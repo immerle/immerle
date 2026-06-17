@@ -53,7 +53,7 @@ func (h *Handler) handleGetShares(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
 	shares, err := h.Shares.ListByUser(r.Context(), user.ID)
 	if err != nil {
-		writeError(w, r, ErrGeneric, err.Error())
+		h.failInternal(w, r, err)
 		return
 	}
 	resp := newResponse()
@@ -89,7 +89,7 @@ func (h *Handler) handleCreateShare(w http.ResponseWriter, r *http.Request) {
 		share.ExpiresAt = &t
 	}
 	if err := h.Shares.Create(r.Context(), share); err != nil {
-		writeError(w, r, ErrGeneric, err.Error())
+		h.failInternal(w, r, err)
 		return
 	}
 	resp := newResponse()
@@ -110,7 +110,7 @@ func (h *Handler) handleUpdateShare(w http.ResponseWriter, r *http.Request) {
 		expires = &t
 	}
 	if err := h.Shares.Update(r.Context(), id, user.ID, param(r, "description"), expires); err != nil {
-		writeError(w, r, ErrGeneric, err.Error())
+		h.failInternal(w, r, err)
 		return
 	}
 	writeOK(w, r)
@@ -120,7 +120,7 @@ func (h *Handler) handleDeleteShare(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
 	id := param(r, "id")
 	if err := h.Shares.Delete(r.Context(), id, user.ID); err != nil {
-		writeError(w, r, ErrGeneric, err.Error())
+		h.failInternal(w, r, err)
 		return
 	}
 	writeOK(w, r)

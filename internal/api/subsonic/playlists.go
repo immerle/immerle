@@ -28,7 +28,7 @@ func (h *Handler) handleGetPlaylists(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
 	lists, err := h.Playlists.ListVisible(r.Context(), user.ID)
 	if err != nil {
-		writeError(w, r, ErrGeneric, err.Error())
+		h.failInternal(w, r, err)
 		return
 	}
 	resp := newResponse()
@@ -54,7 +54,7 @@ func (h *Handler) handleGetPlaylist(w http.ResponseWriter, r *http.Request) {
 	}
 	tracks, err := h.Playlists.Tracks(r.Context(), id)
 	if err != nil {
-		writeError(w, r, ErrGeneric, err.Error())
+		h.failInternal(w, r, err)
 		return
 	}
 	trackAnn, _ := h.Annotations.AnnotationMap(r.Context(), user.ID, models.ItemTrack)
@@ -86,7 +86,7 @@ func (h *Handler) handleCreatePlaylist(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if err := h.Playlists.ReplaceTracks(r.Context(), playlistID, songIDs, user.ID); err != nil {
-			writeError(w, r, ErrGeneric, err.Error())
+			h.failInternal(w, r, err)
 			return
 		}
 		h.respondPlaylist(w, r, playlistID)
@@ -106,7 +106,7 @@ func (h *Handler) handleCreatePlaylist(w http.ResponseWriter, r *http.Request) {
 		UpdatedAt: now,
 	}
 	if err := h.Playlists.Create(r.Context(), p); err != nil {
-		writeError(w, r, ErrGeneric, err.Error())
+		h.failInternal(w, r, err)
 		return
 	}
 	if len(songIDs) > 0 {
@@ -141,7 +141,7 @@ func (h *Handler) handleUpdatePlaylist(w http.ResponseWriter, r *http.Request) {
 		p.Public = boolParam(r, "public", p.Public)
 	}
 	if err := h.Playlists.UpdateMeta(r.Context(), p); err != nil {
-		writeError(w, r, ErrGeneric, err.Error())
+		h.failInternal(w, r, err)
 		return
 	}
 
@@ -178,7 +178,7 @@ func (h *Handler) handleDeletePlaylist(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.Playlists.Delete(r.Context(), id); err != nil {
-		writeError(w, r, ErrGeneric, err.Error())
+		h.failInternal(w, r, err)
 		return
 	}
 	writeOK(w, r)
@@ -187,7 +187,7 @@ func (h *Handler) handleDeletePlaylist(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) respondPlaylist(w http.ResponseWriter, r *http.Request, id string) {
 	p, err := h.Playlists.Get(r.Context(), id)
 	if err != nil {
-		writeError(w, r, ErrGeneric, err.Error())
+		h.failInternal(w, r, err)
 		return
 	}
 	tracks, _ := h.Playlists.Tracks(r.Context(), id)

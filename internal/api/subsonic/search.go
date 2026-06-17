@@ -19,7 +19,7 @@ func (h *Handler) handleSearch3(w http.ResponseWriter, r *http.Request) {
 
 	artists, albums, tracks, err := h.Catalog.Search(r.Context(), query, artistCount, albumCount, songCount)
 	if err != nil {
-		writeError(w, r, ErrGeneric, err.Error())
+		h.failInternal(w, r, err)
 		return
 	}
 

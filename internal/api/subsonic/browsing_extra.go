@@ -50,7 +50,7 @@ func (h *Handler) handleGetSongsByGenre(w http.ResponseWriter, r *http.Request) 
 	offset := intParam(r, "offset", 0)
 	tracks, err := h.Catalog.ListTracksByGenre(r.Context(), genre, count, offset)
 	if err != nil {
-		writeError(w, r, ErrGeneric, err.Error())
+		h.failInternal(w, r, err)
 		return
 	}
 	resp := newResponse()
@@ -62,7 +62,7 @@ func (h *Handler) handleGetRandomSongs(w http.ResponseWriter, r *http.Request) {
 	size := intParam(r, "size", 10)
 	tracks, err := h.Catalog.RandomTracks(r.Context(), size, param(r, "genre"), intParam(r, "fromYear", 0), intParam(r, "toYear", 0))
 	if err != nil {
-		writeError(w, r, ErrGeneric, err.Error())
+		h.failInternal(w, r, err)
 		return
 	}
 	resp := newResponse()
@@ -75,7 +75,7 @@ func (h *Handler) handleGetAlbumList(w http.ResponseWriter, r *http.Request) {
 	opt := buildAlbumListOptions(r, user.ID)
 	albums, err := h.Catalog.ListAlbums(r.Context(), opt)
 	if err != nil {
-		writeError(w, r, ErrGeneric, err.Error())
+		h.failInternal(w, r, err)
 		return
 	}
 	albumAnn, _ := h.Annotations.AnnotationMap(r.Context(), user.ID, models.ItemAlbum)
@@ -166,7 +166,7 @@ func (h *Handler) handleSearch2(w http.ResponseWriter, r *http.Request) {
 	artists, albums, tracks, err := h.Catalog.Search(r.Context(), query,
 		intParam(r, "artistCount", 20), intParam(r, "albumCount", 20), intParam(r, "songCount", 20))
 	if err != nil {
-		writeError(w, r, ErrGeneric, err.Error())
+		h.failInternal(w, r, err)
 		return
 	}
 	out := &SearchResult2{}
