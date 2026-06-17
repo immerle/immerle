@@ -75,12 +75,17 @@ func (w *Watcher) Run(ctx context.Context) error {
 			w.handleEvent(watcher, event, pending)
 
 		case <-tick.C:
-			// Periodic full rescan (interval read live → hot-reloadable).
+			// Periodic full rescan (interval read live → hot-reloadable). Run it
+			// in a goroutine: a multi-minute scan must not block this loop, or
+			// fsnotify events go undrained and are silently dropped. ScanPaths
+			// self-guards against overlapping runs (its scanning flag).
 			if iv := w.scanInterval(); iv > 0 && time.Since(lastScan) >= iv {
 				lastScan = time.Now()
-				if _, err := w.scanner.ScanPaths(ctx, w.paths); err != nil {
-					w.logger.Warn("periodic scan failed", "error", err)
-				}
+				go func() {
+					if _, err := w.scanner.ScanPaths(ctx, w.paths); err != nil {
+						w.logger.Warn("periodic scan failed", "error", err)
+					}
+				}()
 			}
 			// Debounce flush of pending file events.
 			now := time.Now()
