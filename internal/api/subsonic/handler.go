@@ -5,13 +5,12 @@ import (
 	"encoding/hex"
 	"errors"
 	"log/slog"
-	"net"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/google/uuid"
 
+	"github.com/immerle/immerle/internal/api/httputil"
 	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
@@ -138,8 +137,8 @@ func (h *Handler) authenticated(next http.HandlerFunc) http.HandlerFunc {
 			Password:  r.Form.Get("p"),
 			Token:     r.Form.Get("t"),
 			Salt:      r.Form.Get("s"),
-			APIToken:  apiTokenFromRequest(r),
-			RemoteIP:  clientIP(r),
+			APIToken:  httputil.APITokenFromRequest(r),
+			RemoteIP:  httputil.ClientIP(r),
 			UserAgent: r.UserAgent(),
 		}
 		user, err := h.Auth.Authenticate(r.Context(), creds)
@@ -210,30 +209,6 @@ func contextDetached() context.Context {
 
 // newID generates a unique identifier for new entities.
 func newID() string { return uuid.NewString() }
-
-// clientIP returns the best-effort client IP (first X-Forwarded-For hop, else
-// the remote address without its port).
-func clientIP(r *http.Request) string {
-	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		if i := strings.IndexByte(xff, ','); i >= 0 {
-			return strings.TrimSpace(xff[:i])
-		}
-		return strings.TrimSpace(xff)
-	}
-	if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
-		return host
-	}
-	return r.RemoteAddr
-}
-
-// apiTokenFromRequest extracts a personal API token from the Authorization
-// Bearer header or the apiKey parameter. r.ParseForm must have been called.
-func apiTokenFromRequest(r *http.Request) string {
-	if h := r.Header.Get("Authorization"); len(h) > 7 && strings.EqualFold(h[:7], "bearer ") {
-		return strings.TrimSpace(h[7:])
-	}
-	return r.Form.Get("apiKey")
-}
 
 // decodeEncParam decodes a Subsonic "enc:<hex>" encoded password value.
 func decodeEncParam(p string) string {

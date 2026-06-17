@@ -7,11 +7,10 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
-	"net"
 	"net/http"
-	"strings"
 	"time"
 
+	"github.com/immerle/immerle/internal/api/httputil"
 	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/importer"
 	"github.com/immerle/immerle/internal/models"
@@ -160,30 +159,6 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.Handle("/admin/settings", auth(h.handleSettings))
 }
 
-// apiTokenFromRequest extracts a personal API token / device JWT from the
-// Authorization Bearer header or the apiKey parameter. r.ParseForm must have
-// been called.
-func apiTokenFromRequest(r *http.Request) string {
-	if h := r.Header.Get("Authorization"); len(h) > 7 && strings.EqualFold(h[:7], "bearer ") {
-		return strings.TrimSpace(h[7:])
-	}
-	return r.Form.Get("apiKey")
-}
-
-// clientIP returns the best-effort client IP.
-func clientIP(r *http.Request) string {
-	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		if i := strings.IndexByte(xff, ','); i >= 0 {
-			return strings.TrimSpace(xff[:i])
-		}
-		return strings.TrimSpace(xff)
-	}
-	if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
-		return host
-	}
-	return r.RemoteAddr
-}
-
 func (h *Handler) authenticated(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		_ = r.ParseForm()
@@ -192,8 +167,8 @@ func (h *Handler) authenticated(next http.HandlerFunc) http.HandlerFunc {
 			Password:  r.Form.Get("p"),
 			Token:     r.Form.Get("t"),
 			Salt:      r.Form.Get("s"),
-			APIToken:  apiTokenFromRequest(r),
-			RemoteIP:  clientIP(r),
+			APIToken:  httputil.APITokenFromRequest(r),
+			RemoteIP:  httputil.ClientIP(r),
 			UserAgent: r.UserAgent(),
 		}
 		user, err := h.Auth.Authenticate(r.Context(), creds)
