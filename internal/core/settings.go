@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -178,15 +179,8 @@ func yamlToJSON(data []byte, v any) error {
 
 // transcodeEqual compares two transcode settings (slices included).
 func transcodeEqual(a, b models.TranscodeRuntime) bool {
-	if a.FFmpegPath != b.FFmpegPath || a.FFprobePath != b.FFprobePath || len(a.Profiles) != len(b.Profiles) {
-		return false
-	}
-	for i := range a.Profiles {
-		if a.Profiles[i] != b.Profiles[i] {
-			return false
-		}
-	}
-	return true
+	return a.FFmpegPath == b.FFmpegPath && a.FFprobePath == b.FFprobePath &&
+		slices.Equal(a.Profiles, b.Profiles)
 }
 
 // sanitizeSettings clamps/normalizes incoming values.
