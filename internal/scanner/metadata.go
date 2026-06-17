@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -54,16 +55,9 @@ var audioExtensions = map[string]string{
 // IsAudioFile reports whether the path has a recognized audio extension and
 // returns its content type.
 func IsAudioFile(path string) (string, bool) {
-	ext := strings.ToLower(extOf(path))
+	ext := strings.ToLower(filepath.Ext(path))
 	ct, ok := audioExtensions[ext]
 	return ct, ok
-}
-
-func extOf(path string) string {
-	if i := strings.LastIndexByte(path, '.'); i >= 0 {
-		return path[i:]
-	}
-	return ""
 }
 
 // Extractor reads tags from audio files, falling back to ffprobe for fields the

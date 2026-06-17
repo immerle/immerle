@@ -250,7 +250,7 @@ func (s *Scanner) indexFile(ctx context.Context, path string) (string, bool, err
 		coverArt = existing.CoverArt
 	}
 
-	suffix := strings.TrimPrefix(strings.ToLower(extOf(path)), ".")
+	suffix := strings.TrimPrefix(strings.ToLower(filepath.Ext(path)), ".")
 	ct, _ := IsAudioFile(path)
 
 	// Determine if this is an add vs update before upserting.
