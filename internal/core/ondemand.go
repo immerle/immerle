@@ -472,7 +472,7 @@ func (s *CatalogService) embedTags(ctx context.Context, src, dest string, meta p
 
 	cmd := exec.CommandContext(ctx, s.state.ffmpegPath, args...)
 	if out, err := cmd.CombinedOutput(); err != nil {
-		s.state.logger.Warn("tag embed via ffmpeg failed, using raw file", "error", err, "output", truncate(string(out), 300))
+		s.state.logger.Warn("tag embed via ffmpeg failed, using raw file", "error", err, "output", string(out[:min(len(out), 300)]))
 		return os.Rename(src, dest)
 	}
 	_ = os.Remove(src)
@@ -639,11 +639,4 @@ func firstNonEmpty(vals ...string) string {
 		}
 	}
 	return ""
-}
-
-func truncate(s string, n int) string {
-	if len(s) > n {
-		return s[:n]
-	}
-	return s
 }
