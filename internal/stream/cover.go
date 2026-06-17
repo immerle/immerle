@@ -102,8 +102,10 @@ func (c *CoverService) resolveOriginal(ctx context.Context, id string) ([]byte, 
 	}
 
 	// Direct cover file written at scan time (keyed by album id).
-	if data, err := os.ReadFile(filepath.Join(c.coversDir, id)); err == nil {
-		return data, nil
+	if p, ok := c.coverFile(id); ok {
+		if data, err := os.ReadFile(p); err == nil {
+			return data, nil
+		}
 	}
 
 	// Try as a track id: embedded art, then a sidecar image in its directory.
@@ -116,8 +118,10 @@ func (c *CoverService) resolveOriginal(ctx context.Context, id string) ([]byte, 
 		}
 		// Track may point at an album cover.
 		if t.CoverArt != "" && t.CoverArt != id {
-			if data, err := os.ReadFile(filepath.Join(c.coversDir, t.CoverArt)); err == nil {
-				return data, nil
+			if p, ok := c.coverFile(t.CoverArt); ok {
+				if data, err := os.ReadFile(p); err == nil {
+					return data, nil
+				}
 			}
 		}
 	}
@@ -196,6 +200,17 @@ func findSidecar(dir string) ([]byte, error) {
 
 func looksLikeImageBytes(data []byte) bool {
 	return detectContentType(data) != "application/octet-stream"
+}
+
+// coverFile resolves a stored cover filename under coversDir, rejecting any id
+// that would escape the directory (path traversal). Cover files are flat, keyed
+// by album id, so the result must sit directly inside coversDir.
+func (c *CoverService) coverFile(name string) (string, bool) {
+	p := filepath.Join(c.coversDir, name)
+	if filepath.Dir(p) != filepath.Clean(c.coversDir) {
+		return "", false
+	}
+	return p, true
 }
 
 func (c *CoverService) cachePath(id string, size int) string {
