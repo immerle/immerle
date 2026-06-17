@@ -2,6 +2,7 @@ package immerle
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/importer"
 	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/persistence"
 )
 
 // handleCapabilities reports the immerle features this instance supports so
@@ -147,6 +149,10 @@ func (h *Handler) handleFriendAccept(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.Friends.Accept(r.Context(), requesterUser.ID, user.ID, uuid.NewString()); err != nil {
+		if errors.Is(err, persistence.ErrNotFound) {
+			writeJSON(w, http.StatusNotFound, errorBody("no pending request from this user"))
+			return
+		}
 		writeJSON(w, http.StatusInternalServerError, errorBody(err.Error()))
 		return
 	}

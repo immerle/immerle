@@ -32,15 +32,23 @@ func (r *FriendRepo) SetStatus(ctx context.Context, userID, friendID string, sta
 	return err
 }
 
-// Accept marks a request accepted and creates the reciprocal accepted edge.
+// Accept marks a pending request accepted and creates the reciprocal accepted
+// edge. Returns ErrNotFound if no pending inbound request from requesterID to
+// accepterID exists, so a friendship cannot be forged without a real request.
 func (r *FriendRepo) Accept(ctx context.Context, requesterID, accepterID, newID string) error {
 	return r.withTx(ctx, func(tx *sql.Tx) error {
 		now := db.Millis(time.Now())
-		if _, err := tx.ExecContext(ctx, r.rebind(`UPDATE friendships SET status='accepted', updated_at=? WHERE user_id=? AND friend_id=?`),
-			now, requesterID, accepterID); err != nil {
+		res, err := tx.ExecContext(ctx, r.rebind(`UPDATE friendships SET status='accepted', updated_at=? WHERE user_id=? AND friend_id=? AND status='pending'`),
+			now, requesterID, accepterID)
+		if err != nil {
 			return err
 		}
-		_, err := tx.ExecContext(ctx, r.rebind(`INSERT INTO friendships (id, user_id, friend_id, status, created_at, updated_at)
+		if n, err := res.RowsAffected(); err != nil {
+			return err
+		} else if n == 0 {
+			return ErrNotFound
+		}
+		_, err = tx.ExecContext(ctx, r.rebind(`INSERT INTO friendships (id, user_id, friend_id, status, created_at, updated_at)
 			VALUES (?, ?, ?, 'accepted', ?, ?)
 			ON CONFLICT(user_id, friend_id) DO UPDATE SET status='accepted', updated_at=excluded.updated_at`),
 			newID, accepterID, requesterID, now, now)
