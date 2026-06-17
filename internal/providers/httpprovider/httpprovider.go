@@ -8,7 +8,7 @@
 // # Remote protocol
 //
 // The external service must expose three endpoints under the base URL (paths are
-// configurable). All requests carry any configured headers (e.g. an auth token).
+// fixed). All requests carry any configured headers (e.g. an auth token).
 //
 //	GET  {endpoint}{searchPath}?q={query}&limit={n}
 //	     → 200 application/json: {"results": [ <Track>, ... ]}
@@ -44,23 +44,10 @@ import (
 
 // Config is the JSON config payload supplied per provider. Every field is
 // optional; only Headers typically needs setting (to authenticate to the
-// service). Paths default to /search, /resolve and /download.
+// service). Endpoint paths are fixed by the protocol (see the path constants).
 type Config struct {
 	// Headers are sent on every request (e.g. {"Authorization": "Bearer ..."}).
 	Headers map[string]string `json:"headers,omitempty"`
-	// SearchPath, ResolvePath, DownloadPath override the default endpoint paths.
-	SearchPath   string `json:"searchPath,omitempty"`
-	ResolvePath  string `json:"resolvePath,omitempty"`
-	DownloadPath string `json:"downloadPath,omitempty"`
-	// Artist/album browsing paths (optional capabilities). A service that does
-	// not implement one should return 404 — the provider then degrades quietly
-	// (the artist page just won't be enriched from it). Defaults: /artists,
-	// /artist/albums, /artist/tracks, /album/tracks.
-	SearchArtistsPath string `json:"searchArtistsPath,omitempty"`
-	ArtistAlbumsPath  string `json:"artistAlbumsPath,omitempty"`
-	ArtistTracksPath  string `json:"artistTracksPath,omitempty"`
-	AlbumTracksPath   string `json:"albumTracksPath,omitempty"`
-	ArtistImagePath   string `json:"artistImagePath,omitempty"`
 	// Quality is a free-form label reported as the provider's MaxQuality.
 	Quality string `json:"quality,omitempty"`
 	// TimeoutSeconds bounds each HTTP call (default 60).
@@ -78,6 +65,19 @@ type Provider struct {
 	cfg      Config
 	http     *http.Client
 }
+
+// Endpoint paths on the remote service — fixed by the protocol. The remote must
+// implement these exact paths under its base URL.
+const (
+	searchPath        = "/search"
+	resolvePath       = "/resolve"
+	downloadPath      = "/download"
+	searchArtistsPath = "/artists"
+	artistAlbumsPath  = "/artist/albums"
+	artistTracksPath  = "/artist/tracks"
+	albumTracksPath   = "/album/tracks"
+	artistImagePath   = "/artist/image"
+)
 
 // New builds an HTTP provider. endpoint must be an absolute http(s) URL;
 // configJSON is the raw config payload ("" or "{}" for defaults).
@@ -98,21 +98,6 @@ func New(name, endpoint, configJSON string) (*Provider, error) {
 			return nil, fmt.Errorf("httpprovider: invalid config JSON: %w", err)
 		}
 	}
-	for _, d := range []struct {
-		field *string
-		def   string
-	}{
-		{&cfg.SearchPath, "/search"},
-		{&cfg.ResolvePath, "/resolve"},
-		{&cfg.DownloadPath, "/download"},
-		{&cfg.SearchArtistsPath, "/artists"},
-		{&cfg.ArtistAlbumsPath, "/artist/albums"},
-		{&cfg.ArtistTracksPath, "/artist/tracks"},
-		{&cfg.AlbumTracksPath, "/album/tracks"},
-		{&cfg.ArtistImagePath, "/artist/image"},
-	} {
-		*d.field = pathOr(*d.field, d.def)
-	}
 	timeout := 60 * time.Second
 	if cfg.TimeoutSeconds > 0 {
 		timeout = time.Duration(cfg.TimeoutSeconds) * time.Second
@@ -127,17 +112,6 @@ func New(name, endpoint, configJSON string) (*Provider, error) {
 		cfg:      cfg,
 		http:     &http.Client{Timeout: timeout},
 	}, nil
-}
-
-func pathOr(p, def string) string {
-	p = strings.TrimSpace(p)
-	if p == "" {
-		return def
-	}
-	if !strings.HasPrefix(p, "/") {
-		p = "/" + p
-	}
-	return p
 }
 
 // Name implements providers.Provider.
@@ -215,7 +189,7 @@ func (p *Provider) Search(ctx context.Context, query string, limit int) ([]provi
 		limit = 20
 	}
 	q := url.Values{"q": {query}, "limit": {strconv.Itoa(limit)}}
-	req, err := p.newRequest(ctx, p.cfg.SearchPath, q)
+	req, err := p.newRequest(ctx, searchPath, q)
 	if err != nil {
 		return nil, err
 	}
@@ -246,7 +220,7 @@ func (p *Provider) Search(ctx context.Context, query string, limit int) ([]provi
 // Resolve implements providers.Provider. It accepts either a bare track object
 // or {"result": <Track>}.
 func (p *Provider) Resolve(ctx context.Context, providerTrackID string) (providers.Result, error) {
-	req, err := p.newRequest(ctx, p.cfg.ResolvePath, url.Values{"id": {providerTrackID}})
+	req, err := p.newRequest(ctx, resolvePath, url.Values{"id": {providerTrackID}})
 	if err != nil {
 		return providers.Result{}, err
 	}
@@ -323,7 +297,7 @@ func (p *Provider) Download(ctx context.Context, providerTrackID string, w io.Wr
 // carries a streamable 2xx body. Any error returned here is from the pre-stream
 // phase (nothing written to the caller yet), so it is safe to retry.
 func (p *Provider) openDownload(ctx context.Context, providerTrackID string) (*http.Response, error) {
-	req, err := p.newRequest(ctx, p.cfg.DownloadPath, url.Values{"id": {providerTrackID}})
+	req, err := p.newRequest(ctx, downloadPath, url.Values{"id": {providerTrackID}})
 	if err != nil {
 		return nil, err
 	}

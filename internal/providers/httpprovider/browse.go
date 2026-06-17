@@ -65,7 +65,7 @@ func (p *Provider) SearchArtists(ctx context.Context, query string, limit int) (
 	var body struct {
 		Artists []artistWire `json:"artists"`
 	}
-	if err := p.getJSON(ctx, p.cfg.SearchArtistsPath, q, &body); err != nil {
+	if err := p.getJSON(ctx, searchArtistsPath, q, &body); err != nil {
 		if errors.Is(err, errUnsupported) {
 			return nil, nil
 		}
@@ -97,7 +97,7 @@ func (p *Provider) ArtistAlbums(ctx context.Context, providerArtistID string, li
 	var body struct {
 		Albums []albumWire `json:"albums"`
 	}
-	if err := p.getJSON(ctx, p.cfg.ArtistAlbumsPath, q, &body); err != nil {
+	if err := p.getJSON(ctx, artistAlbumsPath, q, &body); err != nil {
 		if errors.Is(err, errUnsupported) {
 			return nil, nil
 		}
@@ -125,7 +125,7 @@ func (p *Provider) ArtistTracks(ctx context.Context, providerArtistID string, li
 	if limit <= 0 {
 		limit = 50
 	}
-	return p.tracksAt(ctx, p.cfg.ArtistTracksPath, providerArtistID, limit)
+	return p.tracksAt(ctx, artistTracksPath, providerArtistID, limit)
 }
 
 // AlbumTracks implements providers.AlbumBrowser.
@@ -135,7 +135,7 @@ func (p *Provider) AlbumTracks(ctx context.Context, providerAlbumID string, limi
 	if limit <= 0 {
 		limit = 200
 	}
-	return p.tracksAt(ctx, p.cfg.AlbumTracksPath, providerAlbumID, limit)
+	return p.tracksAt(ctx, albumTracksPath, providerAlbumID, limit)
 }
 
 // ArtistImage implements providers.ArtistImageSearcher.
@@ -145,7 +145,7 @@ func (p *Provider) ArtistImage(ctx context.Context, name string) (string, error)
 	var body struct {
 		ImageURL string `json:"imageUrl"`
 	}
-	if err := p.getJSON(ctx, p.cfg.ArtistImagePath, url.Values{"name": {name}}, &body); err != nil {
+	if err := p.getJSON(ctx, artistImagePath, url.Values{"name": {name}}, &body); err != nil {
 		if errors.Is(err, errUnsupported) {
 			return "", nil
 		}
