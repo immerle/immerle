@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/immerle/immerle/internal/strutil"
 )
 
 // InternetArchiveProvider serves freely-distributable audio from the Internet
@@ -94,16 +96,6 @@ func firstString(v any) string {
 	return ""
 }
 
-// firstNonEmpty returns the first non-empty string among its arguments.
-func firstNonEmpty(vals ...string) string {
-	for _, v := range vals {
-		if v != "" {
-			return v
-		}
-	}
-	return ""
-}
-
 func isAudioFormat(f iaFile) (suffix string, ok bool) {
 	name := strings.ToLower(f.Name)
 	switch {
@@ -158,9 +150,9 @@ func (p *InternetArchiveProvider) Search(ctx context.Context, query string, limi
 }
 
 func iaResult(identifier string, f iaFile, md *iaMetadata, suffix string) Result {
-	title := firstNonEmpty(f.Title, strings.TrimSuffix(f.Name, "."+suffix))
-	artist := firstNonEmpty(f.Artist, firstString(md.Metadata.Creator), "Unknown Artist")
-	album := firstNonEmpty(f.Album, md.Metadata.Title, identifier)
+	title := strutil.FirstNonEmpty(f.Title, strings.TrimSuffix(f.Name, "."+suffix))
+	artist := strutil.FirstNonEmpty(f.Artist, firstString(md.Metadata.Creator), "Unknown Artist")
+	album := strutil.FirstNonEmpty(f.Album, md.Metadata.Title, identifier)
 	track, _ := strconv.Atoi(f.Track)
 	year := 0
 	if len(md.Metadata.Date) >= 4 {

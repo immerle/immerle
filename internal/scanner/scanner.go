@@ -19,6 +19,7 @@ import (
 
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
+	"github.com/immerle/immerle/internal/strutil"
 )
 
 // Scanner indexes audio files into the catalog.
@@ -196,7 +197,7 @@ func (s *Scanner) indexFile(ctx context.Context, path string) (string, bool, err
 
 	// Resolve the artist. For compilations we still attribute the track to its
 	// performing artist, but album artist drives album grouping.
-	albumArtistName := firstNonEmpty(md.AlbumArtist, md.Artist)
+	albumArtistName := strutil.FirstNonEmpty(md.AlbumArtist, md.Artist)
 	albumArtistID, err := s.catalog.UpsertArtist(ctx, models.Artist{
 		ID:        uuid.NewString(),
 		Name:      albumArtistName,

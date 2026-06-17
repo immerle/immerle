@@ -10,6 +10,8 @@ import (
 	"strings"
 
 	"github.com/dhowden/tag"
+
+	"github.com/immerle/immerle/internal/strutil"
 )
 
 // Metadata is the normalized set of fields extracted from an audio file.
@@ -151,21 +153,12 @@ func extractMBIDs(raw map[string]interface{}, md *Metadata) {
 		}
 		return ""
 	}
-	md.MBTrackID = firstNonEmpty(md.MBTrackID, get("musicbrainz_trackid", "musicbrainz track id", "----:com.apple.itunes:musicbrainz track id"))
-	md.MBAlbumID = firstNonEmpty(md.MBAlbumID, get("musicbrainz_albumid", "musicbrainz album id"))
-	md.MBArtistID = firstNonEmpty(md.MBArtistID, get("musicbrainz_artistid", "musicbrainz artist id"))
+	md.MBTrackID = strutil.FirstNonEmpty(md.MBTrackID, get("musicbrainz_trackid", "musicbrainz track id", "----:com.apple.itunes:musicbrainz track id"))
+	md.MBAlbumID = strutil.FirstNonEmpty(md.MBAlbumID, get("musicbrainz_albumid", "musicbrainz album id"))
+	md.MBArtistID = strutil.FirstNonEmpty(md.MBArtistID, get("musicbrainz_artistid", "musicbrainz artist id"))
 	if comp := get("compilation", "tcmp", "itunescompilation"); comp == "1" || strings.EqualFold(comp, "true") {
 		md.Compilation = true
 	}
-}
-
-func firstNonEmpty(vals ...string) string {
-	for _, v := range vals {
-		if strings.TrimSpace(v) != "" {
-			return strings.TrimSpace(v)
-		}
-	}
-	return ""
 }
 
 // ffprobeOutput is the subset of ffprobe JSON we consume.
@@ -222,7 +215,7 @@ func (e *Extractor) augmentWithFFprobe(ctx context.Context, path string, md *Met
 		md.Genre = tags["genre"]
 	}
 	if md.Year == 0 {
-		md.Year = parseYear(firstNonEmpty(tags["date"], tags["year"], tags["originalyear"]))
+		md.Year = parseYear(strutil.FirstNonEmpty(tags["date"], tags["year"], tags["originalyear"]))
 	}
 	if md.TrackNo == 0 {
 		md.TrackNo = parseLeadingInt(tags["track"])
@@ -230,9 +223,9 @@ func (e *Extractor) augmentWithFFprobe(ctx context.Context, path string, md *Met
 	if md.DiscNo == 0 {
 		md.DiscNo = parseLeadingInt(tags["disc"])
 	}
-	md.MBTrackID = firstNonEmpty(md.MBTrackID, tags["musicbrainz_trackid"], tags["musicbrainz_releasetrackid"])
-	md.MBAlbumID = firstNonEmpty(md.MBAlbumID, tags["musicbrainz_albumid"])
-	md.MBArtistID = firstNonEmpty(md.MBArtistID, tags["musicbrainz_artistid"])
+	md.MBTrackID = strutil.FirstNonEmpty(md.MBTrackID, tags["musicbrainz_trackid"], tags["musicbrainz_releasetrackid"])
+	md.MBAlbumID = strutil.FirstNonEmpty(md.MBAlbumID, tags["musicbrainz_albumid"])
+	md.MBArtistID = strutil.FirstNonEmpty(md.MBArtistID, tags["musicbrainz_artistid"])
 }
 
 func mergeTags(format map[string]string, streams []struct {

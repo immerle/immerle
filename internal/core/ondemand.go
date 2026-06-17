@@ -21,6 +21,7 @@ import (
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 	"github.com/immerle/immerle/internal/providers"
+	"github.com/immerle/immerle/internal/strutil"
 )
 
 // ProviderRegistry holds the configured providers, keyed by name. It is safe
@@ -536,9 +537,9 @@ func fetchImage(ctx context.Context, url string) ([]byte, error) {
 
 // destPath builds Artist/Album/NN - Title.suffix under the download dir.
 func (s *CatalogService) destPath(meta providers.Result, suffix string) string {
-	artist := sanitize(firstNonEmpty(meta.AlbumArtist, meta.Artist, "Unknown Artist"))
-	album := sanitize(firstNonEmpty(meta.Album, "Unknown Album"))
-	title := sanitize(firstNonEmpty(meta.Title, "Unknown"))
+	artist := sanitize(strutil.FirstNonEmpty(meta.AlbumArtist, meta.Artist, "Unknown Artist"))
+	album := sanitize(strutil.FirstNonEmpty(meta.Album, "Unknown Album"))
+	title := sanitize(strutil.FirstNonEmpty(meta.Title, "Unknown"))
 	name := title
 	if meta.TrackNo > 0 {
 		name = fmt.Sprintf("%02d - %s", meta.TrackNo, title)
@@ -630,15 +631,6 @@ func sanitize(s string) string {
 		return "Unknown"
 	}
 	return out
-}
-
-func firstNonEmpty(vals ...string) string {
-	for _, v := range vals {
-		if strings.TrimSpace(v) != "" {
-			return v
-		}
-	}
-	return ""
 }
 
 func truncate(s string, n int) string {
