@@ -98,14 +98,21 @@ func New(name, endpoint, configJSON string) (*Provider, error) {
 			return nil, fmt.Errorf("httpprovider: invalid config JSON: %w", err)
 		}
 	}
-	cfg.SearchPath = pathOr(cfg.SearchPath, "/search")
-	cfg.ResolvePath = pathOr(cfg.ResolvePath, "/resolve")
-	cfg.DownloadPath = pathOr(cfg.DownloadPath, "/download")
-	cfg.SearchArtistsPath = pathOr(cfg.SearchArtistsPath, "/artists")
-	cfg.ArtistAlbumsPath = pathOr(cfg.ArtistAlbumsPath, "/artist/albums")
-	cfg.ArtistTracksPath = pathOr(cfg.ArtistTracksPath, "/artist/tracks")
-	cfg.AlbumTracksPath = pathOr(cfg.AlbumTracksPath, "/album/tracks")
-	cfg.ArtistImagePath = pathOr(cfg.ArtistImagePath, "/artist/image")
+	for _, d := range []struct {
+		field *string
+		def   string
+	}{
+		{&cfg.SearchPath, "/search"},
+		{&cfg.ResolvePath, "/resolve"},
+		{&cfg.DownloadPath, "/download"},
+		{&cfg.SearchArtistsPath, "/artists"},
+		{&cfg.ArtistAlbumsPath, "/artist/albums"},
+		{&cfg.ArtistTracksPath, "/artist/tracks"},
+		{&cfg.AlbumTracksPath, "/album/tracks"},
+		{&cfg.ArtistImagePath, "/artist/image"},
+	} {
+		*d.field = pathOr(*d.field, d.def)
+	}
 	timeout := 60 * time.Second
 	if cfg.TimeoutSeconds > 0 {
 		timeout = time.Duration(cfg.TimeoutSeconds) * time.Second
