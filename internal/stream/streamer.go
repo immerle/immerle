@@ -159,7 +159,7 @@ func (s *Streamer) runFFmpeg(ctx context.Context, src, dst, format string, bitra
 	start := time.Now()
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		s.logger.Warn("ffmpeg transcode failed", "src", src, "format", format, "error", err, "output", truncate(string(out), 500))
+		s.logger.Warn("ffmpeg transcode failed", "src", src, "format", format, "error", err, "output", string(out[:min(len(out), 500)]))
 		return fmt.Errorf("transcode: %w", err)
 	}
 	s.logger.Debug("transcoded", "src", src, "format", format, "bitrate", bitrate, "elapsed", time.Since(start))
@@ -203,11 +203,4 @@ func contentTypeForFormat(format string) string {
 	default:
 		return "application/octet-stream"
 	}
-}
-
-func truncate(s string, n int) string {
-	if len(s) > n {
-		return s[:n]
-	}
-	return s
 }
