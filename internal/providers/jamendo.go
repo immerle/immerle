@@ -34,7 +34,7 @@ func NewJamendoProvider(clientID, audioFormat, baseURL string) *JamendoProvider 
 		clientID:    clientID,
 		audioFormat: audioFormat,
 		baseURL:     baseURL,
-		http:        &http.Client{Timeout: 60 * time.Second},
+		http:        NewHTTPClient(60 * time.Second),
 	}
 }
 
@@ -138,7 +138,7 @@ func (p *JamendoProvider) query(ctx context.Context, params url.Values) (*jamend
 		return nil, fmt.Errorf("jamendo: status %d", resp.StatusCode)
 	}
 	var out jamendoResponse
-	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+	if err := json.NewDecoder(io.LimitReader(resp.Body, MaxMetadataBytes)).Decode(&out); err != nil {
 		return nil, err
 	}
 	if out.Headers.Status != "" && out.Headers.Status != "success" {
@@ -213,6 +213,6 @@ func (p *JamendoProvider) fetch(ctx context.Context, rawURL string, w io.Writer)
 	if resp.StatusCode >= 300 {
 		return fmt.Errorf("jamendo: download status %d", resp.StatusCode)
 	}
-	_, err = io.Copy(w, resp.Body)
+	_, err = io.Copy(w, io.LimitReader(resp.Body, MaxDownloadBytes))
 	return err
 }
