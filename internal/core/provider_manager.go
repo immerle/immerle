@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
@@ -44,6 +45,12 @@ type BuiltinDef struct {
 // reordered, but not deleted. Their credentials live entirely in the config —
 // nothing comes from the environment.
 type ProviderManager struct {
+	// mu serializes the public mutating methods: each does a read-modify-write
+	// across the persisted configs and the live registry, and concurrent admin
+	// mutations would otherwise desync registry order from persisted SortOrder.
+	// ponytail: one coarse lock; admin mutations are rare, so contention is a
+	// non-issue.
+	mu           sync.Mutex
 	repo         *persistence.ProviderConfigRepo
 	registry     *ProviderRegistry
 	build        ProviderBuilder
@@ -75,6 +82,8 @@ func NewProviderManager(repo *persistence.ProviderConfigRepo, registry *Provider
 // Load reconciles persisted configs with the built-ins and registers every
 // enabled provider into the live registry, in sort order. Call once at startup.
 func (m *ProviderManager) Load(ctx context.Context) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	if err := m.ensureBuiltins(ctx); err != nil {
 		return err
 	}
@@ -158,6 +167,8 @@ func (m *ProviderManager) Active(name string) bool {
 // match its enabled flag. For a built-in only the config + enabled flag are
 // honoured (kind/endpoint are fixed); a built-in's credentials are edited here.
 func (m *ProviderManager) Upsert(ctx context.Context, cfg models.ProviderConfig) (models.ProviderConfig, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	cfg.Name = strings.TrimSpace(cfg.Name)
 	if !providerNameRe.MatchString(cfg.Name) {
 		return cfg, fmt.Errorf("invalid provider name (use lowercase letters, digits, '-' or '_')")
@@ -211,6 +222,8 @@ func (m *ProviderManager) Upsert(ctx context.Context, cfg models.ProviderConfig)
 // SetEnabled toggles any provider (built-in or dynamic) on or off, updating the
 // live registry to match.
 func (m *ProviderManager) SetEnabled(ctx context.Context, name string, enabled bool) (models.ProviderConfig, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	cfg, err := m.repo.Get(ctx, name)
 	if err != nil {
 		return cfg, err
@@ -234,6 +247,8 @@ func (m *ProviderManager) SetEnabled(ctx context.Context, name string, enabled b
 // Reorder sets the provider priority to the given name order. Every persisted
 // provider must appear exactly once. The live registry is updated to match.
 func (m *ProviderManager) Reorder(ctx context.Context, names []string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	configs, err := m.repo.List(ctx)
 	if err != nil {
 		return err
@@ -267,6 +282,8 @@ func (m *ProviderManager) Reorder(ctx context.Context, names []string) error {
 // Delete removes a dynamic provider and unregisters it. Built-in providers
 // cannot be deleted (disable them instead).
 func (m *ProviderManager) Delete(ctx context.Context, name string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	if _, isBuiltin := m.builtins[name]; isBuiltin {
 		return fmt.Errorf("provider %q is built-in and cannot be deleted (disable it instead)", name)
 	}

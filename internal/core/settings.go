@@ -104,25 +104,29 @@ func (s *SettingsService) Get() models.RuntimeSettings {
 // list of fields that changed but only take effect after a restart.
 func (s *SettingsService) Update(next models.RuntimeSettings) (models.RuntimeSettings, []string, error) {
 	next = sanitizeSettings(next)
+	// Hold the lock across persist + assign so a racing Update can't leave the
+	// in-memory current out of sync with what was written to disk.
 	s.mu.Lock()
-	cfg := Configuration{Secret: s.secret, Settings: next}
-	s.mu.Unlock()
-	if err := s.write(cfg); err != nil {
+	defer s.mu.Unlock()
+	if err := s.write(Configuration{Secret: s.secret, Settings: next}); err != nil {
 		return next, nil, err
 	}
-	s.mu.Lock()
 	s.current = next
-	s.mu.Unlock()
-	return next, s.PendingRestart(), nil
+	return next, s.pendingRestartLocked(), nil
 }
 
 // PendingRestart lists the restart-only fields whose current value differs from
 // the value active since boot.
 func (s *SettingsService) PendingRestart() []string {
 	s.mu.RLock()
-	cur, boot := s.current, s.boot
-	s.mu.RUnlock()
+	defer s.mu.RUnlock()
+	return s.pendingRestartLocked()
+}
 
+// pendingRestartLocked computes the pending-restart fields; callers must hold
+// s.mu (read or write).
+func (s *SettingsService) pendingRestartLocked() []string {
+	cur, boot := s.current, s.boot
 	var out []string
 	if !transcodeEqual(cur.Transcode, boot.Transcode) {
 		out = append(out, "transcode")

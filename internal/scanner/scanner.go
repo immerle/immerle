@@ -39,7 +39,11 @@ type Scanner struct {
 }
 
 // SetOnComplete registers a callback invoked after each full scan completes.
-func (s *Scanner) SetOnComplete(fn func(context.Context, Result)) { s.onComplete = fn }
+func (s *Scanner) SetOnComplete(fn func(context.Context, Result)) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.onComplete = fn
+}
 
 // Result summarizes a scan.
 type Result struct {
@@ -147,8 +151,11 @@ func (s *Scanner) ScanPaths(ctx context.Context, paths []string) (Result, error)
 	res.Elapsed = time.Since(start)
 	s.logger.Info("scan complete", "scanned", res.Scanned, "added", res.Added,
 		"updated", res.Updated, "removed", res.Removed, "errors", res.Errors, "elapsed", res.Elapsed)
-	if s.onComplete != nil {
-		s.onComplete(ctx, res)
+	s.mu.Lock()
+	onComplete := s.onComplete
+	s.mu.Unlock()
+	if onComplete != nil {
+		onComplete(ctx, res)
 	}
 	return res, nil
 }
