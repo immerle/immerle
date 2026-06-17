@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/immerle/immerle/internal/api/docs"
@@ -49,6 +50,9 @@ type App struct {
 	// watch is the runtime "watch" setting captured at boot (changing it needs a
 	// restart, so the running process uses the boot value).
 	watch bool
+	// wg tracks background workers so Run can wait for them to drain before
+	// returning (and the caller closing the DB), avoiding "database is closed".
+	wg sync.WaitGroup
 }
 
 // builtinProviderDefs declares the compiled-in providers managed via the admin
@@ -371,46 +375,69 @@ func New(cfg config.Config) (*App, error) {
 }
 
 // Run starts background workers and the HTTP server, blocking until ctx is done.
+// On shutdown it cancels the workers and waits for them to drain before
+// returning, so a subsequent Close() never shuts the DB out from under a worker.
 func (a *App) Run(ctx context.Context) error {
+	// Own cancellable scope so workers are stopped even if the server returns for
+	// a reason other than ctx cancellation (e.g. a bind failure).
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	if len(a.scanPaths) > 0 {
-		go func() {
-			if _, err := a.scanner.ScanPaths(context.Background(), a.scanPaths); err != nil {
+		a.spawn(func() {
+			// Use the run ctx so a SIGTERM during the initial scan cancels it.
+			if _, err := a.scanner.ScanPaths(ctx, a.scanPaths); err != nil {
 				a.logger.Warn("initial scan failed", "error", err)
 			}
 			// Newly scanned artists need avatars now, not at the next idle tick.
 			if a.enricher != nil {
 				a.enricher.Wake()
 			}
-		}()
+		})
 	}
 	if a.watch && len(a.scanPaths) > 0 {
-		go func() {
+		a.spawn(func() {
 			if err := a.watcher.Run(ctx); err != nil {
 				a.logger.Warn("watcher stopped", "error", err)
 			}
-		}()
+		})
 	}
 	if a.onDemand != nil {
-		go a.onDemand.Worker(ctx)
+		a.spawn(func() { a.onDemand.Worker(ctx) })
 	}
 	if a.federation != nil {
-		go a.federation.Run(ctx)
+		a.spawn(func() { a.federation.Run(ctx) })
 	}
 	if a.enricher != nil {
 		// Short idle so incrementally-added artists are picked up promptly; the
 		// post-scan Wake() handles the cold-start case immediately.
-		go a.enricher.Run(ctx, 2*time.Minute)
+		a.spawn(func() { a.enricher.Run(ctx, 2*time.Minute) })
 	}
 	if a.evictor != nil {
 		// Always started; it self-gates on the runtime enabled flag.
-		go a.evictor.Run(ctx)
+		a.spawn(func() { a.evictor.Run(ctx) })
 	}
 	if a.imports != nil {
-		go a.imports.Worker(ctx)
+		a.spawn(func() { a.imports.Worker(ctx) })
 	}
 
 	srv := server.New(a.cfg.Server.Address, a.handler, a.logger)
-	return srv.Run(ctx)
+	err := srv.Run(ctx)
+	// Stop workers and wait for them to finish before returning, so Close() can
+	// safely shut the DB.
+	cancel()
+	a.wg.Wait()
+	return err
+}
+
+// spawn runs fn as a tracked background worker so Run can wait for it on
+// shutdown.
+func (a *App) spawn(fn func()) {
+	a.wg.Add(1)
+	go func() {
+		defer a.wg.Done()
+		fn()
+	}()
 }
 
 // providerControllerOrNil returns a nil interface (not a typed-nil) when the
