@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	chi "github.com/go-chi/chi/v5"
+
 	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/testutil"
 )
@@ -33,7 +35,7 @@ func newAdminEnv(t *testing.T) (*httptest.Server, *fakeCleanup) {
 	settings, _ := core.NewSettingsService(filepath.Join(t.TempDir(), "configuration.yaml"), "", "", testutil.NewLogger())
 	fc := &fakeCleanup{}
 	h := NewHandler(Deps{Auth: auth, Users: store.Users, Settings: settings, Cleanup: fc, Logger: testutil.NewLogger()})
-	mux := http.NewServeMux()
+	mux := chi.NewRouter()
 	h.Register(mux)
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)

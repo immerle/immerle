@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	chi "github.com/go-chi/chi/v5"
+
 	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/persistence"
 	"github.com/immerle/immerle/internal/testutil"
@@ -34,7 +36,7 @@ func newEnv(t *testing.T) (*httptest.Server, *persistence.Store) {
 		Jam:       core.NewJamService(store.Jam),
 		Logger:    testutil.NewLogger(),
 	})
-	mux := http.NewServeMux()
+	mux := chi.NewRouter()
 	h.Register(mux)
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)

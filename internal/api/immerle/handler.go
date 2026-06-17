@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"time"
 
+	chi "github.com/go-chi/chi/v5"
+
 	"github.com/immerle/immerle/internal/api/httputil"
 	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/importer"
@@ -94,7 +96,7 @@ const userKey ctxKey = iota
 // Register mounts the native immerle extension endpoints on mux at the root
 // (the Subsonic API lives under /rest/). The legacy /rest/immerle.capabilities
 // alias is kept for Subsonic-style capability discovery.
-func (h *Handler) Register(mux *http.ServeMux) {
+func (h *Handler) Register(mux chi.Router) {
 	// Capability discovery is unauthenticated so apps can detect support.
 	mux.HandleFunc("/capabilities", h.handleCapabilities)
 	mux.HandleFunc("/rest/immerle.capabilities", h.handleCapabilities)
