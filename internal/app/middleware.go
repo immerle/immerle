@@ -27,6 +27,18 @@ func (s *statusRecorder) Flush() {
 	}
 }
 
+// securityHeadersMiddleware sets baseline security response headers on every
+// response (cheap, applies globally including to error and preflight responses).
+func securityHeadersMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		h := w.Header()
+		h.Set("X-Content-Type-Options", "nosniff")
+		h.Set("X-Frame-Options", "DENY")
+		h.Set("Referrer-Policy", "no-referrer")
+		next.ServeHTTP(w, r)
+	})
+}
+
 // loggingMiddleware logs each request at debug level.
 func loggingMiddleware(logger *slog.Logger, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

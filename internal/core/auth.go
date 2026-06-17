@@ -32,6 +32,10 @@ type AuthService struct {
 	devices *persistence.DeviceRepo
 	box     *secretBox
 	jwtKey  []byte
+	// dummyHash is a valid encrypted password used to equalize the timing of a
+	// failed login when the username does not exist (so the decrypt+compare path
+	// always runs), preventing account-enumeration via response timing.
+	dummyHash string
 }
 
 // NewAuthService builds an AuthService. tokens/devices may be nil to disable the
@@ -43,7 +47,11 @@ func NewAuthService(users *persistence.UserRepo, tokens *persistence.APITokenRep
 	}
 	// Derive a dedicated HMAC key for JWTs (separate from the password AES key).
 	jwtKey := sha256.Sum256([]byte("jwt:" + secret))
-	return &AuthService{users: users, tokens: tokens, devices: devices, box: box, jwtKey: jwtKey[:]}, nil
+	dummyHash, err := box.Encrypt("immerle-timing-equalizer")
+	if err != nil {
+		return nil, err
+	}
+	return &AuthService{users: users, tokens: tokens, devices: devices, box: box, jwtKey: jwtKey[:], dummyHash: dummyHash}, nil
 }
 
 // Credentials carry an authentication attempt.
@@ -133,13 +141,18 @@ func (a *AuthService) Authenticate(ctx context.Context, c Credentials) (models.U
 		return models.User{}, ErrUnauthorized
 	}
 	u, err := a.users.GetByUsername(ctx, c.Username)
-	if errors.Is(err, persistence.ErrNotFound) {
-		return models.User{}, ErrUnauthorized
-	}
-	if err != nil {
+	notFound := errors.Is(err, persistence.ErrNotFound)
+	if err != nil && !notFound {
 		return models.User{}, err
 	}
-	stored, err := a.box.Decrypt(u.PasswordHash)
+	// Always run the decrypt + constant-time compare, even when the username does
+	// not exist (against a dummy hash), so a missing account is not detectable by
+	// response timing. The notFound guard below makes success impossible.
+	hash := u.PasswordHash
+	if notFound {
+		hash = a.dummyHash
+	}
+	stored, err := a.box.Decrypt(hash)
 	if err != nil {
 		return models.User{}, ErrUnauthorized
 	}
@@ -147,12 +160,12 @@ func (a *AuthService) Authenticate(ctx context.Context, c Credentials) (models.U
 	switch {
 	case c.Token != "" && c.Salt != "":
 		expected := md5.Sum([]byte(stored + c.Salt))
-		if subtle.ConstantTimeCompare([]byte(hex.EncodeToString(expected[:])), []byte(strings.ToLower(c.Token))) == 1 {
+		if subtle.ConstantTimeCompare([]byte(hex.EncodeToString(expected[:])), []byte(strings.ToLower(c.Token))) == 1 && !notFound {
 			return u, nil
 		}
 	case c.Password != "":
 		pw := decodePassword(c.Password)
-		if subtle.ConstantTimeCompare([]byte(pw), []byte(stored)) == 1 {
+		if subtle.ConstantTimeCompare([]byte(pw), []byte(stored)) == 1 && !notFound {
 			return u, nil
 		}
 	}

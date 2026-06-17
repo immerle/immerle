@@ -38,12 +38,9 @@ func corsMiddleware(origins func() []string, next http.Handler) http.Handler {
 				h.Set("Access-Control-Allow-Origin", origin)
 			}
 			h.Set("Access-Control-Allow-Methods", "GET, POST, HEAD, OPTIONS")
-			// Echo requested headers, falling back to a sensible default set.
-			reqHeaders := r.Header.Get("Access-Control-Request-Headers")
-			if reqHeaders == "" {
-				reqHeaders = "Authorization, Content-Type, Range"
-			}
-			h.Set("Access-Control-Allow-Headers", reqHeaders)
+			// Fixed allow-list rather than reflecting the client-controlled
+			// Access-Control-Request-Headers verbatim.
+			h.Set("Access-Control-Allow-Headers", "Authorization, Content-Type, Range")
 			// Expose range/streaming headers so players can seek.
 			h.Set("Access-Control-Expose-Headers", "Content-Length, Content-Range, Accept-Ranges")
 			h.Set("Access-Control-Max-Age", strconv.Itoa(86400))
