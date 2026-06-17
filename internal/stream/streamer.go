@@ -135,7 +135,14 @@ func (s *Streamer) transcodedFile(ctx context.Context, track models.Track, forma
 		if err := os.MkdirAll(s.cacheDir, 0o755); err != nil {
 			return nil, err
 		}
-		return nil, s.runFFmpeg(ctx, track.Path, cachePath, format, bitrate)
+		// Detach from the first caller: a coalesced transcode is shared by all
+		// waiters and must survive that client disconnecting. Keep a deadline so
+		// an orphaned ffmpeg (all callers gone) is still killed, since detaching
+		// removes the request's cancellation as a kill path.
+		// ponytail: fixed 10m ceiling; make configurable if long transcodes appear.
+		fctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Minute)
+		defer cancel()
+		return nil, s.runFFmpeg(fctx, track.Path, cachePath, format, bitrate)
 	})
 	if err != nil {
 		return "", err

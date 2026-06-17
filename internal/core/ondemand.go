@@ -295,9 +295,12 @@ func (s *CatalogService) resolve(ctx context.Context, userID, trackID string) (m
 		return models.Track{}, false, "", fmt.Errorf("unknown provider %q", provName)
 	}
 
-	// Deduplicate concurrent resolves of the same track.
+	// Deduplicate concurrent resolves of the same track. Detach from the first
+	// caller's ctx: the coalesced resolve/download is shared by all waiters, so
+	// it must survive that client disconnecting. (Stalls are bounded by the
+	// provider HTTP client timeout.)
 	v, err, _ := st.group.Do(trackID, func() (any, error) {
-		return s.resolveOnce(ctx, userID, prov, ptid)
+		return s.resolveOnce(context.WithoutCancel(ctx), userID, prov, ptid)
 	})
 	if err != nil {
 		return models.Track{}, false, "", err
@@ -371,8 +374,10 @@ func (s *CatalogService) resolveOnce(ctx context.Context, userID string, prov pr
 // corrupt the output and break MBID-based dedup).
 func (s *CatalogService) processJob(ctx context.Context, job models.DownloadJob, prov providers.Provider, meta providers.Result) (string, error) {
 	key := "job:" + job.Provider + ":" + job.ProviderTrackID
+	// Detach from the first caller's ctx so a disconnect doesn't cancel the
+	// shared download/ingest for the other waiters coalesced on this key.
 	v, err, _ := s.state.group.Do(key, func() (any, error) {
-		return s.doProcessJob(ctx, job, prov, meta)
+		return s.doProcessJob(context.WithoutCancel(ctx), job, prov, meta)
 	})
 	if err != nil {
 		return "", err
