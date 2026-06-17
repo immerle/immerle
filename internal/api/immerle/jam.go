@@ -1,6 +1,7 @@
 package immerle
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -9,6 +10,21 @@ import (
 
 	"github.com/immerle/immerle/internal/models"
 )
+
+// jamMember reports whether userID is the host or a current participant of the
+// session. Used to gate read access to session state and the SSE event stream.
+func (h *Handler) jamMember(ctx context.Context, session models.JamSession, userID string) bool {
+	if session.HostID == userID {
+		return true
+	}
+	participants, _ := h.Jam.Participants(ctx, session.ID)
+	for _, p := range participants {
+		if p.UserID == userID {
+			return true
+		}
+	}
+	return false
+}
 
 // @Summary      Create a Jam session
 // @Description  Starts a synchronized listening session hosted by the caller.
@@ -91,9 +107,14 @@ func (h *Handler) handleJamLeave(w http.ResponseWriter, r *http.Request) {
 // @Failure      404  {object}  ErrorResponse
 // @Router       /jam/state [get]
 func (h *Handler) handleJamState(w http.ResponseWriter, r *http.Request) {
+	user := userFrom(r.Context())
 	id := r.Form.Get("sessionId")
 	session, err := h.Jam.Get(r.Context(), id)
 	if err != nil {
+		writeJSON(w, http.StatusNotFound, errorBody("session not found"))
+		return
+	}
+	if !h.jamMember(r.Context(), session, user.ID) {
 		writeJSON(w, http.StatusNotFound, errorBody("session not found"))
 		return
 	}
@@ -174,9 +195,14 @@ func (h *Handler) handleJamUpdate(w http.ResponseWriter, r *http.Request) {
 // @Failure      404  {object}  ErrorResponse
 // @Router       /jam/events [get]
 func (h *Handler) handleJamEvents(w http.ResponseWriter, r *http.Request) {
+	user := userFrom(r.Context())
 	id := r.Form.Get("sessionId")
 	session, err := h.Jam.Get(r.Context(), id)
 	if err != nil {
+		writeJSON(w, http.StatusNotFound, errorBody("session not found"))
+		return
+	}
+	if !h.jamMember(r.Context(), session, user.ID) {
 		writeJSON(w, http.StatusNotFound, errorBody("session not found"))
 		return
 	}
