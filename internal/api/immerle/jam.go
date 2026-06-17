@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/immerle/immerle/internal/models"
 )
@@ -220,20 +222,39 @@ func (h *Handler) handleJamEvents(w http.ResponseWriter, r *http.Request) {
 	ch, unsubscribe := h.Jam.Subscribe(id)
 	defer unsubscribe()
 
+	// Bound each write so a stalled/slow client connection errors out instead of
+	// leaking this goroutine and its subscription forever.
+	rc := http.NewResponseController(w)
+	setDeadline := func() { _ = rc.SetWriteDeadline(time.Now().Add(10 * time.Second)) }
+
 	// Send the current snapshot immediately so a late joiner is in sync.
 	participants, _ := h.Jam.Participants(r.Context(), id)
+	setDeadline()
 	writeEvent(w, flusher, session, participants)
+
+	// Keep-alive so idle connections (and dead peers behind a proxy) are detected.
+	heartbeat := time.NewTicker(20 * time.Second)
+	defer heartbeat.Stop()
 
 	for {
 		select {
 		case <-r.Context().Done():
 			return
+		case <-heartbeat.C:
+			setDeadline()
+			if _, err := io.WriteString(w, ": ping\n\n"); err != nil {
+				return
+			}
+			flusher.Flush()
 		case ev, ok := <-ch:
 			if !ok {
 				return
 			}
 			payload, _ := json.Marshal(ev)
-			fmt.Fprintf(w, "event: %s\ndata: %s\n\n", ev.Type, payload)
+			setDeadline()
+			if _, err := fmt.Fprintf(w, "event: %s\ndata: %s\n\n", ev.Type, payload); err != nil {
+				return
+			}
 			flusher.Flush()
 		}
 	}
