@@ -28,7 +28,7 @@ func corsMiddleware(origins func() []string, next http.Handler) http.Handler {
 		}
 
 		origin := r.Header.Get("Origin")
-		if origin != "" && originAllowed(origin, allowAny, set) {
+		if origin != "" && (allowAny || set[strings.ToLower(origin)]) {
 			h := w.Header()
 			// Vary so caches don't serve one origin's response to another.
 			h.Add("Vary", "Origin")
@@ -57,11 +57,4 @@ func corsMiddleware(origins func() []string, next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
-}
-
-func originAllowed(origin string, allowAny bool, set map[string]bool) bool {
-	if allowAny {
-		return true
-	}
-	return set[strings.ToLower(origin)]
 }
