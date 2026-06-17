@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const COLLAPSED_KEY = 'gossignol.sidebarCollapsed.v1';
+const COLLAPSED_KEY = 'immerle.sidebarCollapsed.v1';
 
 /** Persistent UI preferences (desktop sidebar collapsed state). */
 interface UIState {

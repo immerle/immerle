@@ -1,6 +1,6 @@
 // Package importer pulls playlists from external sources (e.g. Spotify) and
 // resolves each source track against the on-demand content providers to build a
-// gossignol playlist. Sources are pluggable: register a Factory for a new source
+// immerle playlist. Sources are pluggable: register a Factory for a new source
 // and it becomes available without touching the import engine.
 package importer
 
@@ -24,7 +24,7 @@ type Track struct {
 }
 
 // Playlist is a playlist as listed by an import source — distinct from both the
-// import job and the gossignol playlist that will be created from it.
+// import job and the immerle playlist that will be created from it.
 type Playlist struct {
 	Name        string
 	Description string
@@ -42,7 +42,7 @@ type Source interface {
 	FetchPlaylist(ctx context.Context, ref string) (Playlist, error)
 }
 
-// HubFetcher fetches an external playlist through the gossignol hub
+// HubFetcher fetches an external playlist through the immerle hub
 // (federation). The hub holds the third-party credentials (e.g. Spotify), so a
 // source backed by it needs none of its own.
 type HubFetcher interface {

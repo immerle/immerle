@@ -6,7 +6,7 @@ import { Badge, Button, Card, EmptyState, ErrorState, Field, IconButton, Loading
 import { Chip } from '../src/components/ui';
 import { AdminHeader, AdminScroll, CardTitle } from '../src/components/AdminUI';
 import { Ionicon } from '../src/components/Ionicon';
-import { APITokenDTO } from '../src/api/gossignolApi';
+import { APITokenDTO } from '../src/api/immerleApi';
 import { useColors } from '../src/theme/colors';
 
 const DAY = 86_400_000;

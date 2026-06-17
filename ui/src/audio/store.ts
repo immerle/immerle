@@ -2,14 +2,14 @@ import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../auth/store';
 import { queryClient } from '../query/queryClient';
-import { GossignolClient } from '../api/gossignol/client';
+import { ImmerleClient } from '../api/immerle/client';
 import { Song } from '../api/subsonic/types';
 import { AudioEngine, PlayableTrack, RepeatMode } from './types';
 import { createEngine } from './engine';
 import { DEFAULT_QUALITY_ID, presetById } from './quality';
 
-const QUALITY_KEY = 'gossignol.quality.v1';
-const VOLUME_KEY = 'gossignol.volume.v1';
+const QUALITY_KEY = 'immerle.quality.v1';
+const VOLUME_KEY = 'immerle.volume.v1';
 
 /** Fisher–Yates shuffle (pure). */
 function shuffled<T>(arr: T[]): T[] {
@@ -22,7 +22,7 @@ function shuffled<T>(arr: T[]): T[] {
 }
 
 /** Build a player track from a Subsonic song at the chosen quality. */
-function songToTrack(client: GossignolClient, song: Song, qualityId: string): PlayableTrack {
+function songToTrack(client: ImmerleClient, song: Song, qualityId: string): PlayableTrack {
   const preset = presetById(qualityId);
   return {
     id: song.id,
@@ -88,7 +88,7 @@ let saveQueueTimer: ReturnType<typeof setTimeout> | null = null;
 // Original queue order, kept so shuffle can be turned off again.
 let orderBackup: Song[] | null = null;
 
-function client(): GossignolClient | null {
+function client(): ImmerleClient | null {
   return useAuth.getState().client;
 }
 

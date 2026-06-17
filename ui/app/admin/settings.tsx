@@ -7,7 +7,7 @@ import {
   useSettings,
   useUpdateSettings,
 } from '../../src/query/admin';
-import { RuntimeSettingsDTO } from '../../src/api/gossignolApi';
+import { RuntimeSettingsDTO } from '../../src/api/immerleApi';
 import { Badge, Button, Card, ErrorState, Field, IconButton, Loading } from '../../src/components/ui';
 import { AdminHeader, AdminScroll } from '../../src/components/AdminUI';
 import { Ionicon } from '../../src/components/Ionicon';
@@ -180,7 +180,7 @@ export default function AdminSettings() {
               {sheet === 'federation' ? (
                 <>
                   <ToggleRow label="Fédération activée" value={form.fedEnabled} onChange={(v) => set('fedEnabled', v)} />
-                  <Field label="URL du hub" autoCapitalize="none" keyboardType="url" placeholder="https://hub.gossignol.fr" value={form.hubUrl} onChangeText={(v) => set('hubUrl', v)} />
+                  <Field label="URL du hub" autoCapitalize="none" keyboardType="url" placeholder="https://hub.immerle.fr" value={form.hubUrl} onChangeText={(v) => set('hubUrl', v)} />
                   <Field label="Clé publique" autoCapitalize="none" autoCorrect={false} value={form.publicKey} onChangeText={(v) => set('publicKey', v)} help="Fournie par le hub à l'onboarding (en-tête X-Instance-ID)." />
                   <Field label="Clé privée" autoCapitalize="none" autoCorrect={false} secureTextEntry value={form.privateKey} onChangeText={(v) => set('privateKey', v)} help="Fournie par le hub à l'onboarding (Authorization: Bearer)." />
                   <Field label="Intervalle de synchro (s)" keyboardType="number-pad" value={form.syncInterval} onChangeText={(v) => set('syncInterval', v)} />

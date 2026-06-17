@@ -1,6 +1,6 @@
-appId: com.gossignol.app
-productName: Gossignol
-copyright: © Gossignol
+appId: com.immerle.app
+productName: Immerle
+copyright: © Immerle
 
 directories:
   output: release

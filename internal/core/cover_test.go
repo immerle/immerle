@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/gossignol/gossignol/internal/providers"
-	"github.com/gossignol/gossignol/internal/testutil"
+	"github.com/immerle/immerle/internal/providers"
+	"github.com/immerle/immerle/internal/testutil"
 )
 
 func TestSaveSidecarCover(t *testing.T) {

@@ -3,7 +3,7 @@ package core
 import (
 	"context"
 
-	"github.com/gossignol/gossignol/internal/models"
+	"github.com/immerle/immerle/internal/models"
 )
 
 // CatalogService is the on-demand catalog (S5): it searches external providers,

@@ -16,7 +16,7 @@ const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 type FieldKey = 'setupToken' | 'username' | 'displayName' | 'password' | 'confirm' | 'email';
 
 /**
- * First-run server setup — creating the very first admin account on a Gossignol
+ * First-run server setup — creating the very first admin account on a Immerle
  * backend. This screen lives in the app (not the server) and talks to the
  * public `/setup/{status,init}` endpoints of whichever server URL the user
  * points at. It implements the spec's state machine, mirrors server-side
@@ -304,7 +304,7 @@ function SuccessScreen({ username, url, onLogin }: { username: string; url: stri
         Compte <Text className="font-semibold text-foreground">{username}</Text> créé avec succès.
       </Text>
       <Text className="text-center text-sm text-muted">
-        Connectez votre client (l'app Gossignol, Supersonic, Symfonium…) à cette adresse :
+        Connectez votre client (l'app Immerle, Supersonic, Symfonium…) à cette adresse :
       </Text>
       <Text selectable className="rounded-lg bg-surface-alt px-3 py-2 text-sm text-foreground">{url}</Text>
       <View className="w-full pt-2">

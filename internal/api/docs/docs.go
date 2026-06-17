@@ -1,9 +1,9 @@
 // Package docs embeds the generated OpenAPI 3.1 specification for the native
-// gossignol API and serves it together with a self-contained Swagger UI.
+// immerle API and serves it together with a self-contained Swagger UI.
 //
 // The spec is generated from handler annotations with swaggo/swag v2:
 //
-//	make openapi   # or: swag init -g doc.go -d internal/api/gossignol \
+//	make openapi   # or: swag init -g doc.go -d internal/api/immerle \
 //	               #          -o internal/api/docs --ot json,yaml --parseInternal --v3.1
 package docs
 

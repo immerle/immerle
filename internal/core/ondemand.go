@@ -18,9 +18,9 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/sync/singleflight"
 
-	"github.com/gossignol/gossignol/internal/models"
-	"github.com/gossignol/gossignol/internal/persistence"
-	"github.com/gossignol/gossignol/internal/providers"
+	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/persistence"
+	"github.com/immerle/immerle/internal/providers"
 )
 
 // ProviderRegistry holds the configured providers, keyed by name. It is safe

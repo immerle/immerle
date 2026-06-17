@@ -7,7 +7,7 @@ import { AdminHeader, AdminScroll } from '../../src/components/AdminUI';
 import { CoverArt } from '../../src/components/CoverArt';
 import { Ionicon } from '../../src/components/Ionicon';
 import { usePlayer } from '../../src/audio/store';
-import { ImportItemDTO } from '../../src/api/gossignolApi';
+import { ImportItemDTO } from '../../src/api/immerleApi';
 import { useColors } from '../../src/theme/colors';
 
 type Filter = 'all' | 'matched' | 'doubtful' | 'missing' | 'failed';

@@ -8,8 +8,8 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/gossignol/gossignol/internal/core"
-	"github.com/gossignol/gossignol/internal/testutil"
+	"github.com/immerle/immerle/internal/core"
+	"github.com/immerle/immerle/internal/testutil"
 )
 
 // TestGetUserReturnsDisplayName verifies getUser surfaces the display name and

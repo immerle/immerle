@@ -9,9 +9,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/gossignol/gossignol/internal/models"
-	"github.com/gossignol/gossignol/internal/providers"
-	"github.com/gossignol/gossignol/internal/testutil"
+	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/providers"
+	"github.com/immerle/immerle/internal/testutil"
 )
 
 // A provider track without an MBID (e.g. Deezer) must still be deduplicated out

@@ -1,8 +1,8 @@
-# Gossignol — application Expo cross-platform
+# Immerle — application Expo cross-platform
 
 Une seule base de code Expo / React Native + TypeScript ciblant **web, iOS et
 Android**. Client musical compatible Subsonic / OpenSubsonic, avec une couche
-Gossignol *capability-aware* qui masque les fonctions absentes selon ce que
+Immerle *capability-aware* qui masque les fonctions absentes selon ce que
 l'instance annonce.
 
 ## Stack
@@ -25,7 +25,7 @@ npm run ios      # simulateur iOS  (macOS + Xcode)
 npm run android  # émulateur Android
 ```
 
-Connexion : URL de l'instance Subsonic/Gossignol + identifiant + mot de passe.
+Connexion : URL de l'instance Subsonic/Immerle + identifiant + mot de passe.
 La session est persistée (secure-store) et restaurée au redémarrage. Le mot de
 passe ne quitte jamais l'écran de login : seul le **token salé** dérivé
 (`md5(password + salt)`) est stocké.
@@ -52,7 +52,7 @@ app/                      Routes expo-router (écrans)
   player.tsx · queue.tsx  Lecteur plein écran + file (modaux)
 src/
   api/subsonic/           Client Subsonic typé (auth token salé, URLs stream/cover)
-  api/gossignol/          Client capability-aware + endpoints admin étendus
+  api/immerle/          Client capability-aware + endpoints admin étendus
   audio/                  Abstraction AudioPlayer (engine.native / engine.web) + store
   auth/                   Store de session + stockage sécurisé cross-platform
   query/                  Hooks TanStack Query (library, search, playlists, admin)
@@ -62,10 +62,10 @@ src/
 
 ### Couche capability-aware
 
-`probeCapabilities()` interroge `/gossignol/capabilities`. En cas d'échec (404,
+`probeCapabilities()` interroge `/immerle/capabilities`. En cas d'échec (404,
 réseau, serveur Subsonic pur) elle retombe sur un jeu **conservateur**
 (`SUBSONIC_ONLY_CAPABILITIES`) : l'app se réduit gracieusement à un client
-musical. Chaque fonction Gossignol est gardée par `client.has(feature)`, donc
+musical. Chaque fonction Immerle est gardée par `client.has(feature)`, donc
 l'UI n'affiche jamais d'impasse.
 
 ### Lecteur
@@ -93,7 +93,7 @@ pour suivre l'écoute entre appareils.
 | **W6** Reco/éditoriales, offline, finition (PWA, cache hors-ligne) | ⏳ à venir |
 
 > Les écrans admin providers/jobs/fédération/serveur dépendent d'endpoints
-> Gossignol côté serveur (S4/S5/S7). Ils sont câblés et capability-gated : ils
+> Immerle côté serveur (S4/S5/S7). Ils sont câblés et capability-gated : ils
 > apparaissent uniquement quand l'instance les annonce.
 
 ## Validation

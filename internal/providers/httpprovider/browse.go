@@ -9,7 +9,7 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/gossignol/gossignol/internal/providers"
+	"github.com/immerle/immerle/internal/providers"
 )
 
 // errUnsupported marks an endpoint the remote service does not implement (404).

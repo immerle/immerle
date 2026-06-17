@@ -3,7 +3,7 @@ import { Modal, Platform, Pressable, ScrollView, Switch, Text, View } from 'reac
 import { Stack } from 'expo-router';
 import { useAuth } from '../../src/auth/store';
 import { useProviderMutations, useProviders, useSettings, useUpdateSettings } from '../../src/query/admin';
-import { Provider } from '../../src/api/gossignol/types';
+import { Provider } from '../../src/api/immerle/types';
 import { Badge, Button, Card, EmptyState, ErrorState, Field, IconButton, Loading, SectionHeader } from '../../src/components/ui';
 import { AdminHeader, AdminScroll } from '../../src/components/AdminUI';
 import { Ionicon } from '../../src/components/Ionicon';

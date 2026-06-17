@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gossignol/gossignol/internal/models"
+	"github.com/immerle/immerle/internal/models"
 )
 
 func (h *Handler) handleGetPlayQueue(w http.ResponseWriter, r *http.Request) {

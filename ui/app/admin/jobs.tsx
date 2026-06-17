@@ -1,7 +1,7 @@
 import { ScrollView, Text, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { useDownloadJobs, useJobMutations } from '../../src/query/admin';
-import { DownloadJob, DownloadJobStatus } from '../../src/api/gossignol/types';
+import { DownloadJob, DownloadJobStatus } from '../../src/api/immerle/types';
 import { Badge, Card, EmptyState, ErrorState, IconButton, Loading } from '../../src/components/ui';
 import { useColors } from '../../src/theme/colors';
 

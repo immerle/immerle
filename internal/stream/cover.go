@@ -22,8 +22,8 @@ import (
 
 	"github.com/dhowden/tag"
 
-	"github.com/gossignol/gossignol/internal/models"
-	"github.com/gossignol/gossignol/internal/persistence"
+	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/persistence"
 )
 
 // CoverService resolves, resizes and caches cover art.

@@ -6,8 +6,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/gossignol/gossignol/internal/db"
-	"github.com/gossignol/gossignol/internal/models"
+	"github.com/immerle/immerle/internal/db"
+	"github.com/immerle/immerle/internal/models"
 )
 
 // DeviceRepo persists device sessions (JWT jti registry + revocation + tracking).

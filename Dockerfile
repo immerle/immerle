@@ -10,33 +10,33 @@ RUN go mod download
 
 COPY . .
 ARG VERSION=docker
-RUN CGO_ENABLED=0 go build -ldflags "-s -w -X main.version=${VERSION}" -o /out/gossignol ./cmd/gossignol
+RUN CGO_ENABLED=0 go build -ldflags "-s -w -X main.version=${VERSION}" -o /out/immerle ./cmd/immerle
 
 # ---- runtime stage ----
 FROM alpine:3.20
 RUN apk add --no-cache ffmpeg ca-certificates && \
-    adduser -D -u 10001 gossignol
+    adduser -D -u 10001 immerle
 WORKDIR /app
-COPY --from=build /out/gossignol /usr/local/bin/gossignol
+COPY --from=build /out/immerle /usr/local/bin/immerle
 
 # Pre-create the mount points owned by the non-root user. A fresh named volume
 # inherits this ownership, so the server (running as uid 10001) can create the
 # SQLite database and write derived data under /data.
-RUN mkdir -p /data /music && chown -R gossignol:gossignol /data /music /app
+RUN mkdir -p /data /music && chown -R immerle:immerle /data /music /app
 
 # Library (read-only mount) and derived data.
 VOLUME ["/music", "/data"]
 ENV LIBRARY_DATA_DIR=/data \
-    DATABASE_DSN=/data/gossignol.db \
+    DATABASE_DSN=/data/immerle.db \
     PORT=4533
 
 EXPOSE 4533
-USER gossignol
+USER immerle
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s \
     CMD wget -qO- http://127.0.0.1:4533/ping || exit 1
 
-ENTRYPOINT ["gossignol"]
+ENTRYPOINT ["immerle"]
 # Config comes from the environment (and an optional /app/.env). Runtime settings
 # (provider behaviour, avatars, scan, federation) are managed via the admin API.
 CMD []

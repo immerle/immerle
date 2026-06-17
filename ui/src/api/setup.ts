@@ -1,9 +1,9 @@
 import {
-  createGossignolApi,
+  createImmerleApi,
   FieldErrorDTO,
   SetupInitRequest,
   SetupStatus,
-} from './gossignolApi';
+} from './immerleApi';
 
 /**
  * First-run setup calls, built on the generated OpenAPI client. These two
@@ -23,14 +23,14 @@ export async function getSetupStatus(
   serverUrl: string,
   signal?: AbortSignal,
 ): Promise<SetupStatus> {
-  const api = createGossignolApi(serverUrl);
+  const api = createImmerleApi(serverUrl);
   const { data, error } = await api.GET('/setup/status', { signal });
   if (error || !data) throw new Error('setup_status_failed');
   return data;
 }
 
 export async function initSetup(serverUrl: string, payload: InitPayload): Promise<InitResult> {
-  const api = createGossignolApi(serverUrl);
+  const api = createImmerleApi(serverUrl);
   const { data, error, response } = await api.POST('/setup/init', { body: payload });
 
   if (response.status === 201 && data?.user) {

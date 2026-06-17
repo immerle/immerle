@@ -10,8 +10,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/gossignol/gossignol/internal/models"
-	"github.com/gossignol/gossignol/internal/providers"
+	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/providers"
 )
 
 // PendingDownload is a remote track that is not yet local and must be fetched.

@@ -6,14 +6,14 @@ import { useLibraryStats } from '../../src/query/admin';
 import { EmptyState, SectionHeader } from '../../src/components/ui';
 import { ADMIN_MAX_WIDTH, AdminHeader } from '../../src/components/AdminUI';
 import { Ionicon } from '../../src/components/Ionicon';
-import { CapabilityFeature } from '../../src/api/gossignol/types';
+import { CapabilityFeature } from '../../src/api/immerle/types';
 import { formatBytes, formatCount } from '../../src/utils/format';
 import { useColors } from '../../src/theme/colors';
 
 // Instance-wide capability flags advertised at `/capabilities` — read-only,
 // shown here (admin) rather than in user settings since they describe the server.
 const FEATURES: { key: CapabilityFeature; label: string; icon: string }[] = [
-  { key: 'gossignolAuth', label: 'Auth Gossignol', icon: 'key' },
+  { key: 'immerleAuth', label: 'Auth Immerle', icon: 'key' },
   { key: 'onDemandCatalog', label: 'Catalogue à la demande', icon: 'cloud-download' },
   { key: 'dynamicProviders', label: 'Providers dynamiques', icon: 'cube' },
   { key: 'federation', label: 'Fédération', icon: 'git-network' },
@@ -58,7 +58,7 @@ const LINKS: AdminLink[] = [
 
 /**
  * Admin home. Only reachable by admins (the tab itself is role-gated). Sections
- * that depend on Gossignol-only capabilities are hidden when the instance is a
+ * that depend on Immerle-only capabilities are hidden when the instance is a
  * plain Subsonic server, so admins never see dead ends.
  */
 export default function Admin() {

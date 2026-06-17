@@ -5,9 +5,9 @@ import {
   SubsonicClient,
   SubsonicCredentials,
 } from '../api/subsonic/client';
-import { GossignolClient } from '../api/gossignol/client';
-import { probeCapabilities } from '../api/gossignol/capabilities';
-import { GossignolSession } from '../api/gossignol/types';
+import { ImmerleClient } from '../api/immerle/client';
+import { probeCapabilities } from '../api/immerle/capabilities';
+import { ImmerleSession } from '../api/immerle/types';
 import { randomHex } from '../utils/random';
 import {
   deleteSecureItem,
@@ -20,7 +20,7 @@ export type AuthStatus = 'idle' | 'restoring' | 'authenticated' | 'unauthenticat
 
 interface AuthState {
   status: AuthStatus;
-  client: GossignolClient | null;
+  client: ImmerleClient | null;
   /** Reactive display name of the current user (falls back to the username). */
   displayName: string | null;
   error: string | null;
@@ -39,22 +39,22 @@ interface AuthState {
 }
 
 /**
- * Build a fully-wired Gossignol client from stored credentials: rebuild the
- * Subsonic client, probe capabilities, and attempt a native Gossignol session
- * if the instance advertises `gossignolAuth`.
+ * Build a fully-wired Immerle client from stored credentials: rebuild the
+ * Subsonic client, probe capabilities, and attempt a native Immerle session
+ * if the instance advertises `immerleAuth`.
  */
 async function buildClient(
   creds: SubsonicCredentials,
   password?: string,
-): Promise<GossignolClient> {
+): Promise<ImmerleClient> {
   const subsonic = new SubsonicClient(creds);
   const capabilities = await probeCapabilities(creds.serverUrl);
 
-  let session: GossignolSession | null = null;
-  if (capabilities.features.gossignolAuth && password) {
-    session = await tryGossignolLogin(creds.serverUrl, creds.username, password);
+  let session: ImmerleSession | null = null;
+  if (capabilities.features.immerleAuth && password) {
+    session = await tryImmerleLogin(creds.serverUrl, creds.username, password);
   }
-  const client = new GossignolClient(subsonic, capabilities, session);
+  const client = new ImmerleClient(subsonic, capabilities, session);
 
   // Fetch the Subsonic user record once: it carries the display name (for the
   // greeting/account UI) and, when there's no native session, the admin role.
@@ -69,11 +69,11 @@ async function buildClient(
 }
 
 /** Best-effort native session. Never throws — Subsonic auth is the floor. */
-async function tryGossignolLogin(
+async function tryImmerleLogin(
   serverUrl: string,
   username: string,
   password: string,
-): Promise<GossignolSession | null> {
+): Promise<ImmerleSession | null> {
   try {
     const res = await fetch(`${serverUrl}/auth/login`, {
       method: 'POST',
@@ -81,7 +81,7 @@ async function tryGossignolLogin(
       body: JSON.stringify({ username, password }),
     });
     if (!res.ok) return null;
-    return (await res.json()) as GossignolSession;
+    return (await res.json()) as ImmerleSession;
   } catch {
     return null;
   }
@@ -113,7 +113,7 @@ export const useAuth = create<AuthState>((set, get) => ({
       const client = await buildClient(creds);
       // Re-hydrate a persisted native session if we have one.
       const rawSession = await getSecureItem(STORAGE_KEYS.session);
-      if (rawSession) client.setSession(JSON.parse(rawSession) as GossignolSession);
+      if (rawSession) client.setSession(JSON.parse(rawSession) as ImmerleSession);
       set({ status: 'authenticated', client, displayName: client.displayName });
     } catch {
       // Corrupt/expired stored state: drop to login rather than crash.
@@ -160,7 +160,7 @@ export const useAuth = create<AuthState>((set, get) => ({
 }));
 
 /** Convenience selector: the live client, or throw if used before auth. */
-export function useClient(): GossignolClient {
+export function useClient(): ImmerleClient {
   const client = useAuth((s) => s.client);
   if (!client) throw new Error('useClient called before authentication');
   return client;

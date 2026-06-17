@@ -5,7 +5,7 @@ import { usePublicPlaylists, useSubscriptionMutations } from '../src/query/playl
 import { useAuth } from '../src/auth/store';
 import { Button, EmptyState, ErrorState, Loading } from '../src/components/ui';
 import { PlaylistMosaic } from '../src/components/PlaylistMosaic';
-import { PublicPlaylistDTO } from '../src/api/gossignolApi';
+import { PublicPlaylistDTO } from '../src/api/immerleApi';
 import { formatCount } from '../src/utils/format';
 
 /**

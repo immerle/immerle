@@ -8,7 +8,7 @@ import (
 
 // corsMiddleware applies CORS headers for the allowed origins (read live via
 // origins() so the admin can change them at runtime) and answers preflight
-// (OPTIONS) requests. An entry of "*" allows any origin. Because gossignol
+// (OPTIONS) requests. An entry of "*" allows any origin. Because immerle
 // authenticates via query parameters (not cookies), credentials are not
 // required; a matched specific origin is echoed back so browser clients on that
 // origin can read responses.

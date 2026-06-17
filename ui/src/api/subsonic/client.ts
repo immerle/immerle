@@ -18,7 +18,7 @@ import {
 } from './types';
 
 export const SUBSONIC_API_VERSION = '1.16.1';
-const CLIENT_NAME = 'gossignol';
+const CLIENT_NAME = 'immerle';
 
 /** Credentials needed to talk to a Subsonic server. The raw password is never kept. */
 export interface SubsonicCredentials {
@@ -121,7 +121,7 @@ export class SubsonicClient {
   }
 
   /**
-   * Salted-token auth params, for layering onto the Gossignol extension API
+   * Salted-token auth params, for layering onto the Immerle extension API
    * (which accepts the same `u`+`t`+`s`+`v`+`c` scheme as Subsonic).
    */
   tokenParams(): { u: string; t: string; s: string; v: string; c: string } {
@@ -135,7 +135,7 @@ export class SubsonicClient {
   }
 
   /**
-   * Build an authenticated URL for a non-`/rest` path (the Gossignol extension
+   * Build an authenticated URL for a non-`/rest` path (the Immerle extension
    * API, mounted at the server root with no prefix). Carries the same
    * salted-token auth params.
    */
@@ -291,7 +291,7 @@ export class SubsonicClient {
   /**
    * Update a playlist. `songIndexToRemove` removes entries by position;
    * `songIdToAdd` appends songs. Reordering is done by the higher-level
-   * Gossignol client which replaces the whole entry list.
+   * Immerle client which replaces the whole entry list.
    */
   async updatePlaylist(
     playlistId: string,

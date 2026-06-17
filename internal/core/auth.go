@@ -15,8 +15,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/gossignol/gossignol/internal/models"
-	"github.com/gossignol/gossignol/internal/persistence"
+	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/persistence"
 )
 
 // ErrUnauthorized is returned when credentials are missing or invalid.

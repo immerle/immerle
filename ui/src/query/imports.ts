@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth/store';
-import { ImportDTO } from '../api/gossignolApi';
+import { ImportDTO } from '../api/immerleApi';
 import { qk } from './keys';
 
 /** Playlist-import hooks, gated by the `playlistImport` capability. */

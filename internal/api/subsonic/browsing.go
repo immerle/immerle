@@ -9,9 +9,9 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/gossignol/gossignol/internal/core"
-	"github.com/gossignol/gossignol/internal/models"
-	"github.com/gossignol/gossignol/internal/persistence"
+	"github.com/immerle/immerle/internal/core"
+	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/persistence"
 )
 
 func (h *Handler) handleGetMusicFolders(w http.ResponseWriter, r *http.Request) {

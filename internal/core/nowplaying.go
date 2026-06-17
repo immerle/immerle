@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gossignol/gossignol/internal/models"
+	"github.com/immerle/immerle/internal/models"
 )
 
 // NowPlayingTracker keeps an in-memory record of what each user is currently

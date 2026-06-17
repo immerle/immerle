@@ -1,4 +1,4 @@
-# Gossignol Desktop (Electron)
+# Immerle Desktop (Electron)
 
 The desktop app reuses the exact same code as the web target: Electron loads the
 Expo **web** build. No separate UI codebase. The web audio engine

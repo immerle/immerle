@@ -1,16 +1,16 @@
 services:
-  gossignol:
+  immerle:
     build:
       context: .
       args:
         VERSION: compose
-    image: gossignol/gossignol:latest
+    image: immerle/immerle:latest
     ports:
       - "4533:4533"
     environment:
       PORT: "4533"
       DATABASE_DRIVER: "sqlite"
-      DATABASE_DSN: "/data/gossignol.db"
+      DATABASE_DSN: "/data/immerle.db"
       LIBRARY_DATA_DIR: "/data"
       LIBRARY_PATHS: "/music"
       # The auth secret is auto-generated and persisted to /data/secret on first
@@ -24,7 +24,7 @@ services:
       LOG_FORMAT: "json"
     volumes:
       - ./music:/music:ro
-      - gossignol-data:/data
+      - immerle-data:/data
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4533/ping"]
       interval: 30s
@@ -34,17 +34,17 @@ services:
 
   # Optional Postgres backend for large instances. To use it, set
   # DATABASE_DRIVER=postgres and
-  # DATABASE_DSN=postgres://gossignol:gossignol@postgres:5432/gossignol?sslmode=disable
+  # DATABASE_DSN=postgres://immerle:immerle@postgres:5432/immerle?sslmode=disable
   postgres:
     image: postgres:16-alpine
     profiles: ["postgres"]
     environment:
-      POSTGRES_USER: gossignol
-      POSTGRES_PASSWORD: gossignol
-      POSTGRES_DB: gossignol
+      POSTGRES_USER: immerle
+      POSTGRES_PASSWORD: immerle
+      POSTGRES_DB: immerle
     volumes:
-      - gossignol-pg:/var/lib/postgresql/data
+      - immerle-pg:/var/lib/postgresql/data
 
 volumes:
-  gossignol-data:
-  gossignol-pg:
+  immerle-data:
+  immerle-pg:

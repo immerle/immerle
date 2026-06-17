@@ -1,0 +1,160 @@
+/**
+ * Immerle-specific data model — everything that lives beyond the Subsonic
+ * surface (capabilities discovery, on-demand catalog, federation, richer admin).
+ */
+
+/** Feature flags an instance advertises at `/capabilities`. */
+export interface Capabilities {
+  /** Server version string. */
+  version: string;
+  /** Immerle API revision, lets the client gate by contract version. */
+  apiRevision: number;
+  features: {
+    /** Native Immerle session/JWT auth (vs. Subsonic-only). */
+    immerleAuth: boolean;
+    /** On-demand catalog: fetch tracks from third-party providers. */
+    onDemandCatalog: boolean;
+    /** Admin-managed dynamic content providers, configurable at runtime. */
+    dynamicProviders: boolean;
+    /** Admin runtime settings endpoint (`/admin/settings`). */
+    runtimeSettings: boolean;
+    /** Downloads eviction-sweep endpoints (`/admin/cleanup`). */
+    cleanup: boolean;
+    /** Editorial/reco playlists pushed from the federation hub. */
+    federation: boolean;
+    /** Real-time listening sessions. */
+    jam: boolean;
+    /** Real-time collaborative playlists. */
+    collaborativePlaylists: boolean;
+    /** Public playlists with opt-in subscriptions. */
+    publicPlaylists: boolean;
+    /** Import playlists from external platforms (e.g. Spotify). */
+    playlistImport: boolean;
+    /** Friends / activity feed. */
+    social: boolean;
+    /** Richer admin surface (providers, jobs, transcode profiles). */
+    adminExtended: boolean;
+    /** Per-track / per-album offline download endpoints. */
+    offlineDownloads: boolean;
+  };
+  /** Transcode formats the server can produce, for the quality picker. */
+  transcoding?: { format: string; maxBitRate: number }[];
+}
+
+export type CapabilityFeature = keyof Capabilities['features'];
+
+/** A Immerle session obtained from native auth (optional, instance-dependent). */
+export interface ImmerleSession {
+  token: string;
+  refreshToken?: string;
+  expiresAt?: number;
+  userId: string;
+  username: string;
+  isAdmin: boolean;
+}
+
+// --- Admin: library --------------------------------------------------------
+
+export interface LibraryStats {
+  artistCount: number;
+  albumCount: number;
+  songCount: number;
+  /** Bytes used by the media library. */
+  totalSize: number;
+  lastScan?: string;
+}
+
+export interface ScanProgress {
+  scanning: boolean;
+  /** Items processed so far. */
+  count: number;
+  /** Total items if known (incremental scans may not report one). */
+  total?: number;
+  phase?: 'scanning' | 'cleaning' | 'analyzing' | 'idle';
+  startedAt?: string;
+}
+
+// --- Admin: dynamic providers ----------------------------------------------
+
+/**
+ * An admin-managed dynamic provider: content-neutral, just a name + HTTP
+ * endpoint + opaque JSON config. `enabled` is the stored intent; `active`
+ * reflects whether it is registered in the live registry right now.
+ */
+export interface Provider {
+  name: string;
+  kind: string;
+  endpoint: string;
+  /** Opaque JSON config payload (headers, paths, quality…), as a string. */
+  config: string;
+  enabled: boolean;
+  active: boolean;
+  /** Built-in providers (from server config) can't be deleted or redefined. */
+  builtin: boolean;
+  /** False for built-ins; true for user-created dynamic providers. */
+  deletable: boolean;
+  /** Priority order (lower = higher priority); drives search fallback. */
+  sortOrder: number;
+}
+
+export type DownloadJobStatus =
+  | 'queued'
+  | 'running'
+  | 'completed'
+  | 'failed'
+  | 'cancelled';
+
+export interface DownloadJob {
+  id: string;
+  providerId: string;
+  query: string;
+  title?: string;
+  artist?: string;
+  status: DownloadJobStatus;
+  /** 0..1 */
+  progress: number;
+  error?: string;
+  createdAt: string;
+  /** Resulting Subsonic song id once imported. */
+  resultSongId?: string;
+}
+
+// --- Admin: federation -----------------------------------------------------
+
+export interface FederationState {
+  enabled: boolean;
+  hubUrl?: string;
+  connection: 'connected' | 'connecting' | 'disconnected' | 'error';
+  message?: string;
+  /** Opt-in anonymized export of listening stats to the hub. */
+  anonymizedExport: boolean;
+  lastSync?: string;
+}
+
+// --- Admin: server / transcoding ------------------------------------------
+
+export interface TranscodeProfile {
+  id: string;
+  name: string;
+  targetFormat: string;
+  maxBitRate: number;
+  isDefault: boolean;
+}
+
+export interface ServerSettings {
+  serverName?: string;
+  defaultTranscodeProfileId?: string;
+  scrobblingEnabled: boolean;
+  /** Maximum bitrate streamed without explicit override. */
+  maxStreamBitRate?: number;
+}
+
+/** Thrown when a Immerle REST endpoint returns a non-2xx. */
+export class ImmerleApiError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = 'ImmerleApiError';
+    this.status = status;
+  }
+}

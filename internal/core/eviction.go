@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/gossignol/gossignol/internal/persistence"
+	"github.com/immerle/immerle/internal/persistence"
 )
 
 // Evictor garbage-collects provider-downloaded tracks that are no longer worth

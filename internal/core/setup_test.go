@@ -6,7 +6,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/gossignol/gossignol/internal/testutil"
+	"github.com/immerle/immerle/internal/testutil"
 )
 
 func newSetup(t *testing.T, requireToken bool) (*SetupService, *AuthService) {

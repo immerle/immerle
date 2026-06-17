@@ -44,6 +44,6 @@ export async function deleteSecureItem(key: string): Promise<void> {
 }
 
 export const STORAGE_KEYS = {
-  credentials: 'gossignol.credentials.v1',
-  session: 'gossignol.session.v1',
+  credentials: 'immerle.credentials.v1',
+  session: 'immerle.session.v1',
 } as const;

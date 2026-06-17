@@ -17,8 +17,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/gossignol/gossignol/internal/models"
-	"github.com/gossignol/gossignol/internal/persistence"
+	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/persistence"
 )
 
 // Scanner indexes audio files into the catalog.

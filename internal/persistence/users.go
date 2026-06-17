@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"errors"
 
-	"github.com/gossignol/gossignol/internal/db"
-	"github.com/gossignol/gossignol/internal/models"
+	"github.com/immerle/immerle/internal/db"
+	"github.com/immerle/immerle/internal/models"
 )
 
 // UserRepo persists user accounts.

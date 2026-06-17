@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gossignol/gossignol/internal/models"
+	"github.com/immerle/immerle/internal/models"
 )
 
 func toPlaylist(p models.Playlist, entries []Child) Playlist {

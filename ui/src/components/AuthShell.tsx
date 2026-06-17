@@ -7,7 +7,7 @@ import { useColors } from '../theme/colors';
 
 /**
  * Shared chrome for the auth screens (login / setup): an immersive accent
- * gradient backdrop, the Gossignol brand mark, and a floating surface card that
+ * gradient backdrop, the Immerle brand mark, and a floating surface card that
  * holds the form. Centered with a max width so it looks good on desktop too.
  */
 export function AuthShell({
@@ -80,7 +80,7 @@ function Brand({ subtitle }: { subtitle?: string }) {
       >
         <Ionicon name="musical-notes" size={40} color={colors.primaryForeground} />
       </LinearGradient>
-      <Text className="text-3xl font-bold tracking-tight text-foreground">Gossignol</Text>
+      <Text className="text-3xl font-bold tracking-tight text-foreground">Immerle</Text>
       {subtitle ? <Text className="max-w-[300px] text-center text-base text-muted">{subtitle}</Text> : null}
     </View>
   );

@@ -7,7 +7,7 @@ import { CoverArt } from '../../src/components/CoverArt';
 import { PlaylistMosaic } from '../../src/components/PlaylistMosaic';
 import { colorFor } from '../../src/components/AdminUI';
 import { Ionicon } from '../../src/components/Ionicon';
-import { ActivityEventDTO, ProfilePlaylistDTO } from '../../src/api/gossignolApi';
+import { ActivityEventDTO, ProfilePlaylistDTO } from '../../src/api/immerleApi';
 import { formatRelativeTime, formatDuration } from '../../src/utils/format';
 import { useColors } from '../../src/theme/colors';
 

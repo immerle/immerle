@@ -8,9 +8,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/gossignol/gossignol/internal/models"
-	"github.com/gossignol/gossignol/internal/persistence"
-	"github.com/gossignol/gossignol/internal/providers"
+	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/persistence"
+	"github.com/immerle/immerle/internal/providers"
 )
 
 // providerNameRe constrains dynamic provider names to a simple slug so they are

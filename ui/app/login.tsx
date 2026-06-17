@@ -8,7 +8,7 @@ import { Ionicon } from '../src/components/Ionicon';
 import { useColors } from '../src/theme/colors';
 
 /**
- * Subsonic / Gossignol login. Verifies the credentials against the live
+ * Subsonic / Immerle login. Verifies the credentials against the live
  * instance (ping) before persisting them to secure storage, then enters the
  * app. The raw password never leaves this screen — only the derived salted
  * token is stored.
@@ -48,7 +48,7 @@ export default function Login() {
             <Text className="text-sm font-medium text-primary">Première installation ? Configurer le serveur</Text>
           </Pressable>
           <Text className="max-w-[320px] text-center text-xs text-muted">
-            Compatible Subsonic / OpenSubsonic. Les fonctions Gossignol s'activent automatiquement selon votre instance.
+            Compatible Subsonic / OpenSubsonic. Les fonctions Immerle s'activent automatiquement selon votre instance.
           </Text>
         </>
       }

@@ -5,11 +5,11 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/gossignol/gossignol/internal/models"
-	"github.com/gossignol/gossignol/internal/persistence"
-	"github.com/gossignol/gossignol/internal/providers"
-	"github.com/gossignol/gossignol/internal/providers/httpprovider"
-	"github.com/gossignol/gossignol/internal/testutil"
+	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/persistence"
+	"github.com/immerle/immerle/internal/providers"
+	"github.com/immerle/immerle/internal/providers/httpprovider"
+	"github.com/immerle/immerle/internal/testutil"
 )
 
 func newManager(t *testing.T, builtins ...BuiltinDef) (*ProviderManager, *ProviderRegistry, *persistence.Store) {

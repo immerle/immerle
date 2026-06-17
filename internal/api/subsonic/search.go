@@ -5,7 +5,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/gossignol/gossignol/internal/models"
+	"github.com/immerle/immerle/internal/models"
 )
 
 func (h *Handler) handleSearch3(w http.ResponseWriter, r *http.Request) {

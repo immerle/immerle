@@ -124,7 +124,7 @@ export default function UIKit() {
 
         <View className="items-center px-4 pt-8">
           <Ionicon name="musical-notes" size={20} color={colors.primary} />
-          <Text className="pt-1 text-xs text-muted">Gossignol · Design system v1</Text>
+          <Text className="pt-1 text-xs text-muted">Immerle · Design system v1</Text>
         </View>
       </ScrollView>
     </>

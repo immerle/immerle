@@ -1,6 +1,6 @@
 # Binaries
 /bin/
-gossignol
+/immerle
 *.exe
 
 # Local data & databases
@@ -8,7 +8,7 @@ gossignol
 *.db
 *.db-wal
 *.db-shm
-gossignol.db*
+immerle.db*
 
 # Local config (keep config.example.yaml)
 config.yaml
