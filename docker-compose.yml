@@ -1,0 +1,50 @@
+services:
+  gossignol:
+    build:
+      context: .
+      args:
+        VERSION: compose
+    image: gossignol/gossignol:latest
+    ports:
+      - "4533:4533"
+    environment:
+      PORT: "4533"
+      DATABASE_DRIVER: "sqlite"
+      DATABASE_DSN: "/data/gossignol.db"
+      LIBRARY_DATA_DIR: "/data"
+      LIBRARY_PATHS: "/music"
+      # The auth secret is auto-generated and persisted to /data/secret on first
+      # run (override with AUTH_SECRET if you must). CORS, device-token TTL,
+      # transcoding, the on-demand switch & provider behaviour, avatars, scan
+      # cadence/watch and federation are runtime settings managed by an admin via
+      # the API (POST /admin/settings) and persisted in the database.
+      # The first admin is created via the setup API (POST /setup/init), not via
+      # env. Set to "true" to require the one-time startup token.
+      AUTH_REQUIRE_SETUP_TOKEN: "false"
+      LOG_FORMAT: "json"
+    volumes:
+      - ./music:/music:ro
+      - gossignol-data:/data
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4533/ping"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+
+  # Optional Postgres backend for large instances. To use it, set
+  # DATABASE_DRIVER=postgres and
+  # DATABASE_DSN=postgres://gossignol:gossignol@postgres:5432/gossignol?sslmode=disable
+  postgres:
+    image: postgres:16-alpine
+    profiles: ["postgres"]
+    environment:
+      POSTGRES_USER: gossignol
+      POSTGRES_PASSWORD: gossignol
+      POSTGRES_DB: gossignol
+    volumes:
+      - gossignol-pg:/var/lib/postgresql/data
+
+volumes:
+  gossignol-data:
+  gossignol-pg:

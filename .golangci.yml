@@ -1,0 +1,39 @@
+version: "2"
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - misspell
+    - revive
+    - bodyclose
+    - unconvert
+  settings:
+    revive:
+      rules:
+        - name: exported
+          disabled: false
+    errcheck:
+      exclude-functions:
+        - (*database/sql.Rows).Close
+        - (io.Closer).Close
+        - fmt.Fprintf
+        - os.Remove
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - errcheck
+          - bodyclose
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/gossignol/gossignol

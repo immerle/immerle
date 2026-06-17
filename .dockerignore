@@ -1,0 +1,11 @@
+bin/
+data/
+music/
+*.db
+*.db-wal
+*.db-shm
+.git/
+.github/
+*.md
+!config.example.yaml
+.golangci.yml

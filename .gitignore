@@ -1,0 +1,29 @@
+# Binaries
+/bin/
+gossignol
+*.exe
+
+# Local data & databases
+/data/
+*.db
+*.db-wal
+*.db-shm
+gossignol.db*
+
+# Local config (keep config.example.yaml)
+config.yaml
+config.local.yaml
+
+# Local music for compose
+/music/
+/dist/
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Temp
+deezer-http/
+federation/

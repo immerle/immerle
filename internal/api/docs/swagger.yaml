@@ -1,0 +1,2839 @@
+components:
+  schemas:
+    gossignol.APITokenDTO:
+      properties:
+        createdAt:
+          example: "2026-06-15T09:00:00Z"
+          type: string
+        expiresAt:
+          type: string
+        id:
+          type: string
+        lastUsedAt:
+          type: string
+        name:
+          example: my-cli
+          type: string
+        prefix:
+          example: gsk_AbC12
+          type: string
+      type: object
+    gossignol.AccountResponse:
+      properties:
+        ok:
+          example: true
+          type: boolean
+        user:
+          properties:
+            displayName:
+              example: Bob Marley
+              type: string
+            email:
+              example: bob@example.com
+              type: string
+            id:
+              type: string
+            isAdmin:
+              example: false
+              type: boolean
+            username:
+              example: bob
+              type: string
+          type: object
+      type: object
+    gossignol.ActivityEventDTO:
+      properties:
+        createdAt:
+          example: "2026-06-15T09:00:00Z"
+          type: string
+        displayName:
+          example: Bob Marley
+          type: string
+        id:
+          type: string
+        item:
+          $ref: '#/components/schemas/gossignol.ActivityItemDTO'
+        itemId:
+          type: string
+        itemType:
+          example: track
+          type: string
+        privacy:
+          example: friends
+          type: string
+        type:
+          example: listen
+          type: string
+        userId:
+          type: string
+        username:
+          example: bob
+          type: string
+      type: object
+    gossignol.ActivityItemDTO:
+      properties:
+        album:
+          example: Discovery
+          type: string
+        albumId:
+          type: string
+        artist:
+          example: Daft Punk
+          type: string
+        artistId:
+          type: string
+        coverArt:
+          type: string
+        duration:
+          example: 320
+          type: integer
+        title:
+          example: One More Time
+          type: string
+        year:
+          example: 2001
+          type: integer
+      type: object
+    gossignol.ActivityResponse:
+      properties:
+        events:
+          items:
+            $ref: '#/components/schemas/gossignol.ActivityEventDTO'
+          type: array
+          uniqueItems: false
+        ok:
+          example: true
+          type: boolean
+      type: object
+    gossignol.CapabilitiesResponse:
+      properties:
+        capabilities:
+          additionalProperties:
+            $ref: '#/components/schemas/gossignol.CapabilityDTO'
+          type: object
+        ok:
+          example: true
+          type: boolean
+        protocolVersion:
+          example: 1.0.0
+          type: string
+        server:
+          example: gossignol
+          type: string
+      type: object
+    gossignol.CapabilityDTO:
+      properties:
+        version:
+          example: 1
+          type: integer
+      type: object
+    gossignol.CleanupRunResponse:
+      properties:
+        ok:
+          example: true
+          type: boolean
+        removed:
+          example: 3
+          type: integer
+      type: object
+    gossignol.CleanupStatusResponse:
+      properties:
+        enabled:
+          example: true
+          type: boolean
+        intervalSeconds:
+          example: 21600
+          type: integer
+        maxAgeSeconds:
+          example: 2592000
+          type: integer
+        ok:
+          example: true
+          type: boolean
+      type: object
+    gossignol.CreateTokenResponse:
+      properties:
+        id:
+          type: string
+        name:
+          example: my-cli
+          type: string
+        ok:
+          example: true
+          type: boolean
+        prefix:
+          example: gsk_AbC12
+          type: string
+        token:
+          example: gsk_AbC12...full-secret
+          type: string
+      type: object
+    gossignol.DeviceDTO:
+      properties:
+        createdAt:
+          type: string
+        expiresAt:
+          type: string
+        id:
+          type: string
+        lastIp:
+          type: string
+        lastSeen:
+          type: string
+        name:
+          example: Pixel 8
+          type: string
+        userAgent:
+          type: string
+      type: object
+    gossignol.DevicesResponse:
+      properties:
+        devices:
+          items:
+            $ref: '#/components/schemas/gossignol.DeviceDTO'
+          type: array
+          uniqueItems: false
+        ok:
+          example: true
+          type: boolean
+      type: object
+    gossignol.ErrorResponse:
+      properties:
+        error:
+          example: already_initialized
+          type: string
+        ok:
+          example: false
+          type: boolean
+      type: object
+    gossignol.FieldErrorDTO:
+      properties:
+        field:
+          example: password
+          type: string
+        message:
+          example: must be at least 8 characters
+          type: string
+      type: object
+    gossignol.FriendDTO:
+      properties:
+        displayName:
+          example: Bob Marley
+          type: string
+        id:
+          type: string
+        username:
+          example: bob
+          type: string
+      type: object
+    gossignol.FriendsResponse:
+      properties:
+        friends:
+          items:
+            $ref: '#/components/schemas/gossignol.FriendDTO'
+          type: array
+          uniqueItems: false
+        ok:
+          example: true
+          type: boolean
+      type: object
+    gossignol.ImportDTO:
+      properties:
+        doubtful:
+          example: 2
+          type: integer
+        error:
+          type: string
+        failed:
+          example: 0
+          type: integer
+        id:
+          type: string
+        items:
+          items:
+            $ref: '#/components/schemas/gossignol.ImportItemDTO'
+          type: array
+          uniqueItems: false
+        matched:
+          example: 38
+          type: integer
+        missing:
+          example: 2
+          type: integer
+        playlistId:
+          type: string
+        source:
+          example: spotify
+          type: string
+        sourcePlaylistName:
+          type: string
+        sourceRef:
+          type: string
+        status:
+          example: completed
+          type: string
+        total:
+          example: 42
+          type: integer
+      type: object
+    gossignol.ImportItemDTO:
+      properties:
+        candidateCoverArt:
+          type: string
+        candidateTrackId:
+          description: |-
+            CandidateTrackID / CandidateCoverArt let a client preview a doubtful item:
+            play the candidate (stream accepts the remote track id) and show its cover.
+          type: string
+        confidence:
+          example: 0.62
+          type: number
+        id:
+          type: string
+        matchedTrackId:
+          type: string
+        note:
+          type: string
+        position:
+          type: integer
+        resolvedArtist:
+          type: string
+        resolvedTitle:
+          type: string
+        sourceAlbum:
+          type: string
+        sourceArtist:
+          example: Daft Punk
+          type: string
+        sourceTitle:
+          example: Da Funk
+          type: string
+        status:
+          example: matched
+          type: string
+      type: object
+    gossignol.ImportItemResponse:
+      properties:
+        item:
+          $ref: '#/components/schemas/gossignol.ImportItemDTO'
+        ok:
+          example: true
+          type: boolean
+      type: object
+    gossignol.ImportResponse:
+      properties:
+        import:
+          $ref: '#/components/schemas/gossignol.ImportDTO'
+        ok:
+          example: true
+          type: boolean
+      type: object
+    gossignol.ImportSourceDTO:
+      properties:
+        configured:
+          example: true
+          type: boolean
+        name:
+          example: spotify
+          type: string
+      type: object
+    gossignol.ImportSourcesResponse:
+      properties:
+        ok:
+          example: true
+          type: boolean
+        sources:
+          items:
+            $ref: '#/components/schemas/gossignol.ImportSourceDTO'
+          type: array
+          uniqueItems: false
+      type: object
+    gossignol.ImportsResponse:
+      properties:
+        imports:
+          items:
+            $ref: '#/components/schemas/gossignol.ImportDTO'
+          type: array
+          uniqueItems: false
+        ok:
+          example: true
+          type: boolean
+      type: object
+    gossignol.JamParticipantDTO:
+      properties:
+        joinedAt:
+          example: "2026-06-15T09:00:00Z"
+          type: string
+        sessionId:
+          type: string
+        userId:
+          type: string
+        username:
+          example: bob
+          type: string
+      type: object
+    gossignol.JamResponse:
+      properties:
+        ok:
+          example: true
+          type: boolean
+        participants:
+          items:
+            $ref: '#/components/schemas/gossignol.JamParticipantDTO'
+          type: array
+          uniqueItems: false
+        session:
+          $ref: '#/components/schemas/gossignol.JamSessionDTO'
+      type: object
+    gossignol.JamSessionDTO:
+      properties:
+        currentTrackId:
+          type: string
+        hostId:
+          type: string
+        id:
+          type: string
+        name:
+          example: Friday Night
+          type: string
+        position:
+          example: 42000
+          type: integer
+        state:
+          example: playing
+          type: string
+        trackIds:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+      type: object
+    gossignol.LibraryStatsDTO:
+      properties:
+        albums:
+          example: 128
+          type: integer
+        artists:
+          example: 42
+          type: integer
+        totalDuration:
+          example: 432000
+          type: integer
+        totalSize:
+          example: 9663676416
+          type: integer
+        tracks:
+          example: 1560
+          type: integer
+        updatedAt:
+          example: "2026-06-17T09:00:00Z"
+          type: string
+      type: object
+    gossignol.LibraryStatsResponse:
+      properties:
+        ok:
+          example: true
+          type: boolean
+        stats:
+          $ref: '#/components/schemas/gossignol.LibraryStatsDTO'
+      type: object
+    gossignol.LoginResponse:
+      properties:
+        device:
+          $ref: '#/components/schemas/gossignol.DeviceDTO'
+        ok:
+          example: true
+          type: boolean
+        token:
+          example: eyJhbGciOiJIUzI1Ni␣...
+          type: string
+      type: object
+    gossignol.OKResponse:
+      properties:
+        ok:
+          example: true
+          type: boolean
+      type: object
+    gossignol.PendingFriendDTO:
+      properties:
+        displayName:
+          example: Alice Coltrane
+          type: string
+        id:
+          type: string
+        since:
+          example: "2026-06-15T09:00:00Z"
+          type: string
+        username:
+          example: alice
+          type: string
+      type: object
+    gossignol.PendingFriendsResponse:
+      properties:
+        ok:
+          example: true
+          type: boolean
+        pending:
+          items:
+            $ref: '#/components/schemas/gossignol.PendingFriendDTO'
+          type: array
+          uniqueItems: false
+      type: object
+    gossignol.ProfilePlaylistDTO:
+      properties:
+        comment:
+          type: string
+        coverArts:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+        duration:
+          example: 5400
+          type: integer
+        id:
+          type: string
+        name:
+          example: Summer vibes
+          type: string
+        songCount:
+          example: 24
+          type: integer
+      type: object
+    gossignol.ProfileResponse:
+      properties:
+        activity:
+          items:
+            $ref: '#/components/schemas/gossignol.ActivityEventDTO'
+          type: array
+          uniqueItems: false
+        isFriend:
+          example: true
+          type: boolean
+        isSelf:
+          example: false
+          type: boolean
+        ok:
+          example: true
+          type: boolean
+        playlists:
+          items:
+            $ref: '#/components/schemas/gossignol.ProfilePlaylistDTO'
+          type: array
+          uniqueItems: false
+        user:
+          properties:
+            displayName:
+              example: Bob Marley
+              type: string
+            id:
+              type: string
+            isAdmin:
+              example: false
+              type: boolean
+            username:
+              example: bob
+              type: string
+          type: object
+      type: object
+    gossignol.ProviderDTO:
+      properties:
+        active:
+          example: true
+          type: boolean
+        builtin:
+          example: false
+          type: boolean
+        config:
+          example: '{"headers":{"Authorization":"Bearer x"}}'
+          type: string
+        deletable:
+          example: true
+          type: boolean
+        enabled:
+          example: true
+          type: boolean
+        endpoint:
+          example: https://my-service.internal
+          type: string
+        kind:
+          example: http
+          type: string
+        name:
+          example: manual
+          type: string
+        sortOrder:
+          example: 3
+          type: integer
+      type: object
+    gossignol.ProviderResponse:
+      properties:
+        ok:
+          example: true
+          type: boolean
+        provider:
+          $ref: '#/components/schemas/gossignol.ProviderDTO'
+      type: object
+    gossignol.ProvidersResponse:
+      properties:
+        ok:
+          example: true
+          type: boolean
+        providers:
+          items:
+            $ref: '#/components/schemas/gossignol.ProviderDTO'
+          type: array
+          uniqueItems: false
+      type: object
+    gossignol.PublicPlaylistDTO:
+      properties:
+        comment:
+          type: string
+        coverArts:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+        duration:
+          type: integer
+        id:
+          type: string
+        name:
+          example: Editorial Picks
+          type: string
+        owner:
+          example: alice
+          type: string
+        songCount:
+          type: integer
+        subscribed:
+          type: boolean
+      type: object
+    gossignol.PublicPlaylistsResponse:
+      properties:
+        ok:
+          example: true
+          type: boolean
+        playlists:
+          items:
+            $ref: '#/components/schemas/gossignol.PublicPlaylistDTO'
+          type: array
+          uniqueItems: false
+      type: object
+    gossignol.RuntimeSettingsDTO:
+      properties:
+        auth:
+          properties:
+            deviceTokenTtlSeconds:
+              example: 2592000
+              type: integer
+          type: object
+        cleanup:
+          properties:
+            enabled:
+              example: true
+              type: boolean
+            intervalSeconds:
+              example: 21600
+              type: integer
+            maxAgeSeconds:
+              example: 2592000
+              type: integer
+          type: object
+        federation:
+          properties:
+            enabled:
+              example: false
+              type: boolean
+            exportScrobbles:
+              type: boolean
+            hubUrl:
+              type: string
+            privateKey:
+              type: string
+            publicKey:
+              type: string
+            resolveMissing:
+              type: boolean
+            syncIntervalSeconds:
+              example: 3600
+              type: integer
+          type: object
+        providers:
+          properties:
+            autoDownloadOnPlay:
+              example: true
+              type: boolean
+            searchTimeoutSeconds:
+              example: 6
+              type: integer
+          type: object
+        scan:
+          properties:
+            intervalSeconds:
+              example: 3600
+              type: integer
+            watch:
+              example: true
+              type: boolean
+          type: object
+        server:
+          properties:
+            corsAllowedOrigins:
+              example:
+              - '*'
+              items:
+                type: string
+              type: array
+              uniqueItems: false
+          type: object
+        transcode:
+          properties:
+            ffmpegPath:
+              example: ffmpeg
+              type: string
+            ffprobePath:
+              example: ffprobe
+              type: string
+            profiles:
+              items:
+                properties:
+                  bitRate:
+                    example: 192
+                    type: integer
+                  ffmpegArgs:
+                    type: string
+                  format:
+                    example: mp3
+                    type: string
+                  name:
+                    example: mp3
+                    type: string
+                type: object
+              type: array
+              uniqueItems: false
+          type: object
+      type: object
+    gossignol.SettingsResponse:
+      properties:
+        ok:
+          example: true
+          type: boolean
+        pendingRestart:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+        restartRequired:
+          example: false
+          type: boolean
+        settings:
+          $ref: '#/components/schemas/gossignol.RuntimeSettingsDTO'
+      type: object
+    gossignol.SetupInitRequest:
+      properties:
+        displayName:
+          description: |-
+            DisplayName is an optional free-text name shown in the UI (falls back to
+            the username when empty).
+          example: Kilian Smiti
+          type: string
+        email:
+          example: me@example.com
+          type: string
+        password:
+          example: a-strong-password
+          type: string
+        setupToken:
+          description: |-
+            SetupToken is required only when the server was started with
+            auth.require_setup_token=true.
+          type: string
+        username:
+          example: kilian
+          type: string
+      type: object
+    gossignol.SetupInitResponse:
+      properties:
+        ok:
+          example: true
+          type: boolean
+        user:
+          $ref: '#/components/schemas/gossignol.UserDTO'
+      type: object
+    gossignol.SetupStatusResponse:
+      properties:
+        initialized:
+          example: false
+          type: boolean
+        needsSetup:
+          example: true
+          type: boolean
+        ok:
+          example: true
+          type: boolean
+        setupTokenRequired:
+          example: false
+          type: boolean
+        userCount:
+          example: 0
+          type: integer
+      type: object
+    gossignol.ThemeDTO:
+      properties:
+        accentColor:
+          example: '#3b82f6'
+          type: string
+      type: object
+    gossignol.ThemeResponse:
+      properties:
+        ok:
+          example: true
+          type: boolean
+        theme:
+          $ref: '#/components/schemas/gossignol.ThemeDTO'
+      type: object
+    gossignol.TokensResponse:
+      properties:
+        ok:
+          example: true
+          type: boolean
+        tokens:
+          items:
+            $ref: '#/components/schemas/gossignol.APITokenDTO'
+          type: array
+          uniqueItems: false
+      type: object
+    gossignol.UserDTO:
+      properties:
+        displayName:
+          example: Kilian Smiti
+          type: string
+        id:
+          type: string
+        isAdmin:
+          example: true
+          type: boolean
+        username:
+          example: kilian
+          type: string
+      type: object
+    gossignol.ValidationErrorResponse:
+      properties:
+        details:
+          items:
+            $ref: '#/components/schemas/gossignol.FieldErrorDTO'
+          type: array
+          uniqueItems: false
+        error:
+          example: validation
+          type: string
+        ok:
+          example: false
+          type: boolean
+      type: object
+externalDocs:
+  description: ""
+  url: ""
+info:
+  contact:
+    name: gossignol
+  description: |-
+    Native gossignol endpoints (first-run setup, capability
+    discovery, friends, activity feed, collaborative playlists and
+    synchronized Jam sessions) that complement the Subsonic /
+    OpenSubsonic API served under /rest/.
+
+    Authenticated endpoints reuse Subsonic credentials passed as
+    query parameters: u (username) plus either p (password) or the
+    token pair t (md5(password+salt)) and s (salt), and c (client
+    name). Setup and capability endpoints are unauthenticated.
+  license:
+    name: See repository
+  title: gossignol extension API
+  version: 1.0.0
+openapi: 3.1.0
+paths:
+  /account:
+    get:
+      description: Reads (GET) or updates (POST) the authenticated user's own account.
+        POST is a partial update — only fields present are changed. Lets a user set
+        their display name and email themselves.
+      parameters:
+      - description: Subsonic username (or use a Bearer token)
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Subsonic password
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Client name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      - description: 'POST only: free-text UI name (empty clears it)'
+        in: query
+        name: displayName
+        schema:
+          type: string
+      - description: 'POST only: email address (empty clears it)'
+        in: query
+        name: email
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.AccountResponse'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: Bad Request
+      summary: Get or update your account
+      tags:
+      - users
+    post:
+      description: Reads (GET) or updates (POST) the authenticated user's own account.
+        POST is a partial update — only fields present are changed. Lets a user set
+        their display name and email themselves.
+      parameters:
+      - description: Subsonic username (or use a Bearer token)
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Subsonic password
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Client name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      - description: 'POST only: free-text UI name (empty clears it)'
+        in: query
+        name: displayName
+        schema:
+          type: string
+      - description: 'POST only: email address (empty clears it)'
+        in: query
+        name: email
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.AccountResponse'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: Bad Request
+      summary: Get or update your account
+      tags:
+      - users
+  /activity:
+    get:
+      description: Returns activity events visible to the caller, honoring each author's
+        privacy setting.
+      parameters:
+      - description: Subsonic username
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Subsonic password (or t+s token auth)
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Client name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ActivityResponse'
+          description: OK
+      summary: Activity feed
+      tags:
+      - activity
+  /admin/cleanup:
+    get:
+      description: Admin only. GET reports the eviction sweep state; POST with enabled=true|false
+        turns the background sweep on or off at runtime (persisted; hot).
+      parameters:
+      - description: Subsonic username (or use a Bearer token)
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Subsonic password
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Client name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      - description: 'POST only: enable or disable the sweep'
+        in: query
+        name: enabled
+        schema:
+          type: boolean
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.CleanupStatusResponse'
+          description: OK
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: Forbidden
+      summary: Get or toggle the cleanup sweep
+      tags:
+      - admin
+    post:
+      description: Admin only. GET reports the eviction sweep state; POST with enabled=true|false
+        turns the background sweep on or off at runtime (persisted; hot).
+      parameters:
+      - description: Subsonic username (or use a Bearer token)
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Subsonic password
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Client name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      - description: 'POST only: enable or disable the sweep'
+        in: query
+        name: enabled
+        schema:
+          type: boolean
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.CleanupStatusResponse'
+          description: OK
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: Forbidden
+      summary: Get or toggle the cleanup sweep
+      tags:
+      - admin
+  /admin/cleanup/run:
+    post:
+      description: Admin only. Runs one eviction pass immediately and returns how
+        many provider downloads were removed. Works even when the background sweep
+        is disabled.
+      parameters:
+      - description: Subsonic username (or use a Bearer token)
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Subsonic password
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Client name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.CleanupRunResponse'
+          description: OK
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: Forbidden
+      summary: Run the cleanup sweep now
+      tags:
+      - admin
+  /admin/providers:
+    get:
+      description: 'Admin only. GET lists configured providers; POST creates or updates
+        one. A provider is content-neutral: a name, an HTTP endpoint and an opaque
+        JSON config. POST applies immediately — an enabled provider is registered
+        live, a disabled one is removed.'
+      parameters:
+      - description: Subsonic username (or Bearer token)
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Subsonic password
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Client name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      - description: 'POST: provider name (slug: a-z 0-9 - _)'
+        in: query
+        name: name
+        schema:
+          type: string
+      - description: 'POST: base http(s) URL of the external service'
+        in: query
+        name: endpoint
+        schema:
+          type: string
+      - description: 'POST: JSON config payload (default {})'
+        in: query
+        name: config
+        schema:
+          type: string
+      - description: 'POST: register it live (default true)'
+        in: query
+        name: enabled
+        schema:
+          type: boolean
+      - description: 'POST: provider kind (default http)'
+        in: query
+        name: kind
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ProvidersResponse'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: Bad Request
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: Forbidden
+      summary: List or upsert on-demand providers
+      tags:
+      - admin
+    post:
+      description: 'Admin only. GET lists configured providers; POST creates or updates
+        one. A provider is content-neutral: a name, an HTTP endpoint and an opaque
+        JSON config. POST applies immediately — an enabled provider is registered
+        live, a disabled one is removed.'
+      parameters:
+      - description: Subsonic username (or Bearer token)
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Subsonic password
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Client name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      - description: 'POST: provider name (slug: a-z 0-9 - _)'
+        in: query
+        name: name
+        schema:
+          type: string
+      - description: 'POST: base http(s) URL of the external service'
+        in: query
+        name: endpoint
+        schema:
+          type: string
+      - description: 'POST: JSON config payload (default {})'
+        in: query
+        name: config
+        schema:
+          type: string
+      - description: 'POST: register it live (default true)'
+        in: query
+        name: enabled
+        schema:
+          type: boolean
+      - description: 'POST: provider kind (default http)'
+        in: query
+        name: kind
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ProvidersResponse'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: Bad Request
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: Forbidden
+      summary: List or upsert on-demand providers
+      tags:
+      - admin
+  /admin/providers/delete:
+    post:
+      description: Admin only. Removes a provider config and unregisters it.
+      parameters:
+      - description: Subsonic username (or Bearer token)
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Subsonic password
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Client name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      - description: Provider name
+        in: query
+        name: name
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.OKResponse'
+          description: OK
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: Not Found
+      summary: Delete a provider
+      tags:
+      - admin
+  /admin/providers/enable:
+    post:
+      description: Admin only. Toggles a provider on or off; the change is applied
+        to the live registry immediately.
+      parameters:
+      - description: Subsonic username (or Bearer token)
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Subsonic password
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Client name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      - description: Provider name
+        in: query
+        name: name
+        required: true
+        schema:
+          type: string
+      - description: Enable (true) or disable (false)
+        in: query
+        name: enabled
+        required: true
+        schema:
+          type: boolean
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ProviderResponse'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: Bad Request
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: Not Found
+      summary: Enable or disable a provider
+      tags:
+      - admin
+  /admin/providers/reorder:
+    post:
+      description: Admin only. Sets the provider priority order (lower = higher priority).
+        The `order` param is a comma-separated list of every provider name, each exactly
+        once. Order also decides which provider search falls back to when no explicit
+        default is set.
+      parameters:
+      - description: Subsonic username (or Bearer token)
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Subsonic password
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Client name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      - description: Comma-separated provider names in the desired order
+        in: query
+        name: order
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ProvidersResponse'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: Bad Request
+      summary: Reorder providers
+      tags:
+      - admin
+  /admin/settings:
+    get:
+      description: Admin only. GET returns the current runtime settings (provider
+        behaviour, artist avatars, scan cadence, federation) plus whether a restart
+        is pending. POST applies a partial update (send a JSON body with the fields
+        to change; omitted fields keep their current value). Provider behaviour and
+        the scan interval apply immediately (hot reload); avatars, the scan watcher
+        and federation only take effect after a restart — when one of those changes,
+        the response sets restartRequired=true and lists the pending fields so the
+        UI can prompt for a restart.
+      parameters:
+      - description: Subsonic username (or Bearer token)
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Subsonic password
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Client name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/gossignol.RuntimeSettingsDTO'
+                description: 'POST: settings fields to change (partial)'
+                summary: body
+        description: 'POST: settings fields to change (partial)'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.SettingsResponse'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: Bad Request
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: Forbidden
+      summary: Get or update runtime settings
+      tags:
+      - admin
+    post:
+      description: Admin only. GET returns the current runtime settings (provider
+        behaviour, artist avatars, scan cadence, federation) plus whether a restart
+        is pending. POST applies a partial update (send a JSON body with the fields
+        to change; omitted fields keep their current value). Provider behaviour and
+        the scan interval apply immediately (hot reload); avatars, the scan watcher
+        and federation only take effect after a restart — when one of those changes,
+        the response sets restartRequired=true and lists the pending fields so the
+        UI can prompt for a restart.
+      parameters:
+      - description: Subsonic username (or Bearer token)
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Subsonic password
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Client name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/gossignol.RuntimeSettingsDTO'
+                description: 'POST: settings fields to change (partial)'
+                summary: body
+        description: 'POST: settings fields to change (partial)'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.SettingsResponse'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: Bad Request
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: Forbidden
+      summary: Get or update runtime settings
+      tags:
+      - admin
+  /auth/login:
+    post:
+      description: 'Authenticates with username + password (or Subsonic token auth)
+        and returns a device-session JWT carrying a unique id (jti). Use it as "Authorization:
+        Bearer <jwt>". The session is tracked in the devices registry and can be revoked.'
+      parameters:
+      - description: Username
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Password
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Subsonic token md5(password+salt)
+        in: query
+        name: t
+        schema:
+          type: string
+      - description: Subsonic salt
+        in: query
+        name: s
+        schema:
+          type: string
+      - description: Client/device name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      - description: Device label (defaults to c)
+        in: query
+        name: device
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.LoginResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: Unauthorized
+      summary: Log in a device (issue a JWT)
+      tags:
+      - devices
+  /capabilities:
+    get:
+      description: Unauthenticated. Lets clients detect supported gossignol extensions
+        and whether first-run setup is still needed.
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.CapabilitiesResponse'
+          description: OK
+      summary: Capability discovery
+      tags:
+      - discovery
+  /devices:
+    get:
+      description: Lists the caller's active device sessions (one per issued JWT),
+        with last-seen time, IP and user agent.
+      parameters:
+      - description: Username (or Bearer token)
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Password
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Client name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.DevicesResponse'
+          description: OK
+      summary: List devices
+      tags:
+      - devices
+  /devices/revoke:
+    post:
+      description: Revokes a device session by id — the associated JWT can no longer
+        authenticate.
+      parameters:
+      - description: Username (or Bearer token)
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Password
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Client name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      - description: Device id (jti) to revoke
+        in: query
+        name: id
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.OKResponse'
+          description: OK
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: Not Found
+      summary: Revoke a device
+      tags:
+      - devices
+  /friends:
+    get:
+      description: Returns the caller's accepted friends.
+      parameters:
+      - description: Subsonic username
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Subsonic password (or use t+s token auth)
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Client name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.FriendsResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: Unauthorized
+      summary: List friends
+      tags:
+      - friends
+  /friends/accept:
+    post:
+      parameters:
+      - description: Subsonic username
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Subsonic password (or t+s token auth)
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Client name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      - description: Username of the requester to accept
+        in: query
+        name: username
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.OKResponse'
+          description: OK
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: Not Found
+      summary: Accept a friend request
+      tags:
+      - friends
+  /friends/pending:
+    get:
+      parameters:
+      - description: Subsonic username
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Subsonic password (or t+s token auth)
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Client name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.PendingFriendsResponse'
+          description: OK
+      summary: List pending friend requests
+      tags:
+      - friends
+  /friends/request:
+    post:
+      parameters:
+      - description: Subsonic username
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Subsonic password (or t+s token auth)
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Client name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      - description: Target username to befriend
+        in: query
+        name: username
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.OKResponse'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: Bad Request
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: Not Found
+      summary: Send a friend request
+      tags:
+      - friends
+  /imports:
+    get:
+      description: Lists the caller's playlist imports (most recent first), without
+        per-track items.
+      parameters:
+      - description: Subsonic username
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Subsonic password (or t+s token auth)
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Client name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ImportsResponse'
+          description: OK
+      summary: List imports
+      tags:
+      - imports
+  /imports/items/resolve:
+    post:
+      description: 'Resolves a doubtful/missing/failed import item: downloads a track
+        and adds it to the import''s playlist, flipping the item to "matched". With
+        no `query`, it validates the flagged candidate as-is; with a `query`, it re-searches
+        the content providers with that corrected text and uses the best result.'
+      parameters:
+      - description: Subsonic username
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Subsonic password (or t+s token auth)
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Client name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      - description: Import item id
+        in: query
+        name: itemId
+        required: true
+        schema:
+          type: string
+      - description: Corrected 'artist title' search (omit to validate the flagged
+          candidate)
+        in: query
+        name: query
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ImportItemResponse'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: Bad Request
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: Not Found
+      summary: Validate or modify an import item
+      tags:
+      - imports
+  /imports/sources:
+    get:
+      description: Lists the available playlist-import sources (e.g. spotify) and
+        whether each is configured.
+      parameters:
+      - description: Subsonic username
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Subsonic password (or t+s token auth)
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Client name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ImportSourcesResponse'
+          description: OK
+      summary: List import sources
+      tags:
+      - imports
+  /imports/start:
+    post:
+      description: Queues an import of an external playlist (by source + reference).
+        Returns the import job; poll /imports/status for progress. The import creates
+        a new gossignol playlist and resolves each source track against the on-demand
+        content providers.
+      parameters:
+      - description: Subsonic username
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Subsonic password (or t+s token auth)
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Client name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      - description: Import source name (e.g. spotify)
+        in: query
+        name: source
+        required: true
+        schema:
+          type: string
+      - description: Source playlist id or URL
+        in: query
+        name: ref
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ImportResponse'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: Bad Request
+      summary: Start a playlist import
+      tags:
+      - imports
+  /imports/status:
+    get:
+      description: Returns one import with its per-track items and their status (matched/doubtful/missing/failed)
+        for a progress page.
+      parameters:
+      - description: Subsonic username
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Subsonic password (or t+s token auth)
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Client name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      - description: Import id
+        in: query
+        name: id
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ImportResponse'
+          description: OK
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: Not Found
+      summary: Import status
+      tags:
+      - imports
+  /jam/create:
+    post:
+      description: Starts a synchronized listening session hosted by the caller.
+      parameters:
+      - description: Subsonic username
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Subsonic password (or t+s token auth)
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Client name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      - description: Session name
+        in: query
+        name: name
+        schema:
+          type: string
+      - description: Comma-separated track ids
+        in: query
+        name: trackIds
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.JamResponse'
+          description: OK
+      summary: Create a Jam session
+      tags:
+      - jam
+  /jam/events:
+    get:
+      description: Server-Sent Events stream. Emits the current state immediately,
+        then a "state"/"participants"/"closed" event on every change.
+      parameters:
+      - description: Subsonic username
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Subsonic password (or t+s token auth)
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Client name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      - description: Jam session id
+        in: query
+        name: sessionId
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            text/event-stream:
+              schema:
+                type: string
+          description: SSE stream
+        "404":
+          content:
+            text/event-stream:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: Not Found
+      summary: Stream Jam events (SSE)
+      tags:
+      - jam
+  /jam/join:
+    post:
+      parameters:
+      - description: Subsonic username
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Subsonic password (or t+s token auth)
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Client name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      - description: Jam session id
+        in: query
+        name: sessionId
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.JamResponse'
+          description: OK
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: Not Found
+      summary: Join a Jam session
+      tags:
+      - jam
+  /jam/leave:
+    post:
+      parameters:
+      - description: Subsonic username
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Subsonic password (or t+s token auth)
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Client name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      - description: Jam session id
+        in: query
+        name: sessionId
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.OKResponse'
+          description: OK
+      summary: Leave a Jam session
+      tags:
+      - jam
+  /jam/state:
+    get:
+      parameters:
+      - description: Subsonic username
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Subsonic password (or t+s token auth)
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Client name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      - description: Jam session id
+        in: query
+        name: sessionId
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.JamResponse'
+          description: OK
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: Not Found
+      summary: Get Jam session state
+      tags:
+      - jam
+  /jam/update:
+    post:
+      description: Host-only. Updates the shared track/position/state and broadcasts
+        it to participants over SSE.
+      parameters:
+      - description: Subsonic username
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Subsonic password (or t+s token auth)
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Client name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      - description: Jam session id
+        in: query
+        name: sessionId
+        required: true
+        schema:
+          type: string
+      - description: Current track id
+        in: query
+        name: currentTrackId
+        schema:
+          type: string
+      - description: Playback position in ms
+        in: query
+        name: position
+        schema:
+          type: integer
+      - description: playing or paused
+        in: query
+        name: state
+        schema:
+          type: string
+      - description: Comma-separated track ids
+        in: query
+        name: trackIds
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.JamResponse'
+          description: OK
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: Forbidden
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: Not Found
+      summary: Update Jam playback (host only)
+      tags:
+      - jam
+  /library/stats:
+    get:
+      description: 'Returns library-wide analytics: artist/album/track counts, total
+        on-disk size (bytes) and total duration (seconds). Cached and refreshed at
+        each scan.'
+      parameters:
+      - description: Subsonic username
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Subsonic password (or t+s token auth)
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Client name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.LibraryStatsResponse'
+          description: OK
+      summary: Library analytics
+      tags:
+      - library
+  /playlists/collaborators:
+    post:
+      description: Owner-only. Marks the playlist collaborative and grants edit rights
+        to another user.
+      parameters:
+      - description: Subsonic username
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Subsonic password (or t+s token auth)
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Client name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      - description: Playlist id
+        in: query
+        name: playlistId
+        required: true
+        schema:
+          type: string
+      - description: User to grant edit rights
+        in: query
+        name: username
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.OKResponse'
+          description: OK
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: Forbidden
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: Not Found
+      summary: Add a playlist collaborator
+      tags:
+      - playlists
+  /playlists/public:
+    get:
+      description: Lists public playlists (not owned by the caller) available to subscribe
+        to. Each entry includes whether the caller is already subscribed.
+      parameters:
+      - description: Subsonic username
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Subsonic password (or token auth)
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Client name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.PublicPlaylistsResponse'
+          description: OK
+      summary: Browse public playlists
+      tags:
+      - playlists
+  /playlists/subscribe:
+    post:
+      description: Adds a public playlist to the caller's library (read-only). It
+        then appears in getPlaylists like a normal playlist.
+      parameters:
+      - description: Subsonic username
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Subsonic password (or token auth)
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Client name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      - description: Playlist id to subscribe to
+        in: query
+        name: playlistId
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.OKResponse'
+          description: OK
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: Forbidden
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: Not Found
+      summary: Subscribe to a public playlist
+      tags:
+      - playlists
+  /playlists/unsubscribe:
+    post:
+      parameters:
+      - description: Subsonic username
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Subsonic password (or token auth)
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Client name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      - description: Playlist id
+        in: query
+        name: playlistId
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.OKResponse'
+          description: OK
+      summary: Unsubscribe from a playlist
+      tags:
+      - playlists
+  /profile:
+    get:
+      description: Returns a user's profile — identity, recent activity visible to
+        the caller (honoring privacy), and their public playlists. Defaults to the
+        caller when username is omitted.
+      parameters:
+      - description: Subsonic username
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Subsonic password (or t+s token auth)
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Client name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      - description: Target username (defaults to the caller)
+        in: query
+        name: username
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ProfileResponse'
+          description: OK
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: Not Found
+      summary: User profile
+      tags:
+      - users
+  /setup/init:
+    post:
+      description: Unauthenticated, one-shot. Creates the initial admin — the only
+        way to bootstrap an account (no config/env provisioning). Self-locks once
+        any user exists.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/gossignol.SetupInitRequest'
+                description: Initial admin credentials
+                summary: body
+        description: Initial admin credentials
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.SetupInitResponse'
+          description: Created
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ValidationErrorResponse'
+          description: validation
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: invalid_setup_token
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: already_initialized
+      summary: Create the first administrator
+      tags:
+      - setup
+  /setup/status:
+    get:
+      description: Unauthenticated. Reports whether the server still needs its first
+        admin and whether a setup token is required.
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.SetupStatusResponse'
+          description: OK
+      summary: First-run setup status
+      tags:
+      - setup
+  /theme:
+    get:
+      description: Reads (GET) or updates (POST) the caller's per-account theme. Only
+        the accent colour is supported for now. POST applies a partial update — omitted
+        fields keep their stored value; pass an empty accentColor to clear it.
+      parameters:
+      - description: Subsonic username (or use a Bearer token)
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Subsonic password
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Client name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      - description: 'POST only: CSS hex colour, e.g. #3b82f6 (empty string clears
+          it)'
+        in: query
+        name: accentColor
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ThemeResponse'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: Bad Request
+      summary: Get or update the UI theme
+      tags:
+      - theme
+    post:
+      description: Reads (GET) or updates (POST) the caller's per-account theme. Only
+        the accent colour is supported for now. POST applies a partial update — omitted
+        fields keep their stored value; pass an empty accentColor to clear it.
+      parameters:
+      - description: Subsonic username (or use a Bearer token)
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Subsonic password
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Client name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      - description: 'POST only: CSS hex colour, e.g. #3b82f6 (empty string clears
+          it)'
+        in: query
+        name: accentColor
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ThemeResponse'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: Bad Request
+      summary: Get or update the UI theme
+      tags:
+      - theme
+  /tokens:
+    get:
+      description: Lists the caller's active personal access tokens (no secrets).
+      parameters:
+      - description: Subsonic username (or use a Bearer token)
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Subsonic password
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Client name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.TokensResponse'
+          description: OK
+      summary: List API tokens
+      tags:
+      - tokens
+  /tokens/create:
+    post:
+      description: 'Creates a personal access token scoped to the caller. The secret
+        is returned ONCE — store it now. Use it as "Authorization: Bearer <token>"
+        or "?apiKey=<token>".'
+      parameters:
+      - description: Subsonic username
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Subsonic password
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Client name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      - description: Label for the token
+        in: query
+        name: name
+        schema:
+          type: string
+      - description: Expiry as unix epoch millis (0 = never)
+        in: query
+        name: expires
+        schema:
+          type: integer
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.CreateTokenResponse'
+          description: Created
+      summary: Create an API token
+      tags:
+      - tokens
+  /tokens/revoke:
+    post:
+      parameters:
+      - description: Subsonic username
+        in: query
+        name: u
+        required: true
+        schema:
+          type: string
+      - description: Subsonic password
+        in: query
+        name: p
+        schema:
+          type: string
+      - description: Client name
+        in: query
+        name: c
+        required: true
+        schema:
+          type: string
+      - description: Token id to revoke
+        in: query
+        name: id
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.OKResponse'
+          description: OK
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gossignol.ErrorResponse'
+          description: Not Found
+      summary: Revoke an API token
+      tags:
+      - tokens
+tags:
+- description: First-run provisioning of the initial administrator.
+  name: setup
+- description: Capability discovery for client apps.
+  name: discovery
+- description: Friend requests and listing.
+  name: friends
+- description: Social activity feed (privacy-aware).
+  name: activity
+- description: Collaborative playlist management.
+  name: playlists
+- description: Synchronized listening sessions (SSE).
+  name: jam
+- description: Personal API tokens scoped to the calling user.
+  name: tokens
+- description: Device sessions (JWT) with a revocation/device registry.
+  name: devices
