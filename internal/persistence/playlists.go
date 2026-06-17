@@ -282,6 +282,15 @@ func (r *PlaylistRepo) ReplaceTracks(ctx context.Context, playlistID string, tra
 // it appends at the current max position so concurrent appends do not collide.
 func (r *PlaylistRepo) AppendTracks(ctx context.Context, playlistID string, trackIDs []string, addedBy string) error {
 	return r.withTx(ctx, func(tx *sql.Tx) error {
+		// Serialize concurrent appends to the same playlist so two transactions
+		// don't read the same MAX(position) and collide on PK(playlist_id,
+		// position). SQLite's single-writer lock already serializes writers;
+		// Postgres (READ COMMITTED) needs an explicit lock on the parent row.
+		if r.db.Dialect == "postgres" {
+			if _, err := tx.ExecContext(ctx, r.rebind(`SELECT 1 FROM playlists WHERE id=? FOR UPDATE`), playlistID); err != nil {
+				return err
+			}
+		}
 		var maxPos sql.NullInt64
 		if err := tx.QueryRowContext(ctx, r.rebind(`SELECT MAX(position) FROM playlist_tracks WHERE playlist_id=?`), playlistID).Scan(&maxPos); err != nil {
 			return err
