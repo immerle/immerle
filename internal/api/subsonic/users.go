@@ -55,7 +55,7 @@ func (h *Handler) handleGetUsers(w http.ResponseWriter, r *http.Request) {
 	}
 	users, err := h.Users.List(r.Context())
 	if err != nil {
-		writeError(w, r, ErrGeneric, err.Error())
+		h.failInternal(w, r, err)
 		return
 	}
 	resp := newResponse()
@@ -81,7 +81,7 @@ func (h *Handler) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 	email := param(r, "email")
 	displayName := param(r, "displayName")
 	if _, err := h.Auth.CreateUser(r.Context(), username, decodeEncParam(password), email, displayName, admin); err != nil {
-		writeError(w, r, ErrGeneric, err.Error())
+		h.failInternal(w, r, err)
 		return
 	}
 	writeOK(w, r)
@@ -110,7 +110,7 @@ func (h *Handler) handleUpdateUser(w http.ResponseWriter, r *http.Request) {
 		u.ScrobbleEnabled = boolParam(r, "scrobblingEnabled", u.ScrobbleEnabled)
 	}
 	if err := h.Users.Update(r.Context(), u); err != nil {
-		writeError(w, r, ErrGeneric, err.Error())
+		h.failInternal(w, r, err)
 		return
 	}
 	if pw := param(r, "password"); pw != "" {
@@ -130,7 +130,7 @@ func (h *Handler) handleDeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.Users.Delete(r.Context(), u.ID); err != nil {
-		writeError(w, r, ErrGeneric, err.Error())
+		h.failInternal(w, r, err)
 		return
 	}
 	writeOK(w, r)
@@ -154,7 +154,7 @@ func (h *Handler) handleChangePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.Auth.SetPassword(r.Context(), u.ID, decodeEncParam(password)); err != nil {
-		writeError(w, r, ErrGeneric, err.Error())
+		h.failInternal(w, r, err)
 		return
 	}
 	writeOK(w, r)

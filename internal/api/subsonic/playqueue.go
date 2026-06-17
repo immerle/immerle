@@ -15,7 +15,7 @@ func (h *Handler) handleGetPlayQueue(w http.ResponseWriter, r *http.Request) {
 			writeOK(w, r) // no saved queue
 			return
 		}
-		writeError(w, r, ErrGeneric, err.Error())
+		h.failInternal(w, r, err)
 		return
 	}
 	trackAnn, _ := h.Annotations.AnnotationMap(r.Context(), user.ID, models.ItemTrack)
@@ -51,7 +51,7 @@ func (h *Handler) handleSavePlayQueue(w http.ResponseWriter, r *http.Request) {
 		TrackIDs:   ids,
 	}
 	if err := h.PlayQueues.Save(r.Context(), q); err != nil {
-		writeError(w, r, ErrGeneric, err.Error())
+		h.failInternal(w, r, err)
 		return
 	}
 	writeOK(w, r)

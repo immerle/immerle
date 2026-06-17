@@ -35,7 +35,7 @@ func musicFolderID(i int) string {
 func (h *Handler) handleGetIndexes(w http.ResponseWriter, r *http.Request) {
 	artists, err := h.Catalog.ListArtists(r.Context())
 	if err != nil {
-		writeError(w, r, ErrGeneric, err.Error())
+		h.failInternal(w, r, err)
 		return
 	}
 	resp := newResponse()
@@ -49,7 +49,7 @@ func (h *Handler) handleGetIndexes(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handleGetArtists(w http.ResponseWriter, r *http.Request) {
 	artists, err := h.Catalog.ListArtists(r.Context())
 	if err != nil {
-		writeError(w, r, ErrGeneric, err.Error())
+		h.failInternal(w, r, err)
 		return
 	}
 	user := userFrom(r.Context())
@@ -75,7 +75,7 @@ func (h *Handler) handleGetArtist(w http.ResponseWriter, r *http.Request) {
 	}
 	albums, err := h.Catalog.ListAlbumsByArtist(r.Context(), id)
 	if err != nil {
-		writeError(w, r, ErrGeneric, err.Error())
+		h.failInternal(w, r, err)
 		return
 	}
 	user := userFrom(r.Context())
@@ -252,7 +252,7 @@ func (h *Handler) handleGetAlbumList2(w http.ResponseWriter, r *http.Request) {
 	opt := buildAlbumListOptions(r, user.ID)
 	albums, err := h.Catalog.ListAlbums(r.Context(), opt)
 	if err != nil {
-		writeError(w, r, ErrGeneric, err.Error())
+		h.failInternal(w, r, err)
 		return
 	}
 	albumAnn, _ := h.Annotations.AnnotationMap(r.Context(), user.ID, models.ItemAlbum)
@@ -283,7 +283,7 @@ func (h *Handler) handleGetSong(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handleGetGenres(w http.ResponseWriter, r *http.Request) {
 	genres, err := h.Genres.List(r.Context())
 	if err != nil {
-		writeError(w, r, ErrGeneric, err.Error())
+		h.failInternal(w, r, err)
 		return
 	}
 	resp := newResponse()

@@ -68,7 +68,7 @@ func (h *Handler) handleSetRating(w http.ResponseWriter, r *http.Request) {
 	if core.IsRemoteID(id) {
 		id = h.localTrackID(r.Context(), userFrom(r.Context()).ID, id)
 		if err := h.Annotations.SetRating(r.Context(), user.ID, models.ItemTrack, id, rating); err != nil {
-			writeError(w, r, ErrGeneric, err.Error())
+			h.failInternal(w, r, err)
 			return
 		}
 		writeOK(w, r)
@@ -83,7 +83,7 @@ func (h *Handler) handleSetRating(w http.ResponseWriter, r *http.Request) {
 		itemType = models.ItemArtist
 	}
 	if err := h.Annotations.SetRating(r.Context(), user.ID, itemType, id, rating); err != nil {
-		writeError(w, r, ErrGeneric, err.Error())
+		h.failInternal(w, r, err)
 		return
 	}
 	writeOK(w, r)

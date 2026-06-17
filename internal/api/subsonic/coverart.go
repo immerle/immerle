@@ -17,7 +17,10 @@ func (h *Handler) handleGetCoverArt(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Cover art not found", http.StatusNotFound)
 			return
 		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		if h.Logger != nil {
+			h.Logger.Error("getCoverArt failed", "id", id, "error", err)
+		}
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", contentType)

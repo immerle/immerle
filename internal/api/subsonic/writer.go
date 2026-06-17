@@ -55,7 +55,7 @@ func writeXML(w http.ResponseWriter, resp *Response) {
 func writeJSON(w http.ResponseWriter, resp *Response, callback string) {
 	body, err := json.Marshal(jsonEnvelope{Response: resp})
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 	if callback != "" {
@@ -72,6 +72,17 @@ func writeJSON(w http.ResponseWriter, resp *Response, callback string) {
 // writeError renders a Subsonic error response.
 func writeError(w http.ResponseWriter, r *http.Request, code int, message string) {
 	write(w, r, errorResponse(code, message))
+}
+
+// failInternal logs the real error server-side and returns a generic Subsonic
+// error to the client, so internal details (filesystem paths, driver messages)
+// never leak. The Subsonic error envelope and code are unchanged — only the
+// human-readable message is genericized, which the spec permits.
+func (h *Handler) failInternal(w http.ResponseWriter, r *http.Request, err error) {
+	if h.Logger != nil {
+		h.Logger.Error("subsonic request failed", "endpoint", r.URL.Path, "error", err)
+	}
+	writeError(w, r, ErrGeneric, "Internal server error")
 }
 
 // writeOK renders a bare success response.
