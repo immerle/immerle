@@ -31,9 +31,6 @@ func NewLibraryStatsService(catalog *persistence.CatalogRepo, logger *slog.Logge
 // Refresh recomputes the snapshot from the catalog and stores it. Safe to call
 // from a scan-completion hook.
 func (s *LibraryStatsService) Refresh(ctx context.Context) (models.LibraryStats, error) {
-	if s == nil {
-		return models.LibraryStats{}, nil
-	}
 	artists, albums, tracks, err := s.catalog.Stats(ctx)
 	if err != nil {
 		return models.LibraryStats{}, err
@@ -58,9 +55,6 @@ func (s *LibraryStatsService) Refresh(ctx context.Context) (models.LibraryStats,
 
 // Get returns the last computed snapshot (zero value before the first Refresh).
 func (s *LibraryStatsService) Get() models.LibraryStats {
-	if s == nil {
-		return models.LibraryStats{}
-	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.cached
