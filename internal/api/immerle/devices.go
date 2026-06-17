@@ -22,6 +22,10 @@ import (
 // @Failure      401  {object}  ErrorResponse
 // @Router       /auth/login [post]
 func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, errorBody("method_not_allowed"))
+		return
+	}
 	_ = r.ParseForm()
 	deviceName := r.Form.Get("device")
 	if deviceName == "" {
