@@ -2,12 +2,12 @@ package immerle
 
 import (
 	"context"
-	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
 	"time"
 
+	chi "github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 
 	"github.com/immerle/immerle/internal/core"
@@ -36,7 +36,7 @@ func TestLibraryStatsEndpoint(t *testing.T) {
 	}
 
 	h := NewHandler(Deps{Auth: auth, Users: store.Users, LibraryStats: stats, Logger: testutil.NewLogger()})
-	mux := http.NewServeMux()
+	mux := chi.NewRouter()
 	h.Register(mux)
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)

@@ -11,6 +11,7 @@ import (
 	"embed"
 	"net/http"
 
+	chi "github.com/go-chi/chi/v5"
 	httpSwagger "github.com/swaggo/http-swagger/v2"
 )
 
@@ -21,10 +22,10 @@ var specFS embed.FS
 //   - GET /openapi.json — the OpenAPI 3.1 document (JSON)
 //   - GET /openapi.yaml — the same document (YAML)
 //   - GET /swagger/      — Swagger UI (self-contained), reading /openapi.json
-func Register(mux *http.ServeMux) {
+func Register(mux chi.Router) {
 	mux.HandleFunc("/openapi.json", serveSpec("swagger.json", "application/json"))
 	mux.HandleFunc("/openapi.yaml", serveSpec("swagger.yaml", "application/yaml"))
-	mux.Handle("/swagger/", httpSwagger.Handler(httpSwagger.URL("/openapi.json")))
+	mux.Handle("/swagger/*", httpSwagger.Handler(httpSwagger.URL("/openapi.json")))
 }
 
 func serveSpec(name, contentType string) http.HandlerFunc {

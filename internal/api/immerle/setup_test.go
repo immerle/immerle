@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	chi "github.com/go-chi/chi/v5"
+
 	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/persistence"
 	"github.com/immerle/immerle/internal/testutil"
@@ -26,7 +28,7 @@ func newSetupEnv(t *testing.T, requireToken bool) (*httptest.Server, *core.Setup
 		Setup:  setupSvc,
 		Logger: testutil.NewLogger(),
 	})
-	mux := http.NewServeMux()
+	mux := chi.NewRouter()
 	h.Register(mux)
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)

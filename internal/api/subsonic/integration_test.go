@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	chi "github.com/go-chi/chi/v5"
+
 	"github.com/immerle/immerle/internal/config"
 	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/persistence"
@@ -81,7 +83,7 @@ func newTestEnv(t *testing.T) *testEnv {
 		Logger:           logger,
 		MusicFolderPaths: []string{lib},
 	})
-	mux := http.NewServeMux()
+	mux := chi.NewRouter()
 	h.Register(mux)
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)

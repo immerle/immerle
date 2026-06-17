@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"time"
 
+	chi "github.com/go-chi/chi/v5"
+
 	"github.com/immerle/immerle/internal/api/docs"
 	"github.com/immerle/immerle/internal/api/immerle"
 	"github.com/immerle/immerle/internal/api/subsonic"
@@ -342,9 +344,9 @@ func New(cfg config.Config) (*App, error) {
 		logger.Warn("initial library stats failed", "error", err)
 	}
 
-	mux := http.NewServeMux()
+	mux := chi.NewRouter()
 	mux.HandleFunc("/ping", healthHandler)
-	mux.HandleFunc("/share/", shareHandler(store.Shares, logger))
+	mux.HandleFunc("/share/*", shareHandler(store.Shares, logger))
 	subHandler.Register(mux)
 	gosHandler.Register(mux)
 	docs.Register(mux) // /openapi.json, /openapi.yaml, /swagger/

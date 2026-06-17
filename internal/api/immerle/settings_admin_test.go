@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 
+	chi "github.com/go-chi/chi/v5"
+
 	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/testutil"
 )
@@ -31,7 +33,7 @@ func newSettingsEnv(t *testing.T) *httptest.Server {
 		t.Fatal(err)
 	}
 	h := NewHandler(Deps{Auth: auth, Users: store.Users, Settings: settings, Logger: testutil.NewLogger()})
-	mux := http.NewServeMux()
+	mux := chi.NewRouter()
 	h.Register(mux)
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)

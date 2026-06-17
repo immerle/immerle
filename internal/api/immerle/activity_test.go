@@ -2,12 +2,12 @@ package immerle
 
 import (
 	"context"
-	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
 	"time"
 
+	chi "github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 
 	"github.com/immerle/immerle/internal/core"
@@ -42,7 +42,7 @@ func TestActivityFeedEnrichesItems(t *testing.T) {
 		Auth: auth, Users: store.Users, Friends: store.Friends,
 		Activity: activitySvc, Catalog: store.Catalog, Logger: testutil.NewLogger(),
 	})
-	mux := http.NewServeMux()
+	mux := chi.NewRouter()
 	h.Register(mux)
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
@@ -110,7 +110,7 @@ func TestProfileEndpoint(t *testing.T) {
 		Auth: auth, Users: store.Users, Friends: store.Friends,
 		Activity: activitySvc, Playlists: store.Playlists, Catalog: store.Catalog, Logger: testutil.NewLogger(),
 	})
-	mux := http.NewServeMux()
+	mux := chi.NewRouter()
 	h.Register(mux)
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)

@@ -7,6 +7,8 @@ import (
 	"net/url"
 	"testing"
 
+	chi "github.com/go-chi/chi/v5"
+
 	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/importer"
 	"github.com/immerle/immerle/internal/testutil"
@@ -26,7 +28,7 @@ func TestImportEndpointsFlow(t *testing.T) {
 	svc := importer.NewService(store.Imports, store.Playlists, nil, nil, cfg, testutil.NewLogger())
 
 	h := NewHandler(Deps{Auth: auth, Users: store.Users, Imports: svc, Logger: testutil.NewLogger()})
-	mux := http.NewServeMux()
+	mux := chi.NewRouter()
 	h.Register(mux)
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)

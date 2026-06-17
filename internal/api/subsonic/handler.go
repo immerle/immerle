@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 
+	chi "github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 
 	"github.com/immerle/immerle/internal/api/httputil"
@@ -58,7 +59,7 @@ type ctxKey int
 const userKey ctxKey = iota
 
 // Register mounts all Subsonic endpoints on mux under /rest/.
-func (h *Handler) Register(mux *http.ServeMux) {
+func (h *Handler) Register(mux chi.Router) {
 	endpoints := map[string]http.HandlerFunc{
 		"ping":                      h.handlePing,
 		"getLicense":                h.handleGetLicense,

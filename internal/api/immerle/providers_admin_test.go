@@ -8,6 +8,8 @@ import (
 	"net/url"
 	"testing"
 
+	chi "github.com/go-chi/chi/v5"
+
 	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/providers"
@@ -31,7 +33,7 @@ func newProvidersEnv(t *testing.T) *httptest.Server {
 	}
 	mgr := core.NewProviderManager(store.ProviderConfigs, reg, build, nil, testutil.NewLogger())
 	h := NewHandler(Deps{Auth: auth, Users: store.Users, Providers: mgr, Logger: testutil.NewLogger()})
-	mux := http.NewServeMux()
+	mux := chi.NewRouter()
 	h.Register(mux)
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
@@ -132,7 +134,7 @@ func TestProvidersBuiltinAndReorder(t *testing.T) {
 		t.Fatal(err)
 	}
 	h := NewHandler(Deps{Auth: auth, Users: store.Users, Providers: mgr, Logger: testutil.NewLogger()})
-	mux := http.NewServeMux()
+	mux := chi.NewRouter()
 	h.Register(mux)
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
@@ -187,7 +189,7 @@ func TestProvidersDisabledSubsystem(t *testing.T) {
 	auth, _ := core.NewAuthService(store.Users, store.APITokens, store.Devices, "secret")
 	_, _ = auth.CreateUser(ctx, "admin", "adminpw", "", "", true)
 	h := NewHandler(Deps{Auth: auth, Users: store.Users, Logger: testutil.NewLogger()})
-	mux := http.NewServeMux()
+	mux := chi.NewRouter()
 	h.Register(mux)
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
