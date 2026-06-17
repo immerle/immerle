@@ -7,9 +7,9 @@ import "encoding/xml"
 const APIVersion = "1.16.1"
 
 // ServerType identifies this implementation.
-const ServerType = "gossignol"
+const ServerType = "immerle"
 
-// ServerVersion is the gossignol server version.
+// ServerVersion is the immerle server version.
 const ServerVersion = "0.1.0"
 
 // Response is the root Subsonic response envelope.
@@ -213,7 +213,7 @@ type Playlist struct {
 	Created   string `xml:"created,attr,omitempty" json:"created,omitempty"`
 	Changed   string `xml:"changed,attr,omitempty" json:"changed,omitempty"`
 	CoverArt  string `xml:"coverArt,attr,omitempty" json:"coverArt,omitempty"`
-	// CoverArts is a gossignol extension: the cover-art ids of the first few
+	// CoverArts is a immerle extension: the cover-art ids of the first few
 	// tracks (up to 4) for a mosaic thumbnail.
 	CoverArts []string `xml:"coverArts,omitempty" json:"coverArts,omitempty"`
 	Entry     []Child  `xml:"entry" json:"entry,omitempty"`
@@ -228,7 +228,7 @@ type Users struct {
 type User struct {
 	Username string `xml:"username,attr" json:"username"`
 	Email    string `xml:"email,attr,omitempty" json:"email,omitempty"`
-	// DisplayName is a gossignol extension (not standard Subsonic): a free-text
+	// DisplayName is a immerle extension (not standard Subsonic): a free-text
 	// UI name. Always present (empty string when unset) so clients can read it
 	// directly and fall back to the username themselves.
 	DisplayName       string `xml:"displayName,attr" json:"displayName"`

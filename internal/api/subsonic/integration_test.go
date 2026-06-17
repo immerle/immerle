@@ -10,12 +10,12 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/gossignol/gossignol/internal/config"
-	"github.com/gossignol/gossignol/internal/core"
-	"github.com/gossignol/gossignol/internal/persistence"
-	"github.com/gossignol/gossignol/internal/scanner"
-	"github.com/gossignol/gossignol/internal/stream"
-	"github.com/gossignol/gossignol/internal/testutil"
+	"github.com/immerle/immerle/internal/config"
+	"github.com/immerle/immerle/internal/core"
+	"github.com/immerle/immerle/internal/persistence"
+	"github.com/immerle/immerle/internal/scanner"
+	"github.com/immerle/immerle/internal/stream"
+	"github.com/immerle/immerle/internal/testutil"
 )
 
 type testEnv struct {

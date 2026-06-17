@@ -1,11 +1,11 @@
-# gossignol-server
+# immerle-server
 
 A self-hosted music server that speaks the **Subsonic / OpenSubsonic** API for
 compatibility with existing clients (Supersonic, Symfonium, DSub, …) and adds
-native **gossignol** extensions for the social and on-demand features Subsonic
+native **immerle** extensions for the social and on-demand features Subsonic
 lacks: friends, an activity feed, collaborative playlists, synchronized *Jam*
 listening sessions, an on-demand catalog, and optional federation with a
-`gossignol-hub`.
+`immerle-hub`.
 
 Single Go binary, SQLite by default (Postgres optional), bootstrap-configured via
 environment / `.env`, with the rest managed at runtime through the admin API.
@@ -15,7 +15,7 @@ environment / `.env`, with the rest managed at runtime through the admin API.
 Layered, with clear boundaries:
 
 ```
-cmd/gossignol            entrypoint
+cmd/immerle            entrypoint
 internal/
   config                 bootstrap config (.env / environment)
   logging                structured logging (slog)
@@ -27,9 +27,9 @@ internal/
   providers              pluggable on-demand catalog providers (jamendo, internet-archive, http)
   core                   business services (auth, annotations, on-demand,
                          activity, jam, now-playing)
-  federation             gossignol-hub client
+  federation             immerle-hub client
   api/subsonic           Subsonic / OpenSubsonic handlers (XML + JSON)
-  api/gossignol          native gossignol extension handlers (JSON + SSE)
+  api/immerle          native immerle extension handlers (JSON + SSE)
   server                 HTTP server with graceful shutdown
   app                    wiring
 ```
@@ -52,7 +52,7 @@ curl -X POST http://localhost:4533/setup/init \
 ```bash
 make build
 cp .env.example .env   # edit as needed
-./bin/gossignol        # auto-loads .env (or pass -env path/to/.env)
+./bin/immerle        # auto-loads .env (or pass -env path/to/.env)
 ```
 
 Requirements: Go 1.25+, and `ffmpeg`/`ffprobe` on `PATH` for transcoding,
@@ -145,7 +145,7 @@ SQLite by default. For large instances:
 
 ```bash
 DATABASE_DRIVER=postgres
-DATABASE_DSN=postgres://gossignol:gossignol@localhost:5432/gossignol?sslmode=disable
+DATABASE_DSN=postgres://immerle:immerle@localhost:5432/immerle?sslmode=disable
 ```
 
 Migrations (goose, embedded) apply automatically at startup.
@@ -160,10 +160,10 @@ Migrations (goose, embedded) apply automatically at startup.
 | S3 | Streaming & transcoding: `stream` (Range/seek) + `download`, ffmpeg profiles by `maxBitRate`/`format`, transcode cache, no leaked ffmpeg processes |
 | S4 | Multi-user: accounts (admin/non-admin), per-user star/rating/playcount, `scrobble`, `getNowPlaying`, playlists CRUD, server `get/savePlayQueue` |
 | S5 | On-demand catalog: pluggable `Provider` interface, async `download_jobs` queue with resume, download→tag→file layout→scan ingest, hooks in `search3` and streaming, strict MBID/hash dedup |
-| S6 | gossignol social: `gossignol.capabilities` discovery, collaborative playlists, friends, activity feed with privacy, shares, Jam sessions (SSE) |
+| S6 | immerle social: `immerle.capabilities` discovery, collaborative playlists, friends, activity feed with privacy, shares, Jam sessions (SSE) |
 | S7 | Hub federation: opt-in registration, editorial/reco playlist sync, portable-id resolution (+ optional on-demand download), anonymized scrobble export, federated read-only playlists |
 
-## gossignol extension API
+## immerle extension API
 
 Capability discovery is unauthenticated so apps can detect support:
 
@@ -216,23 +216,23 @@ client, "deleting" a subscribed playlist simply **unsubscribes** (removes it fro
 your library) — the owner's playlist is untouched. `getPlaylists` returns your
 own + collaborative + subscribed + federated playlists.
 
-For a richer list UI, every playlist carries a **`coverArts`** array (gossignol
+For a richer list UI, every playlist carries a **`coverArts`** array (immerle
 extension) — the cover-art ids of its **first up-to-4 tracks**, in order, for a
 mosaic thumbnail (a track's cover falls back to its album when it has none). It
 is computed in a single set-based query per list (no per-playlist round-trip) and
-appears on Subsonic `getPlaylists`/`getPlaylist` as well as the gossignol
+appears on Subsonic `getPlaylists`/`getPlaylist` as well as the immerle
 `/playlists/public` and `/profile` playlist entries.
 
 ### Playlist import (Spotify, pluggable)
 
-Import a playlist from an external service into a new gossignol playlist. The
+Import a playlist from an external service into a new immerle playlist. The
 feature is **source-pluggable** (an `importer.Source` interface + factory
 registry, mirroring the content providers) — **Spotify** ships first; add a
 source by registering a factory, no engine changes.
 
 Three concepts are kept **distinct** so a dedicated imports UI can show progress:
 the **import job** (the operation + per-track status), the **source listing**
-(the playlist as it exists at Spotify), and the **gossignol playlist** that gets
+(the playlist as it exists at Spotify), and the **immerle playlist** that gets
 created. The import job carries the link to the created playlist plus running
 counters.
 
@@ -311,7 +311,7 @@ requests without their password:
 curl -X POST "http://host:4533/tokens/create?u=me&p=pw&c=app&name=my-cli"
 # → { "ok": true, "token": "gsk_…", "id": "…", "prefix": "gsk_…" }
 
-# use it — as a Bearer header or ?apiKey, on BOTH the Subsonic and gossignol APIs
+# use it — as a Bearer header or ?apiKey, on BOTH the Subsonic and immerle APIs
 curl -H "Authorization: Bearer gsk_…" "http://host:4533/rest/getArtists?c=app&f=json"
 curl "http://host:4533/rest/getArtists?c=app&f=json&apiKey=gsk_…"
 
@@ -346,7 +346,7 @@ Invalid colours are rejected with HTTP 400.
 
 ### OpenAPI / Swagger
 
-The native gossignol API is documented with an **OpenAPI 3.1** specification,
+The native immerle API is documented with an **OpenAPI 3.1** specification,
 generated from handler annotations with [swaggo/swag v2](https://github.com/swaggo/swag)
 and served by the binary:
 

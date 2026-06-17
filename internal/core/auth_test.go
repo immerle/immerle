@@ -7,7 +7,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/gossignol/gossignol/internal/testutil"
+	"github.com/immerle/immerle/internal/testutil"
 )
 
 func TestPasswordEncryptionRoundTrip(t *testing.T) {

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth/store';
-import { ServerSettings, TranscodeProfile } from '../api/gossignol/types';
-import { RuntimeSettingsDTO } from '../api/gossignolApi';
+import { ServerSettings, TranscodeProfile } from '../api/immerle/types';
+import { RuntimeSettingsDTO } from '../api/immerleApi';
 import { qk } from './keys';
 
 // --- Library stats & scan --------------------------------------------------

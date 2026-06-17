@@ -10,11 +10,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gossignol/gossignol/internal/models"
-	"github.com/gossignol/gossignol/internal/persistence"
-	"github.com/gossignol/gossignol/internal/providers"
-	"github.com/gossignol/gossignol/internal/scanner"
-	"github.com/gossignol/gossignol/internal/testutil"
+	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/persistence"
+	"github.com/immerle/immerle/internal/providers"
+	"github.com/immerle/immerle/internal/scanner"
+	"github.com/immerle/immerle/internal/testutil"
 )
 
 // fakeProvider is a minimal in-memory provider for merge tests.

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/gossignol/gossignol/internal/stream"
+	"github.com/immerle/immerle/internal/stream"
 )
 
 func (h *Handler) handleGetCoverArt(w http.ResponseWriter, r *http.Request) {

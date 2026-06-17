@@ -1,6 +1,6 @@
 components:
   schemas:
-    gossignol.APITokenDTO:
+    immerle.APITokenDTO:
       properties:
         createdAt:
           example: "2026-06-15T09:00:00Z"
@@ -18,7 +18,7 @@ components:
           example: gsk_AbC12
           type: string
       type: object
-    gossignol.AccountResponse:
+    immerle.AccountResponse:
       properties:
         ok:
           example: true
@@ -41,7 +41,7 @@ components:
               type: string
           type: object
       type: object
-    gossignol.ActivityEventDTO:
+    immerle.ActivityEventDTO:
       properties:
         createdAt:
           example: "2026-06-15T09:00:00Z"
@@ -52,7 +52,7 @@ components:
         id:
           type: string
         item:
-          $ref: '#/components/schemas/gossignol.ActivityItemDTO'
+          $ref: '#/components/schemas/immerle.ActivityItemDTO'
         itemId:
           type: string
         itemType:
@@ -70,7 +70,7 @@ components:
           example: bob
           type: string
       type: object
-    gossignol.ActivityItemDTO:
+    immerle.ActivityItemDTO:
       properties:
         album:
           example: Discovery
@@ -94,22 +94,22 @@ components:
           example: 2001
           type: integer
       type: object
-    gossignol.ActivityResponse:
+    immerle.ActivityResponse:
       properties:
         events:
           items:
-            $ref: '#/components/schemas/gossignol.ActivityEventDTO'
+            $ref: '#/components/schemas/immerle.ActivityEventDTO'
           type: array
           uniqueItems: false
         ok:
           example: true
           type: boolean
       type: object
-    gossignol.CapabilitiesResponse:
+    immerle.CapabilitiesResponse:
       properties:
         capabilities:
           additionalProperties:
-            $ref: '#/components/schemas/gossignol.CapabilityDTO'
+            $ref: '#/components/schemas/immerle.CapabilityDTO'
           type: object
         ok:
           example: true
@@ -118,16 +118,16 @@ components:
           example: 1.0.0
           type: string
         server:
-          example: gossignol
+          example: immerle
           type: string
       type: object
-    gossignol.CapabilityDTO:
+    immerle.CapabilityDTO:
       properties:
         version:
           example: 1
           type: integer
       type: object
-    gossignol.CleanupRunResponse:
+    immerle.CleanupRunResponse:
       properties:
         ok:
           example: true
@@ -136,7 +136,7 @@ components:
           example: 3
           type: integer
       type: object
-    gossignol.CleanupStatusResponse:
+    immerle.CleanupStatusResponse:
       properties:
         enabled:
           example: true
@@ -151,7 +151,7 @@ components:
           example: true
           type: boolean
       type: object
-    gossignol.CreateTokenResponse:
+    immerle.CreateTokenResponse:
       properties:
         id:
           type: string
@@ -168,7 +168,7 @@ components:
           example: gsk_AbC12...full-secret
           type: string
       type: object
-    gossignol.DeviceDTO:
+    immerle.DeviceDTO:
       properties:
         createdAt:
           type: string
@@ -186,18 +186,18 @@ components:
         userAgent:
           type: string
       type: object
-    gossignol.DevicesResponse:
+    immerle.DevicesResponse:
       properties:
         devices:
           items:
-            $ref: '#/components/schemas/gossignol.DeviceDTO'
+            $ref: '#/components/schemas/immerle.DeviceDTO'
           type: array
           uniqueItems: false
         ok:
           example: true
           type: boolean
       type: object
-    gossignol.ErrorResponse:
+    immerle.ErrorResponse:
       properties:
         error:
           example: already_initialized
@@ -206,7 +206,7 @@ components:
           example: false
           type: boolean
       type: object
-    gossignol.FieldErrorDTO:
+    immerle.FieldErrorDTO:
       properties:
         field:
           example: password
@@ -215,7 +215,7 @@ components:
           example: must be at least 8 characters
           type: string
       type: object
-    gossignol.FriendDTO:
+    immerle.FriendDTO:
       properties:
         displayName:
           example: Bob Marley
@@ -226,18 +226,18 @@ components:
           example: bob
           type: string
       type: object
-    gossignol.FriendsResponse:
+    immerle.FriendsResponse:
       properties:
         friends:
           items:
-            $ref: '#/components/schemas/gossignol.FriendDTO'
+            $ref: '#/components/schemas/immerle.FriendDTO'
           type: array
           uniqueItems: false
         ok:
           example: true
           type: boolean
       type: object
-    gossignol.ImportDTO:
+    immerle.ImportDTO:
       properties:
         doubtful:
           example: 2
@@ -251,7 +251,7 @@ components:
           type: string
         items:
           items:
-            $ref: '#/components/schemas/gossignol.ImportItemDTO'
+            $ref: '#/components/schemas/immerle.ImportItemDTO'
           type: array
           uniqueItems: false
         matched:
@@ -276,7 +276,7 @@ components:
           example: 42
           type: integer
       type: object
-    gossignol.ImportItemDTO:
+    immerle.ImportItemDTO:
       properties:
         candidateCoverArt:
           type: string
@@ -312,23 +312,23 @@ components:
           example: matched
           type: string
       type: object
-    gossignol.ImportItemResponse:
+    immerle.ImportItemResponse:
       properties:
         item:
-          $ref: '#/components/schemas/gossignol.ImportItemDTO'
+          $ref: '#/components/schemas/immerle.ImportItemDTO'
         ok:
           example: true
           type: boolean
       type: object
-    gossignol.ImportResponse:
+    immerle.ImportResponse:
       properties:
         import:
-          $ref: '#/components/schemas/gossignol.ImportDTO'
+          $ref: '#/components/schemas/immerle.ImportDTO'
         ok:
           example: true
           type: boolean
       type: object
-    gossignol.ImportSourceDTO:
+    immerle.ImportSourceDTO:
       properties:
         configured:
           example: true
@@ -337,29 +337,29 @@ components:
           example: spotify
           type: string
       type: object
-    gossignol.ImportSourcesResponse:
+    immerle.ImportSourcesResponse:
       properties:
         ok:
           example: true
           type: boolean
         sources:
           items:
-            $ref: '#/components/schemas/gossignol.ImportSourceDTO'
+            $ref: '#/components/schemas/immerle.ImportSourceDTO'
           type: array
           uniqueItems: false
       type: object
-    gossignol.ImportsResponse:
+    immerle.ImportsResponse:
       properties:
         imports:
           items:
-            $ref: '#/components/schemas/gossignol.ImportDTO'
+            $ref: '#/components/schemas/immerle.ImportDTO'
           type: array
           uniqueItems: false
         ok:
           example: true
           type: boolean
       type: object
-    gossignol.JamParticipantDTO:
+    immerle.JamParticipantDTO:
       properties:
         joinedAt:
           example: "2026-06-15T09:00:00Z"
@@ -372,20 +372,20 @@ components:
           example: bob
           type: string
       type: object
-    gossignol.JamResponse:
+    immerle.JamResponse:
       properties:
         ok:
           example: true
           type: boolean
         participants:
           items:
-            $ref: '#/components/schemas/gossignol.JamParticipantDTO'
+            $ref: '#/components/schemas/immerle.JamParticipantDTO'
           type: array
           uniqueItems: false
         session:
-          $ref: '#/components/schemas/gossignol.JamSessionDTO'
+          $ref: '#/components/schemas/immerle.JamSessionDTO'
       type: object
-    gossignol.JamSessionDTO:
+    immerle.JamSessionDTO:
       properties:
         currentTrackId:
           type: string
@@ -408,7 +408,7 @@ components:
           type: array
           uniqueItems: false
       type: object
-    gossignol.LibraryStatsDTO:
+    immerle.LibraryStatsDTO:
       properties:
         albums:
           example: 128
@@ -429,18 +429,18 @@ components:
           example: "2026-06-17T09:00:00Z"
           type: string
       type: object
-    gossignol.LibraryStatsResponse:
+    immerle.LibraryStatsResponse:
       properties:
         ok:
           example: true
           type: boolean
         stats:
-          $ref: '#/components/schemas/gossignol.LibraryStatsDTO'
+          $ref: '#/components/schemas/immerle.LibraryStatsDTO'
       type: object
-    gossignol.LoginResponse:
+    immerle.LoginResponse:
       properties:
         device:
-          $ref: '#/components/schemas/gossignol.DeviceDTO'
+          $ref: '#/components/schemas/immerle.DeviceDTO'
         ok:
           example: true
           type: boolean
@@ -448,13 +448,13 @@ components:
           example: eyJhbGciOiJIUzI1Ni␣...
           type: string
       type: object
-    gossignol.OKResponse:
+    immerle.OKResponse:
       properties:
         ok:
           example: true
           type: boolean
       type: object
-    gossignol.PendingFriendDTO:
+    immerle.PendingFriendDTO:
       properties:
         displayName:
           example: Alice Coltrane
@@ -468,18 +468,18 @@ components:
           example: alice
           type: string
       type: object
-    gossignol.PendingFriendsResponse:
+    immerle.PendingFriendsResponse:
       properties:
         ok:
           example: true
           type: boolean
         pending:
           items:
-            $ref: '#/components/schemas/gossignol.PendingFriendDTO'
+            $ref: '#/components/schemas/immerle.PendingFriendDTO'
           type: array
           uniqueItems: false
       type: object
-    gossignol.ProfilePlaylistDTO:
+    immerle.ProfilePlaylistDTO:
       properties:
         comment:
           type: string
@@ -500,11 +500,11 @@ components:
           example: 24
           type: integer
       type: object
-    gossignol.ProfileResponse:
+    immerle.ProfileResponse:
       properties:
         activity:
           items:
-            $ref: '#/components/schemas/gossignol.ActivityEventDTO'
+            $ref: '#/components/schemas/immerle.ActivityEventDTO'
           type: array
           uniqueItems: false
         isFriend:
@@ -518,7 +518,7 @@ components:
           type: boolean
         playlists:
           items:
-            $ref: '#/components/schemas/gossignol.ProfilePlaylistDTO'
+            $ref: '#/components/schemas/immerle.ProfilePlaylistDTO'
           type: array
           uniqueItems: false
         user:
@@ -536,7 +536,7 @@ components:
               type: string
           type: object
       type: object
-    gossignol.ProviderDTO:
+    immerle.ProviderDTO:
       properties:
         active:
           example: true
@@ -566,26 +566,26 @@ components:
           example: 3
           type: integer
       type: object
-    gossignol.ProviderResponse:
+    immerle.ProviderResponse:
       properties:
         ok:
           example: true
           type: boolean
         provider:
-          $ref: '#/components/schemas/gossignol.ProviderDTO'
+          $ref: '#/components/schemas/immerle.ProviderDTO'
       type: object
-    gossignol.ProvidersResponse:
+    immerle.ProvidersResponse:
       properties:
         ok:
           example: true
           type: boolean
         providers:
           items:
-            $ref: '#/components/schemas/gossignol.ProviderDTO'
+            $ref: '#/components/schemas/immerle.ProviderDTO'
           type: array
           uniqueItems: false
       type: object
-    gossignol.PublicPlaylistDTO:
+    immerle.PublicPlaylistDTO:
       properties:
         comment:
           type: string
@@ -609,18 +609,18 @@ components:
         subscribed:
           type: boolean
       type: object
-    gossignol.PublicPlaylistsResponse:
+    immerle.PublicPlaylistsResponse:
       properties:
         ok:
           example: true
           type: boolean
         playlists:
           items:
-            $ref: '#/components/schemas/gossignol.PublicPlaylistDTO'
+            $ref: '#/components/schemas/immerle.PublicPlaylistDTO'
           type: array
           uniqueItems: false
       type: object
-    gossignol.RuntimeSettingsDTO:
+    immerle.RuntimeSettingsDTO:
       properties:
         auth:
           properties:
@@ -714,7 +714,7 @@ components:
               uniqueItems: false
           type: object
       type: object
-    gossignol.SettingsResponse:
+    immerle.SettingsResponse:
       properties:
         ok:
           example: true
@@ -728,9 +728,9 @@ components:
           example: false
           type: boolean
         settings:
-          $ref: '#/components/schemas/gossignol.RuntimeSettingsDTO'
+          $ref: '#/components/schemas/immerle.RuntimeSettingsDTO'
       type: object
-    gossignol.SetupInitRequest:
+    immerle.SetupInitRequest:
       properties:
         displayName:
           description: |-
@@ -753,15 +753,15 @@ components:
           example: kilian
           type: string
       type: object
-    gossignol.SetupInitResponse:
+    immerle.SetupInitResponse:
       properties:
         ok:
           example: true
           type: boolean
         user:
-          $ref: '#/components/schemas/gossignol.UserDTO'
+          $ref: '#/components/schemas/immerle.UserDTO'
       type: object
-    gossignol.SetupStatusResponse:
+    immerle.SetupStatusResponse:
       properties:
         initialized:
           example: false
@@ -779,32 +779,32 @@ components:
           example: 0
           type: integer
       type: object
-    gossignol.ThemeDTO:
+    immerle.ThemeDTO:
       properties:
         accentColor:
           example: '#3b82f6'
           type: string
       type: object
-    gossignol.ThemeResponse:
+    immerle.ThemeResponse:
       properties:
         ok:
           example: true
           type: boolean
         theme:
-          $ref: '#/components/schemas/gossignol.ThemeDTO'
+          $ref: '#/components/schemas/immerle.ThemeDTO'
       type: object
-    gossignol.TokensResponse:
+    immerle.TokensResponse:
       properties:
         ok:
           example: true
           type: boolean
         tokens:
           items:
-            $ref: '#/components/schemas/gossignol.APITokenDTO'
+            $ref: '#/components/schemas/immerle.APITokenDTO'
           type: array
           uniqueItems: false
       type: object
-    gossignol.UserDTO:
+    immerle.UserDTO:
       properties:
         displayName:
           example: Kilian Smiti
@@ -818,11 +818,11 @@ components:
           example: kilian
           type: string
       type: object
-    gossignol.ValidationErrorResponse:
+    immerle.ValidationErrorResponse:
       properties:
         details:
           items:
-            $ref: '#/components/schemas/gossignol.FieldErrorDTO'
+            $ref: '#/components/schemas/immerle.FieldErrorDTO'
           type: array
           uniqueItems: false
         error:
@@ -837,9 +837,9 @@ externalDocs:
   url: ""
 info:
   contact:
-    name: gossignol
+    name: immerle
   description: |-
-    Native gossignol endpoints (first-run setup, capability
+    Native immerle endpoints (first-run setup, capability
     discovery, friends, activity feed, collaborative playlists and
     synchronized Jam sessions) that complement the Subsonic /
     OpenSubsonic API served under /rest/.
@@ -850,7 +850,7 @@ info:
     name). Setup and capability endpoints are unauthenticated.
   license:
     name: See repository
-  title: gossignol extension API
+  title: immerle extension API
   version: 1.0.0
 openapi: 3.1.0
 paths:
@@ -892,13 +892,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.AccountResponse'
+                $ref: '#/components/schemas/immerle.AccountResponse'
           description: OK
         "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: Bad Request
       summary: Get or update your account
       tags:
@@ -940,13 +940,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.AccountResponse'
+                $ref: '#/components/schemas/immerle.AccountResponse'
           description: OK
         "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: Bad Request
       summary: Get or update your account
       tags:
@@ -978,7 +978,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ActivityResponse'
+                $ref: '#/components/schemas/immerle.ActivityResponse'
           description: OK
       summary: Activity feed
       tags:
@@ -1015,13 +1015,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.CleanupStatusResponse'
+                $ref: '#/components/schemas/immerle.CleanupStatusResponse'
           description: OK
         "403":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: Forbidden
       summary: Get or toggle the cleanup sweep
       tags:
@@ -1057,13 +1057,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.CleanupStatusResponse'
+                $ref: '#/components/schemas/immerle.CleanupStatusResponse'
           description: OK
         "403":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: Forbidden
       summary: Get or toggle the cleanup sweep
       tags:
@@ -1096,13 +1096,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.CleanupRunResponse'
+                $ref: '#/components/schemas/immerle.CleanupRunResponse'
           description: OK
         "403":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: Forbidden
       summary: Run the cleanup sweep now
       tags:
@@ -1161,19 +1161,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ProvidersResponse'
+                $ref: '#/components/schemas/immerle.ProvidersResponse'
           description: OK
         "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: Bad Request
         "403":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: Forbidden
       summary: List or upsert on-demand providers
       tags:
@@ -1231,19 +1231,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ProvidersResponse'
+                $ref: '#/components/schemas/immerle.ProvidersResponse'
           description: OK
         "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: Bad Request
         "403":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: Forbidden
       summary: List or upsert on-demand providers
       tags:
@@ -1280,13 +1280,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.OKResponse'
+                $ref: '#/components/schemas/immerle.OKResponse'
           description: OK
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: Not Found
       summary: Delete a provider
       tags:
@@ -1330,19 +1330,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ProviderResponse'
+                $ref: '#/components/schemas/immerle.ProviderResponse'
           description: OK
         "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: Bad Request
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: Not Found
       summary: Enable or disable a provider
       tags:
@@ -1382,13 +1382,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ProvidersResponse'
+                $ref: '#/components/schemas/immerle.ProvidersResponse'
           description: OK
         "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: Bad Request
       summary: Reorder providers
       tags:
@@ -1427,7 +1427,7 @@ paths:
             schema:
               oneOf:
               - type: object
-              - $ref: '#/components/schemas/gossignol.RuntimeSettingsDTO'
+              - $ref: '#/components/schemas/immerle.RuntimeSettingsDTO'
                 description: 'POST: settings fields to change (partial)'
                 summary: body
         description: 'POST: settings fields to change (partial)'
@@ -1436,19 +1436,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.SettingsResponse'
+                $ref: '#/components/schemas/immerle.SettingsResponse'
           description: OK
         "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: Bad Request
         "403":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: Forbidden
       summary: Get or update runtime settings
       tags:
@@ -1486,7 +1486,7 @@ paths:
             schema:
               oneOf:
               - type: object
-              - $ref: '#/components/schemas/gossignol.RuntimeSettingsDTO'
+              - $ref: '#/components/schemas/immerle.RuntimeSettingsDTO'
                 description: 'POST: settings fields to change (partial)'
                 summary: body
         description: 'POST: settings fields to change (partial)'
@@ -1495,19 +1495,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.SettingsResponse'
+                $ref: '#/components/schemas/immerle.SettingsResponse'
           description: OK
         "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: Bad Request
         "403":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: Forbidden
       summary: Get or update runtime settings
       tags:
@@ -1555,27 +1555,27 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.LoginResponse'
+                $ref: '#/components/schemas/immerle.LoginResponse'
           description: OK
         "401":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: Unauthorized
       summary: Log in a device (issue a JWT)
       tags:
       - devices
   /capabilities:
     get:
-      description: Unauthenticated. Lets clients detect supported gossignol extensions
+      description: Unauthenticated. Lets clients detect supported immerle extensions
         and whether first-run setup is still needed.
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.CapabilitiesResponse'
+                $ref: '#/components/schemas/immerle.CapabilitiesResponse'
           description: OK
       summary: Capability discovery
       tags:
@@ -1607,7 +1607,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.DevicesResponse'
+                $ref: '#/components/schemas/immerle.DevicesResponse'
           description: OK
       summary: List devices
       tags:
@@ -1645,13 +1645,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.OKResponse'
+                $ref: '#/components/schemas/immerle.OKResponse'
           description: OK
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: Not Found
       summary: Revoke a device
       tags:
@@ -1682,13 +1682,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.FriendsResponse'
+                $ref: '#/components/schemas/immerle.FriendsResponse'
           description: OK
         "401":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: Unauthorized
       summary: List friends
       tags:
@@ -1724,13 +1724,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.OKResponse'
+                $ref: '#/components/schemas/immerle.OKResponse'
           description: OK
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: Not Found
       summary: Accept a friend request
       tags:
@@ -1760,7 +1760,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.PendingFriendsResponse'
+                $ref: '#/components/schemas/immerle.PendingFriendsResponse'
           description: OK
       summary: List pending friend requests
       tags:
@@ -1796,19 +1796,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.OKResponse'
+                $ref: '#/components/schemas/immerle.OKResponse'
           description: OK
         "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: Bad Request
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: Not Found
       summary: Send a friend request
       tags:
@@ -1840,7 +1840,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ImportsResponse'
+                $ref: '#/components/schemas/immerle.ImportsResponse'
           description: OK
       summary: List imports
       tags:
@@ -1886,19 +1886,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ImportItemResponse'
+                $ref: '#/components/schemas/immerle.ImportItemResponse'
           description: OK
         "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: Bad Request
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: Not Found
       summary: Validate or modify an import item
       tags:
@@ -1930,7 +1930,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ImportSourcesResponse'
+                $ref: '#/components/schemas/immerle.ImportSourcesResponse'
           description: OK
       summary: List import sources
       tags:
@@ -1939,7 +1939,7 @@ paths:
     post:
       description: Queues an import of an external playlist (by source + reference).
         Returns the import job; poll /imports/status for progress. The import creates
-        a new gossignol playlist and resolves each source track against the on-demand
+        a new immerle playlist and resolves each source track against the on-demand
         content providers.
       parameters:
       - description: Subsonic username
@@ -1976,13 +1976,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ImportResponse'
+                $ref: '#/components/schemas/immerle.ImportResponse'
           description: OK
         "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: Bad Request
       summary: Start a playlist import
       tags:
@@ -2020,13 +2020,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ImportResponse'
+                $ref: '#/components/schemas/immerle.ImportResponse'
           description: OK
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: Not Found
       summary: Import status
       tags:
@@ -2067,7 +2067,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.JamResponse'
+                $ref: '#/components/schemas/immerle.JamResponse'
           description: OK
       summary: Create a Jam session
       tags:
@@ -2111,7 +2111,7 @@ paths:
           content:
             text/event-stream:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: Not Found
       summary: Stream Jam events (SSE)
       tags:
@@ -2147,13 +2147,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.JamResponse'
+                $ref: '#/components/schemas/immerle.JamResponse'
           description: OK
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: Not Found
       summary: Join a Jam session
       tags:
@@ -2189,7 +2189,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.OKResponse'
+                $ref: '#/components/schemas/immerle.OKResponse'
           description: OK
       summary: Leave a Jam session
       tags:
@@ -2225,13 +2225,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.JamResponse'
+                $ref: '#/components/schemas/immerle.JamResponse'
           description: OK
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: Not Found
       summary: Get Jam session state
       tags:
@@ -2289,19 +2289,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.JamResponse'
+                $ref: '#/components/schemas/immerle.JamResponse'
           description: OK
         "403":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: Forbidden
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: Not Found
       summary: Update Jam playback (host only)
       tags:
@@ -2334,7 +2334,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.LibraryStatsResponse'
+                $ref: '#/components/schemas/immerle.LibraryStatsResponse'
           description: OK
       summary: Library analytics
       tags:
@@ -2378,19 +2378,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.OKResponse'
+                $ref: '#/components/schemas/immerle.OKResponse'
           description: OK
         "403":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: Forbidden
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: Not Found
       summary: Add a playlist collaborator
       tags:
@@ -2422,7 +2422,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.PublicPlaylistsResponse'
+                $ref: '#/components/schemas/immerle.PublicPlaylistsResponse'
           description: OK
       summary: Browse public playlists
       tags:
@@ -2460,19 +2460,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.OKResponse'
+                $ref: '#/components/schemas/immerle.OKResponse'
           description: OK
         "403":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: Forbidden
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: Not Found
       summary: Subscribe to a public playlist
       tags:
@@ -2508,7 +2508,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.OKResponse'
+                $ref: '#/components/schemas/immerle.OKResponse'
           description: OK
       summary: Unsubscribe from a playlist
       tags:
@@ -2546,13 +2546,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ProfileResponse'
+                $ref: '#/components/schemas/immerle.ProfileResponse'
           description: OK
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: Not Found
       summary: User profile
       tags:
@@ -2568,7 +2568,7 @@ paths:
             schema:
               oneOf:
               - type: object
-              - $ref: '#/components/schemas/gossignol.SetupInitRequest'
+              - $ref: '#/components/schemas/immerle.SetupInitRequest'
                 description: Initial admin credentials
                 summary: body
         description: Initial admin credentials
@@ -2578,25 +2578,25 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.SetupInitResponse'
+                $ref: '#/components/schemas/immerle.SetupInitResponse'
           description: Created
         "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ValidationErrorResponse'
+                $ref: '#/components/schemas/immerle.ValidationErrorResponse'
           description: validation
         "401":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: invalid_setup_token
         "409":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: already_initialized
       summary: Create the first administrator
       tags:
@@ -2610,7 +2610,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.SetupStatusResponse'
+                $ref: '#/components/schemas/immerle.SetupStatusResponse'
           description: OK
       summary: First-run setup status
       tags:
@@ -2649,13 +2649,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ThemeResponse'
+                $ref: '#/components/schemas/immerle.ThemeResponse'
           description: OK
         "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: Bad Request
       summary: Get or update the UI theme
       tags:
@@ -2693,13 +2693,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ThemeResponse'
+                $ref: '#/components/schemas/immerle.ThemeResponse'
           description: OK
         "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: Bad Request
       summary: Get or update the UI theme
       tags:
@@ -2730,7 +2730,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.TokensResponse'
+                $ref: '#/components/schemas/immerle.TokensResponse'
           description: OK
       summary: List API tokens
       tags:
@@ -2773,7 +2773,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.CreateTokenResponse'
+                $ref: '#/components/schemas/immerle.CreateTokenResponse'
           description: Created
       summary: Create an API token
       tags:
@@ -2809,13 +2809,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.OKResponse'
+                $ref: '#/components/schemas/immerle.OKResponse'
           description: OK
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/gossignol.ErrorResponse'
+                $ref: '#/components/schemas/immerle.ErrorResponse'
           description: Not Found
       summary: Revoke an API token
       tags:

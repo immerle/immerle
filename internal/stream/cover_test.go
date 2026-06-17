@@ -12,8 +12,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/gossignol/gossignol/internal/models"
-	"github.com/gossignol/gossignol/internal/testutil"
+	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/testutil"
 )
 
 func jpegBytes(t *testing.T) []byte {

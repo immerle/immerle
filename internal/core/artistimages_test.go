@@ -11,8 +11,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/gossignol/gossignol/internal/models"
-	"github.com/gossignol/gossignol/internal/testutil"
+	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/testutil"
 )
 
 // tinyPNG is a minimal valid PNG (1x1) so looksLikeImage accepts it.

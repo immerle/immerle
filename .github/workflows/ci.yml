@@ -28,7 +28,7 @@ jobs:
       - name: Verify OpenAPI spec is up to date
         run: |
           go run github.com/swaggo/swag/v2/cmd/swag@v2.0.0-rc5 init \
-            -g doc.go -d internal/api/gossignol -o internal/api/docs \
+            -g doc.go -d internal/api/immerle -o internal/api/docs \
             --ot json,yaml --parseInternal --v3.1
           git diff --exit-code internal/api/docs
 
@@ -39,7 +39,7 @@ jobs:
         run: go test -race ./...
 
       - name: Build
-        run: CGO_ENABLED=0 go build -o bin/gossignol ./cmd/gossignol
+        run: CGO_ENABLED=0 go build -o bin/immerle ./cmd/immerle
 
   lint:
     runs-on: ubuntu-latest

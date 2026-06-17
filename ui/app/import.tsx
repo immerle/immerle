@@ -7,7 +7,7 @@ import { Badge, Button, Card, EmptyState, Field, Loading, SectionHeader } from '
 import { AdminHeader, AdminScroll, CardTitle } from '../src/components/AdminUI';
 import { PlaylistMosaic } from '../src/components/PlaylistMosaic';
 import { Ionicon } from '../src/components/Ionicon';
-import { ImportDTO } from '../src/api/gossignolApi';
+import { ImportDTO } from '../src/api/immerleApi';
 
 const SOURCE_LABELS: Record<string, string> = { spotify: 'Spotify' };
 const label = (s?: string) => (s ? SOURCE_LABELS[s] ?? s : '');

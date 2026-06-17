@@ -36,4 +36,4 @@ formatters:
   settings:
     goimports:
       local-prefixes:
-        - github.com/gossignol/gossignol
+        - github.com/immerle/immerle

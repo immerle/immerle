@@ -1,4 +1,4 @@
-module github.com/gossignol/gossignol
+module github.com/immerle/immerle
 
 go 1.25.7
 

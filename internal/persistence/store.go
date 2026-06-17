@@ -7,7 +7,7 @@ import (
 	"database/sql"
 	"errors"
 
-	"github.com/gossignol/gossignol/internal/db"
+	"github.com/immerle/immerle/internal/db"
 )
 
 // ErrNotFound is returned when a lookup matches no row.

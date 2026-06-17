@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gossignol/gossignol/internal/models"
-	"github.com/gossignol/gossignol/internal/persistence"
+	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/persistence"
 )
 
 // LibraryStatsService keeps an in-memory snapshot of the library analytics

@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Gossignol",
-    "slug": "gossignol-app",
+    "name": "Immerle",
+    "slug": "immerle-app",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": "gossignol",
+    "scheme": "immerle",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -18,7 +18,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.gossignol.app",
+      "bundleIdentifier": "com.immerle.app",
       "infoPlist": {
         "UIBackgroundModes": [
           "audio"
@@ -26,7 +26,7 @@
       }
     },
     "android": {
-      "package": "com.gossignol.app",
+      "package": "com.immerle.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#121212"

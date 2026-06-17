@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gossignol/gossignol/internal/persistence"
+	"github.com/immerle/immerle/internal/persistence"
 )
 
 // statusRecorder captures the response status for access logging.

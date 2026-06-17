@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/gossignol/gossignol/internal/core"
-	"github.com/gossignol/gossignol/internal/models"
+	"github.com/immerle/immerle/internal/core"
+	"github.com/immerle/immerle/internal/models"
 )
 
 func (h *Handler) handleStar(w http.ResponseWriter, r *http.Request) {

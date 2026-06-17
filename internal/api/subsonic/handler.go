@@ -12,11 +12,11 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/gossignol/gossignol/internal/core"
-	"github.com/gossignol/gossignol/internal/models"
-	"github.com/gossignol/gossignol/internal/persistence"
-	"github.com/gossignol/gossignol/internal/scanner"
-	"github.com/gossignol/gossignol/internal/stream"
+	"github.com/immerle/immerle/internal/core"
+	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/persistence"
+	"github.com/immerle/immerle/internal/scanner"
+	"github.com/immerle/immerle/internal/stream"
 )
 
 // Deps holds the dependencies of the Subsonic handler. Optional fields (OnDemand)

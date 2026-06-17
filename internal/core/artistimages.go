@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/gossignol/gossignol/internal/persistence"
+	"github.com/immerle/immerle/internal/persistence"
 )
 
 // ArtistImageLookup resolves an artist's avatar URL. Artist images come from the

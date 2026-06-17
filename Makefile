@@ -1,5 +1,5 @@
-BINARY      := gossignol
-PKG         := ./cmd/gossignol
+BINARY      := immerle
+PKG         := ./cmd/immerle
 BIN_DIR     := bin
 VERSION     ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 LDFLAGS     := -s -w -X main.version=$(VERSION)
@@ -49,7 +49,7 @@ clean:
 
 ## openapi: regenerate the OpenAPI 3.1 spec from handler annotations (swaggo/swag v2)
 openapi:
-	$(SWAG) init -g doc.go -d internal/api/gossignol -o internal/api/docs --ot json,yaml --parseInternal --v3.1
+	$(SWAG) init -g doc.go -d internal/api/immerle -o internal/api/docs --ot json,yaml --parseInternal --v3.1
 
 ## openapi-check: fail if the committed spec is out of date
 openapi-check: openapi
@@ -60,7 +60,7 @@ ci: tidy vet lint test build openapi-check
 
 ## docker: build the docker image
 docker:
-	docker build -t gossignol/gossignol:$(VERSION) .
+	docker build -t immerle/immerle:$(VERSION) .
 
 ## docker-up: start the stack with docker compose
 docker-up:

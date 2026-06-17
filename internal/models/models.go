@@ -1,4 +1,4 @@
-// Package models defines the domain entities persisted by gossignol-server.
+// Package models defines the domain entities persisted by immerle-server.
 package models
 
 import "time"
@@ -460,7 +460,7 @@ const (
 )
 
 // Import is a playlist-import job. It pulls a playlist from an external source
-// (e.g. Spotify), creates a gossignol playlist, then resolves each source track
+// (e.g. Spotify), creates a immerle playlist, then resolves each source track
 // against the on-demand content providers. It is deliberately distinct from both
 // the source listing and the created playlist so an "imports" page can track
 // progress independently.
@@ -473,7 +473,7 @@ type Import struct {
 	SourceRef string `json:"sourceRef"`
 	// SourcePlaylistName is the playlist name as seen at the source.
 	SourcePlaylistName string `json:"sourcePlaylistName,omitempty"`
-	// PlaylistID is the gossignol playlist created for this import.
+	// PlaylistID is the immerle playlist created for this import.
 	PlaylistID string       `json:"playlistId,omitempty"`
 	Status     ImportStatus `json:"status"`
 	Total      int          `json:"total"`

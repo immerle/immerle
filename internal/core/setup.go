@@ -11,8 +11,8 @@ import (
 	"regexp"
 	"unicode/utf8"
 
-	"github.com/gossignol/gossignol/internal/models"
-	"github.com/gossignol/gossignol/internal/persistence"
+	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/persistence"
 )
 
 // ErrInvalidSetupToken is returned when the setup token is missing or wrong.

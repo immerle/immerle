@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gossignol/gossignol/internal/testutil"
+	"github.com/immerle/immerle/internal/testutil"
 )
 
 func TestAPITokenCreateAuthenticateRevoke(t *testing.T) {

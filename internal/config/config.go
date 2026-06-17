@@ -1,4 +1,4 @@
-// Package config loads gossignol-server BOOTSTRAP configuration from the
+// Package config loads immerle-server BOOTSTRAP configuration from the
 // environment (and an optional .env file): the few settings that must be known
 // before anything starts and need a restart to change — server port, database,
 // the optional auth secret, the setup-token gate, logging and library paths.
@@ -85,7 +85,7 @@ type TranscodeProfile struct {
 	FFmpegArgs string
 }
 
-// FederationConfig configures the optional gossignol-hub connection. It is no
+// FederationConfig configures the optional immerle-hub connection. It is no
 // longer part of the bootstrap Config (it is a runtime setting); the type is
 // kept because the federation service consumes it — app builds it from the
 // runtime settings.
@@ -107,7 +107,7 @@ func Default() Config {
 		Auth:   AuthConfig{Secret: "", RequireSetupToken: false},
 		Database: DatabaseConfig{
 			Driver:          "sqlite",
-			DSN:             "gossignol.db",
+			DSN:             "immerle.db",
 			MaxOpenConns:    1,
 			MaxIdleConns:    1,
 			ConnMaxLifetime: 0,

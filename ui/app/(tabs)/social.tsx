@@ -15,7 +15,7 @@ import { useJam } from '../../src/jam/store';
 import { Badge, Button, Card, EmptyState, Field, Loading, SectionHeader } from '../../src/components/ui';
 import { Ionicon } from '../../src/components/Ionicon';
 import { CoverArt } from '../../src/components/CoverArt';
-import { ActivityEventDTO } from '../../src/api/gossignolApi';
+import { ActivityEventDTO } from '../../src/api/immerleApi';
 import { useColors } from '../../src/theme/colors';
 import { formatRelativeTime } from '../../src/utils/format';
 

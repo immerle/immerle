@@ -3,7 +3,7 @@ package subsonic
 import (
 	"time"
 
-	"github.com/gossignol/gossignol/internal/models"
+	"github.com/immerle/immerle/internal/models"
 )
 
 func formatTime(t time.Time) string {

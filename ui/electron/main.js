@@ -100,7 +100,7 @@ async function createWindow() {
     height: 820,
     minWidth: 900,
     minHeight: 600,
-    title: 'Gossignol',
+    title: 'Immerle',
     backgroundColor: '#121212',
     show: false,
     icon: path.join(__dirname, '..', 'assets', 'icon.png'),

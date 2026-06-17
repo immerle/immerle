@@ -3,8 +3,8 @@ package subsonic
 import (
 	"net/http"
 
-	"github.com/gossignol/gossignol/internal/core"
-	"github.com/gossignol/gossignol/internal/models"
+	"github.com/immerle/immerle/internal/core"
+	"github.com/immerle/immerle/internal/models"
 )
 
 func toUser(u models.User) User {

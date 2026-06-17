@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gossignol/gossignol/internal/providers"
+	"github.com/immerle/immerle/internal/providers"
 )
 
 // A generic HTTP provider advertises every browse capability (it degrades to

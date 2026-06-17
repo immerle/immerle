@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const RECENTS_KEY = 'gossignol.searchRecents.v1';
+const RECENTS_KEY = 'immerle.searchRecents.v1';
 const MAX_RECENTS = 8;
 
 /**

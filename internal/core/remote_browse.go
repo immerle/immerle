@@ -5,8 +5,8 @@ import (
 	"encoding/base64"
 	"strings"
 
-	"github.com/gossignol/gossignol/internal/models"
-	"github.com/gossignol/gossignol/internal/providers"
+	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/providers"
 )
 
 // Remote browse id prefixes. Remote artists/albums surfaced in search are not in

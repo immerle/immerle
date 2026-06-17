@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gossignol/gossignol/internal/providers"
+	"github.com/immerle/immerle/internal/providers"
 )
 
 // searchProvider returns the single provider used for remote search: the first

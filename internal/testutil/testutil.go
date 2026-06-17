@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gossignol/gossignol/internal/db"
-	"github.com/gossignol/gossignol/internal/persistence"
+	"github.com/immerle/immerle/internal/db"
+	"github.com/immerle/immerle/internal/persistence"
 )
 
 // NewLogger returns a warn-level logger for tests.

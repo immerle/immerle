@@ -41,7 +41,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.AccountResponse"];
+                        "application/json": components["schemas"]["immerle.AccountResponse"];
                     };
                 };
                 /** @description Bad Request */
@@ -50,7 +50,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
             };
@@ -86,7 +86,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.AccountResponse"];
+                        "application/json": components["schemas"]["immerle.AccountResponse"];
                     };
                 };
                 /** @description Bad Request */
@@ -95,7 +95,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
             };
@@ -139,7 +139,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ActivityResponse"];
+                        "application/json": components["schemas"]["immerle.ActivityResponse"];
                     };
                 };
             };
@@ -187,7 +187,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.CleanupStatusResponse"];
+                        "application/json": components["schemas"]["immerle.CleanupStatusResponse"];
                     };
                 };
                 /** @description Forbidden */
@@ -196,7 +196,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
             };
@@ -230,7 +230,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.CleanupStatusResponse"];
+                        "application/json": components["schemas"]["immerle.CleanupStatusResponse"];
                     };
                 };
                 /** @description Forbidden */
@@ -239,7 +239,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
             };
@@ -285,7 +285,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.CleanupRunResponse"];
+                        "application/json": components["schemas"]["immerle.CleanupRunResponse"];
                     };
                 };
                 /** @description Forbidden */
@@ -294,7 +294,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
             };
@@ -348,7 +348,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ProvidersResponse"];
+                        "application/json": components["schemas"]["immerle.ProvidersResponse"];
                     };
                 };
                 /** @description Bad Request */
@@ -357,7 +357,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
                 /** @description Forbidden */
@@ -366,7 +366,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
             };
@@ -408,7 +408,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ProvidersResponse"];
+                        "application/json": components["schemas"]["immerle.ProvidersResponse"];
                     };
                 };
                 /** @description Bad Request */
@@ -417,7 +417,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
                 /** @description Forbidden */
@@ -426,7 +426,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
             };
@@ -474,7 +474,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.OKResponse"];
+                        "application/json": components["schemas"]["immerle.OKResponse"];
                     };
                 };
                 /** @description Not Found */
@@ -483,7 +483,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
             };
@@ -533,7 +533,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ProviderResponse"];
+                        "application/json": components["schemas"]["immerle.ProviderResponse"];
                     };
                 };
                 /** @description Bad Request */
@@ -542,7 +542,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
                 /** @description Not Found */
@@ -551,7 +551,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
             };
@@ -599,7 +599,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ProvidersResponse"];
+                        "application/json": components["schemas"]["immerle.ProvidersResponse"];
                     };
                 };
                 /** @description Bad Request */
@@ -608,7 +608,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
             };
@@ -647,7 +647,7 @@ export interface paths {
             /** @description POST: settings fields to change (partial) */
             requestBody?: {
                 content: {
-                    "application/json": Record<string, never> | components["schemas"]["gossignol.RuntimeSettingsDTO"];
+                    "application/json": Record<string, never> | components["schemas"]["immerle.RuntimeSettingsDTO"];
                 };
             };
             responses: {
@@ -657,7 +657,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.SettingsResponse"];
+                        "application/json": components["schemas"]["immerle.SettingsResponse"];
                     };
                 };
                 /** @description Bad Request */
@@ -666,7 +666,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
                 /** @description Forbidden */
@@ -675,7 +675,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
             };
@@ -702,7 +702,7 @@ export interface paths {
             /** @description POST: settings fields to change (partial) */
             requestBody?: {
                 content: {
-                    "application/json": Record<string, never> | components["schemas"]["gossignol.RuntimeSettingsDTO"];
+                    "application/json": Record<string, never> | components["schemas"]["immerle.RuntimeSettingsDTO"];
                 };
             };
             responses: {
@@ -712,7 +712,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.SettingsResponse"];
+                        "application/json": components["schemas"]["immerle.SettingsResponse"];
                     };
                 };
                 /** @description Bad Request */
@@ -721,7 +721,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
                 /** @description Forbidden */
@@ -730,7 +730,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
             };
@@ -782,7 +782,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.LoginResponse"];
+                        "application/json": components["schemas"]["immerle.LoginResponse"];
                     };
                 };
                 /** @description Unauthorized */
@@ -791,7 +791,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
             };
@@ -811,7 +811,7 @@ export interface paths {
         };
         /**
          * Capability discovery
-         * @description Unauthenticated. Lets clients detect supported gossignol extensions and whether first-run setup is still needed.
+         * @description Unauthenticated. Lets clients detect supported immerle extensions and whether first-run setup is still needed.
          */
         get: {
             parameters: {
@@ -828,7 +828,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.CapabilitiesResponse"];
+                        "application/json": components["schemas"]["immerle.CapabilitiesResponse"];
                     };
                 };
             };
@@ -874,7 +874,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.DevicesResponse"];
+                        "application/json": components["schemas"]["immerle.DevicesResponse"];
                     };
                 };
             };
@@ -924,7 +924,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.OKResponse"];
+                        "application/json": components["schemas"]["immerle.OKResponse"];
                     };
                 };
                 /** @description Not Found */
@@ -933,7 +933,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
             };
@@ -977,7 +977,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.FriendsResponse"];
+                        "application/json": components["schemas"]["immerle.FriendsResponse"];
                     };
                 };
                 /** @description Unauthorized */
@@ -986,7 +986,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
             };
@@ -1033,7 +1033,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.OKResponse"];
+                        "application/json": components["schemas"]["immerle.OKResponse"];
                     };
                 };
                 /** @description Not Found */
@@ -1042,7 +1042,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
             };
@@ -1083,7 +1083,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.PendingFriendsResponse"];
+                        "application/json": components["schemas"]["immerle.PendingFriendsResponse"];
                     };
                 };
             };
@@ -1130,7 +1130,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.OKResponse"];
+                        "application/json": components["schemas"]["immerle.OKResponse"];
                     };
                 };
                 /** @description Bad Request */
@@ -1139,7 +1139,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
                 /** @description Not Found */
@@ -1148,7 +1148,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
             };
@@ -1192,7 +1192,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ImportsResponse"];
+                        "application/json": components["schemas"]["immerle.ImportsResponse"];
                     };
                 };
             };
@@ -1244,7 +1244,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ImportItemResponse"];
+                        "application/json": components["schemas"]["immerle.ImportItemResponse"];
                     };
                 };
                 /** @description Bad Request */
@@ -1253,7 +1253,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
                 /** @description Not Found */
@@ -1262,7 +1262,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
             };
@@ -1306,7 +1306,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ImportSourcesResponse"];
+                        "application/json": components["schemas"]["immerle.ImportSourcesResponse"];
                     };
                 };
             };
@@ -1330,7 +1330,7 @@ export interface paths {
         put?: never;
         /**
          * Start a playlist import
-         * @description Queues an import of an external playlist (by source + reference). Returns the import job; poll /imports/status for progress. The import creates a new gossignol playlist and resolves each source track against the on-demand content providers.
+         * @description Queues an import of an external playlist (by source + reference). Returns the import job; poll /imports/status for progress. The import creates a new immerle playlist and resolves each source track against the on-demand content providers.
          */
         post: {
             parameters: {
@@ -1358,7 +1358,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ImportResponse"];
+                        "application/json": components["schemas"]["immerle.ImportResponse"];
                     };
                 };
                 /** @description Bad Request */
@@ -1367,7 +1367,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
             };
@@ -1413,7 +1413,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ImportResponse"];
+                        "application/json": components["schemas"]["immerle.ImportResponse"];
                     };
                 };
                 /** @description Not Found */
@@ -1422,7 +1422,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
             };
@@ -1474,7 +1474,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.JamResponse"];
+                        "application/json": components["schemas"]["immerle.JamResponse"];
                     };
                 };
             };
@@ -1529,7 +1529,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/event-stream": components["schemas"]["gossignol.ErrorResponse"];
+                        "text/event-stream": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
             };
@@ -1576,7 +1576,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.JamResponse"];
+                        "application/json": components["schemas"]["immerle.JamResponse"];
                     };
                 };
                 /** @description Not Found */
@@ -1585,7 +1585,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
             };
@@ -1630,7 +1630,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.OKResponse"];
+                        "application/json": components["schemas"]["immerle.OKResponse"];
                     };
                 };
             };
@@ -1673,7 +1673,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.JamResponse"];
+                        "application/json": components["schemas"]["immerle.JamResponse"];
                     };
                 };
                 /** @description Not Found */
@@ -1682,7 +1682,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
             };
@@ -1740,7 +1740,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.JamResponse"];
+                        "application/json": components["schemas"]["immerle.JamResponse"];
                     };
                 };
                 /** @description Forbidden */
@@ -1749,7 +1749,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
                 /** @description Not Found */
@@ -1758,7 +1758,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
             };
@@ -1802,7 +1802,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.LibraryStatsResponse"];
+                        "application/json": components["schemas"]["immerle.LibraryStatsResponse"];
                     };
                 };
             };
@@ -1854,7 +1854,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.OKResponse"];
+                        "application/json": components["schemas"]["immerle.OKResponse"];
                     };
                 };
                 /** @description Forbidden */
@@ -1863,7 +1863,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
                 /** @description Not Found */
@@ -1872,7 +1872,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
             };
@@ -1916,7 +1916,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.PublicPlaylistsResponse"];
+                        "application/json": components["schemas"]["immerle.PublicPlaylistsResponse"];
                     };
                 };
             };
@@ -1966,7 +1966,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.OKResponse"];
+                        "application/json": components["schemas"]["immerle.OKResponse"];
                     };
                 };
                 /** @description Forbidden */
@@ -1975,7 +1975,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
                 /** @description Not Found */
@@ -1984,7 +1984,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
             };
@@ -2029,7 +2029,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.OKResponse"];
+                        "application/json": components["schemas"]["immerle.OKResponse"];
                     };
                 };
             };
@@ -2075,7 +2075,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ProfileResponse"];
+                        "application/json": components["schemas"]["immerle.ProfileResponse"];
                     };
                 };
                 /** @description Not Found */
@@ -2084,7 +2084,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
             };
@@ -2120,7 +2120,7 @@ export interface paths {
             /** @description Initial admin credentials */
             requestBody: {
                 content: {
-                    "application/json": Record<string, never> | components["schemas"]["gossignol.SetupInitRequest"];
+                    "application/json": Record<string, never> | components["schemas"]["immerle.SetupInitRequest"];
                 };
             };
             responses: {
@@ -2130,7 +2130,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.SetupInitResponse"];
+                        "application/json": components["schemas"]["immerle.SetupInitResponse"];
                     };
                 };
                 /** @description validation */
@@ -2139,7 +2139,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ValidationErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ValidationErrorResponse"];
                     };
                 };
                 /** @description invalid_setup_token */
@@ -2148,7 +2148,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
                 /** @description already_initialized */
@@ -2157,7 +2157,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
             };
@@ -2194,7 +2194,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.SetupStatusResponse"];
+                        "application/json": components["schemas"]["immerle.SetupStatusResponse"];
                     };
                 };
             };
@@ -2242,7 +2242,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ThemeResponse"];
+                        "application/json": components["schemas"]["immerle.ThemeResponse"];
                     };
                 };
                 /** @description Bad Request */
@@ -2251,7 +2251,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
             };
@@ -2285,7 +2285,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ThemeResponse"];
+                        "application/json": components["schemas"]["immerle.ThemeResponse"];
                     };
                 };
                 /** @description Bad Request */
@@ -2294,7 +2294,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
             };
@@ -2338,7 +2338,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.TokensResponse"];
+                        "application/json": components["schemas"]["immerle.TokensResponse"];
                     };
                 };
             };
@@ -2390,7 +2390,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.CreateTokenResponse"];
+                        "application/json": components["schemas"]["immerle.CreateTokenResponse"];
                     };
                 };
             };
@@ -2435,7 +2435,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.OKResponse"];
+                        "application/json": components["schemas"]["immerle.OKResponse"];
                     };
                 };
                 /** @description Not Found */
@@ -2444,7 +2444,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["gossignol.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ErrorResponse"];
                     };
                 };
             };
@@ -2459,7 +2459,7 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        "gossignol.APITokenDTO": {
+        "immerle.APITokenDTO": {
             /** @example 2026-06-15T09:00:00Z */
             createdAt?: string;
             expiresAt?: string;
@@ -2470,7 +2470,7 @@ export interface components {
             /** @example gsk_AbC12 */
             prefix?: string;
         };
-        "gossignol.AccountResponse": {
+        "immerle.AccountResponse": {
             /** @example true */
             ok?: boolean;
             user?: {
@@ -2485,13 +2485,13 @@ export interface components {
                 username?: string;
             };
         };
-        "gossignol.ActivityEventDTO": {
+        "immerle.ActivityEventDTO": {
             /** @example 2026-06-15T09:00:00Z */
             createdAt?: string;
             /** @example Bob Marley */
             displayName?: string;
             id?: string;
-            item?: components["schemas"]["gossignol.ActivityItemDTO"];
+            item?: components["schemas"]["immerle.ActivityItemDTO"];
             itemId?: string;
             /** @example track */
             itemType?: string;
@@ -2503,7 +2503,7 @@ export interface components {
             /** @example bob */
             username?: string;
         };
-        "gossignol.ActivityItemDTO": {
+        "immerle.ActivityItemDTO": {
             /** @example Discovery */
             album?: string;
             albumId?: string;
@@ -2518,33 +2518,33 @@ export interface components {
             /** @example 2001 */
             year?: number;
         };
-        "gossignol.ActivityResponse": {
-            events?: components["schemas"]["gossignol.ActivityEventDTO"][];
+        "immerle.ActivityResponse": {
+            events?: components["schemas"]["immerle.ActivityEventDTO"][];
             /** @example true */
             ok?: boolean;
         };
-        "gossignol.CapabilitiesResponse": {
+        "immerle.CapabilitiesResponse": {
             capabilities?: {
-                [key: string]: components["schemas"]["gossignol.CapabilityDTO"];
+                [key: string]: components["schemas"]["immerle.CapabilityDTO"];
             };
             /** @example true */
             ok?: boolean;
             /** @example 1.0.0 */
             protocolVersion?: string;
-            /** @example gossignol */
+            /** @example immerle */
             server?: string;
         };
-        "gossignol.CapabilityDTO": {
+        "immerle.CapabilityDTO": {
             /** @example 1 */
             version?: number;
         };
-        "gossignol.CleanupRunResponse": {
+        "immerle.CleanupRunResponse": {
             /** @example true */
             ok?: boolean;
             /** @example 3 */
             removed?: number;
         };
-        "gossignol.CleanupStatusResponse": {
+        "immerle.CleanupStatusResponse": {
             /** @example true */
             enabled?: boolean;
             /** @example 21600 */
@@ -2554,7 +2554,7 @@ export interface components {
             /** @example true */
             ok?: boolean;
         };
-        "gossignol.CreateTokenResponse": {
+        "immerle.CreateTokenResponse": {
             id?: string;
             /** @example my-cli */
             name?: string;
@@ -2565,7 +2565,7 @@ export interface components {
             /** @example gsk_AbC12...full-secret */
             token?: string;
         };
-        "gossignol.DeviceDTO": {
+        "immerle.DeviceDTO": {
             createdAt?: string;
             expiresAt?: string;
             id?: string;
@@ -2575,43 +2575,43 @@ export interface components {
             name?: string;
             userAgent?: string;
         };
-        "gossignol.DevicesResponse": {
-            devices?: components["schemas"]["gossignol.DeviceDTO"][];
+        "immerle.DevicesResponse": {
+            devices?: components["schemas"]["immerle.DeviceDTO"][];
             /** @example true */
             ok?: boolean;
         };
-        "gossignol.ErrorResponse": {
+        "immerle.ErrorResponse": {
             /** @example already_initialized */
             error?: string;
             /** @example false */
             ok?: boolean;
         };
-        "gossignol.FieldErrorDTO": {
+        "immerle.FieldErrorDTO": {
             /** @example password */
             field?: string;
             /** @example must be at least 8 characters */
             message?: string;
         };
-        "gossignol.FriendDTO": {
+        "immerle.FriendDTO": {
             /** @example Bob Marley */
             displayName?: string;
             id?: string;
             /** @example bob */
             username?: string;
         };
-        "gossignol.FriendsResponse": {
-            friends?: components["schemas"]["gossignol.FriendDTO"][];
+        "immerle.FriendsResponse": {
+            friends?: components["schemas"]["immerle.FriendDTO"][];
             /** @example true */
             ok?: boolean;
         };
-        "gossignol.ImportDTO": {
+        "immerle.ImportDTO": {
             /** @example 2 */
             doubtful?: number;
             error?: string;
             /** @example 0 */
             failed?: number;
             id?: string;
-            items?: components["schemas"]["gossignol.ImportItemDTO"][];
+            items?: components["schemas"]["immerle.ImportItemDTO"][];
             /** @example 38 */
             matched?: number;
             /** @example 2 */
@@ -2626,7 +2626,7 @@ export interface components {
             /** @example 42 */
             total?: number;
         };
-        "gossignol.ImportItemDTO": {
+        "immerle.ImportItemDTO": {
             candidateCoverArt?: string;
             /**
              * @description CandidateTrackID / CandidateCoverArt let a client preview a doubtful item:
@@ -2649,33 +2649,33 @@ export interface components {
             /** @example matched */
             status?: string;
         };
-        "gossignol.ImportItemResponse": {
-            item?: components["schemas"]["gossignol.ImportItemDTO"];
+        "immerle.ImportItemResponse": {
+            item?: components["schemas"]["immerle.ImportItemDTO"];
             /** @example true */
             ok?: boolean;
         };
-        "gossignol.ImportResponse": {
-            import?: components["schemas"]["gossignol.ImportDTO"];
+        "immerle.ImportResponse": {
+            import?: components["schemas"]["immerle.ImportDTO"];
             /** @example true */
             ok?: boolean;
         };
-        "gossignol.ImportSourceDTO": {
+        "immerle.ImportSourceDTO": {
             /** @example true */
             configured?: boolean;
             /** @example spotify */
             name?: string;
         };
-        "gossignol.ImportSourcesResponse": {
+        "immerle.ImportSourcesResponse": {
             /** @example true */
             ok?: boolean;
-            sources?: components["schemas"]["gossignol.ImportSourceDTO"][];
+            sources?: components["schemas"]["immerle.ImportSourceDTO"][];
         };
-        "gossignol.ImportsResponse": {
-            imports?: components["schemas"]["gossignol.ImportDTO"][];
+        "immerle.ImportsResponse": {
+            imports?: components["schemas"]["immerle.ImportDTO"][];
             /** @example true */
             ok?: boolean;
         };
-        "gossignol.JamParticipantDTO": {
+        "immerle.JamParticipantDTO": {
             /** @example 2026-06-15T09:00:00Z */
             joinedAt?: string;
             sessionId?: string;
@@ -2683,13 +2683,13 @@ export interface components {
             /** @example bob */
             username?: string;
         };
-        "gossignol.JamResponse": {
+        "immerle.JamResponse": {
             /** @example true */
             ok?: boolean;
-            participants?: components["schemas"]["gossignol.JamParticipantDTO"][];
-            session?: components["schemas"]["gossignol.JamSessionDTO"];
+            participants?: components["schemas"]["immerle.JamParticipantDTO"][];
+            session?: components["schemas"]["immerle.JamSessionDTO"];
         };
-        "gossignol.JamSessionDTO": {
+        "immerle.JamSessionDTO": {
             currentTrackId?: string;
             hostId?: string;
             id?: string;
@@ -2701,7 +2701,7 @@ export interface components {
             state?: string;
             trackIds?: string[];
         };
-        "gossignol.LibraryStatsDTO": {
+        "immerle.LibraryStatsDTO": {
             /** @example 128 */
             albums?: number;
             /** @example 42 */
@@ -2715,23 +2715,23 @@ export interface components {
             /** @example 2026-06-17T09:00:00Z */
             updatedAt?: string;
         };
-        "gossignol.LibraryStatsResponse": {
+        "immerle.LibraryStatsResponse": {
             /** @example true */
             ok?: boolean;
-            stats?: components["schemas"]["gossignol.LibraryStatsDTO"];
+            stats?: components["schemas"]["immerle.LibraryStatsDTO"];
         };
-        "gossignol.LoginResponse": {
-            device?: components["schemas"]["gossignol.DeviceDTO"];
+        "immerle.LoginResponse": {
+            device?: components["schemas"]["immerle.DeviceDTO"];
             /** @example true */
             ok?: boolean;
             /** @example eyJhbGciOiJIUzI1Ni␣... */
             token?: string;
         };
-        "gossignol.OKResponse": {
+        "immerle.OKResponse": {
             /** @example true */
             ok?: boolean;
         };
-        "gossignol.PendingFriendDTO": {
+        "immerle.PendingFriendDTO": {
             /** @example Alice Coltrane */
             displayName?: string;
             id?: string;
@@ -2740,12 +2740,12 @@ export interface components {
             /** @example alice */
             username?: string;
         };
-        "gossignol.PendingFriendsResponse": {
+        "immerle.PendingFriendsResponse": {
             /** @example true */
             ok?: boolean;
-            pending?: components["schemas"]["gossignol.PendingFriendDTO"][];
+            pending?: components["schemas"]["immerle.PendingFriendDTO"][];
         };
-        "gossignol.ProfilePlaylistDTO": {
+        "immerle.ProfilePlaylistDTO": {
             comment?: string;
             coverArts?: string[];
             /** @example 5400 */
@@ -2756,15 +2756,15 @@ export interface components {
             /** @example 24 */
             songCount?: number;
         };
-        "gossignol.ProfileResponse": {
-            activity?: components["schemas"]["gossignol.ActivityEventDTO"][];
+        "immerle.ProfileResponse": {
+            activity?: components["schemas"]["immerle.ActivityEventDTO"][];
             /** @example true */
             isFriend?: boolean;
             /** @example false */
             isSelf?: boolean;
             /** @example true */
             ok?: boolean;
-            playlists?: components["schemas"]["gossignol.ProfilePlaylistDTO"][];
+            playlists?: components["schemas"]["immerle.ProfilePlaylistDTO"][];
             user?: {
                 /** @example Bob Marley */
                 displayName?: string;
@@ -2775,7 +2775,7 @@ export interface components {
                 username?: string;
             };
         };
-        "gossignol.ProviderDTO": {
+        "immerle.ProviderDTO": {
             /** @example true */
             active?: boolean;
             /** @example false */
@@ -2795,17 +2795,17 @@ export interface components {
             /** @example 3 */
             sortOrder?: number;
         };
-        "gossignol.ProviderResponse": {
+        "immerle.ProviderResponse": {
             /** @example true */
             ok?: boolean;
-            provider?: components["schemas"]["gossignol.ProviderDTO"];
+            provider?: components["schemas"]["immerle.ProviderDTO"];
         };
-        "gossignol.ProvidersResponse": {
+        "immerle.ProvidersResponse": {
             /** @example true */
             ok?: boolean;
-            providers?: components["schemas"]["gossignol.ProviderDTO"][];
+            providers?: components["schemas"]["immerle.ProviderDTO"][];
         };
-        "gossignol.PublicPlaylistDTO": {
+        "immerle.PublicPlaylistDTO": {
             comment?: string;
             coverArts?: string[];
             duration?: number;
@@ -2817,12 +2817,12 @@ export interface components {
             songCount?: number;
             subscribed?: boolean;
         };
-        "gossignol.PublicPlaylistsResponse": {
+        "immerle.PublicPlaylistsResponse": {
             /** @example true */
             ok?: boolean;
-            playlists?: components["schemas"]["gossignol.PublicPlaylistDTO"][];
+            playlists?: components["schemas"]["immerle.PublicPlaylistDTO"][];
         };
-        "gossignol.RuntimeSettingsDTO": {
+        "immerle.RuntimeSettingsDTO": {
             auth?: {
                 /** @example 2592000 */
                 deviceTokenTtlSeconds?: number;
@@ -2882,15 +2882,15 @@ export interface components {
                 }[];
             };
         };
-        "gossignol.SettingsResponse": {
+        "immerle.SettingsResponse": {
             /** @example true */
             ok?: boolean;
             pendingRestart?: string[];
             /** @example false */
             restartRequired?: boolean;
-            settings?: components["schemas"]["gossignol.RuntimeSettingsDTO"];
+            settings?: components["schemas"]["immerle.RuntimeSettingsDTO"];
         };
-        "gossignol.SetupInitRequest": {
+        "immerle.SetupInitRequest": {
             /**
              * @description DisplayName is an optional free-text name shown in the UI (falls back to
              *     the username when empty).
@@ -2909,12 +2909,12 @@ export interface components {
             /** @example kilian */
             username?: string;
         };
-        "gossignol.SetupInitResponse": {
+        "immerle.SetupInitResponse": {
             /** @example true */
             ok?: boolean;
-            user?: components["schemas"]["gossignol.UserDTO"];
+            user?: components["schemas"]["immerle.UserDTO"];
         };
-        "gossignol.SetupStatusResponse": {
+        "immerle.SetupStatusResponse": {
             /** @example false */
             initialized?: boolean;
             /** @example true */
@@ -2926,21 +2926,21 @@ export interface components {
             /** @example 0 */
             userCount?: number;
         };
-        "gossignol.ThemeDTO": {
+        "immerle.ThemeDTO": {
             /** @example #3b82f6 */
             accentColor?: string;
         };
-        "gossignol.ThemeResponse": {
+        "immerle.ThemeResponse": {
             /** @example true */
             ok?: boolean;
-            theme?: components["schemas"]["gossignol.ThemeDTO"];
+            theme?: components["schemas"]["immerle.ThemeDTO"];
         };
-        "gossignol.TokensResponse": {
+        "immerle.TokensResponse": {
             /** @example true */
             ok?: boolean;
-            tokens?: components["schemas"]["gossignol.APITokenDTO"][];
+            tokens?: components["schemas"]["immerle.APITokenDTO"][];
         };
-        "gossignol.UserDTO": {
+        "immerle.UserDTO": {
             /** @example Kilian Smiti */
             displayName?: string;
             id?: string;
@@ -2949,8 +2949,8 @@ export interface components {
             /** @example kilian */
             username?: string;
         };
-        "gossignol.ValidationErrorResponse": {
-            details?: components["schemas"]["gossignol.FieldErrorDTO"][];
+        "immerle.ValidationErrorResponse": {
+            details?: components["schemas"]["immerle.FieldErrorDTO"][];
             /** @example validation */
             error?: string;
             /** @example false */

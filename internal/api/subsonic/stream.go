@@ -5,9 +5,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gossignol/gossignol/internal/core"
-	"github.com/gossignol/gossignol/internal/models"
-	"github.com/gossignol/gossignol/internal/stream"
+	"github.com/immerle/immerle/internal/core"
+	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/stream"
 )
 
 func (h *Handler) handleStream(w http.ResponseWriter, r *http.Request) {

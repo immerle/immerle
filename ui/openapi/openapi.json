@@ -1,7 +1,7 @@
 {
     "components": {
         "schemas": {
-            "gossignol.ActivityEventDTO": {
+            "immerle.ActivityEventDTO": {
                 "properties": {
                     "createdAt": {
                         "example": "2026-06-15T09:00:00Z",
@@ -35,11 +35,11 @@
                 },
                 "type": "object"
             },
-            "gossignol.ActivityResponse": {
+            "immerle.ActivityResponse": {
                 "properties": {
                     "events": {
                         "items": {
-                            "$ref": "#/components/schemas/gossignol.ActivityEventDTO"
+                            "$ref": "#/components/schemas/immerle.ActivityEventDTO"
                         },
                         "type": "array",
                         "uniqueItems": false
@@ -51,11 +51,11 @@
                 },
                 "type": "object"
             },
-            "gossignol.CapabilitiesResponse": {
+            "immerle.CapabilitiesResponse": {
                 "properties": {
                     "capabilities": {
                         "additionalProperties": {
-                            "$ref": "#/components/schemas/gossignol.CapabilityDTO"
+                            "$ref": "#/components/schemas/immerle.CapabilityDTO"
                         },
                         "type": "object"
                     },
@@ -68,13 +68,13 @@
                         "type": "string"
                     },
                     "server": {
-                        "example": "gossignol",
+                        "example": "immerle",
                         "type": "string"
                     }
                 },
                 "type": "object"
             },
-            "gossignol.CapabilityDTO": {
+            "immerle.CapabilityDTO": {
                 "properties": {
                     "version": {
                         "example": 1,
@@ -83,7 +83,7 @@
                 },
                 "type": "object"
             },
-            "gossignol.ErrorResponse": {
+            "immerle.ErrorResponse": {
                 "properties": {
                     "error": {
                         "example": "already_initialized",
@@ -96,7 +96,7 @@
                 },
                 "type": "object"
             },
-            "gossignol.FieldErrorDTO": {
+            "immerle.FieldErrorDTO": {
                 "properties": {
                     "field": {
                         "example": "password",
@@ -109,7 +109,7 @@
                 },
                 "type": "object"
             },
-            "gossignol.FriendDTO": {
+            "immerle.FriendDTO": {
                 "properties": {
                     "id": {
                         "type": "string"
@@ -121,11 +121,11 @@
                 },
                 "type": "object"
             },
-            "gossignol.FriendsResponse": {
+            "immerle.FriendsResponse": {
                 "properties": {
                     "friends": {
                         "items": {
-                            "$ref": "#/components/schemas/gossignol.FriendDTO"
+                            "$ref": "#/components/schemas/immerle.FriendDTO"
                         },
                         "type": "array",
                         "uniqueItems": false
@@ -137,7 +137,7 @@
                 },
                 "type": "object"
             },
-            "gossignol.JamParticipantDTO": {
+            "immerle.JamParticipantDTO": {
                 "properties": {
                     "joinedAt": {
                         "example": "2026-06-15T09:00:00Z",
@@ -156,7 +156,7 @@
                 },
                 "type": "object"
             },
-            "gossignol.JamResponse": {
+            "immerle.JamResponse": {
                 "properties": {
                     "ok": {
                         "example": true,
@@ -164,18 +164,18 @@
                     },
                     "participants": {
                         "items": {
-                            "$ref": "#/components/schemas/gossignol.JamParticipantDTO"
+                            "$ref": "#/components/schemas/immerle.JamParticipantDTO"
                         },
                         "type": "array",
                         "uniqueItems": false
                     },
                     "session": {
-                        "$ref": "#/components/schemas/gossignol.JamSessionDTO"
+                        "$ref": "#/components/schemas/immerle.JamSessionDTO"
                     }
                 },
                 "type": "object"
             },
-            "gossignol.JamSessionDTO": {
+            "immerle.JamSessionDTO": {
                 "properties": {
                     "currentTrackId": {
                         "type": "string"
@@ -208,7 +208,7 @@
                 },
                 "type": "object"
             },
-            "gossignol.OKResponse": {
+            "immerle.OKResponse": {
                 "properties": {
                     "ok": {
                         "example": true,
@@ -217,7 +217,7 @@
                 },
                 "type": "object"
             },
-            "gossignol.PendingFriendDTO": {
+            "immerle.PendingFriendDTO": {
                 "properties": {
                     "id": {
                         "type": "string"
@@ -233,7 +233,7 @@
                 },
                 "type": "object"
             },
-            "gossignol.PendingFriendsResponse": {
+            "immerle.PendingFriendsResponse": {
                 "properties": {
                     "ok": {
                         "example": true,
@@ -241,7 +241,7 @@
                     },
                     "pending": {
                         "items": {
-                            "$ref": "#/components/schemas/gossignol.PendingFriendDTO"
+                            "$ref": "#/components/schemas/immerle.PendingFriendDTO"
                         },
                         "type": "array",
                         "uniqueItems": false
@@ -249,7 +249,7 @@
                 },
                 "type": "object"
             },
-            "gossignol.SetupInitRequest": {
+            "immerle.SetupInitRequest": {
                 "properties": {
                     "email": {
                         "example": "me@example.com",
@@ -270,19 +270,19 @@
                 },
                 "type": "object"
             },
-            "gossignol.SetupInitResponse": {
+            "immerle.SetupInitResponse": {
                 "properties": {
                     "ok": {
                         "example": true,
                         "type": "boolean"
                     },
                     "user": {
-                        "$ref": "#/components/schemas/gossignol.UserDTO"
+                        "$ref": "#/components/schemas/immerle.UserDTO"
                     }
                 },
                 "type": "object"
             },
-            "gossignol.SetupStatusResponse": {
+            "immerle.SetupStatusResponse": {
                 "properties": {
                     "initialized": {
                         "example": false,
@@ -307,7 +307,7 @@
                 },
                 "type": "object"
             },
-            "gossignol.UserDTO": {
+            "immerle.UserDTO": {
                 "properties": {
                     "id": {
                         "type": "string"
@@ -323,11 +323,11 @@
                 },
                 "type": "object"
             },
-            "gossignol.ValidationErrorResponse": {
+            "immerle.ValidationErrorResponse": {
                 "properties": {
                     "details": {
                         "items": {
-                            "$ref": "#/components/schemas/gossignol.FieldErrorDTO"
+                            "$ref": "#/components/schemas/immerle.FieldErrorDTO"
                         },
                         "type": "array",
                         "uniqueItems": false
@@ -347,13 +347,13 @@
     },
     "info": {
         "contact": {
-            "name": "gossignol"
+            "name": "immerle"
         },
-        "description": "Native gossignol endpoints (first-run setup, capability\ndiscovery, friends, activity feed, collaborative playlists and\nsynchronized Jam sessions) that complement the Subsonic /\nOpenSubsonic API served under /rest/.\n\nAuthenticated endpoints reuse Subsonic credentials passed as\nquery parameters: u (username) plus either p (password) or the\ntoken pair t (md5(password+salt)) and s (salt), and c (client\nname). Setup and capability endpoints are unauthenticated.",
+        "description": "Native immerle endpoints (first-run setup, capability\ndiscovery, friends, activity feed, collaborative playlists and\nsynchronized Jam sessions) that complement the Subsonic /\nOpenSubsonic API served under /rest/.\n\nAuthenticated endpoints reuse Subsonic credentials passed as\nquery parameters: u (username) plus either p (password) or the\ntoken pair t (md5(password+salt)) and s (salt), and c (client\nname). Setup and capability endpoints are unauthenticated.",
         "license": {
             "name": "See repository"
         },
-        "title": "gossignol extension API",
+        "title": "immerle extension API",
         "version": "1.0.0"
     },
     "externalDocs": {
@@ -397,7 +397,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/gossignol.ActivityResponse"
+                                    "$ref": "#/components/schemas/immerle.ActivityResponse"
                                 }
                             }
                         },
@@ -412,13 +412,13 @@
         },
         "/capabilities": {
             "get": {
-                "description": "Unauthenticated. Lets clients detect supported gossignol extensions and whether first-run setup is still needed.",
+                "description": "Unauthenticated. Lets clients detect supported immerle extensions and whether first-run setup is still needed.",
                 "responses": {
                     "200": {
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/gossignol.CapabilitiesResponse"
+                                    "$ref": "#/components/schemas/immerle.CapabilitiesResponse"
                                 }
                             }
                         },
@@ -467,7 +467,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/gossignol.FriendsResponse"
+                                    "$ref": "#/components/schemas/immerle.FriendsResponse"
                                 }
                             }
                         },
@@ -477,7 +477,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/gossignol.ErrorResponse"
+                                    "$ref": "#/components/schemas/immerle.ErrorResponse"
                                 }
                             }
                         },
@@ -534,7 +534,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/gossignol.OKResponse"
+                                    "$ref": "#/components/schemas/immerle.OKResponse"
                                 }
                             }
                         },
@@ -544,7 +544,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/gossignol.ErrorResponse"
+                                    "$ref": "#/components/schemas/immerle.ErrorResponse"
                                 }
                             }
                         },
@@ -592,7 +592,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/gossignol.PendingFriendsResponse"
+                                    "$ref": "#/components/schemas/immerle.PendingFriendsResponse"
                                 }
                             }
                         },
@@ -649,7 +649,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/gossignol.OKResponse"
+                                    "$ref": "#/components/schemas/immerle.OKResponse"
                                 }
                             }
                         },
@@ -659,7 +659,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/gossignol.ErrorResponse"
+                                    "$ref": "#/components/schemas/immerle.ErrorResponse"
                                 }
                             }
                         },
@@ -669,7 +669,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/gossignol.ErrorResponse"
+                                    "$ref": "#/components/schemas/immerle.ErrorResponse"
                                 }
                             }
                         },
@@ -734,7 +734,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/gossignol.JamResponse"
+                                    "$ref": "#/components/schemas/immerle.JamResponse"
                                 }
                             }
                         },
@@ -802,7 +802,7 @@
                         "content": {
                             "text/event-stream": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/gossignol.ErrorResponse"
+                                    "$ref": "#/components/schemas/immerle.ErrorResponse"
                                 }
                             }
                         },
@@ -859,7 +859,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/gossignol.JamResponse"
+                                    "$ref": "#/components/schemas/immerle.JamResponse"
                                 }
                             }
                         },
@@ -869,7 +869,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/gossignol.ErrorResponse"
+                                    "$ref": "#/components/schemas/immerle.ErrorResponse"
                                 }
                             }
                         },
@@ -926,7 +926,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/gossignol.OKResponse"
+                                    "$ref": "#/components/schemas/immerle.OKResponse"
                                 }
                             }
                         },
@@ -983,7 +983,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/gossignol.JamResponse"
+                                    "$ref": "#/components/schemas/immerle.JamResponse"
                                 }
                             }
                         },
@@ -993,7 +993,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/gossignol.ErrorResponse"
+                                    "$ref": "#/components/schemas/immerle.ErrorResponse"
                                 }
                             }
                         },
@@ -1083,7 +1083,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/gossignol.JamResponse"
+                                    "$ref": "#/components/schemas/immerle.JamResponse"
                                 }
                             }
                         },
@@ -1093,7 +1093,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/gossignol.ErrorResponse"
+                                    "$ref": "#/components/schemas/immerle.ErrorResponse"
                                 }
                             }
                         },
@@ -1103,7 +1103,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/gossignol.ErrorResponse"
+                                    "$ref": "#/components/schemas/immerle.ErrorResponse"
                                 }
                             }
                         },
@@ -1170,7 +1170,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/gossignol.OKResponse"
+                                    "$ref": "#/components/schemas/immerle.OKResponse"
                                 }
                             }
                         },
@@ -1180,7 +1180,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/gossignol.ErrorResponse"
+                                    "$ref": "#/components/schemas/immerle.ErrorResponse"
                                 }
                             }
                         },
@@ -1190,7 +1190,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/gossignol.ErrorResponse"
+                                    "$ref": "#/components/schemas/immerle.ErrorResponse"
                                 }
                             }
                         },
@@ -1215,7 +1215,7 @@
                                         "type": "object"
                                     },
                                     {
-                                        "$ref": "#/components/schemas/gossignol.SetupInitRequest",
+                                        "$ref": "#/components/schemas/immerle.SetupInitRequest",
                                         "summary": "body",
                                         "description": "Initial admin credentials"
                                     }
@@ -1231,7 +1231,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/gossignol.SetupInitResponse"
+                                    "$ref": "#/components/schemas/immerle.SetupInitResponse"
                                 }
                             }
                         },
@@ -1241,7 +1241,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/gossignol.ValidationErrorResponse"
+                                    "$ref": "#/components/schemas/immerle.ValidationErrorResponse"
                                 }
                             }
                         },
@@ -1251,7 +1251,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/gossignol.ErrorResponse"
+                                    "$ref": "#/components/schemas/immerle.ErrorResponse"
                                 }
                             }
                         },
@@ -1261,7 +1261,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/gossignol.ErrorResponse"
+                                    "$ref": "#/components/schemas/immerle.ErrorResponse"
                                 }
                             }
                         },
@@ -1282,7 +1282,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/gossignol.SetupStatusResponse"
+                                    "$ref": "#/components/schemas/immerle.SetupStatusResponse"
                                 }
                             }
                         },

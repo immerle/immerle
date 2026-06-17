@@ -9,8 +9,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/gossignol/gossignol/internal/models"
-	"github.com/gossignol/gossignol/internal/persistence"
+	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/persistence"
 )
 
 // ContentResolver is the slice of the on-demand catalog the importer needs:
@@ -23,7 +23,7 @@ type ContentResolver interface {
 }
 
 // Service runs playlist imports: it pulls a playlist from a source, creates a
-// gossignol playlist and resolves each source track against the content
+// immerle playlist and resolves each source track against the content
 // providers, recording per-track status so a UI can follow progress.
 type Service struct {
 	imports   *persistence.ImportRepo
@@ -276,7 +276,7 @@ func (s *Service) process(ctx context.Context, im *models.Import) error {
 		return err
 	}
 
-	// Create the destination gossignol playlist (distinct from the source).
+	// Create the destination immerle playlist (distinct from the source).
 	now := time.Now()
 	name := strings.TrimSpace(pl.Name)
 	if name == "" {

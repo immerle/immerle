@@ -7,7 +7,7 @@ import (
 
 func init() { RegisterFactory("spotify", newSpotify) }
 
-// spotifySource imports a public Spotify playlist through the gossignol hub. The
+// spotifySource imports a public Spotify playlist through the immerle hub. The
 // hub owns the Spotify credentials and exposes a "fetch public playlist"
 // endpoint, so this source needs no client id/secret of its own — it just
 // delegates, passing the user-supplied reference (id or URL) straight through.

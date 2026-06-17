@@ -11,22 +11,22 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/gossignol/gossignol/internal/api/docs"
-	"github.com/gossignol/gossignol/internal/api/gossignol"
-	"github.com/gossignol/gossignol/internal/api/subsonic"
-	"github.com/gossignol/gossignol/internal/config"
-	"github.com/gossignol/gossignol/internal/core"
-	"github.com/gossignol/gossignol/internal/db"
-	"github.com/gossignol/gossignol/internal/federation"
-	"github.com/gossignol/gossignol/internal/importer"
-	"github.com/gossignol/gossignol/internal/logging"
-	"github.com/gossignol/gossignol/internal/models"
-	"github.com/gossignol/gossignol/internal/persistence"
-	"github.com/gossignol/gossignol/internal/providers"
-	"github.com/gossignol/gossignol/internal/providers/httpprovider"
-	"github.com/gossignol/gossignol/internal/scanner"
-	"github.com/gossignol/gossignol/internal/server"
-	"github.com/gossignol/gossignol/internal/stream"
+	"github.com/immerle/immerle/internal/api/docs"
+	"github.com/immerle/immerle/internal/api/immerle"
+	"github.com/immerle/immerle/internal/api/subsonic"
+	"github.com/immerle/immerle/internal/config"
+	"github.com/immerle/immerle/internal/core"
+	"github.com/immerle/immerle/internal/db"
+	"github.com/immerle/immerle/internal/federation"
+	"github.com/immerle/immerle/internal/importer"
+	"github.com/immerle/immerle/internal/logging"
+	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/persistence"
+	"github.com/immerle/immerle/internal/providers"
+	"github.com/immerle/immerle/internal/providers/httpprovider"
+	"github.com/immerle/immerle/internal/scanner"
+	"github.com/immerle/immerle/internal/server"
+	"github.com/immerle/immerle/internal/stream"
 )
 
 // App holds the assembled application.
@@ -317,7 +317,7 @@ func New(cfg config.Config) (*App, error) {
 		Logger:           logger,
 	})
 
-	gosHandler := gossignol.NewHandler(gossignol.Deps{
+	gosHandler := immerle.NewHandler(immerle.Deps{
 		Auth:         authSvc,
 		Users:        store.Users,
 		Friends:      store.Friends,
@@ -415,7 +415,7 @@ func (a *App) Run(ctx context.Context) error {
 
 // providerControllerOrNil returns a nil interface (not a typed-nil) when the
 // manager is absent, so the handler's `Providers == nil` check holds.
-func providerControllerOrNil(m *core.ProviderManager) gossignol.ProviderController {
+func providerControllerOrNil(m *core.ProviderManager) immerle.ProviderController {
 	if m == nil {
 		return nil
 	}

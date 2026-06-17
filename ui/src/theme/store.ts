@@ -7,8 +7,8 @@ import { useAuth } from '../auth/store';
 
 export type ThemePreference = 'light' | 'dark' | 'system';
 
-const STORAGE_KEY = 'gossignol.theme.v1';
-const ACCENT_KEY = 'gossignol.accent.v1';
+const STORAGE_KEY = 'immerle.theme.v1';
+const ACCENT_KEY = 'immerle.accent.v1';
 
 interface ThemeState {
   preference: ThemePreference;

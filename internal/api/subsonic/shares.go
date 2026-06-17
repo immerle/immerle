@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gossignol/gossignol/internal/models"
+	"github.com/immerle/immerle/internal/models"
 )
 
 func (h *Handler) shareURL(secret string) string {

@@ -3,7 +3,7 @@ package persistence
 import (
 	"context"
 
-	"github.com/gossignol/gossignol/internal/models"
+	"github.com/immerle/immerle/internal/models"
 )
 
 // GenreRepo persists genres derived from track metadata.

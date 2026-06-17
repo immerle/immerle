@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { useAuth } from '../auth/store';
 import { usePlayer } from '../audio/store';
-import { JamParticipantDTO, JamSessionDTO } from '../api/gossignolApi';
+import { JamParticipantDTO, JamSessionDTO } from '../api/immerleApi';
 
 type Session = JamSessionDTO & { updatedAt?: string };
 

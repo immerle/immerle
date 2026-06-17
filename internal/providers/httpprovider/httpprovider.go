@@ -39,7 +39,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gossignol/gossignol/internal/providers"
+	"github.com/immerle/immerle/internal/providers"
 )
 
 // Config is the JSON config payload supplied per provider. Every field is
