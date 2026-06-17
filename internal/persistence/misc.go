@@ -85,12 +85,19 @@ func (r *ScrobbleRepo) Unexported(ctx context.Context, limit int) ([]models.Scro
 
 // MarkExported flags scrobbles as exported to the hub.
 func (r *ScrobbleRepo) MarkExported(ctx context.Context, ids []string) error {
-	for _, id := range ids {
-		if _, err := r.exec(ctx, `UPDATE scrobbles SET exported=1 WHERE id=?`, id); err != nil {
-			return err
-		}
+	if len(ids) == 0 {
+		return nil
 	}
-	return nil
+	// Single statement so the flag flips atomically — a mid-batch failure must
+	// not leave some scrobbles marked exported and others not.
+	placeholders := make([]string, len(ids))
+	args := make([]any, len(ids))
+	for i, id := range ids {
+		placeholders[i] = "?"
+		args[i] = id
+	}
+	_, err := r.exec(ctx, `UPDATE scrobbles SET exported=1 WHERE id IN (`+strings.Join(placeholders, ",")+`)`, args...)
+	return err
 }
 
 // ---- Shares ----
