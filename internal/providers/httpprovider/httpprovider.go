@@ -118,7 +118,7 @@ func New(name, endpoint, configJSON string) (*Provider, error) {
 		name:     name,
 		endpoint: endpoint,
 		cfg:      cfg,
-		http:     &http.Client{Timeout: timeout},
+		http:     providers.NewHTTPClient(timeout),
 	}, nil
 }
 
@@ -223,7 +223,7 @@ func (p *Provider) Search(ctx context.Context, query string, limit int) ([]provi
 	var body struct {
 		Results []track `json:"results"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+	if err := json.NewDecoder(io.LimitReader(resp.Body, providers.MaxMetadataBytes)).Decode(&body); err != nil {
 		return nil, fmt.Errorf("%s: decode search: %w", p.name, err)
 	}
 	out := make([]providers.Result, 0, len(body.Results))
@@ -251,7 +251,7 @@ func (p *Provider) Resolve(ctx context.Context, providerTrackID string) (provide
 	if resp.StatusCode >= 300 {
 		return providers.Result{}, fmt.Errorf("%s: resolve status %d", p.name, resp.StatusCode)
 	}
-	raw, err := io.ReadAll(resp.Body)
+	raw, err := io.ReadAll(io.LimitReader(resp.Body, providers.MaxMetadataBytes))
 	if err != nil {
 		return providers.Result{}, err
 	}
@@ -305,7 +305,7 @@ func (p *Provider) Download(ctx context.Context, providerTrackID string, w io.Wr
 			break
 		}
 		// 2xx stream acquired — bytes now flow to w and cannot be replayed.
-		_, cErr := io.Copy(w, resp.Body)
+		_, cErr := io.Copy(w, io.LimitReader(resp.Body, providers.MaxDownloadBytes))
 		resp.Body.Close()
 		return cErr
 	}

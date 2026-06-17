@@ -7,7 +7,29 @@ import (
 	"context"
 	"errors"
 	"io"
+	"net/http"
+	"time"
 )
+
+// Response-size caps for the shipped HTTP-backed providers. A hostile or buggy
+// remote must not be able to exhaust memory or disk with an unbounded body.
+const (
+	// MaxMetadataBytes caps an in-memory JSON/metadata response.
+	MaxMetadataBytes = 8 << 20 // 8 MiB
+	// MaxDownloadBytes caps a streamed audio download. Generous enough for any
+	// real lossless track while bounding disk exhaustion.
+	// ponytail: 1 GiB ceiling; raise if legitimately larger files appear.
+	MaxDownloadBytes = 1 << 30 // 1 GiB
+)
+
+// NewHTTPClient builds the HTTP client used by the shipped providers: an overall
+// request timeout plus a header timeout, so a remote that accepts the connection
+// but never sends response headers cannot hang a request indefinitely.
+func NewHTTPClient(timeout time.Duration) *http.Client {
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.ResponseHeaderTimeout = 30 * time.Second
+	return &http.Client{Timeout: timeout, Transport: tr}
+}
 
 // ErrDownloadNotSupported is returned by a provider's Download when it only
 // exposes search/metadata and intentionally does not retrieve audio (e.g. the

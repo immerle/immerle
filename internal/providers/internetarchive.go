@@ -32,7 +32,7 @@ func NewInternetArchiveProvider(baseURL string, maxItems int) *InternetArchivePr
 	return &InternetArchiveProvider{
 		baseURL:  strings.TrimRight(baseURL, "/"),
 		maxItems: maxItems,
-		http:     &http.Client{Timeout: 60 * time.Second},
+		http:     NewHTTPClient(60 * time.Second),
 	}
 }
 
@@ -225,7 +225,7 @@ func (p *InternetArchiveProvider) Download(ctx context.Context, providerTrackID 
 	if resp.StatusCode >= 300 {
 		return fmt.Errorf("internet-archive: download status %d", resp.StatusCode)
 	}
-	_, err = io.Copy(w, resp.Body)
+	_, err = io.Copy(w, io.LimitReader(resp.Body, MaxDownloadBytes))
 	return err
 }
 
@@ -250,7 +250,7 @@ func (p *InternetArchiveProvider) getJSON(ctx context.Context, rawURL string, ou
 	if resp.StatusCode >= 300 {
 		return fmt.Errorf("internet-archive: status %d", resp.StatusCode)
 	}
-	return json.NewDecoder(resp.Body).Decode(out)
+	return json.NewDecoder(io.LimitReader(resp.Body, MaxMetadataBytes)).Decode(out)
 }
 
 func splitIAID(id string) (identifier, filename string, ok bool) {
