@@ -65,11 +65,13 @@ func (h *Handler) serveLocal(w http.ResponseWriter, r *http.Request, track model
 }
 
 // streamProgressive serves the provider's original bytes directly on a first
-// listen. It does NOT transcode (that would force buffering the whole file first)
-// but labels the response as the requested format, so the client treats it as the
-// stream it asked for. Seeking is disabled until the local copy is ready.
+// listen. It does NOT transcode (that would force buffering the whole file
+// first), so it must advertise the content type of the *actual* bytes — the
+// provider's suffix — not the requested transcode format, or a client would get
+// e.g. raw FLAC labelled audio/mpeg. Seeking is disabled until the local copy is
+// ready; later plays go through the seekable, transcoding local path.
 func (h *Handler) streamProgressive(w http.ResponseWriter, r *http.Request, pending *core.PendingDownload, opts stream.Options) {
-	w.Header().Set("Content-Type", audioContentType(opts.Format, pending.Suffix()))
+	w.Header().Set("Content-Type", audioContentType("", pending.Suffix()))
 	w.Header().Set("Accept-Ranges", "none")
 	if err := h.OnDemand.StreamPending(r.Context(), pending, w); err != nil {
 		// Headers/bytes have already started; nothing to do but log.

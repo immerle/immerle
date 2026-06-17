@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -29,7 +30,7 @@ func (h *Handler) handleGetMusicFolders(w http.ResponseWriter, r *http.Request) 
 }
 
 func musicFolderID(i int) string {
-	return "folder-" + string(rune('0'+i))
+	return "folder-" + strconv.Itoa(i)
 }
 
 func (h *Handler) handleGetIndexes(w http.ResponseWriter, r *http.Request) {

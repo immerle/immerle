@@ -61,6 +61,8 @@ func (h *Handler) handleSetupInit(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusMethodNotAllowed, errorBody("method_not_allowed"))
 		return
 	}
+	// Unauthenticated endpoint: cap the body so it can't be used to exhaust memory.
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 
 	req := parseSetupInit(r)
 
