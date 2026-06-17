@@ -149,6 +149,12 @@ func (c Config) Validate() error {
 	if c.Server.Address == "" {
 		return fmt.Errorf("server.address must be set")
 	}
+	// An empty secret is allowed (one is auto-generated at runtime), but an
+	// explicitly-set AUTH_SECRET must be long enough to be a meaningful key for
+	// token signing and stored-password encryption.
+	if s := c.Auth.Secret; s != "" && len(s) < 16 {
+		return fmt.Errorf("auth.secret (AUTH_SECRET) must be at least 16 characters")
+	}
 	return nil
 }
 

@@ -130,9 +130,17 @@ func (h *Handler) Register(mux chi.Router) {
 }
 
 // authenticated wraps a handler with Subsonic authentication.
+// maxFormBytes caps a request body parsed as form params, so an unbounded POST
+// body can't exhaust memory.
+const maxFormBytes = 1 << 20 // 1 MiB
+
 func (h *Handler) authenticated(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		_ = r.ParseForm()
+		r.Body = http.MaxBytesReader(w, r.Body, maxFormBytes)
+		if err := r.ParseForm(); err != nil {
+			writeError(w, r, ErrGeneric, "Invalid request")
+			return
+		}
 		creds := core.Credentials{
 			Username:  r.Form.Get("u"),
 			Password:  r.Form.Get("p"),
