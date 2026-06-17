@@ -1,0 +1,116 @@
+import { useState } from 'react';
+import { Pressable, Text, View } from 'react-native';
+import { router } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import Slider from '@react-native-community/slider';
+import { CoverArt } from '../src/components/CoverArt';
+import { IconButton } from '../src/components/ui';
+import { PlayButton } from '../src/components/PlayButton';
+import { usePlayer } from '../src/audio/store';
+import { formatDuration } from '../src/utils/format';
+import { useColors } from '../src/theme/colors';
+
+/**
+ * Full-screen "now playing". Presented modally. Shows large artwork, a seekable
+ * progress bar, primary transport controls, and repeat mode. Track/queue state
+ * comes entirely from the player store, so it mirrors whatever the OS controls
+ * (lockscreen/MediaSession) do too.
+ */
+export default function Player() {
+  const colors = useColors();
+  const song = usePlayer((s) => (s.index >= 0 ? s.songs[s.index] : undefined));
+  const status = usePlayer((s) => s.status);
+  const position = usePlayer((s) => s.position);
+  const duration = usePlayer((s) => s.duration);
+  const repeat = usePlayer((s) => s.repeat);
+  const toggle = usePlayer((s) => s.toggle);
+  const next = usePlayer((s) => s.next);
+  const previous = usePlayer((s) => s.previous);
+  const seekTo = usePlayer((s) => s.seekTo);
+  const cycleRepeat = usePlayer((s) => s.cycleRepeat);
+  const shuffle = usePlayer((s) => s.shuffle);
+  const toggleShuffle = usePlayer((s) => s.toggleShuffle);
+
+  const [scrubbing, setScrubbing] = useState<number | null>(null);
+
+  if (!song) {
+    return (
+      <SafeAreaView className="flex-1 items-center justify-center bg-background">
+        <Text className="text-muted">Aucune lecture en cours</Text>
+        <Pressable onPress={() => router.back()} className="mt-4">
+          <Text className="text-primary">Fermer</Text>
+        </Pressable>
+      </SafeAreaView>
+    );
+  }
+
+  const isPlaying = status === 'playing';
+  const shownPosition = scrubbing ?? position;
+  const repeatIcon = repeat === 'track' ? 'repeat' : 'repeat';
+  const repeatActive = repeat !== 'off';
+
+  return (
+    <SafeAreaView className="flex-1 bg-background">
+      <View className="flex-row items-center justify-between px-4 pt-2">
+        <IconButton name="chevron-down" size={28} onPress={() => router.back()} accessibilityLabel="Fermer" />
+        <Text className="text-sm font-medium text-muted">En lecture</Text>
+        <IconButton name="list" size={24} onPress={() => router.push('/queue')} accessibilityLabel="File" />
+      </View>
+
+      <View className="flex-1 justify-center px-6">
+        <View className="items-center">
+          <CoverArt coverArt={song.coverArt} size={300} rounded="rounded-3xl" />
+        </View>
+
+        <View className="pt-8">
+          <Text numberOfLines={1} className="text-2xl font-bold text-foreground">
+            {song.title}
+          </Text>
+          <Text numberOfLines={1} className="pt-1 text-lg text-muted">
+            {song.artist}
+          </Text>
+        </View>
+
+        <View className="pt-6">
+          <Slider
+            minimumValue={0}
+            maximumValue={duration > 0 ? duration : 1}
+            value={shownPosition}
+            minimumTrackTintColor={colors.primary}
+            maximumTrackTintColor={colors.border}
+            thumbTintColor={colors.primary}
+            onValueChange={(v) => setScrubbing(v)}
+            onSlidingComplete={(v) => {
+              setScrubbing(null);
+              void seekTo(v);
+            }}
+          />
+          <View className="flex-row justify-between">
+            <Text className="text-xs text-muted">{formatDuration(shownPosition)}</Text>
+            <Text className="text-xs text-muted">{formatDuration(duration)}</Text>
+          </View>
+        </View>
+
+        <View className="flex-row items-center justify-between px-2 pt-6">
+          <IconButton
+            name={repeatIcon}
+            size={24}
+            color={repeatActive ? colors.primary : colors.muted}
+            onPress={cycleRepeat}
+            accessibilityLabel="Répéter"
+          />
+          <IconButton name="play-skip-back" size={34} onPress={previous} accessibilityLabel="Précédent" />
+          <PlayButton playing={isPlaying} onPress={toggle} size={72} />
+          <IconButton name="play-skip-forward" size={34} onPress={next} accessibilityLabel="Suivant" />
+          <IconButton
+            name="shuffle"
+            size={24}
+            color={shuffle ? colors.primary : colors.muted}
+            onPress={toggleShuffle}
+            accessibilityLabel="Lecture aléatoire"
+          />
+        </View>
+      </View>
+    </SafeAreaView>
+  );
+}

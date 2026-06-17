@@ -1,0 +1,1326 @@
+{
+    "components": {
+        "schemas": {
+            "gossignol.ActivityEventDTO": {
+                "properties": {
+                    "createdAt": {
+                        "example": "2026-06-15T09:00:00Z",
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "itemId": {
+                        "type": "string"
+                    },
+                    "itemType": {
+                        "example": "track",
+                        "type": "string"
+                    },
+                    "privacy": {
+                        "example": "friends",
+                        "type": "string"
+                    },
+                    "type": {
+                        "example": "listen",
+                        "type": "string"
+                    },
+                    "userId": {
+                        "type": "string"
+                    },
+                    "username": {
+                        "example": "bob",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "gossignol.ActivityResponse": {
+                "properties": {
+                    "events": {
+                        "items": {
+                            "$ref": "#/components/schemas/gossignol.ActivityEventDTO"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "ok": {
+                        "example": true,
+                        "type": "boolean"
+                    }
+                },
+                "type": "object"
+            },
+            "gossignol.CapabilitiesResponse": {
+                "properties": {
+                    "capabilities": {
+                        "additionalProperties": {
+                            "$ref": "#/components/schemas/gossignol.CapabilityDTO"
+                        },
+                        "type": "object"
+                    },
+                    "ok": {
+                        "example": true,
+                        "type": "boolean"
+                    },
+                    "protocolVersion": {
+                        "example": "1.0.0",
+                        "type": "string"
+                    },
+                    "server": {
+                        "example": "gossignol",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "gossignol.CapabilityDTO": {
+                "properties": {
+                    "version": {
+                        "example": 1,
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
+            "gossignol.ErrorResponse": {
+                "properties": {
+                    "error": {
+                        "example": "already_initialized",
+                        "type": "string"
+                    },
+                    "ok": {
+                        "example": false,
+                        "type": "boolean"
+                    }
+                },
+                "type": "object"
+            },
+            "gossignol.FieldErrorDTO": {
+                "properties": {
+                    "field": {
+                        "example": "password",
+                        "type": "string"
+                    },
+                    "message": {
+                        "example": "must be at least 8 characters",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "gossignol.FriendDTO": {
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "username": {
+                        "example": "bob",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "gossignol.FriendsResponse": {
+                "properties": {
+                    "friends": {
+                        "items": {
+                            "$ref": "#/components/schemas/gossignol.FriendDTO"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "ok": {
+                        "example": true,
+                        "type": "boolean"
+                    }
+                },
+                "type": "object"
+            },
+            "gossignol.JamParticipantDTO": {
+                "properties": {
+                    "joinedAt": {
+                        "example": "2026-06-15T09:00:00Z",
+                        "type": "string"
+                    },
+                    "sessionId": {
+                        "type": "string"
+                    },
+                    "userId": {
+                        "type": "string"
+                    },
+                    "username": {
+                        "example": "bob",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "gossignol.JamResponse": {
+                "properties": {
+                    "ok": {
+                        "example": true,
+                        "type": "boolean"
+                    },
+                    "participants": {
+                        "items": {
+                            "$ref": "#/components/schemas/gossignol.JamParticipantDTO"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "session": {
+                        "$ref": "#/components/schemas/gossignol.JamSessionDTO"
+                    }
+                },
+                "type": "object"
+            },
+            "gossignol.JamSessionDTO": {
+                "properties": {
+                    "currentTrackId": {
+                        "type": "string"
+                    },
+                    "hostId": {
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "example": "Friday Night",
+                        "type": "string"
+                    },
+                    "position": {
+                        "example": 42000,
+                        "type": "integer"
+                    },
+                    "state": {
+                        "example": "playing",
+                        "type": "string"
+                    },
+                    "trackIds": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "type": "object"
+            },
+            "gossignol.OKResponse": {
+                "properties": {
+                    "ok": {
+                        "example": true,
+                        "type": "boolean"
+                    }
+                },
+                "type": "object"
+            },
+            "gossignol.PendingFriendDTO": {
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "since": {
+                        "example": "2026-06-15T09:00:00Z",
+                        "type": "string"
+                    },
+                    "username": {
+                        "example": "alice",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "gossignol.PendingFriendsResponse": {
+                "properties": {
+                    "ok": {
+                        "example": true,
+                        "type": "boolean"
+                    },
+                    "pending": {
+                        "items": {
+                            "$ref": "#/components/schemas/gossignol.PendingFriendDTO"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "type": "object"
+            },
+            "gossignol.SetupInitRequest": {
+                "properties": {
+                    "email": {
+                        "example": "me@example.com",
+                        "type": "string"
+                    },
+                    "password": {
+                        "example": "a-strong-password",
+                        "type": "string"
+                    },
+                    "setupToken": {
+                        "description": "SetupToken is required only when the server was started with\nauth.require_setup_token=true.",
+                        "type": "string"
+                    },
+                    "username": {
+                        "example": "kilian",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "gossignol.SetupInitResponse": {
+                "properties": {
+                    "ok": {
+                        "example": true,
+                        "type": "boolean"
+                    },
+                    "user": {
+                        "$ref": "#/components/schemas/gossignol.UserDTO"
+                    }
+                },
+                "type": "object"
+            },
+            "gossignol.SetupStatusResponse": {
+                "properties": {
+                    "initialized": {
+                        "example": false,
+                        "type": "boolean"
+                    },
+                    "needsSetup": {
+                        "example": true,
+                        "type": "boolean"
+                    },
+                    "ok": {
+                        "example": true,
+                        "type": "boolean"
+                    },
+                    "setupTokenRequired": {
+                        "example": false,
+                        "type": "boolean"
+                    },
+                    "userCount": {
+                        "example": 0,
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
+            "gossignol.UserDTO": {
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "isAdmin": {
+                        "example": true,
+                        "type": "boolean"
+                    },
+                    "username": {
+                        "example": "kilian",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "gossignol.ValidationErrorResponse": {
+                "properties": {
+                    "details": {
+                        "items": {
+                            "$ref": "#/components/schemas/gossignol.FieldErrorDTO"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "error": {
+                        "example": "validation",
+                        "type": "string"
+                    },
+                    "ok": {
+                        "example": false,
+                        "type": "boolean"
+                    }
+                },
+                "type": "object"
+            }
+        }
+    },
+    "info": {
+        "contact": {
+            "name": "gossignol"
+        },
+        "description": "Native gossignol endpoints (first-run setup, capability\ndiscovery, friends, activity feed, collaborative playlists and\nsynchronized Jam sessions) that complement the Subsonic /\nOpenSubsonic API served under /rest/.\n\nAuthenticated endpoints reuse Subsonic credentials passed as\nquery parameters: u (username) plus either p (password) or the\ntoken pair t (md5(password+salt)) and s (salt), and c (client\nname). Setup and capability endpoints are unauthenticated.",
+        "license": {
+            "name": "See repository"
+        },
+        "title": "gossignol extension API",
+        "version": "1.0.0"
+    },
+    "externalDocs": {
+        "description": "",
+        "url": ""
+    },
+    "paths": {
+        "/activity": {
+            "get": {
+                "description": "Returns activity events visible to the caller, honoring each author's privacy setting.",
+                "parameters": [
+                    {
+                        "description": "Subsonic username",
+                        "in": "query",
+                        "name": "u",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Subsonic password (or t+s token auth)",
+                        "in": "query",
+                        "name": "p",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Client name",
+                        "in": "query",
+                        "name": "c",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/gossignol.ActivityResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "summary": "Activity feed",
+                "tags": [
+                    "activity"
+                ]
+            }
+        },
+        "/capabilities": {
+            "get": {
+                "description": "Unauthenticated. Lets clients detect supported gossignol extensions and whether first-run setup is still needed.",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/gossignol.CapabilitiesResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "summary": "Capability discovery",
+                "tags": [
+                    "discovery"
+                ]
+            }
+        },
+        "/friends": {
+            "get": {
+                "description": "Returns the caller's accepted friends.",
+                "parameters": [
+                    {
+                        "description": "Subsonic username",
+                        "in": "query",
+                        "name": "u",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Subsonic password (or use t+s token auth)",
+                        "in": "query",
+                        "name": "p",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Client name",
+                        "in": "query",
+                        "name": "c",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/gossignol.FriendsResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/gossignol.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "summary": "List friends",
+                "tags": [
+                    "friends"
+                ]
+            }
+        },
+        "/friends/accept": {
+            "post": {
+                "parameters": [
+                    {
+                        "description": "Subsonic username",
+                        "in": "query",
+                        "name": "u",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Subsonic password (or t+s token auth)",
+                        "in": "query",
+                        "name": "p",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Client name",
+                        "in": "query",
+                        "name": "c",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Username of the requester to accept",
+                        "in": "query",
+                        "name": "username",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/gossignol.OKResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/gossignol.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "summary": "Accept a friend request",
+                "tags": [
+                    "friends"
+                ]
+            }
+        },
+        "/friends/pending": {
+            "get": {
+                "parameters": [
+                    {
+                        "description": "Subsonic username",
+                        "in": "query",
+                        "name": "u",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Subsonic password (or t+s token auth)",
+                        "in": "query",
+                        "name": "p",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Client name",
+                        "in": "query",
+                        "name": "c",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/gossignol.PendingFriendsResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "summary": "List pending friend requests",
+                "tags": [
+                    "friends"
+                ]
+            }
+        },
+        "/friends/request": {
+            "post": {
+                "parameters": [
+                    {
+                        "description": "Subsonic username",
+                        "in": "query",
+                        "name": "u",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Subsonic password (or t+s token auth)",
+                        "in": "query",
+                        "name": "p",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Client name",
+                        "in": "query",
+                        "name": "c",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Target username to befriend",
+                        "in": "query",
+                        "name": "username",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/gossignol.OKResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/gossignol.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/gossignol.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "summary": "Send a friend request",
+                "tags": [
+                    "friends"
+                ]
+            }
+        },
+        "/jam/create": {
+            "post": {
+                "description": "Starts a synchronized listening session hosted by the caller.",
+                "parameters": [
+                    {
+                        "description": "Subsonic username",
+                        "in": "query",
+                        "name": "u",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Subsonic password (or t+s token auth)",
+                        "in": "query",
+                        "name": "p",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Client name",
+                        "in": "query",
+                        "name": "c",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Session name",
+                        "in": "query",
+                        "name": "name",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Comma-separated track ids",
+                        "in": "query",
+                        "name": "trackIds",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/gossignol.JamResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "summary": "Create a Jam session",
+                "tags": [
+                    "jam"
+                ]
+            }
+        },
+        "/jam/events": {
+            "get": {
+                "description": "Server-Sent Events stream. Emits the current state immediately, then a \"state\"/\"participants\"/\"closed\" event on every change.",
+                "parameters": [
+                    {
+                        "description": "Subsonic username",
+                        "in": "query",
+                        "name": "u",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Subsonic password (or t+s token auth)",
+                        "in": "query",
+                        "name": "p",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Client name",
+                        "in": "query",
+                        "name": "c",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Jam session id",
+                        "in": "query",
+                        "name": "sessionId",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "text/event-stream": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "description": "SSE stream"
+                    },
+                    "404": {
+                        "content": {
+                            "text/event-stream": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/gossignol.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "summary": "Stream Jam events (SSE)",
+                "tags": [
+                    "jam"
+                ]
+            }
+        },
+        "/jam/join": {
+            "post": {
+                "parameters": [
+                    {
+                        "description": "Subsonic username",
+                        "in": "query",
+                        "name": "u",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Subsonic password (or t+s token auth)",
+                        "in": "query",
+                        "name": "p",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Client name",
+                        "in": "query",
+                        "name": "c",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Jam session id",
+                        "in": "query",
+                        "name": "sessionId",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/gossignol.JamResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/gossignol.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "summary": "Join a Jam session",
+                "tags": [
+                    "jam"
+                ]
+            }
+        },
+        "/jam/leave": {
+            "post": {
+                "parameters": [
+                    {
+                        "description": "Subsonic username",
+                        "in": "query",
+                        "name": "u",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Subsonic password (or t+s token auth)",
+                        "in": "query",
+                        "name": "p",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Client name",
+                        "in": "query",
+                        "name": "c",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Jam session id",
+                        "in": "query",
+                        "name": "sessionId",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/gossignol.OKResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "summary": "Leave a Jam session",
+                "tags": [
+                    "jam"
+                ]
+            }
+        },
+        "/jam/state": {
+            "get": {
+                "parameters": [
+                    {
+                        "description": "Subsonic username",
+                        "in": "query",
+                        "name": "u",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Subsonic password (or t+s token auth)",
+                        "in": "query",
+                        "name": "p",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Client name",
+                        "in": "query",
+                        "name": "c",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Jam session id",
+                        "in": "query",
+                        "name": "sessionId",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/gossignol.JamResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/gossignol.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "summary": "Get Jam session state",
+                "tags": [
+                    "jam"
+                ]
+            }
+        },
+        "/jam/update": {
+            "post": {
+                "description": "Host-only. Updates the shared track/position/state and broadcasts it to participants over SSE.",
+                "parameters": [
+                    {
+                        "description": "Subsonic username",
+                        "in": "query",
+                        "name": "u",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Subsonic password (or t+s token auth)",
+                        "in": "query",
+                        "name": "p",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Client name",
+                        "in": "query",
+                        "name": "c",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Jam session id",
+                        "in": "query",
+                        "name": "sessionId",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Current track id",
+                        "in": "query",
+                        "name": "currentTrackId",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Playback position in ms",
+                        "in": "query",
+                        "name": "position",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "description": "playing or paused",
+                        "in": "query",
+                        "name": "state",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Comma-separated track ids",
+                        "in": "query",
+                        "name": "trackIds",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/gossignol.JamResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/gossignol.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/gossignol.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "summary": "Update Jam playback (host only)",
+                "tags": [
+                    "jam"
+                ]
+            }
+        },
+        "/playlists/collaborators": {
+            "post": {
+                "description": "Owner-only. Marks the playlist collaborative and grants edit rights to another user.",
+                "parameters": [
+                    {
+                        "description": "Subsonic username",
+                        "in": "query",
+                        "name": "u",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Subsonic password (or t+s token auth)",
+                        "in": "query",
+                        "name": "p",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Client name",
+                        "in": "query",
+                        "name": "c",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Playlist id",
+                        "in": "query",
+                        "name": "playlistId",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "User to grant edit rights",
+                        "in": "query",
+                        "name": "username",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/gossignol.OKResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/gossignol.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/gossignol.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "summary": "Add a playlist collaborator",
+                "tags": [
+                    "playlists"
+                ]
+            }
+        },
+        "/setup/init": {
+            "post": {
+                "description": "Unauthenticated, one-shot. Creates the initial admin — the only way to bootstrap an account (no config/env provisioning). Self-locks once any user exists.",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/gossignol.SetupInitRequest",
+                                        "summary": "body",
+                                        "description": "Initial admin credentials"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Initial admin credentials",
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/gossignol.SetupInitResponse"
+                                }
+                            }
+                        },
+                        "description": "Created"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/gossignol.ValidationErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "validation"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/gossignol.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "invalid_setup_token"
+                    },
+                    "409": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/gossignol.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "already_initialized"
+                    }
+                },
+                "summary": "Create the first administrator",
+                "tags": [
+                    "setup"
+                ]
+            }
+        },
+        "/setup/status": {
+            "get": {
+                "description": "Unauthenticated. Reports whether the server still needs its first admin and whether a setup token is required.",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/gossignol.SetupStatusResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "summary": "First-run setup status",
+                "tags": [
+                    "setup"
+                ]
+            }
+        }
+    },
+    "openapi": "3.1.0",
+    "tags": [
+        {
+            "description": "First-run provisioning of the initial administrator.",
+            "name": "setup"
+        },
+        {
+            "description": "Capability discovery for client apps.",
+            "name": "discovery"
+        },
+        {
+            "description": "Friend requests and listing.",
+            "name": "friends"
+        },
+        {
+            "description": "Social activity feed (privacy-aware).",
+            "name": "activity"
+        },
+        {
+            "description": "Collaborative playlist management.",
+            "name": "playlists"
+        },
+        {
+            "description": "Synchronized listening sessions (SSE).",
+            "name": "jam"
+        }
+    ]
+}

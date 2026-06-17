@@ -1,0 +1,79 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Dark-first: paint the page background before React/theme mount so a reload
+     never flashes white during bundle load. */
+  html,
+  body,
+  #root {
+    background-color: rgb(18 18 18);
+  }
+
+  :root {
+    /* Light theme — Spotify-flavored (RGB channels, consumed by tailwind.config.js). */
+    --color-background: 255 255 255;
+    --color-surface: 246 246 246;
+    --color-surface-alt: 237 237 237;
+    --color-foreground: 0 0 0;
+    --color-muted: 107 107 107;
+    --color-border: 229 229 229;
+    --color-primary: 29 185 84; /* #1DB954 */
+    --color-primary-foreground: 0 0 0;
+    --color-accent: 29 185 84;
+    --color-danger: 215 32 32;
+    --color-success: 29 185 84;
+  }
+
+  .dark:root,
+  :root.dark {
+    /* Dark theme — the primary Spotify look: near-black with bright green. */
+    --color-background: 18 18 18; /* #121212 */
+    --color-surface: 24 24 24; /* #181818 */
+    --color-surface-alt: 40 40 40; /* #282828 */
+    --color-foreground: 255 255 255;
+    --color-muted: 179 179 179; /* #B3B3B3 */
+    --color-border: 42 42 42; /* #2A2A2A — kept very subtle */
+    --color-primary: 30 215 96; /* #1ED760 */
+    --color-primary-foreground: 0 0 0;
+    --color-accent: 30 215 96;
+    --color-danger: 226 33 52;
+    --color-success: 30 215 96;
+  }
+}
+
+@layer base {
+  /* RN Web renders TextInput as a raw <input>; drop the browser's default focus
+     outline so the rounded container can own the focus ring instead. */
+  input:focus,
+  input:focus-visible,
+  textarea:focus,
+  textarea:focus-visible {
+    outline: none;
+  }
+}
+
+/* Theme-aware scrollbars (web). Channels come from the active theme above. */
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--color-border)) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: rgb(var(--color-border));
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(var(--color-muted));
+  }
+}

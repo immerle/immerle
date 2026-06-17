@@ -1,0 +1,48 @@
+appId: com.gossignol.app
+productName: Gossignol
+copyright: © Gossignol
+
+directories:
+  output: release
+  buildResources: build
+
+# Override the package.json "main" (which must stay "expo-router/entry" for
+# Expo) with the Electron entry point inside the packaged app.
+extraMetadata:
+  main: electron/main.js
+
+# Only ship the Electron glue + the exported web build. electron-builder also
+# bundles production dependencies automatically (none are needed at runtime).
+files:
+  - electron/**/*
+  - dist/**/*
+  - package.json
+
+asar: true
+
+mac:
+  category: public.app-category.music
+  icon: assets/icon.png
+  target:
+    - target: dmg
+      arch: [x64, arm64]
+    - target: zip
+      arch: [x64, arm64]
+
+win:
+  icon: assets/icon.png
+  target:
+    - target: nsis
+      arch: [x64]
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+
+linux:
+  icon: assets/icon.png
+  category: AudioVideo
+  target:
+    - AppImage
+    - deb
