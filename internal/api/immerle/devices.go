@@ -3,6 +3,7 @@ package immerle
 import (
 	"net/http"
 
+	"github.com/immerle/immerle/internal/api/httputil"
 	"github.com/immerle/immerle/internal/core"
 )
 
@@ -36,7 +37,7 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 		Password:  r.Form.Get("p"),
 		Token:     r.Form.Get("t"),
 		Salt:      r.Form.Get("s"),
-		RemoteIP:  clientIP(r),
+		RemoteIP:  httputil.ClientIP(r),
 		UserAgent: r.UserAgent(),
 	}
 	token, dev, err := h.Auth.IssueDeviceToken(r.Context(), creds, deviceName, h.deviceTokenTTL())
