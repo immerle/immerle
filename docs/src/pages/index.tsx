@@ -44,14 +44,14 @@ const FEATURES = [
   },
 ];
 
-function Equalizer() {
-  // Decorative; hidden from assistive tech.
+function EqualizerBackdrop() {
+  // Full-width equalizer behind the hero; decorative, fades out below.
   return (
-    <span className={styles.eq} aria-hidden="true">
-      {Array.from({length: 5}).map((_, i) => (
+    <div className={styles.eqBg} aria-hidden="true">
+      {Array.from({length: 48}).map((_, i) => (
         <span key={i} style={{['--i' as string]: i}} />
       ))}
-    </span>
+    </div>
   );
 }
 
@@ -61,6 +61,7 @@ export default function Home(): React.ReactElement {
     <Layout title="Self-hosted music that sings" description={siteConfig.tagline}>
       <main className={styles.main}>
         <div className={styles.aurora} aria-hidden="true" />
+        <EqualizerBackdrop />
         <div className={styles.grain} aria-hidden="true" />
 
         <section className={styles.hero}>
@@ -76,7 +77,6 @@ export default function Home(): React.ReactElement {
             Own every
             <br />
             beat of your <span className={styles.sings}>music</span>
-            <Equalizer />
           </h1>
           <p className={styles.lede}>
             Stream, share and discover — on a music server that's entirely
