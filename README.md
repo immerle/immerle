@@ -89,5 +89,6 @@ handler annotations — CI fails on a stale spec. See
 
 ## 📜 License
 
-Immerle is free software, licensed under the **[GNU GPLv3](LICENSE)**. You’re
-free to use, study, share and improve it — just keep it free. 💚
+Immerle is free software, licensed under the **[GNU AGPLv3](LICENSE)**. You’re
+free to use, study, share and improve it — just keep it free, and if you run a
+modified version as a network service, share your changes too. 💚
