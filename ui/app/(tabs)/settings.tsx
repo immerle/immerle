@@ -7,7 +7,7 @@ import { useLocale, LocalePref } from '../../src/i18n/store';
 import { usePlayer } from '../../src/audio/store';
 import { useAccount, useUpdateAccount } from '../../src/query/account';
 import { QUALITY_PRESETS } from '../../src/audio/quality';
-import { Button, Card, Field } from '../../src/components/ui';
+import { Button, Card, Field, Select } from '../../src/components/ui';
 import { AdminHeader, AdminScroll, CardTitle, colorFor } from '../../src/components/AdminUI';
 import { Ionicon } from '../../src/components/Ionicon';
 import { ACCENT_PRESETS, DEFAULT_ACCENT, normalizeHex } from '../../src/theme/accent';
@@ -20,10 +20,10 @@ const THEME_OPTIONS: { key: ThemePreference; label: string; icon: string }[] = [
 ];
 
 // Language names shown in their own language; `system` follows the device.
-const LANG_OPTIONS: { key: LocalePref; label: string; icon: string }[] = [
-  { key: 'system', label: 'Système', icon: 'phone-portrait' },
-  { key: 'en', label: 'English', icon: 'language' },
-  { key: 'fr', label: 'Français', icon: 'language' },
+const LANG_OPTIONS: { value: LocalePref; label: string }[] = [
+  { value: 'system', label: 'Système' },
+  { value: 'en', label: 'English' },
+  { value: 'fr', label: 'Français' },
 ];
 
 /** User settings: account, appearance, accent colour, playback quality, access. */
@@ -107,6 +107,10 @@ export default function Settings() {
           value={editEmail}
           onChangeText={setEditEmail}
         />
+        <View className="gap-1.5">
+          <Text className="text-sm font-medium text-muted">Langue</Text>
+          <Select value={localePref} options={LANG_OPTIONS} onChange={setLocale} />
+        </View>
         <View className="flex-row justify-end">
           <Button
             title="Enregistrer"
@@ -141,27 +145,6 @@ export default function Settings() {
       </Card>
 
       {/* Accent color */}
-      <Card className="gap-3">
-        <CardTitle icon="language" color="#8b5cf6" title="Langue" />
-        <View className="flex-row gap-2">
-          {LANG_OPTIONS.map((opt) => {
-            const active = localePref === opt.key;
-            return (
-              <Pressable
-                key={opt.key}
-                onPress={() => setLocale(opt.key)}
-                className={`flex-1 items-center gap-1 rounded-xl border p-3 ${
-                  active ? 'border-primary bg-primary/10' : 'border-border bg-surface-alt'
-                }`}
-              >
-                <Ionicon name={opt.icon} size={22} color={active ? colors.primary : colors.muted} />
-                <Text className={`text-sm ${active ? 'font-semibold text-primary' : 'text-muted'}`}>{opt.label}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      </Card>
-
       <Card className="gap-3">
         <CardTitle icon="color-palette" color={currentAccent} title="Couleur d'accent" />
         <View className="flex-row flex-wrap gap-3">

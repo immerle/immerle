@@ -1,6 +1,7 @@
 import { ReactNode, useState } from 'react';
 import {
   ActivityIndicator,
+  Modal,
   Pressable,
   PressableProps,
   Text,
@@ -265,5 +266,55 @@ export function SectionHeader({ title, action }: { title: string; action?: React
       <Text className="text-xl font-bold tracking-tight text-foreground">{title}</Text>
       {action}
     </View>
+  );
+}
+
+// --- Select ----------------------------------------------------------------
+
+/** Dependency-free dropdown: a trigger that opens a modal list of options. */
+export function Select<T extends string>({
+  value,
+  options,
+  onChange,
+}: {
+  value: T;
+  options: { value: T; label: string }[];
+  onChange: (v: T) => void;
+}) {
+  const colors = useColors();
+  const [open, setOpen] = useState(false);
+  const current = options.find((o) => o.value === value);
+  return (
+    <>
+      <Pressable
+        onPress={() => setOpen(true)}
+        className="flex-row items-center justify-between rounded-xl border border-border bg-surface-alt px-3 py-2.5 active:opacity-70"
+      >
+        <Text className="text-base text-foreground">{current?.label ?? value}</Text>
+        <Ionicon name="chevron-down" size={18} color={colors.muted} />
+      </Pressable>
+      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+        <Pressable className="flex-1 justify-center bg-black/40 px-8" onPress={() => setOpen(false)}>
+          <View className="overflow-hidden rounded-2xl border border-border bg-surface">
+            {options.map((o, i) => {
+              const active = o.value === value;
+              return (
+                <Pressable
+                  key={o.value}
+                  onPress={() => {
+                    onChange(o.value);
+                    setOpen(false);
+                  }}
+                  className={`flex-row items-center justify-between px-4 py-3 ${i > 0 ? 'border-t border-border' : ''} ${active ? 'bg-primary/10' : 'active:bg-surface-alt'}`}
+                >
+                  <Text className={`text-base ${active ? 'font-semibold text-primary' : 'text-foreground'}`}>{o.label}</Text>
+                  {active ? <Ionicon name="checkmark" size={18} color={colors.primary} /> : null}
+                </Pressable>
+              );
+            })}
+          </View>
+        </Pressable>
+      </Modal>
+    </>
   );
 }
