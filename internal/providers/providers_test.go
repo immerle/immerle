@@ -55,10 +55,10 @@ func TestJamendoSearchResolveDownload(t *testing.T) {
 }
 
 func TestJamendoFactoryRequiresClientID(t *testing.T) {
-	if _, err := Build("jamendo", map[string]string{}); err == nil {
+	if _, err := Build("jamendo", Config{}); err == nil {
 		t.Fatal("expected error without client_id")
 	}
-	if _, err := Build("jamendo", map[string]string{"client_id": "x"}); err != nil {
+	if _, err := Build("jamendo", Config{Params: map[string]string{"client_id": "x"}}); err != nil {
 		t.Fatalf("unexpected error with client_id: %v", err)
 	}
 }

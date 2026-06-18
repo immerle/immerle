@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"regexp"
@@ -188,8 +187,10 @@ func (m *ProviderManager) Upsert(ctx context.Context, cfg models.ProviderConfig)
 	if strings.TrimSpace(cfg.Config) == "" {
 		cfg.Config = "{}"
 	}
-	if !json.Valid([]byte(cfg.Config)) {
-		return cfg, fmt.Errorf("config must be valid JSON")
+	// Enforce the unified config schema ({ header, params, … }); rejects invalid
+	// JSON and unknown keys with a clear message before anything is persisted.
+	if _, err := providers.ParseConfig(cfg.Config); err != nil {
+		return cfg, err
 	}
 
 	// Preserve sort order on update; a newly created provider goes to the front

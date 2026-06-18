@@ -46,8 +46,9 @@ func NewFreeMusicArchiveProvider(baseURL string) *FreeMusicArchiveProvider {
 }
 
 func init() {
-	RegisterFactory("free-music-archive", func(settings map[string]string) (Provider, error) {
-		return NewFreeMusicArchiveProvider(setting(settings, "base_url", "")), nil
+	RegisterFactory("free-music-archive", func(_ Config) (Provider, error) {
+		// No tunables; base_url is hardcoded in the constructor.
+		return NewFreeMusicArchiveProvider(""), nil
 	})
 }
 

@@ -5,6 +5,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 )
 
@@ -79,6 +80,32 @@ func TestHTTPProviderSearchResolveDownload(t *testing.T) {
 	}
 	if buf.String() != "AUDIOBYTES" {
 		t.Fatalf("unexpected audio: %q", buf.String())
+	}
+}
+
+func TestHTTPProviderMergesStaticParams(t *testing.T) {
+	var gotQuery url.Values
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotQuery = r.URL.Query()
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"results":[]}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	// A static param (apikey) is appended; a static "q" must NOT override the
+	// protocol's own q.
+	p, err := New("manual", srv.URL, `{"params":{"apikey":"secret","q":"OVERRIDE"}}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := p.Search(context.Background(), "realquery", 5); err != nil {
+		t.Fatal(err)
+	}
+	if gotQuery.Get("apikey") != "secret" {
+		t.Fatalf("static param not merged: %v", gotQuery)
+	}
+	if gotQuery.Get("q") != "realquery" {
+		t.Fatalf("static param overrode protocol q: %q", gotQuery.Get("q"))
 	}
 }
 
