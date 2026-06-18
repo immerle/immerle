@@ -129,6 +129,16 @@ export function useProviderMutations() {
   return { upsert, setEnabled, remove, reorder };
 }
 
+/** Recent warn/error events for one provider; only fetched while the popin is open. */
+export function useProviderLogs(name: string | null) {
+  const client = useAuth((s) => s.client);
+  return useQuery({
+    queryKey: qk.providerLogs(name ?? ''),
+    enabled: !!client && !!name,
+    queryFn: ({ signal }) => client!.getProviderLogs(name!, signal),
+  });
+}
+
 export function useDownloadJobs() {
   const client = useAuth((s) => s.client);
   return useQuery({

@@ -262,3 +262,9 @@ func (s *SettingsService) CleanupMaxAge() time.Duration {
 func (s *SettingsService) CleanupInterval() time.Duration {
 	return time.Duration(s.Get().Cleanup.IntervalSeconds) * time.Second
 }
+
+// LogRetention returns how long persisted logs are kept (read live). A zero or
+// negative value means "keep forever" (pruning disabled).
+func (s *SettingsService) LogRetention() time.Duration {
+	return time.Duration(s.Get().Logs.RetentionDays) * 24 * time.Hour
+}

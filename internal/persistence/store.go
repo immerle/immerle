@@ -35,6 +35,7 @@ type Store struct {
 	Downloads       *DownloadRepo
 	ProviderCache   *ProviderCacheRepo
 	ProviderConfigs *ProviderConfigRepo
+	ProviderLogs    *ProviderLogRepo
 	APITokens       *APITokenRepo
 	Devices         *DeviceRepo
 	Imports         *ImportRepo
@@ -59,6 +60,7 @@ func New(database *db.DB) *Store {
 		Downloads:       &DownloadRepo{base},
 		ProviderCache:   &ProviderCacheRepo{base},
 		ProviderConfigs: &ProviderConfigRepo{base},
+		ProviderLogs:    &ProviderLogRepo{base},
 		APITokens:       &APITokenRepo{base},
 		Devices:         &DeviceRepo{base},
 		Imports:         &ImportRepo{base},

@@ -25,7 +25,7 @@ const RESTART_LABEL_KEYS: Record<string, string> = {
   federation: 'admin.settings.restartFederation',
 };
 
-type SectionKey = 'auth' | 'server' | 'transcode' | 'federation' | 'cleanup';
+type SectionKey = 'auth' | 'server' | 'transcode' | 'federation' | 'cleanup' | 'logs';
 
 interface Section {
   key: SectionKey;
@@ -47,6 +47,7 @@ interface Form {
   syncInterval: string;
   resolveMissing: boolean;
   exportScrobbles: boolean;
+  logRetention: string;
 }
 
 function toForm(s: RuntimeSettingsDTO): Form {
@@ -62,6 +63,7 @@ function toForm(s: RuntimeSettingsDTO): Form {
     syncInterval: String(s.federation?.syncIntervalSeconds ?? 0),
     resolveMissing: s.federation?.resolveMissing ?? false,
     exportScrobbles: s.federation?.exportScrobbles ?? false,
+    logRetention: String(s.logs?.retentionDays ?? 30),
   };
 }
 
@@ -76,6 +78,7 @@ export default function AdminSettings() {
     { key: 'transcode', icon: 'film', color: '#a855f7', title: t('admin.settings.transcodeTitle'), subtitle: t('admin.settings.transcodeSubtitle') },
     { key: 'federation', icon: 'git-network', color: '#14b8a6', title: t('admin.settings.federationTitle'), subtitle: t('admin.settings.federationSubtitle') },
     { key: 'cleanup', icon: 'trash-bin', color: '#ef4444', title: t('admin.settings.cleanupTitle'), subtitle: t('admin.settings.cleanupSubtitle') },
+    { key: 'logs', icon: 'document-text', color: '#f59e0b', title: t('admin.settings.logsTitle'), subtitle: t('admin.settings.logsSubtitle') },
   ];
   const q = useSettings();
   const update = useUpdateSettings();
@@ -204,6 +207,20 @@ export default function AdminSettings() {
                       })
                     }
                   />
+                </>
+              ) : null}
+
+              {sheet === 'logs' ? (
+                <>
+                  <Text className="text-xs text-muted">{t('admin.settings.logsDescription')}</Text>
+                  <Field
+                    label={t('admin.settings.logRetention')}
+                    keyboardType="number-pad"
+                    value={form.logRetention}
+                    onChangeText={(v) => set('logRetention', v)}
+                    help={t('admin.settings.logRetentionHelp')}
+                  />
+                  <SaveButton loading={update.isPending} onPress={() => save({ logs: { retentionDays: num(form.logRetention) } })} />
                 </>
               ) : null}
 

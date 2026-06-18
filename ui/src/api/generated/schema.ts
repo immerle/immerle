@@ -677,6 +677,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/providers/{name}/logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a provider's recent warn/error events
+         * @description Admin only. Returns the most recent provider action failures (search/resolve/download), newest first.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Provider name */
+                    name: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.ProviderLogDTO"][];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/settings": {
         parameters: {
             query?: never;
@@ -3143,6 +3212,19 @@ export interface components {
             /** @example 3 */
             sortOrder?: number;
         };
+        "immerle.ProviderLogDTO": {
+            /** @example download */
+            action?: string;
+            /** @example 2026-06-18T20:00:00Z */
+            createdAt?: string;
+            id?: string;
+            /** @example error */
+            level?: string;
+            /** @example unexpected status 404 */
+            message?: string;
+            /** @example free-music-archive */
+            provider?: string;
+        };
         "immerle.PublicPlaylistDTO": {
             comment?: string;
             coverArts?: string[];
@@ -3179,10 +3261,14 @@ export interface components {
                 /** @example 3600 */
                 syncIntervalSeconds?: number;
             };
+            logs?: {
+                /** @example 30 */
+                retentionDays?: number;
+            };
             providers?: {
                 /** @example true */
                 autoDownloadOnPlay?: boolean;
-                /** @example 6 */
+                /** @example 3 */
                 searchTimeoutSeconds?: number;
             };
             scan?: {

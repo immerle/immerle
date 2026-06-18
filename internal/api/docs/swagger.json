@@ -610,6 +610,34 @@
                 },
                 "type": "object"
             },
+            "immerle.ProviderLogDTO": {
+                "properties": {
+                    "action": {
+                        "example": "download",
+                        "type": "string"
+                    },
+                    "createdAt": {
+                        "example": "2026-06-18T20:00:00Z",
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "level": {
+                        "example": "error",
+                        "type": "string"
+                    },
+                    "message": {
+                        "example": "unexpected status 404",
+                        "type": "string"
+                    },
+                    "provider": {
+                        "example": "free-music-archive",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "immerle.PublicPlaylistDTO": {
                 "properties": {
                     "comment": {
@@ -701,6 +729,15 @@
                         },
                         "type": "object"
                     },
+                    "logs": {
+                        "properties": {
+                            "retentionDays": {
+                                "example": 30,
+                                "type": "integer"
+                            }
+                        },
+                        "type": "object"
+                    },
                     "providers": {
                         "properties": {
                             "autoDownloadOnPlay": {
@@ -708,7 +745,7 @@
                                 "type": "boolean"
                             },
                             "searchTimeoutSeconds": {
-                                "example": 6,
+                                "example": 3,
                                 "type": "integer"
                             }
                         },
@@ -1818,6 +1855,76 @@
                     }
                 ],
                 "summary": "Enable or disable a provider",
+                "tags": [
+                    "admin"
+                ]
+            }
+        },
+        "/admin/providers/{name}/logs": {
+            "get": {
+                "description": "Admin only. Returns the most recent provider action failures (search/resolve/download), newest first.",
+                "parameters": [
+                    {
+                        "description": "Provider name",
+                        "in": "path",
+                        "name": "name",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/immerle.ProviderLogDTO"
+                                    },
+                                    "type": "array"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "503": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Service Unavailable"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "List a provider's recent warn/error events",
                 "tags": [
                     "admin"
                 ]

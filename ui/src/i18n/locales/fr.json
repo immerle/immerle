@@ -357,7 +357,12 @@
       "enableNow": "Activer immédiatement",
       "create": "Créer",
       "confirmDelete": "Confirmer la suppression",
-      "delete": "Supprimer ce provider"
+      "delete": "Supprimer ce provider",
+      "logsTitle": "{{name}} — journaux",
+      "logsSubtitle": "Erreurs et avertissements récents de ce provider.",
+      "logsEmpty": "Aucune erreur ni avertissement enregistré.",
+      "logsError": "Impossible de charger les journaux.",
+      "viewLogs": "Voir les journaux"
     },
     "settings": {
       "title": "Réglages",
@@ -399,6 +404,11 @@
       "autoSweep": "Balayage automatique",
       "removedCount": "{{count}} supprimé(s)",
       "runCleanup": "Lancer le nettoyage maintenant",
+      "logsTitle": "Journaux",
+      "logsSubtitle": "Rétention des journaux de diagnostic",
+      "logsDescription": "Un balayage quotidien supprime les journaux persistés (erreurs et avertissements des providers) plus anciens que la fenêtre de rétention.",
+      "logRetention": "Rétention (jours)",
+      "logRetentionHelp": "0 conserve les journaux indéfiniment.",
       "save": "Enregistrer"
     },
     "users": {

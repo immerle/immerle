@@ -58,6 +58,17 @@ type ProviderConfig struct {
 // be disabled and reordered, but not deleted).
 func (p ProviderConfig) Builtin() bool { return p.Kind == "builtin" }
 
+// ProviderLog is a single warn/error event from a provider action (search,
+// resolve, download), persisted so the admin can inspect failures per provider.
+type ProviderLog struct {
+	ID        string    `json:"id"`
+	Provider  string    `json:"provider"`
+	Level     string    `json:"level"`  // "warn" | "error"
+	Action    string    `json:"action"` // "search" | "resolve" | "download"
+	Message   string    `json:"message"`
+	CreatedAt time.Time `json:"createdAt"`
+}
+
 // RuntimeSettings holds the admin-managed, hot-or-restart configurable settings.
 // They are persisted in data/configuration.yaml and editable via the admin API —
 // as opposed to the bootstrap settings that live in the environment (.env) and
@@ -71,6 +82,16 @@ type RuntimeSettings struct {
 	Cleanup    CleanupRuntime    `json:"cleanup"`
 	Federation FederationRuntime `json:"federation"`
 	Import     ImportRuntime     `json:"import"`
+	Logs       LogsRuntime       `json:"logs"`
+}
+
+// LogsRuntime configures retention of persisted diagnostic logs (provider logs
+// today, any future log table tomorrow). Hot-reloadable: a daily background
+// pruner reads RetentionDays live and drops rows older than that window.
+type LogsRuntime struct {
+	// RetentionDays is how long persisted logs are kept (default 30). 0 disables
+	// pruning (keep forever).
+	RetentionDays int `json:"retentionDays"`
 }
 
 // ImportRuntime configures playlist-import sources (hot-reloadable). Sources
@@ -170,6 +191,7 @@ func DefaultRuntimeSettings() RuntimeSettings {
 		// config here — they use the federation hub credentials. This map is for
 		// future sources that authenticate directly.
 		Import: ImportRuntime{},
+		Logs:   LogsRuntime{RetentionDays: 30},
 	}
 }
 

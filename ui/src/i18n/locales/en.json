@@ -357,7 +357,12 @@
       "enableNow": "Enable immediately",
       "create": "Create",
       "confirmDelete": "Confirm deletion",
-      "delete": "Delete this provider"
+      "delete": "Delete this provider",
+      "logsTitle": "{{name}} — logs",
+      "logsSubtitle": "Recent errors and warnings for this provider.",
+      "logsEmpty": "No errors or warnings logged.",
+      "logsError": "Could not load logs.",
+      "viewLogs": "View logs"
     },
     "settings": {
       "title": "Settings",
@@ -399,6 +404,11 @@
       "autoSweep": "Automatic sweep",
       "removedCount": "{{count}} removed",
       "runCleanup": "Run cleanup now",
+      "logsTitle": "Logs",
+      "logsSubtitle": "Diagnostic log retention",
+      "logsDescription": "A daily sweep deletes persisted logs (provider errors and warnings) older than the retention window.",
+      "logRetention": "Retention (days)",
+      "logRetentionHelp": "0 keeps logs forever.",
       "save": "Save"
     },
     "users": {

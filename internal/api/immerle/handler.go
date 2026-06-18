@@ -160,6 +160,7 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Put("/admin/providers/order", h.handleProviderReorder)
 			r.Put("/admin/providers/{name}/enabled", h.handleProviderEnable)
 			r.Delete("/admin/providers/{name}", h.handleProviderDelete)
+			r.Get("/admin/providers/{name}/logs", h.handleProviderLogs)
 
 			// Admin: DB-backed runtime settings.
 			r.Get("/admin/settings", h.handleSettings)

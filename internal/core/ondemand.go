@@ -140,14 +140,15 @@ func (s StaticProviderSettings) SearchTimeout() time.Duration {
 
 // catalogServiceState carries the on-demand catalog's runtime dependencies.
 type catalogServiceState struct {
-	catalog     *persistence.CatalogRepo
-	downloads   *persistence.DownloadRepo
-	registry    *ProviderRegistry
-	scanner     onDemandScanner
-	settings    ProviderSettings
-	downloadDir string
-	ffmpegPath  string
-	logger      *slog.Logger
+	catalog      *persistence.CatalogRepo
+	downloads    *persistence.DownloadRepo
+	registry     *ProviderRegistry
+	scanner      onDemandScanner
+	settings     ProviderSettings
+	downloadDir  string
+	ffmpegPath   string
+	logger       *slog.Logger
+	providerLogs *persistence.ProviderLogRepo
 
 	// Remote-search performance: per-provider result cache (TTL) deduped by
 	// singleflight. The overall timeout comes from settings (read live).
@@ -177,6 +178,8 @@ type CatalogServiceConfig struct {
 	DownloadDir string
 	FFmpegPath  string
 	Logger      *slog.Logger
+	// ProviderLogs persists provider warn/error events for the admin (optional).
+	ProviderLogs *persistence.ProviderLogRepo
 }
 
 // NewCatalogService builds an on-demand CatalogService.
@@ -188,18 +191,49 @@ func NewCatalogService(cfg CatalogServiceConfig) *CatalogService {
 		cfg.Settings = StaticProviderSettings{}
 	}
 	return &CatalogService{state: &catalogServiceState{
-		catalog:     cfg.Catalog,
-		downloads:   cfg.Downloads,
-		registry:    cfg.Registry,
-		scanner:     cfg.Scanner,
-		settings:    cfg.Settings,
-		downloadDir: cfg.DownloadDir,
-		ffmpegPath:  cfg.FFmpegPath,
-		logger:      cfg.Logger,
-		searchTTL:   60 * time.Second,
-		searchCache: map[string]searchCacheEntry{},
-		wakeCh:      make(chan struct{}, 1),
+		catalog:      cfg.Catalog,
+		downloads:    cfg.Downloads,
+		registry:     cfg.Registry,
+		scanner:      cfg.Scanner,
+		settings:     cfg.Settings,
+		downloadDir:  cfg.DownloadDir,
+		ffmpegPath:   cfg.FFmpegPath,
+		logger:       cfg.Logger,
+		providerLogs: cfg.ProviderLogs,
+		searchTTL:    60 * time.Second,
+		searchCache:  map[string]searchCacheEntry{},
+		wakeCh:       make(chan struct{}, 1),
 	}}
+}
+
+// logProvider records a provider warn/error to both the structured log and the
+// admin-visible provider_logs table. Persistence is best-effort and detached
+// from ctx cancellation (a timed-out search must still log its failure).
+func (s *CatalogService) logProvider(ctx context.Context, level slog.Level, provider, action, msg string) {
+	st := s.state
+	if st.logger != nil {
+		st.logger.Log(ctx, level, "provider "+action+" failed", "provider", provider, "detail", msg)
+	}
+	if st.providerLogs == nil {
+		return
+	}
+	lvl := "warn"
+	if level >= slog.LevelError {
+		lvl = "error"
+	}
+	if err := st.providerLogs.Insert(context.WithoutCancel(ctx), models.ProviderLog{
+		Provider: provider, Level: lvl, Action: action, Message: msg,
+	}); err != nil && st.logger != nil {
+		st.logger.Warn("persist provider log failed", "error", err)
+	}
+}
+
+// ProviderLogs returns recent warn/error events for a provider (admin API).
+func (s *CatalogService) ProviderLogs(ctx context.Context, provider string, limit int) ([]models.ProviderLog, error) {
+	if s.state.providerLogs == nil {
+		return nil, nil
+	}
+	return s.state.providerLogs.ListByProvider(ctx, provider, limit)
 }
 
 const remotePrefix = "remote:"
@@ -247,7 +281,7 @@ func (s *CatalogService) remoteTracksFrom(ctx context.Context, prov providers.Pr
 	st := s.state
 	results, err := s.cachedTrackSearch(ctx, prov, query, limit)
 	if err != nil {
-		st.logger.Warn("provider search failed", "provider", prov.Name(), "error", err)
+		s.logProvider(ctx, slog.LevelWarn, prov.Name(), "search", err.Error())
 		return nil
 	}
 
@@ -327,6 +361,7 @@ func (s *CatalogService) resolveOnce(ctx context.Context, userID string, prov pr
 
 	meta, err := prov.Resolve(ctx, ptid)
 	if err != nil {
+		s.logProvider(ctx, slog.LevelError, prov.Name(), "resolve", err.Error())
 		return resolveResult{}, err
 	}
 
@@ -365,6 +400,7 @@ func (s *CatalogService) resolveOnce(ctx context.Context, userID string, prov pr
 
 	trackID, err := s.processJob(ctx, job, prov, meta)
 	if err != nil {
+		s.logProvider(ctx, slog.LevelError, prov.Name(), "download", err.Error())
 		_ = st.downloads.Fail(ctx, job.ID, err.Error(), false)
 		return resolveResult{}, err
 	}
@@ -590,11 +626,13 @@ func (s *CatalogService) drainQueue(ctx context.Context) {
 		}
 		meta, err := prov.Resolve(ctx, job.ProviderTrackID)
 		if err != nil {
+			s.logProvider(ctx, slog.LevelError, job.Provider, "resolve", err.Error())
 			_ = st.downloads.Fail(ctx, job.ID, err.Error(), job.Attempts < 3)
 			continue
 		}
 		trackID, err := s.processJob(ctx, job, prov, meta)
 		if err != nil {
+			s.logProvider(ctx, slog.LevelError, job.Provider, "download", err.Error())
 			_ = st.downloads.Fail(ctx, job.ID, err.Error(), job.Attempts < 3)
 			continue
 		}
