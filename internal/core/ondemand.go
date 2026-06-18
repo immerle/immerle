@@ -201,8 +201,8 @@ func NewCatalogService(cfg CatalogServiceConfig) *CatalogService {
 		logger:       cfg.Logger,
 		providerLogs: cfg.ProviderLogs,
 		searchTTL:    60 * time.Second,
-		searchCache: map[string]searchCacheEntry{},
-		wakeCh:      make(chan struct{}, 1),
+		searchCache:  map[string]searchCacheEntry{},
+		wakeCh:       make(chan struct{}, 1),
 	}}
 }
 

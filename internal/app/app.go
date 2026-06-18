@@ -252,11 +252,11 @@ func New(cfg config.Config) (*App, error) {
 	}
 
 	onDemand := core.NewCatalogService(core.CatalogServiceConfig{
-		Catalog:     store.Catalog,
-		Downloads:   store.Downloads,
-		Registry:    registry,
-		Scanner:     scan,
-		Settings:    settingsSvc, // hot-reloadable: default/auto-download/timeout
+		Catalog:      store.Catalog,
+		Downloads:    store.Downloads,
+		Registry:     registry,
+		Scanner:      scan,
+		Settings:     settingsSvc, // hot-reloadable: default/auto-download/timeout
 		DownloadDir:  downloadDir,
 		FFmpegPath:   transcodeCfg.FFmpegPath,
 		Logger:       logger,
