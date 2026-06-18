@@ -358,11 +358,10 @@
       "create": "Créer",
       "confirmDelete": "Confirmer la suppression",
       "delete": "Supprimer ce provider",
-      "logsTitle": "{{name}} — journaux",
-      "logsSubtitle": "Erreurs et avertissements récents de ce provider.",
+      "logsTitle": "Erreurs et avertissements",
+      "logsSubtitle": "Problèmes récents enregistrés pour ce provider.",
       "logsEmpty": "Aucune erreur ni avertissement enregistré.",
-      "logsError": "Impossible de charger les journaux.",
-      "viewLogs": "Voir les journaux"
+      "logsError": "Impossible de charger les journaux."
     },
     "settings": {
       "title": "Réglages",
