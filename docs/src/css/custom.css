@@ -4,6 +4,24 @@
  * work well for content-centric websites.
  */
 
+/* Display + mono faces for the landing page (scoped via CSS vars below). */
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Space+Mono:wght@400;700&display=swap');
+
+:root {
+  --immerle-display: 'Bricolage Grotesque', system-ui, sans-serif;
+  --immerle-mono: 'Space Mono', ui-monospace, monospace;
+
+  /* Black navbar + footer on every page, to match the landing. */
+  --ifm-navbar-background-color: #0a0a0c;
+  --ifm-navbar-link-color: #f3f2ef;
+  --ifm-navbar-link-hover-color: #1ed760;
+  --ifm-navbar-shadow: 0 1px 0 rgba(255, 255, 255, 0.08);
+  --ifm-footer-background-color: #0a0a0c;
+  --ifm-footer-color: #c9c8c4;
+  --ifm-footer-link-color: #c9c8c4;
+  --ifm-footer-title-color: #f3f2ef;
+}
+
 /* You can override the default Infima variables here. */
 :root {
   --ifm-color-primary: #2e8555;
@@ -15,6 +33,32 @@
   --ifm-color-primary-lightest: #3cad6e;
   --ifm-code-font-size: 95%;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+}
+
+/* The classic footer's `dark` style hardcodes a grey; pin it to our ink. */
+.footer--dark {
+  --ifm-footer-background-color: #0a0a0c;
+}
+
+/* Homepage: navbar overlays the hero — transparent at the top, ink once
+   scrolled. The `home-page` / `nav-scrolled` classes are toggled in index.tsx. */
+body.home-page .navbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  background: transparent;
+  box-shadow: none;
+  transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+body.home-page.nav-scrolled .navbar {
+  background: #0a0a0c;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* No light/dark switch on the homepage (it has its own fixed dark look). */
+body.home-page .navbar [class*='colorModeToggle'] {
+  display: none;
 }
 
 /* For readability concerns, you should choose a lighter palette in dark mode. */

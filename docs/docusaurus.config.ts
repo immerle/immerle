@@ -41,7 +41,7 @@ const config: Config = {
       {
         docs: {
           sidebarPath: './sidebars.ts',
-          routeBasePath: '/', // docs are the site root; no separate landing page
+          routeBasePath: '/docs', // landing lives at the root, docs under /docs
           editUrl: 'https://github.com/immerle/immerle/tree/main/docs/',
         },
         blog: false,
@@ -79,22 +79,14 @@ const config: Config = {
     },
     footer: {
       style: 'dark',
+      // Flat list (no column titles) → a single compact row, not a tall grid.
       links: [
-        {
-          title: 'Docs',
-          items: [
-            {label: 'Introduction', to: '/'},
-            {label: 'Installation', to: '/installation'},
-            {label: 'Configuration', to: '/configuration'},
-            {label: 'API reference', to: '/api/'},
-          ],
-        },
-        {
-          title: 'More',
-          items: [{label: 'GitHub', href: 'https://github.com/immerle/immerle'}],
-        },
+        {label: 'Docs', to: '/docs'},
+        {label: 'Installation', to: '/docs/installation'},
+        {label: 'API', to: '/api/'},
+        {label: 'GitHub', href: 'https://github.com/immerle/immerle'},
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} Immerle. Logo by Alicia SMITI. Built with Docusaurus.`,
+      copyright: `© ${new Date().getFullYear()} Immerle · Built with Docusaurus`,
     },
     prism: {
       theme: prismThemes.github,
