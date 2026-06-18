@@ -56,6 +56,8 @@ func TestCORSPreflightShortCircuits(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodOptions, srv.URL+"/x", nil)
 	req.Header.Set("Origin", "http://localhost:8081")
 	req.Header.Set("Access-Control-Request-Method", "POST")
+	// The client-requested headers are deliberately ignored; we advertise a
+	// fixed allow-list instead of reflecting this value.
 	req.Header.Set("Access-Control-Request-Headers", "Content-Type")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -68,8 +70,8 @@ func TestCORSPreflightShortCircuits(t *testing.T) {
 	if got := resp.Header.Get("Access-Control-Allow-Methods"); got == "" {
 		t.Fatal("preflight should advertise allowed methods")
 	}
-	if got := resp.Header.Get("Access-Control-Allow-Headers"); got != "Content-Type" {
-		t.Fatalf("preflight should echo requested headers, got %q", got)
+	if got := resp.Header.Get("Access-Control-Allow-Headers"); got != "Authorization, Content-Type, Range" {
+		t.Fatalf("preflight should advertise the fixed allow-list, got %q", got)
 	}
 }
 
