@@ -2,6 +2,7 @@ import React from 'react';
 import Layout from '@theme/Layout';
 import Link from '@docusaurus/Link';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
+import useBaseUrl from '@docusaurus/useBaseUrl';
 import styles from './index.module.css';
 
 const DOCKER_CMD = `docker run -d --name immerle \\
@@ -63,18 +64,22 @@ export default function Home(): React.ReactElement {
         <div className={styles.grain} aria-hidden="true" />
 
         <section className={styles.hero}>
+          <img
+            className={styles.logo}
+            src={useBaseUrl('/img/logo.svg')}
+            alt="Immerle"
+            width={104}
+            height={85}
+          />
           <p className={styles.kicker}>One small Go binary · SQLite out of the box</p>
           <h1 className={styles.title}>
-            Your music,
-            <br />
-            self-hosted —
+            Your music, self-hosted —
             <br />
             and it <span className={styles.sings}>sings<Equalizer /></span>
           </h1>
           <p className={styles.lede}>
-            Immerle speaks fluent Subsonic / OpenSubsonic, so the clients you
-            already love just work. Then it goes further: on-demand catalogs,
-            jam sessions, friends and federation.
+            Fluent Subsonic / OpenSubsonic — your clients just work. Then it
+            goes further.
           </p>
 
           <div className={styles.ctas}>

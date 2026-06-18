@@ -53,6 +53,15 @@
   text-align: center;
 }
 
+.logo {
+  height: clamp(56px, 9vw, 88px);
+  width: auto;
+  margin-bottom: 1.6rem;
+  filter: drop-shadow(0 8px 28px rgba(0, 0, 0, 0.45));
+  opacity: 0;
+  animation: rise 0.7s ease-out forwards;
+}
+
 .kicker {
   font-family: var(--immerle-mono);
   font-size: 0.78rem;
@@ -65,11 +74,11 @@
 }
 
 .title {
-  font-size: clamp(2.7rem, 9vw, 6rem);
-  line-height: 0.98;
-  letter-spacing: -0.03em;
+  font-size: clamp(2.1rem, 5.2vw, 3.6rem);
+  line-height: 1.04;
+  letter-spacing: -0.025em;
   font-weight: 800;
-  margin: 0 0 1.6rem;
+  margin: 0 0 1.4rem;
   opacity: 0;
   animation: rise 0.8s 0.12s ease-out forwards;
 }
