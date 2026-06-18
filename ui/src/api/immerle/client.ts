@@ -2,6 +2,8 @@ import { SubsonicClient } from '../subsonic/client';
 import {
   ActivityEventDTO,
   APITokenDTO,
+  ApiError,
+  ErrorResponse,
   createAuthedImmerleApi,
   CreateTokenResponse,
   FriendDTO,
@@ -32,6 +34,15 @@ import {
   ServerSettings,
   TranscodeProfile,
 } from './types';
+
+/**
+ * Build an {@link ImmerleApiError} from an openapi-fetch error body, preferring
+ * the server's `code`/`params` (for i18n) and falling back to a local code.
+ */
+function apiErr(error: ErrorResponse | undefined, fallbackCode: string): ImmerleApiError {
+  const e = error?.error;
+  return new ImmerleApiError(0, e?.message ?? fallbackCode, e?.code ?? fallbackCode, e?.params);
+}
 
 /** Normalize a provider DTO (all fields optional) into a complete {@link Provider}. */
 function toProvider(dto: ProviderDTO): Provider {
@@ -145,13 +156,17 @@ export class ImmerleClient {
     });
     if (!res.ok) {
       let message = `HTTP ${res.status}`;
+      let code: string | undefined;
+      let params: Record<string, unknown> | undefined;
       try {
-        const j = (await res.json()) as { error?: { code?: string; message?: string } };
-        message = j.error?.message ?? j.error?.code ?? message;
+        const j = (await res.json()) as { error?: ApiError };
+        code = j.error?.code;
+        params = j.error?.params;
+        message = j.error?.message ?? code ?? message;
       } catch {
         /* ignore non-JSON error bodies */
       }
-      throw new ImmerleApiError(res.status, message);
+      throw new ImmerleApiError(res.status, message, code, params);
     }
     if (res.status === 204) return undefined as T;
     return (await res.json()) as T;
@@ -217,7 +232,7 @@ export class ImmerleClient {
   /** List configured providers (with live `enabled`/`active` status). Admin-only. */
   async listProviders(signal?: AbortSignal): Promise<Provider[]> {
     const { data, error } = await this.api.GET('/admin/providers', { signal });
-    if (error || !data) throw new ImmerleApiError(0, 'providers_failed');
+    if (error || !data) throw apiErr(error, 'providers_failed');
     return data.map(toProvider);
   }
 
@@ -241,7 +256,7 @@ export class ImmerleClient {
         kind: p.kind,
       },
     });
-    if (error) throw new ImmerleApiError(0, 'provider_upsert_failed');
+    if (error) throw apiErr(error, 'provider_upsert_failed');
     return this.listProviders();
   }
 
@@ -251,7 +266,7 @@ export class ImmerleClient {
       params: { path: { name } },
       body: { enabled },
     });
-    if (error || !data) throw new ImmerleApiError(0, 'provider_enable_failed');
+    if (error || !data) throw apiErr(error, 'provider_enable_failed');
     return toProvider(data);
   }
 
@@ -260,7 +275,7 @@ export class ImmerleClient {
     const { error } = await this.api.DELETE('/admin/providers/{name}', {
       params: { path: { name } },
     });
-    if (error) throw new ImmerleApiError(0, 'provider_delete_failed');
+    if (error) throw apiErr(error, 'provider_delete_failed');
   }
 
   /**
@@ -271,7 +286,7 @@ export class ImmerleClient {
     const { data, error } = await this.api.PUT('/admin/providers/order', {
       body: { order },
     });
-    if (error || !data) throw new ImmerleApiError(0, 'provider_reorder_failed');
+    if (error || !data) throw apiErr(error, 'provider_reorder_failed');
     return data.map(toProvider);
   }
 
@@ -301,7 +316,7 @@ export class ImmerleClient {
 
   async getCleanup(signal?: AbortSignal): Promise<CleanupStatus> {
     const { data, error } = await this.api.GET('/admin/cleanup', { signal });
-    if (error || !data) throw new ImmerleApiError(0, 'cleanup_failed');
+    if (error || !data) throw apiErr(error, 'cleanup_failed');
     return {
       enabled: data.enabled ?? false,
       intervalSeconds: data.intervalSeconds ?? 0,
@@ -311,7 +326,7 @@ export class ImmerleClient {
 
   async setCleanupEnabled(enabled: boolean): Promise<CleanupStatus> {
     const { data, error } = await this.api.PUT('/admin/cleanup', { body: { enabled } });
-    if (error || !data) throw new ImmerleApiError(0, 'cleanup_toggle_failed');
+    if (error || !data) throw apiErr(error, 'cleanup_toggle_failed');
     return {
       enabled: data.enabled ?? false,
       intervalSeconds: data.intervalSeconds ?? 0,
@@ -322,7 +337,7 @@ export class ImmerleClient {
   /** Run an eviction sweep now; returns the number of removed downloads. */
   async runCleanup(): Promise<number> {
     const { data, error } = await this.api.POST('/admin/cleanup/runs', {});
-    if (error || !data) throw new ImmerleApiError(0, 'cleanup_run_failed');
+    if (error || !data) throw apiErr(error, 'cleanup_run_failed');
     return data.removed ?? 0;
   }
 
@@ -390,31 +405,31 @@ export class ImmerleClient {
 
   async getFriends(signal?: AbortSignal): Promise<FriendDTO[]> {
     const { data, error } = await this.api.GET('/friends', { signal });
-    if (error || !data) throw new ImmerleApiError(0, 'friends_failed');
+    if (error || !data) throw apiErr(error, 'friends_failed');
     return data;
   }
 
   async getPendingFriends(signal?: AbortSignal): Promise<PendingFriendDTO[]> {
     const { data, error } = await this.api.GET('/friends/requests', { signal });
-    if (error || !data) throw new ImmerleApiError(0, 'pending_failed');
+    if (error || !data) throw apiErr(error, 'pending_failed');
     return data;
   }
 
   async requestFriend(username: string): Promise<void> {
     const { error } = await this.api.POST('/friends/requests', { body: { username } });
-    if (error) throw new ImmerleApiError(0, 'friend_request_failed');
+    if (error) throw apiErr(error, 'friend_request_failed');
   }
 
   async acceptFriend(username: string): Promise<void> {
     const { error } = await this.api.POST('/friends/requests/{username}/accept', {
       params: { path: { username } },
     });
-    if (error) throw new ImmerleApiError(0, 'friend_accept_failed');
+    if (error) throw apiErr(error, 'friend_accept_failed');
   }
 
   async getActivity(signal?: AbortSignal): Promise<ActivityEventDTO[]> {
     const { data, error } = await this.api.GET('/activity', { signal });
-    if (error || !data) throw new ImmerleApiError(0, 'activity_failed');
+    if (error || !data) throw apiErr(error, 'activity_failed');
     return data;
   }
 
@@ -422,7 +437,7 @@ export class ImmerleClient {
 
   async getAccount(signal?: AbortSignal): Promise<Account> {
     const { data, error } = await this.api.GET('/me', { signal });
-    if (error || !data) throw new ImmerleApiError(0, 'account_failed');
+    if (error || !data) throw apiErr(error, 'account_failed');
     return {
       username: data.username ?? this.username,
       displayName: data.displayName ?? '',
@@ -434,7 +449,7 @@ export class ImmerleClient {
   /** Update the caller's own display name / email (partial). */
   async updateAccount(patch: { displayName?: string; email?: string }): Promise<Account> {
     const { data, error } = await this.api.PATCH('/me', { body: patch });
-    if (error || !data) throw new ImmerleApiError(0, 'account_update_failed');
+    if (error || !data) throw apiErr(error, 'account_update_failed');
     this.setDisplayName(data.displayName);
     return {
       username: data.username ?? this.username,
@@ -451,7 +466,7 @@ export class ImmerleClient {
       params: { path: { username: username ?? 'me' } },
       signal,
     });
-    if (error || !data) throw new ImmerleApiError(0, 'profile_failed');
+    if (error || !data) throw apiErr(error, 'profile_failed');
     return {
       user: data.user ?? {},
       isSelf: data.isSelf ?? false,
@@ -465,7 +480,7 @@ export class ImmerleClient {
 
   async jamCreate(name?: string): Promise<JamResult> {
     const { data, error } = await this.api.POST('/jam', { body: { name } });
-    if (error || !data) throw new ImmerleApiError(0, 'jam_create_failed');
+    if (error || !data) throw apiErr(error, 'jam_create_failed');
     return { session: data.session, participants: data.participants ?? [] };
   }
 
@@ -473,7 +488,7 @@ export class ImmerleClient {
     const { data, error } = await this.api.POST('/jam/{id}/participants', {
       params: { path: { id: sessionId } },
     });
-    if (error || !data) throw new ImmerleApiError(0, 'jam_join_failed');
+    if (error || !data) throw apiErr(error, 'jam_join_failed');
     return { session: data.session, participants: data.participants ?? [] };
   }
 
@@ -482,7 +497,7 @@ export class ImmerleClient {
       params: { path: { id: sessionId } },
       signal,
     });
-    if (error || !data) throw new ImmerleApiError(0, 'jam_state_failed');
+    if (error || !data) throw apiErr(error, 'jam_state_failed');
     return { session: data.session, participants: data.participants ?? [] };
   }
 
@@ -495,7 +510,7 @@ export class ImmerleClient {
       params: { path: { id: sessionId } },
       body: fields,
     });
-    if (error || !data) throw new ImmerleApiError(0, 'jam_update_failed');
+    if (error || !data) throw apiErr(error, 'jam_update_failed');
     return { session: data.session, participants: data.participants ?? [] };
   }
 
@@ -503,7 +518,7 @@ export class ImmerleClient {
     const { error } = await this.api.DELETE('/jam/{id}/participants/me', {
       params: { path: { id: sessionId } },
     });
-    if (error) throw new ImmerleApiError(0, 'jam_leave_failed');
+    if (error) throw apiErr(error, 'jam_leave_failed');
   }
 
   /** SSE endpoint URL for live Jam events. EventSource can't set headers, so the
@@ -520,7 +535,7 @@ export class ImmerleClient {
       params: { path: { id: playlistId } },
       body: { username },
     });
-    if (error) throw new ImmerleApiError(0, 'collaborator_add_failed');
+    if (error) throw apiErr(error, 'collaborator_add_failed');
   }
 
   // --- Public playlists (discovery + opt-in subscription) -----------------
@@ -528,7 +543,7 @@ export class ImmerleClient {
   /** Browse public playlists; each carries a `subscribed` flag for the caller. */
   async getPublicPlaylists(signal?: AbortSignal): Promise<PublicPlaylistDTO[]> {
     const { data, error } = await this.api.GET('/playlists/public', { signal });
-    if (error || !data) throw new ImmerleApiError(0, 'public_playlists_failed');
+    if (error || !data) throw apiErr(error, 'public_playlists_failed');
     return data;
   }
 
@@ -536,14 +551,14 @@ export class ImmerleClient {
     const { error } = await this.api.PUT('/playlists/{id}/subscription', {
       params: { path: { id: playlistId } },
     });
-    if (error) throw new ImmerleApiError(0, 'subscribe_failed');
+    if (error) throw apiErr(error, 'subscribe_failed');
   }
 
   async unsubscribePlaylist(playlistId: string): Promise<void> {
     const { error } = await this.api.DELETE('/playlists/{id}/subscription', {
       params: { path: { id: playlistId } },
     });
-    if (error) throw new ImmerleApiError(0, 'unsubscribe_failed');
+    if (error) throw apiErr(error, 'unsubscribe_failed');
   }
 
   // --- Playlist imports (external platforms) ------------------------------
@@ -551,21 +566,21 @@ export class ImmerleClient {
   /** Available import sources and whether each is configured server-side. */
   async listImportSources(signal?: AbortSignal): Promise<ImportSourceDTO[]> {
     const { data, error } = await this.api.GET('/imports/sources', { signal });
-    if (error || !data) throw new ImmerleApiError(0, 'import_sources_failed');
+    if (error || !data) throw apiErr(error, 'import_sources_failed');
     return data;
   }
 
   /** The caller's playlist imports, most recent first (no per-track items). */
   async listImports(signal?: AbortSignal): Promise<ImportDTO[]> {
     const { data, error } = await this.api.GET('/imports', { signal });
-    if (error || !data) throw new ImmerleApiError(0, 'imports_failed');
+    if (error || !data) throw apiErr(error, 'imports_failed');
     return data;
   }
 
   /** Queue an import of an external playlist by `source` + `ref` (id or URL). */
   async startImport(source: string, ref: string): Promise<ImportDTO> {
     const { data, error } = await this.api.POST('/imports', { body: { source, ref } });
-    if (error || !data) throw new ImmerleApiError(0, 'import_start_failed');
+    if (error || !data) throw apiErr(error, 'import_start_failed');
     return data;
   }
 
@@ -579,7 +594,7 @@ export class ImmerleClient {
       params: { path: { id: importId, itemId } },
       body: query ? { query } : {},
     });
-    if (error || !data) throw new ImmerleApiError(0, 'import_resolve_failed');
+    if (error || !data) throw apiErr(error, 'import_resolve_failed');
     return data;
   }
 
@@ -589,7 +604,7 @@ export class ImmerleClient {
       params: { path: { id } },
       signal,
     });
-    if (error || !data) throw new ImmerleApiError(0, 'import_status_failed');
+    if (error || !data) throw apiErr(error, 'import_status_failed');
     return data;
   }
 
@@ -597,7 +612,7 @@ export class ImmerleClient {
 
   async listTokens(signal?: AbortSignal): Promise<APITokenDTO[]> {
     const { data, error } = await this.api.GET('/tokens', { signal });
-    if (error || !data) throw new ImmerleApiError(0, 'tokens_failed');
+    if (error || !data) throw apiErr(error, 'tokens_failed');
     return data;
   }
 
@@ -605,13 +620,13 @@ export class ImmerleClient {
    * optional RFC3339 timestamp. */
   async createToken(name?: string, expiresAt?: string): Promise<CreateTokenResponse> {
     const { data, error } = await this.api.POST('/tokens', { body: { name, expiresAt } });
-    if (error || !data) throw new ImmerleApiError(0, 'token_create_failed');
+    if (error || !data) throw apiErr(error, 'token_create_failed');
     return data;
   }
 
   async revokeToken(id: string): Promise<void> {
     const { error } = await this.api.DELETE('/tokens/{id}', { params: { path: { id } } });
-    if (error) throw new ImmerleApiError(0, 'token_revoke_failed');
+    if (error) throw apiErr(error, 'token_revoke_failed');
   }
 
   // --- Per-account UI theme ------------------------------------------------
@@ -619,7 +634,7 @@ export class ImmerleClient {
   /** The caller's stored theme (accent colour, etc.). */
   async getTheme(signal?: AbortSignal): Promise<ThemeDTO> {
     const { data, error } = await this.api.GET('/theme', { signal });
-    if (error || !data) throw new ImmerleApiError(0, 'theme_failed');
+    if (error || !data) throw apiErr(error, 'theme_failed');
     return data;
   }
 
@@ -629,7 +644,7 @@ export class ImmerleClient {
    */
   async setTheme(accentColor: string): Promise<ThemeDTO> {
     const { data, error } = await this.api.PATCH('/theme', { body: { accentColor } });
-    if (error || !data) throw new ImmerleApiError(0, 'theme_update_failed');
+    if (error || !data) throw apiErr(error, 'theme_update_failed');
     return data;
   }
 }

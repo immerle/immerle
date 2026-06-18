@@ -152,9 +152,15 @@ export interface ServerSettings {
 /** Thrown when a Immerle REST endpoint returns a non-2xx. */
 export class ImmerleApiError extends Error {
   status: number;
-  constructor(status: number, message: string) {
+  /** Stable server error code (e.g. `not_found`); i18n key under `errors.*`. */
+  code?: string;
+  /** Interpolation variables for the localized message (server-sent). */
+  params?: Record<string, unknown>;
+  constructor(status: number, message: string, code?: string, params?: Record<string, unknown>) {
     super(message);
     this.name = 'ImmerleApiError';
     this.status = status;
+    this.code = code;
+    this.params = params;
   }
 }

@@ -42,6 +42,8 @@ export type SetupInitRequest = components['schemas']['immerle.SetupInitRequest']
 export type SetupInitResponse = components['schemas']['immerle.UserDTO'];
 export type FieldErrorDTO = components['schemas']['immerle.fieldError'];
 export type ApiError = components['schemas']['immerle.apiError'];
+/** The `{error:{code,message,params}}` envelope returned on every non-2xx. */
+export type ErrorResponse = components['schemas']['immerle.errorResponse'];
 export type CapabilitiesResponse =
   paths['/capabilities']['get']['responses']['200']['content']['application/json'];
 
