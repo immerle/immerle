@@ -10,7 +10,8 @@
 *.db-shm
 immerle.db*
 
-# Local config (keep config.example.yaml)
+# Local config (keep .env.example / config.example.yaml)
+.env
 config.yaml
 config.local.yaml
 
