@@ -443,11 +443,12 @@ export class ImmerleClient {
       displayName: data.displayName ?? '',
       email: data.email ?? '',
       isAdmin: data.isAdmin ?? false,
+      language: (data.language ?? '') as AccountLanguage,
     };
   }
 
-  /** Update the caller's own display name / email (partial). */
-  async updateAccount(patch: { displayName?: string; email?: string }): Promise<Account> {
+  /** Update the caller's own display name / email / language (partial). */
+  async updateAccount(patch: { displayName?: string; email?: string; language?: AccountLanguage }): Promise<Account> {
     const { data, error } = await this.api.PATCH('/me', { body: patch });
     if (error || !data) throw apiErr(error, 'account_update_failed');
     this.setDisplayName(data.displayName);
@@ -456,6 +457,7 @@ export class ImmerleClient {
       displayName: data.displayName ?? '',
       email: data.email ?? '',
       isAdmin: data.isAdmin ?? false,
+      language: (data.language ?? '') as AccountLanguage,
     };
   }
 
@@ -680,12 +682,16 @@ export interface CleanupStatus {
   maxAgeSeconds: number;
 }
 
+/** A stored UI-language preference; "" means follow the device locale. */
+export type AccountLanguage = 'en' | 'fr' | '';
+
 /** The caller's own account, editable via `/me`. */
 export interface Account {
   username: string;
   displayName: string;
   email: string;
   isAdmin: boolean;
+  language: AccountLanguage;
 }
 
 /** A user's profile: identity, recent activity and public playlists. */

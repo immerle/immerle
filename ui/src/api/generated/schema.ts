@@ -2903,6 +2903,8 @@ export interface components {
             id?: string;
             /** @example false */
             isAdmin?: boolean;
+            /** @example fr */
+            language?: string;
             /** @example bob */
             username?: string;
         };
@@ -3323,6 +3325,7 @@ export interface components {
         "immerle.updateAccountRequest": {
             displayName?: string;
             email?: string;
+            language?: string;
         };
         "immerle.updateJamRequest": {
             currentTrackId?: string;

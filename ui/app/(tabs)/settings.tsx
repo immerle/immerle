@@ -50,8 +50,17 @@ export default function Settings() {
     if (account.data) {
       setEditName(account.data.displayName);
       setEditEmail(account.data.email);
+      // Server is the cross-device source of truth: seed the picker from it
+      // ("" → follow device). Local AsyncStorage stays the offline fallback.
+      setLocale(account.data.language || 'system');
     }
-  }, [account.data]);
+  }, [account.data, setLocale]);
+
+  // Apply the language instantly (local) and persist it server-side.
+  const onChangeLocale = (p: LocalePref) => {
+    setLocale(p);
+    updateAccount.mutate({ language: p === 'system' ? '' : p });
+  };
 
   const currentAccent = accent ?? DEFAULT_ACCENT;
   const username = client?.username ?? '?';
@@ -109,7 +118,7 @@ export default function Settings() {
         />
         <View className="gap-1.5">
           <Text className="text-sm font-medium text-muted">{t('settings.language')}</Text>
-          <Select value={localePref} options={langOptions} onChange={setLocale} />
+          <Select value={localePref} options={langOptions} onChange={onChangeLocale} />
         </View>
         <View className="flex-row justify-end">
           <Button
