@@ -11,12 +11,15 @@ directories:
 extraMetadata:
   main: electron/main.js
 
-# Only ship the Electron glue + the exported web build. electron-builder also
-# bundles production dependencies automatically (none are needed at runtime).
+# Ship only the Electron glue + the exported web build. The !node_modules line
+# is essential: electron-builder auto-bundles the whole production dependency
+# tree (the entire RN/Expo stack, ~205M) otherwise — none of it runs in
+# Electron, which serves dist/ over http using only Node built-ins.
 files:
   - electron/**/*
   - dist/**/*
   - package.json
+  - "!node_modules/**/*"
 
 asar: true
 
