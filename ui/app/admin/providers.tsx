@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { Modal, Platform, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
+import { useColorScheme } from 'nativewind';
 import { Stack } from 'expo-router';
 import { useAuth } from '../../src/auth/store';
 import { useProviderLogs, useProviderMutations, useProviders, useSettings, useUpdateSettings } from '../../src/query/admin';
@@ -295,11 +296,43 @@ function ArrowButton({ icon, onPress, disabled }: { icon: string; onPress?: () =
   );
 }
 
-/** Config editor: monospace JSON with live validation and a Format button.
- * The unified schema is { header: {…}, params: {…}, … }. */
+// JSON syntax-highlight palette (token → hex), tuned for both themes.
+const JSON_SYNTAX = {
+  light: { key: '#0b7285', str: '#2b8a3e', num: '#e8590c', lit: '#9c36b5', punct: '#868e96' },
+  dark: { key: '#66d9e8', str: '#69db7c', num: '#ffa94d', lit: '#da77f2', punct: '#909296' },
+} as const;
+
+// One regex pass: object keys ("…":), strings, true/false/null, numbers, punctuation.
+const JSON_TOKEN_RE =
+  /("(?:\\.|[^"\\])*"\s*:)|("(?:\\.|[^"\\])*")|(\b(?:true|false|null)\b)|(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)|([{}[\],:])/g;
+
+/** Tokenize JSON source into colored <Text> spans (best-effort; never throws). */
+function highlightJson(src: string, pal: { key: string; str: string; num: string; lit: string; punct: string }, fallback: string) {
+  const out: ReactNode[] = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
+  JSON_TOKEN_RE.lastIndex = 0;
+  while ((m = JSON_TOKEN_RE.exec(src))) {
+    if (m.index > last) out.push(<Text key={last} style={{ color: fallback }}>{src.slice(last, m.index)}</Text>);
+    const [full, key, str, lit, num] = m;
+    const color = key ? pal.key : str ? pal.str : lit ? pal.lit : num ? pal.num : pal.punct;
+    out.push(<Text key={m.index} style={{ color }}>{full}</Text>);
+    last = m.index + full.length;
+  }
+  if (last < src.length) out.push(<Text key="tail" style={{ color: fallback }}>{src.slice(last)}</Text>);
+  return out;
+}
+
+/** Config editor: monospace JSON with syntax highlighting, live validation and a
+ * Format button. The unified schema is { header: {…}, params: {…}, … }. A colored
+ * <Text> overlay sits behind a transparent-glyph TextInput (admin is web-only). */
 function JsonConfigField({ value, onChangeText }: { value: string; onChangeText: (v: string) => void }) {
   const t = useT();
   const colors = useColors();
+  const { colorScheme } = useColorScheme();
+  const pal = colorScheme === 'dark' ? JSON_SYNTAX.dark : JSON_SYNTAX.light;
+  const placeholder = '{\n  "header": {},\n  "params": {}\n}';
+
   const error = useMemo(() => {
     const s = value.trim();
     if (!s) return null;
@@ -310,6 +343,14 @@ function JsonConfigField({ value, onChangeText }: { value: string; onChangeText:
       return (e as Error).message;
     }
   }, [value]);
+
+  // Shared text metrics so the overlay lines up exactly with the input.
+  const textStyle = {
+    fontFamily: Platform.select({ web: 'monospace', default: 'Courier' }),
+    fontSize: 13,
+    lineHeight: 20,
+    padding: 10,
+  } as const;
 
   return (
     <View className="gap-1.5">
@@ -323,27 +364,32 @@ function JsonConfigField({ value, onChangeText }: { value: string; onChangeText:
           <Text className="text-xs text-foreground">{t('admin.providers.configFormat')}</Text>
         </Pressable>
       </View>
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        multiline
-        autoCapitalize="none"
-        autoCorrect={false}
-        spellCheck={false}
-        placeholder={'{\n  "header": {},\n  "params": {}\n}'}
-        placeholderTextColor={colors.muted}
-        style={{
-          minHeight: 140,
-          textAlignVertical: 'top',
-          fontFamily: Platform.select({ web: 'monospace', default: 'Courier' }),
-          fontSize: 13,
-          color: colors.foreground,
-          borderWidth: 1,
-          borderColor: error ? colors.danger : colors.border,
-          borderRadius: 12,
-          padding: 10,
-        }}
-      />
+      <View style={{ position: 'relative', minHeight: 140, borderWidth: 1, borderColor: error ? colors.danger : colors.border, borderRadius: 12 }}>
+        {/* Colored layer behind the input (or the placeholder when empty). */}
+        <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
+          <Text style={textStyle}>
+            {value ? highlightJson(value, pal, colors.foreground) : <Text style={{ color: colors.muted }}>{placeholder}</Text>}
+          </Text>
+        </View>
+        <TextInput
+          value={value}
+          onChangeText={onChangeText}
+          multiline
+          autoCapitalize="none"
+          autoCorrect={false}
+          spellCheck={false}
+          // Glyphs invisible (the overlay shows them in color) but the caret stays visible.
+          style={[
+            textStyle,
+            { flex: 1, minHeight: 140, textAlignVertical: 'top', color: colors.foreground },
+            // Web-only props (transparent glyphs, visible caret) — not in RN's TextStyle.
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (Platform.OS === 'web'
+              ? { WebkitTextFillColor: 'transparent', caretColor: colors.foreground }
+              : null) as any,
+          ]}
+        />
+      </View>
       <Text className={`text-xs ${error ? 'text-danger' : 'text-muted'}`}>
         {error ? t('admin.providers.configInvalid') : t('admin.providers.configHelp')}
       </Text>
