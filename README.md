@@ -1,38 +1,56 @@
-# immerle-server
+# Immerle
 
-A self-hosted music server that speaks the **Subsonic / OpenSubsonic** API for
-compatibility with existing clients (Supersonic, Symfonium, DSub, …) and adds
-native **immerle** extensions for the social and on-demand features Subsonic
-lacks: friends, an activity feed, collaborative playlists, synchronized *Jam*
-listening sessions, an on-demand catalog, and optional federation with a
-`immerle-hub`.
+> A self-hosted music server with a song of its own.
 
-Single Go binary, SQLite by default (Postgres optional), bootstrap-configured via
-environment / `.env`, with the rest managed at runtime through the admin API.
+**Immerle** *(pronounced “I-mmerle”)* speaks the **Subsonic / OpenSubsonic** API,
+so it works out of the box with the clients you already use — Supersonic,
+Symfonium, DSub, and the rest — and then adds the social, on-demand and
+federated features Subsonic never had: friends, an activity feed, collaborative
+playlists, synchronized *Jam* listening sessions, an on-demand catalog, playlist
+import, and optional federation with an `immerle-hub`.
 
-## Architecture
+It ships as a **single Go binary**, runs on **SQLite by default** (Postgres
+optional), is bootstrap-configured via environment / `.env`, and is managed at
+runtime through an admin API.
 
-Layered, with clear boundaries:
+### Why “Immerle”?
 
-```
-cmd/immerle            entrypoint
-internal/
-  config                 bootstrap config (.env / environment)
-  logging                structured logging (slog)
-  db                     connection pool, goose migrations, dialect helpers
-  models                 domain entities
-  persistence            repositories (one per aggregate) over database/sql
-  scanner                filesystem walk, tag extraction, idempotent upserts
-  stream                 audio streaming (range/seek), ffmpeg transcoding, cover art
-  providers              pluggable on-demand catalog providers (jamendo, internet-archive, http)
-  core                   business services (auth, annotations, on-demand,
-                         activity, jam, now-playing)
-  federation             immerle-hub client
-  api/subsonic           Subsonic / OpenSubsonic handlers (XML + JSON)
-  api/immerle          native immerle extension handlers (JSON + SSE)
-  server                 HTTP server with graceful shutdown
-  app                    wiring
-```
+A small wink at [Immich](https://immich.app), the self-hosted photo server whose
+own name nobody has ever quite explained — and *merle*, French for **blackbird**,
+the songbird famous for its beautiful improvised whistling. A self-hosted server,
+for music, that sings: **Immerle**.
+
+---
+
+## Features
+
+- **Subsonic / OpenSubsonic compatible** — browsing, search, streaming,
+  transcoding, playlists, scrobbling, now-playing. Use any existing client.
+- **On-demand catalog** — pluggable providers (Jamendo, Internet Archive, and
+  runtime-registered HTTP providers) stream and ingest tracks you don't own yet,
+  progressively on first play.
+- **Social** — friends, activity feed with per-event privacy, collaborative &
+  public/subscribable playlists, shares.
+- **Jam sessions** — synchronized listening, streamed over SSE.
+- **Playlist import** — pluggable sources (Spotify ships first), matched against
+  the on-demand providers.
+- **Federation (opt-in)** — editorial/reco playlist sync and portable-id
+  resolution via an `immerle-hub`.
+- **Auth** — Subsonic token/password, device JWTs (revocable), and personal API
+  tokens.
+- **OpenAPI 3.1** spec + self-contained Swagger UI for the native API.
+
+## Contents
+
+- [Quick start](#quick-start)
+- [First-run setup](#first-run-setup)
+- [Configuration](#configuration)
+- [Architecture](#architecture)
+- [The native Immerle API](#the-native-immerle-api)
+- [On-demand providers & artist avatars](#on-demand-providers--artist-avatars)
+- [Development](#development)
+- [Contributing](#contributing)
+- [License](#license)
 
 ## Quick start
 
@@ -52,13 +70,19 @@ curl -X POST http://localhost:4533/setup/init \
 ```bash
 make build
 cp .env.example .env   # edit as needed
-./bin/immerle        # auto-loads .env (or pass -env path/to/.env)
+./bin/immerle          # auto-loads .env (or pass -env path/to/.env)
 ```
 
 Requirements: Go 1.25+, and `ffmpeg`/`ffprobe` on `PATH` for transcoding,
 duration probing and on-demand tag embedding.
 
-### First-run setup
+### Health & connecting a client
+
+- Health check: `GET /ping` → `{"status":"ok"}`
+- After setup, point a Subsonic client at `http://<host>:4533` with the
+  credentials you just created.
+
+## First-run setup
 
 There is **no** admin account provisioned from config or environment. On a fresh
 database the server starts in *setup mode*; create the first administrator
@@ -79,12 +103,6 @@ login username (it falls back to the username when empty). Set
 `AUTH_REQUIRE_SETUP_TOKEN=true` to gate setup behind a one-time token printed
 at startup (logs and `data/setup-token`); pass it as `setupToken` in the init
 request.
-
-### Health & connecting a client
-
-- Health check: `GET /ping` → `{"status":"ok"}`
-- After setup, point a Subsonic client at `http://<host>:4533` with the
-  credentials you just created.
 
 ## Configuration
 
@@ -150,7 +168,31 @@ DATABASE_DSN=postgres://immerle:immerle@localhost:5432/immerle?sslmode=disable
 
 Migrations (goose, embedded) apply automatically at startup.
 
-## Feature overview (milestones)
+## Architecture
+
+Layered, with clear boundaries:
+
+```
+cmd/immerle              entrypoint
+internal/
+  config                 bootstrap config (.env / environment)
+  logging                structured logging (slog)
+  db                     connection pool, goose migrations, dialect helpers
+  models                 domain entities
+  persistence            repositories (one per aggregate) over database/sql
+  scanner                filesystem walk, tag extraction, idempotent upserts
+  stream                 audio streaming (range/seek), ffmpeg transcoding, cover art
+  providers              pluggable on-demand catalog providers (jamendo, internet-archive, http)
+  core                   business services (auth, annotations, on-demand,
+                         activity, jam, now-playing)
+  federation             immerle-hub client
+  api/subsonic           Subsonic / OpenSubsonic handlers (XML + JSON)
+  api/immerle            native immerle extension handlers (JSON + SSE)
+  server                 HTTP server with graceful shutdown
+  app                    wiring
+```
+
+### Milestones
 
 | Milestone | Feature |
 |-----------|---------|
@@ -163,7 +205,7 @@ Migrations (goose, embedded) apply automatically at startup.
 | S6 | immerle social: `immerle.capabilities` discovery, collaborative playlists, friends, activity feed with privacy, shares, Jam sessions (SSE) |
 | S7 | Hub federation: opt-in registration, editorial/reco playlist sync, portable-id resolution (+ optional on-demand download), anonymized scrobble export, federated read-only playlists |
 
-## immerle extension API
+## The native Immerle API
 
 Capability discovery is unauthenticated so apps can detect support:
 
@@ -171,16 +213,15 @@ Capability discovery is unauthenticated so apps can detect support:
 curl http://localhost:4533/capabilities
 ```
 
-Other endpoints (`/friends`, `/activity`, `/profile`,
-`/jam/*`, …) authenticate with the same credentials as Subsonic
-(`u` + `p`, or `u` + `t` + `s`). Jam sessions stream state over SSE at
-`/jam/events`.
+Other endpoints (`/friends`, `/activity`, `/profile`, `/jam/*`, …) authenticate
+with the same credentials as Subsonic (`u` + `p`, or `u` + `t` + `s`). Jam
+sessions stream state over SSE at `/jam/events`.
 
 `GET /profile?username=<name>` returns a user's profile — identity
 (`username`, `displayName`, `isAdmin`), their recent **activity** visible to the
 caller (honoring each event's privacy), their **public playlists**, and
 `isSelf`/`isFriend` flags. Omit `username` to fetch your own profile. Activity
-events (in `/activity` and `/profile`) now carry the author's `displayName`
+events (in `/activity` and `/profile`) carry the author's `displayName`
 alongside `username`.
 
 `/account` is the caller's **own editable account**: `GET /account` returns it
@@ -267,15 +308,16 @@ track is appended to the import's playlist, and the import counters rebalance.
 **Spotify goes through the hub**, not the Spotify API directly: the source
 delegates to the federation hub's lazy import job — `POST {hub}/api/v1/spotify/imports`
 then poll `GET {hub}/api/v1/spotify/imports/{id}` until completed — so **no
-Spotify credentials live on the instance** — the hub holds them. It therefore requires a configured
-hub: set `federation.hubUrl` plus the hub-issued `federation.publicKey` /
-`federation.privateKey` (sent as `X-Instance-ID` and `Authorization: Bearer`) in
-the runtime settings — all **hot-reloadable** (no restart). The hub client is
-always running and reads its config live, so just setting a hub URL makes import
-available even with background federation **sync** left disabled. The `ref`
-accepts a playlist id, a `spotify:playlist:…` URI, or an
-`open.spotify.com/playlist/…` URL (the hub parses it). Adding a future source that authenticates directly instead can still use
-`import.sources.<name>` for its own config.
+Spotify credentials live on the instance** — the hub holds them. It therefore
+requires a configured hub: set `federation.hubUrl` plus the hub-issued
+`federation.publicKey` / `federation.privateKey` (sent as `X-Instance-ID` and
+`Authorization: Bearer`) in the runtime settings — all **hot-reloadable** (no
+restart). The hub client is always running and reads its config live, so just
+setting a hub URL makes import available even with background federation **sync**
+left disabled. The `ref` accepts a playlist id, a `spotify:playlist:…` URI, or an
+`open.spotify.com/playlist/…` URL (the hub parses it). A future source that
+authenticates directly instead can still use `import.sources.<name>` for its own
+config.
 
 ### Device sessions (JWT)
 
@@ -296,8 +338,8 @@ curl -X POST "http://host:4533/devices/revoke?u=me&p=pw&c=app&id=<jti>"   # JWT 
 ```
 
 JWTs are HS256-signed with a key derived from the auth secret (auto-generated and
-stored in `data/configuration.yaml`, or `AUTH_SECRET`); verification is stateless except
-for one indexed check that the `jti` isn't revoked (which also refreshes
+stored in `data/configuration.yaml`, or `AUTH_SECRET`); verification is stateless
+except for one indexed check that the `jti` isn't revoked (which also refreshes
 last-seen/IP). Lifetime is the runtime setting `auth.deviceTokenTtlSeconds`
 (`POST /admin/settings`; default 30 days, `0` = never, revoke-only).
 
@@ -376,15 +418,15 @@ provider, auto-download, search timeout) is also a hot runtime setting.
 Shipped built-in providers (legal, no DRM): **`jamendo`** (Creative Commons
 catalog, free authorized downloads — seeded **disabled** with a
 `{"client_id":"<JAMENDO_TOKEN>","audioformat":"mp32"}` config to fill in and
-enable) and **`internet-archive`** (archive.org: public-domain recordings, Creative Commons
-works and artist-sanctioned live music — no credentials, no DRM).
+enable) and **`internet-archive`** (archive.org: public-domain recordings,
+Creative Commons works and artist-sanctioned live music — no credentials, no DRM).
 
 Other catalogs are added **at runtime** as external services rather than compiled
-in (see *Dynamic providers* below). For example, **Deezer metadata** now lives in
-the standalone [`deezer-http`](./deezer-http) module — a separate, dependency-free
-service that exposes Deezer's *public* catalog over the provider protocol
-(search/resolve, **no** download) — and is registered via the admin API. The core
-ships **no** Deezer downloader.
+in (see *Dynamic providers* below). For example, **Deezer metadata** lives in a
+standalone `deezer-http` module — a separate, dependency-free service that
+exposes Deezer's *public* catalog over the provider protocol (search/resolve,
+**no** download) — and is registered via the admin API. The core ships **no**
+Deezer downloader.
 
 ### Dynamic providers (runtime, admin-managed)
 
@@ -428,8 +470,8 @@ priority** — the first enabled provider is the one search/enrichment uses (the
 is no separate "default" setting). A **newly added provider is placed first**
 (highest priority) so it takes effect immediately without a manual reorder;
 editing an existing provider keeps its position. Dynamic names must be slugs and
-may not shadow a built-in. The remote service implements three endpoints (paths configurable):
-`GET {endpoint}/search?q=&limit=` → `{"results":[<track>]}`,
+may not shadow a built-in. The remote service implements three endpoints (paths
+configurable): `GET {endpoint}/search?q=&limit=` → `{"results":[<track>]}`,
 `GET {endpoint}/resolve?id=` → `<track>`, and `GET {endpoint}/download?id=` → raw
 audio bytes. See the OpenAPI spec and `internal/providers/httpprovider` for the
 exact `<track>` shape.
@@ -460,10 +502,10 @@ Search (`search3`/`search2`) **merges** the local library with results from the
 against local tracks by MBID and local artists by name). Search targets a single
 provider (not a fan-out), runs the song and artist lookups concurrently, caches
 provider results (60s TTL, singleflight) and is bounded by the runtime search
-timeout (default 6s).
-Remote artists are browsable: `getArtist`/`getMusicDirectory` on a remote artist
-re-query the provider (via its `ArtistAlbumLister`/`AlbumBrowser` capabilities,
-e.g. Deezer's artist page) to list the discography and each album's tracks.
+timeout (default 6s). Remote artists are browsable: `getArtist`/`getMusicDirectory`
+on a remote artist re-query the provider (via its `ArtistAlbumLister`/`AlbumBrowser`
+capabilities, e.g. Deezer's artist page) to list the discography and each album's
+tracks.
 
 A **local** artist's `getArtist` is also enriched with the rest of the artist's
 discography from the provider: albums you don't own are merged in (deduplicated
@@ -473,10 +515,10 @@ one album shows their full catalog, not just what's on disk.
 `getArtist?includeSongs=true` inlines each album's tracks in the response
 (`album[].song[]`) so a client can render the whole artist in one call. Off by
 default; local album songs come from the catalog, remote ones are fetched from
-the provider concurrently (bounded, with a timeout). Remote cover art / avatars (e.g. Deezer's
-`ALB_PICTURE`/`ART_PICTURE`) are served through `getCoverArt`, fetched on demand
-from the provider's public image CDN and cached. A **host allowlist** (default
-`dzcdn.net`) guards against SSRF.
+the provider concurrently (bounded, with a timeout). Remote cover art / avatars
+(e.g. Deezer's `ALB_PICTURE`/`ART_PICTURE`) are served through `getCoverArt`,
+fetched on demand from the provider's public image CDN and cached. A **host
+allowlist** (default `dzcdn.net`) guards against SSRF.
 
 Local cover art is read from **embedded** tags and from **sidecar files**
 (`cover.jpg`, `folder.jpg`, `front`, `albumart`, … in the album folder or its
@@ -519,6 +561,14 @@ make ci          # tidy + vet + lint + test + build
 Tests that need real audio generate fixtures with `ffmpeg` and skip when it is
 not installed.
 
+## Contributing
+
+Issues and pull requests are welcome. Before opening a PR, run `make ci` (it
+must pass) and regenerate the OpenAPI spec with `make openapi` if you touched
+handler annotations — CI fails on a stale spec.
+
 ## License
 
-See repository.
+No license has been declared yet. Until one is added, default copyright applies
+and all rights are reserved — open an issue if you'd like to use Immerle in your
+own project.
