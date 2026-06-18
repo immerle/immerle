@@ -45,7 +45,9 @@ func (r *CatalogRepo) UpsertArtist(ctx context.Context, a models.Artist) (string
 	if err == nil {
 		// Backfill MBID if we learned it.
 		if a.MBID != "" {
-			_, _ = r.exec(ctx, `UPDATE artists SET mbid=? WHERE id=? AND mbid=''`, a.MBID, id)
+			if _, err := r.exec(ctx, `UPDATE artists SET mbid=? WHERE id=? AND mbid=''`, a.MBID, id); err != nil {
+				return "", err
+			}
 		}
 		return id, nil
 	}
@@ -70,7 +72,9 @@ func (r *CatalogRepo) GetArtist(ctx context.Context, id string) (models.Artist, 
 	if err != nil {
 		return a, err
 	}
-	_ = r.queryRow(ctx, `SELECT COUNT(*) FROM albums WHERE artist_id=?`, id).Scan(&a.AlbumCount)
+	if err := r.queryRow(ctx, `SELECT COUNT(*) FROM albums WHERE artist_id=?`, id).Scan(&a.AlbumCount); err != nil {
+		return a, err
+	}
 	return a, nil
 }
 
@@ -132,9 +136,11 @@ func (r *CatalogRepo) UpsertAlbum(ctx context.Context, a models.Album) (string, 
 	var id string
 	err := r.queryRow(ctx, `SELECT id FROM albums WHERE artist_id=? AND name=?`, a.ArtistID, a.Name).Scan(&id)
 	if err == nil {
-		_, _ = r.exec(ctx, `UPDATE albums SET year=COALESCE(NULLIF(?,0), year), genre=COALESCE(NULLIF(?,''), genre),
+		if _, err := r.exec(ctx, `UPDATE albums SET year=COALESCE(NULLIF(?,0), year), genre=COALESCE(NULLIF(?,''), genre),
 			cover_art=CASE WHEN cover_art='' THEN ? ELSE cover_art END, is_compilation=?, mbid=CASE WHEN mbid='' THEN ? ELSE mbid END
-			WHERE id=?`, a.Year, a.Genre, a.CoverArt, db.Bool(a.IsCompilation), a.MBID, id)
+			WHERE id=?`, a.Year, a.Genre, a.CoverArt, db.Bool(a.IsCompilation), a.MBID, id); err != nil {
+			return "", err
+		}
 		return id, nil
 	}
 	if !errors.Is(err, sql.ErrNoRows) {

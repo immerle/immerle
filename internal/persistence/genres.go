@@ -2,6 +2,8 @@ package persistence
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 
 	"github.com/immerle/immerle/internal/models"
 )
@@ -18,6 +20,10 @@ func (r *GenreRepo) Upsert(ctx context.Context, id, name string) (string, error)
 	err := r.queryRow(ctx, `SELECT id FROM genres WHERE name=?`, name).Scan(&existing)
 	if err == nil {
 		return existing, nil
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		// A real query error must not silently fall through to an INSERT.
+		return "", err
 	}
 	if _, err := r.exec(ctx, `INSERT INTO genres (id, name) VALUES (?, ?)`, id, name); err != nil {
 		return "", err

@@ -147,14 +147,27 @@ func (h *Handler) handleUpdatePlaylist(w http.ResponseWriter, r *http.Request) {
 
 	// Add songs (append, collaborative-safe) and remove by index.
 	if add := r.Form["songIdToAdd"]; len(add) > 0 {
-		_ = h.Playlists.AppendTracks(r.Context(), id, add, user.ID)
+		if err := h.Playlists.AppendTracks(r.Context(), id, add, user.ID); err != nil {
+			writeError(w, r, ErrGeneric, "Failed to add tracks")
+			return
+		}
 	}
 	if rem := r.Form["songIndexToRemove"]; len(rem) > 0 {
 		idxs := make([]int, 0, len(rem))
 		for _, s := range rem {
-			idxs = append(idxs, atoiSafe(s))
+			// Skip non-numeric indexes; atoi-to-0 would silently remove the first
+			// track on a malformed value.
+			n, err := strconv.Atoi(s)
+			if err != nil {
+				writeError(w, r, ErrMissingParameter, "Invalid songIndexToRemove")
+				return
+			}
+			idxs = append(idxs, n)
 		}
-		_ = h.Playlists.RemoveIndexes(r.Context(), id, idxs)
+		if err := h.Playlists.RemoveIndexes(r.Context(), id, idxs); err != nil {
+			writeError(w, r, ErrGeneric, "Failed to remove tracks")
+			return
+		}
 	}
 	writeOK(w, r)
 }
