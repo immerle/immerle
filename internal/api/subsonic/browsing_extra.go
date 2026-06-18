@@ -163,8 +163,9 @@ func (h *Handler) handleGetStarred(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) handleSearch2(w http.ResponseWriter, r *http.Request) {
 	query := trimQuery(param(r, "query"))
+	artistCount, songCount := intParam(r, "artistCount", 20), intParam(r, "songCount", 20)
 	artists, albums, tracks, err := h.Catalog.Search(r.Context(), query,
-		intParam(r, "artistCount", 20), intParam(r, "albumCount", 20), intParam(r, "songCount", 20))
+		artistCount, intParam(r, "albumCount", 20), songCount)
 	if err != nil {
 		h.failInternal(w, r, err)
 		return
@@ -175,8 +176,8 @@ func (h *Handler) handleSearch2(w http.ResponseWriter, r *http.Request) {
 		out.Artist = append(out.Artist, ArtistItem{ID: a.ID, Name: a.Name})
 		seenArtist[strings.ToLower(a.Name)] = true
 	}
-	if h.OnDemand != nil && trimQuery(param(r, "query")) != "" {
-		if remote, err := h.OnDemand.RemoteSearchArtists(r.Context(), trimQuery(param(r, "query")), intParam(r, "artistCount", 20)); err == nil {
+	if h.OnDemand != nil && query != "" {
+		if remote, err := h.OnDemand.RemoteSearchArtists(r.Context(), query, artistCount); err == nil {
 			for _, a := range remote {
 				if seenArtist[strings.ToLower(a.Name)] {
 					continue
@@ -189,7 +190,7 @@ func (h *Handler) handleSearch2(w http.ResponseWriter, r *http.Request) {
 	for _, a := range albums {
 		out.Album = append(out.Album, toAlbumChild(a, nil))
 	}
-	out.Song = h.mergeRemoteSongs(r, h.tracksToChildren(r, tracks), trimQuery(param(r, "query")), intParam(r, "songCount", 20))
+	out.Song = h.mergeRemoteSongs(r, h.tracksToChildren(r, tracks), query, songCount)
 	resp := newResponse()
 	resp.SearchResult2 = out
 	write(w, r, resp)

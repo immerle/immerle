@@ -5,7 +5,6 @@ package providers
 
 import (
 	"context"
-	"errors"
 	"io"
 	"net/http"
 	"time"
@@ -30,12 +29,6 @@ func NewHTTPClient(timeout time.Duration) *http.Client {
 	tr.ResponseHeaderTimeout = 30 * time.Second
 	return &http.Client{Timeout: timeout, Transport: tr}
 }
-
-// ErrDownloadNotSupported is returned by a provider's Download when it only
-// exposes search/metadata and intentionally does not retrieve audio (e.g. the
-// Deezer provider, which uses the account ARL for metadata only — never to
-// fetch or decrypt protected streams).
-var ErrDownloadNotSupported = errors.New("download not supported by this provider (metadata only)")
 
 // Result is a track found at a provider.
 type Result struct {

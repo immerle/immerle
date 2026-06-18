@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -58,7 +59,7 @@ func (r *ProviderRegistry) Unregister(name string) bool {
 	delete(r.providers, name)
 	for i, n := range r.order {
 		if n == name {
-			r.order = append(r.order[:i], r.order[i+1:]...)
+			r.order = slices.Delete(r.order, i, i+1)
 			break
 		}
 	}

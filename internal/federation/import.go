@@ -13,18 +13,15 @@ import (
 // hub. The hub holds the third-party credentials and resolves public playlists,
 // so instances import without their own Spotify keys.
 type ExternalPlaylist struct {
-	Name        string
-	Description string
-	Tracks      []ExternalTrack
+	Name   string
+	Tracks []ExternalTrack
 }
 
 // ExternalTrack is one track of an ExternalPlaylist (metadata only).
 type ExternalTrack struct {
-	Title    string
-	Artist   string
-	Album    string
-	ISRC     string
-	Duration int
+	Title  string
+	Artist string
+	Album  string
 }
 
 // importPollInterval is the delay between hub job polls (a var so tests can
@@ -48,14 +45,6 @@ func (s *Service) FetchExternalPlaylist(ctx context.Context, source, ref string)
 	if source != "spotify" {
 		return ExternalPlaylist{}, fmt.Errorf("hub import source %q not supported", source)
 	}
-
-	// DEBUG: surface the exact credentials sent to the hub so a 401 can be
-	// diagnosed against the hub dashboard. Remove once the auth is sorted.
-	c := s.cfg()
-	s.logger.Warn("hub import debug — credentials sent",
-		"hubUrl", c.HubURL,
-		"publicKey (X-Instance-ID)", c.PublicKey,
-		"privateKey (Bearer)", c.PrivateKey)
 
 	raw, err := s.do(ctx, http.MethodPost, "/api/v1/spotify/imports", map[string]any{"playlist": ref})
 	if err != nil {
@@ -107,23 +96,19 @@ type spotifyImportJob struct {
 	Status   string `json:"status"` // pending | in_progress | completed | failed
 	Error    string `json:"error"`
 	Playlist struct {
-		Name        string `json:"name"`
-		Description string `json:"description"`
+		Name string `json:"name"`
 	} `json:"playlist"`
 	Tracks []struct {
-		Artist   string `json:"artist"`
-		Title    string `json:"title"`
-		Album    string `json:"album"`
-		Duration int    `json:"duration"`
+		Artist string `json:"artist"`
+		Title  string `json:"title"`
+		Album  string `json:"album"`
 	} `json:"tracks"`
 }
 
 func (j spotifyImportJob) toExternal() ExternalPlaylist {
-	pl := ExternalPlaylist{Name: j.Playlist.Name, Description: j.Playlist.Description}
+	pl := ExternalPlaylist{Name: j.Playlist.Name}
 	for _, t := range j.Tracks {
-		pl.Tracks = append(pl.Tracks, ExternalTrack{
-			Title: t.Title, Artist: t.Artist, Album: t.Album, Duration: t.Duration,
-		})
+		pl.Tracks = append(pl.Tracks, ExternalTrack{Title: t.Title, Artist: t.Artist, Album: t.Album})
 	}
 	return pl
 }

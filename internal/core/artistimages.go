@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/immerle/immerle/internal/persistence"
@@ -127,7 +128,7 @@ func (e *ArtistImageEnricher) enrichOne(ctx context.Context, id, name string) bo
 	}
 	if imgURL != "" {
 		data, derr := e.download(ctx, imgURL)
-		if derr == nil && looksLikeImage(data) {
+		if derr == nil && strings.HasPrefix(http.DetectContentType(data), "image/") {
 			if err := e.save(id, data); err != nil {
 				e.logger.Warn("could not cache artist image", "artist", name, "error", err)
 			} else if err := e.catalog.SetArtistCover(ctx, id, id); err != nil {
@@ -164,23 +165,4 @@ func (e *ArtistImageEnricher) save(id string, data []byte) error {
 		return err
 	}
 	return os.WriteFile(filepath.Join(e.coversDir, id), data, 0o644)
-}
-
-// looksLikeImage validates magic bytes so non-image responses (e.g. an HTML
-// error page) are never cached as an avatar.
-func looksLikeImage(data []byte) bool {
-	if len(data) < 12 {
-		return false
-	}
-	switch {
-	case data[0] == 0xFF && data[1] == 0xD8 && data[2] == 0xFF: // JPEG
-		return true
-	case string(data[1:4]) == "PNG": // PNG
-		return true
-	case string(data[:6]) == "GIF87a" || string(data[:6]) == "GIF89a": // GIF
-		return true
-	case string(data[:4]) == "RIFF" && string(data[8:12]) == "WEBP": // WebP
-		return true
-	}
-	return false
 }

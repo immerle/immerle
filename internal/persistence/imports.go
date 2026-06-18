@@ -16,7 +16,7 @@ type ImportRepo struct{ *base }
 const importColumns = `id, user_id, source, source_ref, source_playlist_name, playlist_id, status,
 	total, matched, doubtful, missing, failed, error, created_at, updated_at`
 
-func scanImport(s interface{ Scan(...any) error }) (models.Import, error) {
+func scanImport(s rowScanner) (models.Import, error) {
 	var im models.Import
 	var status string
 	var playlistID sql.NullString
@@ -125,7 +125,7 @@ func (r *ImportRepo) RequeueStale(ctx context.Context) error {
 const importItemColumns = `id, import_id, position, source_title, source_artist, source_album, status,
 	matched_track_id, resolved_title, resolved_artist, confidence, note, candidate_id, candidate_cover_art, created_at, updated_at`
 
-func scanImportItem(s interface{ Scan(...any) error }) (models.ImportItem, error) {
+func scanImportItem(s rowScanner) (models.ImportItem, error) {
 	var it models.ImportItem
 	var status string
 	var created, updated int64

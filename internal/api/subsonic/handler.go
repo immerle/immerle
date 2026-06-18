@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 
 	chi "github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -215,20 +216,14 @@ func isNotFound(err error) bool {
 	return errors.Is(err, persistence.ErrNotFound)
 }
 
-// contextDetached returns a background context for fire-and-forget work that
-// must outlive the originating HTTP request (e.g. an admin-triggered scan).
-func contextDetached() context.Context {
-	return context.Background()
-}
-
 // newID generates a unique identifier for new entities.
 func newID() string { return uuid.NewString() }
 
 // decodeEncParam decodes a Subsonic "enc:<hex>" encoded password value.
 func decodeEncParam(p string) string {
-	if len(p) > 4 && p[:4] == "enc:" {
-		if raw, err := hex.DecodeString(p[4:]); err == nil {
-			return string(raw)
+	if raw, ok := strings.CutPrefix(p, "enc:"); ok {
+		if dec, err := hex.DecodeString(raw); err == nil {
+			return string(dec)
 		}
 	}
 	return p

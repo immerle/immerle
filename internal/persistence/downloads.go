@@ -15,7 +15,7 @@ type DownloadRepo struct{ *base }
 
 const downloadColumns = `id, user_id, provider, provider_track_id, query, status, track_id, error, attempts, created_at, updated_at`
 
-func scanDownload(s interface{ Scan(...any) error }) (models.DownloadJob, error) {
+func scanDownload(s rowScanner) (models.DownloadJob, error) {
 	var j models.DownloadJob
 	var status string
 	var created, updated int64

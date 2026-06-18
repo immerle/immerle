@@ -26,7 +26,7 @@ func NewDB(t *testing.T) *db.DB {
 	t.Helper()
 	dir := t.TempDir()
 	dsn := filepath.Join(dir, "test.db")
-	database, err := db.Open("sqlite", dsn, 1, 1, 0)
+	database, err := db.Open("sqlite", dsn)
 	if err != nil {
 		t.Fatalf("open db: %v", err)
 	}

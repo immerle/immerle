@@ -49,15 +49,6 @@ func NewCoverService(catalog *persistence.CatalogRepo, coversDir string) *CoverS
 	}
 }
 
-// AllowImageHosts adds host suffixes that remote cover URLs may point at.
-func (c *CoverService) AllowImageHosts(hosts ...string) {
-	for _, h := range hosts {
-		if h = strings.TrimSpace(strings.ToLower(h)); h != "" {
-			c.allowHosts = append(c.allowHosts, h)
-		}
-	}
-}
-
 // ErrNoCover indicates no cover art could be resolved for an id.
 var ErrNoCover = errors.New("no cover art")
 
@@ -80,13 +71,13 @@ func (c *CoverService) Get(ctx context.Context, id string, size int) ([]byte, st
 	}
 
 	if size <= 0 {
-		return raw, detectContentType(raw), nil
+		return raw, http.DetectContentType(raw), nil
 	}
 
 	resized, err := resizeSquareJPEG(raw, size)
 	if err != nil {
 		// Fall back to the original if decoding/resizing fails.
-		return raw, detectContentType(raw), nil
+		return raw, http.DetectContentType(raw), nil
 	}
 	_ = os.MkdirAll(c.cacheDir, 0o755)
 	_ = os.WriteFile(c.cachePath(id, size), resized, 0o644)
@@ -199,7 +190,7 @@ func findSidecar(dir string) ([]byte, error) {
 }
 
 func looksLikeImageBytes(data []byte) bool {
-	return detectContentType(data) != "application/octet-stream"
+	return strings.HasPrefix(http.DetectContentType(data), "image/")
 }
 
 // coverFile resolves a stored cover filename under coversDir, rejecting any id
@@ -317,20 +308,4 @@ func resizeSquareJPEG(raw []byte, size int) ([]byte, error) {
 		return nil, err
 	}
 	return buf.Bytes(), nil
-}
-
-func detectContentType(data []byte) string {
-	if len(data) >= 3 && data[0] == 0xFF && data[1] == 0xD8 && data[2] == 0xFF {
-		return "image/jpeg"
-	}
-	if len(data) >= 8 && string(data[1:4]) == "PNG" {
-		return "image/png"
-	}
-	if len(data) >= 6 && (string(data[:6]) == "GIF87a" || string(data[:6]) == "GIF89a") {
-		return "image/gif"
-	}
-	if len(data) >= 12 && string(data[:4]) == "RIFF" && string(data[8:12]) == "WEBP" {
-		return "image/webp"
-	}
-	return "application/octet-stream"
 }
