@@ -1115,6 +1115,26 @@
                             }
                         },
                         "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
                     }
                 },
                 "security": [
@@ -1142,6 +1162,16 @@
                         },
                         "description": "OK"
                     },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
                     "403": {
                         "content": {
                             "application/json": {
@@ -1151,6 +1181,16 @@
                             }
                         },
                         "description": "Forbidden"
+                    },
+                    "503": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Service Unavailable"
                     }
                 },
                 "security": [
@@ -1206,6 +1246,16 @@
                         },
                         "description": "Bad Request"
                     },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
                     "403": {
                         "content": {
                             "application/json": {
@@ -1215,6 +1265,26 @@
                             }
                         },
                         "description": "Forbidden"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    },
+                    "503": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Service Unavailable"
                     }
                 },
                 "security": [
@@ -1242,6 +1312,16 @@
                         },
                         "description": "Created"
                     },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
                     "403": {
                         "content": {
                             "application/json": {
@@ -1251,6 +1331,26 @@
                             }
                         },
                         "description": "Forbidden"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    },
+                    "503": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Service Unavailable"
                     }
                 },
                 "security": [
@@ -1281,6 +1381,16 @@
                         },
                         "description": "OK"
                     },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
                     "403": {
                         "content": {
                             "application/json": {
@@ -1290,6 +1400,26 @@
                             }
                         },
                         "description": "Forbidden"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    },
+                    "503": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Service Unavailable"
                     }
                 },
                 "security": [
@@ -1345,6 +1475,16 @@
                         },
                         "description": "Bad Request"
                     },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
                     "403": {
                         "content": {
                             "application/json": {
@@ -1354,6 +1494,16 @@
                             }
                         },
                         "description": "Forbidden"
+                    },
+                    "503": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Service Unavailable"
                     }
                 },
                 "security": [
@@ -1413,6 +1563,46 @@
                             }
                         },
                         "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    },
+                    "503": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Service Unavailable"
                     }
                 },
                 "security": [
@@ -1444,6 +1634,36 @@
                     "204": {
                         "description": "deleted"
                     },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
                     "404": {
                         "content": {
                             "application/json": {
@@ -1453,6 +1673,16 @@
                             }
                         },
                         "description": "Not Found"
+                    },
+                    "503": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Service Unavailable"
                     }
                 },
                 "security": [
@@ -1521,6 +1751,26 @@
                         },
                         "description": "Bad Request"
                     },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
                     "404": {
                         "content": {
                             "application/json": {
@@ -1530,6 +1780,16 @@
                             }
                         },
                         "description": "Not Found"
+                    },
+                    "503": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Service Unavailable"
                     }
                 },
                 "security": [
@@ -1557,6 +1817,16 @@
                         },
                         "description": "OK"
                     },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
                     "403": {
                         "content": {
                             "application/json": {
@@ -1566,6 +1836,16 @@
                             }
                         },
                         "description": "Forbidden"
+                    },
+                    "503": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Service Unavailable"
                     }
                 },
                 "security": [
@@ -1621,6 +1901,16 @@
                         },
                         "description": "Bad Request"
                     },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
                     "403": {
                         "content": {
                             "application/json": {
@@ -1630,6 +1920,26 @@
                             }
                         },
                         "description": "Forbidden"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    },
+                    "503": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Service Unavailable"
                     }
                 },
                 "security": [
@@ -1676,6 +1986,16 @@
                             }
                         },
                         "description": "Created"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
                     },
                     "401": {
                         "content": {
@@ -1731,6 +2051,26 @@
                             }
                         },
                         "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
                     }
                 },
                 "security": [
@@ -1762,6 +2102,16 @@
                     "204": {
                         "description": "revoked"
                     },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
                     "404": {
                         "content": {
                             "application/json": {
@@ -1771,6 +2121,16 @@
                             }
                         },
                         "description": "Not Found"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
                     }
                 },
                 "security": [
@@ -1799,6 +2159,26 @@
                             }
                         },
                         "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
                     }
                 },
                 "security": [
@@ -1827,6 +2207,26 @@
                             }
                         },
                         "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
                     }
                 },
                 "security": [
@@ -1881,6 +2281,16 @@
                         },
                         "description": "Bad Request"
                     },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
                     "404": {
                         "content": {
                             "application/json": {
@@ -1890,6 +2300,16 @@
                             }
                         },
                         "description": "Not Found"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
                     }
                 },
                 "security": [
@@ -1927,6 +2347,16 @@
                         },
                         "description": "OK"
                     },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
                     "404": {
                         "content": {
                             "application/json": {
@@ -1936,6 +2366,16 @@
                             }
                         },
                         "description": "Not Found"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
                     }
                 },
                 "security": [
@@ -1965,6 +2405,26 @@
                             }
                         },
                         "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
                     }
                 },
                 "security": [
@@ -2019,6 +2479,26 @@
                             }
                         },
                         "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "503": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Service Unavailable"
                     }
                 },
                 "security": [
@@ -2048,6 +2528,16 @@
                             }
                         },
                         "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
                     }
                 },
                 "security": [
@@ -2086,6 +2576,16 @@
                         },
                         "description": "OK"
                     },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
                     "404": {
                         "content": {
                             "application/json": {
@@ -2095,6 +2595,26 @@
                             }
                         },
                         "description": "Not Found"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    },
+                    "503": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Service Unavailable"
                     }
                 },
                 "security": [
@@ -2171,6 +2691,16 @@
                         },
                         "description": "Bad Request"
                     },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
                     "404": {
                         "content": {
                             "application/json": {
@@ -2180,6 +2710,16 @@
                             }
                         },
                         "description": "Not Found"
+                    },
+                    "503": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Service Unavailable"
                     }
                 },
                 "security": [
@@ -2225,6 +2765,36 @@
                             }
                         },
                         "description": "Created"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
                     }
                 },
                 "security": [
@@ -2261,6 +2831,16 @@
                             }
                         },
                         "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
                     },
                     "404": {
                         "content": {
@@ -2327,6 +2907,26 @@
                         },
                         "description": "OK"
                     },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
                     "403": {
                         "content": {
                             "application/json": {
@@ -2346,6 +2946,16 @@
                             }
                         },
                         "description": "Not Found"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
                     }
                 },
                 "security": [
@@ -2384,6 +2994,16 @@
                         },
                         "description": "SSE stream"
                     },
+                    "401": {
+                        "content": {
+                            "text/event-stream": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
                     "404": {
                         "content": {
                             "text/event-stream": {
@@ -2393,6 +3013,16 @@
                             }
                         },
                         "description": "Not Found"
+                    },
+                    "500": {
+                        "content": {
+                            "text/event-stream": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
                     }
                 },
                 "security": [
@@ -2430,6 +3060,16 @@
                         },
                         "description": "Created"
                     },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
                     "404": {
                         "content": {
                             "application/json": {
@@ -2439,6 +3079,16 @@
                             }
                         },
                         "description": "Not Found"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
                     }
                 },
                 "security": [
@@ -2468,6 +3118,26 @@
                 "responses": {
                     "204": {
                         "description": "left"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
                     }
                 },
                 "security": [
@@ -2494,6 +3164,16 @@
                             }
                         },
                         "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
                     }
                 },
                 "security": [
@@ -2520,6 +3200,26 @@
                             }
                         },
                         "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
                     }
                 },
                 "security": [
@@ -2574,6 +3274,26 @@
                             }
                         },
                         "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
                     }
                 },
                 "security": [
@@ -2603,6 +3323,26 @@
                             }
                         },
                         "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
                     }
                 },
                 "security": [
@@ -2661,6 +3401,26 @@
                         },
                         "description": "added"
                     },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
                     "403": {
                         "content": {
                             "application/json": {
@@ -2680,6 +3440,16 @@
                             }
                         },
                         "description": "Not Found"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
                     }
                 },
                 "security": [
@@ -2709,6 +3479,26 @@
                 "responses": {
                     "204": {
                         "description": "unsubscribed"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
                     }
                 },
                 "security": [
@@ -2738,6 +3528,16 @@
                     "204": {
                         "description": "subscribed"
                     },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
                     "403": {
                         "content": {
                             "application/json": {
@@ -2757,6 +3557,16 @@
                             }
                         },
                         "description": "Not Found"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
                     }
                 },
                 "security": [
@@ -2783,6 +3593,16 @@
                             }
                         },
                         "description": "OK"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
                     }
                 },
                 "summary": "First-run setup status",
@@ -2852,6 +3672,16 @@
                             }
                         },
                         "description": "already_initialized"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
                     }
                 },
                 "summary": "Create the first administrator",
@@ -2872,6 +3702,26 @@
                             }
                         },
                         "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
                     }
                 },
                 "security": [
@@ -2926,6 +3776,26 @@
                             }
                         },
                         "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
                     }
                 },
                 "security": [
@@ -2955,6 +3825,26 @@
                             }
                         },
                         "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
                     }
                 },
                 "security": [
@@ -2999,6 +3889,36 @@
                             }
                         },
                         "description": "Created"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
                     }
                 },
                 "security": [
@@ -3029,6 +3949,16 @@
                     "204": {
                         "description": "revoked"
                     },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
                     "404": {
                         "content": {
                             "application/json": {
@@ -3038,6 +3968,16 @@
                             }
                         },
                         "description": "Not Found"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
                     }
                 },
                 "security": [
@@ -3076,6 +4016,16 @@
                         },
                         "description": "OK"
                     },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
                     "404": {
                         "content": {
                             "application/json": {
@@ -3085,6 +4035,16 @@
                             }
                         },
                         "description": "Not Found"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.apiError"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
                     }
                 },
                 "security": [

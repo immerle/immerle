@@ -16,6 +16,7 @@ import (
 // @Security     BearerAuth
 // @Produce      json
 // @Success      200  {object}  LibraryStatsDTO
+// @Failure      401  {object}  apiError
 // @Router       /library/stats [get]
 func (h *Handler) handleLibraryStats(w http.ResponseWriter, r *http.Request) {
 	if h.LibraryStats == nil {

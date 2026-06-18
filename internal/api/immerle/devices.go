@@ -27,6 +27,7 @@ type loginRequest struct {
 // @Produce      json
 // @Param        body  body  loginRequest  true  "Credentials"
 // @Success      201  {object}  LoginDTO
+// @Failure      400  {object}  apiError
 // @Failure      401  {object}  apiError
 // @Router       /auth/sessions [post]
 func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
@@ -69,6 +70,8 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 // @Security     BearerAuth
 // @Produce      json
 // @Success      200  {array}  DeviceDTO
+// @Failure      401  {object}  apiError
+// @Failure      500  {object}  apiError
 // @Router       /devices [get]
 func (h *Handler) handleDevices(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
@@ -100,7 +103,9 @@ func (h *Handler) handleDevices(w http.ResponseWriter, r *http.Request) {
 // @Security     BearerAuth
 // @Param        id  path  string  true  "Device id (jti) to revoke"
 // @Success      204  "revoked"
+// @Failure      401  {object}  apiError
 // @Failure      404  {object}  apiError
+// @Failure      500  {object}  apiError
 // @Router       /devices/{id} [delete]
 func (h *Handler) handleRevokeDevice(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())

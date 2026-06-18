@@ -30,6 +30,8 @@ func (h *Handler) loadTheme(r *http.Request, userID string) (models.ThemeSetting
 // @Security     BearerAuth
 // @Produce      json
 // @Success      200  {object}  ThemeDTO
+// @Failure      401  {object}  apiError
+// @Failure      500  {object}  apiError
 // @Router       /theme [get]
 func (h *Handler) handleTheme(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
@@ -59,6 +61,8 @@ type updateThemeRequest struct {
 // @Param        body  body  updateThemeRequest  true  "Theme fields to change"
 // @Success      200  {object}  ThemeDTO
 // @Failure      400  {object}  apiError
+// @Failure      401  {object}  apiError
+// @Failure      500  {object}  apiError
 // @Router       /theme [patch]
 func (h *Handler) handleThemeUpdate(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())

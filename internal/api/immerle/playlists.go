@@ -12,6 +12,8 @@ import (
 // @Security     BearerAuth
 // @Produce      json
 // @Success      200  {array}  PublicPlaylistDTO
+// @Failure      401  {object}  apiError
+// @Failure      500  {object}  apiError
 // @Router       /playlists/public [get]
 func (h *Handler) handlePublicPlaylists(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
@@ -45,8 +47,10 @@ func (h *Handler) handlePublicPlaylists(w http.ResponseWriter, r *http.Request) 
 // @Security     BearerAuth
 // @Param        id  path  string  true  "Playlist id to subscribe to"
 // @Success      204  "subscribed"
+// @Failure      401  {object}  apiError
 // @Failure      403  {object}  apiError
 // @Failure      404  {object}  apiError
+// @Failure      500  {object}  apiError
 // @Router       /playlists/{id}/subscription [put]
 func (h *Handler) handleSubscribePlaylist(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
@@ -75,6 +79,8 @@ func (h *Handler) handleSubscribePlaylist(w http.ResponseWriter, r *http.Request
 // @Security     BearerAuth
 // @Param        id  path  string  true  "Playlist id"
 // @Success      204  "unsubscribed"
+// @Failure      401  {object}  apiError
+// @Failure      500  {object}  apiError
 // @Router       /playlists/{id}/subscription [delete]
 func (h *Handler) handleUnsubscribePlaylist(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())

@@ -13,7 +13,9 @@ import (
 // @Security     BearerAuth
 // @Produce      json
 // @Success      200  {object}  SettingsDTO
+// @Failure      401  {object}  apiError
 // @Failure      403  {object}  apiError
+// @Failure      503  {object}  apiError
 // @Router       /admin/settings [get]
 func (h *Handler) handleSettings(w http.ResponseWriter, r *http.Request) {
 	if !h.requireAdmin(w, r) {
@@ -37,7 +39,10 @@ func (h *Handler) handleSettings(w http.ResponseWriter, r *http.Request) {
 // @Param        body  body  RuntimeSettingsDTO  true  "Settings fields to change (partial)"
 // @Success      200  {object}  SettingsDTO
 // @Failure      400  {object}  apiError
+// @Failure      401  {object}  apiError
 // @Failure      403  {object}  apiError
+// @Failure      500  {object}  apiError
+// @Failure      503  {object}  apiError
 // @Router       /admin/settings [patch]
 func (h *Handler) handleSettingsUpdate(w http.ResponseWriter, r *http.Request) {
 	if !h.requireAdmin(w, r) {

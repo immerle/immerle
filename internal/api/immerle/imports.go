@@ -16,6 +16,7 @@ import (
 // @Security     BearerAuth
 // @Produce      json
 // @Success      200  {array}  ImportSourceDTO
+// @Failure      401  {object}  apiError
 // @Router       /imports/sources [get]
 func (h *Handler) handleImportSources(w http.ResponseWriter, r *http.Request) {
 	if h.Imports == nil {
@@ -33,6 +34,8 @@ func (h *Handler) handleImportSources(w http.ResponseWriter, r *http.Request) {
 // @Security     BearerAuth
 // @Produce      json
 // @Success      200  {array}  ImportDTO
+// @Failure      401  {object}  apiError
+// @Failure      500  {object}  apiError
 // @Router       /imports [get]
 func (h *Handler) handleImports(w http.ResponseWriter, r *http.Request) {
 	if h.Imports == nil {
@@ -65,6 +68,8 @@ type startImportRequest struct {
 // @Param        body  body  startImportRequest  true  "Import source + reference"
 // @Success      201  {object}  ImportDTO
 // @Failure      400  {object}  apiError
+// @Failure      401  {object}  apiError
+// @Failure      503  {object}  apiError
 // @Router       /imports [post]
 func (h *Handler) handleImportStart(w http.ResponseWriter, r *http.Request) {
 	if h.Imports == nil {
@@ -103,7 +108,9 @@ type resolveItemRequest struct {
 // @Param        body    body  resolveItemRequest  false  "Optional corrected 'artist title' search"
 // @Success      200  {object}  ImportItemDTO
 // @Failure      400  {object}  apiError
+// @Failure      401  {object}  apiError
 // @Failure      404  {object}  apiError
+// @Failure      503  {object}  apiError
 // @Router       /imports/{id}/items/{itemId}/resolve [post]
 func (h *Handler) handleImportItemResolve(w http.ResponseWriter, r *http.Request) {
 	if h.Imports == nil {
@@ -142,7 +149,10 @@ func (h *Handler) handleImportItemResolve(w http.ResponseWriter, r *http.Request
 // @Produce      json
 // @Param        id  path  string  true  "Import id"
 // @Success      200  {object}  ImportDTO
+// @Failure      401  {object}  apiError
 // @Failure      404  {object}  apiError
+// @Failure      500  {object}  apiError
+// @Failure      503  {object}  apiError
 // @Router       /imports/{id} [get]
 func (h *Handler) handleImportStatus(w http.ResponseWriter, r *http.Request) {
 	if h.Imports == nil {

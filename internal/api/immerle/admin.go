@@ -31,7 +31,9 @@ func (h *Handler) cleanupStatus() map[string]any {
 // @Security     BearerAuth
 // @Produce      json
 // @Success      200  {object}  CleanupStatusDTO
+// @Failure      401  {object}  apiError
 // @Failure      403  {object}  apiError
+// @Failure      503  {object}  apiError
 // @Router       /admin/cleanup [get]
 func (h *Handler) handleCleanup(w http.ResponseWriter, r *http.Request) {
 	if !h.requireAdmin(w, r) {
@@ -60,7 +62,10 @@ type cleanupUpdateRequest struct {
 // @Param        body  body  cleanupUpdateRequest  true  "Enable or disable the sweep"
 // @Success      200  {object}  CleanupStatusDTO
 // @Failure      400  {object}  apiError
+// @Failure      401  {object}  apiError
 // @Failure      403  {object}  apiError
+// @Failure      500  {object}  apiError
+// @Failure      503  {object}  apiError
 // @Router       /admin/cleanup [put]
 func (h *Handler) handleCleanupUpdate(w http.ResponseWriter, r *http.Request) {
 	if !h.requireAdmin(w, r) {
@@ -97,7 +102,10 @@ func (h *Handler) handleCleanupUpdate(w http.ResponseWriter, r *http.Request) {
 // @Security     BearerAuth
 // @Produce      json
 // @Success      201  {object}  CleanupRunDTO
+// @Failure      401  {object}  apiError
 // @Failure      403  {object}  apiError
+// @Failure      500  {object}  apiError
+// @Failure      503  {object}  apiError
 // @Router       /admin/cleanup/runs [post]
 func (h *Handler) handleCleanupRun(w http.ResponseWriter, r *http.Request) {
 	if !h.requireAdmin(w, r) {

@@ -36,6 +36,8 @@ func accountView(u models.User) map[string]any {
 // @Security     BearerAuth
 // @Produce      json
 // @Success      200  {object}  AccountDTO
+// @Failure      401  {object}  apiError
+// @Failure      500  {object}  apiError
 // @Router       /me [get]
 func (h *Handler) handleAccount(w http.ResponseWriter, r *http.Request) {
 	caller := userFrom(r.Context())
@@ -65,6 +67,8 @@ type updateAccountRequest struct {
 // @Param        body  body  updateAccountRequest  true  "Account fields to change"
 // @Success      200  {object}  AccountDTO
 // @Failure      400  {object}  apiError
+// @Failure      401  {object}  apiError
+// @Failure      500  {object}  apiError
 // @Router       /me [patch]
 func (h *Handler) handleAccountUpdate(w http.ResponseWriter, r *http.Request) {
 	caller := userFrom(r.Context())

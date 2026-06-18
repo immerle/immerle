@@ -65,6 +65,8 @@ func (h *Handler) handleCapabilities(w http.ResponseWriter, r *http.Request) {
 // @Security     BearerAuth
 // @Produce      json
 // @Success      200  {array}  FriendDTO
+// @Failure      401  {object}  apiError
+// @Failure      500  {object}  apiError
 // @Router       /friends [get]
 func (h *Handler) handleFriends(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
@@ -99,7 +101,9 @@ type friendRequestBody struct {
 // @Param        body  body  friendRequestBody  true  "Target username"
 // @Success      201  {object}  apiError  "created"
 // @Failure      400  {object}  apiError
+// @Failure      401  {object}  apiError
 // @Failure      404  {object}  apiError
+// @Failure      500  {object}  apiError
 // @Router       /friends/requests [post]
 func (h *Handler) handleFriendRequest(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
@@ -144,7 +148,9 @@ func (h *Handler) handleFriendRequest(w http.ResponseWriter, r *http.Request) {
 // @Produce      json
 // @Param        username  path  string  true  "Username of the requester to accept"
 // @Success      200  {object}  FriendDTO
+// @Failure      401  {object}  apiError
 // @Failure      404  {object}  apiError
+// @Failure      500  {object}  apiError
 // @Router       /friends/requests/{username}/accept [post]
 func (h *Handler) handleFriendAccept(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
@@ -175,6 +181,8 @@ func (h *Handler) handleFriendAccept(w http.ResponseWriter, r *http.Request) {
 // @Security     BearerAuth
 // @Produce      json
 // @Success      200  {array}  PendingFriendDTO
+// @Failure      401  {object}  apiError
+// @Failure      500  {object}  apiError
 // @Router       /friends/requests [get]
 func (h *Handler) handleFriendPending(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
@@ -202,6 +210,8 @@ func (h *Handler) handleFriendPending(w http.ResponseWriter, r *http.Request) {
 // @Security     BearerAuth
 // @Produce      json
 // @Success      200  {array}  ActivityEventDTO
+// @Failure      401  {object}  apiError
+// @Failure      500  {object}  apiError
 // @Router       /activity [get]
 func (h *Handler) handleActivity(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
@@ -300,7 +310,9 @@ func (h *Handler) activityItem(ctx context.Context, e models.ActivityEvent) map[
 // @Produce      json
 // @Param        username  path  string  true  "Target username, or 'me' for the caller"
 // @Success      200  {object}  ProfileDTO
+// @Failure      401  {object}  apiError
 // @Failure      404  {object}  apiError
+// @Failure      500  {object}  apiError
 // @Router       /users/{username} [get]
 func (h *Handler) handleProfile(w http.ResponseWriter, r *http.Request) {
 	caller := userFrom(r.Context())
@@ -380,8 +392,11 @@ type addCollaboratorBody struct {
 // @Param        id    path  string               true  "Playlist id"
 // @Param        body  body  addCollaboratorBody  true  "User to grant edit rights"
 // @Success      201  {object}  apiError  "added"
+// @Failure      400  {object}  apiError
+// @Failure      401  {object}  apiError
 // @Failure      403  {object}  apiError
 // @Failure      404  {object}  apiError
+// @Failure      500  {object}  apiError
 // @Router       /playlists/{id}/collaborators [post]
 func (h *Handler) handleAddCollaborator(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())

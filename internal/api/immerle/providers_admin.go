@@ -42,7 +42,10 @@ func (h *Handler) providersAvailable(w http.ResponseWriter) bool {
 // @Security     BearerAuth
 // @Produce      json
 // @Success      200  {array}  ProviderDTO
+// @Failure      401  {object}  apiError
 // @Failure      403  {object}  apiError
+// @Failure      500  {object}  apiError
+// @Failure      503  {object}  apiError
 // @Router       /admin/providers [get]
 func (h *Handler) handleProviders(w http.ResponseWriter, r *http.Request) {
 	if !h.requireAdmin(w, r) || !h.providersAvailable(w) {
@@ -80,7 +83,9 @@ type upsertProviderRequest struct {
 // @Param        body  body  upsertProviderRequest  true  "Provider config"
 // @Success      200  {object}  ProviderDTO
 // @Failure      400  {object}  apiError
+// @Failure      401  {object}  apiError
 // @Failure      403  {object}  apiError
+// @Failure      503  {object}  apiError
 // @Router       /admin/providers [post]
 func (h *Handler) handleProviderUpsert(w http.ResponseWriter, r *http.Request) {
 	if !h.requireAdmin(w, r) || !h.providersAvailable(w) {
@@ -126,7 +131,10 @@ type setEnabledRequest struct {
 // @Param        body  body  setEnabledRequest  true  "Enabled flag"
 // @Success      200  {object}  ProviderDTO
 // @Failure      400  {object}  apiError
+// @Failure      401  {object}  apiError
+// @Failure      403  {object}  apiError
 // @Failure      404  {object}  apiError
+// @Failure      503  {object}  apiError
 // @Router       /admin/providers/{name}/enabled [put]
 func (h *Handler) handleProviderEnable(w http.ResponseWriter, r *http.Request) {
 	if !h.requireAdmin(w, r) || !h.providersAvailable(w) {
@@ -158,7 +166,11 @@ func (h *Handler) handleProviderEnable(w http.ResponseWriter, r *http.Request) {
 // @Security     BearerAuth
 // @Param        name  path  string  true  "Provider name"
 // @Success      204  "deleted"
+// @Failure      400  {object}  apiError
+// @Failure      401  {object}  apiError
+// @Failure      403  {object}  apiError
 // @Failure      404  {object}  apiError
+// @Failure      503  {object}  apiError
 // @Router       /admin/providers/{name} [delete]
 func (h *Handler) handleProviderDelete(w http.ResponseWriter, r *http.Request) {
 	if !h.requireAdmin(w, r) || !h.providersAvailable(w) {
@@ -189,6 +201,10 @@ type reorderRequest struct {
 // @Param        body  body  reorderRequest  true  "Provider names in the desired order"
 // @Success      200  {array}  ProviderDTO
 // @Failure      400  {object}  apiError
+// @Failure      401  {object}  apiError
+// @Failure      403  {object}  apiError
+// @Failure      500  {object}  apiError
+// @Failure      503  {object}  apiError
 // @Router       /admin/providers/order [put]
 func (h *Handler) handleProviderReorder(w http.ResponseWriter, r *http.Request) {
 	if !h.requireAdmin(w, r) || !h.providersAvailable(w) {
