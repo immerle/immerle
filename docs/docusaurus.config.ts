@@ -41,7 +41,7 @@ const config: Config = {
       {
         docs: {
           sidebarPath: './sidebars.ts',
-          routeBasePath: '/', // docs are the site root; no separate landing page
+          routeBasePath: '/docs', // landing lives at the root, docs under /docs
           editUrl: 'https://github.com/immerle/immerle/tree/main/docs/',
         },
         blog: false,
@@ -83,9 +83,9 @@ const config: Config = {
         {
           title: 'Docs',
           items: [
-            {label: 'Introduction', to: '/'},
-            {label: 'Installation', to: '/installation'},
-            {label: 'Configuration', to: '/configuration'},
+            {label: 'Introduction', to: '/docs'},
+            {label: 'Installation', to: '/docs/installation'},
+            {label: 'Configuration', to: '/docs/configuration'},
             {label: 'API reference', to: '/api/'},
           ],
         },

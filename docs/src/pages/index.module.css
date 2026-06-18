@@ -1,0 +1,264 @@
+/* Immerle landing — night / vinyl. Dark canvas, aurora glow in the logo's
+   colours, big editorial type. CSS-only motion. */
+
+.main {
+  --ink: #0a0a0c;
+  --paper: #f3f2ef;
+  --green: #1ed760;
+  --pink: #ef71b8;
+  --blue: #0e75ee;
+  --yellow: #fcac01;
+  position: relative;
+  overflow: clip;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--immerle-display);
+  isolation: isolate;
+}
+
+/* Drifting colour blobs behind everything. */
+.aurora {
+  position: absolute;
+  inset: -20% -10% auto -10%;
+  height: 120vh;
+  z-index: -2;
+  background:
+    radial-gradient(40% 50% at 18% 22%, color-mix(in srgb, var(--green) 55%, transparent), transparent 70%),
+    radial-gradient(38% 46% at 82% 12%, color-mix(in srgb, var(--pink) 50%, transparent), transparent 70%),
+    radial-gradient(46% 52% at 65% 60%, color-mix(in srgb, var(--blue) 45%, transparent), transparent 72%);
+  filter: blur(70px) saturate(135%);
+  opacity: 0.85;
+  animation: drift 22s ease-in-out infinite alternate;
+}
+
+@keyframes drift {
+  to { transform: translate3d(0, -4%, 0) scale(1.08) rotate(4deg); }
+}
+
+/* Subtle film grain over the glow. */
+.grain {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ---- hero ---- */
+.hero {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: clamp(5rem, 12vh, 9rem) 1.5rem 4rem;
+  text-align: center;
+}
+
+.kicker {
+  font-family: var(--immerle-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--green) 80%, white);
+  margin-bottom: 1.4rem;
+  opacity: 0;
+  animation: rise 0.7s 0.05s ease-out forwards;
+}
+
+.title {
+  font-size: clamp(2.7rem, 9vw, 6rem);
+  line-height: 0.98;
+  letter-spacing: -0.03em;
+  font-weight: 800;
+  margin: 0 0 1.6rem;
+  opacity: 0;
+  animation: rise 0.8s 0.12s ease-out forwards;
+}
+
+.sings {
+  position: relative;
+  white-space: nowrap;
+  background: linear-gradient(100deg, var(--green), var(--yellow) 45%, var(--pink));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* animated equalizer riding next to "sings" */
+.eq {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 0.18em;
+  height: 0.62em;
+  margin-left: 0.28em;
+  vertical-align: baseline;
+}
+.eq > span {
+  width: 0.12em;
+  height: 100%;
+  border-radius: 0.06em;
+  background: linear-gradient(var(--green), var(--blue));
+  transform-origin: bottom;
+  animation: bounce 1s ease-in-out infinite;
+  animation-delay: calc(var(--i) * 0.13s);
+}
+@keyframes bounce {
+  0%, 100% { transform: scaleY(0.25); }
+  50% { transform: scaleY(1); }
+}
+
+.lede {
+  max-width: 38ch;
+  margin: 0 auto 2.4rem;
+  font-family: system-ui, sans-serif;
+  font-size: clamp(1.05rem, 2.2vw, 1.3rem);
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--paper) 78%, transparent);
+  opacity: 0;
+  animation: rise 0.8s 0.2s ease-out forwards;
+}
+
+.ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  justify-content: center;
+  margin-bottom: 3.4rem;
+  opacity: 0;
+  animation: rise 0.8s 0.28s ease-out forwards;
+}
+
+.primary,
+.secondary {
+  display: inline-block;
+  padding: 0.85rem 1.6rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 1rem;
+  text-decoration: none;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+.primary {
+  background: var(--green);
+  color: #06210f;
+  box-shadow: 0 10px 40px -8px color-mix(in srgb, var(--green) 70%, transparent);
+}
+.primary:hover {
+  transform: translateY(-2px);
+  color: #06210f;
+  box-shadow: 0 16px 48px -8px color-mix(in srgb, var(--green) 80%, transparent);
+}
+.secondary {
+  color: var(--paper);
+  border: 1px solid color-mix(in srgb, var(--paper) 30%, transparent);
+}
+.secondary:hover {
+  transform: translateY(-2px);
+  color: var(--paper);
+  background: color-mix(in srgb, var(--paper) 8%, transparent);
+}
+
+/* ---- terminal ---- */
+.terminal {
+  max-width: 620px;
+  margin: 0 auto;
+  text-align: left;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--paper) 14%, transparent);
+  background: color-mix(in srgb, #000 55%, transparent);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 30px 80px -30px rgba(0, 0, 0, 0.8);
+  opacity: 0;
+  animation: rise 0.8s 0.36s ease-out forwards;
+}
+.termBar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1rem;
+  background: color-mix(in srgb, var(--paper) 6%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--paper) 10%, transparent);
+}
+.termBar > span {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+}
+.termBar > span:nth-child(1) { background: var(--pink); }
+.termBar > span:nth-child(2) { background: var(--yellow); }
+.termBar > span:nth-child(3) { background: var(--green); }
+.termBar > em {
+  margin-left: auto;
+  font-family: var(--immerle-mono);
+  font-style: normal;
+  font-size: 0.72rem;
+  color: color-mix(in srgb, var(--paper) 55%, transparent);
+}
+.termBody {
+  margin: 0;
+  padding: 1.2rem 1.3rem;
+  background: transparent;
+  font-family: var(--immerle-mono);
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--green) 30%, var(--paper));
+  white-space: pre;
+  overflow-x: auto;
+}
+
+/* ---- features ---- */
+.features {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 5rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+}
+.card {
+  padding: 1.6rem;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--paper) 12%, transparent);
+  background: color-mix(in srgb, var(--paper) 4%, transparent);
+  transition: transform 0.18s ease, border-color 0.2s ease, background 0.2s ease;
+}
+.card:hover {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--green) 50%, transparent);
+  background: color-mix(in srgb, var(--paper) 7%, transparent);
+}
+.cardGlyph { font-size: 1.7rem; }
+.cardTitle {
+  margin: 0.8rem 0 0.5rem;
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.cardBody {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--paper) 72%, transparent);
+}
+
+/* ---- outro ---- */
+.outro {
+  text-align: center;
+  padding: 1rem 1.5rem 7rem;
+}
+.outroTitle {
+  font-size: clamp(1.6rem, 4vw, 2.6rem);
+  letter-spacing: -0.02em;
+  margin: 0 0 1.8rem;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora, .eq > span { animation: none; }
+  .kicker, .title, .lede, .ctas, .terminal { animation: none; opacity: 1; }
+}
