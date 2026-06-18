@@ -16,7 +16,7 @@ import (
 // @Tags         setup
 // @Produce      json
 // @Success      200  {object}  SetupStatusDTO
-// @Failure      500  {object}  apiError
+// @Failure      500  {object}  errorResponse
 // @Router       /setup [get]
 func (h *Handler) handleSetupStatus(w http.ResponseWriter, r *http.Request) {
 	initialized, count, err := h.setupState(r)
@@ -51,10 +51,10 @@ type setupInitRequest struct {
 // @Produce      json
 // @Param        body  body  SetupInitRequest  true  "Initial admin credentials"
 // @Success      201  {object}  UserDTO
-// @Failure      400  {object}  apiError  "validation"
-// @Failure      401  {object}  apiError  "invalid_setup_token"
-// @Failure      409  {object}  apiError  "already_initialized"
-// @Failure      500  {object}  apiError
+// @Failure      400  {object}  errorResponse  "validation"
+// @Failure      401  {object}  errorResponse  "invalid_setup_token"
+// @Failure      409  {object}  errorResponse  "already_initialized"
+// @Failure      500  {object}  errorResponse
 // @Router       /setup [post]
 func (h *Handler) handleSetupInit(w http.ResponseWriter, r *http.Request) {
 	var req setupInitRequest

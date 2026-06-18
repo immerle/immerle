@@ -17,11 +17,18 @@ type fieldError struct {
 	Message string `json:"message"`
 }
 
-// apiError is the body returned on any non-2xx response.
+// apiError describes a single failure (code, message and optional per-field
+// validation details). It is the value nested under the "error" key.
 type apiError struct {
 	Code    string       `json:"code"`
 	Message string       `json:"message"`
 	Fields  []fieldError `json:"fields,omitempty"`
+}
+
+// errorResponse is the wire envelope for every non-2xx response: the apiError is
+// nested under an "error" key, e.g. {"error":{"code":"not_found",...}}.
+type errorResponse struct {
+	Error apiError `json:"error"`
 }
 
 // writeResource writes v as JSON with the given status. A nil v (e.g. 204) sends

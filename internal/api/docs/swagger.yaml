@@ -656,6 +656,11 @@ components:
         name:
           type: string
       type: object
+    immerle.errorResponse:
+      properties:
+        error:
+          $ref: '#/components/schemas/immerle.apiError'
+      type: object
     immerle.fieldError:
       properties:
         field:
@@ -792,13 +797,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Internal Server Error
       security:
       - BearerAuth: []
@@ -819,19 +824,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
         "403":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Forbidden
         "503":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Service Unavailable
       security:
       - BearerAuth: []
@@ -863,31 +868,31 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Bad Request
         "401":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
         "403":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Forbidden
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Internal Server Error
         "503":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Service Unavailable
       security:
       - BearerAuth: []
@@ -910,25 +915,25 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
         "403":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Forbidden
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Internal Server Error
         "503":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Service Unavailable
       security:
       - BearerAuth: []
@@ -952,25 +957,25 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
         "403":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Forbidden
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Internal Server Error
         "503":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Service Unavailable
       security:
       - BearerAuth: []
@@ -1003,25 +1008,25 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Bad Request
         "401":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
         "403":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Forbidden
         "503":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Service Unavailable
       security:
       - BearerAuth: []
@@ -1045,31 +1050,31 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Bad Request
         "401":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
         "403":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Forbidden
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Not Found
         "503":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Service Unavailable
       security:
       - BearerAuth: []
@@ -1109,31 +1114,31 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Bad Request
         "401":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
         "403":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Forbidden
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Not Found
         "503":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Service Unavailable
       security:
       - BearerAuth: []
@@ -1169,31 +1174,31 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Bad Request
         "401":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
         "403":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Forbidden
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Internal Server Error
         "503":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Service Unavailable
       security:
       - BearerAuth: []
@@ -1215,19 +1220,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
         "403":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Forbidden
         "503":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Service Unavailable
       security:
       - BearerAuth: []
@@ -1262,31 +1267,31 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Bad Request
         "401":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
         "403":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Forbidden
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Internal Server Error
         "503":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Service Unavailable
       security:
       - BearerAuth: []
@@ -1320,13 +1325,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Bad Request
         "401":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
       summary: Create a device session (issue a JWT)
       tags:
@@ -1362,13 +1367,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Internal Server Error
       security:
       - BearerAuth: []
@@ -1393,19 +1398,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Not Found
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Internal Server Error
       security:
       - BearerAuth: []
@@ -1427,13 +1432,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Internal Server Error
       security:
       - BearerAuth: []
@@ -1455,13 +1460,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Internal Server Error
       security:
       - BearerAuth: []
@@ -1491,25 +1496,25 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Bad Request
         "401":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Not Found
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Internal Server Error
       security:
       - BearerAuth: []
@@ -1536,19 +1541,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Not Found
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Internal Server Error
       security:
       - BearerAuth: []
@@ -1572,13 +1577,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Internal Server Error
       security:
       - BearerAuth: []
@@ -1612,19 +1617,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Bad Request
         "401":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
         "503":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Service Unavailable
       security:
       - BearerAuth: []
@@ -1653,25 +1658,25 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Not Found
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Internal Server Error
         "503":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Service Unavailable
       security:
       - BearerAuth: []
@@ -1718,25 +1723,25 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Bad Request
         "401":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Not Found
         "503":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Service Unavailable
       security:
       - BearerAuth: []
@@ -1760,7 +1765,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
       security:
       - BearerAuth: []
@@ -1791,19 +1796,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Bad Request
         "401":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Internal Server Error
       security:
       - BearerAuth: []
@@ -1830,13 +1835,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Not Found
       security:
       - BearerAuth: []
@@ -1875,31 +1880,31 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Bad Request
         "401":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
         "403":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Forbidden
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Not Found
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Internal Server Error
       security:
       - BearerAuth: []
@@ -1928,19 +1933,19 @@ paths:
           content:
             text/event-stream:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
         "404":
           content:
             text/event-stream:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Not Found
         "500":
           content:
             text/event-stream:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Internal Server Error
       security:
       - BearerAuth: []
@@ -1967,19 +1972,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Not Found
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Internal Server Error
       security:
       - BearerAuth: []
@@ -2002,13 +2007,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Internal Server Error
       security:
       - BearerAuth: []
@@ -2031,7 +2036,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
       security:
       - BearerAuth: []
@@ -2053,13 +2058,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Internal Server Error
       security:
       - BearerAuth: []
@@ -2091,19 +2096,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Bad Request
         "401":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Internal Server Error
       security:
       - BearerAuth: []
@@ -2143,31 +2148,31 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Bad Request
         "401":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
         "403":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Forbidden
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Not Found
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Internal Server Error
       security:
       - BearerAuth: []
@@ -2190,13 +2195,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Internal Server Error
       security:
       - BearerAuth: []
@@ -2220,25 +2225,25 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
         "403":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Forbidden
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Not Found
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Internal Server Error
       security:
       - BearerAuth: []
@@ -2262,13 +2267,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Internal Server Error
       security:
       - BearerAuth: []
@@ -2290,7 +2295,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Internal Server Error
       summary: First-run setup status
       tags:
@@ -2321,25 +2326,25 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: validation
         "401":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: invalid_setup_token
         "409":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: already_initialized
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Internal Server Error
       summary: Create the first administrator
       tags:
@@ -2357,13 +2362,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Internal Server Error
       security:
       - BearerAuth: []
@@ -2395,19 +2400,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Bad Request
         "401":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Internal Server Error
       security:
       - BearerAuth: []
@@ -2430,13 +2435,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Internal Server Error
       security:
       - BearerAuth: []
@@ -2468,19 +2473,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Bad Request
         "401":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Internal Server Error
       security:
       - BearerAuth: []
@@ -2503,19 +2508,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Not Found
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Internal Server Error
       security:
       - BearerAuth: []
@@ -2545,19 +2550,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Not Found
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.errorResponse'
           description: Internal Server Error
       security:
       - BearerAuth: []
