@@ -108,61 +108,69 @@ func (h *Handler) Register(mux chi.Router) {
 	// Device login is unauthenticated (it exchanges credentials for a JWT).
 	mux.HandleFunc("/auth/login", h.handleLogin)
 
-	auth := func(fn http.HandlerFunc) http.HandlerFunc { return h.authenticated(fn) }
-	mux.Handle("/friends", auth(h.handleFriends))
-	mux.Handle("/friends/request", auth(h.handleFriendRequest))
-	mux.Handle("/friends/accept", auth(h.handleFriendAccept))
-	mux.Handle("/friends/pending", auth(h.handleFriendPending))
-	mux.Handle("/activity", auth(h.handleActivity))
-	mux.Handle("/profile", auth(h.handleProfile))
-	mux.Handle("/account", auth(h.handleAccount))
-	mux.Handle("/library/stats", auth(h.handleLibraryStats))
+	// Everything below requires authentication; the group middleware applies it
+	// once instead of wrapping each handler.
+	mux.Group(func(r chi.Router) {
+		r.Use(h.authMiddleware)
 
-	// Playlist imports from external sources (e.g. Spotify).
-	mux.Handle("/imports/sources", auth(h.handleImportSources))
-	mux.Handle("/imports/start", auth(h.handleImportStart))
-	mux.Handle("/imports/status", auth(h.handleImportStatus))
-	mux.Handle("/imports/items/resolve", auth(h.handleImportItemResolve))
-	mux.Handle("/imports", auth(h.handleImports))
-	mux.Handle("/playlists/collaborators", auth(h.handleAddCollaborator))
-	mux.Handle("/playlists/public", auth(h.handlePublicPlaylists))
-	mux.Handle("/playlists/subscribe", auth(h.handleSubscribePlaylist))
-	mux.Handle("/playlists/unsubscribe", auth(h.handleUnsubscribePlaylist))
-	mux.Handle("/jam/create", auth(h.handleJamCreate))
-	mux.Handle("/jam/join", auth(h.handleJamJoin))
-	mux.Handle("/jam/leave", auth(h.handleJamLeave))
-	mux.Handle("/jam/state", auth(h.handleJamState))
-	mux.Handle("/jam/update", auth(h.handleJamUpdate))
-	mux.Handle("/jam/events", auth(h.handleJamEvents))
+		r.HandleFunc("/friends", h.handleFriends)
+		r.HandleFunc("/friends/request", h.handleFriendRequest)
+		r.HandleFunc("/friends/accept", h.handleFriendAccept)
+		r.HandleFunc("/friends/pending", h.handleFriendPending)
+		r.HandleFunc("/activity", h.handleActivity)
+		r.HandleFunc("/profile", h.handleProfile)
+		r.HandleFunc("/account", h.handleAccount)
+		r.HandleFunc("/library/stats", h.handleLibraryStats)
 
-	// Personal API tokens (scoped to the authenticated user).
-	mux.Handle("/tokens", auth(h.handleTokens))
-	mux.Handle("/tokens/create", auth(h.handleCreateToken))
-	mux.Handle("/tokens/revoke", auth(h.handleRevokeToken))
+		// Playlist imports from external sources (e.g. Spotify).
+		r.HandleFunc("/imports/sources", h.handleImportSources)
+		r.HandleFunc("/imports/start", h.handleImportStart)
+		r.HandleFunc("/imports/status", h.handleImportStatus)
+		r.HandleFunc("/imports/items/resolve", h.handleImportItemResolve)
+		r.HandleFunc("/imports", h.handleImports)
+		r.HandleFunc("/playlists/collaborators", h.handleAddCollaborator)
+		r.HandleFunc("/playlists/public", h.handlePublicPlaylists)
+		r.HandleFunc("/playlists/subscribe", h.handleSubscribePlaylist)
+		r.HandleFunc("/playlists/unsubscribe", h.handleUnsubscribePlaylist)
+		r.HandleFunc("/jam/create", h.handleJamCreate)
+		r.HandleFunc("/jam/join", h.handleJamJoin)
+		r.HandleFunc("/jam/leave", h.handleJamLeave)
+		r.HandleFunc("/jam/state", h.handleJamState)
+		r.HandleFunc("/jam/update", h.handleJamUpdate)
+		r.HandleFunc("/jam/events", h.handleJamEvents)
 
-	// Device sessions (JWT): list and revoke.
-	mux.Handle("/devices", auth(h.handleDevices))
-	mux.Handle("/devices/revoke", auth(h.handleRevokeDevice))
+		// Personal API tokens (scoped to the authenticated user).
+		r.HandleFunc("/tokens", h.handleTokens)
+		r.HandleFunc("/tokens/create", h.handleCreateToken)
+		r.HandleFunc("/tokens/revoke", h.handleRevokeToken)
 
-	// Per-account UI theme (scoped to the authenticated user).
-	mux.Handle("/theme", auth(h.handleTheme))
+		// Device sessions (JWT): list and revoke.
+		r.HandleFunc("/devices", h.handleDevices)
+		r.HandleFunc("/devices/revoke", h.handleRevokeDevice)
 
-	// Admin: runtime control of the provider-download eviction sweep.
-	mux.Handle("/admin/cleanup", auth(h.handleCleanup))
-	mux.Handle("/admin/cleanup/run", auth(h.handleCleanupRun))
+		// Per-account UI theme (scoped to the authenticated user).
+		r.HandleFunc("/theme", h.handleTheme)
 
-	// Admin: runtime-configurable on-demand providers.
-	mux.Handle("/admin/providers", auth(h.handleProviders))
-	mux.Handle("/admin/providers/enable", auth(h.handleProviderEnable))
-	mux.Handle("/admin/providers/reorder", auth(h.handleProviderReorder))
-	mux.Handle("/admin/providers/delete", auth(h.handleProviderDelete))
+		// Admin: runtime control of the provider-download eviction sweep.
+		r.HandleFunc("/admin/cleanup", h.handleCleanup)
+		r.HandleFunc("/admin/cleanup/run", h.handleCleanupRun)
 
-	// Admin: DB-backed runtime settings (provider behaviour, avatars, scan, federation).
-	mux.Handle("/admin/settings", auth(h.handleSettings))
+		// Admin: runtime-configurable on-demand providers.
+		r.HandleFunc("/admin/providers", h.handleProviders)
+		r.HandleFunc("/admin/providers/enable", h.handleProviderEnable)
+		r.HandleFunc("/admin/providers/reorder", h.handleProviderReorder)
+		r.HandleFunc("/admin/providers/delete", h.handleProviderDelete)
+
+		// Admin: DB-backed runtime settings (provider behaviour, avatars, scan, federation).
+		r.HandleFunc("/admin/settings", h.handleSettings)
+	})
 }
 
-func (h *Handler) authenticated(next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+// authMiddleware authenticates the request (Subsonic-style credentials or a
+// device JWT / API token) and injects the user into the context. On failure it
+// answers 401 and does not call next.
+func (h *Handler) authMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_ = r.ParseForm()
 		creds := core.Credentials{
 			Username:  r.Form.Get("u"),
@@ -179,8 +187,8 @@ func (h *Handler) authenticated(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 		ctx := context.WithValue(r.Context(), userKey, user)
-		next(w, r.WithContext(ctx))
-	}
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
 }
 
 func userFrom(ctx context.Context) models.User {
