@@ -130,10 +130,10 @@ type StaticProviderSettings struct {
 // AutoDownloadOnPlay implements ProviderSettings.
 func (s StaticProviderSettings) AutoDownloadOnPlay() bool { return s.AutoDownload }
 
-// SearchTimeout implements ProviderSettings (defaulting to 6s).
+// SearchTimeout implements ProviderSettings (defaulting to 3s).
 func (s StaticProviderSettings) SearchTimeout() time.Duration {
 	if s.Timeout <= 0 {
-		return 6 * time.Second
+		return 3 * time.Second
 	}
 	return s.Timeout
 }
@@ -228,7 +228,6 @@ func decodeRemoteID(id string) (provider, providerTrackID string, ok bool) {
 // returns streamable-remote tracks, deduplicated and filtered against the local
 // library (by MBID). Cached, deduplicated and time-bounded.
 func (s *CatalogService) remoteSearch(ctx context.Context, query string, limit int) ([]models.Track, error) {
-	st := s.state
 	if limit <= 0 {
 		limit = 20
 	}
@@ -238,11 +237,18 @@ func (s *CatalogService) remoteSearch(ctx context.Context, query string, limit i
 	}
 	ctx, cancel := s.searchCtx(ctx)
 	defer cancel()
+	return s.remoteTracksFrom(ctx, prov, query, limit), nil
+}
 
+// remoteTracksFrom searches a single provider and returns streamable-remote
+// tracks, deduplicated and filtered against the local library (by MBID and
+// completed downloads). The context/timeout is set by the caller.
+func (s *CatalogService) remoteTracksFrom(ctx context.Context, prov providers.Provider, query string, limit int) []models.Track {
+	st := s.state
 	results, err := s.cachedTrackSearch(ctx, prov, query, limit)
 	if err != nil {
 		st.logger.Warn("provider search failed", "provider", prov.Name(), "error", err)
-		return nil, nil
+		return nil
 	}
 
 	out := make([]models.Track, 0, limit)
@@ -272,7 +278,7 @@ func (s *CatalogService) remoteSearch(ctx context.Context, query string, limit i
 		seen[id] = true
 		out = append(out, toRemoteTrack(prov.Name(), res))
 	}
-	return out, nil
+	return out
 }
 
 // resolve makes a track available locally, downloading it if needed. It returns

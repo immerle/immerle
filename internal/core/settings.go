@@ -190,7 +190,7 @@ func transcodeEqual(a, b models.TranscodeRuntime) bool {
 // sanitizeSettings clamps/normalizes incoming values.
 func sanitizeSettings(rs models.RuntimeSettings) models.RuntimeSettings {
 	if rs.Providers.SearchTimeoutSeconds <= 0 {
-		rs.Providers.SearchTimeoutSeconds = 6
+		rs.Providers.SearchTimeoutSeconds = 3
 	}
 	if rs.Scan.IntervalSeconds < 0 {
 		rs.Scan.IntervalSeconds = 0

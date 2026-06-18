@@ -24,7 +24,7 @@ func TestSettingsServiceHotAndRestart(t *testing.T) {
 	s, path := newSettings(t)
 
 	// Defaults applied; the file is written; nothing pending a restart.
-	if s.Get().Providers.SearchTimeoutSeconds != 6 {
+	if s.Get().Providers.SearchTimeoutSeconds != 3 {
 		t.Fatalf("default search timeout = %d", s.Get().Providers.SearchTimeoutSeconds)
 	}
 	if _, err := os.Stat(path); err != nil {
@@ -88,7 +88,7 @@ func TestSettingsServiceSanitizes(t *testing.T) {
 	next := s.Get()
 	next.Providers.SearchTimeoutSeconds = 0 // invalid → clamped to default
 	saved, _, _ := s.Update(next)
-	if saved.Providers.SearchTimeoutSeconds != 6 {
+	if saved.Providers.SearchTimeoutSeconds != 3 {
 		t.Fatalf("timeout not clamped: %d", saved.Providers.SearchTimeoutSeconds)
 	}
 }

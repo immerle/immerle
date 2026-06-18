@@ -46,7 +46,7 @@ type RuntimeSettingsDTO struct {
 	} `json:"transcode"`
 	Providers struct {
 		AutoDownloadOnPlay   bool `json:"autoDownloadOnPlay" example:"true"`
-		SearchTimeoutSeconds int  `json:"searchTimeoutSeconds" example:"6"`
+		SearchTimeoutSeconds int  `json:"searchTimeoutSeconds" example:"3"`
 	} `json:"providers"`
 	Scan struct {
 		IntervalSeconds int  `json:"intervalSeconds" example:"3600"`
