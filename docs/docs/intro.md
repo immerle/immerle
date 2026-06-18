@@ -36,4 +36,5 @@ you outgrow it). Drop in your music, hit play.
 - [Configuration](./configuration.md) — bootstrap settings vs. runtime settings.
 - [Connecting clients](./clients.md) — point any Subsonic app at your server.
 - [Subsonic API](./subsonic-api.md) — the `/rest/*` methods clients use.
+- [Custom content provider](./custom-provider.md) — plug in your own on-demand catalog.
 - [API reference](pathname:///api/) — the OpenAPI docs for Immerle's own REST API.
