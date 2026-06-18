@@ -44,6 +44,10 @@
                         "example": false,
                         "type": "boolean"
                     },
+                    "language": {
+                        "example": "fr",
+                        "type": "string"
+                    },
                     "username": {
                         "example": "bob",
                         "type": "string"
@@ -1033,6 +1037,9 @@
                         "type": "string"
                     },
                     "email": {
+                        "type": "string"
+                    },
+                    "language": {
                         "type": "string"
                     }
                 },
