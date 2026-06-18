@@ -895,6 +895,11 @@
                     },
                     "message": {
                         "type": "string"
+                    },
+                    "params": {
+                        "additionalProperties": {},
+                        "description": "i18n interpolation values; always present ({} when none)",
+                        "type": "object"
                     }
                 },
                 "type": "object"

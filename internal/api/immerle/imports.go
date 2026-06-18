@@ -83,7 +83,7 @@ func (h *Handler) handleImportStart(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
 	im, err := h.Imports.Start(r.Context(), user.ID, req.Source, req.Ref)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "bad_request", err.Error())
+		writeErrorParams(w, http.StatusBadRequest, "bad_request", err.Error(), map[string]any{"detail": err.Error()})
 		return
 	}
 	writeResource(w, http.StatusCreated, im)
@@ -133,7 +133,7 @@ func (h *Handler) handleImportItemResolve(w http.ResponseWriter, r *http.Request
 			writeError(w, http.StatusNotFound, "not_found", "import item not found")
 			return
 		}
-		writeError(w, http.StatusBadRequest, "bad_request", err.Error())
+		writeErrorParams(w, http.StatusBadRequest, "bad_request", err.Error(), map[string]any{"detail": err.Error()})
 		return
 	}
 	writeResource(w, http.StatusOK, item)

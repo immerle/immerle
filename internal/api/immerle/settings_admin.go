@@ -56,7 +56,7 @@ func (h *Handler) handleSettingsUpdate(w http.ResponseWriter, r *http.Request) {
 	next := h.Settings.Get()
 	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 	if err := json.NewDecoder(r.Body).Decode(&next); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_body", "invalid settings JSON: "+err.Error())
+		writeErrorParams(w, http.StatusBadRequest, "invalid_body", "invalid settings JSON: "+err.Error(), map[string]any{"detail": err.Error()})
 		return
 	}
 	saved, pending, err := h.Settings.Update(next)

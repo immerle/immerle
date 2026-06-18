@@ -117,7 +117,7 @@ func (h *Handler) handleFriendRequest(w http.ResponseWriter, r *http.Request) {
 	}
 	friend, err := h.Users.GetByUsername(r.Context(), req.Username)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "not_found", "user not found")
+		writeErrorParams(w, http.StatusNotFound, "not_found", "user not found", map[string]any{"username": req.Username})
 		return
 	}
 	if friend.ID == user.ID {
@@ -156,12 +156,12 @@ func (h *Handler) handleFriendAccept(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
 	requesterUser, err := h.Users.GetByUsername(r.Context(), pathParam(r, "username"))
 	if err != nil {
-		writeError(w, http.StatusNotFound, "not_found", "user not found")
+		writeErrorParams(w, http.StatusNotFound, "not_found", "user not found", map[string]any{"username": pathParam(r, "username")})
 		return
 	}
 	if err := h.Friends.Accept(r.Context(), requesterUser.ID, user.ID, uuid.NewString()); err != nil {
 		if errors.Is(err, persistence.ErrNotFound) {
-			writeError(w, http.StatusNotFound, "not_found", "no pending request from this user")
+			writeErrorParams(w, http.StatusNotFound, "not_found", "no pending request from this user", map[string]any{"username": requesterUser.Username})
 			return
 		}
 		writeInternal(w, err)
@@ -321,7 +321,7 @@ func (h *Handler) handleProfile(w http.ResponseWriter, r *http.Request) {
 	if username != "me" && username != caller.Username {
 		u, err := h.Users.GetByUsername(r.Context(), username)
 		if err != nil {
-			writeError(w, http.StatusNotFound, "not_found", "user not found")
+			writeErrorParams(w, http.StatusNotFound, "not_found", "user not found", map[string]any{"username": username})
 			return
 		}
 		target = u
@@ -417,7 +417,7 @@ func (h *Handler) handleAddCollaborator(w http.ResponseWriter, r *http.Request) 
 	}
 	collaborator, err := h.Users.GetByUsername(r.Context(), req.Username)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "not_found", "user not found")
+		writeErrorParams(w, http.StatusNotFound, "not_found", "user not found", map[string]any{"username": req.Username})
 		return
 	}
 	// Ensure the playlist is marked collaborative.

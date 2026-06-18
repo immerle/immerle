@@ -107,7 +107,7 @@ func (h *Handler) handleProviderUpsert(w http.ResponseWriter, r *http.Request) {
 		Enabled:  enabled,
 	})
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "bad_request", err.Error())
+		writeErrorParams(w, http.StatusBadRequest, "bad_request", err.Error(), map[string]any{"detail": err.Error()})
 		return
 	}
 	h.Logger.Info("provider upserted", "provider", saved.Name, "enabled", saved.Enabled, "by", userFrom(r.Context()).Username)
@@ -236,5 +236,5 @@ func (h *Handler) writeProviderError(w http.ResponseWriter, err error) {
 		writeError(w, http.StatusNotFound, "not_found", "provider not found")
 		return
 	}
-	writeError(w, http.StatusBadRequest, "bad_request", err.Error())
+	writeErrorParams(w, http.StatusBadRequest, "bad_request", err.Error(), map[string]any{"detail": err.Error()})
 }
