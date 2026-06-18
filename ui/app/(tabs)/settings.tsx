@@ -12,18 +12,12 @@ import { AdminHeader, AdminScroll, CardTitle, colorFor } from '../../src/compone
 import { Ionicon } from '../../src/components/Ionicon';
 import { ACCENT_PRESETS, DEFAULT_ACCENT, normalizeHex } from '../../src/theme/accent';
 import { useColors } from '../../src/theme/colors';
+import { t } from '../../src/i18n';
 
-const THEME_OPTIONS: { key: ThemePreference; label: string; icon: string }[] = [
-  { key: 'light', label: 'Clair', icon: 'sunny' },
-  { key: 'dark', label: 'Sombre', icon: 'moon' },
-  { key: 'system', label: 'Système', icon: 'phone-portrait' },
-];
-
-// Language names shown in their own language; `system` follows the device.
-const LANG_OPTIONS: { value: LocalePref; label: string }[] = [
-  { value: 'system', label: 'Système' },
-  { value: 'en', label: 'English' },
-  { value: 'fr', label: 'Français' },
+const THEME_OPTIONS: { key: ThemePreference; icon: string }[] = [
+  { key: 'light', icon: 'sunny' },
+  { key: 'dark', icon: 'moon' },
+  { key: 'system', icon: 'phone-portrait' },
 ];
 
 /** User settings: account, appearance, accent colour, playback quality, access. */
@@ -39,6 +33,12 @@ export default function Settings() {
   const setQuality = usePlayer((s) => s.setQuality);
   const localePref = useLocale((s) => s.preference);
   const setLocale = useLocale((s) => s.setPreference);
+  // `system` is translated; the fixed locales keep their endonym.
+  const langOptions: { value: LocalePref; label: string }[] = [
+    { value: 'system', label: t('settings.system') },
+    { value: 'en', label: 'English' },
+    { value: 'fr', label: 'Français' },
+  ];
   const [customHex, setCustomHex] = useState('');
 
   const displayNameState = useAuth((s) => s.displayName);
@@ -71,7 +71,7 @@ export default function Settings() {
 
   return (
     <AdminScroll
-      header={<AdminHeader color={colors.primary} title="Réglages" subtitle="Compte & préférences" showBack={false} />}
+      header={<AdminHeader color={colors.primary} title={t('settings.title')} subtitle={t('settings.subtitle')} showBack={false} />}
     >
       {/* Account */}
       <Card>
@@ -88,7 +88,7 @@ export default function Settings() {
           </View>
           {client?.isAdmin ? (
             <View className="rounded-full bg-success/15 px-2.5 py-1">
-              <Text className="text-xs font-semibold text-success">Admin</Text>
+              <Text className="text-xs font-semibold text-success">{t('settings.admin')}</Text>
             </View>
           ) : null}
         </View>
@@ -96,11 +96,11 @@ export default function Settings() {
 
       {/* Profile (self-service display name + email) */}
       <Card className="gap-3">
-        <CardTitle icon="person" color="#14b8a6" title="Profil" />
-        <Field label="Nom affiché" placeholder={username} value={editName} onChangeText={setEditName} />
+        <CardTitle icon="person" color="#14b8a6" title={t('settings.profile')} />
+        <Field label={t('settings.displayName')} placeholder={username} value={editName} onChangeText={setEditName} />
         <Field
-          label="Email"
-          placeholder="vous@exemple.fr"
+          label={t('settings.email')}
+          placeholder={t('settings.emailPlaceholder')}
           keyboardType="email-address"
           autoCapitalize="none"
           autoCorrect={false}
@@ -108,12 +108,12 @@ export default function Settings() {
           onChangeText={setEditEmail}
         />
         <View className="gap-1.5">
-          <Text className="text-sm font-medium text-muted">Langue</Text>
-          <Select value={localePref} options={LANG_OPTIONS} onChange={setLocale} />
+          <Text className="text-sm font-medium text-muted">{t('settings.language')}</Text>
+          <Select value={localePref} options={langOptions} onChange={setLocale} />
         </View>
         <View className="flex-row justify-end">
           <Button
-            title="Enregistrer"
+            title={t('settings.save')}
             size="sm"
             icon="save-outline"
             loading={updateAccount.isPending}
@@ -124,7 +124,7 @@ export default function Settings() {
 
       {/* Appearance */}
       <Card className="gap-3">
-        <CardTitle icon="contrast" color="#3b82f6" title="Apparence" />
+        <CardTitle icon="contrast" color="#3b82f6" title={t('settings.appearance')} />
         <View className="flex-row gap-2">
           {THEME_OPTIONS.map((opt) => {
             const active = themePref === opt.key;
@@ -137,7 +137,7 @@ export default function Settings() {
                 }`}
               >
                 <Ionicon name={opt.icon} size={22} color={active ? colors.primary : colors.muted} />
-                <Text className={`text-sm ${active ? 'font-semibold text-primary' : 'text-muted'}`}>{opt.label}</Text>
+                <Text className={`text-sm ${active ? 'font-semibold text-primary' : 'text-muted'}`}>{t(`settings.theme.${opt.key}`)}</Text>
               </Pressable>
             );
           })}
@@ -146,7 +146,7 @@ export default function Settings() {
 
       {/* Accent color */}
       <Card className="gap-3">
-        <CardTitle icon="color-palette" color={currentAccent} title="Couleur d'accent" />
+        <CardTitle icon="color-palette" color={currentAccent} title={t('settings.accent')} />
         <View className="flex-row flex-wrap gap-3">
           {ACCENT_PRESETS.map((p) => {
             const active = currentAccent.toLowerCase() === p.hex.toLowerCase();
@@ -166,7 +166,7 @@ export default function Settings() {
         <View className="flex-row items-end gap-2">
           <View className="flex-1">
             <Field
-              label="Couleur libre (hex)"
+              label={t('settings.customColor')}
               placeholder="#1ed760"
               autoCapitalize="none"
               autoCorrect={false}
@@ -176,14 +176,14 @@ export default function Settings() {
             />
           </View>
           <View className="mb-0.5 h-11 w-11 rounded-xl border border-border" style={{ backgroundColor: normalizeHex(customHex) ?? currentAccent }} />
-          <Button title="Appliquer" disabled={!normalizeHex(customHex)} onPress={applyCustom} />
+          <Button title={t('settings.apply')} disabled={!normalizeHex(customHex)} onPress={applyCustom} />
         </View>
-        {accent ? <Button title="Réinitialiser (vert par défaut)" variant="ghost" onPress={() => setAccent(null)} /> : null}
+        {accent ? <Button title={t('settings.resetAccent')} variant="ghost" onPress={() => setAccent(null)} /> : null}
       </Card>
 
       {/* Quality */}
       <Card className="gap-3">
-        <CardTitle icon="musical-notes" color="#ec4899" title="Qualité de lecture" />
+        <CardTitle icon="musical-notes" color="#ec4899" title={t('settings.quality')} />
         <View className="overflow-hidden rounded-xl border border-border">
           {QUALITY_PRESETS.map((p, i) => {
             const active = p.id === qualityId;
@@ -203,16 +203,16 @@ export default function Settings() {
 
       {/* Account & access */}
       <Card className="gap-2">
-        <CardTitle icon="key" color="#14b8a6" title="Compte & accès" />
+        <CardTitle icon="key" color="#14b8a6" title={t('settings.access')} />
         {client?.has('playlistImport') ? (
-          <NavRow icon="cloud-download-outline" title="Importer une playlist" subtitle="Depuis Spotify et autres plateformes" onPress={() => router.push('/import' as never)} />
+          <NavRow icon="cloud-download-outline" title={t('settings.importTitle')} subtitle={t('settings.importSubtitle')} onPress={() => router.push('/import' as never)} />
         ) : null}
-        <NavRow icon="phone-portrait-outline" title="Appareils connectés" subtitle="Sessions de lecture actives" onPress={() => router.push('/devices' as never)} />
-        <NavRow icon="key-outline" title="API" subtitle="Gérer vos tokens d'accès" onPress={() => router.push('/api-tokens' as never)} />
+        <NavRow icon="phone-portrait-outline" title={t('settings.devicesTitle')} subtitle={t('settings.devicesSubtitle')} onPress={() => router.push('/devices' as never)} />
+        <NavRow icon="key-outline" title={t('settings.apiTitle')} subtitle={t('settings.apiSubtitle')} onPress={() => router.push('/api-tokens' as never)} />
       </Card>
 
       <View className="pt-2">
-        <Button title="Se déconnecter" variant="danger" icon="log-out-outline" onPress={onLogout} />
+        <Button title={t('settings.logout')} variant="danger" icon="log-out-outline" onPress={onLogout} />
       </View>
     </AdminScroll>
   );
