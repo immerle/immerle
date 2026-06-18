@@ -16,6 +16,10 @@ func validEmail(s string) bool {
 	return err == nil && addr.Address == s
 }
 
+// supportedLanguages are the UI languages the client ships translations for.
+// "" is also accepted (clears the preference → client uses the device locale).
+var supportedLanguages = map[string]bool{"en": true, "fr": true}
+
 // accountView is the caller's own account (includes the private email).
 func accountView(u models.User) map[string]any {
 	return map[string]any{
@@ -24,6 +28,7 @@ func accountView(u models.User) map[string]any {
 		"displayName": u.DisplayName,
 		"email":       u.Email,
 		"isAdmin":     u.IsAdmin,
+		"language":    u.Language,
 	}
 }
 
@@ -54,6 +59,7 @@ func (h *Handler) handleAccount(w http.ResponseWriter, r *http.Request) {
 type updateAccountRequest struct {
 	DisplayName *string `json:"displayName"`
 	Email       *string `json:"email"`
+	Language    *string `json:"language"`
 }
 
 // handleAccountUpdate applies a partial update to the caller's own account.
@@ -92,6 +98,14 @@ func (h *Handler) handleAccountUpdate(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		user.Email = email
+	}
+	if req.Language != nil {
+		lang := strings.TrimSpace(*req.Language)
+		if lang != "" && !supportedLanguages[lang] {
+			writeError(w, http.StatusBadRequest, "validation", "language must be one of: en, fr")
+			return
+		}
+		user.Language = lang
 	}
 	if err := h.Users.Update(r.Context(), user); err != nil {
 		writeInternal(w, err)

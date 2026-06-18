@@ -18,6 +18,9 @@ type User struct {
 	ScrobbleEnabled bool `json:"scrobbleEnabled"`
 	// ActivityPrivacy is "public", "friends", or "private".
 	ActivityPrivacy string `json:"activityPrivacy"`
+	// Language is the user's preferred UI language (e.g. "en", "fr"). Empty means
+	// the client should fall back to the device locale.
+	Language string `json:"language,omitempty"`
 }
 
 // ThemeSettings holds a user's per-account UI theme, applied client-side. It is

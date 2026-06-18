@@ -135,6 +135,7 @@ type AccountDTO struct {
 	DisplayName string `json:"displayName,omitempty" example:"Bob Marley"`
 	Email       string `json:"email,omitempty" example:"bob@example.com"`
 	IsAdmin     bool   `json:"isAdmin" example:"false"`
+	Language    string `json:"language,omitempty" example:"fr"`
 }
 
 // FriendDTO is a friend reference.
