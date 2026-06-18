@@ -23,48 +23,72 @@ func (h *Handler) loadTheme(r *http.Request, userID string) (models.ThemeSetting
 	return theme, nil
 }
 
-// handleTheme returns or updates the caller's UI theme.
+// handleTheme returns the caller's UI theme.
 //
-// @Summary      Get or update the UI theme
-// @Description  Reads (GET) or updates (POST) the caller's per-account theme. Only the accent colour is supported for now. POST applies a partial update — omitted fields keep their stored value; pass an empty accentColor to clear it.
+// @Summary      Get the UI theme
 // @Tags         theme
+// @Security     BearerAuth
 // @Produce      json
-// @Param        u            query  string  true   "Subsonic username (or use a Bearer token)"
-// @Param        p            query  string  false  "Subsonic password"
-// @Param        c            query  string  true   "Client name"
-// @Param        accentColor  query  string  false  "POST only: CSS hex colour, e.g. #3b82f6 (empty string clears it)"
-// @Success      200  {object}  ThemeResponse
-// @Failure      400  {object}  ErrorResponse
+// @Success      200  {object}  ThemeDTO
 // @Router       /theme [get]
-// @Router       /theme [post]
 func (h *Handler) handleTheme(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
 	theme, err := h.loadTheme(r, user.ID)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, errorBody(err.Error()))
+		writeInternal(w, err)
+		return
+	}
+	writeResource(w, http.StatusOK, theme)
+}
+
+// updateThemeRequest is a partial theme update; pointer fields distinguish
+// "omitted" (keep) from "" (clear).
+type updateThemeRequest struct {
+	AccentColor *string `json:"accentColor"`
+}
+
+// handleThemeUpdate applies a partial update to the caller's UI theme. Only the
+// accent colour is supported; pass an empty accentColor to clear it.
+//
+// @Summary      Update the UI theme
+// @Description  Partial update — omitted fields keep their stored value; pass an empty accentColor to clear it.
+// @Tags         theme
+// @Security     BearerAuth
+// @Accept       json
+// @Produce      json
+// @Param        body  body  updateThemeRequest  true  "Theme fields to change"
+// @Success      200  {object}  ThemeDTO
+// @Failure      400  {object}  apiError
+// @Router       /theme [patch]
+func (h *Handler) handleThemeUpdate(w http.ResponseWriter, r *http.Request) {
+	user := userFrom(r.Context())
+	theme, err := h.loadTheme(r, user.ID)
+	if err != nil {
+		writeInternal(w, err)
 		return
 	}
 
-	if r.Method == http.MethodPost {
-		// Partial update: only fields present in the form are changed.
-		if _, ok := r.Form["accentColor"]; ok {
-			color := strings.TrimSpace(r.Form.Get("accentColor"))
-			if color != "" && !hexColor.MatchString(color) {
-				writeJSON(w, http.StatusBadRequest, errorBody("accentColor must be a hex colour like #3b82f6"))
-				return
-			}
-			theme.AccentColor = color
-		}
-		encoded, err := json.Marshal(theme)
-		if err != nil {
-			writeJSON(w, http.StatusInternalServerError, errorBody(err.Error()))
+	var req updateThemeRequest
+	if !decodeJSON(w, r, &req) {
+		return
+	}
+	if req.AccentColor != nil {
+		color := strings.TrimSpace(*req.AccentColor)
+		if color != "" && !hexColor.MatchString(color) {
+			writeError(w, http.StatusBadRequest, "validation", "accentColor must be a hex colour like #3b82f6")
 			return
 		}
-		if err := h.Users.SetTheme(r.Context(), user.ID, string(encoded)); err != nil {
-			writeJSON(w, http.StatusInternalServerError, errorBody(err.Error()))
-			return
-		}
+		theme.AccentColor = color
 	}
 
-	writeJSON(w, http.StatusOK, okBody(map[string]any{"theme": theme}))
+	encoded, err := json.Marshal(theme)
+	if err != nil {
+		writeInternal(w, err)
+		return
+	}
+	if err := h.Users.SetTheme(r.Context(), user.ID, string(encoded)); err != nil {
+		writeInternal(w, err)
+		return
+	}
+	writeResource(w, http.StatusOK, theme)
 }

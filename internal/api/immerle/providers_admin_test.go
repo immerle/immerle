@@ -2,10 +2,8 @@ package immerle
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"testing"
 
 	chi "github.com/go-chi/chi/v5"
@@ -40,78 +38,75 @@ func newProvidersEnv(t *testing.T) *httptest.Server {
 	return srv
 }
 
-func admin() url.Values { return url.Values{"u": {"admin"}, "p": {"adminpw"}, "c": {"test"}} }
-
 func TestProvidersAdminOnly(t *testing.T) {
 	srv := newProvidersEnv(t)
-	resp, err := http.PostForm(srv.URL+"/admin/providers", url.Values{
-		"u": {"bob"}, "p": {"bobpw"}, "c": {"test"}, "name": {"manual"}, "endpoint": {"https://x"},
+	bob := login(t, srv, "bob")
+	status, body := doMap(t, srv, http.MethodPost, "/admin/providers", bob, map[string]any{
+		"name": "manual", "endpoint": "https://x",
 	})
-	if err != nil {
-		t.Fatal(err)
+	if status != http.StatusForbidden {
+		t.Fatalf("non-admin should get 403, got %d", status)
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusForbidden {
-		t.Fatalf("non-admin should get 403, got %d", resp.StatusCode)
+	if errObj, _ := body["error"].(map[string]any); errObj["code"] != "forbidden" {
+		t.Fatalf("expected forbidden error, got %+v", body)
 	}
 }
 
 func TestProvidersCrudFlow(t *testing.T) {
 	srv := newProvidersEnv(t)
+	admin := login(t, srv, "admin")
 
 	// Create.
-	v := admin()
-	v.Set("name", "manual")
-	v.Set("endpoint", "https://svc.internal")
-	v.Set("config", `{"quality":"hi"}`)
-	body := postForm(t, srv, "/admin/providers", v)
-	prov, _ := body["provider"].(map[string]any)
+	status, prov := doMap(t, srv, http.MethodPost, "/admin/providers", admin, map[string]any{
+		"name":     "manual",
+		"endpoint": "https://svc.internal",
+		"config":   `{"quality":"hi"}`,
+	})
+	if status != http.StatusOK {
+		t.Fatalf("create failed: %d %+v", status, prov)
+	}
 	if prov["name"] != "manual" || prov["enabled"] != true || prov["active"] != true {
-		t.Fatalf("create failed: %+v", body)
+		t.Fatalf("create failed: %+v", prov)
 	}
 
 	// List shows it.
-	body = postFormGet(t, srv, "/admin/providers", admin())
-	provs, _ := body["providers"].([]any)
-	if len(provs) != 1 {
-		t.Fatalf("expected 1 provider, got %d", len(provs))
+	st, provs := doArr(t, srv, http.MethodGet, "/admin/providers", admin, nil)
+	if st != http.StatusOK || len(provs) != 1 {
+		t.Fatalf("expected 1 provider, got status %d len %d", st, len(provs))
 	}
 
 	// Disable → no longer active but still listed.
-	dv := admin()
-	dv.Set("name", "manual")
-	dv.Set("enabled", "false")
-	body = postForm(t, srv, "/admin/providers/enable", dv)
-	prov, _ = body["provider"].(map[string]any)
+	status, prov = doMap(t, srv, http.MethodPut, "/admin/providers/manual/enabled", admin, map[string]any{"enabled": false})
+	if status != http.StatusOK {
+		t.Fatalf("disable failed: %d %+v", status, prov)
+	}
 	if prov["enabled"] != false || prov["active"] != false {
-		t.Fatalf("disable failed: %+v", body)
+		t.Fatalf("disable failed: %+v", prov)
 	}
 
 	// Delete.
-	delv := admin()
-	delv.Set("name", "manual")
-	if body = postForm(t, srv, "/admin/providers/delete", delv); body["ok"] != true {
-		t.Fatalf("delete failed: %+v", body)
+	if st := doStatus(t, srv, http.MethodDelete, "/admin/providers/manual", admin, nil); st != http.StatusNoContent {
+		t.Fatalf("delete failed: %d", st)
 	}
-	body = postFormGet(t, srv, "/admin/providers", admin())
-	if provs, _ := body["providers"].([]any); len(provs) != 0 {
-		t.Fatalf("expected 0 providers after delete, got %d", len(provs))
+	st, provs = doArr(t, srv, http.MethodGet, "/admin/providers", admin, nil)
+	if st != http.StatusOK || len(provs) != 0 {
+		t.Fatalf("expected 0 providers after delete, got status %d len %d", st, len(provs))
 	}
 }
 
 func TestProvidersRejectsBadConfig(t *testing.T) {
 	srv := newProvidersEnv(t)
-	v := admin()
-	v.Set("name", "manual")
-	v.Set("endpoint", "https://x")
-	v.Set("config", "{not json")
-	resp, err := http.PostForm(srv.URL+"/admin/providers", v)
-	if err != nil {
-		t.Fatal(err)
+	admin := login(t, srv, "admin")
+	status, body := doMap(t, srv, http.MethodPost, "/admin/providers", admin, map[string]any{
+		"name":     "manual",
+		"endpoint": "https://x",
+		"config":   "{not json",
+	})
+	if status != http.StatusBadRequest {
+		t.Fatalf("bad config should be 400, got %d", status)
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusBadRequest {
-		t.Fatalf("bad config should be 400, got %d", resp.StatusCode)
+	if errObj, _ := body["error"].(map[string]any); errObj["code"] != "bad_request" {
+		t.Fatalf("expected bad_request error, got %+v", body)
 	}
 }
 
@@ -138,18 +133,20 @@ func TestProvidersBuiltinAndReorder(t *testing.T) {
 	h.Register(mux)
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
+	admin := login(t, srv, "admin")
 
 	// Add a dynamic provider.
-	v := admin()
-	v.Set("name", "manual")
-	v.Set("endpoint", "https://svc.internal")
-	postForm(t, srv, "/admin/providers", v)
+	if st := doStatus(t, srv, http.MethodPost, "/admin/providers", admin, map[string]any{
+		"name":     "manual",
+		"endpoint": "https://svc.internal",
+	}); st != http.StatusOK {
+		t.Fatalf("add dynamic provider failed: %d", st)
+	}
 
 	// List shows the built-in (not deletable) and the dynamic (deletable).
-	body := postFormGet(t, srv, "/admin/providers", admin())
-	provs, _ := body["providers"].([]any)
-	if len(provs) != 2 {
-		t.Fatalf("expected 2 providers, got %d", len(provs))
+	st, provs := doArr(t, srv, http.MethodGet, "/admin/providers", admin, nil)
+	if st != http.StatusOK || len(provs) != 2 {
+		t.Fatalf("expected 2 providers, got status %d len %d", st, len(provs))
 	}
 	byName := map[string]map[string]any{}
 	for _, p := range provs {
@@ -164,19 +161,17 @@ func TestProvidersBuiltinAndReorder(t *testing.T) {
 	}
 
 	// A built-in cannot be deleted.
-	dv := admin()
-	dv.Set("name", "jamendo")
-	resp, _ := http.PostForm(srv.URL+"/admin/providers/delete", dv)
-	if resp.StatusCode != http.StatusBadRequest {
-		t.Fatalf("deleting a built-in should be 400, got %d", resp.StatusCode)
+	if st := doStatus(t, srv, http.MethodDelete, "/admin/providers/jamendo", admin, nil); st != http.StatusBadRequest {
+		t.Fatalf("deleting a built-in should be 400, got %d", st)
 	}
-	resp.Body.Close()
 
 	// Reorder: put the dynamic provider first.
-	rv := admin()
-	rv.Set("order", "manual,jamendo")
-	body = postForm(t, srv, "/admin/providers/reorder", rv)
-	provs, _ = body["providers"].([]any)
+	st, provs = doArr(t, srv, http.MethodPut, "/admin/providers/order", admin, map[string]any{
+		"order": []string{"manual", "jamendo"},
+	})
+	if st != http.StatusOK {
+		t.Fatalf("reorder failed: %d", st)
+	}
 	if provs[0].(map[string]any)["name"] != "manual" {
 		t.Fatalf("reorder not reflected: %+v", provs)
 	}
@@ -193,26 +188,13 @@ func TestProvidersDisabledSubsystem(t *testing.T) {
 	h.Register(mux)
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
+	admin := login(t, srv, "admin")
 
-	resp, err := http.PostForm(srv.URL+"/admin/providers", admin())
-	if err != nil {
-		t.Fatal(err)
+	status, body := doMap(t, srv, http.MethodPost, "/admin/providers", admin, map[string]any{"name": "manual"})
+	if status != http.StatusServiceUnavailable {
+		t.Fatalf("expected 503 when subsystem disabled, got %d", status)
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusServiceUnavailable {
-		t.Fatalf("expected 503 when subsystem disabled, got %d", resp.StatusCode)
+	if errObj, _ := body["error"].(map[string]any); errObj["code"] != "unavailable" {
+		t.Fatalf("expected unavailable error, got %+v", body)
 	}
-}
-
-// postFormGet issues a GET with query params and decodes the JSON body.
-func postFormGet(t *testing.T, srv *httptest.Server, path string, v url.Values) map[string]any {
-	t.Helper()
-	resp, err := http.Get(srv.URL + path + "?" + v.Encode())
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer resp.Body.Close()
-	var out map[string]any
-	_ = json.NewDecoder(resp.Body).Decode(&out)
-	return out
 }

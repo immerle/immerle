@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"testing"
 
 	chi "github.com/go-chi/chi/v5"
@@ -33,13 +32,15 @@ func TestImportEndpointsFlow(t *testing.T) {
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
 
-	creds := url.Values{"u": {"alice"}, "p": {"alicepw"}, "c": {"test"}}
+	token := login(t, srv, "alice")
 
 	// Sources lists spotify, reported as not configured (no credentials).
-	body := postFormGet(t, srv, "/imports/sources", creds)
-	sources, _ := body["sources"].([]any)
+	status, sources := doArr(t, srv, http.MethodGet, "/imports/sources", token, nil)
+	if status != http.StatusOK {
+		t.Fatalf("sources status %d", status)
+	}
 	if len(sources) == 0 {
-		t.Fatalf("expected at least one source, got %+v", body)
+		t.Fatalf("expected at least one source, got %+v", sources)
 	}
 	found := false
 	for _, s := range sources {
@@ -56,22 +57,16 @@ func TestImportEndpointsFlow(t *testing.T) {
 	}
 
 	// Starting an import for the unconfigured source fails with 400.
-	start := url.Values{"source": {"spotify"}, "ref": {"PL"}}
-	for k, v := range creds {
-		start[k] = v
-	}
-	resp, err := http.PostForm(srv.URL+"/imports/start", start)
-	if err != nil {
-		t.Fatal(err)
-	}
-	resp.Body.Close()
-	if resp.StatusCode != http.StatusBadRequest {
-		t.Fatalf("expected 400 for unconfigured source, got %d", resp.StatusCode)
+	if code := doStatus(t, srv, http.MethodPost, "/imports", token, map[string]any{"source": "spotify", "ref": "PL"}); code != http.StatusBadRequest {
+		t.Fatalf("expected 400 for unconfigured source, got %d", code)
 	}
 
 	// Empty imports list for the caller.
-	body = postFormGet(t, srv, "/imports", creds)
-	if imports, _ := body["imports"].([]any); len(imports) != 0 {
-		t.Fatalf("expected no imports, got %+v", body["imports"])
+	status, imports := doArr(t, srv, http.MethodGet, "/imports", token, nil)
+	if status != http.StatusOK {
+		t.Fatalf("imports status %d", status)
+	}
+	if len(imports) != 0 {
+		t.Fatalf("expected no imports, got %+v", imports)
 	}
 }

@@ -1,7 +1,6 @@
 package immerle
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
@@ -16,16 +15,15 @@ import (
 // @Description  Unauthenticated. Reports whether the server still needs its first admin and whether a setup token is required.
 // @Tags         setup
 // @Produce      json
-// @Success      200  {object}  SetupStatusResponse
-// @Router       /setup/status [get]
+// @Success      200  {object}  SetupStatusDTO
+// @Router       /setup [get]
 func (h *Handler) handleSetupStatus(w http.ResponseWriter, r *http.Request) {
 	initialized, count, err := h.setupState(r)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, errorBody(err.Error()))
+		writeInternal(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{
-		"ok":                 true,
+	writeResource(w, http.StatusOK, map[string]any{
 		"initialized":        initialized,
 		"needsSetup":         !initialized,
 		"userCount":          count,
@@ -33,7 +31,7 @@ func (h *Handler) handleSetupStatus(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// setupInitRequest is the body accepted by /setup/init (JSON or form).
+// setupInitRequest is the body accepted by POST /setup.
 type setupInitRequest struct {
 	Username    string `json:"username"`
 	Password    string `json:"password"`
@@ -43,7 +41,7 @@ type setupInitRequest struct {
 }
 
 // handleSetupInit creates the first admin account. It is public but self-locks
-// once a user exists (409). Accepts JSON or form-encoded bodies.
+// once a user exists (409).
 //
 // @Summary      Create the first administrator
 // @Description  Unauthenticated, one-shot. Creates the initial admin — the only way to bootstrap an account (no config/env provisioning). Self-locks once any user exists.
@@ -51,64 +49,42 @@ type setupInitRequest struct {
 // @Accept       json
 // @Produce      json
 // @Param        body  body  SetupInitRequest  true  "Initial admin credentials"
-// @Success      201  {object}  SetupInitResponse
-// @Failure      400  {object}  ValidationErrorResponse  "validation"
-// @Failure      401  {object}  ErrorResponse            "invalid_setup_token"
-// @Failure      409  {object}  ErrorResponse            "already_initialized"
-// @Router       /setup/init [post]
+// @Success      201  {object}  UserDTO
+// @Failure      400  {object}  apiError  "validation"
+// @Failure      401  {object}  apiError  "invalid_setup_token"
+// @Failure      409  {object}  apiError  "already_initialized"
+// @Router       /setup [post]
 func (h *Handler) handleSetupInit(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		writeJSON(w, http.StatusMethodNotAllowed, errorBody("method_not_allowed"))
+	var req setupInitRequest
+	if !decodeJSON(w, r, &req) {
 		return
 	}
-	// Unauthenticated endpoint: cap the body so it can't be used to exhaust memory.
-	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
-
-	req := parseSetupInit(r)
 
 	user, err := h.Setup.InitFirstAdmin(r.Context(), strings.TrimSpace(req.Username), req.Password, strings.TrimSpace(req.Email), req.DisplayName, req.SetupToken)
 	switch {
 	case err == nil:
-		writeJSON(w, http.StatusCreated, map[string]any{
-			"ok": true,
-			"user": map[string]any{
-				"id":          user.ID,
-				"username":    user.Username,
-				"displayName": user.DisplayName,
-				"isAdmin":     true,
-			},
+		writeResource(w, http.StatusCreated, map[string]any{
+			"id":          user.ID,
+			"username":    user.Username,
+			"displayName": user.DisplayName,
+			"isAdmin":     true,
 		})
 	case errors.Is(err, core.ErrAlreadyInitialized):
-		writeJSON(w, http.StatusConflict, map[string]any{"ok": false, "error": "already_initialized"})
+		writeError(w, http.StatusConflict, "already_initialized", "server is already initialized")
 	case errors.Is(err, core.ErrInvalidSetupToken):
-		writeJSON(w, http.StatusUnauthorized, map[string]any{"ok": false, "error": "invalid_setup_token"})
+		writeError(w, http.StatusUnauthorized, "invalid_setup_token", "invalid setup token")
 	default:
 		var verr *core.ValidationError
 		if errors.As(err, &verr) {
-			writeJSON(w, http.StatusBadRequest, map[string]any{
-				"ok":      false,
-				"error":   "validation",
-				"details": verr.Fields,
-			})
+			fields := make([]fieldError, 0, len(verr.Fields))
+			for _, f := range verr.Fields {
+				fields = append(fields, fieldError{Field: f.Field, Message: f.Message})
+			}
+			writeValidation(w, fields)
 			return
 		}
-		writeJSON(w, http.StatusInternalServerError, errorBody(err.Error()))
+		writeInternal(w, err)
 	}
-}
-
-func parseSetupInit(r *http.Request) setupInitRequest {
-	var req setupInitRequest
-	if strings.HasPrefix(r.Header.Get("Content-Type"), "application/json") {
-		_ = json.NewDecoder(r.Body).Decode(&req)
-		return req
-	}
-	_ = r.ParseForm()
-	req.Username = r.Form.Get("username")
-	req.Password = r.Form.Get("password")
-	req.Email = r.Form.Get("email")
-	req.DisplayName = r.Form.Get("displayName")
-	req.SetupToken = r.Form.Get("setupToken")
-	return req
 }
 
 // setupState returns whether the server is initialized and its user count.

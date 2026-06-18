@@ -2,8 +2,8 @@ package immerle
 
 import (
 	"context"
+	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"testing"
 	"time"
 
@@ -41,10 +41,11 @@ func TestLibraryStatsEndpoint(t *testing.T) {
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
 
-	body := postFormGet(t, srv, "/library/stats", url.Values{"u": {"alice"}, "p": {"alicepw"}, "c": {"test"}})
-	s, _ := body["stats"].(map[string]any)
-	if s == nil {
-		t.Fatalf("no stats in response: %+v", body)
+	alice := login(t, srv, "alice")
+
+	status, s := doMap(t, srv, http.MethodGet, "/library/stats", alice, nil)
+	if status != http.StatusOK {
+		t.Fatalf("library stats failed: status %d %+v", status, s)
 	}
 	if s["totalSize"] != float64(4242) {
 		t.Fatalf("expected totalSize 4242, got %v", s["totalSize"])

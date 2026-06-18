@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"testing"
 
 	chi "github.com/go-chi/chi/v5"
@@ -27,26 +26,21 @@ func TestAccountSelfEdit(t *testing.T) {
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
 
-	creds := func(extra url.Values) url.Values {
-		v := url.Values{"u": {"bob"}, "p": {"bobpw"}, "c": {"test"}}
-		for k, vals := range extra {
-			v[k] = vals
-		}
-		return v
-	}
+	bob := login(t, srv, "bob")
 
 	// GET own account exposes the (empty) email.
-	body := postFormGet(t, srv, "/account", creds(nil))
-	u, _ := body["user"].(map[string]any)
-	if u == nil || u["username"] != "bob" || u["displayName"] != "Bob M" {
-		t.Fatalf("account GET wrong: %+v", body["user"])
+	status, u := doMap(t, srv, http.MethodGet, "/me", bob, nil)
+	if status != http.StatusOK || u["username"] != "bob" || u["displayName"] != "Bob M" {
+		t.Fatalf("account GET wrong: status %d %+v", status, u)
 	}
 
-	// POST updates display name + email (display name is trimmed).
-	body = postForm(t, srv, "/account", creds(url.Values{"displayName": {"  New Bob  "}, "email": {"bob@example.com"}}))
-	u, _ = body["user"].(map[string]any)
-	if u["displayName"] != "New Bob" || u["email"] != "bob@example.com" {
-		t.Fatalf("account update wrong: %+v", body["user"])
+	// PATCH updates display name + email (display name is trimmed).
+	status, u = doMap(t, srv, http.MethodPatch, "/me", bob, map[string]any{
+		"displayName": "  New Bob  ",
+		"email":       "bob@example.com",
+	})
+	if status != http.StatusOK || u["displayName"] != "New Bob" || u["email"] != "bob@example.com" {
+		t.Fatalf("account update wrong: status %d %+v", status, u)
 	}
 
 	// Persisted across requests.
@@ -56,14 +50,13 @@ func TestAccountSelfEdit(t *testing.T) {
 	}
 
 	// Invalid email is rejected.
-	if code := postFormStatus(t, srv, "/account", creds(url.Values{"email": {"not-an-email"}})); code != http.StatusBadRequest {
+	if code := doStatus(t, srv, http.MethodPatch, "/me", bob, map[string]any{"email": "not-an-email"}); code != http.StatusBadRequest {
 		t.Fatalf("expected 400 for invalid email, got %d", code)
 	}
 
 	// A partial update touches only the field provided (email unchanged here).
-	body = postForm(t, srv, "/account", creds(url.Values{"displayName": {"Bobby"}}))
-	u, _ = body["user"].(map[string]any)
-	if u["displayName"] != "Bobby" || u["email"] != "bob@example.com" {
-		t.Fatalf("partial update clobbered email: %+v", body["user"])
+	status, u = doMap(t, srv, http.MethodPatch, "/me", bob, map[string]any{"displayName": "Bobby"})
+	if status != http.StatusOK || u["displayName"] != "Bobby" || u["email"] != "bob@example.com" {
+		t.Fatalf("partial update clobbered email: status %d %+v", status, u)
 	}
 }

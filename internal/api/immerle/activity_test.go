@@ -2,8 +2,8 @@ package immerle
 
 import (
 	"context"
+	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"testing"
 	"time"
 
@@ -47,8 +47,11 @@ func TestActivityFeedEnrichesItems(t *testing.T) {
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
 
-	body := postFormGet(t, srv, "/activity", url.Values{"u": {"alice"}, "p": {"alicepw"}, "c": {"test"}})
-	events, _ := body["events"].([]any)
+	token := login(t, srv, "alice")
+	status, events := doArr(t, srv, http.MethodGet, "/activity", token, nil)
+	if status != http.StatusOK {
+		t.Fatalf("status %d", status)
+	}
 	if len(events) != 1 {
 		t.Fatalf("expected 1 event, got %d", len(events))
 	}
@@ -116,7 +119,11 @@ func TestProfileEndpoint(t *testing.T) {
 	t.Cleanup(srv.Close)
 
 	// Bob views Alice's profile.
-	body := postFormGet(t, srv, "/profile", url.Values{"u": {"bob"}, "p": {"bobpw"}, "c": {"test"}, "username": {"alice"}})
+	bobToken := login(t, srv, "bob")
+	status, body := doMap(t, srv, http.MethodGet, "/users/alice", bobToken, nil)
+	if status != http.StatusOK {
+		t.Fatalf("status %d", status)
+	}
 	u, _ := body["user"].(map[string]any)
 	if u == nil || u["username"] != "alice" || u["displayName"] != "Alice W" {
 		t.Fatalf("profile user wrong: %+v", body["user"])

@@ -3,28 +3,50 @@ import type { paths, components } from './generated/schema';
 import { normalizeServerUrl } from './subsonic/client';
 
 /**
- * Typed client for the Immerle extension API, generated from the server's
- * OpenAPI document (`src/api/generated/schema.ts`, regenerated via
- * `npm run gen:api`). Paths and payloads are fully type-checked against the
- * spec — there is no hand-maintained URL/shape duplication.
+ * Typed client for the Immerle REST API, generated from the server's OpenAPI
+ * document (`src/api/generated/schema.ts`, regenerated via `npm run gen:api`).
+ * Paths and payloads are fully type-checked against the spec.
  *
- * The extension API is mounted at the server root (no `/immerle` prefix), so
- * `baseUrl` is just the normalized server URL.
+ * The REST API is mounted under `/api/v1`; authenticated endpoints require a
+ * Bearer token (a device JWT or a personal API token).
  */
 export type ImmerleApi = Client<paths>;
 
+/** API base path appended to the normalized server URL. */
+const API_BASE = '/api/v1';
+
+function baseUrl(serverUrl: string): string {
+  return normalizeServerUrl(serverUrl) + API_BASE;
+}
+
 export function createImmerleApi(serverUrl: string): ImmerleApi {
-  return createClient<paths>({ baseUrl: normalizeServerUrl(serverUrl) });
+  return createClient<paths>({ baseUrl: baseUrl(serverUrl) });
+}
+
+/** An authenticated REST client: sends `Authorization: Bearer <token>` on every request. */
+export function createAuthedImmerleApi(serverUrl: string, token: string): ImmerleApi {
+  const api = createImmerleApi(serverUrl);
+  api.use({
+    onRequest({ request }) {
+      request.headers.set('Authorization', `Bearer ${token}`);
+      return request;
+    },
+  });
+  return api;
 }
 
 // Re-export the generated DTOs that callers consume, under friendly names.
 export type SetupStatus =
-  paths['/setup/status']['get']['responses']['200']['content']['application/json'];
+  paths['/setup']['get']['responses']['200']['content']['application/json'];
 export type SetupInitRequest = components['schemas']['immerle.SetupInitRequest'];
-export type SetupInitResponse = components['schemas']['immerle.SetupInitResponse'];
-export type FieldErrorDTO = components['schemas']['immerle.FieldErrorDTO'];
+export type SetupInitResponse = components['schemas']['immerle.UserDTO'];
+export type FieldErrorDTO = components['schemas']['immerle.fieldError'];
+export type ApiError = components['schemas']['immerle.apiError'];
 export type CapabilitiesResponse =
   paths['/capabilities']['get']['responses']['200']['content']['application/json'];
+
+// Session creation (device login).
+export type LoginResponse = components['schemas']['immerle.LoginDTO'];
 
 // Social / Jam DTOs.
 export type FriendDTO = components['schemas']['immerle.FriendDTO'];
@@ -35,13 +57,13 @@ export type JamParticipantDTO = components['schemas']['immerle.JamParticipantDTO
 
 // API tokens (personal access tokens).
 export type APITokenDTO = components['schemas']['immerle.APITokenDTO'];
-export type CreateTokenResponse = components['schemas']['immerle.CreateTokenResponse'];
+export type CreateTokenResponse = components['schemas']['immerle.CreateTokenDTO'];
 
 // Public playlists (discovery + opt-in subscription).
 export type PublicPlaylistDTO = components['schemas']['immerle.PublicPlaylistDTO'];
 
 // User profile (identity + recent activity + public playlists).
-export type ProfileResponse = components['schemas']['immerle.ProfileResponse'];
+export type ProfileResponse = components['schemas']['immerle.ProfileDTO'];
 export type ProfilePlaylistDTO = components['schemas']['immerle.ProfilePlaylistDTO'];
 
 // Playlist imports from external platforms.
@@ -57,22 +79,3 @@ export type ProviderDTO = components['schemas']['immerle.ProviderDTO'];
 
 // Runtime settings + downloads cleanup (admin).
 export type RuntimeSettingsDTO = components['schemas']['immerle.RuntimeSettingsDTO'];
-
-/** An authenticated extension-API client: layers salted-token auth on every request. */
-export function createAuthedImmerleApi(
-  serverUrl: string,
-  auth: { t: string; s: string; v: string },
-): ImmerleApi {
-  const api = createImmerleApi(serverUrl);
-  api.use({
-    onRequest({ request }) {
-      const url = new URL(request.url);
-      url.searchParams.set('t', auth.t);
-      url.searchParams.set('s', auth.s);
-      url.searchParams.set('v', auth.v);
-      url.searchParams.set('f', 'json');
-      return new Request(url, request);
-    },
-  });
-  return api;
-}

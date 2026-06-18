@@ -4,108 +4,6 @@
  */
 
 export interface paths {
-    "/account": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get or update your account
-         * @description Reads (GET) or updates (POST) the authenticated user's own account. POST is a partial update — only fields present are changed. Lets a user set their display name and email themselves.
-         */
-        get: {
-            parameters: {
-                query: {
-                    /** @description Subsonic username (or use a Bearer token) */
-                    u: string;
-                    /** @description Subsonic password */
-                    p?: string;
-                    /** @description Client name */
-                    c: string;
-                    /** @description POST only: free-text UI name (empty clears it) */
-                    displayName?: string;
-                    /** @description POST only: email address (empty clears it) */
-                    email?: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.AccountResponse"];
-                    };
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        /**
-         * Get or update your account
-         * @description Reads (GET) or updates (POST) the authenticated user's own account. POST is a partial update — only fields present are changed. Lets a user set their display name and email themselves.
-         */
-        post: {
-            parameters: {
-                query: {
-                    /** @description Subsonic username (or use a Bearer token) */
-                    u: string;
-                    /** @description Subsonic password */
-                    p?: string;
-                    /** @description Client name */
-                    c: string;
-                    /** @description POST only: free-text UI name (empty clears it) */
-                    displayName?: string;
-                    /** @description POST only: email address (empty clears it) */
-                    email?: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.AccountResponse"];
-                    };
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/activity": {
         parameters: {
             query?: never;
@@ -113,20 +11,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * Activity feed
-         * @description Returns activity events visible to the caller, honoring each author's privacy setting.
-         */
+        /** Activity feed */
         get: {
             parameters: {
-                query: {
-                    /** @description Subsonic username */
-                    u: string;
-                    /** @description Subsonic password (or t+s token auth) */
-                    p?: string;
-                    /** @description Client name */
-                    c: string;
-                };
+                query?: never;
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -139,7 +27,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ActivityResponse"];
+                        "application/json": components["schemas"]["immerle.ActivityEventDTO"][];
                     };
                 };
             };
@@ -160,21 +48,12 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get or toggle the cleanup sweep
-         * @description Admin only. GET reports the eviction sweep state; POST with enabled=true|false turns the background sweep on or off at runtime (persisted; hot).
+         * Get the cleanup sweep state
+         * @description Admin only. Reports the eviction sweep state.
          */
         get: {
             parameters: {
-                query: {
-                    /** @description Subsonic username (or use a Bearer token) */
-                    u: string;
-                    /** @description Subsonic password */
-                    p?: string;
-                    /** @description Client name */
-                    c: string;
-                    /** @description POST only: enable or disable the sweep */
-                    enabled?: boolean;
-                };
+                query?: never;
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -187,7 +66,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.CleanupStatusResponse"];
+                        "application/json": components["schemas"]["immerle.CleanupStatusDTO"];
                     };
                 };
                 /** @description Forbidden */
@@ -196,33 +75,28 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.apiError"];
                     };
                 };
             };
         };
-        put?: never;
         /**
-         * Get or toggle the cleanup sweep
-         * @description Admin only. GET reports the eviction sweep state; POST with enabled=true|false turns the background sweep on or off at runtime (persisted; hot).
+         * Toggle the cleanup sweep
+         * @description Admin only. Enables or disables the background eviction sweep at runtime (persisted; hot).
          */
-        post: {
+        put: {
             parameters: {
-                query: {
-                    /** @description Subsonic username (or use a Bearer token) */
-                    u: string;
-                    /** @description Subsonic password */
-                    p?: string;
-                    /** @description Client name */
-                    c: string;
-                    /** @description POST only: enable or disable the sweep */
-                    enabled?: boolean;
-                };
+                query?: never;
                 header?: never;
                 path?: never;
                 cookie?: never;
             };
-            requestBody?: never;
+            /** @description Enable or disable the sweep */
+            requestBody: {
+                content: {
+                    "application/json": Record<string, never> | components["schemas"]["immerle.cleanupUpdateRequest"];
+                };
+            };
             responses: {
                 /** @description OK */
                 200: {
@@ -230,7 +104,16 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.CleanupStatusResponse"];
+                        "application/json": components["schemas"]["immerle.CleanupStatusDTO"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.apiError"];
                     };
                 };
                 /** @description Forbidden */
@@ -239,18 +122,19 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.apiError"];
                     };
                 };
             };
         };
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/admin/cleanup/run": {
+    "/admin/cleanup/runs": {
         parameters: {
             query?: never;
             header?: never;
@@ -265,27 +149,20 @@ export interface paths {
          */
         post: {
             parameters: {
-                query: {
-                    /** @description Subsonic username (or use a Bearer token) */
-                    u: string;
-                    /** @description Subsonic password */
-                    p?: string;
-                    /** @description Client name */
-                    c: string;
-                };
+                query?: never;
                 header?: never;
                 path?: never;
                 cookie?: never;
             };
             requestBody?: never;
             responses: {
-                /** @description OK */
-                200: {
+                /** @description Created */
+                201: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.CleanupRunResponse"];
+                        "application/json": components["schemas"]["immerle.CleanupRunDTO"];
                     };
                 };
                 /** @description Forbidden */
@@ -294,7 +171,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.apiError"];
                     };
                 };
             };
@@ -313,29 +190,12 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List or upsert on-demand providers
-         * @description Admin only. GET lists configured providers; POST creates or updates one. A provider is content-neutral: a name, an HTTP endpoint and an opaque JSON config. POST applies immediately — an enabled provider is registered live, a disabled one is removed.
+         * List on-demand providers
+         * @description Admin only. Lists configured providers (built-in and dynamic) with their live status.
          */
         get: {
             parameters: {
-                query: {
-                    /** @description Subsonic username (or Bearer token) */
-                    u: string;
-                    /** @description Subsonic password */
-                    p?: string;
-                    /** @description Client name */
-                    c: string;
-                    /** @description POST: provider name (slug: a-z 0-9 - _) */
-                    name?: string;
-                    /** @description POST: base http(s) URL of the external service */
-                    endpoint?: string;
-                    /** @description POST: JSON config payload (default {}) */
-                    config?: string;
-                    /** @description POST: register it live (default true) */
-                    enabled?: boolean;
-                    /** @description POST: provider kind (default http) */
-                    kind?: string;
-                };
+                query?: never;
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -348,16 +208,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ProvidersResponse"];
-                    };
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ProviderDTO"][];
                     };
                 };
                 /** @description Forbidden */
@@ -366,41 +217,29 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.apiError"];
                     };
                 };
             };
         };
         put?: never;
         /**
-         * List or upsert on-demand providers
-         * @description Admin only. GET lists configured providers; POST creates or updates one. A provider is content-neutral: a name, an HTTP endpoint and an opaque JSON config. POST applies immediately — an enabled provider is registered live, a disabled one is removed.
+         * Create or update an on-demand provider
+         * @description Admin only. A provider is content-neutral: a name, an HTTP endpoint and an opaque JSON config. Applied immediately — an enabled provider is registered live, a disabled one is removed.
          */
         post: {
             parameters: {
-                query: {
-                    /** @description Subsonic username (or Bearer token) */
-                    u: string;
-                    /** @description Subsonic password */
-                    p?: string;
-                    /** @description Client name */
-                    c: string;
-                    /** @description POST: provider name (slug: a-z 0-9 - _) */
-                    name?: string;
-                    /** @description POST: base http(s) URL of the external service */
-                    endpoint?: string;
-                    /** @description POST: JSON config payload (default {}) */
-                    config?: string;
-                    /** @description POST: register it live (default true) */
-                    enabled?: boolean;
-                    /** @description POST: provider kind (default http) */
-                    kind?: string;
-                };
+                query?: never;
                 header?: never;
                 path?: never;
                 cookie?: never;
             };
-            requestBody?: never;
+            /** @description Provider config */
+            requestBody: {
+                content: {
+                    "application/json": Record<string, never> | components["schemas"]["immerle.upsertProviderRequest"];
+                };
+            };
             responses: {
                 /** @description OK */
                 200: {
@@ -408,7 +247,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ProvidersResponse"];
+                        "application/json": components["schemas"]["immerle.ProviderDTO"];
                     };
                 };
                 /** @description Bad Request */
@@ -417,7 +256,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.apiError"];
                     };
                 };
                 /** @description Forbidden */
@@ -426,7 +265,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.apiError"];
                     };
                 };
             };
@@ -437,7 +276,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/admin/providers/delete": {
+    "/admin/providers/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Reorder providers
+         * @description Admin only. Sets the provider priority order (lower = higher priority). `order` lists every provider name, each exactly once. Order also decides which provider search falls back to when no explicit default is set.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Provider names in the desired order */
+            requestBody: {
+                content: {
+                    "application/json": Record<string, never> | components["schemas"]["immerle.reorderRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.ProviderDTO"][];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.apiError"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/providers/{name}": {
         parameters: {
             query?: never;
             header?: never;
@@ -446,36 +338,29 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        post?: never;
         /**
          * Delete a provider
          * @description Admin only. Removes a provider config and unregisters it.
          */
-        post: {
+        delete: {
             parameters: {
-                query: {
-                    /** @description Subsonic username (or Bearer token) */
-                    u: string;
-                    /** @description Subsonic password */
-                    p?: string;
-                    /** @description Client name */
-                    c: string;
+                query?: never;
+                header?: never;
+                path: {
                     /** @description Provider name */
                     name: string;
                 };
-                header?: never;
-                path?: never;
                 cookie?: never;
             };
             requestBody?: never;
             responses: {
-                /** @description OK */
-                200: {
+                /** @description deleted */
+                204: {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content: {
-                        "application/json": components["schemas"]["immerle.OKResponse"];
-                    };
+                    content?: never;
                 };
                 /** @description Not Found */
                 404: {
@@ -483,18 +368,17 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.apiError"];
                     };
                 };
             };
         };
-        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/admin/providers/enable": {
+    "/admin/providers/{name}/enabled": {
         parameters: {
             query?: never;
             header?: never;
@@ -502,30 +386,26 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put?: never;
         /**
          * Enable or disable a provider
          * @description Admin only. Toggles a provider on or off; the change is applied to the live registry immediately.
          */
-        post: {
+        put: {
             parameters: {
-                query: {
-                    /** @description Subsonic username (or Bearer token) */
-                    u: string;
-                    /** @description Subsonic password */
-                    p?: string;
-                    /** @description Client name */
-                    c: string;
+                query?: never;
+                header?: never;
+                path: {
                     /** @description Provider name */
                     name: string;
-                    /** @description Enable (true) or disable (false) */
-                    enabled: boolean;
                 };
-                header?: never;
-                path?: never;
                 cookie?: never;
             };
-            requestBody?: never;
+            /** @description Enabled flag */
+            requestBody: {
+                content: {
+                    "application/json": Record<string, never> | components["schemas"]["immerle.setEnabledRequest"];
+                };
+            };
             responses: {
                 /** @description OK */
                 200: {
@@ -533,7 +413,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ProviderResponse"];
+                        "application/json": components["schemas"]["immerle.ProviderDTO"];
                     };
                 };
                 /** @description Bad Request */
@@ -542,7 +422,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.apiError"];
                     };
                 };
                 /** @description Not Found */
@@ -551,68 +431,12 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.apiError"];
                     };
                 };
             };
         };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/admin/providers/reorder": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Reorder providers
-         * @description Admin only. Sets the provider priority order (lower = higher priority). The `order` param is a comma-separated list of every provider name, each exactly once. Order also decides which provider search falls back to when no explicit default is set.
-         */
-        post: {
-            parameters: {
-                query: {
-                    /** @description Subsonic username (or Bearer token) */
-                    u: string;
-                    /** @description Subsonic password */
-                    p?: string;
-                    /** @description Client name */
-                    c: string;
-                    /** @description Comma-separated provider names in the desired order */
-                    order: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.ProvidersResponse"];
-                    };
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.ErrorResponse"];
-                    };
-                };
-            };
-        };
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -627,149 +451,12 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get or update runtime settings
-         * @description Admin only. GET returns the current runtime settings (provider behaviour, artist avatars, scan cadence, federation) plus whether a restart is pending. POST applies a partial update (send a JSON body with the fields to change; omitted fields keep their current value). Provider behaviour and the scan interval apply immediately (hot reload); avatars, the scan watcher and federation only take effect after a restart — when one of those changes, the response sets restartRequired=true and lists the pending fields so the UI can prompt for a restart.
+         * Get runtime settings
+         * @description Admin only. Returns the current runtime settings (provider behaviour, artist avatars, scan cadence, federation) plus whether a restart is pending.
          */
         get: {
             parameters: {
-                query: {
-                    /** @description Subsonic username (or Bearer token) */
-                    u: string;
-                    /** @description Subsonic password */
-                    p?: string;
-                    /** @description Client name */
-                    c: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description POST: settings fields to change (partial) */
-            requestBody?: {
-                content: {
-                    "application/json": Record<string, never> | components["schemas"]["immerle.RuntimeSettingsDTO"];
-                };
-            };
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.SettingsResponse"];
-                    };
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.ErrorResponse"];
-                    };
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        /**
-         * Get or update runtime settings
-         * @description Admin only. GET returns the current runtime settings (provider behaviour, artist avatars, scan cadence, federation) plus whether a restart is pending. POST applies a partial update (send a JSON body with the fields to change; omitted fields keep their current value). Provider behaviour and the scan interval apply immediately (hot reload); avatars, the scan watcher and federation only take effect after a restart — when one of those changes, the response sets restartRequired=true and lists the pending fields so the UI can prompt for a restart.
-         */
-        post: {
-            parameters: {
-                query: {
-                    /** @description Subsonic username (or Bearer token) */
-                    u: string;
-                    /** @description Subsonic password */
-                    p?: string;
-                    /** @description Client name */
-                    c: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description POST: settings fields to change (partial) */
-            requestBody?: {
-                content: {
-                    "application/json": Record<string, never> | components["schemas"]["immerle.RuntimeSettingsDTO"];
-                };
-            };
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.SettingsResponse"];
-                    };
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.ErrorResponse"];
-                    };
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/login": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Log in a device (issue a JWT)
-         * @description Authenticates with username + password (or Subsonic token auth) and returns a device-session JWT carrying a unique id (jti). Use it as "Authorization: Bearer <jwt>". The session is tracked in the devices registry and can be revoked.
-         */
-        post: {
-            parameters: {
-                query: {
-                    /** @description Username */
-                    u: string;
-                    /** @description Password */
-                    p?: string;
-                    /** @description Subsonic token md5(password+salt) */
-                    t?: string;
-                    /** @description Subsonic salt */
-                    s?: string;
-                    /** @description Client/device name */
-                    c: string;
-                    /** @description Device label (defaults to c) */
-                    device?: string;
-                };
+                query?: never;
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -782,7 +469,108 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.LoginResponse"];
+                        "application/json": components["schemas"]["immerle.SettingsDTO"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.apiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update runtime settings
+         * @description Admin only. Partial update (send a JSON body with the fields to change; omitted fields keep their current value). Provider behaviour and the scan interval apply immediately (hot reload); avatars, the scan watcher and federation only take effect after a restart — the response sets restartRequired=true and lists the pending fields.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Settings fields to change (partial) */
+            requestBody: {
+                content: {
+                    "application/json": Record<string, never> | components["schemas"]["immerle.RuntimeSettingsDTO"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.SettingsDTO"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.apiError"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.apiError"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/auth/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create a device session (issue a JWT)
+         * @description Authenticates with username + password (or Subsonic token auth) and returns a device-session JWT carrying a unique id (jti). Use it as "Authorization: Bearer <jwt>". The session is tracked in the devices registry and can be revoked.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Credentials */
+            requestBody: {
+                content: {
+                    "application/json": Record<string, never> | components["schemas"]["immerle.loginRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.LoginDTO"];
                     };
                 };
                 /** @description Unauthorized */
@@ -791,7 +579,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.apiError"];
                     };
                 };
             };
@@ -828,7 +616,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.CapabilitiesResponse"];
+                        "application/json": components["schemas"]["immerle.CapabilitiesDTO"];
                     };
                 };
             };
@@ -854,14 +642,7 @@ export interface paths {
          */
         get: {
             parameters: {
-                query: {
-                    /** @description Username (or Bearer token) */
-                    u: string;
-                    /** @description Password */
-                    p?: string;
-                    /** @description Client name */
-                    c: string;
-                };
+                query?: never;
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -874,7 +655,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.DevicesResponse"];
+                        "application/json": components["schemas"]["immerle.DeviceDTO"][];
                     };
                 };
             };
@@ -887,7 +668,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/devices/revoke": {
+    "/devices/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -896,36 +677,29 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        post?: never;
         /**
          * Revoke a device
          * @description Revokes a device session by id — the associated JWT can no longer authenticate.
          */
-        post: {
+        delete: {
             parameters: {
-                query: {
-                    /** @description Username (or Bearer token) */
-                    u: string;
-                    /** @description Password */
-                    p?: string;
-                    /** @description Client name */
-                    c: string;
+                query?: never;
+                header?: never;
+                path: {
                     /** @description Device id (jti) to revoke */
                     id: string;
                 };
-                header?: never;
-                path?: never;
                 cookie?: never;
             };
             requestBody?: never;
             responses: {
-                /** @description OK */
-                200: {
+                /** @description revoked */
+                204: {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content: {
-                        "application/json": components["schemas"]["immerle.OKResponse"];
-                    };
+                    content?: never;
                 };
                 /** @description Not Found */
                 404: {
@@ -933,12 +707,11 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.apiError"];
                     };
                 };
             };
         };
-        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -951,20 +724,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * List friends
-         * @description Returns the caller's accepted friends.
-         */
+        /** List friends */
         get: {
             parameters: {
-                query: {
-                    /** @description Subsonic username */
-                    u: string;
-                    /** @description Subsonic password (or use t+s token auth) */
-                    p?: string;
-                    /** @description Client name */
-                    c: string;
-                };
+                query?: never;
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -977,16 +740,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.FriendsResponse"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.FriendDTO"][];
                     };
                 };
             };
@@ -999,7 +753,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/friends/accept": {
+    "/friends/requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List pending friend requests */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.PendingFriendDTO"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Send a friend request */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Target username */
+            requestBody: {
+                content: {
+                    "application/json": Record<string, never> | components["schemas"]["immerle.friendRequestBody"];
+                };
+            };
+            responses: {
+                /** @description created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.apiError"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.apiError"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.apiError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/friends/requests/{username}/accept": {
         parameters: {
             query?: never;
             header?: never;
@@ -1011,18 +844,12 @@ export interface paths {
         /** Accept a friend request */
         post: {
             parameters: {
-                query: {
-                    /** @description Subsonic username */
-                    u: string;
-                    /** @description Subsonic password (or t+s token auth) */
-                    p?: string;
-                    /** @description Client name */
-                    c: string;
+                query?: never;
+                header?: never;
+                path: {
                     /** @description Username of the requester to accept */
                     username: string;
                 };
-                header?: never;
-                path?: never;
                 cookie?: never;
             };
             requestBody?: never;
@@ -1033,7 +860,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.OKResponse"];
+                        "application/json": components["schemas"]["immerle.FriendDTO"];
                     };
                 };
                 /** @description Not Found */
@@ -1042,113 +869,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/friends/pending": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List pending friend requests */
-        get: {
-            parameters: {
-                query: {
-                    /** @description Subsonic username */
-                    u: string;
-                    /** @description Subsonic password (or t+s token auth) */
-                    p?: string;
-                    /** @description Client name */
-                    c: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.PendingFriendsResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/friends/request": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Send a friend request */
-        post: {
-            parameters: {
-                query: {
-                    /** @description Subsonic username */
-                    u: string;
-                    /** @description Subsonic password (or t+s token auth) */
-                    p?: string;
-                    /** @description Client name */
-                    c: string;
-                    /** @description Target username to befriend */
-                    username: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.OKResponse"];
-                    };
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.ErrorResponse"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.apiError"];
                     };
                 };
             };
@@ -1172,14 +893,7 @@ export interface paths {
          */
         get: {
             parameters: {
-                query: {
-                    /** @description Subsonic username */
-                    u: string;
-                    /** @description Subsonic password (or t+s token auth) */
-                    p?: string;
-                    /** @description Client name */
-                    c: string;
-                };
+                query?: never;
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -1192,59 +906,37 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ImportsResponse"];
+                        "application/json": components["schemas"]["immerle.ImportDTO"][];
                     };
                 };
             };
         };
         put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/imports/items/resolve": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
         /**
-         * Validate or modify an import item
-         * @description Resolves a doubtful/missing/failed import item: downloads a track and adds it to the import's playlist, flipping the item to "matched". With no `query`, it validates the flagged candidate as-is; with a `query`, it re-searches the content providers with that corrected text and uses the best result.
+         * Start a playlist import
+         * @description Queues an import of an external playlist (by source + reference). Returns the import job; poll GET /imports/{id} for progress. The import creates a new immerle playlist and resolves each source track against the on-demand content providers.
          */
         post: {
             parameters: {
-                query: {
-                    /** @description Subsonic username */
-                    u: string;
-                    /** @description Subsonic password (or t+s token auth) */
-                    p?: string;
-                    /** @description Client name */
-                    c: string;
-                    /** @description Import item id */
-                    itemId: string;
-                    /** @description Corrected 'artist title' search (omit to validate the flagged candidate) */
-                    query?: string;
-                };
+                query?: never;
                 header?: never;
                 path?: never;
                 cookie?: never;
             };
-            requestBody?: never;
+            /** @description Import source + reference */
+            requestBody: {
+                content: {
+                    "application/json": Record<string, never> | components["schemas"]["immerle.startImportRequest"];
+                };
+            };
             responses: {
-                /** @description OK */
-                200: {
+                /** @description Created */
+                201: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ImportItemResponse"];
+                        "application/json": components["schemas"]["immerle.ImportDTO"];
                     };
                 };
                 /** @description Bad Request */
@@ -1253,16 +945,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ErrorResponse"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.apiError"];
                     };
                 };
             };
@@ -1286,14 +969,7 @@ export interface paths {
          */
         get: {
             parameters: {
-                query: {
-                    /** @description Subsonic username */
-                    u: string;
-                    /** @description Subsonic password (or t+s token auth) */
-                    p?: string;
-                    /** @description Client name */
-                    c: string;
-                };
+                query?: never;
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -1306,7 +982,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ImportSourcesResponse"];
+                        "application/json": components["schemas"]["immerle.ImportSourceDTO"][];
                     };
                 };
             };
@@ -1319,66 +995,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/imports/start": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Start a playlist import
-         * @description Queues an import of an external playlist (by source + reference). Returns the import job; poll /imports/status for progress. The import creates a new immerle playlist and resolves each source track against the on-demand content providers.
-         */
-        post: {
-            parameters: {
-                query: {
-                    /** @description Subsonic username */
-                    u: string;
-                    /** @description Subsonic password (or t+s token auth) */
-                    p?: string;
-                    /** @description Client name */
-                    c: string;
-                    /** @description Import source name (e.g. spotify) */
-                    source: string;
-                    /** @description Source playlist id or URL */
-                    ref: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.ImportResponse"];
-                    };
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/imports/status": {
+    "/imports/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1391,18 +1008,12 @@ export interface paths {
          */
         get: {
             parameters: {
-                query: {
-                    /** @description Subsonic username */
-                    u: string;
-                    /** @description Subsonic password (or t+s token auth) */
-                    p?: string;
-                    /** @description Client name */
-                    c: string;
+                query?: never;
+                header?: never;
+                path: {
                     /** @description Import id */
                     id: string;
                 };
-                header?: never;
-                path?: never;
                 cookie?: never;
             };
             requestBody?: never;
@@ -1413,7 +1024,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ImportResponse"];
+                        "application/json": components["schemas"]["immerle.ImportDTO"];
                     };
                 };
                 /** @description Not Found */
@@ -1422,7 +1033,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.apiError"];
                     };
                 };
             };
@@ -1435,7 +1046,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/jam/create": {
+    "/imports/{id}/items/{itemId}/resolve": {
         parameters: {
             query?: never;
             header?: never;
@@ -1445,28 +1056,27 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Create a Jam session
-         * @description Starts a synchronized listening session hosted by the caller.
+         * Validate or modify an import item
+         * @description Resolves a doubtful/missing/failed import item: downloads a track and adds it to the import's playlist, flipping the item to "matched". With no `query`, it validates the flagged candidate as-is; with a `query`, it re-searches the content providers with that corrected text and uses the best result.
          */
         post: {
             parameters: {
-                query: {
-                    /** @description Subsonic username */
-                    u: string;
-                    /** @description Subsonic password (or t+s token auth) */
-                    p?: string;
-                    /** @description Client name */
-                    c: string;
-                    /** @description Session name */
-                    name?: string;
-                    /** @description Comma-separated track ids */
-                    trackIds?: string;
-                };
+                query?: never;
                 header?: never;
-                path?: never;
+                path: {
+                    /** @description Import id */
+                    id: string;
+                    /** @description Import item id */
+                    itemId: string;
+                };
                 cookie?: never;
             };
-            requestBody?: never;
+            /** @description Optional corrected 'artist title' search */
+            requestBody?: {
+                content: {
+                    "application/json": Record<string, never> | components["schemas"]["immerle.resolveItemRequest"];
+                };
+            };
             responses: {
                 /** @description OK */
                 200: {
@@ -1474,7 +1084,25 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.JamResponse"];
+                        "application/json": components["schemas"]["immerle.ImportItemDTO"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.apiError"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.apiError"];
                     };
                 };
             };
@@ -1485,7 +1113,145 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/jam/events": {
+    "/jam": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create a Jam session */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Session name and initial track ids */
+            requestBody: {
+                content: {
+                    "application/json": Record<string, never> | components["schemas"]["immerle.createJamRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.JamDTO"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/jam/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Jam session state */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Jam session id */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.JamDTO"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.apiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Jam playback (host only)
+         * @description Host-only. Updates the shared track/position/state (partial) and broadcasts it to participants over SSE.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Jam session id */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description Playback fields to change */
+            requestBody: {
+                content: {
+                    "application/json": Record<string, never> | components["schemas"]["immerle.updateJamRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.JamDTO"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.apiError"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.apiError"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/jam/{id}/events": {
         parameters: {
             query?: never;
             header?: never;
@@ -1498,18 +1264,12 @@ export interface paths {
          */
         get: {
             parameters: {
-                query: {
-                    /** @description Subsonic username */
-                    u: string;
-                    /** @description Subsonic password (or t+s token auth) */
-                    p?: string;
-                    /** @description Client name */
-                    c: string;
-                    /** @description Jam session id */
-                    sessionId: string;
-                };
+                query?: never;
                 header?: never;
-                path?: never;
+                path: {
+                    /** @description Jam session id */
+                    id: string;
+                };
                 cookie?: never;
             };
             requestBody?: never;
@@ -1529,7 +1289,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/event-stream": components["schemas"]["immerle.ErrorResponse"];
+                        "text/event-stream": components["schemas"]["immerle.apiError"];
                     };
                 };
             };
@@ -1542,7 +1302,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/jam/join": {
+    "/jam/{id}/participants": {
         parameters: {
             query?: never;
             header?: never;
@@ -1554,29 +1314,23 @@ export interface paths {
         /** Join a Jam session */
         post: {
             parameters: {
-                query: {
-                    /** @description Subsonic username */
-                    u: string;
-                    /** @description Subsonic password (or t+s token auth) */
-                    p?: string;
-                    /** @description Client name */
-                    c: string;
-                    /** @description Jam session id */
-                    sessionId: string;
-                };
+                query?: never;
                 header?: never;
-                path?: never;
+                path: {
+                    /** @description Jam session id */
+                    id: string;
+                };
                 cookie?: never;
             };
             requestBody?: never;
             responses: {
-                /** @description OK */
-                200: {
+                /** @description Created */
+                201: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.JamResponse"];
+                        "application/json": components["schemas"]["immerle.JamDTO"];
                     };
                 };
                 /** @description Not Found */
@@ -1585,7 +1339,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.apiError"];
                     };
                 };
             };
@@ -1596,7 +1350,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/jam/leave": {
+    "/jam/{id}/participants/me": {
         parameters: {
             query?: never;
             header?: never;
@@ -1604,166 +1358,30 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put?: never;
-        /** Leave a Jam session */
-        post: {
-            parameters: {
-                query: {
-                    /** @description Subsonic username */
-                    u: string;
-                    /** @description Subsonic password (or t+s token auth) */
-                    p?: string;
-                    /** @description Client name */
-                    c: string;
-                    /** @description Jam session id */
-                    sessionId: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.OKResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/jam/state": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Jam session state */
-        get: {
-            parameters: {
-                query: {
-                    /** @description Subsonic username */
-                    u: string;
-                    /** @description Subsonic password (or t+s token auth) */
-                    p?: string;
-                    /** @description Client name */
-                    c: string;
-                    /** @description Jam session id */
-                    sessionId: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.JamResponse"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.ErrorResponse"];
-                    };
-                };
-            };
-        };
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/jam/update": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Update Jam playback (host only)
-         * @description Host-only. Updates the shared track/position/state and broadcasts it to participants over SSE.
-         */
-        post: {
+        /** Leave a Jam session */
+        delete: {
             parameters: {
-                query: {
-                    /** @description Subsonic username */
-                    u: string;
-                    /** @description Subsonic password (or t+s token auth) */
-                    p?: string;
-                    /** @description Client name */
-                    c: string;
-                    /** @description Jam session id */
-                    sessionId: string;
-                    /** @description Current track id */
-                    currentTrackId?: string;
-                    /** @description Playback position in ms */
-                    position?: number;
-                    /** @description playing or paused */
-                    state?: string;
-                    /** @description Comma-separated track ids */
-                    trackIds?: string;
-                };
+                query?: never;
                 header?: never;
-                path?: never;
+                path: {
+                    /** @description Jam session id */
+                    id: string;
+                };
                 cookie?: never;
             };
             requestBody?: never;
             responses: {
-                /** @description OK */
-                200: {
+                /** @description left */
+                204: {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content: {
-                        "application/json": components["schemas"]["immerle.JamResponse"];
-                    };
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.ErrorResponse"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.ErrorResponse"];
-                    };
+                    content?: never;
                 };
             };
         };
-        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1782,14 +1400,7 @@ export interface paths {
          */
         get: {
             parameters: {
-                query: {
-                    /** @description Subsonic username */
-                    u: string;
-                    /** @description Subsonic password (or t+s token auth) */
-                    p?: string;
-                    /** @description Client name */
-                    c: string;
-                };
+                query?: never;
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -1802,7 +1413,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.LibraryStatsResponse"];
+                        "application/json": components["schemas"]["immerle.LibraryStatsDTO"];
                     };
                 };
             };
@@ -1815,33 +1426,20 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/playlists/collaborators": {
+    "/me": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
-        put?: never;
         /**
-         * Add a playlist collaborator
-         * @description Owner-only. Marks the playlist collaborative and grants edit rights to another user.
+         * Get your account
+         * @description Returns the authenticated user's own account, including the private email.
          */
-        post: {
+        get: {
             parameters: {
-                query: {
-                    /** @description Subsonic username */
-                    u: string;
-                    /** @description Subsonic password (or t+s token auth) */
-                    p?: string;
-                    /** @description Client name */
-                    c: string;
-                    /** @description Playlist id */
-                    playlistId: string;
-                    /** @description User to grant edit rights */
-                    username: string;
-                };
+                query?: never;
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -1854,33 +1452,54 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.OKResponse"];
-                    };
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.ErrorResponse"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.AccountDTO"];
                     };
                 };
             };
         };
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Update your account
+         * @description Partial update — only fields present are changed. Lets a user set their display name and email themselves.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Account fields to change */
+            requestBody: {
+                content: {
+                    "application/json": Record<string, never> | components["schemas"]["immerle.updateAccountRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.AccountDTO"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.apiError"];
+                    };
+                };
+            };
+        };
         trace?: never;
     };
     "/playlists/public": {
@@ -1896,14 +1515,7 @@ export interface paths {
          */
         get: {
             parameters: {
-                query: {
-                    /** @description Subsonic username */
-                    u: string;
-                    /** @description Subsonic password (or token auth) */
-                    p?: string;
-                    /** @description Client name */
-                    c: string;
-                };
+                query?: never;
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -1916,7 +1528,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.PublicPlaylistsResponse"];
+                        "application/json": components["schemas"]["immerle.PublicPlaylistDTO"][];
                     };
                 };
             };
@@ -1929,7 +1541,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/playlists/subscribe": {
+    "/playlists/{id}/collaborators": {
         parameters: {
             query?: never;
             header?: never;
@@ -1939,34 +1551,33 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Subscribe to a public playlist
-         * @description Adds a public playlist to the caller's library (read-only). It then appears in getPlaylists like a normal playlist.
+         * Add a playlist collaborator
+         * @description Owner-only. Marks the playlist collaborative and grants edit rights to another user.
          */
         post: {
             parameters: {
-                query: {
-                    /** @description Subsonic username */
-                    u: string;
-                    /** @description Subsonic password (or token auth) */
-                    p?: string;
-                    /** @description Client name */
-                    c: string;
-                    /** @description Playlist id to subscribe to */
-                    playlistId: string;
-                };
+                query?: never;
                 header?: never;
-                path?: never;
+                path: {
+                    /** @description Playlist id */
+                    id: string;
+                };
                 cookie?: never;
             };
-            requestBody?: never;
+            /** @description User to grant edit rights */
+            requestBody: {
+                content: {
+                    "application/json": Record<string, never> | components["schemas"]["immerle.addCollaboratorBody"];
+                };
+            };
             responses: {
-                /** @description OK */
-                200: {
+                /** @description added */
+                201: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.OKResponse"];
+                        "application/json": components["schemas"]["immerle.apiError"];
                     };
                 };
                 /** @description Forbidden */
@@ -1975,7 +1586,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.apiError"];
                     };
                 };
                 /** @description Not Found */
@@ -1984,7 +1595,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.apiError"];
                     };
                 };
             };
@@ -1995,7 +1606,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/playlists/unsubscribe": {
+    "/playlists/{id}/subscription": {
         parameters: {
             query?: never;
             header?: never;
@@ -2003,172 +1614,78 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put?: never;
-        /** Unsubscribe from a playlist */
-        post: {
-            parameters: {
-                query: {
-                    /** @description Subsonic username */
-                    u: string;
-                    /** @description Subsonic password (or token auth) */
-                    p?: string;
-                    /** @description Client name */
-                    c: string;
-                    /** @description Playlist id */
-                    playlistId: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.OKResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/profile": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
         /**
-         * User profile
-         * @description Returns a user's profile — identity, recent activity visible to the caller (honoring privacy), and their public playlists. Defaults to the caller when username is omitted.
+         * Subscribe to a public playlist
+         * @description Adds a public playlist to the caller's library (read-only). It then appears in getPlaylists like a normal playlist. Idempotent.
          */
-        get: {
-            parameters: {
-                query: {
-                    /** @description Subsonic username */
-                    u: string;
-                    /** @description Subsonic password (or t+s token auth) */
-                    p?: string;
-                    /** @description Client name */
-                    c: string;
-                    /** @description Target username (defaults to the caller) */
-                    username?: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.ProfileResponse"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/setup/init": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Create the first administrator
-         * @description Unauthenticated, one-shot. Creates the initial admin — the only way to bootstrap an account (no config/env provisioning). Self-locks once any user exists.
-         */
-        post: {
+        put: {
             parameters: {
                 query?: never;
                 header?: never;
-                path?: never;
+                path: {
+                    /** @description Playlist id to subscribe to */
+                    id: string;
+                };
                 cookie?: never;
             };
-            /** @description Initial admin credentials */
-            requestBody: {
-                content: {
-                    "application/json": Record<string, never> | components["schemas"]["immerle.SetupInitRequest"];
-                };
-            };
+            requestBody?: never;
             responses: {
-                /** @description Created */
-                201: {
+                /** @description subscribed */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.SetupInitResponse"];
+                        "application/json": components["schemas"]["immerle.apiError"];
                     };
                 };
-                /** @description validation */
-                400: {
+                /** @description Not Found */
+                404: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ValidationErrorResponse"];
-                    };
-                };
-                /** @description invalid_setup_token */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.ErrorResponse"];
-                    };
-                };
-                /** @description already_initialized */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.apiError"];
                     };
                 };
             };
         };
-        delete?: never;
+        post?: never;
+        /** Unsubscribe from a playlist */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Playlist id */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description unsubscribed */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/setup/status": {
+    "/setup": {
         parameters: {
             query?: never;
             header?: never;
@@ -2194,13 +1711,68 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.SetupStatusResponse"];
+                        "application/json": components["schemas"]["immerle.SetupStatusDTO"];
                     };
                 };
             };
         };
         put?: never;
-        post?: never;
+        /**
+         * Create the first administrator
+         * @description Unauthenticated, one-shot. Creates the initial admin — the only way to bootstrap an account (no config/env provisioning). Self-locks once any user exists.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Initial admin credentials */
+            requestBody: {
+                content: {
+                    "application/json": Record<string, never> | components["schemas"]["immerle.SetupInitRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.UserDTO"];
+                    };
+                };
+                /** @description validation */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.apiError"];
+                    };
+                };
+                /** @description invalid_setup_token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.apiError"];
+                    };
+                };
+                /** @description already_initialized */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.apiError"];
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -2214,22 +1786,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * Get or update the UI theme
-         * @description Reads (GET) or updates (POST) the caller's per-account theme. Only the accent colour is supported for now. POST applies a partial update — omitted fields keep their stored value; pass an empty accentColor to clear it.
-         */
+        /** Get the UI theme */
         get: {
             parameters: {
-                query: {
-                    /** @description Subsonic username (or use a Bearer token) */
-                    u: string;
-                    /** @description Subsonic password */
-                    p?: string;
-                    /** @description Client name */
-                    c: string;
-                    /** @description POST only: CSS hex colour, e.g. #3b82f6 (empty string clears it) */
-                    accentColor?: string;
-                };
+                query?: never;
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -2242,42 +1802,33 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ThemeResponse"];
-                    };
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.ThemeDTO"];
                     };
                 };
             };
         };
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
         /**
-         * Get or update the UI theme
-         * @description Reads (GET) or updates (POST) the caller's per-account theme. Only the accent colour is supported for now. POST applies a partial update — omitted fields keep their stored value; pass an empty accentColor to clear it.
+         * Update the UI theme
+         * @description Partial update — omitted fields keep their stored value; pass an empty accentColor to clear it.
          */
-        post: {
+        patch: {
             parameters: {
-                query: {
-                    /** @description Subsonic username (or use a Bearer token) */
-                    u: string;
-                    /** @description Subsonic password */
-                    p?: string;
-                    /** @description Client name */
-                    c: string;
-                    /** @description POST only: CSS hex colour, e.g. #3b82f6 (empty string clears it) */
-                    accentColor?: string;
-                };
+                query?: never;
                 header?: never;
                 path?: never;
                 cookie?: never;
             };
-            requestBody?: never;
+            /** @description Theme fields to change */
+            requestBody: {
+                content: {
+                    "application/json": Record<string, never> | components["schemas"]["immerle.updateThemeRequest"];
+                };
+            };
             responses: {
                 /** @description OK */
                 200: {
@@ -2285,7 +1836,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ThemeResponse"];
+                        "application/json": components["schemas"]["immerle.ThemeDTO"];
                     };
                 };
                 /** @description Bad Request */
@@ -2294,15 +1845,11 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.apiError"];
                     };
                 };
             };
         };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
         trace?: never;
     };
     "/tokens": {
@@ -2318,14 +1865,7 @@ export interface paths {
          */
         get: {
             parameters: {
-                query: {
-                    /** @description Subsonic username (or use a Bearer token) */
-                    u: string;
-                    /** @description Subsonic password */
-                    p?: string;
-                    /** @description Client name */
-                    c: string;
-                };
+                query?: never;
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -2338,51 +1878,29 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.TokensResponse"];
+                        "application/json": components["schemas"]["immerle.APITokenDTO"][];
                     };
                 };
             };
         };
         put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/tokens/create": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
         /**
          * Create an API token
-         * @description Creates a personal access token scoped to the caller. The secret is returned ONCE — store it now. Use it as "Authorization: Bearer <token>" or "?apiKey=<token>".
+         * @description Creates a personal access token scoped to the caller. The secret is returned ONCE — store it now. Use it as "Authorization: Bearer <token>".
          */
         post: {
             parameters: {
-                query: {
-                    /** @description Subsonic username */
-                    u: string;
-                    /** @description Subsonic password */
-                    p?: string;
-                    /** @description Client name */
-                    c: string;
-                    /** @description Label for the token */
-                    name?: string;
-                    /** @description Expiry as unix epoch millis (0 = never) */
-                    expires?: number;
-                };
+                query?: never;
                 header?: never;
                 path?: never;
                 cookie?: never;
             };
-            requestBody?: never;
+            /** @description Token name and optional expiry */
+            requestBody: {
+                content: {
+                    "application/json": Record<string, never> | components["schemas"]["immerle.createTokenRequest"];
+                };
+            };
             responses: {
                 /** @description Created */
                 201: {
@@ -2390,7 +1908,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.CreateTokenResponse"];
+                        "application/json": components["schemas"]["immerle.CreateTokenDTO"];
                     };
                 };
             };
@@ -2401,7 +1919,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/tokens/revoke": {
+    "/tokens/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -2410,21 +1928,62 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        post?: never;
         /** Revoke an API token */
-        post: {
+        delete: {
             parameters: {
-                query: {
-                    /** @description Subsonic username */
-                    u: string;
-                    /** @description Subsonic password */
-                    p?: string;
-                    /** @description Client name */
-                    c: string;
+                query?: never;
+                header?: never;
+                path: {
                     /** @description Token id to revoke */
                     id: string;
                 };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description revoked */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.apiError"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/{username}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * User profile
+         * @description Returns a user's profile — identity, recent activity visible to the caller (honoring privacy), and their public playlists. Use "me" for the caller.
+         */
+        get: {
+            parameters: {
+                query?: never;
                 header?: never;
-                path?: never;
+                path: {
+                    /** @description Target username, or 'me' for the caller */
+                    username: string;
+                };
                 cookie?: never;
             };
             requestBody?: never;
@@ -2435,7 +1994,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.OKResponse"];
+                        "application/json": components["schemas"]["immerle.ProfileDTO"];
                     };
                 };
                 /** @description Not Found */
@@ -2444,11 +2003,13 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ErrorResponse"];
+                        "application/json": components["schemas"]["immerle.apiError"];
                     };
                 };
             };
         };
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2470,20 +2031,16 @@ export interface components {
             /** @example gsk_AbC12 */
             prefix?: string;
         };
-        "immerle.AccountResponse": {
-            /** @example true */
-            ok?: boolean;
-            user?: {
-                /** @example Bob Marley */
-                displayName?: string;
-                /** @example bob@example.com */
-                email?: string;
-                id?: string;
-                /** @example false */
-                isAdmin?: boolean;
-                /** @example bob */
-                username?: string;
-            };
+        "immerle.AccountDTO": {
+            /** @example Bob Marley */
+            displayName?: string;
+            /** @example bob@example.com */
+            email?: string;
+            id?: string;
+            /** @example false */
+            isAdmin?: boolean;
+            /** @example bob */
+            username?: string;
         };
         "immerle.ActivityEventDTO": {
             /** @example 2026-06-15T09:00:00Z */
@@ -2518,17 +2075,10 @@ export interface components {
             /** @example 2001 */
             year?: number;
         };
-        "immerle.ActivityResponse": {
-            events?: components["schemas"]["immerle.ActivityEventDTO"][];
-            /** @example true */
-            ok?: boolean;
-        };
-        "immerle.CapabilitiesResponse": {
+        "immerle.CapabilitiesDTO": {
             capabilities?: {
                 [key: string]: components["schemas"]["immerle.CapabilityDTO"];
             };
-            /** @example true */
-            ok?: boolean;
             /** @example 1.0.0 */
             protocolVersion?: string;
             /** @example immerle */
@@ -2538,28 +2088,22 @@ export interface components {
             /** @example 1 */
             version?: number;
         };
-        "immerle.CleanupRunResponse": {
-            /** @example true */
-            ok?: boolean;
+        "immerle.CleanupRunDTO": {
             /** @example 3 */
             removed?: number;
         };
-        "immerle.CleanupStatusResponse": {
+        "immerle.CleanupStatusDTO": {
             /** @example true */
             enabled?: boolean;
             /** @example 21600 */
             intervalSeconds?: number;
             /** @example 2592000 */
             maxAgeSeconds?: number;
-            /** @example true */
-            ok?: boolean;
         };
-        "immerle.CreateTokenResponse": {
+        "immerle.CreateTokenDTO": {
             id?: string;
             /** @example my-cli */
             name?: string;
-            /** @example true */
-            ok?: boolean;
             /** @example gsk_AbC12 */
             prefix?: string;
             /** @example gsk_AbC12...full-secret */
@@ -2575,34 +2119,12 @@ export interface components {
             name?: string;
             userAgent?: string;
         };
-        "immerle.DevicesResponse": {
-            devices?: components["schemas"]["immerle.DeviceDTO"][];
-            /** @example true */
-            ok?: boolean;
-        };
-        "immerle.ErrorResponse": {
-            /** @example already_initialized */
-            error?: string;
-            /** @example false */
-            ok?: boolean;
-        };
-        "immerle.FieldErrorDTO": {
-            /** @example password */
-            field?: string;
-            /** @example must be at least 8 characters */
-            message?: string;
-        };
         "immerle.FriendDTO": {
             /** @example Bob Marley */
             displayName?: string;
             id?: string;
             /** @example bob */
             username?: string;
-        };
-        "immerle.FriendsResponse": {
-            friends?: components["schemas"]["immerle.FriendDTO"][];
-            /** @example true */
-            ok?: boolean;
         };
         "immerle.ImportDTO": {
             /** @example 2 */
@@ -2649,31 +2171,15 @@ export interface components {
             /** @example matched */
             status?: string;
         };
-        "immerle.ImportItemResponse": {
-            item?: components["schemas"]["immerle.ImportItemDTO"];
-            /** @example true */
-            ok?: boolean;
-        };
-        "immerle.ImportResponse": {
-            import?: components["schemas"]["immerle.ImportDTO"];
-            /** @example true */
-            ok?: boolean;
-        };
         "immerle.ImportSourceDTO": {
             /** @example true */
             configured?: boolean;
             /** @example spotify */
             name?: string;
         };
-        "immerle.ImportSourcesResponse": {
-            /** @example true */
-            ok?: boolean;
-            sources?: components["schemas"]["immerle.ImportSourceDTO"][];
-        };
-        "immerle.ImportsResponse": {
-            imports?: components["schemas"]["immerle.ImportDTO"][];
-            /** @example true */
-            ok?: boolean;
+        "immerle.JamDTO": {
+            participants?: components["schemas"]["immerle.JamParticipantDTO"][];
+            session?: components["schemas"]["immerle.JamSessionDTO"];
         };
         "immerle.JamParticipantDTO": {
             /** @example 2026-06-15T09:00:00Z */
@@ -2682,12 +2188,6 @@ export interface components {
             userId?: string;
             /** @example bob */
             username?: string;
-        };
-        "immerle.JamResponse": {
-            /** @example true */
-            ok?: boolean;
-            participants?: components["schemas"]["immerle.JamParticipantDTO"][];
-            session?: components["schemas"]["immerle.JamSessionDTO"];
         };
         "immerle.JamSessionDTO": {
             currentTrackId?: string;
@@ -2715,21 +2215,10 @@ export interface components {
             /** @example 2026-06-17T09:00:00Z */
             updatedAt?: string;
         };
-        "immerle.LibraryStatsResponse": {
-            /** @example true */
-            ok?: boolean;
-            stats?: components["schemas"]["immerle.LibraryStatsDTO"];
-        };
-        "immerle.LoginResponse": {
+        "immerle.LoginDTO": {
             device?: components["schemas"]["immerle.DeviceDTO"];
-            /** @example true */
-            ok?: boolean;
-            /** @example eyJhbGciOiJIUzI1Ni␣... */
+            /** @example eyJhbGciOiJIUzI1Ni... */
             token?: string;
-        };
-        "immerle.OKResponse": {
-            /** @example true */
-            ok?: boolean;
         };
         "immerle.PendingFriendDTO": {
             /** @example Alice Coltrane */
@@ -2740,10 +2229,22 @@ export interface components {
             /** @example alice */
             username?: string;
         };
-        "immerle.PendingFriendsResponse": {
+        "immerle.ProfileDTO": {
+            activity?: components["schemas"]["immerle.ActivityEventDTO"][];
             /** @example true */
-            ok?: boolean;
-            pending?: components["schemas"]["immerle.PendingFriendDTO"][];
+            isFriend?: boolean;
+            /** @example false */
+            isSelf?: boolean;
+            playlists?: components["schemas"]["immerle.ProfilePlaylistDTO"][];
+            user?: {
+                /** @example Bob Marley */
+                displayName?: string;
+                id?: string;
+                /** @example false */
+                isAdmin?: boolean;
+                /** @example bob */
+                username?: string;
+            };
         };
         "immerle.ProfilePlaylistDTO": {
             comment?: string;
@@ -2755,25 +2256,6 @@ export interface components {
             name?: string;
             /** @example 24 */
             songCount?: number;
-        };
-        "immerle.ProfileResponse": {
-            activity?: components["schemas"]["immerle.ActivityEventDTO"][];
-            /** @example true */
-            isFriend?: boolean;
-            /** @example false */
-            isSelf?: boolean;
-            /** @example true */
-            ok?: boolean;
-            playlists?: components["schemas"]["immerle.ProfilePlaylistDTO"][];
-            user?: {
-                /** @example Bob Marley */
-                displayName?: string;
-                id?: string;
-                /** @example false */
-                isAdmin?: boolean;
-                /** @example bob */
-                username?: string;
-            };
         };
         "immerle.ProviderDTO": {
             /** @example true */
@@ -2795,16 +2277,6 @@ export interface components {
             /** @example 3 */
             sortOrder?: number;
         };
-        "immerle.ProviderResponse": {
-            /** @example true */
-            ok?: boolean;
-            provider?: components["schemas"]["immerle.ProviderDTO"];
-        };
-        "immerle.ProvidersResponse": {
-            /** @example true */
-            ok?: boolean;
-            providers?: components["schemas"]["immerle.ProviderDTO"][];
-        };
         "immerle.PublicPlaylistDTO": {
             comment?: string;
             coverArts?: string[];
@@ -2816,11 +2288,6 @@ export interface components {
             owner?: string;
             songCount?: number;
             subscribed?: boolean;
-        };
-        "immerle.PublicPlaylistsResponse": {
-            /** @example true */
-            ok?: boolean;
-            playlists?: components["schemas"]["immerle.PublicPlaylistDTO"][];
         };
         "immerle.RuntimeSettingsDTO": {
             auth?: {
@@ -2882,9 +2349,7 @@ export interface components {
                 }[];
             };
         };
-        "immerle.SettingsResponse": {
-            /** @example true */
-            ok?: boolean;
+        "immerle.SettingsDTO": {
             pendingRestart?: string[];
             /** @example false */
             restartRequired?: boolean;
@@ -2909,18 +2374,11 @@ export interface components {
             /** @example kilian */
             username?: string;
         };
-        "immerle.SetupInitResponse": {
-            /** @example true */
-            ok?: boolean;
-            user?: components["schemas"]["immerle.UserDTO"];
-        };
-        "immerle.SetupStatusResponse": {
+        "immerle.SetupStatusDTO": {
             /** @example false */
             initialized?: boolean;
             /** @example true */
             needsSetup?: boolean;
-            /** @example true */
-            ok?: boolean;
             /** @example false */
             setupTokenRequired?: boolean;
             /** @example 0 */
@@ -2929,16 +2387,6 @@ export interface components {
         "immerle.ThemeDTO": {
             /** @example #3b82f6 */
             accentColor?: string;
-        };
-        "immerle.ThemeResponse": {
-            /** @example true */
-            ok?: boolean;
-            theme?: components["schemas"]["immerle.ThemeDTO"];
-        };
-        "immerle.TokensResponse": {
-            /** @example true */
-            ok?: boolean;
-            tokens?: components["schemas"]["immerle.APITokenDTO"][];
         };
         "immerle.UserDTO": {
             /** @example Kilian Smiti */
@@ -2949,12 +2397,77 @@ export interface components {
             /** @example kilian */
             username?: string;
         };
-        "immerle.ValidationErrorResponse": {
-            details?: components["schemas"]["immerle.FieldErrorDTO"][];
-            /** @example validation */
-            error?: string;
-            /** @example false */
-            ok?: boolean;
+        "immerle.addCollaboratorBody": {
+            username?: string;
+        };
+        "immerle.apiError": {
+            code?: string;
+            fields?: components["schemas"]["immerle.fieldError"][];
+            message?: string;
+        };
+        "immerle.cleanupUpdateRequest": {
+            enabled?: boolean;
+        };
+        "immerle.createJamRequest": {
+            name?: string;
+            trackIds?: string[];
+        };
+        "immerle.createTokenRequest": {
+            /**
+             * @description ExpiresAt is an optional RFC3339 timestamp; omit or null for a token that
+             *     never expires.
+             */
+            expiresAt?: string;
+            name?: string;
+        };
+        "immerle.fieldError": {
+            field?: string;
+            message?: string;
+        };
+        "immerle.friendRequestBody": {
+            username?: string;
+        };
+        "immerle.loginRequest": {
+            /** @description Device is an optional human label for the session (defaults to the username). */
+            device?: string;
+            password?: string;
+            salt?: string;
+            /** @description Token + Salt allow Subsonic-style token auth instead of a raw password. */
+            token?: string;
+            username?: string;
+        };
+        "immerle.reorderRequest": {
+            order?: string[];
+        };
+        "immerle.resolveItemRequest": {
+            query?: string;
+        };
+        "immerle.setEnabledRequest": {
+            enabled?: boolean;
+        };
+        "immerle.startImportRequest": {
+            ref?: string;
+            source?: string;
+        };
+        "immerle.updateAccountRequest": {
+            displayName?: string;
+            email?: string;
+        };
+        "immerle.updateJamRequest": {
+            currentTrackId?: string;
+            position?: number;
+            state?: string;
+            trackIds?: string[];
+        };
+        "immerle.updateThemeRequest": {
+            accentColor?: string;
+        };
+        "immerle.upsertProviderRequest": {
+            config?: string;
+            enabled?: boolean;
+            endpoint?: string;
+            kind?: string;
+            name?: string;
         };
     };
     responses: never;

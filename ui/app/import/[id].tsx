@@ -119,7 +119,7 @@ export default function ImportDetail() {
 
         <Card className="p-0">
           {shown.length ? (
-            shown.map((it, i) => <ItemRow key={it.id ?? i} item={it} first={i === 0} />)
+            shown.map((it, i) => <ItemRow key={it.id ?? i} importId={id ?? ''} item={it} first={i === 0} />)
           ) : (
             <Text className="px-4 py-4 text-sm text-muted">Aucun élément dans cette catégorie.</Text>
           )}
@@ -129,7 +129,7 @@ export default function ImportDetail() {
   );
 }
 
-function ItemRow({ item, first }: { item: ImportItemDTO; first: boolean }) {
+function ItemRow({ importId, item, first }: { importId: string; item: ImportItemDTO; first: boolean }) {
   const colors = useColors();
   const status = item.status ?? '';
   const resolve = useResolveImportItem();
@@ -149,9 +149,10 @@ function ItemRow({ item, first }: { item: ImportItemDTO; first: boolean }) {
     setQuery(`${item.sourceArtist ?? ''} ${item.sourceTitle ?? ''}`.trim());
     setEditing(true);
   };
-  const validate = () => item.id && resolve.mutate({ itemId: item.id });
+  const validate = () => item.id && resolve.mutate({ importId, itemId: item.id });
   const modify = () => {
-    if (item.id && query.trim()) resolve.mutate({ itemId: item.id, query: query.trim() }, { onSuccess: () => setEditing(false) });
+    if (item.id && query.trim())
+      resolve.mutate({ importId, itemId: item.id, query: query.trim() }, { onSuccess: () => setEditing(false) });
   };
 
   return (

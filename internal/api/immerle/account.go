@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/immerle/immerle/internal/core"
+	"github.com/immerle/immerle/internal/models"
 )
 
 // validEmail is a light sanity check (not full RFC 5322): a bare address with no
@@ -15,57 +16,82 @@ func validEmail(s string) bool {
 	return err == nil && addr.Address == s
 }
 
-// handleAccount returns or updates the caller's own account settings. Unlike the
-// public /profile, it exposes the private email and lets the user change their
-// display name and email.
+// accountView is the caller's own account (includes the private email).
+func accountView(u models.User) map[string]any {
+	return map[string]any{
+		"id":          u.ID,
+		"username":    u.Username,
+		"displayName": u.DisplayName,
+		"email":       u.Email,
+		"isAdmin":     u.IsAdmin,
+	}
+}
+
+// handleAccount returns the caller's own account settings. Unlike the public
+// profile (/users/{username}), it exposes the private email.
 //
-// @Summary      Get or update your account
-// @Description  Reads (GET) or updates (POST) the authenticated user's own account. POST is a partial update — only fields present are changed. Lets a user set their display name and email themselves.
+// @Summary      Get your account
+// @Description  Returns the authenticated user's own account, including the private email.
 // @Tags         users
+// @Security     BearerAuth
 // @Produce      json
-// @Param        u            query  string  true   "Subsonic username (or use a Bearer token)"
-// @Param        p            query  string  false  "Subsonic password"
-// @Param        c            query  string  true   "Client name"
-// @Param        displayName  query  string  false  "POST only: free-text UI name (empty clears it)"
-// @Param        email        query  string  false  "POST only: email address (empty clears it)"
-// @Success      200  {object}  AccountResponse
-// @Failure      400  {object}  ErrorResponse
-// @Router       /account [get]
-// @Router       /account [post]
+// @Success      200  {object}  AccountDTO
+// @Router       /me [get]
 func (h *Handler) handleAccount(w http.ResponseWriter, r *http.Request) {
 	caller := userFrom(r.Context())
-	// Reload to avoid persisting stale fields from the auth snapshot.
 	user, err := h.Users.GetByID(r.Context(), caller.ID)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, errorBody(err.Error()))
+		writeInternal(w, err)
+		return
+	}
+	writeResource(w, http.StatusOK, accountView(user))
+}
+
+// updateAccountRequest is a partial account update; pointer fields distinguish
+// "omitted" (keep) from "" (clear).
+type updateAccountRequest struct {
+	DisplayName *string `json:"displayName"`
+	Email       *string `json:"email"`
+}
+
+// handleAccountUpdate applies a partial update to the caller's own account.
+//
+// @Summary      Update your account
+// @Description  Partial update — only fields present are changed. Lets a user set their display name and email themselves.
+// @Tags         users
+// @Security     BearerAuth
+// @Accept       json
+// @Produce      json
+// @Param        body  body  updateAccountRequest  true  "Account fields to change"
+// @Success      200  {object}  AccountDTO
+// @Failure      400  {object}  apiError
+// @Router       /me [patch]
+func (h *Handler) handleAccountUpdate(w http.ResponseWriter, r *http.Request) {
+	caller := userFrom(r.Context())
+	user, err := h.Users.GetByID(r.Context(), caller.ID)
+	if err != nil {
+		writeInternal(w, err)
 		return
 	}
 
-	if r.Method == http.MethodPost {
-		if _, ok := r.Form["displayName"]; ok {
-			user.DisplayName = core.NormalizeDisplayName(r.Form.Get("displayName"))
-		}
-		if _, ok := r.Form["email"]; ok {
-			email := strings.TrimSpace(r.Form.Get("email"))
-			if email != "" && !validEmail(email) {
-				writeJSON(w, http.StatusBadRequest, errorBody("email must be a valid address like name@example.com"))
-				return
-			}
-			user.Email = email
-		}
-		if err := h.Users.Update(r.Context(), user); err != nil {
-			writeJSON(w, http.StatusInternalServerError, errorBody(err.Error()))
+	var req updateAccountRequest
+	if !decodeJSON(w, r, &req) {
+		return
+	}
+	if req.DisplayName != nil {
+		user.DisplayName = core.NormalizeDisplayName(*req.DisplayName)
+	}
+	if req.Email != nil {
+		email := strings.TrimSpace(*req.Email)
+		if email != "" && !validEmail(email) {
+			writeError(w, http.StatusBadRequest, "validation", "email must be a valid address like name@example.com")
 			return
 		}
+		user.Email = email
 	}
-
-	writeJSON(w, http.StatusOK, okBody(map[string]any{
-		"user": map[string]any{
-			"id":          user.ID,
-			"username":    user.Username,
-			"displayName": user.DisplayName,
-			"email":       user.Email,
-			"isAdmin":     user.IsAdmin,
-		},
-	}))
+	if err := h.Users.Update(r.Context(), user); err != nil {
+		writeInternal(w, err)
+		return
+	}
+	writeResource(w, http.StatusOK, accountView(user))
 }

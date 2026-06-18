@@ -60,8 +60,8 @@ export function adaptCapabilities(payload: CapabilitiesResponse): Capabilities {
     version: payload.protocolVersion ?? SUBSONIC_ONLY_CAPABILITIES.version,
     apiRevision: 1,
     features: {
-      // No capability advertises native auth; keep Subsonic auth as the floor.
-      immerleAuth: false,
+      // The server advertises native device auth (JWT) via the `devices` cap.
+      immerleAuth: has('devices'),
       onDemandCatalog: has('onDemandCatalog'),
       dynamicProviders: has('dynamicProviders'),
       runtimeSettings: has('runtimeSettings'),

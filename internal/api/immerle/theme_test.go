@@ -2,74 +2,66 @@ package immerle
 
 import (
 	"net/http"
-	"net/url"
 	"testing"
 )
 
-func themeOf(body map[string]any) map[string]any {
-	t, _ := body["theme"].(map[string]any)
-	return t
-}
-
 func TestThemeDefaultsEmpty(t *testing.T) {
 	srv, _ := newEnv(t)
-	body := postForm(t, srv, "/theme", creds("alice")) // POST without fields = read
-	if body["ok"] != true {
-		t.Fatalf("theme read failed: %+v", body)
+	alice := login(t, srv, "alice")
+	status, theme := doMap(t, srv, http.MethodGet, "/theme", alice, nil)
+	if status != http.StatusOK {
+		t.Fatalf("theme read failed: status %d %+v", status, theme)
 	}
-	if ac := themeOf(body)["accentColor"]; ac != nil && ac != "" {
+	if ac := theme["accentColor"]; ac != nil && ac != "" {
 		t.Fatalf("expected empty accent colour by default, got %v", ac)
 	}
 }
 
 func TestThemeSetAndPersist(t *testing.T) {
 	srv, _ := newEnv(t)
+	alice := login(t, srv, "alice")
+	bob := login(t, srv, "bob")
 
-	v := creds("alice")
-	v.Set("accentColor", "#3b82f6")
-	body := postForm(t, srv, "/theme", v)
-	if themeOf(body)["accentColor"] != "#3b82f6" {
-		t.Fatalf("set accent failed: %+v", body)
+	status, theme := doMap(t, srv, http.MethodPatch, "/theme", alice, map[string]any{"accentColor": "#3b82f6"})
+	if status != http.StatusOK || theme["accentColor"] != "#3b82f6" {
+		t.Fatalf("set accent failed: status %d %+v", status, theme)
 	}
 
 	// Persisted across a fresh read.
-	body = postForm(t, srv, "/theme", creds("alice"))
-	if themeOf(body)["accentColor"] != "#3b82f6" {
-		t.Fatalf("accent not persisted: %+v", body)
+	_, theme = doMap(t, srv, http.MethodGet, "/theme", alice, nil)
+	if theme["accentColor"] != "#3b82f6" {
+		t.Fatalf("accent not persisted: %+v", theme)
 	}
 
 	// Scoped per user: bob is unaffected.
-	body = postForm(t, srv, "/theme", creds("bob"))
-	if ac := themeOf(body)["accentColor"]; ac != nil && ac != "" {
+	_, theme = doMap(t, srv, http.MethodGet, "/theme", bob, nil)
+	if ac := theme["accentColor"]; ac != nil && ac != "" {
 		t.Fatalf("bob's theme should be independent, got %v", ac)
 	}
 }
 
 func TestThemeRejectsInvalidColor(t *testing.T) {
 	srv, _ := newEnv(t)
-	v := creds("alice")
-	v.Set("accentColor", "blue")
-	resp, err := http.PostForm(srv.URL+"/theme", v)
-	if err != nil {
-		t.Fatal(err)
+	alice := login(t, srv, "alice")
+	status, body := doMap(t, srv, http.MethodPatch, "/theme", alice, map[string]any{"accentColor": "blue"})
+	if status != http.StatusBadRequest {
+		t.Fatalf("invalid colour should be 400, got %d", status)
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusBadRequest {
-		t.Fatalf("invalid colour should be 400, got %d", resp.StatusCode)
+	errObj, _ := body["error"].(map[string]any)
+	if errObj == nil || errObj["code"] != "validation" {
+		t.Fatalf("expected validation error, got %+v", body)
 	}
 }
 
 func TestThemeClearsAccent(t *testing.T) {
 	srv, _ := newEnv(t)
+	alice := login(t, srv, "alice")
 
-	v := creds("alice")
-	v.Set("accentColor", "#abc")
-	postForm(t, srv, "/theme", v)
+	doStatus(t, srv, http.MethodPatch, "/theme", alice, map[string]any{"accentColor": "#abc"})
 
 	// Empty string clears it.
-	clear := url.Values{"u": {"alice"}, "p": {"alicepw"}, "c": {"test"}, "accentColor": {""}}
-	body := postForm(t, srv, "/theme", clear)
-	if ac := themeOf(body)["accentColor"]; ac != nil && ac != "" {
+	_, theme := doMap(t, srv, http.MethodPatch, "/theme", alice, map[string]any{"accentColor": ""})
+	if ac := theme["accentColor"]; ac != nil && ac != "" {
 		t.Fatalf("accent should be cleared, got %v", ac)
 	}
 }

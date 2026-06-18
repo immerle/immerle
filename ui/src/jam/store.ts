@@ -100,7 +100,7 @@ async function pushHost(sessionId: string) {
       currentTrackId: song.id,
       position: Math.floor(player.position * 1000),
       state: player.status === 'playing' ? 'playing' : 'paused',
-      trackIds: player.songs.map((s) => s.id).join(','),
+      trackIds: player.songs.map((s) => s.id),
     })
     .catch(() => undefined);
 }
