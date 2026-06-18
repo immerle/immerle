@@ -1,5 +1,5 @@
 import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
-import { Modal, Platform, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
+import { Animated, Modal, Platform, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
 import { useColorScheme } from 'nativewind';
 import { Stack } from 'expo-router';
 import { useAuth } from '../../src/auth/store';
@@ -430,6 +430,23 @@ function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose
   const [error, setError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
 
+  // Slide-in-from-the-right animation (RN Modal has no lateral slide).
+  const PANEL_W = 540;
+  const slide = useRef(new Animated.Value(PANEL_W)).current;
+  const fade = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(slide, { toValue: 0, duration: 220, useNativeDriver: false }),
+      Animated.timing(fade, { toValue: 1, duration: 220, useNativeDriver: false }),
+    ]).start();
+  }, [slide, fade]);
+  // Animate out, then let the parent unmount us.
+  const close = () =>
+    Animated.parallel([
+      Animated.timing(slide, { toValue: PANEL_W, duration: 180, useNativeDriver: false }),
+      Animated.timing(fade, { toValue: 0, duration: 180, useNativeDriver: false }),
+    ]).start(() => onClose());
+
   const validate = (): string | null => {
     if (!SLUG_RE.test(name)) return t('admin.providers.invalidName');
     // Built-ins have no endpoint (the server compiles in how to reach them).
@@ -454,20 +471,23 @@ function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose
     setError(null);
     upsert.mutate(
       { name, endpoint, config: config.trim() || '{}', enabled, kind: isBuiltin ? 'builtin' : 'http' },
-      { onSuccess: onClose, onError: (e) => setError(tError(e)) },
+      { onSuccess: close, onError: (e) => setError(tError(e)) },
     );
   };
 
   return (
-    <Modal transparent animationType="fade" visible onRequestClose={onClose}>
-      <Pressable className="flex-1 flex-row justify-end bg-black/60" onPress={onClose}>
-        {/* Side panel: full height, anchored right — room for the config editor + logs. */}
-        <Pressable className="h-full w-full max-w-[540px] bg-surface" onPress={(e) => e.stopPropagation()}>
+    <Modal transparent animationType="none" visible onRequestClose={close}>
+      <Pressable className="flex-1 flex-row justify-end" onPress={close}>
+        {/* Dimmed backdrop fades in/out with the panel. */}
+        <Animated.View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', opacity: fade }} />
+        {/* Side panel slides in from the right — room for the config editor + logs. */}
+        <Animated.View style={{ height: '100%', width: '100%', maxWidth: PANEL_W, transform: [{ translateX: slide }] }}>
+          <Pressable className="h-full bg-surface" onPress={(e) => e.stopPropagation()}>
           <View className="flex-row items-center justify-between border-b border-border px-5 py-4">
             <Text className="text-lg font-bold tracking-tight text-foreground">
               {isEdit ? t('admin.providers.editTitle', { name: initial?.name }) : t('admin.providers.newTitle')}
             </Text>
-            <IconButton name="close" color={colors.muted} onPress={onClose} accessibilityLabel={t('admin.providers.close')} />
+            <IconButton name="close" color={colors.muted} onPress={close} accessibilityLabel={t('admin.providers.close')} />
           </View>
 
           <ScrollView
@@ -504,19 +524,12 @@ function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose
 
             {error ? <Text className="text-xs text-danger">{error}</Text> : null}
 
-            <View className="flex-row gap-2">
-              <View className="flex-1">
-                <Button title={t('admin.providers.cancel')} variant="ghost" onPress={onClose} />
-              </View>
-              <View className="flex-1">
-                <Button
-                  title={isEdit ? t('admin.providers.save') : t('admin.providers.create')}
-                  icon="save-outline"
-                  loading={upsert.isPending}
-                  onPress={submit}
-                />
-              </View>
-            </View>
+            <Button
+              title={isEdit ? t('admin.providers.save') : t('admin.providers.create')}
+              icon="save-outline"
+              loading={upsert.isPending}
+              onPress={submit}
+            />
 
             {/* Delete lives here (built-ins are never deletable). */}
             {isEdit && initial?.deletable ? (
@@ -526,7 +539,7 @@ function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose
                   icon="trash"
                   variant="danger"
                   loading={remove.isPending}
-                  onPress={() => remove.mutate(initial.name, { onSuccess: onClose })}
+                  onPress={() => remove.mutate(initial.name, { onSuccess: close })}
                 />
               ) : (
                 <Button title={t('admin.providers.delete')} icon="trash-outline" variant="danger" onPress={() => setConfirming(true)} />
@@ -536,7 +549,8 @@ function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose
             {/* Recent provider errors/warnings — only for a saved provider. */}
             {isEdit && initial ? <ProviderLogsSection name={initial.name} /> : null}
           </ScrollView>
-        </Pressable>
+          </Pressable>
+        </Animated.View>
       </Pressable>
     </Modal>
   );
