@@ -404,6 +404,11 @@
       "autoSweep": "Balayage automatique",
       "removedCount": "{{count}} supprimé(s)",
       "runCleanup": "Lancer le nettoyage maintenant",
+      "logsTitle": "Journaux",
+      "logsSubtitle": "Rétention des journaux de diagnostic",
+      "logsDescription": "Un balayage quotidien supprime les journaux persistés (erreurs et avertissements des providers) plus anciens que la fenêtre de rétention.",
+      "logRetention": "Rétention (jours)",
+      "logRetentionHelp": "0 conserve les journaux indéfiniment.",
       "save": "Enregistrer"
     },
     "users": {

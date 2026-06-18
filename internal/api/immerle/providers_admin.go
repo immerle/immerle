@@ -239,7 +239,7 @@ func (h *Handler) handleProviderReorder(w http.ResponseWriter, r *http.Request) 
 // @Security     BearerAuth
 // @Produce      json
 // @Param        name  path  string  true  "Provider name"
-// @Success      200  {array}  models.ProviderLog
+// @Success      200  {array}  ProviderLogDTO
 // @Failure      401  {object}  errorResponse
 // @Failure      403  {object}  errorResponse
 // @Failure      503  {object}  errorResponse

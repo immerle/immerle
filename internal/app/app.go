@@ -45,6 +45,7 @@ type App struct {
 	federation *federation.Service
 	enricher   *core.ArtistImageEnricher
 	evictor    *core.Evictor
+	logPruner  *core.LogPruner
 	settings   *core.SettingsService
 	imports    *importer.Service
 	handler    http.Handler
@@ -304,6 +305,10 @@ func New(cfg config.Config) (*App, error) {
 	evictor := core.NewEvictor(store.Catalog, store.Downloads,
 		settingsSvc.CleanupEnabled, settingsSvc.CleanupMaxAge, settingsSvc.CleanupInterval(), logger)
 
+	// Daily retention sweep over persisted diagnostic logs. The window is read
+	// live from the runtime settings; register any future log table here.
+	logPruner := core.NewLogPruner(settingsSvc.LogRetention, 24*time.Hour, logger, store.ProviderLogs)
+
 	subHandler := subsonic.NewHandler(subsonic.Deps{
 		Auth:             authSvc,
 		Catalog:          store.Catalog,
@@ -371,6 +376,7 @@ func New(cfg config.Config) (*App, error) {
 		federation: fed,
 		enricher:   enricher,
 		evictor:    evictor,
+		logPruner:  logPruner,
 		settings:   settingsSvc,
 		imports:    importSvc,
 		// Security headers outermost (apply to every response), then CORS
@@ -424,6 +430,9 @@ func (a *App) Run(ctx context.Context) error {
 	if a.evictor != nil {
 		// Always started; it self-gates on the runtime enabled flag.
 		a.spawn(func() { a.evictor.Run(ctx) })
+	}
+	if a.logPruner != nil {
+		a.spawn(func() { a.logPruner.Run(ctx) })
 	}
 	if a.imports != nil {
 		a.spawn(func() { a.imports.Worker(ctx) })

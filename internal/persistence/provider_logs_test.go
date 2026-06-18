@@ -40,4 +40,17 @@ func TestProviderLogsInsertAndList(t *testing.T) {
 	if got[0].CreatedAt.IsZero() {
 		t.Fatal("createdAt not populated")
 	}
+
+	// Pruning: a cutoff in the past keeps everything; a cutoff in the future
+	// (after all rows) removes everything.
+	if n, err := store.ProviderLogs.PruneOlderThan(ctx, time.Now().Add(-time.Hour)); err != nil || n != 0 {
+		t.Fatalf("prune past cutoff: removed %d, err %v (want 0)", n, err)
+	}
+	if n, err := store.ProviderLogs.PruneOlderThan(ctx, time.Now().Add(time.Hour)); err != nil || n != 3 {
+		t.Fatalf("prune future cutoff: removed %d, err %v (want 3)", n, err)
+	}
+	left, _ := store.ProviderLogs.ListByProvider(ctx, "fma", 100)
+	if len(left) != 0 {
+		t.Fatalf("expected all rows pruned, got %d", len(left))
+	}
 }

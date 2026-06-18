@@ -82,6 +82,16 @@ type RuntimeSettings struct {
 	Cleanup    CleanupRuntime    `json:"cleanup"`
 	Federation FederationRuntime `json:"federation"`
 	Import     ImportRuntime     `json:"import"`
+	Logs       LogsRuntime       `json:"logs"`
+}
+
+// LogsRuntime configures retention of persisted diagnostic logs (provider logs
+// today, any future log table tomorrow). Hot-reloadable: a daily background
+// pruner reads RetentionDays live and drops rows older than that window.
+type LogsRuntime struct {
+	// RetentionDays is how long persisted logs are kept (default 30). 0 disables
+	// pruning (keep forever).
+	RetentionDays int `json:"retentionDays"`
 }
 
 // ImportRuntime configures playlist-import sources (hot-reloadable). Sources
@@ -181,6 +191,7 @@ func DefaultRuntimeSettings() RuntimeSettings {
 		// config here — they use the federation hub credentials. This map is for
 		// future sources that authenticate directly.
 		Import: ImportRuntime{},
+		Logs:   LogsRuntime{RetentionDays: 30},
 	}
 }
 

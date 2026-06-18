@@ -66,6 +66,9 @@ type RuntimeSettingsDTO struct {
 		ResolveMissing      bool   `json:"resolveMissing"`
 		ExportScrobbles     bool   `json:"exportScrobbles"`
 	} `json:"federation"`
+	Logs struct {
+		RetentionDays int `json:"retentionDays" example:"30"`
+	} `json:"logs"`
 }
 
 // SettingsDTO returns the runtime settings and restart state.
@@ -73,6 +76,16 @@ type SettingsDTO struct {
 	Settings        RuntimeSettingsDTO `json:"settings"`
 	RestartRequired bool               `json:"restartRequired" example:"false"`
 	PendingRestart  []string           `json:"pendingRestart"`
+}
+
+// ProviderLogDTO is a persisted warn/error event from a provider action.
+type ProviderLogDTO struct {
+	ID        string `json:"id"`
+	Provider  string `json:"provider" example:"free-music-archive"`
+	Level     string `json:"level" example:"error"`
+	Action    string `json:"action" example:"download"`
+	Message   string `json:"message" example:"unexpected status 404"`
+	CreatedAt string `json:"createdAt" example:"2026-06-18T20:00:00Z"`
 }
 
 // CleanupStatusDTO reports the provider-download eviction sweep state.

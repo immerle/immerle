@@ -23,6 +23,20 @@ func (r *ProviderLogRepo) Insert(ctx context.Context, l models.ProviderLog) erro
 	// ponytail: table grows unbounded; add a retention sweep if it ever matters.
 }
 
+// LogTableName identifies this log store to the daily pruner.
+func (r *ProviderLogRepo) LogTableName() string { return "provider_logs" }
+
+// PruneOlderThan deletes log rows created before cutoff and returns the number
+// removed. Implements the pruner's PrunableLog interface.
+func (r *ProviderLogRepo) PruneOlderThan(ctx context.Context, cutoff time.Time) (int64, error) {
+	res, err := r.exec(ctx, `DELETE FROM provider_logs WHERE created_at < ?`, db.Millis(cutoff))
+	if err != nil {
+		return 0, err
+	}
+	n, _ := res.RowsAffected()
+	return n, nil
+}
+
 // ListByProvider returns the most recent events for a provider, newest first.
 func (r *ProviderLogRepo) ListByProvider(ctx context.Context, provider string, limit int) ([]models.ProviderLog, error) {
 	if limit <= 0 || limit > 500 {
