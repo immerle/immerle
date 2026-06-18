@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="logo.svg" alt="Immerle" width="180" />
+
 # 🐦 Immerle
 
 ### *Your music, self-hosted — and it sings.*
@@ -111,6 +113,10 @@ connect, and for complying with all applicable copyright and other laws. Immerle
 and its maintainers provide the software only and **disclaim all responsibility
 and liability** for how it is used or what content is served through it. See
 [DISCLAIMER.md](DISCLAIMER.md).
+
+## 🎨 Credits
+
+The Immerle logo was designed by **Alicia SMITI** — thank you! 💖
 
 ## 📜 License
 

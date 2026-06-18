@@ -7,7 +7,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 const config: Config = {
   title: 'Immerle',
   tagline: 'Your music, self-hosted — and it sings.',
-  favicon: 'img/favicon.ico',
+  favicon: 'img/favicon.png',
 
   future: {
     v4: true, // Improve compatibility with the upcoming Docusaurus v4
@@ -94,7 +94,7 @@ const config: Config = {
           items: [{label: 'GitHub', href: 'https://github.com/immerle/immerle'}],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} Immerle. Built with Docusaurus.`,
+      copyright: `Copyright © ${new Date().getFullYear()} Immerle. Logo by Alicia SMITI. Built with Docusaurus.`,
     },
     prism: {
       theme: prismThemes.github,
