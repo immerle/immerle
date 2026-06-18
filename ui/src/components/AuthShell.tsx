@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicon } from './Ionicon';
+import { Image } from 'expo-image';
 import { useColors } from '../theme/colors';
 
 /**
@@ -59,27 +59,14 @@ export function AuthShell({
 }
 
 function Brand({ subtitle }: { subtitle?: string }) {
-  const colors = useColors();
   return (
     <View className="items-center gap-3">
-      <LinearGradient
-        colors={[colors.primary, colors.primary + '99']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{
-          height: 80,
-          width: 80,
-          borderRadius: 24,
-          alignItems: 'center',
-          justifyContent: 'center',
-          shadowColor: colors.primary,
-          shadowOpacity: 0.5,
-          shadowRadius: 18,
-          shadowOffset: { width: 0, height: 8 },
-        }}
-      >
-        <Ionicon name="musical-notes" size={40} color={colors.primaryForeground} />
-      </LinearGradient>
+      <Image
+        source={require('../../assets/logo.png')}
+        style={{ width: 100, height: 81 }}
+        contentFit="contain"
+        accessibilityLabel="Immerle"
+      />
       <Text className="text-3xl font-bold tracking-tight text-foreground">Immerle</Text>
       {subtitle ? <Text className="max-w-[300px] text-center text-base text-muted">{subtitle}</Text> : null}
     </View>
