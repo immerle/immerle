@@ -7,6 +7,7 @@ import { Button, EmptyState, ErrorState, Loading } from '../src/components/ui';
 import { PlaylistMosaic } from '../src/components/PlaylistMosaic';
 import { PublicPlaylistDTO } from '../src/api/immerleApi';
 import { formatCount } from '../src/utils/format';
+import { useT } from '../src/i18n/store';
 
 /**
  * Discover public playlists. Subscriptions are opt-in: a public playlist only
@@ -15,6 +16,7 @@ import { formatCount } from '../src/utils/format';
  * playlist is untouched.
  */
 export default function Discover() {
+  const t = useT();
   const client = useAuth((s) => s.client);
   const q = usePublicPlaylists();
   const { subscribe, unsubscribe } = useSubscriptionMutations();
@@ -22,9 +24,9 @@ export default function Discover() {
   if (!client?.has('publicPlaylists')) {
     return (
       <>
-        <Stack.Screen options={{ title: 'Playlists publiques' }} />
+        <Stack.Screen options={{ title: t('social.discover.title') }} />
         <View className="flex-1 bg-background">
-          <EmptyState icon="globe-outline" title="Indisponible" subtitle="Cette instance n'expose pas les playlists publiques." />
+          <EmptyState icon="globe-outline" title={t('social.discover.unavailableTitle')} subtitle={t('social.discover.unavailableSubtitle')} />
         </View>
       </>
     );
@@ -32,14 +34,14 @@ export default function Discover() {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Playlists publiques' }} />
+      <Stack.Screen options={{ title: t('social.discover.title') }} />
       <View className="flex-1 bg-background">
         {q.isLoading ? (
           <Loading />
         ) : q.isError ? (
-          <ErrorState message="Impossible de charger les playlists publiques." onRetry={q.refetch} />
+          <ErrorState message={t('social.discover.loadError')} onRetry={q.refetch} />
         ) : !q.data?.length ? (
-          <EmptyState icon="globe-outline" title="Aucune playlist publique" subtitle="Rien à découvrir pour l'instant." />
+          <EmptyState icon="globe-outline" title={t('social.discover.emptyTitle')} subtitle={t('social.discover.emptySubtitle')} />
         ) : (
           <FlashList<PublicPlaylistDTO>
             data={q.data}
@@ -49,7 +51,7 @@ export default function Discover() {
             onRefresh={q.refetch}
             ListHeaderComponent={
               <Text className="px-4 pb-1 pt-3 text-sm text-muted">
-                Abonnez-vous pour ajouter une playlist à votre bibliothèque (lecture seule).
+                {t('social.discover.subscribeHint')}
               </Text>
             }
             renderItem={({ item }) => {
@@ -62,12 +64,12 @@ export default function Discover() {
                       {item.name}
                     </Text>
                     <Text numberOfLines={1} className="text-sm text-muted">
-                      par {item.owner ?? '—'} · {formatCount(item.songCount)} titres
+                      {t('social.discover.byOwner', { owner: item.owner ?? '—', count: formatCount(item.songCount) })}
                     </Text>
                   </View>
                   {subscribed ? (
                     <Button
-                      title="Abonné"
+                      title={t('social.discover.subscribed')}
                       size="sm"
                       variant="secondary"
                       icon="checkmark"
@@ -76,7 +78,7 @@ export default function Discover() {
                     />
                   ) : (
                     <Button
-                      title="S'abonner"
+                      title={t('social.discover.subscribe')}
                       size="sm"
                       loading={subscribe.isPending}
                       onPress={() => item.id && subscribe.mutate(item.id)}

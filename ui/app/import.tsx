@@ -8,24 +8,18 @@ import { AdminHeader, AdminScroll, CardTitle } from '../src/components/AdminUI';
 import { PlaylistMosaic } from '../src/components/PlaylistMosaic';
 import { Ionicon } from '../src/components/Ionicon';
 import { ImportDTO } from '../src/api/immerleApi';
+import { useT } from '../src/i18n/store';
 
 const SOURCE_LABELS: Record<string, string> = { spotify: 'Spotify' };
 const label = (s?: string) => (s ? SOURCE_LABELS[s] ?? s : '');
 
-const STATUS_LABELS: Record<string, string> = {
-  pending: 'En attente',
-  queued: 'En file',
-  running: 'En cours',
-  completed: 'Terminé',
-  failed: 'Échec',
-  error: 'Erreur',
-};
 const statusTone = (s?: string): 'success' | 'danger' | 'primary' =>
   s === 'completed' ? 'success' : s === 'failed' || s === 'error' ? 'danger' : 'primary';
 
 /** Import playlists from external platforms (e.g. Spotify) — gated by the
  * `playlistImport` capability. Reached from Réglages → Importer une playlist. */
 export default function ImportScreen() {
+  const t = useT();
   const sources = useImportSources();
   const imports = useImports();
   const playlists = usePlaylists();
@@ -57,18 +51,18 @@ export default function ImportScreen() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <AdminScroll header={<AdminHeader color="#1db954" title="Importer une playlist" subtitle="Depuis vos autres plateformes" />}>
+      <AdminScroll header={<AdminHeader color="#1db954" title={t('tools.import.title')} subtitle={t('tools.import.subtitle')} />}>
         {sources.isLoading ? (
           <Loading />
         ) : !configured.length ? (
           <EmptyState
             icon="cloud-offline-outline"
-            title="Aucune source configurée"
-            subtitle="L'administrateur doit configurer une plateforme d'import (ex. Spotify)."
+            title={t('tools.import.noSourceTitle')}
+            subtitle={t('tools.import.noSourceSubtitle')}
           />
         ) : (
           <Card className="gap-3">
-            <CardTitle icon="cloud-download" color="#1db954" title="Nouvel import" />
+            <CardTitle icon="cloud-download" color="#1db954" title={t('tools.import.newImport')} />
             <View className="flex-row flex-wrap gap-2">
               {(sources.data ?? []).map((s) => {
                 const active = source === s.name;
@@ -80,13 +74,13 @@ export default function ImportScreen() {
                     className={`flex-row items-center gap-1.5 rounded-full px-3 py-1.5 ${active ? 'bg-primary/15' : 'bg-surface-alt'} ${s.configured ? '' : 'opacity-40'}`}
                   >
                     <Text className={`text-sm ${active ? 'font-semibold text-primary' : 'text-foreground'}`}>{label(s.name)}</Text>
-                    {!s.configured ? <Text className="text-[10px] text-muted">non configuré</Text> : null}
+                    {!s.configured ? <Text className="text-[10px] text-muted">{t('tools.import.notConfigured')}</Text> : null}
                   </Pressable>
                 );
               })}
             </View>
             <Field
-              label="Lien ou ID de la playlist"
+              label={t('tools.import.refLabel')}
               placeholder="https://open.spotify.com/playlist/…"
               autoCapitalize="none"
               autoCorrect={false}
@@ -94,14 +88,14 @@ export default function ImportScreen() {
               onChangeText={setRef}
               onSubmitEditing={submit}
             />
-            {start.isError ? <Text className="text-xs text-danger">Échec du lancement de l'import.</Text> : null}
-            <Button title="Importer" icon="cloud-download" loading={start.isPending} disabled={!source || !ref.trim()} onPress={submit} />
+            {start.isError ? <Text className="text-xs text-danger">{t('tools.import.startError')}</Text> : null}
+            <Button title={t('tools.import.startButton')} icon="cloud-download" loading={start.isPending} disabled={!source || !ref.trim()} onPress={submit} />
           </Card>
         )}
 
         {imports.data?.length ? (
           <>
-            <SectionHeader title="Imports récents" />
+            <SectionHeader title={t('tools.import.recent')} />
             {imports.data.map((i) => (
               <ImportRow
                 key={i.id}
@@ -118,7 +112,16 @@ export default function ImportScreen() {
 }
 
 function ImportRow({ imp, covers, onPress }: { imp: ImportDTO; covers: string[]; onPress: () => void }) {
-  const name = imp.sourcePlaylistName || imp.sourceRef || 'Import';
+  const t = useT();
+  const STATUS_LABELS: Record<string, string> = {
+    pending: t('tools.import.statusPending'),
+    queued: t('tools.import.statusQueued'),
+    running: t('tools.import.statusRunning'),
+    completed: t('tools.import.statusCompleted'),
+    failed: t('tools.import.statusFailed'),
+    error: t('tools.import.statusError'),
+  };
+  const name = imp.sourcePlaylistName || imp.sourceRef || t('tools.import.fallbackName');
   const total = imp.total ?? 0;
   const matched = imp.matched ?? 0;
   const done = imp.status === 'completed';
@@ -136,10 +139,10 @@ function ImportRow({ imp, covers, onPress }: { imp: ImportDTO; covers: string[];
             <Badge label={STATUS_LABELS[imp.status ?? ''] ?? imp.status ?? ''} tone={statusTone(imp.status)} />
           </View>
           <Text className="text-xs text-muted" numberOfLines={1}>
-            {label(imp.source)} · {matched}/{total} trouvés
-            {imp.doubtful ? ` · ${imp.doubtful} douteux` : ''}
-            {imp.missing ? ` · ${imp.missing} manquants` : ''}
-            {imp.failed ? ` · ${imp.failed} échecs` : ''}
+            {label(imp.source)} · {t('tools.import.matchedCount', { matched, total })}
+            {imp.doubtful ? ` · ${t('tools.import.doubtfulCount', { count: imp.doubtful })}` : ''}
+            {imp.missing ? ` · ${t('tools.import.missingCount', { count: imp.missing })}` : ''}
+            {imp.failed ? ` · ${t('tools.import.failedCount', { count: imp.failed })}` : ''}
           </Text>
           {!done && total > 0 ? (
             <View className="h-1.5 w-full overflow-hidden rounded-full bg-surface-alt">

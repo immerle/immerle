@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicon } from './Ionicon';
 import { useColors } from '../theme/colors';
+import { useT } from '../i18n/store';
 
 // --- Button ----------------------------------------------------------------
 
@@ -215,12 +216,13 @@ export function Loading({ label }: { label?: string }) {
 }
 
 export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
+  const t = useT();
   const colors = useColors();
   return (
     <View className="flex-1 items-center justify-center gap-3 p-8">
       <Ionicon name="cloud-offline-outline" size={42} color={colors.danger} />
       <Text className="text-center text-base text-foreground">{message}</Text>
-      {onRetry ? <Button title="Réessayer" variant="secondary" onPress={onRetry} /> : null}
+      {onRetry ? <Button title={t('components.ui.retry')} variant="secondary" onPress={onRetry} /> : null}
     </View>
   );
 }

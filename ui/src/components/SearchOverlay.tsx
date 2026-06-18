@@ -13,6 +13,7 @@ import { searchNav, useSearchUI } from '../search/store';
 import { SearchResults } from './SearchResults';
 import { Field } from './ui';
 import { WIDE_BREAKPOINT } from '../theme/layout';
+import { useT } from '../i18n/store';
 
 /**
  * Global search surface. There is no dedicated search page anymore:
@@ -23,6 +24,7 @@ import { WIDE_BREAKPOINT } from '../theme/layout';
  * result navigates the app (pathname change).
  */
 export function SearchOverlay() {
+  const t = useT();
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
@@ -77,7 +79,7 @@ export function SearchOverlay() {
             <View className="flex-1">
               <Field
                 icon="search"
-                placeholder="Artistes, albums, titres…"
+                placeholder={t('components.search.searchSubtitle')}
                 value={query}
                 onChangeText={setQuery}
                 autoFocus
@@ -88,7 +90,7 @@ export function SearchOverlay() {
               />
             </View>
             <Pressable onPress={close} hitSlop={8} className="active:opacity-60">
-              <Text className="text-base font-semibold text-primary">Annuler</Text>
+              <Text className="text-base font-semibold text-primary">{t('components.search.cancel')}</Text>
             </Pressable>
           </View>
           <SearchResults onClose={close} />

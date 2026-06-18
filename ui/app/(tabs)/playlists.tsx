@@ -13,9 +13,11 @@ import { IconButton } from '../../src/components/ui';
 import { Playlist } from '../../src/api/subsonic/types';
 import { formatCount } from '../../src/utils/format';
 import { useColors } from '../../src/theme/colors';
+import { useT } from '../../src/i18n/store';
 
 /** Pinned virtual playlist of starred songs — always shown first. */
 function LikedRow() {
+  const t = useT();
   const starred = useStarred();
   const count = starred.data?.song?.length ?? 0;
   return (
@@ -25,16 +27,17 @@ function LikedRow() {
     >
       <LikedCover size={56} rounded={8} />
       <View className="flex-1">
-        <Text className="text-base font-semibold text-foreground">Titres likés</Text>
-        <Text className="text-sm text-muted">{formatCount(count)} titres · likés</Text>
+        <Text className="text-base font-semibold text-foreground">{t('home.playlists.likedTracks')}</Text>
+        <Text className="text-sm text-muted">{t('home.playlists.likedSubtitle', { count: formatCount(count) })}</Text>
       </View>
-      <IconButton name="chevron-forward" size={18} accessibilityLabel="Ouvrir" />
+      <IconButton name="chevron-forward" size={18} accessibilityLabel={t('home.playlists.open')} />
     </Pressable>
   );
 }
 
 /** Playlists hub: list, create, and open. CRUD detail lives in /playlist/[id]. */
 export default function Playlists() {
+  const t = useT();
   const colors = useColors();
   const q = usePlaylists();
   const create = useCreatePlaylist();
@@ -58,7 +61,7 @@ export default function Playlists() {
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-background">
       <View className="flex-row items-center justify-between px-4 pb-1 pt-3">
-        <Text className="text-3xl font-bold text-foreground">Playlists</Text>
+        <Text className="text-3xl font-bold text-foreground">{t('home.playlists.title')}</Text>
         <View className="flex-row items-center gap-3">
           {canDiscover ? (
             <IconButton
@@ -66,7 +69,7 @@ export default function Playlists() {
               size={26}
               color={colors.primary}
               onPress={() => router.push('/discover' as never)}
-              accessibilityLabel="Playlists publiques"
+              accessibilityLabel={t('home.playlists.publicPlaylists')}
             />
           ) : null}
           <IconButton
@@ -74,7 +77,7 @@ export default function Playlists() {
             size={28}
             color={colors.primary}
             onPress={() => setCreating((c) => !c)}
-            accessibilityLabel="Nouvelle playlist"
+            accessibilityLabel={t('home.playlists.newPlaylist')}
           />
         </View>
       </View>
@@ -82,13 +85,13 @@ export default function Playlists() {
       {creating ? (
         <View className="gap-2 px-4 py-2">
           <Field
-            placeholder="Nom de la playlist"
+            placeholder={t('home.playlists.namePlaceholder')}
             value={name}
             onChangeText={setName}
             autoFocus
             onSubmitEditing={submit}
           />
-          <Button title="Créer" icon="add" loading={create.isPending} onPress={submit} />
+          <Button title={t('home.playlists.create')} icon="add" loading={create.isPending} onPress={submit} />
         </View>
       ) : null}
 
@@ -98,12 +101,12 @@ export default function Playlists() {
       {q.isLoading ? (
         <Loading />
       ) : q.isError ? (
-        <ErrorState message="Impossible de charger les playlists." onRetry={q.refetch} />
+        <ErrorState message={t('home.playlists.loadError')} onRetry={q.refetch} />
       ) : !q.data?.length ? (
         <EmptyState
           icon="list"
-          title="Aucune playlist"
-          subtitle="Créez-en une avec le bouton +."
+          title={t('home.playlists.empty')}
+          subtitle={t('home.playlists.emptySubtitle')}
         />
       ) : (
         <FlashList<Playlist>
@@ -122,7 +125,7 @@ export default function Playlists() {
                 <Text numberOfLines={1} className="text-base font-semibold text-foreground">
                   {item.name}
                 </Text>
-                <Text className="text-sm text-muted">{formatCount(item.songCount)} titres</Text>
+                <Text className="text-sm text-muted">{t('home.playlists.trackCount', { count: formatCount(item.songCount) })}</Text>
               </View>
             </Pressable>
           )}

@@ -7,6 +7,7 @@ import { IconButton } from './ui';
 import { useAuth } from '../auth/store';
 import { useSearchUI } from '../search/store';
 import { useColors } from '../theme/colors';
+import { useT } from '../i18n/store';
 
 // The top bar is the desktop chrome; it provides Back so detail screens drop
 // their own header. Hidden only on pre-auth and the full-screen player/queue.
@@ -20,6 +21,7 @@ const HIDDEN_ROUTES = ['/login', '/setup', '/player', '/queue'];
  * pre-auth screens, and on detail pages.
  */
 export function TopBar({ wide }: { wide: boolean }) {
+  const t = useT();
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
@@ -62,13 +64,13 @@ export function TopBar({ wide }: { wide: boolean }) {
     >
       {/* Left — back + forward */}
       <View className="flex-row items-center gap-2">
-        <CircleButton icon="chevron-back" onPress={() => router.back()} label="Retour" />
-        <CircleButton icon="chevron-forward" onPress={goForward} label="Suivant" />
+        <CircleButton icon="chevron-back" onPress={() => router.back()} label={t('components.topbar.back')} />
+        <CircleButton icon="chevron-forward" onPress={goForward} label={t('components.topbar.forward')} />
       </View>
 
       {/* Center — home + live search input */}
       <View className="flex-1 flex-row items-center justify-center gap-2">
-        <CircleButton icon="home" onPress={() => go('/')} active={pathname === '/'} label="Accueil" />
+        <CircleButton icon="home" onPress={() => go('/')} active={pathname === '/'} label={t('components.topbar.home')} />
         <View
           className={`max-w-[520px] flex-1 flex-row items-center gap-2 rounded-full border bg-surface-alt px-4 ${
             searchFocused ? 'border-primary' : 'border-transparent'
@@ -83,7 +85,7 @@ export function TopBar({ wide }: { wide: boolean }) {
               setSearchFocused(true);
             }}
             onBlur={() => setSearchFocused(false)}
-            placeholder="Que souhaitez-vous écouter ?"
+            placeholder={t('components.topbar.searchPlaceholder')}
             placeholderTextColor={colors.muted}
             className="flex-1 py-2.5 text-sm text-foreground"
             autoCapitalize="none"
@@ -91,7 +93,7 @@ export function TopBar({ wide }: { wide: boolean }) {
             returnKeyType="search"
           />
           {query ? (
-            <IconButton name="close-circle" size={18} color={colors.muted} onPress={closeSearch} accessibilityLabel="Effacer" />
+            <IconButton name="close-circle" size={18} color={colors.muted} onPress={closeSearch} accessibilityLabel={t('components.topbar.clear')} />
           ) : null}
         </View>
       </View>
@@ -99,12 +101,12 @@ export function TopBar({ wide }: { wide: boolean }) {
       {/* Right — social + avatar */}
       <View className="flex-row items-center gap-3">
         {hasSocial ? (
-          <CircleButton icon="people" onPress={() => go('/social')} active={pathname === '/social'} label="Social" />
+          <CircleButton icon="people" onPress={() => go('/social')} active={pathname === '/social'} label={t('components.topbar.social')} />
         ) : null}
         <Pressable
           onPress={() => setMenu(true)}
           accessibilityRole="button"
-          accessibilityLabel="Menu du compte"
+          accessibilityLabel={t('components.topbar.accountMenu')}
           className="h-9 w-9 items-center justify-center rounded-full bg-primary active:opacity-80"
         >
           <Text className="text-sm font-bold text-primary-foreground">{initial}</Text>
@@ -126,11 +128,11 @@ export function TopBar({ wide }: { wide: boolean }) {
                 {client?.serverUrl}
               </Text>
             </View>
-            <MenuItem icon="settings-outline" label="Réglages" onPress={() => go('/settings')} />
+            <MenuItem icon="settings-outline" label={t('components.topbar.settings')} onPress={() => go('/settings')} />
             {isAdmin ? (
-              <MenuItem icon="shield-checkmark-outline" label="Administration" onPress={() => go('/admin')} />
+              <MenuItem icon="shield-checkmark-outline" label={t('components.topbar.administration')} onPress={() => go('/admin')} />
             ) : null}
-            <MenuItem icon="log-out-outline" label="Se déconnecter" tone="danger" onPress={onLogout} />
+            <MenuItem icon="log-out-outline" label={t('components.topbar.logout')} tone="danger" onPress={onLogout} />
           </View>
         </Pressable>
       </Modal>

@@ -11,6 +11,7 @@ import { Ionicon } from './Ionicon';
 import { usePlayer } from '../audio/store';
 import { useTrackMenu } from './trackMenu';
 import { useColors } from '../theme/colors';
+import { useT } from '../i18n/store';
 
 /**
  * Live search results, shared by the web header popover and the mobile
@@ -21,6 +22,7 @@ import { useColors } from '../theme/colors';
  * Selecting anything records the query as recent and dismisses the search.
  */
 export function SearchResults({ onClose }: { onClose: () => void }) {
+  const t = useT();
   const colors = useColors();
   const query = useSearchUI((s) => s.query);
   const recents = useSearchUI((s) => s.recents);
@@ -62,11 +64,11 @@ export function SearchResults({ onClose }: { onClose: () => void }) {
   // --- Empty query → recent searches -------------------------------------
   if (trimmed.length === 0) {
     if (recents.length === 0) {
-      return <EmptyState icon="search" title="Rechercher" subtitle="Artistes, albums, titres…" />;
+      return <EmptyState icon="search" title={t('components.search.searchTitle')} subtitle={t('components.search.searchSubtitle')} />;
     }
     return (
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 12 }}>
-        <Text className="px-4 pb-1 pt-3 text-base font-bold text-foreground">Recherches récentes</Text>
+        <Text className="px-4 pb-1 pt-3 text-base font-bold text-foreground">{t('components.search.recentSearches')}</Text>
         {recents.map((r) => (
           <Pressable
             key={r}
@@ -85,13 +87,13 @@ export function SearchResults({ onClose }: { onClose: () => void }) {
   if (isLoading) return <Loading />;
   const empty = !isFetching && !songs.length && !albums.length && !artists.length;
   if (empty) {
-    return <EmptyState icon="sad-outline" title="Aucun résultat" subtitle={`Rien pour « ${trimmed} »`} />;
+    return <EmptyState icon="sad-outline" title={t('components.search.noResults')} subtitle={t('components.search.nothingFor', { query: trimmed })} />;
   }
 
   return (
     <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 16 }}>
       {artists.length > 0 ? (
-        <Section title="Artistes">
+        <Section title={t('components.search.artists')}>
           {artists.map((a, i) => (
             <Pressable
               key={a.id}
@@ -108,7 +110,7 @@ export function SearchResults({ onClose }: { onClose: () => void }) {
       ) : null}
 
       {songs.length > 0 ? (
-        <Section title="Titres">
+        <Section title={t('components.search.songs')}>
           {songs.map((s, i) => {
             const flatIndex = artists.length + i;
             return (
@@ -125,7 +127,7 @@ export function SearchResults({ onClose }: { onClose: () => void }) {
       ) : null}
 
       {albums.length > 0 ? (
-        <Section title="Albums">
+        <Section title={t('components.search.albums')}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
             {albums.map((a) => (
               <AlbumTile key={a.id} album={a} size={120} />

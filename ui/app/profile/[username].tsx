@@ -9,7 +9,7 @@ import { colorFor } from '../../src/components/AdminUI';
 import { Ionicon } from '../../src/components/Ionicon';
 import { ActivityEventDTO, ProfilePlaylistDTO } from '../../src/api/immerleApi';
 import { formatRelativeTime, formatDuration } from '../../src/utils/format';
-import { useColors } from '../../src/theme/colors';
+import { useT } from '../../src/i18n/store';
 
 function activityStyle(type?: string): { icon: string; color: string } {
   switch (type) {
@@ -28,28 +28,28 @@ function activityStyle(type?: string): { icon: string; color: string } {
   }
 }
 
-function activityVerb(type?: string): string {
+function activityVerb(type: string | undefined, t: (key: string) => string): string {
   switch (type) {
     case 'listen':
     case 'scrobble':
-      return 'a écouté';
+      return t('social.profile.verbListened');
     case 'add':
-      return 'a ajouté';
+      return t('social.profile.verbAdded');
     case 'playlist':
-      return 'a mis à jour';
+      return t('social.profile.verbUpdated');
     case 'like':
     case 'star':
     case 'favorite':
-      return 'a aimé';
+      return t('social.profile.verbLiked');
     default:
-      return type ?? 'a fait une action';
+      return type ?? t('social.profile.verbDefault');
   }
 }
 
 /** Public profile of a user: identity, recent activity (privacy-honoured) and
  * their public playlists. Reached from the friends list / activity feed. */
 export default function Profile() {
-  const colors = useColors();
+  const t = useT();
   const { username } = useLocalSearchParams<{ username: string }>();
   const q = useProfile(username ?? '');
   const { request } = useFriendMutations();
@@ -57,7 +57,7 @@ export default function Profile() {
   if (q.isLoading) {
     return (
       <>
-        <Stack.Screen options={{ title: 'Profil' }} />
+        <Stack.Screen options={{ title: t('social.profile.title') }} />
         <Loading />
       </>
     );
@@ -65,14 +65,14 @@ export default function Profile() {
   if (q.isError || !q.data) {
     return (
       <>
-        <Stack.Screen options={{ title: 'Profil' }} />
-        <ErrorState message="Profil introuvable." onRetry={q.refetch} />
+        <Stack.Screen options={{ title: t('social.profile.title') }} />
+        <ErrorState message={t('social.profile.notFound')} onRetry={q.refetch} />
       </>
     );
   }
 
   const p = q.data;
-  const name = p.user.displayName || p.user.username || 'Utilisateur';
+  const name = p.user.displayName || p.user.username || t('social.profile.fallbackName');
   const handle = p.user.username ?? '';
   const accent = colorFor(name);
 
@@ -95,13 +95,13 @@ export default function Profile() {
                   <Text className="text-2xl font-bold tracking-tight text-foreground">{name}</Text>
                   {handle && handle !== name ? <Text className="text-sm text-muted">@{handle}</Text> : null}
                   <View className="flex-row flex-wrap items-center justify-center gap-2 pt-1">
-                    {p.user.isAdmin ? <Badge label="Admin" tone="success" /> : null}
-                    {p.isSelf ? <Badge label="Vous" tone="primary" /> : p.isFriend ? <Badge label="Ami" tone="default" /> : null}
+                    {p.user.isAdmin ? <Badge label={t('social.profile.admin')} tone="success" /> : null}
+                    {p.isSelf ? <Badge label={t('social.profile.you')} tone="primary" /> : p.isFriend ? <Badge label={t('social.profile.friend')} tone="default" /> : null}
                   </View>
                   {!p.isSelf && !p.isFriend ? (
                     <View className="pt-2">
                       <Button
-                        title="Ajouter en ami"
+                        title={t('social.profile.addFriend')}
                         icon="person-add"
                         size="sm"
                         loading={request.isPending}
@@ -113,10 +113,10 @@ export default function Profile() {
               </View>
 
               {/* Activity */}
-              <SectionHeader title="Activité récente" />
+              <SectionHeader title={t('social.profile.recentActivity')} />
               <View className="px-4">
                 {!p.activity.length ? (
-                  <EmptyState icon="pulse-outline" title="Rien à afficher" subtitle="Aucune activité visible." />
+                  <EmptyState icon="pulse-outline" title={t('social.profile.emptyTitle')} subtitle={t('social.profile.emptySubtitle')} />
                 ) : (
                   <Card className="p-0">
                     {p.activity.map((e, i) => (
@@ -129,7 +129,7 @@ export default function Profile() {
         {/* Public playlists */}
         {p.playlists.length ? (
           <>
-            <SectionHeader title="Playlists publiques" />
+            <SectionHeader title={t('social.profile.publicPlaylists')} />
             <View className="gap-2 px-4">
               {p.playlists.map((pl) => (
                 <PlaylistRow key={pl.id} playlist={pl} onPress={() => pl.id && router.push(`/playlist/${pl.id}` as never)} />
@@ -143,6 +143,7 @@ export default function Profile() {
 }
 
 function ActivityItem({ event, first }: { event: ActivityEventDTO; first: boolean }) {
+  const t = useT();
   const { icon, color } = activityStyle(event.type);
   const item = event.item;
   const goAlbum = () => {
@@ -168,7 +169,7 @@ function ActivityItem({ event, first }: { event: ActivityEventDTO; first: boolea
       </View>
       <View className="flex-1">
         <Text className="text-sm text-foreground" numberOfLines={1}>
-          {activityVerb(event.type)}
+          {activityVerb(event.type, t)}
           {item?.title ? <Text className="font-semibold"> {item.title}</Text> : null}
         </Text>
         {item?.artist ? (
@@ -183,16 +184,18 @@ function ActivityItem({ event, first }: { event: ActivityEventDTO; first: boolea
 }
 
 function PlaylistRow({ playlist, onPress }: { playlist: ProfilePlaylistDTO; onPress: () => void }) {
+  const t = useT();
+  const songCount = playlist.songCount ?? 0;
   return (
     <Pressable onPress={onPress} className="active:opacity-70">
       <Card className="flex-row items-center gap-3">
         <PlaylistMosaic covers={playlist.coverArts ?? []} size={44} rounded="rounded-lg" fallbackIcon="musical-notes" />
         <View className="flex-1">
           <Text className="text-base font-semibold text-foreground" numberOfLines={1}>
-            {playlist.name || 'Playlist'}
+            {playlist.name || t('social.profile.playlistFallback')}
           </Text>
           <Text className="text-xs text-muted">
-            {playlist.songCount ?? 0} titre{(playlist.songCount ?? 0) > 1 ? 's' : ''}
+            {songCount > 1 ? t('social.profile.songCountPlural', { count: songCount }) : t('social.profile.songCount', { count: songCount })}
             {playlist.duration ? ` · ${formatDuration(playlist.duration)}` : ''}
           </Text>
         </View>

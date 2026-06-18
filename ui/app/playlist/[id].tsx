@@ -14,13 +14,13 @@ import { PlaylistMosaic } from '../../src/components/PlaylistMosaic';
 import { TrackList } from '../../src/components/TrackList';
 import { Badge, Button, ErrorState, Field, IconButton, Loading } from '../../src/components/ui';
 import { PlayButton } from '../../src/components/PlayButton';
-import { Ionicon } from '../../src/components/Ionicon';
 import { usePlayer } from '../../src/audio/store';
 import { useAuth } from '../../src/auth/store';
 import { useAddCollaborator } from '../../src/query/social';
 import { Song } from '../../src/api/subsonic/types';
 import { formatDuration } from '../../src/utils/format';
 import { useColors } from '../../src/theme/colors';
+import { useT } from '../../src/i18n/store';
 
 /**
  * Playlist detail with full CRUD. View mode plays the playlist; edit mode lets
@@ -29,6 +29,7 @@ import { useColors } from '../../src/theme/colors';
  * whole playlist.
  */
 export default function PlaylistDetail() {
+  const t = useT();
   const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const q = usePlaylist(id);
@@ -59,7 +60,7 @@ export default function PlaylistDetail() {
   }, [q.data]);
 
   if (q.isLoading) return <Loading />;
-  if (q.isError || !q.data) return <ErrorState message="Playlist introuvable." onRetry={q.refetch} />;
+  if (q.isError || !q.data) return <ErrorState message={t('media.playlist.notFound')} onRetry={q.refetch} />;
 
   const playlist = q.data;
   const songs = playlist.entry ?? [];
@@ -77,9 +78,9 @@ export default function PlaylistDetail() {
     const doIt = () => unsubscribe.mutate(id, { onSuccess: () => router.back() });
     if (Platform.OS === 'web') doIt();
     else
-      Alert.alert('Se désabonner ?', `« ${playlist.name} » sera retirée de votre bibliothèque.`, [
-        { text: 'Annuler', style: 'cancel' },
-        { text: 'Se désabonner', style: 'destructive', onPress: doIt },
+      Alert.alert(t('media.playlist.unsubscribeTitle'), t('media.playlist.unsubscribeMessage', { name: playlist.name }), [
+        { text: t('media.playlist.cancel'), style: 'cancel' },
+        { text: t('media.playlist.unsubscribeConfirm'), style: 'destructive', onPress: doIt },
       ]);
   };
 
@@ -113,9 +114,9 @@ export default function PlaylistDetail() {
     if (Platform.OS === 'web') {
       doDelete();
     } else {
-      Alert.alert('Supprimer la playlist ?', `« ${playlist.name} » sera supprimée.`, [
-        { text: 'Annuler', style: 'cancel' },
-        { text: 'Supprimer', style: 'destructive', onPress: doDelete },
+      Alert.alert(t('media.playlist.deleteTitle'), t('media.playlist.deleteMessage', { name: playlist.name }), [
+        { text: t('media.playlist.cancel'), style: 'cancel' },
+        { text: t('media.playlist.deleteConfirm'), style: 'destructive', onPress: doDelete },
       ]);
     }
   };
@@ -125,34 +126,34 @@ export default function PlaylistDetail() {
       <PlaylistMosaic covers={songs.slice(0, 4).map((s) => s.coverArt)} size={180} fallbackIcon="list" />
       {editing ? (
         <View className="w-full">
-          <Field value={name} onChangeText={setName} placeholder="Nom de la playlist" />
+          <Field value={name} onChangeText={setName} placeholder={t('media.playlist.namePlaceholder')} />
         </View>
       ) : (
         <Text className="text-center text-2xl font-bold text-foreground">{playlist.name}</Text>
       )}
       <Text className="text-xs text-muted">
-        {songs.length} titres · {formatDuration(totalDuration)}
+        {t('media.playlist.trackCount', { count: songs.length })} · {formatDuration(totalDuration)}
       </Text>
       <View className="flex-row gap-2">
-        {!isOwner ? <Badge label="Abonnement" /> : null}
-        {playlist.public ? <Badge label="Publique" tone="primary" /> : null}
+        {!isOwner ? <Badge label={t('media.playlist.subscriptionBadge')} /> : null}
+        {playlist.public ? <Badge label={t('media.playlist.publicBadge')} tone="primary" /> : null}
       </View>
       {!editing ? (
         <View className="w-full flex-row items-center justify-between pt-1">
           {isOwner ? (
-            <IconButton name="create-outline" size={24} color={colors.muted} onPress={() => setEditing(true)} accessibilityLabel="Modifier" />
+            <IconButton name="create-outline" size={24} color={colors.muted} onPress={() => setEditing(true)} accessibilityLabel={t('media.playlist.edit')} />
           ) : (
-            <IconButton name="heart-dislike-outline" size={24} color={colors.danger} onPress={confirmUnsubscribe} accessibilityLabel="Se désabonner" />
+            <IconButton name="heart-dislike-outline" size={24} color={colors.danger} onPress={confirmUnsubscribe} accessibilityLabel={t('media.playlist.unsubscribe')} />
           )}
-          <PlayButton onPress={() => songs.length && playSongs(songs, 0)} size={56} accessibilityLabel="Lecture de la playlist" />
+          <PlayButton onPress={() => songs.length && playSongs(songs, 0)} size={56} accessibilityLabel={t('media.playlist.play')} />
         </View>
       ) : (
         <View className="w-full gap-2 pt-1">
           {canPublic ? (
             <View className="flex-row items-center justify-between rounded-xl bg-surface px-3 py-2">
               <View className="flex-1">
-                <Text className="text-base text-foreground">Playlist publique</Text>
-                <Text className="text-xs text-muted">Visible dans « Playlists publiques » ; abonnement opt-in.</Text>
+                <Text className="text-base text-foreground">{t('media.playlist.publicToggle')}</Text>
+                <Text className="text-xs text-muted">{t('media.playlist.publicHint')}</Text>
               </View>
               <Switch value={isPublic} onValueChange={togglePublic} trackColor={{ true: colors.primary, false: colors.border }} />
             </View>
@@ -161,15 +162,15 @@ export default function PlaylistDetail() {
             <View className="flex-row items-end gap-2">
               <View className="flex-1">
                 <Field
-                  label="Collaborateur"
-                  placeholder="Nom d'utilisateur"
+                  label={t('media.playlist.collaborator')}
+                  placeholder={t('media.playlist.usernamePlaceholder')}
                   autoCapitalize="none"
                   value={collaborator}
                   onChangeText={setCollaborator}
                 />
               </View>
               <Button
-                title="Ajouter"
+                title={t('media.playlist.add')}
                 loading={addCollaborator.isPending}
                 onPress={() =>
                   collaborator.trim() &&
@@ -181,8 +182,8 @@ export default function PlaylistDetail() {
               />
             </View>
           ) : null}
-          <Button title="Enregistrer" icon="checkmark" loading={reorder.isPending || rename.isPending} onPress={save} />
-          <Button title="Supprimer la playlist" icon="trash-outline" variant="danger" onPress={confirmDelete} />
+          <Button title={t('media.playlist.save')} icon="checkmark" loading={reorder.isPending || rename.isPending} onPress={save} />
+          <Button title={t('media.playlist.delete')} icon="trash-outline" variant="danger" onPress={confirmDelete} />
         </View>
       )}
     </View>

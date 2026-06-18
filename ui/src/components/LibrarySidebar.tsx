@@ -10,15 +10,16 @@ import { IconButton, Field, Button } from './ui';
 import { useUI } from '../stores/ui';
 import { Playlist } from '../api/subsonic/types';
 import { useColors } from '../theme/colors';
+import { useT } from '../i18n/store';
 
 const EXPANDED = 248;
 const COLLAPSED = 76;
 
 type SortKey = 'recent' | 'alpha' | 'added';
-const SORTS: { key: SortKey; label: string }[] = [
-  { key: 'recent', label: 'Récents' },
-  { key: 'alpha', label: 'Ordre alphabétique' },
-  { key: 'added', label: "Date d'ajout" },
+const SORTS: { key: SortKey; labelKey: string }[] = [
+  { key: 'recent', labelKey: 'components.sidebar.sortRecent' },
+  { key: 'alpha', labelKey: 'components.sidebar.sortAlpha' },
+  { key: 'added', labelKey: 'components.sidebar.sortAdded' },
 ];
 
 function sortPlaylists(list: Playlist[], key: SortKey): Playlist[] {
@@ -35,6 +36,7 @@ function sortPlaylists(list: Playlist[], key: SortKey): Playlist[] {
  * that shows only the covers and the action buttons.
  */
 export function LibrarySidebar() {
+  const t = useT();
   const colors = useColors();
   const pathname = usePathname();
   const collapsed = useUI((s) => s.sidebarCollapsed);
@@ -64,18 +66,18 @@ export function LibrarySidebar() {
         className={`flex-row items-center gap-2 px-3 py-3 ${collapsed ? 'justify-center' : 'justify-between'}`}
       >
         {collapsed ? (
-          <IconButton name="library" size={24} color={colors.foreground} onPress={toggle} accessibilityLabel="Déplier la bibliothèque" />
+          <IconButton name="library" size={24} color={colors.foreground} onPress={toggle} accessibilityLabel={t('components.sidebar.expandLibrary')} />
         ) : (
           <>
-            <Pressable onPress={toggle} className="flex-row items-center gap-2 active:opacity-70" accessibilityLabel="Replier la bibliothèque">
+            <Pressable onPress={toggle} className="flex-row items-center gap-2 active:opacity-70" accessibilityLabel={t('components.sidebar.collapseLibrary')}>
               <IconButton name="library" size={22} color={colors.muted} onPress={toggle} />
-              <Text className="text-base font-bold text-foreground">Bibliothèque</Text>
+              <Text className="text-base font-bold text-foreground">{t('components.sidebar.library')}</Text>
             </Pressable>
             <View className="flex-row items-center gap-1">
               {canDiscover ? (
-                <IconButton name="compass-outline" size={22} color={colors.muted} onPress={() => router.push('/discover' as never)} accessibilityLabel="Playlists publiques" />
+                <IconButton name="compass-outline" size={22} color={colors.muted} onPress={() => router.push('/discover' as never)} accessibilityLabel={t('components.sidebar.publicPlaylists')} />
               ) : null}
-              <IconButton name="add" size={24} color={colors.muted} onPress={() => setCreating(true)} accessibilityLabel="Nouvelle playlist" />
+              <IconButton name="add" size={24} color={colors.muted} onPress={() => setCreating(true)} accessibilityLabel={t('components.sidebar.newPlaylist')} />
             </View>
           </>
         )}
@@ -84,9 +86,9 @@ export function LibrarySidebar() {
       {collapsed ? (
         <View className="items-center gap-1 pb-2">
           {canDiscover ? (
-            <IconButton name="compass-outline" size={22} color={colors.muted} onPress={() => router.push('/discover' as never)} accessibilityLabel="Playlists publiques" />
+            <IconButton name="compass-outline" size={22} color={colors.muted} onPress={() => router.push('/discover' as never)} accessibilityLabel={t('components.sidebar.publicPlaylists')} />
           ) : null}
-          <IconButton name="add" size={22} color={colors.muted} onPress={() => setCreating(true)} accessibilityLabel="Nouvelle playlist" />
+          <IconButton name="add" size={22} color={colors.muted} onPress={() => setCreating(true)} accessibilityLabel={t('components.sidebar.newPlaylist')} />
         </View>
       ) : null}
 
@@ -104,7 +106,7 @@ export function LibrarySidebar() {
               onChangeText={setFilter}
               onFocus={() => setFilterFocused(true)}
               onBlur={() => setFilterFocused(false)}
-              placeholder="Filtrer"
+              placeholder={t('components.sidebar.filter')}
               placeholderTextColor={colors.muted}
               className="flex-1 py-1.5 text-sm text-foreground"
               autoCapitalize="none"
@@ -112,7 +114,7 @@ export function LibrarySidebar() {
             />
             {filter ? <IconButton name="close-circle" size={15} color={colors.muted} onPress={() => setFilter('')} /> : null}
           </View>
-          <IconButton name="swap-vertical" size={20} color={colors.muted} onPress={() => setSortMenu((v) => !v)} accessibilityLabel="Trier" />
+          <IconButton name="swap-vertical" size={20} color={colors.muted} onPress={() => setSortMenu((v) => !v)} accessibilityLabel={t('components.sidebar.sort')} />
         </View>
       ) : null}
 
@@ -127,7 +129,7 @@ export function LibrarySidebar() {
             className="rounded-xl border border-border bg-surface py-1"
             style={{ position: 'absolute', right: 12, top: 96, width: 200, zIndex: 20 }}
           >
-            <Text className="px-3 py-1 text-xs font-medium text-muted">Trier par</Text>
+            <Text className="px-3 py-1 text-xs font-medium text-muted">{t('components.sidebar.sortBy')}</Text>
             {SORTS.map((s) => (
               <Pressable
                 key={s.key}
@@ -137,7 +139,7 @@ export function LibrarySidebar() {
                 }}
                 className="flex-row items-center justify-between px-3 py-2 active:bg-surface-alt"
               >
-                <Text className={`text-sm ${sort === s.key ? 'text-primary' : 'text-foreground'}`}>{s.label}</Text>
+                <Text className={`text-sm ${sort === s.key ? 'text-primary' : 'text-foreground'}`}>{t(s.labelKey)}</Text>
                 {sort === s.key ? <Ionicon name="checkmark" size={16} color={colors.primary} /> : null}
               </Pressable>
             ))}
@@ -152,8 +154,8 @@ export function LibrarySidebar() {
             active={pathname === '/liked'}
             collapsed={collapsed}
             cover={<LikedCover size={48} rounded={6} />}
-            title="Titres likés"
-            subtitle="Playlist"
+            title={t('components.sidebar.likedSongs')}
+            subtitle={t('components.sidebar.playlist')}
             onPress={() => router.push('/liked' as never)}
           />
         ) : null}
@@ -164,12 +166,12 @@ export function LibrarySidebar() {
             collapsed={collapsed}
             cover={<PlaylistMosaic covers={p.coverArts ?? []} size={48} rounded="rounded-md" fallbackIcon="musical-notes" />}
             title={p.name}
-            subtitle="Playlist"
+            subtitle={t('components.sidebar.playlist')}
             onPress={() => router.push(`/playlist/${p.id}` as never)}
           />
         ))}
         {!collapsed && filtered.length === 0 && !likedMatches ? (
-          <Text className="px-3 py-4 text-sm text-muted">Aucun résultat.</Text>
+          <Text className="px-3 py-4 text-sm text-muted">{t('components.sidebar.noResults')}</Text>
         ) : null}
       </ScrollView>
 
@@ -217,6 +219,7 @@ function Row({
 }
 
 function CreateModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const t = useT();
   const create = useCreatePlaylist();
   const [name, setName] = useState('');
   const submit = () => {
@@ -238,11 +241,11 @@ function CreateModal({ visible, onClose }: { visible: boolean; onClose: () => vo
           className="w-full max-w-sm gap-3 rounded-2xl border border-border bg-surface p-5"
           onPress={(e) => e.stopPropagation()}
         >
-          <Text className="text-lg font-bold text-foreground">Nouvelle playlist</Text>
-          <Field placeholder="Nom de la playlist" value={name} onChangeText={setName} autoFocus onSubmitEditing={submit} />
+          <Text className="text-lg font-bold text-foreground">{t('components.sidebar.newPlaylist')}</Text>
+          <Field placeholder={t('components.sidebar.playlistNamePlaceholder')} value={name} onChangeText={setName} autoFocus onSubmitEditing={submit} />
           <View className="flex-row justify-end gap-2">
-            <Button title="Annuler" variant="secondary" onPress={onClose} />
-            <Button title="Créer" icon="add" loading={create.isPending} onPress={submit} />
+            <Button title={t('components.sidebar.cancel')} variant="secondary" onPress={onClose} />
+            <Button title={t('components.sidebar.create')} icon="add" loading={create.isPending} onPress={submit} />
           </View>
         </Pressable>
       </Pressable>

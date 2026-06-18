@@ -7,6 +7,7 @@ import { Button, Field } from '../src/components/ui';
 import { AuthShell } from '../src/components/AuthShell';
 import { Ionicon } from '../src/components/Ionicon';
 import { useColors } from '../src/theme/colors';
+import { useT } from '../src/i18n/store';
 
 /**
  * Subsonic / Immerle login. Verifies the credentials against the live
@@ -15,6 +16,7 @@ import { useColors } from '../src/theme/colors';
  * token is stored.
  */
 export default function Login() {
+  const t = useT();
   const colors = useColors();
   const login = useAuth((s) => s.login);
   const error = useAuth((s) => s.error);
@@ -43,20 +45,20 @@ export default function Login() {
 
   return (
     <AuthShell
-      subtitle="Connectez-vous à votre instance pour écouter votre bibliothèque."
+      subtitle={t('auth.login.subtitle')}
       footer={
         <>
           <Pressable onPress={() => router.push('/setup' as never)} className="active:opacity-60">
-            <Text className="text-sm font-medium text-primary">Première installation ? Configurer le serveur</Text>
+            <Text className="text-sm font-medium text-primary">{t('auth.login.setupLink')}</Text>
           </Pressable>
           <Text className="max-w-[320px] text-center text-xs text-muted">
-            Compatible Subsonic / OpenSubsonic. Les fonctions Immerle s'activent automatiquement selon votre instance.
+            {t('auth.login.compatNote')}
           </Text>
         </>
       }
     >
       <Field
-        label="Serveur"
+        label={t('auth.login.serverLabel')}
         icon="globe-outline"
         placeholder="https://musique.exemple.fr"
         autoCapitalize="none"
@@ -67,9 +69,9 @@ export default function Login() {
         onChangeText={setServerUrl}
       />
       <Field
-        label="Identifiant"
+        label={t('auth.login.usernameLabel')}
         icon="person-outline"
-        placeholder="utilisateur"
+        placeholder={t('auth.login.usernamePlaceholder')}
         autoCapitalize="none"
         autoCorrect={false}
         autoComplete="username"
@@ -77,7 +79,7 @@ export default function Login() {
         onChangeText={setUsername}
       />
       <Field
-        label="Mot de passe"
+        label={t('auth.login.passwordLabel')}
         icon="lock-closed-outline"
         placeholder="••••••••"
         secureTextEntry={!reveal}
@@ -90,7 +92,7 @@ export default function Login() {
             onPress={() => setReveal((r) => !r)}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel={reveal ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+            accessibilityLabel={reveal ? t('auth.passwordHide') : t('auth.passwordShow')}
           >
             <Ionicon name={reveal ? 'eye-off-outline' : 'eye-outline'} size={20} color={colors.muted} />
           </Pressable>
@@ -104,7 +106,7 @@ export default function Login() {
         </View>
       ) : null}
 
-      <Button title="Se connecter" icon="log-in-outline" loading={busy} disabled={!canSubmit} onPress={onSubmit} />
+      <Button title={t('auth.login.submit')} icon="log-in-outline" loading={busy} disabled={!canSubmit} onPress={onSubmit} />
     </AuthShell>
   );
 }

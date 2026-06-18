@@ -8,7 +8,7 @@ import { Button, ErrorState, Field, Loading } from '../src/components/ui';
 import { AuthShell } from '../src/components/AuthShell';
 import { Ionicon } from '../src/components/Ionicon';
 import { useColors } from '../src/theme/colors';
-import { t } from '../src/i18n';
+import { useT } from '../src/i18n/store';
 
 type Phase = 'url' | 'loading' | 'form' | 'success' | 'done' | 'error';
 
@@ -26,6 +26,7 @@ type FieldKey = 'setupToken' | 'username' | 'displayName' | 'password' | 'confir
  * nothing locally.
  */
 export default function Setup() {
+  const t = useT();
   const colors = useColors();
   const [phase, setPhase] = useState<Phase>('url');
   // Pre-fill with the origin when this app is served by its own Immerle binary.
@@ -71,13 +72,13 @@ export default function Setup() {
   // --- client validation (mirrors the server) ---
   const validate = (): Partial<Record<FieldKey, string>> => {
     const e: Partial<Record<FieldKey, string>> = {};
-    if (tokenRequired && !values.setupToken.trim()) e.setupToken = 'Token requis.';
+    if (tokenRequired && !values.setupToken.trim()) e.setupToken = t('auth.setup.errTokenRequired');
     if (!USERNAME_RE.test(values.username.trim()))
-      e.username = '1 à 64 caractères : lettres, chiffres, . _ -';
-    if (values.password.length < 8) e.password = 'Au moins 8 caractères.';
-    if (values.confirm !== values.password) e.confirm = 'Les mots de passe ne correspondent pas.';
+      e.username = t('auth.setup.usernameHelp');
+    if (values.password.length < 8) e.password = t('auth.setup.passwordHelp');
+    if (values.confirm !== values.password) e.confirm = t('auth.setup.errPasswordMismatch');
     if (values.email.trim() && !EMAIL_RE.test(values.email.trim()))
-      e.email = "Format d'email invalide.";
+      e.email = t('auth.setup.errEmailInvalid');
     return e;
   };
 
@@ -99,7 +100,7 @@ export default function Setup() {
 
     if (!result) {
       setPhase('form');
-      setGlobalError('Erreur réseau — vérifiez la connexion au serveur.');
+      setGlobalError(t('auth.setup.errNetwork'));
       return;
     }
     if (result.ok) {
@@ -123,15 +124,15 @@ export default function Setup() {
       const mapped: Partial<Record<FieldKey, string>> = {};
       const unmapped: string[] = [];
       result.details.forEach((d: SetupFieldError) => {
-        if (d.field && isFieldKey(d.field)) mapped[d.field] = d.message ?? 'Champ invalide.';
-        else unmapped.push(d.message ?? 'Champ invalide.');
+        if (d.field && isFieldKey(d.field)) mapped[d.field] = d.message ?? t('auth.setup.errFieldInvalid');
+        else unmapped.push(d.message ?? t('auth.setup.errFieldInvalid'));
       });
       setErrors(mapped);
       if (unmapped.length) setGlobalError(unmapped.join(' '));
       setPhase('form');
       return;
     }
-    setGlobalError(t(`errors.${result.error}`, { defaultValue: 'La création a échoué. Réessayez.' }));
+    setGlobalError(t(`errors.${result.error}`, { defaultValue: t('auth.setup.errCreateFailed') }));
     setPhase('form');
   };
 
@@ -139,9 +140,9 @@ export default function Setup() {
 
   const subtitle =
     phase === 'url'
-      ? 'Configuration initiale du serveur'
+      ? t('auth.setup.subtitleUrl')
       : phase === 'form'
-        ? 'Créer le compte administrateur'
+        ? t('auth.setup.subtitleForm')
         : undefined;
 
   return (
@@ -150,17 +151,17 @@ export default function Setup() {
       footer={
         phase === 'url' ? (
           <Pressable onPress={goLogin} className="active:opacity-60">
-            <Text className="text-sm font-medium text-primary">J'ai déjà un compte — Se connecter</Text>
+            <Text className="text-sm font-medium text-primary">{t('auth.setup.haveAccount')}</Text>
           </Pressable>
         ) : null
       }
     >
       {phase === 'loading' ? (
-            <Loading label="Contact du serveur…" />
+            <Loading label={t('auth.setup.contacting')} />
           ) : phase === 'error' ? (
             <View className="gap-3">
-              <ErrorState message="Impossible de contacter le serveur." onRetry={probe} />
-              <Button title="Changer d'adresse" variant="secondary" onPress={() => setPhase('url')} />
+              <ErrorState message={t('auth.setup.contactError')} onRetry={probe} />
+              <Button title={t('auth.setup.changeAddress')} variant="secondary" onPress={() => setPhase('url')} />
             </View>
           ) : phase === 'success' ? (
             <SuccessScreen username={createdUser} url={normalizedUrl} onLogin={goLogin} />
@@ -169,7 +170,7 @@ export default function Setup() {
           ) : phase === 'url' ? (
             <View className="gap-4">
               <Field
-                label="Adresse du serveur"
+                label={t('auth.setup.serverAddressLabel')}
                 icon="globe-outline"
                 placeholder="https://musique.exemple.fr"
                 autoCapitalize="none"
@@ -179,9 +180,9 @@ export default function Setup() {
                 value={serverUrl}
                 onChangeText={setServerUrl}
                 onSubmitEditing={probe}
-                help="L'app vérifiera si ce serveur nécessite une configuration initiale."
+                help={t('auth.setup.serverAddressHelp')}
               />
-              <Button title="Continuer" icon="arrow-forward" disabled={!serverUrl.trim()} onPress={probe} />
+              <Button title={t('auth.setup.continue')} icon="arrow-forward" disabled={!serverUrl.trim()} onPress={probe} />
             </View>
           ) : (
             // phase === 'form'
@@ -189,28 +190,28 @@ export default function Setup() {
               {insecure ? (
                 <Banner
                   tone="warn"
-                  text="⚠ Connexion non chiffrée — le mot de passe transitera en clair. Utilisez HTTPS."
+                  text={t('auth.setup.insecureWarning')}
                 />
               ) : null}
               {globalError ? <Banner tone="error" text={globalError} /> : null}
 
               {tokenRequired ? (
                 <Field
-                  label="Token de setup"
+                  label={t('auth.setup.tokenLabel')}
                   icon="key-outline"
-                  placeholder="Token affiché au démarrage du serveur"
+                  placeholder={t('auth.setup.tokenPlaceholder')}
                   autoCapitalize="none"
                   autoCorrect={false}
                   autoComplete="off"
                   value={values.setupToken}
                   onChangeText={(v) => set('setupToken', v)}
                   error={errors.setupToken}
-                  help="Token affiché dans les logs du serveur (ou fichier data/setup-token)."
+                  help={t('auth.setup.tokenHelp')}
                 />
               ) : null}
 
               <Field
-                label="Nom d'utilisateur"
+                label={t('auth.setup.usernameLabel')}
                 icon="person-outline"
                 placeholder="admin"
                 autoCapitalize="none"
@@ -219,11 +220,11 @@ export default function Setup() {
                 value={values.username}
                 onChangeText={(v) => set('username', v)}
                 error={errors.username}
-                help="1 à 64 caractères : lettres, chiffres, . _ -"
+                help={t('auth.setup.usernameHelp')}
               />
 
               <Field
-                label="Nom affiché (optionnel)"
+                label={t('auth.setup.displayNameLabel')}
                 icon="happy-outline"
                 placeholder="Jean Dupont"
                 value={values.displayName}
@@ -232,7 +233,7 @@ export default function Setup() {
               />
 
               <Field
-                label="Mot de passe"
+                label={t('auth.setup.passwordLabel')}
                 icon="lock-closed-outline"
                 placeholder="••••••••"
                 secureTextEntry={!reveal}
@@ -240,13 +241,13 @@ export default function Setup() {
                 value={values.password}
                 onChangeText={(v) => set('password', v)}
                 error={errors.password}
-                help="Au moins 8 caractères."
+                help={t('auth.setup.passwordHelp')}
                 trailing={
                   <Pressable
                     onPress={() => setReveal((r) => !r)}
                     hitSlop={8}
                     accessibilityRole="button"
-                    accessibilityLabel={reveal ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                    accessibilityLabel={reveal ? t('auth.passwordHide') : t('auth.passwordShow')}
                   >
                     <Ionicon name={reveal ? 'eye-off-outline' : 'eye-outline'} size={20} color={colors.muted} />
                   </Pressable>
@@ -254,7 +255,7 @@ export default function Setup() {
               />
 
               <Field
-                label="Confirmer le mot de passe"
+                label={t('auth.setup.confirmLabel')}
                 icon="lock-closed-outline"
                 placeholder="••••••••"
                 secureTextEntry={!reveal}
@@ -265,7 +266,7 @@ export default function Setup() {
               />
 
               <Field
-                label="Email (optionnel)"
+                label={t('auth.setup.emailLabel')}
                 icon="mail-outline"
                 placeholder="admin@exemple.fr"
                 autoCapitalize="none"
@@ -277,9 +278,9 @@ export default function Setup() {
                 error={errors.email}
               />
 
-              <Button title="Créer l'administrateur" icon="shield-checkmark" onPress={submit} />
+              <Button title={t('auth.setup.createAdmin')} icon="shield-checkmark" onPress={submit} />
               <Pressable onPress={() => setPhase('url')} className="items-center py-1 active:opacity-60">
-                <Text className="text-sm text-muted">Changer d'adresse de serveur</Text>
+                <Text className="text-sm text-muted">{t('auth.setup.changeServerAddress')}</Text>
               </Pressable>
             </View>
           )}
@@ -298,39 +299,41 @@ function Banner({ tone, text }: { tone: 'warn' | 'error'; text: string }) {
 }
 
 function SuccessScreen({ username, url, onLogin }: { username: string; url: string; onLogin: () => void }) {
+  const t = useT();
   const colors = useColors();
   return (
     <View className="items-center gap-3">
       <View className="h-16 w-16 items-center justify-center rounded-full bg-success/15">
         <Ionicon name="checkmark" size={36} color={colors.success} />
       </View>
-      <Text className="text-xl font-bold text-foreground">Administrateur créé</Text>
+      <Text className="text-xl font-bold text-foreground">{t('auth.setup.adminCreated')}</Text>
       <Text className="text-center text-base text-muted">
-        Compte <Text className="font-semibold text-foreground">{username}</Text> créé avec succès.
+        {t('auth.setup.accountPrefix')} <Text className="font-semibold text-foreground">{username}</Text> {t('auth.setup.accountSuffix')}
       </Text>
       <Text className="text-center text-sm text-muted">
-        Connectez votre client (l'app Immerle, Supersonic, Symfonium…) à cette adresse :
+        {t('auth.setup.connectClient')}
       </Text>
       <Text selectable className="rounded-lg bg-surface-alt px-3 py-2 text-sm text-foreground">{url}</Text>
       <View className="w-full pt-2">
-        <Button title="Se connecter maintenant" icon="log-in-outline" onPress={onLogin} />
+        <Button title={t('auth.setup.loginNow')} icon="log-in-outline" onPress={onLogin} />
       </View>
     </View>
   );
 }
 
 function DoneScreen({ url, onLogin }: { url: string; onLogin: () => void }) {
+  const t = useT();
   const colors = useColors();
   return (
     <View className="items-center gap-3">
       <View className="h-16 w-16 items-center justify-center rounded-full bg-surface-alt">
         <Ionicon name="checkmark-done" size={32} color={colors.muted} />
       </View>
-      <Text className="text-xl font-bold text-foreground">Serveur déjà configuré</Text>
-      <Text className="text-center text-sm text-muted">Ce serveur possède déjà un administrateur.</Text>
+      <Text className="text-xl font-bold text-foreground">{t('auth.setup.alreadyConfigured')}</Text>
+      <Text className="text-center text-sm text-muted">{t('auth.setup.alreadyHasAdmin')}</Text>
       <Text selectable className="rounded-lg bg-surface-alt px-3 py-2 text-sm text-foreground">{url}</Text>
       <View className="w-full pt-2">
-        <Button title="Se connecter" icon="log-in-outline" onPress={onLogin} />
+        <Button title={t('auth.setup.login')} icon="log-in-outline" onPress={onLogin} />
       </View>
     </View>
   );

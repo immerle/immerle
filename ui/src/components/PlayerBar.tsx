@@ -22,6 +22,7 @@ import { Song } from '../api/subsonic/types';
 import { formatDuration } from '../utils/format';
 import { useColors } from '../theme/colors';
 import { WIDE_BREAKPOINT } from '../theme/layout';
+import { useT } from '../i18n/store';
 
 // Routes where the docked bar should not appear (its own full-screen surfaces,
 // and pre-auth screens).
@@ -68,6 +69,7 @@ export function PlayerBar() {
 
 /** Slim placeholder shown on wide layouts when nothing is playing. */
 function IdleBar() {
+  const t = useT();
   const colors = useColors();
   return (
     <View className="flex-row items-center gap-4 px-4 py-3">
@@ -75,7 +77,7 @@ function IdleBar() {
         <View className="h-14 w-14 items-center justify-center rounded-md bg-surface-alt">
           <Ionicon name="musical-notes" size={22} color={colors.muted} />
         </View>
-        <Text className="text-sm text-muted">Aucune lecture en cours</Text>
+        <Text className="text-sm text-muted">{t('components.player.nothingPlaying')}</Text>
       </View>
       <View className="flex-[1.5] items-center">
         <PlayButton size={40} />
@@ -95,6 +97,7 @@ interface BarProps {
 }
 
 function CompactBar({ song, status, position, duration }: BarProps) {
+  const t = useT();
   const toggle = usePlayer((s) => s.toggle);
   const next = usePlayer((s) => s.next);
   const progress = duration > 0 ? Math.min(position / duration, 1) : 0;
@@ -115,8 +118,8 @@ function CompactBar({ song, status, position, duration }: BarProps) {
             {song.artist}
           </Text>
         </View>
-        <IconButton name={isPlaying ? 'pause' : 'play'} size={26} onPress={toggle} accessibilityLabel={isPlaying ? 'Pause' : 'Lecture'} />
-        <IconButton name="play-skip-forward" size={22} onPress={next} accessibilityLabel="Suivant" />
+        <IconButton name={isPlaying ? 'pause' : 'play'} size={26} onPress={toggle} accessibilityLabel={isPlaying ? t('components.player.pause') : t('components.player.play')} />
+        <IconButton name="play-skip-forward" size={22} onPress={next} accessibilityLabel={t('components.player.next')} />
       </Pressable>
       <View className="mx-2 mb-1 h-1 overflow-hidden rounded-full bg-white/15">
         <View className="h-full rounded-full bg-foreground" style={{ width: `${progress * 100}%` }} />
@@ -126,6 +129,7 @@ function CompactBar({ song, status, position, duration }: BarProps) {
 }
 
 function WideBar({ song, status, position, duration }: BarProps) {
+  const t = useT();
   const colors = useColors();
   const toggle = usePlayer((s) => s.toggle);
   const next = usePlayer((s) => s.next);
@@ -167,18 +171,18 @@ function WideBar({ song, status, position, duration }: BarProps) {
             size={20}
             color={shuffle ? colors.primary : colors.muted}
             onPress={toggleShuffle}
-            accessibilityLabel="Lecture aléatoire"
+            accessibilityLabel={t('components.player.shuffle')}
           />
-          <IconButton name="play-skip-back" size={22} onPress={previous} accessibilityLabel="Précédent" />
+          <IconButton name="play-skip-back" size={22} onPress={previous} accessibilityLabel={t('components.player.previous')} />
           <PlayButton playing={isPlaying} onPress={toggle} size={40} />
-          <IconButton name="play-skip-forward" size={22} onPress={next} accessibilityLabel="Suivant" />
+          <IconButton name="play-skip-forward" size={22} onPress={next} accessibilityLabel={t('components.player.next')} />
           <View>
             <IconButton
               name={repeat === 'track' ? 'repeat-outline' : 'repeat'}
               size={20}
               color={repeat !== 'off' ? colors.primary : colors.muted}
               onPress={cycleRepeat}
-              accessibilityLabel="Répéter"
+              accessibilityLabel={t('components.player.repeat')}
             />
             {repeat === 'track' ? (
               <Text className="absolute -right-1 -top-1 text-[9px] font-bold text-primary">1</Text>
@@ -207,15 +211,16 @@ function WideBar({ song, status, position, duration }: BarProps) {
 
       {/* Right — queue + volume + fullscreen */}
       <View className="flex-1 flex-row items-center justify-end gap-3">
-        <IconButton name="list" size={22} onPress={() => router.push('/queue')} accessibilityLabel="File d'attente" />
+        <IconButton name="list" size={22} onPress={() => router.push('/queue')} accessibilityLabel={t('components.player.queue')} />
         <VolumeControl />
-        <IconButton name="expand" size={20} onPress={() => router.push('/player')} accessibilityLabel="Plein écran" />
+        <IconButton name="expand" size={20} onPress={() => router.push('/player')} accessibilityLabel={t('components.player.fullscreen')} />
       </View>
     </View>
   );
 }
 
 function VolumeControl() {
+  const t = useT();
   const colors = useColors();
   const volume = usePlayer((s) => s.volume);
   const setVolume = usePlayer((s) => s.setVolume);
@@ -232,7 +237,7 @@ function VolumeControl() {
 
   return (
     <View className="flex-row items-center gap-2">
-      <IconButton name={icon} size={20} color={colors.muted} onPress={toggleMute} accessibilityLabel="Volume" />
+      <IconButton name={icon} size={20} color={colors.muted} onPress={toggleMute} accessibilityLabel={t('components.player.volume')} />
       <VolumeBar volume={volume} onChange={setVolume} />
     </View>
   );
@@ -240,6 +245,7 @@ function VolumeControl() {
 
 /** Thin volume bar with no thumb — click or drag anywhere to set the level. */
 function VolumeBar({ volume, onChange }: { volume: number; onChange: (v: number) => void }) {
+  const t = useT();
   const colors = useColors();
   const [width, setWidth] = useState(0);
   const apply = (x: number) => {
@@ -250,7 +256,7 @@ function VolumeBar({ volume, onChange }: { volume: number; onChange: (v: number)
       onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
       style={{ width: 96, height: 16, justifyContent: 'center' }}
       accessibilityRole="adjustable"
-      accessibilityLabel="Volume"
+      accessibilityLabel={t('components.player.volume')}
       onStartShouldSetResponder={() => true}
       onMoveShouldSetResponder={() => true}
       onResponderGrant={(e) => apply(e.nativeEvent.locationX)}
@@ -264,6 +270,7 @@ function VolumeBar({ volume, onChange }: { volume: number; onChange: (v: number)
 }
 
 function LikeButton({ song }: { song: Song }) {
+  const t = useT();
   const colors = useColors();
   const client = useAuth((s) => s.client);
   const [liked, setLiked] = useState<boolean>(!!song.starred);
@@ -286,7 +293,7 @@ function LikeButton({ song }: { song: Song }) {
       size={20}
       color={liked ? colors.primary : colors.muted}
       onPress={toggle}
-      accessibilityLabel={liked ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+      accessibilityLabel={liked ? t('components.player.unlike') : t('components.player.like')}
     />
   );
 }
@@ -294,6 +301,7 @@ function LikeButton({ song }: { song: Song }) {
 /** Circular "+" that opens a dropdown of playlists with checkboxes — ticking a
  * playlist adds the track, unticking removes it. A button opens a create popin. */
 function AddToPlaylistButton({ song }: { song: Song }) {
+  const t = useT();
   const colors = useColors();
   const { height: screenH } = useWindowDimensions();
   const anchorRef = useRef<View>(null);
@@ -319,7 +327,7 @@ function AddToPlaylistButton({ song }: { song: Song }) {
       <Pressable
         ref={anchorRef}
         onPress={open}
-        accessibilityLabel="Ajouter à une playlist"
+        accessibilityLabel={t('components.player.addToPlaylist')}
         className="h-8 w-8 items-center justify-center rounded-full border border-border active:opacity-70"
       >
         <Ionicon name="add" size={18} color={colors.foreground} />
@@ -335,18 +343,18 @@ function AddToPlaylistButton({ song }: { song: Song }) {
             >
               <Pressable onPress={(e) => e.stopPropagation()}>
                 <Text className="px-4 pb-1 pt-3 text-xs font-medium uppercase tracking-wider text-muted">
-                  Ajouter à une playlist
+                  {t('components.player.addToPlaylist')}
                 </Text>
                 <ScrollView style={{ maxHeight: 240 }} showsVerticalScrollIndicator>
                   {(playlists ?? []).length ? (
                     (playlists ?? []).map((p) => <PlaylistCheckRow key={p.id} playlistId={p.id} name={p.name} songId={song.id} />)
                   ) : (
-                    <Text className="px-4 py-2 text-sm text-muted">Aucune playlist.</Text>
+                    <Text className="px-4 py-2 text-sm text-muted">{t('components.player.noPlaylists')}</Text>
                   )}
                 </ScrollView>
                 <View className="border-t border-border p-2">
                   <Button
-                    title="Nouvelle playlist"
+                    title={t('components.player.newPlaylist')}
                     icon="add"
                     size="sm"
                     variant="secondary"
@@ -367,16 +375,16 @@ function AddToPlaylistButton({ song }: { song: Song }) {
         <Pressable className="flex-1 items-center justify-center bg-black/60 px-6" onPress={() => setCreateOpen(false)}>
           <Pressable className="w-full max-w-[400px] gap-3 rounded-2xl bg-surface p-5" onPress={(e) => e.stopPropagation()}>
             <View className="flex-row items-center justify-between">
-              <Text className="text-lg font-bold tracking-tight text-foreground">Nouvelle playlist</Text>
-              <IconButton name="close" color={colors.muted} onPress={() => setCreateOpen(false)} accessibilityLabel="Fermer" />
+              <Text className="text-lg font-bold tracking-tight text-foreground">{t('components.player.newPlaylist')}</Text>
+              <IconButton name="close" color={colors.muted} onPress={() => setCreateOpen(false)} accessibilityLabel={t('components.player.close')} />
             </View>
-            <Field placeholder="Nom de la playlist" autoFocus value={newName} onChangeText={setNewName} onSubmitEditing={createAndAdd} />
+            <Field placeholder={t('components.player.playlistNamePlaceholder')} autoFocus value={newName} onChangeText={setNewName} onSubmitEditing={createAndAdd} />
             <View className="flex-row gap-2">
               <View className="flex-1">
-                <Button title="Annuler" variant="ghost" onPress={() => setCreateOpen(false)} />
+                <Button title={t('components.player.cancel')} variant="ghost" onPress={() => setCreateOpen(false)} />
               </View>
               <View className="flex-1">
-                <Button title="Créer" icon="checkmark" loading={createPlaylist.isPending} disabled={!newName.trim()} onPress={createAndAdd} />
+                <Button title={t('components.player.create')} icon="checkmark" loading={createPlaylist.isPending} disabled={!newName.trim()} onPress={createAndAdd} />
               </View>
             </View>
           </Pressable>

@@ -4,6 +4,7 @@ import { useDownloadJobs, useJobMutations } from '../../src/query/admin';
 import { DownloadJob, DownloadJobStatus } from '../../src/api/immerle/types';
 import { Badge, Card, EmptyState, ErrorState, IconButton, Loading } from '../../src/components/ui';
 import { useColors } from '../../src/theme/colors';
+import { useT } from '../../src/i18n/store';
 
 const STATUS_TONE: Record<DownloadJobStatus, 'default' | 'success' | 'danger' | 'primary'> = {
   queued: 'default',
@@ -12,29 +13,29 @@ const STATUS_TONE: Record<DownloadJobStatus, 'default' | 'success' | 'danger' | 
   failed: 'danger',
   cancelled: 'default',
 };
-const STATUS_LABEL: Record<DownloadJobStatus, string> = {
-  queued: 'En attente',
-  running: 'En cours',
-  completed: 'Terminé',
-  failed: 'Échec',
-  cancelled: 'Annulé',
+const STATUS_LABEL_KEY: Record<DownloadJobStatus, string> = {
+  queued: 'admin.jobs.statusQueued',
+  running: 'admin.jobs.statusRunning',
+  completed: 'admin.jobs.statusCompleted',
+  failed: 'admin.jobs.statusFailed',
+  cancelled: 'admin.jobs.statusCancelled',
 };
 
 /** Download job queue: live progress, retry failed/cancelled, cancel running. */
 export default function AdminJobs() {
-  const colors = useColors();
+  const t = useT();
   const q = useDownloadJobs();
   const { retry, cancel } = useJobMutations();
 
   return (
     <>
-      <Stack.Screen options={{ title: 'File de téléchargement' }} />
+      <Stack.Screen options={{ title: t('admin.jobs.title') }} />
       {q.isLoading ? (
         <Loading />
       ) : q.isError ? (
-        <ErrorState message="Impossible de charger la file." onRetry={q.refetch} />
+        <ErrorState message={t('admin.jobs.loadError')} onRetry={q.refetch} />
       ) : !q.data?.length ? (
-        <EmptyState icon="cloud-download" title="File vide" subtitle="Aucun téléchargement en cours." />
+        <EmptyState icon="cloud-download" title={t('admin.jobs.emptyTitle')} subtitle={t('admin.jobs.emptySubtitle')} />
       ) : (
         <ScrollView className="flex-1 bg-background" contentContainerStyle={{ padding: 16, gap: 12 }}>
           {q.data.map((job) => (
@@ -52,6 +53,7 @@ export default function AdminJobs() {
 }
 
 function JobCard({ job, onRetry, onCancel }: { job: DownloadJob; onRetry: () => void; onCancel: () => void }) {
+  const t = useT();
   const colors = useColors();
   const active = job.status === 'running' || job.status === 'queued';
   const canRetry = job.status === 'failed' || job.status === 'cancelled';
@@ -62,7 +64,7 @@ function JobCard({ job, onRetry, onCancel }: { job: DownloadJob; onRetry: () => 
         <Text numberOfLines={1} className="flex-1 text-base font-semibold text-foreground">
           {job.title || job.query}
         </Text>
-        <Badge label={STATUS_LABEL[job.status]} tone={STATUS_TONE[job.status]} />
+        <Badge label={t(STATUS_LABEL_KEY[job.status])} tone={STATUS_TONE[job.status]} />
       </View>
       {job.artist ? <Text className="text-sm text-muted">{job.artist}</Text> : null}
 
@@ -76,10 +78,10 @@ function JobCard({ job, onRetry, onCancel }: { job: DownloadJob; onRetry: () => 
 
       <View className="flex-row justify-end gap-1">
         {canRetry ? (
-          <IconButton name="refresh" size={22} color={colors.primary} onPress={onRetry} accessibilityLabel="Relancer" />
+          <IconButton name="refresh" size={22} color={colors.primary} onPress={onRetry} accessibilityLabel={t('admin.jobs.retry')} />
         ) : null}
         {active ? (
-          <IconButton name="close-circle" size={22} color={colors.danger} onPress={onCancel} accessibilityLabel="Annuler" />
+          <IconButton name="close-circle" size={22} color={colors.danger} onPress={onCancel} accessibilityLabel={t('admin.jobs.cancel')} />
         ) : null}
       </View>
     </Card>

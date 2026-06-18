@@ -9,6 +9,7 @@ import { PlayButton } from '../src/components/PlayButton';
 import { usePlayer } from '../src/audio/store';
 import { formatDuration } from '../src/utils/format';
 import { useColors } from '../src/theme/colors';
+import { useT } from '../src/i18n/store';
 
 /**
  * Full-screen "now playing". Presented modally. Shows large artwork, a seekable
@@ -17,6 +18,7 @@ import { useColors } from '../src/theme/colors';
  * (lockscreen/MediaSession) do too.
  */
 export default function Player() {
+  const t = useT();
   const colors = useColors();
   const song = usePlayer((s) => (s.index >= 0 ? s.songs[s.index] : undefined));
   const status = usePlayer((s) => s.status);
@@ -36,9 +38,9 @@ export default function Player() {
   if (!song) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-background">
-        <Text className="text-muted">Aucune lecture en cours</Text>
+        <Text className="text-muted">{t('media.player.nothingPlaying')}</Text>
         <Pressable onPress={() => router.back()} className="mt-4">
-          <Text className="text-primary">Fermer</Text>
+          <Text className="text-primary">{t('media.player.close')}</Text>
         </Pressable>
       </SafeAreaView>
     );
@@ -52,9 +54,9 @@ export default function Player() {
   return (
     <SafeAreaView className="flex-1 bg-background">
       <View className="flex-row items-center justify-between px-4 pt-2">
-        <IconButton name="chevron-down" size={28} onPress={() => router.back()} accessibilityLabel="Fermer" />
-        <Text className="text-sm font-medium text-muted">En lecture</Text>
-        <IconButton name="list" size={24} onPress={() => router.push('/queue')} accessibilityLabel="File" />
+        <IconButton name="chevron-down" size={28} onPress={() => router.back()} accessibilityLabel={t('media.player.close')} />
+        <Text className="text-sm font-medium text-muted">{t('media.player.nowPlaying')}</Text>
+        <IconButton name="list" size={24} onPress={() => router.push('/queue')} accessibilityLabel={t('media.player.queue')} />
       </View>
 
       <View className="flex-1 justify-center px-6">
@@ -97,17 +99,17 @@ export default function Player() {
             size={24}
             color={repeatActive ? colors.primary : colors.muted}
             onPress={cycleRepeat}
-            accessibilityLabel="Répéter"
+            accessibilityLabel={t('media.player.repeat')}
           />
-          <IconButton name="play-skip-back" size={34} onPress={previous} accessibilityLabel="Précédent" />
+          <IconButton name="play-skip-back" size={34} onPress={previous} accessibilityLabel={t('media.player.previous')} />
           <PlayButton playing={isPlaying} onPress={toggle} size={72} />
-          <IconButton name="play-skip-forward" size={34} onPress={next} accessibilityLabel="Suivant" />
+          <IconButton name="play-skip-forward" size={34} onPress={next} accessibilityLabel={t('media.player.next')} />
           <IconButton
             name="shuffle"
             size={24}
             color={shuffle ? colors.primary : colors.muted}
             onPress={toggleShuffle}
-            accessibilityLabel="Lecture aléatoire"
+            accessibilityLabel={t('media.player.shuffle')}
           />
         </View>
       </View>
