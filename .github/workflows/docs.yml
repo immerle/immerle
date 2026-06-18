@@ -10,19 +10,16 @@ on:
       - .github/workflows/docs.yml
   workflow_dispatch:
 
-# Allow the deploy job to publish to Pages.
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
-# One live deploy at a time; let an in-flight one finish.
+# One deploy at a time.
 concurrency:
-  group: pages
+  group: docs-deploy
   cancel-in-progress: false
 
 jobs:
-  build:
+  build-deploy:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -35,18 +32,14 @@ jobs:
           cache: npm
           cache-dependency-path: docs/package-lock.json
       - run: npm ci
+      # Builds against ../internal/api/docs/swagger.json, so the API
+      # reference always matches the handlers in this repo.
       - run: npm run build
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      # Push the static build to the org's root Pages repo.
+      - uses: peaceiris/actions-gh-pages@v4
+        if: github.ref == 'refs/heads/main'
         with:
-          path: docs/build
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          deploy_key: ${{ secrets.DOCS_DEPLOY_KEY }}
+          external_repository: immerle/immerle.github.io
+          publish_branch: gh-pages
+          publish_dir: ./docs/build

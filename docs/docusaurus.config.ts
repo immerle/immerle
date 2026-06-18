@@ -14,7 +14,7 @@ const config: Config = {
   },
 
   url: 'https://immerle.github.io',
-  baseUrl: '/immerle/',
+  baseUrl: '/',
 
   organizationName: 'immerle',
   projectName: 'immerle',
