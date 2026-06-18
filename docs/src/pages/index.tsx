@@ -75,7 +75,7 @@ export default function Home(): React.ReactElement {
           <h1 className={styles.title}>
             Next-gen,
             <br />
-            <span className={styles.sings}>self-hosted music</span>
+            self-hosted <span className={styles.sings}>music</span>
             <Equalizer />
           </h1>
           <p className={styles.lede}>
