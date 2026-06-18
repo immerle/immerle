@@ -86,7 +86,7 @@ func TestCoverServiceServesRemoteImage(t *testing.T) {
 	defer srv.Close()
 
 	svc := NewCoverService(store.Catalog, filepath.Join(t.TempDir(), "covers"))
-	svc.AllowImageHosts("127.0.0.1") // httptest host
+	svc.allowHosts = append(svc.allowHosts, "127.0.0.1") // httptest host
 
 	id := models.RemoteCoverID(srv.URL + "/cover.jpg")
 	data, ct, err := svc.Get(ctx, id, 0)

@@ -3,14 +3,14 @@ package subsonic
 
 import "encoding/xml"
 
-// APIVersion is the Subsonic protocol version advertised by the server.
-const APIVersion = "1.16.1"
-
-// ServerType identifies this implementation.
-const ServerType = "immerle"
-
-// ServerVersion is the immerle server version.
-const ServerVersion = "0.1.0"
+const (
+	// apiVersion is the Subsonic protocol version advertised by the server.
+	apiVersion = "1.16.1"
+	// serverType identifies this implementation.
+	serverType = "immerle"
+	// serverVersion is the immerle server version.
+	serverVersion = "0.1.0"
+)
 
 // Response is the root Subsonic response envelope.
 type Response struct {
@@ -256,7 +256,6 @@ type NowPlayingEntry struct {
 	Child
 	Username   string `xml:"username,attr" json:"username"`
 	MinutesAgo int    `xml:"minutesAgo,attr" json:"minutesAgo"`
-	PlayerID   int    `xml:"playerId,attr" json:"playerId"`
 }
 
 // PlayQueue is the saved server-side play queue.
@@ -309,9 +308,9 @@ type OpenSubsonicExtension struct {
 func newResponse() *Response {
 	return &Response{
 		Status:        "ok",
-		Version:       APIVersion,
-		Type:          ServerType,
-		ServerVersion: ServerVersion,
+		Version:       apiVersion,
+		Type:          serverType,
+		ServerVersion: serverVersion,
 		OpenSubsonic:  true,
 	}
 }

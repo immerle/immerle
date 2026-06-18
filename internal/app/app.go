@@ -105,11 +105,9 @@ func (h hubPlaylistFetcher) FetchPlaylist(ctx context.Context, source, ref strin
 	if err != nil {
 		return importer.Playlist{}, err
 	}
-	pl := importer.Playlist{Name: ep.Name, Description: ep.Description}
+	pl := importer.Playlist{Name: ep.Name}
 	for _, t := range ep.Tracks {
-		pl.Tracks = append(pl.Tracks, importer.Track{
-			Title: t.Title, Artist: t.Artist, Album: t.Album, ISRC: t.ISRC, Duration: t.Duration,
-		})
+		pl.Tracks = append(pl.Tracks, importer.Track{Title: t.Title, Artist: t.Artist, Album: t.Album})
 	}
 	return pl, nil
 }
@@ -163,8 +161,7 @@ func federationConfig(f models.FederationRuntime) config.FederationConfig {
 func New(cfg config.Config) (*App, error) {
 	logger := logging.New(cfg.Log.Level, cfg.Log.Format)
 
-	database, err := db.Open(cfg.Database.Driver, cfg.Database.DSN,
-		cfg.Database.MaxOpenConns, cfg.Database.MaxIdleConns, cfg.Database.ConnMaxLifetime)
+	database, err := db.Open(cfg.Database.Driver, cfg.Database.DSN)
 	if err != nil {
 		return nil, err
 	}
@@ -333,7 +330,7 @@ func New(cfg config.Config) (*App, error) {
 		Setup:        setupSvc,
 		Federation:   fed,
 		Cleanup:      evictor,
-		Providers:    providerControllerOrNil(providerMgr),
+		Providers:    providerMgr,
 		Settings:     settingsSvc,
 		Catalog:      store.Catalog,
 		OnDemand:     onDemand,
@@ -350,7 +347,7 @@ func New(cfg config.Config) (*App, error) {
 
 	mux := chi.NewRouter()
 	mux.HandleFunc("/ping", healthHandler)
-	mux.HandleFunc("/share/*", shareHandler(store.Shares, logger))
+	mux.HandleFunc("/share/*", shareHandler(store.Shares))
 	subHandler.Register(mux)
 	gosHandler.Register(mux)
 	docs.Register(mux) // /openapi.json, /openapi.yaml, /swagger/
@@ -441,15 +438,6 @@ func (a *App) spawn(fn func()) {
 		defer a.wg.Done()
 		fn()
 	}()
-}
-
-// providerControllerOrNil returns a nil interface (not a typed-nil) when the
-// manager is absent, so the handler's `Providers == nil` check holds.
-func providerControllerOrNil(m *core.ProviderManager) immerle.ProviderController {
-	if m == nil {
-		return nil
-	}
-	return m
 }
 
 // Close releases resources.

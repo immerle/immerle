@@ -49,11 +49,8 @@ type AuthConfig struct {
 
 // DatabaseConfig selects and configures the storage backend.
 type DatabaseConfig struct {
-	Driver          string // "sqlite" (default) or "postgres"
-	DSN             string
-	MaxOpenConns    int
-	MaxIdleConns    int
-	ConnMaxLifetime time.Duration
+	Driver string // "sqlite" (default) or "postgres"
+	DSN    string
 }
 
 // LogConfig controls structured logging.
@@ -106,11 +103,8 @@ func Default() Config {
 		Server: ServerConfig{Address: ":4533"},
 		Auth:   AuthConfig{Secret: "", RequireSetupToken: false},
 		Database: DatabaseConfig{
-			Driver:          "sqlite",
-			DSN:             "immerle.db",
-			MaxOpenConns:    1,
-			MaxIdleConns:    1,
-			ConnMaxLifetime: 0,
+			Driver: "sqlite",
+			DSN:    "immerle.db",
 		},
 		Log:     LogConfig{Level: "info", Format: "text"},
 		Library: LibraryConfig{DataDir: "data"},

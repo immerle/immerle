@@ -12,23 +12,18 @@ import (
 )
 
 // Track is a single track as described by an import source. Only Title and
-// Artist are required; the rest help matching/display.
+// Artist are required; Album helps matching/display.
 type Track struct {
 	Title  string
 	Artist string
 	Album  string
-	// ISRC is the recording identifier, when the source exposes it.
-	ISRC string
-	// Duration is the track length in seconds (0 if unknown).
-	Duration int
 }
 
 // Playlist is a playlist as listed by an import source — distinct from both the
 // import job and the immerle playlist that will be created from it.
 type Playlist struct {
-	Name        string
-	Description string
-	Tracks      []Track
+	Name   string
+	Tracks []Track
 }
 
 // Source fetches a playlist from an external service. Implementations are

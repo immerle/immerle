@@ -2,6 +2,7 @@ package immerle
 
 import (
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -57,7 +58,7 @@ func (h *Handler) handleCreateToken(w http.ResponseWriter, r *http.Request) {
 	if ms := r.Form.Get("expires"); ms != "" {
 		if n, err := time.Parse(time.RFC3339, ms); err == nil {
 			expires = &n
-		} else if epoch := parseInt64(ms); epoch > 0 {
+		} else if epoch, _ := strconv.ParseInt(ms, 10, 64); epoch > 0 {
 			t := time.UnixMilli(epoch)
 			expires = &t
 		}
@@ -100,15 +101,4 @@ func (h *Handler) handleRevokeToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, okBody(nil))
-}
-
-func parseInt64(s string) int64 {
-	var n int64
-	for _, c := range s {
-		if c < '0' || c > '9' {
-			return 0
-		}
-		n = n*10 + int64(c-'0')
-	}
-	return n
 }

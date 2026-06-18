@@ -2,14 +2,18 @@ package immerle
 
 import (
 	"net/http"
-	"regexp"
+	"net/mail"
 	"strings"
 
 	"github.com/immerle/immerle/internal/core"
 )
 
-// emailPattern is a light sanity check (not full RFC 5322): something@something.
-var emailPattern = regexp.MustCompile(`^[^@\s]+@[^@\s]+\.[^@\s]+$`)
+// validEmail is a light sanity check (not full RFC 5322): a bare address with no
+// display-name part.
+func validEmail(s string) bool {
+	addr, err := mail.ParseAddress(s)
+	return err == nil && addr.Address == s
+}
 
 // handleAccount returns or updates the caller's own account settings. Unlike the
 // public /profile, it exposes the private email and lets the user change their
@@ -43,7 +47,7 @@ func (h *Handler) handleAccount(w http.ResponseWriter, r *http.Request) {
 		}
 		if _, ok := r.Form["email"]; ok {
 			email := strings.TrimSpace(r.Form.Get("email"))
-			if email != "" && !emailPattern.MatchString(email) {
+			if email != "" && !validEmail(email) {
 				writeJSON(w, http.StatusBadRequest, errorBody("email must be a valid address like name@example.com"))
 				return
 			}

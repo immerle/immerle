@@ -31,7 +31,6 @@ type Metadata struct {
 	Compilation bool
 	HasPicture  bool
 	Picture     []byte
-	PictureMIME string
 }
 
 // audioExtensions are the file suffixes treated as audio.
@@ -97,7 +96,6 @@ func (e *Extractor) Extract(ctx context.Context, path string) (Metadata, error) 
 		if pic := m.Picture(); pic != nil {
 			md.HasPicture = true
 			md.Picture = pic.Data
-			md.PictureMIME = pic.MIMEType
 		}
 		extractMBIDs(m.Raw(), &md)
 	}
@@ -171,7 +169,6 @@ type ffprobeOutput struct {
 	} `json:"format"`
 	Streams []struct {
 		CodecType string            `json:"codec_type"`
-		BitRate   string            `json:"bit_rate"`
 		Tags      map[string]string `json:"tags"`
 	} `json:"streams"`
 }
@@ -199,7 +196,7 @@ func (e *Extractor) augmentWithFFprobe(ctx context.Context, path string, md *Met
 	}
 
 	// Fall back to ffprobe tags for fields tag.ReadFrom could not provide.
-	tags := mergeTags(probe.Format.Tags, probe.Streams)
+	tags := mergeTags(probe)
 	if md.Title == "" {
 		md.Title = tags["title"]
 	}
@@ -229,16 +226,12 @@ func (e *Extractor) augmentWithFFprobe(ctx context.Context, path string, md *Met
 	md.MBArtistID = firstNonEmpty(md.MBArtistID, tags["musicbrainz_artistid"])
 }
 
-func mergeTags(format map[string]string, streams []struct {
-	CodecType string            `json:"codec_type"`
-	BitRate   string            `json:"bit_rate"`
-	Tags      map[string]string `json:"tags"`
-}) map[string]string {
+func mergeTags(probe ffprobeOutput) map[string]string {
 	out := make(map[string]string)
-	for k, v := range format {
+	for k, v := range probe.Format.Tags {
 		out[strings.ToLower(k)] = v
 	}
-	for _, s := range streams {
+	for _, s := range probe.Streams {
 		if s.CodecType != "audio" {
 			continue
 		}

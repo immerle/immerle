@@ -121,11 +121,6 @@ func (a *AuthService) SetPassword(ctx context.Context, userID, password string) 
 	return a.users.Update(ctx, u)
 }
 
-// Plaintext recovers a user's stored password (used for federation/internal flows).
-func (a *AuthService) Plaintext(u models.User) (string, error) {
-	return a.box.Decrypt(u.PasswordHash)
-}
-
 // Authenticate validates credentials and returns the user.
 func (a *AuthService) Authenticate(ctx context.Context, c Credentials) (models.User, error) {
 	// A token authenticates as its owner, regardless of username: a device JWT
@@ -174,9 +169,9 @@ func (a *AuthService) Authenticate(ctx context.Context, c Credentials) (models.U
 
 // decodePassword handles Subsonic's "enc:<hex>" password encoding.
 func decodePassword(p string) string {
-	if strings.HasPrefix(p, "enc:") {
-		if raw, err := hex.DecodeString(strings.TrimPrefix(p, "enc:")); err == nil {
-			return string(raw)
+	if raw, ok := strings.CutPrefix(p, "enc:"); ok {
+		if dec, err := hex.DecodeString(raw); err == nil {
+			return string(dec)
 		}
 	}
 	return p
