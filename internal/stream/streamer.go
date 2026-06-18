@@ -181,7 +181,14 @@ func (s *Streamer) ffmpegArgs(src, dst, format string, bitrate int) []string {
 	if p, ok := s.profiles[format]; ok && p.FFmpegArgs != "" {
 		// Custom args from config; %b is replaced with the bitrate in kbps.
 		custom := strings.ReplaceAll(p.FFmpegArgs, "%b", fmt.Sprintf("%d", bitrate))
-		return append(append(base, strings.Fields(custom)...), dst)
+		// Whitelist the flags so a stray/hostile config value can't inject an
+		// extra input/output and turn the transcode into an arbitrary file
+		// read/write (it's argv, not a shell, but ffmpeg flags are still powerful).
+		if fields, ok := safeFFmpegArgs(custom); ok {
+			return append(append(base, fields...), dst)
+		}
+		s.logger.Warn("ignoring ffmpeg profile args: disallowed flag", "format", format, "args", custom)
+		// fall through to the built-in defaults below
 	}
 
 	switch format {
@@ -195,6 +202,30 @@ func (s *Streamer) ffmpegArgs(src, dst, format string, bitrate int) []string {
 		base = append(base, "-c:a", "libmp3lame", "-b:a", fmt.Sprintf("%dk", bitrate), "-f", "mp3")
 	}
 	return append(base, dst)
+}
+
+// allowedFFmpegFlags is the set of ffmpeg flags an admin transcode profile may
+// use. Anything outside it (e.g. -i, -y, a second output) is rejected so the
+// profile can't redirect ffmpeg's I/O.
+var allowedFFmpegFlags = map[string]bool{
+	"-c:a": true, "-codec:a": true, "-acodec": true,
+	"-b:a": true, "-q:a": true, "-vbr": true, "-profile:a": true,
+	"-ar": true, "-ac": true, "-af": true, "-filter:a": true,
+	"-compression_level": true, "-application": true, "-cutoff": true,
+	"-frame_duration": true, "-f": true, "-movflags": true,
+}
+
+// safeFFmpegArgs splits a profile's custom args and accepts them only if every
+// flag token (one starting with "-") is in the whitelist. Value tokens that
+// follow a flag are allowed as-is.
+func safeFFmpegArgs(custom string) ([]string, bool) {
+	fields := strings.Fields(custom)
+	for _, f := range fields {
+		if strings.HasPrefix(f, "-") && !allowedFFmpegFlags[f] {
+			return nil, false
+		}
+	}
+	return fields, true
 }
 
 func contentTypeForFormat(format string) string {

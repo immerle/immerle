@@ -123,12 +123,13 @@ func Load(envPath string) (Config, error) {
 	if envPath == "" {
 		envPath = ".env"
 	}
-	if err := loadDotEnv(envPath); err != nil {
+	dotenv, err := parseDotEnv(envPath)
+	if err != nil {
 		return Config{}, err
 	}
 
 	cfg := Default()
-	applyEnv(&cfg)
+	applyEnv(&cfg, envLookup(dotenv))
 
 	if err := cfg.Validate(); err != nil {
 		return cfg, err
@@ -158,16 +159,18 @@ func (c Config) Validate() error {
 	return nil
 }
 
-// loadDotEnv parses KEY=VALUE lines from path into the environment. Missing file
-// is not an error. Real environment variables take precedence (a key already set
-// in the environment is left untouched).
-func loadDotEnv(path string) error {
+// parseDotEnv parses KEY=VALUE lines from path into a map. A missing file is not
+// an error. Crucially it does NOT call os.Setenv: values (notably secrets) stay
+// local to config resolution and are never exported to the process environment,
+// so child processes (ffmpeg/ffprobe) don't inherit them.
+func parseDotEnv(path string) (map[string]string, error) {
+	out := map[string]string{}
 	f, err := os.Open(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil
+			return out, nil
 		}
-		return fmt.Errorf("open env file %q: %w", path, err)
+		return nil, fmt.Errorf("open env file %q: %w", path, err)
 	}
 	defer func() { _ = f.Close() }()
 
@@ -183,17 +186,26 @@ func loadDotEnv(path string) error {
 			continue
 		}
 		key := strings.TrimSpace(line[:eq])
-		val := strings.TrimSpace(line[eq+1:])
-		val = unquote(val)
+		val := unquote(strings.TrimSpace(line[eq+1:]))
 		if key == "" {
 			continue
 		}
-		if _, set := os.LookupEnv(key); set {
-			continue // real env wins
-		}
-		_ = os.Setenv(key, val)
+		out[key] = val
 	}
-	return sc.Err()
+	return out, sc.Err()
+}
+
+// envLookup resolves a key from the real environment first, then the parsed
+// .env map (real env wins). The .env values are never exported, so they don't
+// leak to child processes.
+func envLookup(dotenv map[string]string) func(string) (string, bool) {
+	return func(key string) (string, bool) {
+		if v, ok := os.LookupEnv(key); ok {
+			return v, true
+		}
+		v, ok := dotenv[key]
+		return v, ok
+	}
 }
 
 func unquote(v string) string {
@@ -203,37 +215,38 @@ func unquote(v string) string {
 	return v
 }
 
-// applyEnv overrides config fields from environment variables.
-func applyEnv(c *Config) {
-	setPort(&c.Server.Address, "PORT")
-	setString(&c.Auth.Secret, "AUTH_SECRET")
-	setBool(&c.Auth.RequireSetupToken, "AUTH_REQUIRE_SETUP_TOKEN")
-	setString(&c.Database.Driver, "DATABASE_DRIVER")
-	setString(&c.Database.DSN, "DATABASE_DSN")
-	setString(&c.Log.Level, "LOG_LEVEL")
-	setString(&c.Log.Format, "LOG_FORMAT")
-	setString(&c.Library.DataDir, "LIBRARY_DATA_DIR")
-	if v := os.Getenv("LIBRARY_PATHS"); v != "" {
+// applyEnv overrides config fields from the resolved environment (real env then
+// .env map, via lookup).
+func applyEnv(c *Config, lookup func(string) (string, bool)) {
+	setPort(&c.Server.Address, lookup, "PORT")
+	setString(&c.Auth.Secret, lookup, "AUTH_SECRET")
+	setBool(&c.Auth.RequireSetupToken, lookup, "AUTH_REQUIRE_SETUP_TOKEN")
+	setString(&c.Database.Driver, lookup, "DATABASE_DRIVER")
+	setString(&c.Database.DSN, lookup, "DATABASE_DSN")
+	setString(&c.Log.Level, lookup, "LOG_LEVEL")
+	setString(&c.Log.Format, lookup, "LOG_FORMAT")
+	setString(&c.Library.DataDir, lookup, "LIBRARY_DATA_DIR")
+	if v, ok := lookup("LIBRARY_PATHS"); ok && v != "" {
 		c.Library.Paths = splitAndTrim(v)
 	}
 }
 
 // setPort sets the listen address from a bare port number (e.g. PORT=4533 →
 // ":4533"). A leading ":" in the value is tolerated.
-func setPort(addr *string, key string) {
-	if v, ok := os.LookupEnv(key); ok && strings.TrimSpace(v) != "" {
+func setPort(addr *string, lookup func(string) (string, bool), key string) {
+	if v, ok := lookup(key); ok && strings.TrimSpace(v) != "" {
 		*addr = ":" + strings.TrimPrefix(strings.TrimSpace(v), ":")
 	}
 }
 
-func setString(dst *string, key string) {
-	if v, ok := os.LookupEnv(key); ok {
+func setString(dst *string, lookup func(string) (string, bool), key string) {
+	if v, ok := lookup(key); ok {
 		*dst = v
 	}
 }
 
-func setBool(dst *bool, key string) {
-	if v, ok := os.LookupEnv(key); ok {
+func setBool(dst *bool, lookup func(string) (string, bool), key string) {
+	if v, ok := lookup(key); ok {
 		if b, err := strconv.ParseBool(v); err == nil {
 			*dst = b
 		}

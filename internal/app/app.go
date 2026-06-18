@@ -368,9 +368,10 @@ func New(cfg config.Config) (*App, error) {
 		evictor:    evictor,
 		settings:   settingsSvc,
 		imports:    importSvc,
-		// CORS is outermost so preflight requests are answered before routing.
-		// Origins are read live from the runtime settings (hot-reloadable).
-		handler:   corsMiddleware(settingsSvc.CORSOrigins, loggingMiddleware(logger, mux)),
+		// Security headers outermost (apply to every response), then CORS
+		// (answers preflight before routing), then logging. Origins are read live
+		// from the runtime settings (hot-reloadable).
+		handler:   securityHeadersMiddleware(corsMiddleware(settingsSvc.CORSOrigins, loggingMiddleware(logger, mux))),
 		scanPaths: scanPaths,
 		watch:     rs.Scan.Watch,
 	}, nil
