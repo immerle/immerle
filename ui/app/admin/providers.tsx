@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useMemo, useState } from 'react';
+import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, Platform, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
 import { useColorScheme } from 'nativewind';
 import { Stack } from 'expo-router';
@@ -333,6 +333,10 @@ function JsonConfigField({ value, onChangeText }: { value: string; onChangeText:
   const pal = colorScheme === 'dark' ? JSON_SYNTAX.dark : JSON_SYNTAX.light;
   const placeholder = '{\n  "header": {},\n  "params": {}\n}';
 
+  // Web textarea DOM node, for caret-aware Tab handling.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const inputRef = useRef<any>(null);
+
   const error = useMemo(() => {
     const s = value.trim();
     if (!s) return null;
@@ -343,6 +347,20 @@ function JsonConfigField({ value, onChangeText }: { value: string; onChangeText:
       return (e as Error).message;
     }
   }, [value]);
+
+  // Tab inserts two spaces at the caret instead of moving focus (web-only).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const onKeyPress = (e: any) => {
+    if (e?.nativeEvent?.key !== 'Tab') return;
+    e.preventDefault?.();
+    const el = inputRef.current;
+    const start = el?.selectionStart ?? value.length;
+    const end = el?.selectionEnd ?? start;
+    onChangeText(value.slice(0, start) + '  ' + value.slice(end));
+    requestAnimationFrame(() => {
+      if (el && typeof el.setSelectionRange === 'function') el.setSelectionRange(start + 2, start + 2);
+    });
+  };
 
   // Shared text metrics so the overlay lines up exactly with the input.
   const textStyle = {
@@ -372,8 +390,10 @@ function JsonConfigField({ value, onChangeText }: { value: string; onChangeText:
           </Text>
         </View>
         <TextInput
+          ref={inputRef}
           value={value}
           onChangeText={onChangeText}
+          onKeyPress={onKeyPress}
           multiline
           autoCapitalize="none"
           autoCorrect={false}
