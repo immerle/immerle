@@ -73,14 +73,14 @@ export default function Home(): React.ReactElement {
           />
           <p className={styles.kicker}>One small Go binary · up in minutes</p>
           <h1 className={styles.title}>
-            The next-gen
+            Next-gen,
             <br />
-            <span className={styles.sings}>self-hosted music<Equalizer /></span>
-            {' '}solution
+            <span className={styles.sings}>self-hosted music</span>
+            <Equalizer />
           </h1>
           <p className={styles.lede}>
-            Fluent Subsonic / OpenSubsonic — your clients just work. Then it
-            goes further.
+            Stream, share and discover — on a music server that's entirely
+            yours. No subscriptions, no limits, no lock-in.
           </p>
 
           <div className={styles.ctas}>
