@@ -20,6 +20,7 @@ import { SearchOverlay } from '../src/components/SearchOverlay';
 import { AccentScope } from '../src/components/AccentScope';
 import { LibrarySidebar } from '../src/components/LibrarySidebar';
 import { useUI } from '../src/stores/ui';
+import { useLocale } from '../src/i18n/store';
 import { useSelfServer } from '../src/api/selfServer';
 import { palette } from '../src/theme/colors';
 import { WIDE_BREAKPOINT } from '../src/theme/layout';
@@ -42,6 +43,7 @@ export default function RootLayout() {
   const hydratePlayer = usePlayer((s) => s.hydrateSettings);
   const loadRecents = useSearchUI((s) => s.loadRecents);
   const hydrateUI = useUI((s) => s.hydrate);
+  const hydrateLocale = useLocale((s) => s.hydrate);
   const detectSelf = useSelfServer((s) => s.detect);
   const authStatus = useAuth((s) => s.status);
   const themeHydrated = useTheme((s) => s.hydrated);
@@ -53,8 +55,9 @@ export default function RootLayout() {
     void initPlayer();
     void loadRecents();
     void hydrateUI();
+    void hydrateLocale();
     void detectSelf();
-  }, [hydrateTheme, restore, hydratePlayer, initPlayer, loadRecents, hydrateUI, detectSelf]);
+  }, [hydrateTheme, restore, hydratePlayer, initPlayer, loadRecents, hydrateUI, hydrateLocale, detectSelf]);
 
   // Once the session is authenticated, the server is the source of truth for
   // the accent — pull it so the choice follows the user across devices.

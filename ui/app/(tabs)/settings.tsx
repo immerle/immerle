@@ -3,6 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../../src/auth/store';
 import { useTheme, ThemePreference } from '../../src/theme/store';
+import { useLocale, LocalePref } from '../../src/i18n/store';
 import { usePlayer } from '../../src/audio/store';
 import { useAccount, useUpdateAccount } from '../../src/query/account';
 import { QUALITY_PRESETS } from '../../src/audio/quality';
@@ -18,6 +19,13 @@ const THEME_OPTIONS: { key: ThemePreference; label: string; icon: string }[] = [
   { key: 'system', label: 'Système', icon: 'phone-portrait' },
 ];
 
+// Language names shown in their own language; `system` follows the device.
+const LANG_OPTIONS: { key: LocalePref; label: string; icon: string }[] = [
+  { key: 'system', label: 'Système', icon: 'phone-portrait' },
+  { key: 'en', label: 'English', icon: 'language' },
+  { key: 'fr', label: 'Français', icon: 'language' },
+];
+
 /** User settings: account, appearance, accent colour, playback quality, access. */
 export default function Settings() {
   const colors = useColors();
@@ -29,6 +37,8 @@ export default function Settings() {
   const setAccent = useTheme((s) => s.setAccent);
   const qualityId = usePlayer((s) => s.qualityId);
   const setQuality = usePlayer((s) => s.setQuality);
+  const localePref = useLocale((s) => s.preference);
+  const setLocale = useLocale((s) => s.setPreference);
   const [customHex, setCustomHex] = useState('');
 
   const displayNameState = useAuth((s) => s.displayName);
@@ -131,6 +141,27 @@ export default function Settings() {
       </Card>
 
       {/* Accent color */}
+      <Card className="gap-3">
+        <CardTitle icon="language" color="#8b5cf6" title="Langue" />
+        <View className="flex-row gap-2">
+          {LANG_OPTIONS.map((opt) => {
+            const active = localePref === opt.key;
+            return (
+              <Pressable
+                key={opt.key}
+                onPress={() => setLocale(opt.key)}
+                className={`flex-1 items-center gap-1 rounded-xl border p-3 ${
+                  active ? 'border-primary bg-primary/10' : 'border-border bg-surface-alt'
+                }`}
+              >
+                <Ionicon name={opt.icon} size={22} color={active ? colors.primary : colors.muted} />
+                <Text className={`text-sm ${active ? 'font-semibold text-primary' : 'text-muted'}`}>{opt.label}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </Card>
+
       <Card className="gap-3">
         <CardTitle icon="color-palette" color={currentAccent} title="Couleur d'accent" />
         <View className="flex-row flex-wrap gap-3">
