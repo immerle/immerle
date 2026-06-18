@@ -17,10 +17,10 @@ describe('formatDuration', () => {
 
 describe('formatBytes', () => {
   it('scales to human units', () => {
-    expect(formatBytes(0)).toBe('0 B');
-    expect(formatBytes(512)).toBe('512 B');
-    expect(formatBytes(1024)).toBe('1.0 KB');
-    expect(formatBytes(1024 * 1024 * 1.5)).toBe('1.5 MB');
+    expect(formatBytes(0)).toBe('0 o');
+    expect(formatBytes(512)).toBe('512 o');
+    expect(formatBytes(1024)).toBe('1.0 Ko');
+    expect(formatBytes(1024 * 1024 * 1.5)).toBe('1.5 Mo');
   });
 });
 
