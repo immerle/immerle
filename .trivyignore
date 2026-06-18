@@ -1,0 +1,23 @@
+# Build-tooling-only CVEs — reviewed 2026-06-18.
+#
+# tar@6.2.1 and @xmldom/xmldom@0.7.13 are pulled exclusively by packaging tools
+# (electron-builder, expo / @expo/cli) and run only on the CI runner during
+# `expo export` / `electron-builder`. They never reach a shipped artifact: the Go
+# server binary uses no npm, and the Electron app ships only the static web bundle.
+# The available fixes are major bumps (tar 6->7, xmldom 0.7->0.9) that those tools
+# pin and weren't tested against. Revisit when expo/electron-builder bump them.
+
+# @xmldom/xmldom (via @expo/plist, @electron/osx-sign)
+CVE-2026-34601
+CVE-2026-41672
+CVE-2026-41673
+CVE-2026-41674
+CVE-2026-41675
+
+# tar (via electron-builder, expo CLI, node-gyp)
+CVE-2026-23745
+CVE-2026-23950
+CVE-2026-24842
+CVE-2026-26960
+CVE-2026-29786
+CVE-2026-31802
