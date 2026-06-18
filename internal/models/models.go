@@ -124,7 +124,7 @@ type TranscodeProfileRuntime struct {
 type ProviderRuntime struct {
 	// AutoDownloadOnPlay downloads a remote result when first streamed.
 	AutoDownloadOnPlay bool `json:"autoDownloadOnPlay"`
-	// SearchTimeoutSeconds bounds a remote search (default 6).
+	// SearchTimeoutSeconds bounds a remote search (default 3).
 	SearchTimeoutSeconds int `json:"searchTimeoutSeconds"`
 }
 
@@ -162,7 +162,7 @@ func DefaultRuntimeSettings() RuntimeSettings {
 				{Name: "mp3", Format: "mp3", BitRate: 192},
 			},
 		},
-		Providers:  ProviderRuntime{AutoDownloadOnPlay: true, SearchTimeoutSeconds: 6},
+		Providers:  ProviderRuntime{AutoDownloadOnPlay: true, SearchTimeoutSeconds: 3},
 		Scan:       ScanRuntime{IntervalSeconds: 600, Watch: true},
 		Cleanup:    CleanupRuntime{Enabled: true, MaxAgeSeconds: 720 * 3600, IntervalSeconds: 6 * 3600},
 		Federation: FederationRuntime{SyncIntervalSeconds: 3600},

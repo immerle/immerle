@@ -130,10 +130,10 @@ type StaticProviderSettings struct {
 // AutoDownloadOnPlay implements ProviderSettings.
 func (s StaticProviderSettings) AutoDownloadOnPlay() bool { return s.AutoDownload }
 
-// SearchTimeout implements ProviderSettings (defaulting to 6s).
+// SearchTimeout implements ProviderSettings (defaulting to 3s).
 func (s StaticProviderSettings) SearchTimeout() time.Duration {
 	if s.Timeout <= 0 {
-		return 6 * time.Second
+		return 3 * time.Second
 	}
 	return s.Timeout
 }
