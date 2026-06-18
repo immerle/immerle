@@ -42,7 +42,10 @@ func (h *Handler) providersAvailable(w http.ResponseWriter) bool {
 // @Security     BearerAuth
 // @Produce      json
 // @Success      200  {array}  ProviderDTO
-// @Failure      403  {object}  apiError
+// @Failure      401  {object}  errorResponse
+// @Failure      403  {object}  errorResponse
+// @Failure      500  {object}  errorResponse
+// @Failure      503  {object}  errorResponse
 // @Router       /admin/providers [get]
 func (h *Handler) handleProviders(w http.ResponseWriter, r *http.Request) {
 	if !h.requireAdmin(w, r) || !h.providersAvailable(w) {
@@ -79,8 +82,10 @@ type upsertProviderRequest struct {
 // @Produce      json
 // @Param        body  body  upsertProviderRequest  true  "Provider config"
 // @Success      200  {object}  ProviderDTO
-// @Failure      400  {object}  apiError
-// @Failure      403  {object}  apiError
+// @Failure      400  {object}  errorResponse
+// @Failure      401  {object}  errorResponse
+// @Failure      403  {object}  errorResponse
+// @Failure      503  {object}  errorResponse
 // @Router       /admin/providers [post]
 func (h *Handler) handleProviderUpsert(w http.ResponseWriter, r *http.Request) {
 	if !h.requireAdmin(w, r) || !h.providersAvailable(w) {
@@ -102,7 +107,7 @@ func (h *Handler) handleProviderUpsert(w http.ResponseWriter, r *http.Request) {
 		Enabled:  enabled,
 	})
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "bad_request", err.Error())
+		writeErrorParams(w, http.StatusBadRequest, "bad_request", err.Error(), map[string]any{"detail": err.Error()})
 		return
 	}
 	h.Logger.Info("provider upserted", "provider", saved.Name, "enabled", saved.Enabled, "by", userFrom(r.Context()).Username)
@@ -125,8 +130,11 @@ type setEnabledRequest struct {
 // @Param        name  path  string             true  "Provider name"
 // @Param        body  body  setEnabledRequest  true  "Enabled flag"
 // @Success      200  {object}  ProviderDTO
-// @Failure      400  {object}  apiError
-// @Failure      404  {object}  apiError
+// @Failure      400  {object}  errorResponse
+// @Failure      401  {object}  errorResponse
+// @Failure      403  {object}  errorResponse
+// @Failure      404  {object}  errorResponse
+// @Failure      503  {object}  errorResponse
 // @Router       /admin/providers/{name}/enabled [put]
 func (h *Handler) handleProviderEnable(w http.ResponseWriter, r *http.Request) {
 	if !h.requireAdmin(w, r) || !h.providersAvailable(w) {
@@ -158,7 +166,11 @@ func (h *Handler) handleProviderEnable(w http.ResponseWriter, r *http.Request) {
 // @Security     BearerAuth
 // @Param        name  path  string  true  "Provider name"
 // @Success      204  "deleted"
-// @Failure      404  {object}  apiError
+// @Failure      400  {object}  errorResponse
+// @Failure      401  {object}  errorResponse
+// @Failure      403  {object}  errorResponse
+// @Failure      404  {object}  errorResponse
+// @Failure      503  {object}  errorResponse
 // @Router       /admin/providers/{name} [delete]
 func (h *Handler) handleProviderDelete(w http.ResponseWriter, r *http.Request) {
 	if !h.requireAdmin(w, r) || !h.providersAvailable(w) {
@@ -188,7 +200,11 @@ type reorderRequest struct {
 // @Produce      json
 // @Param        body  body  reorderRequest  true  "Provider names in the desired order"
 // @Success      200  {array}  ProviderDTO
-// @Failure      400  {object}  apiError
+// @Failure      400  {object}  errorResponse
+// @Failure      401  {object}  errorResponse
+// @Failure      403  {object}  errorResponse
+// @Failure      500  {object}  errorResponse
+// @Failure      503  {object}  errorResponse
 // @Router       /admin/providers/order [put]
 func (h *Handler) handleProviderReorder(w http.ResponseWriter, r *http.Request) {
 	if !h.requireAdmin(w, r) || !h.providersAvailable(w) {
@@ -220,5 +236,5 @@ func (h *Handler) writeProviderError(w http.ResponseWriter, err error) {
 		writeError(w, http.StatusNotFound, "not_found", "provider not found")
 		return
 	}
-	writeError(w, http.StatusBadRequest, "bad_request", err.Error())
+	writeErrorParams(w, http.StatusBadRequest, "bad_request", err.Error(), map[string]any{"detail": err.Error()})
 }

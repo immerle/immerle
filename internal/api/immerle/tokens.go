@@ -13,6 +13,8 @@ import (
 // @Security     BearerAuth
 // @Produce      json
 // @Success      200  {array}  APITokenDTO
+// @Failure      401  {object}  errorResponse
+// @Failure      500  {object}  errorResponse
 // @Router       /tokens [get]
 func (h *Handler) handleTokens(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
@@ -54,6 +56,9 @@ type createTokenRequest struct {
 // @Produce      json
 // @Param        body  body  createTokenRequest  true  "Token name and optional expiry"
 // @Success      201  {object}  CreateTokenDTO
+// @Failure      400  {object}  errorResponse
+// @Failure      401  {object}  errorResponse
+// @Failure      500  {object}  errorResponse
 // @Router       /tokens [post]
 func (h *Handler) handleCreateToken(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
@@ -81,7 +86,9 @@ func (h *Handler) handleCreateToken(w http.ResponseWriter, r *http.Request) {
 // @Security     BearerAuth
 // @Param        id  path  string  true  "Token id to revoke"
 // @Success      204  "revoked"
-// @Failure      404  {object}  apiError
+// @Failure      401  {object}  errorResponse
+// @Failure      404  {object}  errorResponse
+// @Failure      500  {object}  errorResponse
 // @Router       /tokens/{id} [delete]
 func (h *Handler) handleRevokeToken(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())

@@ -13,7 +13,9 @@ import (
 // @Security     BearerAuth
 // @Produce      json
 // @Success      200  {object}  SettingsDTO
-// @Failure      403  {object}  apiError
+// @Failure      401  {object}  errorResponse
+// @Failure      403  {object}  errorResponse
+// @Failure      503  {object}  errorResponse
 // @Router       /admin/settings [get]
 func (h *Handler) handleSettings(w http.ResponseWriter, r *http.Request) {
 	if !h.requireAdmin(w, r) {
@@ -36,8 +38,11 @@ func (h *Handler) handleSettings(w http.ResponseWriter, r *http.Request) {
 // @Produce      json
 // @Param        body  body  RuntimeSettingsDTO  true  "Settings fields to change (partial)"
 // @Success      200  {object}  SettingsDTO
-// @Failure      400  {object}  apiError
-// @Failure      403  {object}  apiError
+// @Failure      400  {object}  errorResponse
+// @Failure      401  {object}  errorResponse
+// @Failure      403  {object}  errorResponse
+// @Failure      500  {object}  errorResponse
+// @Failure      503  {object}  errorResponse
 // @Router       /admin/settings [patch]
 func (h *Handler) handleSettingsUpdate(w http.ResponseWriter, r *http.Request) {
 	if !h.requireAdmin(w, r) {
@@ -51,7 +56,7 @@ func (h *Handler) handleSettingsUpdate(w http.ResponseWriter, r *http.Request) {
 	next := h.Settings.Get()
 	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 	if err := json.NewDecoder(r.Body).Decode(&next); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_body", "invalid settings JSON: "+err.Error())
+		writeErrorParams(w, http.StatusBadRequest, "invalid_body", "invalid settings JSON: "+err.Error(), map[string]any{"detail": err.Error()})
 		return
 	}
 	saved, pending, err := h.Settings.Update(next)

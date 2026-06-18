@@ -65,6 +65,8 @@ func (h *Handler) handleCapabilities(w http.ResponseWriter, r *http.Request) {
 // @Security     BearerAuth
 // @Produce      json
 // @Success      200  {array}  FriendDTO
+// @Failure      401  {object}  errorResponse
+// @Failure      500  {object}  errorResponse
 // @Router       /friends [get]
 func (h *Handler) handleFriends(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
@@ -98,8 +100,10 @@ type friendRequestBody struct {
 // @Produce      json
 // @Param        body  body  friendRequestBody  true  "Target username"
 // @Success      201  {object}  apiError  "created"
-// @Failure      400  {object}  apiError
-// @Failure      404  {object}  apiError
+// @Failure      400  {object}  errorResponse
+// @Failure      401  {object}  errorResponse
+// @Failure      404  {object}  errorResponse
+// @Failure      500  {object}  errorResponse
 // @Router       /friends/requests [post]
 func (h *Handler) handleFriendRequest(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
@@ -113,7 +117,7 @@ func (h *Handler) handleFriendRequest(w http.ResponseWriter, r *http.Request) {
 	}
 	friend, err := h.Users.GetByUsername(r.Context(), req.Username)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "not_found", "user not found")
+		writeErrorParams(w, http.StatusNotFound, "not_found", "user not found", map[string]any{"username": req.Username})
 		return
 	}
 	if friend.ID == user.ID {
@@ -144,18 +148,20 @@ func (h *Handler) handleFriendRequest(w http.ResponseWriter, r *http.Request) {
 // @Produce      json
 // @Param        username  path  string  true  "Username of the requester to accept"
 // @Success      200  {object}  FriendDTO
-// @Failure      404  {object}  apiError
+// @Failure      401  {object}  errorResponse
+// @Failure      404  {object}  errorResponse
+// @Failure      500  {object}  errorResponse
 // @Router       /friends/requests/{username}/accept [post]
 func (h *Handler) handleFriendAccept(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
 	requesterUser, err := h.Users.GetByUsername(r.Context(), pathParam(r, "username"))
 	if err != nil {
-		writeError(w, http.StatusNotFound, "not_found", "user not found")
+		writeErrorParams(w, http.StatusNotFound, "not_found", "user not found", map[string]any{"username": pathParam(r, "username")})
 		return
 	}
 	if err := h.Friends.Accept(r.Context(), requesterUser.ID, user.ID, uuid.NewString()); err != nil {
 		if errors.Is(err, persistence.ErrNotFound) {
-			writeError(w, http.StatusNotFound, "not_found", "no pending request from this user")
+			writeErrorParams(w, http.StatusNotFound, "not_found", "no pending request from this user", map[string]any{"username": requesterUser.Username})
 			return
 		}
 		writeInternal(w, err)
@@ -175,6 +181,8 @@ func (h *Handler) handleFriendAccept(w http.ResponseWriter, r *http.Request) {
 // @Security     BearerAuth
 // @Produce      json
 // @Success      200  {array}  PendingFriendDTO
+// @Failure      401  {object}  errorResponse
+// @Failure      500  {object}  errorResponse
 // @Router       /friends/requests [get]
 func (h *Handler) handleFriendPending(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
@@ -202,6 +210,8 @@ func (h *Handler) handleFriendPending(w http.ResponseWriter, r *http.Request) {
 // @Security     BearerAuth
 // @Produce      json
 // @Success      200  {array}  ActivityEventDTO
+// @Failure      401  {object}  errorResponse
+// @Failure      500  {object}  errorResponse
 // @Router       /activity [get]
 func (h *Handler) handleActivity(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
@@ -300,7 +310,9 @@ func (h *Handler) activityItem(ctx context.Context, e models.ActivityEvent) map[
 // @Produce      json
 // @Param        username  path  string  true  "Target username, or 'me' for the caller"
 // @Success      200  {object}  ProfileDTO
-// @Failure      404  {object}  apiError
+// @Failure      401  {object}  errorResponse
+// @Failure      404  {object}  errorResponse
+// @Failure      500  {object}  errorResponse
 // @Router       /users/{username} [get]
 func (h *Handler) handleProfile(w http.ResponseWriter, r *http.Request) {
 	caller := userFrom(r.Context())
@@ -309,7 +321,7 @@ func (h *Handler) handleProfile(w http.ResponseWriter, r *http.Request) {
 	if username != "me" && username != caller.Username {
 		u, err := h.Users.GetByUsername(r.Context(), username)
 		if err != nil {
-			writeError(w, http.StatusNotFound, "not_found", "user not found")
+			writeErrorParams(w, http.StatusNotFound, "not_found", "user not found", map[string]any{"username": username})
 			return
 		}
 		target = u
@@ -380,8 +392,11 @@ type addCollaboratorBody struct {
 // @Param        id    path  string               true  "Playlist id"
 // @Param        body  body  addCollaboratorBody  true  "User to grant edit rights"
 // @Success      201  {object}  apiError  "added"
-// @Failure      403  {object}  apiError
-// @Failure      404  {object}  apiError
+// @Failure      400  {object}  errorResponse
+// @Failure      401  {object}  errorResponse
+// @Failure      403  {object}  errorResponse
+// @Failure      404  {object}  errorResponse
+// @Failure      500  {object}  errorResponse
 // @Router       /playlists/{id}/collaborators [post]
 func (h *Handler) handleAddCollaborator(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
@@ -402,7 +417,7 @@ func (h *Handler) handleAddCollaborator(w http.ResponseWriter, r *http.Request) 
 	}
 	collaborator, err := h.Users.GetByUsername(r.Context(), req.Username)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "not_found", "user not found")
+		writeErrorParams(w, http.StatusNotFound, "not_found", "user not found", map[string]any{"username": req.Username})
 		return
 	}
 	// Ensure the playlist is marked collaborative.

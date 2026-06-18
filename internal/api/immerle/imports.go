@@ -16,6 +16,7 @@ import (
 // @Security     BearerAuth
 // @Produce      json
 // @Success      200  {array}  ImportSourceDTO
+// @Failure      401  {object}  errorResponse
 // @Router       /imports/sources [get]
 func (h *Handler) handleImportSources(w http.ResponseWriter, r *http.Request) {
 	if h.Imports == nil {
@@ -33,6 +34,8 @@ func (h *Handler) handleImportSources(w http.ResponseWriter, r *http.Request) {
 // @Security     BearerAuth
 // @Produce      json
 // @Success      200  {array}  ImportDTO
+// @Failure      401  {object}  errorResponse
+// @Failure      500  {object}  errorResponse
 // @Router       /imports [get]
 func (h *Handler) handleImports(w http.ResponseWriter, r *http.Request) {
 	if h.Imports == nil {
@@ -64,7 +67,9 @@ type startImportRequest struct {
 // @Produce      json
 // @Param        body  body  startImportRequest  true  "Import source + reference"
 // @Success      201  {object}  ImportDTO
-// @Failure      400  {object}  apiError
+// @Failure      400  {object}  errorResponse
+// @Failure      401  {object}  errorResponse
+// @Failure      503  {object}  errorResponse
 // @Router       /imports [post]
 func (h *Handler) handleImportStart(w http.ResponseWriter, r *http.Request) {
 	if h.Imports == nil {
@@ -78,7 +83,7 @@ func (h *Handler) handleImportStart(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
 	im, err := h.Imports.Start(r.Context(), user.ID, req.Source, req.Ref)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "bad_request", err.Error())
+		writeErrorParams(w, http.StatusBadRequest, "bad_request", err.Error(), map[string]any{"detail": err.Error()})
 		return
 	}
 	writeResource(w, http.StatusCreated, im)
@@ -102,8 +107,10 @@ type resolveItemRequest struct {
 // @Param        itemId  path  string              true   "Import item id"
 // @Param        body    body  resolveItemRequest  false  "Optional corrected 'artist title' search"
 // @Success      200  {object}  ImportItemDTO
-// @Failure      400  {object}  apiError
-// @Failure      404  {object}  apiError
+// @Failure      400  {object}  errorResponse
+// @Failure      401  {object}  errorResponse
+// @Failure      404  {object}  errorResponse
+// @Failure      503  {object}  errorResponse
 // @Router       /imports/{id}/items/{itemId}/resolve [post]
 func (h *Handler) handleImportItemResolve(w http.ResponseWriter, r *http.Request) {
 	if h.Imports == nil {
@@ -126,7 +133,7 @@ func (h *Handler) handleImportItemResolve(w http.ResponseWriter, r *http.Request
 			writeError(w, http.StatusNotFound, "not_found", "import item not found")
 			return
 		}
-		writeError(w, http.StatusBadRequest, "bad_request", err.Error())
+		writeErrorParams(w, http.StatusBadRequest, "bad_request", err.Error(), map[string]any{"detail": err.Error()})
 		return
 	}
 	writeResource(w, http.StatusOK, item)
@@ -142,7 +149,10 @@ func (h *Handler) handleImportItemResolve(w http.ResponseWriter, r *http.Request
 // @Produce      json
 // @Param        id  path  string  true  "Import id"
 // @Success      200  {object}  ImportDTO
-// @Failure      404  {object}  apiError
+// @Failure      401  {object}  errorResponse
+// @Failure      404  {object}  errorResponse
+// @Failure      500  {object}  errorResponse
+// @Failure      503  {object}  errorResponse
 // @Router       /imports/{id} [get]
 func (h *Handler) handleImportStatus(w http.ResponseWriter, r *http.Request) {
 	if h.Imports == nil {

@@ -17,11 +17,19 @@ type fieldError struct {
 	Message string `json:"message"`
 }
 
-// apiError is the body returned on any non-2xx response.
+// apiError describes a single failure (code, message and optional per-field
+// validation details). It is the value nested under the "error" key.
 type apiError struct {
-	Code    string       `json:"code"`
-	Message string       `json:"message"`
-	Fields  []fieldError `json:"fields,omitempty"`
+	Code    string         `json:"code"`
+	Message string         `json:"message"`
+	Params  map[string]any `json:"params"` // i18n interpolation values; always present ({} when none)
+	Fields  []fieldError   `json:"fields,omitempty"`
+}
+
+// errorResponse is the wire envelope for every non-2xx response: the apiError is
+// nested under an "error" key, e.g. {"error":{"code":"not_found",...}}.
+type errorResponse struct {
+	Error apiError `json:"error"`
 }
 
 // writeResource writes v as JSON with the given status. A nil v (e.g. 204) sends
@@ -34,20 +42,30 @@ func writeResource(w http.ResponseWriter, status int, v any) {
 	}
 }
 
-// writeError sends {"error":{code,message}} with the given status.
+// writeError sends {"error":{code,message,params}} with the given status.
 func writeError(w http.ResponseWriter, status int, code, message string) {
-	writeResource(w, status, map[string]apiError{"error": {Code: code, Message: message}})
+	writeErrorParams(w, status, code, message, nil)
+}
+
+// writeErrorParams is writeError with i18n interpolation params (e.g. the
+// offending username or an error detail) the frontend fills into the translated
+// message keyed by code. A nil map serializes as an empty object.
+func writeErrorParams(w http.ResponseWriter, status int, code, message string, params map[string]any) {
+	if params == nil {
+		params = map[string]any{}
+	}
+	writeResource(w, status, errorResponse{Error: apiError{Code: code, Message: message, Params: params}})
 }
 
 // writeInternal reports a 500 from an unexpected error.
 func writeInternal(w http.ResponseWriter, err error) {
-	writeError(w, http.StatusInternalServerError, "internal", err.Error())
+	writeErrorParams(w, http.StatusInternalServerError, "internal", err.Error(), map[string]any{"detail": err.Error()})
 }
 
 // writeValidation sends a 400 with per-field details.
 func writeValidation(w http.ResponseWriter, fields []fieldError) {
-	writeResource(w, http.StatusBadRequest, map[string]apiError{
-		"error": {Code: "validation", Message: "validation failed", Fields: fields},
+	writeResource(w, http.StatusBadRequest, errorResponse{
+		Error: apiError{Code: "validation", Message: "validation failed", Params: map[string]any{}, Fields: fields},
 	})
 }
 
@@ -60,7 +78,7 @@ func decodeJSON(w http.ResponseWriter, r *http.Request, dst any) bool {
 		if err.Error() == "EOF" {
 			return true
 		}
-		writeError(w, http.StatusBadRequest, "invalid_body", "invalid JSON body: "+err.Error())
+		writeErrorParams(w, http.StatusBadRequest, "invalid_body", "invalid JSON body: "+err.Error(), map[string]any{"detail": err.Error()})
 		return false
 	}
 	return true

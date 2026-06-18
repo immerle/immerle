@@ -47,6 +47,9 @@ type createJamRequest struct {
 // @Produce      json
 // @Param        body  body  createJamRequest  true  "Session name and initial track ids"
 // @Success      201  {object}  JamDTO
+// @Failure      400  {object}  errorResponse
+// @Failure      401  {object}  errorResponse
+// @Failure      500  {object}  errorResponse
 // @Router       /jam [post]
 func (h *Handler) handleJamCreate(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
@@ -70,7 +73,9 @@ func (h *Handler) handleJamCreate(w http.ResponseWriter, r *http.Request) {
 // @Produce      json
 // @Param        id  path  string  true  "Jam session id"
 // @Success      201  {object}  JamDTO
-// @Failure      404  {object}  apiError
+// @Failure      401  {object}  errorResponse
+// @Failure      404  {object}  errorResponse
+// @Failure      500  {object}  errorResponse
 // @Router       /jam/{id}/participants [post]
 func (h *Handler) handleJamJoin(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
@@ -94,6 +99,8 @@ func (h *Handler) handleJamJoin(w http.ResponseWriter, r *http.Request) {
 // @Security     BearerAuth
 // @Param        id  path  string  true  "Jam session id"
 // @Success      204  "left"
+// @Failure      401  {object}  errorResponse
+// @Failure      500  {object}  errorResponse
 // @Router       /jam/{id}/participants/me [delete]
 func (h *Handler) handleJamLeave(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
@@ -112,7 +119,8 @@ func (h *Handler) handleJamLeave(w http.ResponseWriter, r *http.Request) {
 // @Produce      json
 // @Param        id  path  string  true  "Jam session id"
 // @Success      200  {object}  JamDTO
-// @Failure      404  {object}  apiError
+// @Failure      401  {object}  errorResponse
+// @Failure      404  {object}  errorResponse
 // @Router       /jam/{id} [get]
 func (h *Handler) handleJamState(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
@@ -149,8 +157,11 @@ type updateJamRequest struct {
 // @Param        id    path  string            true  "Jam session id"
 // @Param        body  body  updateJamRequest  true  "Playback fields to change"
 // @Success      200  {object}  JamDTO
-// @Failure      403  {object}  apiError
-// @Failure      404  {object}  apiError
+// @Failure      400  {object}  errorResponse
+// @Failure      401  {object}  errorResponse
+// @Failure      403  {object}  errorResponse
+// @Failure      404  {object}  errorResponse
+// @Failure      500  {object}  errorResponse
 // @Router       /jam/{id} [patch]
 func (h *Handler) handleJamUpdate(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
@@ -204,7 +215,9 @@ func (h *Handler) handleJamUpdate(w http.ResponseWriter, r *http.Request) {
 // @Produce      text/event-stream
 // @Param        id  path  string  true  "Jam session id"
 // @Success      200  {string}  string  "SSE stream"
-// @Failure      404  {object}  apiError
+// @Failure      401  {object}  errorResponse
+// @Failure      404  {object}  errorResponse
+// @Failure      500  {object}  errorResponse
 // @Router       /jam/{id}/events [get]
 func (h *Handler) handleJamEvents(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
