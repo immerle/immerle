@@ -1,6 +1,11 @@
 {
   "name": "immerle-app",
   "version": "0.1.0",
+  "homepage": "https://github.com/immerle/immerle",
+  "author": {
+    "name": "Kilian SMITI",
+    "email": "kilian@smiti.fr"
+  },
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
