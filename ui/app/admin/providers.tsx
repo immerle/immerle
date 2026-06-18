@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Modal, Platform, Pressable, ScrollView, Switch, Text, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Modal, Platform, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { useAuth } from '../../src/auth/store';
 import { useProviderLogs, useProviderMutations, useProviders, useSettings, useUpdateSettings } from '../../src/query/admin';
@@ -295,6 +295,62 @@ function ArrowButton({ icon, onPress, disabled }: { icon: string; onPress?: () =
   );
 }
 
+/** Config editor: monospace JSON with live validation and a Format button.
+ * The unified schema is { header: {…}, params: {…}, … }. */
+function JsonConfigField({ value, onChangeText }: { value: string; onChangeText: (v: string) => void }) {
+  const t = useT();
+  const colors = useColors();
+  const error = useMemo(() => {
+    const s = value.trim();
+    if (!s) return null;
+    try {
+      JSON.parse(s);
+      return null;
+    } catch (e) {
+      return (e as Error).message;
+    }
+  }, [value]);
+
+  return (
+    <View className="gap-1.5">
+      <View className="flex-row items-center justify-between">
+        <Text className="text-sm font-medium text-foreground">{t('admin.providers.configLabel')}</Text>
+        <Pressable
+          onPress={() => onChangeText(JSON.stringify(JSON.parse(value), null, 2))}
+          disabled={!!error || !value.trim()}
+          className={`rounded-lg px-2 py-1 ${error || !value.trim() ? 'opacity-40' : 'bg-surface-alt active:opacity-70'}`}
+        >
+          <Text className="text-xs text-foreground">{t('admin.providers.configFormat')}</Text>
+        </Pressable>
+      </View>
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        multiline
+        autoCapitalize="none"
+        autoCorrect={false}
+        spellCheck={false}
+        placeholder={'{\n  "header": {},\n  "params": {}\n}'}
+        placeholderTextColor={colors.muted}
+        style={{
+          minHeight: 140,
+          textAlignVertical: 'top',
+          fontFamily: Platform.select({ web: 'monospace', default: 'Courier' }),
+          fontSize: 13,
+          color: colors.foreground,
+          borderWidth: 1,
+          borderColor: error ? colors.danger : colors.border,
+          borderRadius: 12,
+          padding: 10,
+        }}
+      />
+      <Text className={`text-xs ${error ? 'text-danger' : 'text-muted'}`}>
+        {error ? t('admin.providers.configInvalid') : t('admin.providers.configHelp')}
+      </Text>
+    </View>
+  );
+}
+
 function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose: () => void }) {
   const t = useT();
   const colors = useColors();
@@ -373,18 +429,7 @@ function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose
                 onChangeText={setEndpoint}
               />
             ) : null}
-            <Field
-              label={t('admin.providers.configLabel')}
-              placeholder='{"headers":{"Authorization":"Bearer …"}}'
-              autoCapitalize="none"
-              autoCorrect={false}
-              multiline
-              numberOfLines={5}
-              style={{ minHeight: 110, textAlignVertical: 'top' }}
-              help={t('admin.providers.configHelp')}
-              value={config}
-              onChangeText={setConfig}
-            />
+            <JsonConfigField value={config} onChangeText={setConfig} />
             <View className="flex-row items-center justify-between rounded-xl bg-surface-alt px-3 py-2">
               <Text className="text-sm font-medium text-foreground">{t('admin.providers.enableNow')}</Text>
               <Switch value={enabled} onValueChange={setEnabled} trackColor={{ true: colors.primary, false: colors.border }} />
