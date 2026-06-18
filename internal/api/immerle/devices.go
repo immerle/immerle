@@ -7,52 +7,58 @@ import (
 	"github.com/immerle/immerle/internal/core"
 )
 
+// loginRequest is the body for POST /auth/sessions.
+type loginRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+	// Token + Salt allow Subsonic-style token auth instead of a raw password.
+	Token string `json:"token"`
+	Salt  string `json:"salt"`
+	// Device is an optional human label for the session (defaults to the username).
+	Device string `json:"device"`
+}
+
 // handleLogin exchanges credentials for a device-session JWT.
 //
-// @Summary      Log in a device (issue a JWT)
+// @Summary      Create a device session (issue a JWT)
 // @Description  Authenticates with username + password (or Subsonic token auth) and returns a device-session JWT carrying a unique id (jti). Use it as "Authorization: Bearer <jwt>". The session is tracked in the devices registry and can be revoked.
 // @Tags         devices
+// @Accept       json
 // @Produce      json
-// @Param        u       query  string  true   "Username"
-// @Param        p       query  string  false  "Password"
-// @Param        t       query  string  false  "Subsonic token md5(password+salt)"
-// @Param        s       query  string  false  "Subsonic salt"
-// @Param        c       query  string  true   "Client/device name"
-// @Param        device  query  string  false  "Device label (defaults to c)"
-// @Success      200  {object}  LoginResponse
-// @Failure      401  {object}  ErrorResponse
-// @Router       /auth/login [post]
+// @Param        body  body  loginRequest  true  "Credentials"
+// @Success      201  {object}  LoginDTO
+// @Failure      401  {object}  apiError
+// @Router       /auth/sessions [post]
 func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		writeJSON(w, http.StatusMethodNotAllowed, errorBody("method_not_allowed"))
+	var req loginRequest
+	if !decodeJSON(w, r, &req) {
 		return
 	}
-	_ = r.ParseForm()
-	deviceName := r.Form.Get("device")
+	deviceName := req.Device
 	if deviceName == "" {
-		deviceName = r.Form.Get("c")
+		deviceName = req.Username
 	}
 	creds := core.Credentials{
-		Username:  r.Form.Get("u"),
-		Password:  r.Form.Get("p"),
-		Token:     r.Form.Get("t"),
-		Salt:      r.Form.Get("s"),
+		Username:  req.Username,
+		Password:  req.Password,
+		Token:     req.Token,
+		Salt:      req.Salt,
 		RemoteIP:  httputil.ClientIP(r),
 		UserAgent: r.UserAgent(),
 	}
 	token, dev, err := h.Auth.IssueDeviceToken(r.Context(), creds, deviceName, h.deviceTokenTTL())
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, errorBody("unauthorized"))
+		writeError(w, http.StatusUnauthorized, "unauthorized", "invalid credentials")
 		return
 	}
-	writeJSON(w, http.StatusOK, okBody(map[string]any{
+	writeResource(w, http.StatusCreated, map[string]any{
 		"token": token, // the JWT — store it
 		"device": map[string]any{
 			"id":        dev.ID,
 			"name":      dev.Name,
 			"expiresAt": dev.ExpiresAt,
 		},
-	}))
+	})
 }
 
 // handleDevices lists the caller's active device sessions.
@@ -60,17 +66,15 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 // @Summary      List devices
 // @Description  Lists the caller's active device sessions (one per issued JWT), with last-seen time, IP and user agent.
 // @Tags         devices
+// @Security     BearerAuth
 // @Produce      json
-// @Param        u  query  string  true   "Username (or Bearer token)"
-// @Param        p  query  string  false  "Password"
-// @Param        c  query  string  true   "Client name"
-// @Success      200  {object}  DevicesResponse
+// @Success      200  {array}  DeviceDTO
 // @Router       /devices [get]
 func (h *Handler) handleDevices(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
 	devices, err := h.Auth.ListDevices(r.Context(), user.ID)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, errorBody(err.Error()))
+		writeInternal(w, err)
 		return
 	}
 	out := make([]map[string]any, 0, len(devices))
@@ -85,7 +89,7 @@ func (h *Handler) handleDevices(w http.ResponseWriter, r *http.Request) {
 			"expiresAt": d.ExpiresAt,
 		})
 	}
-	writeJSON(w, http.StatusOK, okBody(map[string]any{"devices": out}))
+	writeResource(w, http.StatusOK, out)
 }
 
 // handleRevokeDevice revokes a device session (its JWT stops working).
@@ -93,24 +97,21 @@ func (h *Handler) handleDevices(w http.ResponseWriter, r *http.Request) {
 // @Summary      Revoke a device
 // @Description  Revokes a device session by id — the associated JWT can no longer authenticate.
 // @Tags         devices
-// @Produce      json
-// @Param        u   query  string  true   "Username (or Bearer token)"
-// @Param        p   query  string  false  "Password"
-// @Param        c   query  string  true   "Client name"
-// @Param        id  query  string  true   "Device id (jti) to revoke"
-// @Success      200  {object}  OKResponse
-// @Failure      404  {object}  ErrorResponse
-// @Router       /devices/revoke [post]
+// @Security     BearerAuth
+// @Param        id  path  string  true  "Device id (jti) to revoke"
+// @Success      204  "revoked"
+// @Failure      404  {object}  apiError
+// @Router       /devices/{id} [delete]
 func (h *Handler) handleRevokeDevice(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
-	ok, err := h.Auth.RevokeDevice(r.Context(), r.Form.Get("id"), user.ID)
+	ok, err := h.Auth.RevokeDevice(r.Context(), pathParam(r, "id"), user.ID)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, errorBody(err.Error()))
+		writeInternal(w, err)
 		return
 	}
 	if !ok {
-		writeJSON(w, http.StatusNotFound, errorBody("device not found"))
+		writeError(w, http.StatusNotFound, "not_found", "device not found")
 		return
 	}
-	writeJSON(w, http.StatusOK, okBody(nil))
+	writeResource(w, http.StatusNoContent, nil)
 }

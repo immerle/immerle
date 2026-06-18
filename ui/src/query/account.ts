@@ -57,7 +57,8 @@ export function useTokenMutations() {
   const qc = useQueryClient();
   const invalidate = () => qc.invalidateQueries({ queryKey: KEYS.tokens });
   const create = useMutation({
-    mutationFn: (p: { name?: string; expires?: number }) => client!.createToken(p.name, p.expires),
+    mutationFn: (p: { name?: string; expires?: number }) =>
+      client!.createToken(p.name, p.expires ? new Date(p.expires).toISOString() : undefined),
     onSuccess: invalidate,
   });
   const revoke = useMutation({

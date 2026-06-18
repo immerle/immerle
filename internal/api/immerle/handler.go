@@ -5,7 +5,6 @@ package immerle
 
 import (
 	"context"
-	"encoding/json"
 	"log/slog"
 	"net/http"
 	"time"
@@ -93,97 +92,104 @@ type ctxKey int
 
 const userKey ctxKey = iota
 
-// Register mounts the native immerle extension endpoints on mux at the root
-// (the Subsonic API lives under /rest/). The legacy /rest/immerle.capabilities
-// alias is kept for Subsonic-style capability discovery.
+// Register mounts the native immerle REST API under /api/v1. Authentication is
+// via "Authorization: Bearer <device-jwt | api-token>" (the Subsonic API keeps
+// its own query-param auth). The legacy /rest/immerle.capabilities alias is kept
+// for Subsonic-style capability discovery.
 func (h *Handler) Register(mux chi.Router) {
-	// Capability discovery is unauthenticated so apps can detect support.
-	mux.HandleFunc("/capabilities", h.handleCapabilities)
-	mux.HandleFunc("/rest/immerle.capabilities", h.handleCapabilities)
+	// Legacy capability-discovery alias (Subsonic-style probing).
+	mux.Get("/rest/immerle.capabilities", h.handleCapabilities)
 
-	// First-run setup is unauthenticated and self-locks once a user exists.
-	mux.HandleFunc("/setup/status", h.handleSetupStatus)
-	mux.HandleFunc("/setup/init", h.handleSetupInit)
+	mux.Route("/api/v1", func(r chi.Router) {
+		// Public (no auth): discovery, first-run setup, session creation.
+		r.Get("/capabilities", h.handleCapabilities)
+		r.Get("/setup", h.handleSetupStatus)
+		r.Post("/setup", h.handleSetupInit)
+		r.Post("/auth/sessions", h.handleLogin)
 
-	// Device login is unauthenticated (it exchanges credentials for a JWT).
-	mux.HandleFunc("/auth/login", h.handleLogin)
+		// Everything below requires a Bearer token.
+		r.Group(func(r chi.Router) {
+			r.Use(h.authMiddleware)
 
-	// Everything below requires authentication; the group middleware applies it
-	// once instead of wrapping each handler.
-	mux.Group(func(r chi.Router) {
-		r.Use(h.authMiddleware)
+			// Own account / other users' profiles.
+			r.Get("/me", h.handleAccount)
+			r.Patch("/me", h.handleAccountUpdate)
+			r.Get("/users/{username}", h.handleProfile)
 
-		r.HandleFunc("/friends", h.handleFriends)
-		r.HandleFunc("/friends/request", h.handleFriendRequest)
-		r.HandleFunc("/friends/accept", h.handleFriendAccept)
-		r.HandleFunc("/friends/pending", h.handleFriendPending)
-		r.HandleFunc("/activity", h.handleActivity)
-		r.HandleFunc("/profile", h.handleProfile)
-		r.HandleFunc("/account", h.handleAccount)
-		r.HandleFunc("/library/stats", h.handleLibraryStats)
+			// Friendships.
+			r.Get("/friends", h.handleFriends)
+			r.Get("/friends/requests", h.handleFriendPending)
+			r.Post("/friends/requests", h.handleFriendRequest)
+			r.Post("/friends/requests/{username}/accept", h.handleFriendAccept)
 
-		// Playlist imports from external sources (e.g. Spotify).
-		r.HandleFunc("/imports/sources", h.handleImportSources)
-		r.HandleFunc("/imports/start", h.handleImportStart)
-		r.HandleFunc("/imports/status", h.handleImportStatus)
-		r.HandleFunc("/imports/items/resolve", h.handleImportItemResolve)
-		r.HandleFunc("/imports", h.handleImports)
-		r.HandleFunc("/playlists/collaborators", h.handleAddCollaborator)
-		r.HandleFunc("/playlists/public", h.handlePublicPlaylists)
-		r.HandleFunc("/playlists/subscribe", h.handleSubscribePlaylist)
-		r.HandleFunc("/playlists/unsubscribe", h.handleUnsubscribePlaylist)
-		r.HandleFunc("/jam/create", h.handleJamCreate)
-		r.HandleFunc("/jam/join", h.handleJamJoin)
-		r.HandleFunc("/jam/leave", h.handleJamLeave)
-		r.HandleFunc("/jam/state", h.handleJamState)
-		r.HandleFunc("/jam/update", h.handleJamUpdate)
-		r.HandleFunc("/jam/events", h.handleJamEvents)
+			r.Get("/activity", h.handleActivity)
+			r.Get("/library/stats", h.handleLibraryStats)
 
-		// Personal API tokens (scoped to the authenticated user).
-		r.HandleFunc("/tokens", h.handleTokens)
-		r.HandleFunc("/tokens/create", h.handleCreateToken)
-		r.HandleFunc("/tokens/revoke", h.handleRevokeToken)
+			// Playlist imports from external sources (e.g. Spotify).
+			r.Get("/imports/sources", h.handleImportSources)
+			r.Get("/imports", h.handleImports)
+			r.Post("/imports", h.handleImportStart)
+			r.Get("/imports/{id}", h.handleImportStatus)
+			r.Post("/imports/{id}/items/{itemId}/resolve", h.handleImportItemResolve)
 
-		// Device sessions (JWT): list and revoke.
-		r.HandleFunc("/devices", h.handleDevices)
-		r.HandleFunc("/devices/revoke", h.handleRevokeDevice)
+			// Collaborative / public playlists (extensions over the Subsonic API).
+			r.Get("/playlists/public", h.handlePublicPlaylists)
+			r.Put("/playlists/{id}/subscription", h.handleSubscribePlaylist)
+			r.Delete("/playlists/{id}/subscription", h.handleUnsubscribePlaylist)
+			r.Post("/playlists/{id}/collaborators", h.handleAddCollaborator)
 
-		// Per-account UI theme (scoped to the authenticated user).
-		r.HandleFunc("/theme", h.handleTheme)
+			// Synchronized Jam sessions.
+			r.Post("/jam", h.handleJamCreate)
+			r.Get("/jam/{id}", h.handleJamState)
+			r.Patch("/jam/{id}", h.handleJamUpdate)
+			r.Get("/jam/{id}/events", h.handleJamEvents)
+			r.Post("/jam/{id}/participants", h.handleJamJoin)
+			r.Delete("/jam/{id}/participants/me", h.handleJamLeave)
 
-		// Admin: runtime control of the provider-download eviction sweep.
-		r.HandleFunc("/admin/cleanup", h.handleCleanup)
-		r.HandleFunc("/admin/cleanup/run", h.handleCleanupRun)
+			// Personal API tokens (scoped to the authenticated user).
+			r.Get("/tokens", h.handleTokens)
+			r.Post("/tokens", h.handleCreateToken)
+			r.Delete("/tokens/{id}", h.handleRevokeToken)
 
-		// Admin: runtime-configurable on-demand providers.
-		r.HandleFunc("/admin/providers", h.handleProviders)
-		r.HandleFunc("/admin/providers/enable", h.handleProviderEnable)
-		r.HandleFunc("/admin/providers/reorder", h.handleProviderReorder)
-		r.HandleFunc("/admin/providers/delete", h.handleProviderDelete)
+			// Device sessions (JWT): list and revoke.
+			r.Get("/devices", h.handleDevices)
+			r.Delete("/devices/{id}", h.handleRevokeDevice)
 
-		// Admin: DB-backed runtime settings (provider behaviour, avatars, scan, federation).
-		r.HandleFunc("/admin/settings", h.handleSettings)
+			// Per-account UI theme.
+			r.Get("/theme", h.handleTheme)
+			r.Patch("/theme", h.handleThemeUpdate)
+
+			// Admin: provider-download eviction sweep.
+			r.Get("/admin/cleanup", h.handleCleanup)
+			r.Put("/admin/cleanup", h.handleCleanupUpdate)
+			r.Post("/admin/cleanup/runs", h.handleCleanupRun)
+
+			// Admin: runtime-configurable on-demand providers.
+			r.Get("/admin/providers", h.handleProviders)
+			r.Post("/admin/providers", h.handleProviderUpsert)
+			r.Put("/admin/providers/order", h.handleProviderReorder)
+			r.Put("/admin/providers/{name}/enabled", h.handleProviderEnable)
+			r.Delete("/admin/providers/{name}", h.handleProviderDelete)
+
+			// Admin: DB-backed runtime settings.
+			r.Get("/admin/settings", h.handleSettings)
+			r.Patch("/admin/settings", h.handleSettingsUpdate)
+		})
 	})
 }
 
-// authMiddleware authenticates the request (Subsonic-style credentials or a
-// device JWT / API token) and injects the user into the context. On failure it
-// answers 401 and does not call next.
+// authMiddleware authenticates the request via a Bearer device JWT or API token
+// and injects the user into the context. On failure it answers 401.
 func (h *Handler) authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_ = r.ParseForm()
-		creds := core.Credentials{
-			Username:  r.Form.Get("u"),
-			Password:  r.Form.Get("p"),
-			Token:     r.Form.Get("t"),
-			Salt:      r.Form.Get("s"),
+		_ = r.ParseForm() // allows the ?apiKey= fallback in APITokenFromRequest
+		user, err := h.Auth.Authenticate(r.Context(), core.Credentials{
 			APIToken:  httputil.APITokenFromRequest(r),
 			RemoteIP:  httputil.ClientIP(r),
 			UserAgent: r.UserAgent(),
-		}
-		user, err := h.Auth.Authenticate(r.Context(), creds)
+		})
 		if err != nil {
-			writeJSON(w, http.StatusUnauthorized, errorBody("unauthorized"))
+			writeError(w, http.StatusUnauthorized, "unauthorized", "authentication required")
 			return
 		}
 		ctx := context.WithValue(r.Context(), userKey, user)
@@ -194,22 +200,4 @@ func (h *Handler) authMiddleware(next http.Handler) http.Handler {
 func userFrom(ctx context.Context) models.User {
 	u, _ := ctx.Value(userKey).(models.User)
 	return u
-}
-
-func writeJSON(w http.ResponseWriter, status int, body any) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(body)
-}
-
-func errorBody(msg string) map[string]any {
-	return map[string]any{"ok": false, "error": msg}
-}
-
-func okBody(data map[string]any) map[string]any {
-	if data == nil {
-		data = map[string]any{}
-	}
-	data["ok"] = true
-	return data
 }

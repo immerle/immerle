@@ -2,10 +2,7 @@ package immerle
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
-	"net/http/httptest"
-	"net/url"
 	"testing"
 	"time"
 
@@ -28,6 +25,8 @@ func TestPublicPlaylistSubscriptionFlow(t *testing.T) {
 	_ = store.Playlists.Create(ctx, pub)
 	_ = store.Playlists.Create(ctx, priv)
 
+	bobToken := login(t, srv, "bob")
+
 	// Before subscribing, bob's library does NOT contain Alice's public playlist.
 	visible, _ := store.Playlists.ListVisible(ctx, bob.ID)
 	if containsPlaylist(visible, pub.ID) {
@@ -35,8 +34,10 @@ func TestPublicPlaylistSubscriptionFlow(t *testing.T) {
 	}
 
 	// bob browses public playlists and sees it (not subscribed yet).
-	pubList := postForm(t, srv, "/playlists/public", creds("bob"))
-	pls, _ := pubList["playlists"].([]any)
+	status, pls := doArr(t, srv, http.MethodGet, "/playlists/public", bobToken, nil)
+	if status != http.StatusOK {
+		t.Fatalf("public list status %d", status)
+	}
 	if len(pls) != 1 {
 		t.Fatalf("expected 1 public playlist, got %d", len(pls))
 	}
@@ -46,10 +47,8 @@ func TestPublicPlaylistSubscriptionFlow(t *testing.T) {
 	}
 
 	// bob subscribes.
-	sv := creds("bob")
-	sv.Set("playlistId", pub.ID)
-	if r := postForm(t, srv, "/playlists/subscribe", sv); r["ok"] != true {
-		t.Fatalf("subscribe failed: %+v", r)
+	if code := doStatus(t, srv, http.MethodPut, "/playlists/"+pub.ID+"/subscription", bobToken, nil); code != http.StatusNoContent {
+		t.Fatalf("subscribe failed: %d", code)
 	}
 
 	// Now it appears in bob's library (read-only).
@@ -59,16 +58,14 @@ func TestPublicPlaylistSubscriptionFlow(t *testing.T) {
 	}
 
 	// Subscribing to a private playlist is refused.
-	pv := creds("bob")
-	pv.Set("playlistId", priv.ID)
-	if code := postFormStatus(t, srv, "/playlists/subscribe", pv); code != http.StatusForbidden {
+	if code := doStatus(t, srv, http.MethodPut, "/playlists/"+priv.ID+"/subscription", bobToken, nil); code != http.StatusForbidden {
 		t.Fatalf("subscribing to a private playlist must be 403, got %d", code)
 	}
 
 	// Unsubscribe → removed from library.
-	uv := creds("bob")
-	uv.Set("playlistId", pub.ID)
-	postForm(t, srv, "/playlists/unsubscribe", uv)
+	if code := doStatus(t, srv, http.MethodDelete, "/playlists/"+pub.ID+"/subscription", bobToken, nil); code != http.StatusNoContent {
+		t.Fatalf("unsubscribe failed: %d", code)
+	}
 	visible, _ = store.Playlists.ListVisible(ctx, bob.ID)
 	if containsPlaylist(visible, pub.ID) {
 		t.Fatal("after unsubscribe the playlist must leave bob's library")
@@ -82,17 +79,4 @@ func containsPlaylist(pls []models.Playlist, id string) bool {
 		}
 	}
 	return false
-}
-
-// postFormStatus is like postForm but returns the HTTP status code.
-func postFormStatus(t *testing.T, srv *httptest.Server, path string, v url.Values) int {
-	t.Helper()
-	resp, err := http.PostForm(srv.URL+path, v)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer resp.Body.Close()
-	var discard map[string]any
-	_ = json.NewDecoder(resp.Body).Decode(&discard)
-	return resp.StatusCode
 }

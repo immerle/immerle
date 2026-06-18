@@ -43,45 +43,62 @@ interface AuthState {
  * Subsonic client, probe capabilities, and attempt a native Immerle session
  * if the instance advertises `immerleAuth`.
  */
-async function buildClient(
-  creds: SubsonicCredentials,
-  password?: string,
-): Promise<ImmerleClient> {
+async function buildClient(creds: SubsonicCredentials): Promise<ImmerleClient> {
   const subsonic = new SubsonicClient(creds);
   const capabilities = await probeCapabilities(creds.serverUrl);
 
-  let session: ImmerleSession | null = null;
-  if (capabilities.features.immerleAuth && password) {
-    session = await tryImmerleLogin(creds.serverUrl, creds.username, password);
-  }
-  const client = new ImmerleClient(subsonic, capabilities, session);
-
   // Fetch the Subsonic user record once: it carries the display name (for the
-  // greeting/account UI) and, when there's no native session, the admin role.
+  // greeting/account UI) and the admin role.
+  let displayName: string | undefined;
+  let isAdmin = false;
   try {
     const me = await subsonic.getUser(creds.username);
-    client.setDisplayName(me.displayName);
-    if (!session) client.setAdmin(Boolean(me.adminRole));
+    displayName = me.displayName;
+    isAdmin = Boolean(me.adminRole);
   } catch {
-    if (!session) client.setAdmin(false);
+    /* fall back to defaults below */
   }
+
+  // The Immerle REST API is Bearer-only, so a native device session is required
+  // for every extension call. Mint one by exchanging the Subsonic salted token
+  // (no password needed — works at login and on restore). Best-effort: a plain
+  // Subsonic server has no such endpoint, and capability gates hide the features.
+  let session: ImmerleSession | null = null;
+  if (capabilities.features.immerleAuth) {
+    session = await tryImmerleLogin(subsonic, isAdmin);
+  }
+
+  const client = new ImmerleClient(subsonic, capabilities, session);
+  client.setDisplayName(displayName);
+  if (!session) client.setAdmin(isAdmin);
   return client;
 }
 
-/** Best-effort native session. Never throws — Subsonic auth is the floor. */
+/**
+ * Best-effort native session: exchange the Subsonic salted token for a device
+ * JWT via POST /api/v1/auth/sessions. Never throws — Subsonic auth is the floor.
+ */
 async function tryImmerleLogin(
-  serverUrl: string,
-  username: string,
-  password: string,
+  subsonic: SubsonicClient,
+  isAdmin: boolean,
 ): Promise<ImmerleSession | null> {
   try {
-    const res = await fetch(`${serverUrl}/auth/login`, {
+    const { u, t, s, c } = subsonic.tokenParams();
+    const res = await fetch(`${subsonic.serverUrl}/api/v1/auth/sessions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ username: u, token: t, salt: s, device: c }),
     });
     if (!res.ok) return null;
-    return (await res.json()) as ImmerleSession;
+    const body = (await res.json()) as { token?: string; device?: { expiresAt?: string } };
+    if (!body.token) return null;
+    return {
+      token: body.token,
+      userId: '',
+      username: u,
+      isAdmin,
+      expiresAt: body.device?.expiresAt ? Date.parse(body.device.expiresAt) : undefined,
+    };
   } catch {
     return null;
   }
@@ -110,10 +127,8 @@ export const useAuth = create<AuthState>((set, get) => ({
         return;
       }
       const creds = JSON.parse(raw) as SubsonicCredentials;
+      // buildClient re-mints a fresh device JWT from the stored salted token.
       const client = await buildClient(creds);
-      // Re-hydrate a persisted native session if we have one.
-      const rawSession = await getSecureItem(STORAGE_KEYS.session);
-      if (rawSession) client.setSession(JSON.parse(rawSession) as ImmerleSession);
       set({ status: 'authenticated', client, displayName: client.displayName });
     } catch {
       // Corrupt/expired stored state: drop to login rather than crash.
@@ -144,10 +159,8 @@ export const useAuth = create<AuthState>((set, get) => ({
       throw e;
     }
 
-    const client = await buildClient(creds, password);
+    const client = await buildClient(creds);
     await setSecureItem(STORAGE_KEYS.credentials, JSON.stringify(creds));
-    const session = client.getSession();
-    if (session) await setSecureItem(STORAGE_KEYS.session, JSON.stringify(session));
 
     set({ status: 'authenticated', client, displayName: client.displayName, error: null });
   },

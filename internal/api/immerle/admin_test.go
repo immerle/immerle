@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"path/filepath"
 	"testing"
 
@@ -44,51 +43,50 @@ func newAdminEnv(t *testing.T) (*httptest.Server, *fakeCleanup) {
 
 func TestCleanupRequiresAdmin(t *testing.T) {
 	srv, _ := newAdminEnv(t)
-	resp, err := http.PostForm(srv.URL+"/admin/cleanup", url.Values{
-		"u": {"bob"}, "p": {"bobpw"}, "c": {"test"}, "enabled": {"true"},
-	})
-	if err != nil {
-		t.Fatal(err)
+	bob := login(t, srv, "bob")
+	status, body := doMap(t, srv, http.MethodGet, "/admin/cleanup", bob, nil)
+	if status != http.StatusForbidden {
+		t.Fatalf("non-admin should get 403, got %d", status)
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusForbidden {
-		t.Fatalf("non-admin should get 403, got %d", resp.StatusCode)
+	if errObj, _ := body["error"].(map[string]any); errObj["code"] != "forbidden" {
+		t.Fatalf("expected forbidden error, got %+v", body)
 	}
 }
 
 func TestCleanupToggleAndStatus(t *testing.T) {
 	srv, _ := newAdminEnv(t)
-	admin := func() url.Values { return url.Values{"u": {"admin"}, "p": {"adminpw"}, "c": {"test"}} }
+	admin := login(t, srv, "admin")
 
-	resp, _ := http.PostForm(srv.URL+"/admin/cleanup", admin()) // POST without enabled → 400
-	if resp.StatusCode != http.StatusBadRequest {
-		t.Fatalf("POST without enabled should be 400, got %d", resp.StatusCode)
-	}
-	resp.Body.Close()
-
-	// Default is on (30-day window). Disabling persists; re-enabling persists.
-	v := admin()
-	v.Set("enabled", "false")
-	body := postForm(t, srv, "/admin/cleanup", v)
-	if body["ok"] != true || body["enabled"] != false {
-		t.Fatalf("disable failed: %+v", body)
+	// Status: admin reads the current sweep state directly.
+	status, body := doMap(t, srv, http.MethodGet, "/admin/cleanup", admin, nil)
+	if status != http.StatusOK {
+		t.Fatalf("status read failed: %d %+v", status, body)
 	}
 	if body["maxAgeSeconds"].(float64) != 720*3600 {
 		t.Fatalf("unexpected maxAgeSeconds: %v", body["maxAgeSeconds"])
 	}
 
-	v.Set("enabled", "true")
-	body = postForm(t, srv, "/admin/cleanup", v)
-	if body["enabled"] != true {
-		t.Fatalf("enable failed: %+v", body)
+	// Default is on (30-day window). Disabling persists; re-enabling persists.
+	status, body = doMap(t, srv, http.MethodPut, "/admin/cleanup", admin, map[string]any{"enabled": false})
+	if status != http.StatusOK || body["enabled"] != false {
+		t.Fatalf("disable failed: %d %+v", status, body)
+	}
+	if body["maxAgeSeconds"].(float64) != 720*3600 {
+		t.Fatalf("unexpected maxAgeSeconds: %v", body["maxAgeSeconds"])
+	}
+
+	status, body = doMap(t, srv, http.MethodPut, "/admin/cleanup", admin, map[string]any{"enabled": true})
+	if status != http.StatusOK || body["enabled"] != true {
+		t.Fatalf("enable failed: %d %+v", status, body)
 	}
 }
 
 func TestCleanupRunNow(t *testing.T) {
 	srv, fc := newAdminEnv(t)
-	body := postForm(t, srv, "/admin/cleanup/run", url.Values{"u": {"admin"}, "p": {"adminpw"}, "c": {"test"}})
-	if body["ok"] != true {
-		t.Fatalf("run failed: %+v", body)
+	admin := login(t, srv, "admin")
+	status, body := doMap(t, srv, http.MethodPost, "/admin/cleanup/runs", admin, nil)
+	if status != http.StatusCreated {
+		t.Fatalf("run failed: %d %+v", status, body)
 	}
 	if body["removed"].(float64) != 2 {
 		t.Fatalf("expected removed=2, got %v", body["removed"])

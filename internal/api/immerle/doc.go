@@ -2,17 +2,22 @@
 //
 // @title           immerle extension API
 // @version         1.0.0
-// @description     Native immerle endpoints (first-run setup, capability
+// @description     Native immerle REST API (first-run setup, capability
 // @description     discovery, friends, activity feed, collaborative playlists and
-// @description     synchronized Jam sessions) that complement the Subsonic /
+// @description     synchronized Jam sessions) that complements the Subsonic /
 // @description     OpenSubsonic API served under /rest/.
 // @description
-// @description     Authenticated endpoints reuse Subsonic credentials passed as
-// @description     query parameters: u (username) plus either p (password) or the
-// @description     token pair t (md5(password+salt)) and s (salt), and c (client
-// @description     name). Setup and capability endpoints are unauthenticated.
+// @description     Served under /api/v1. Authenticated endpoints require a Bearer
+// @description     token in the Authorization header — a device JWT (obtained from
+// @description     POST /auth/sessions) or a personal API token. Setup, capability
+// @description     discovery and session creation are unauthenticated.
 // @contact.name    immerle
 // @license.name    See repository
+// @BasePath        /api/v1
+// @securityDefinitions.apikey BearerAuth
+// @in              header
+// @name            Authorization
+// @description     Type "Bearer <token>" where token is a device JWT or API token.
 // @tag.name        setup
 // @tag.description First-run provisioning of the initial administrator.
 // @tag.name        discovery

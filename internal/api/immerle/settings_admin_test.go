@@ -2,11 +2,9 @@ package immerle
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	chi "github.com/go-chi/chi/v5"
@@ -14,13 +12,6 @@ import (
 	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/testutil"
 )
-
-func decode(t *testing.T, resp *http.Response) map[string]any {
-	t.Helper()
-	var out map[string]any
-	_ = json.NewDecoder(resp.Body).Decode(&out)
-	return out
-}
 
 func newSettingsEnv(t *testing.T) *httptest.Server {
 	store := testutil.NewStore(t)
@@ -42,35 +33,30 @@ func newSettingsEnv(t *testing.T) *httptest.Server {
 
 func TestSettingsAdminOnly(t *testing.T) {
 	srv := newSettingsEnv(t)
-	resp, err := http.Get(srv.URL + "/admin/settings?u=bob&p=bobpw&c=test")
-	if err != nil {
-		t.Fatal(err)
+	bob := login(t, srv, "bob")
+	status, body := doMap(t, srv, http.MethodGet, "/admin/settings", bob, nil)
+	if status != http.StatusForbidden {
+		t.Fatalf("non-admin should get 403, got %d", status)
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusForbidden {
-		t.Fatalf("non-admin should get 403, got %d", resp.StatusCode)
+	errObj, _ := body["error"].(map[string]any)
+	if errObj["code"] != "forbidden" {
+		t.Fatalf("expected forbidden error code, got %+v", body)
 	}
 }
 
 func TestSettingsGetAndHotUpdate(t *testing.T) {
 	srv := newSettingsEnv(t)
+	admin := login(t, srv, "admin")
 
-	body := postFormGet(t, srv, "/admin/settings", admin())
+	_, body := doMap(t, srv, http.MethodGet, "/admin/settings", admin, nil)
 	if body["restartRequired"] != false {
 		t.Fatalf("nothing should require restart initially: %+v", body)
 	}
 
 	// Hot change: provider behaviour → applied immediately, no restart.
-	resp, err := http.Post(
-		srv.URL+"/admin/settings?u=admin&p=adminpw&c=test",
-		"application/json",
-		strings.NewReader(`{"providers":{"autoDownloadOnPlay":false,"searchTimeoutSeconds":10}}`),
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer resp.Body.Close()
-	out := decode(t, resp)
+	_, out := doMap(t, srv, http.MethodPatch, "/admin/settings", admin, map[string]any{
+		"providers": map[string]any{"autoDownloadOnPlay": false, "searchTimeoutSeconds": 10},
+	})
 	if out["restartRequired"] != false {
 		t.Fatalf("provider-behaviour change should be hot: %+v", out)
 	}
@@ -83,18 +69,12 @@ func TestSettingsGetAndHotUpdate(t *testing.T) {
 
 func TestSettingsRestartRequired(t *testing.T) {
 	srv := newSettingsEnv(t)
+	admin := login(t, srv, "admin")
 
 	// Toggling the scan watcher is restart-required (the watcher is wired at boot).
-	resp, err := http.Post(
-		srv.URL+"/admin/settings?u=admin&p=adminpw&c=test",
-		"application/json",
-		strings.NewReader(`{"scan":{"watch":false}}`),
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer resp.Body.Close()
-	out := decode(t, resp)
+	_, out := doMap(t, srv, http.MethodPatch, "/admin/settings", admin, map[string]any{
+		"scan": map[string]any{"watch": false},
+	})
 	if out["restartRequired"] != true {
 		t.Fatalf("toggling the scan watcher should require a restart: %+v", out)
 	}
@@ -112,17 +92,11 @@ func TestSettingsRestartRequired(t *testing.T) {
 
 func TestFederationIsHotReloadable(t *testing.T) {
 	srv := newSettingsEnv(t)
+	admin := login(t, srv, "admin")
 
-	resp, err := http.Post(
-		srv.URL+"/admin/settings?u=admin&p=adminpw&c=test",
-		"application/json",
-		strings.NewReader(`{"federation":{"enabled":true,"hubUrl":"https://hub.test"}}`),
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer resp.Body.Close()
-	out := decode(t, resp)
+	_, out := doMap(t, srv, http.MethodPatch, "/admin/settings", admin, map[string]any{
+		"federation": map[string]any{"enabled": true, "hubUrl": "https://hub.test"},
+	})
 	if out["restartRequired"] != false {
 		t.Fatalf("federation changes should be hot (no restart): %+v", out)
 	}

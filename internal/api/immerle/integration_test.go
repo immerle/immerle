@@ -2,11 +2,12 @@ package immerle
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -17,6 +18,9 @@ import (
 	"github.com/immerle/immerle/internal/persistence"
 	"github.com/immerle/immerle/internal/testutil"
 )
+
+// apiBase is the REST API mount point; test paths are given relative to it.
+const apiBase = "/api/v1"
 
 func newEnv(t *testing.T) (*httptest.Server, *persistence.Store) {
 	store := testutil.NewStore(t)
@@ -43,31 +47,89 @@ func newEnv(t *testing.T) (*httptest.Server, *persistence.Store) {
 	return srv, store
 }
 
-func creds(u string) url.Values {
-	return url.Values{"u": {u}, "p": {u + "pw"}, "c": {"test"}}
+// login authenticates a seeded user (password = username+"pw") and returns a
+// Bearer device token.
+func login(t *testing.T, srv *httptest.Server, username string) string {
+	t.Helper()
+	status, body := doMap(t, srv, http.MethodPost, "/auth/sessions", "", map[string]any{
+		"username": username,
+		"password": username + "pw",
+		"device":   "test",
+	})
+	if status != http.StatusCreated {
+		t.Fatalf("login %s: status %d body %+v", username, status, body)
+	}
+	tok, _ := body["token"].(string)
+	if tok == "" {
+		t.Fatalf("login %s: no token in %+v", username, body)
+	}
+	return tok
 }
 
-func postForm(t *testing.T, srv *httptest.Server, path string, v url.Values) map[string]any {
+// do performs an API request. path is relative to /api/v1; token is a Bearer
+// token (empty for none); body is JSON-encoded when non-nil. The caller closes
+// the returned response body.
+func do(t *testing.T, srv *httptest.Server, method, path, token string, body any) *http.Response {
 	t.Helper()
-	resp, err := http.PostForm(srv.URL+path, v)
+	var rdr io.Reader
+	if body != nil {
+		b, err := json.Marshal(body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		rdr = bytes.NewReader(b)
+	}
+	req, err := http.NewRequest(method, srv.URL+apiBase+path, rdr)
 	if err != nil {
 		t.Fatal(err)
 	}
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return resp
+}
+
+// doMap performs a request and decodes a JSON object response.
+func doMap(t *testing.T, srv *httptest.Server, method, path, token string, body any) (int, map[string]any) {
+	t.Helper()
+	resp := do(t, srv, method, path, token, body)
 	defer resp.Body.Close()
 	var out map[string]any
 	_ = json.NewDecoder(resp.Body).Decode(&out)
-	return out
+	return resp.StatusCode, out
+}
+
+// doArr performs a request and decodes a JSON array response.
+func doArr(t *testing.T, srv *httptest.Server, method, path, token string, body any) (int, []any) {
+	t.Helper()
+	resp := do(t, srv, method, path, token, body)
+	defer resp.Body.Close()
+	var out []any
+	_ = json.NewDecoder(resp.Body).Decode(&out)
+	return resp.StatusCode, out
+}
+
+// doStatus performs a request and returns just the status code (body discarded).
+func doStatus(t *testing.T, srv *httptest.Server, method, path, token string, body any) int {
+	t.Helper()
+	resp := do(t, srv, method, path, token, body)
+	resp.Body.Close()
+	return resp.StatusCode
 }
 
 func TestCapabilitiesUnauthenticated(t *testing.T) {
 	srv, _ := newEnv(t)
-	resp, err := http.Get(srv.URL + "/capabilities")
-	if err != nil {
-		t.Fatal(err)
+	status, body := doMap(t, srv, http.MethodGet, "/capabilities", "", nil)
+	if status != http.StatusOK {
+		t.Fatalf("status %d", status)
 	}
-	defer resp.Body.Close()
-	var body map[string]any
-	_ = json.NewDecoder(resp.Body).Decode(&body)
 	if body["server"] != "immerle" {
 		t.Fatalf("unexpected capabilities: %+v", body)
 	}
@@ -79,43 +141,42 @@ func TestCapabilitiesUnauthenticated(t *testing.T) {
 
 func TestFriendRequestAcceptFlow(t *testing.T) {
 	srv, _ := newEnv(t)
+	alice := login(t, srv, "alice")
+	bob := login(t, srv, "bob")
 
 	// alice requests bob.
-	v := creds("alice")
-	v.Set("username", "bob")
-	if r := postForm(t, srv, "/friends/request", v); r["ok"] != true {
-		t.Fatalf("request failed: %+v", r)
+	if s, b := doMap(t, srv, http.MethodPost, "/friends/requests", alice, map[string]any{"username": "bob"}); s != http.StatusCreated {
+		t.Fatalf("request failed: %d %+v", s, b)
 	}
 
 	// bob sees the pending request.
-	pending := postForm(t, srv, "/friends/pending", creds("bob"))
-	list, _ := pending["pending"].([]any)
-	if len(list) != 1 {
-		t.Fatalf("bob should have 1 pending request, got %d", len(list))
+	if s, list := doArr(t, srv, http.MethodGet, "/friends/requests", bob, nil); s != http.StatusOK || len(list) != 1 {
+		t.Fatalf("bob should have 1 pending request, got status %d len %d", s, len(list))
 	}
 
 	// bob accepts.
-	va := creds("bob")
-	va.Set("username", "alice")
-	if r := postForm(t, srv, "/friends/accept", va); r["ok"] != true {
-		t.Fatalf("accept failed: %+v", r)
+	if s := doStatus(t, srv, http.MethodPost, "/friends/requests/alice/accept", bob, nil); s != http.StatusOK {
+		t.Fatalf("accept failed: %d", s)
 	}
 
 	// Both now list each other as friends.
-	for _, pair := range [][2]string{{"alice", "bob"}, {"bob", "alice"}} {
-		r := postForm(t, srv, "/friends", creds(pair[0]))
-		friends, _ := r["friends"].([]any)
-		if len(friends) != 1 {
-			t.Fatalf("%s should have 1 friend, got %d", pair[0], len(friends))
+	for _, tok := range []struct {
+		name, token string
+	}{{"alice", alice}, {"bob", bob}} {
+		s, friends := doArr(t, srv, http.MethodGet, "/friends", tok.token, nil)
+		if s != http.StatusOK || len(friends) != 1 {
+			t.Fatalf("%s should have 1 friend, got status %d len %d", tok.name, s, len(friends))
 		}
 	}
 }
 
 func TestJamSSEKeepsClientsSynced(t *testing.T) {
 	srv, _ := newEnv(t)
+	alice := login(t, srv, "alice")
+	bob := login(t, srv, "bob")
 
 	// alice creates a jam.
-	created := postForm(t, srv, "/jam/create", creds("alice"))
+	_, created := doMap(t, srv, http.MethodPost, "/jam", alice, map[string]any{"name": "test"})
 	session, _ := created["session"].(map[string]any)
 	sessionID, _ := session["id"].(string)
 	if sessionID == "" {
@@ -123,16 +184,10 @@ func TestJamSSEKeepsClientsSynced(t *testing.T) {
 	}
 
 	// bob joins.
-	jv := creds("bob")
-	jv.Set("sessionId", sessionID)
-	postForm(t, srv, "/jam/join", jv)
+	doStatus(t, srv, http.MethodPost, "/jam/"+sessionID+"/participants", bob, nil)
 
 	// bob opens the SSE stream.
-	streamURL := srv.URL + "/jam/events?" + jv.Encode()
-	resp, err := http.Get(streamURL)
-	if err != nil {
-		t.Fatal(err)
-	}
+	resp := do(t, srv, http.MethodGet, "/jam/"+sessionID+"/events", bob, nil)
 	defer resp.Body.Close()
 	if ct := resp.Header.Get("Content-Type"); !strings.HasPrefix(ct, "text/event-stream") {
 		t.Fatalf("expected SSE content type, got %q", ct)
@@ -142,12 +197,11 @@ func TestJamSSEKeepsClientsSynced(t *testing.T) {
 	readSSEData(t, reader)
 
 	// alice (host) updates playback.
-	uv := creds("alice")
-	uv.Set("sessionId", sessionID)
-	uv.Set("currentTrackId", "track-2")
-	uv.Set("position", "42000")
-	uv.Set("state", "playing")
-	postForm(t, srv, "/jam/update", uv)
+	doStatus(t, srv, http.MethodPatch, "/jam/"+sessionID, alice, map[string]any{
+		"currentTrackId": "track-2",
+		"position":       42000,
+		"state":          "playing",
+	})
 
 	// bob receives the synchronized state via SSE.
 	done := make(chan map[string]any, 1)

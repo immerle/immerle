@@ -61,7 +61,8 @@ export function useResolveImportItem() {
   const client = useAuth((s) => s.client);
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ itemId, query }: { itemId: string; query?: string }) => client!.resolveImportItem(itemId, query),
+    mutationFn: ({ importId, itemId, query }: { importId: string; itemId: string; query?: string }) =>
+      client!.resolveImportItem(importId, itemId, query),
     onSuccess: () => {
       // Refresh the import detail/list and the (now updated) playlist.
       qc.invalidateQueries({ queryKey: ['imports'] });
