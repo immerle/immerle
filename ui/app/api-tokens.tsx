@@ -8,13 +8,14 @@ import { AdminHeader, AdminScroll, CardTitle } from '../src/components/AdminUI';
 import { Ionicon } from '../src/components/Ionicon';
 import { APITokenDTO } from '../src/api/immerleApi';
 import { useColors } from '../src/theme/colors';
+import { useT } from '../src/i18n/store';
 
 const DAY = 86_400_000;
-const EXPIRIES: { key: string; label: string; ms: number }[] = [
-  { key: 'never', label: 'Jamais', ms: 0 },
-  { key: '30', label: '30 jours', ms: 30 * DAY },
-  { key: '90', label: '90 jours', ms: 90 * DAY },
-  { key: '365', label: '1 an', ms: 365 * DAY },
+const EXPIRIES: { key: string; labelKey: string; ms: number }[] = [
+  { key: 'never', labelKey: 'tools.tokens.expiryNever', ms: 0 },
+  { key: '30', labelKey: 'tools.tokens.expiry30', ms: 30 * DAY },
+  { key: '90', labelKey: 'tools.tokens.expiry90', ms: 90 * DAY },
+  { key: '365', labelKey: 'tools.tokens.expiry365', ms: 365 * DAY },
 ];
 
 /**
@@ -23,6 +24,7 @@ const EXPIRIES: { key: string; label: string; ms: number }[] = [
  * access via `Authorization: Bearer <token>` or `?apiKey=<token>`.
  */
 export default function ApiTokens() {
+  const t = useT();
   const colors = useColors();
   const q = useTokens();
   const { create, revoke } = useTokenMutations();
@@ -58,22 +60,22 @@ export default function ApiTokens() {
     const doIt = () => revoke.mutate(id);
     if (Platform.OS === 'web') doIt();
     else
-      Alert.alert('Révoquer ce token ?', label, [
-        { text: 'Annuler', style: 'cancel' },
-        { text: 'Révoquer', style: 'destructive', onPress: doIt },
+      Alert.alert(t('tools.tokens.revokeConfirmTitle'), label, [
+        { text: t('tools.tokens.cancel'), style: 'cancel' },
+        { text: t('tools.tokens.revoke'), style: 'destructive', onPress: doIt },
       ]);
   };
 
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <AdminScroll header={<AdminHeader color="#6366f1" title="API" subtitle="Tokens d'accès personnels" />}>
+      <AdminScroll header={<AdminHeader color="#6366f1" title={t('tools.tokens.title')} subtitle={t('tools.tokens.subtitle')} />}>
         <View className="flex-row items-start gap-2 rounded-xl bg-surface-alt p-3">
           <Ionicon name="key-outline" size={18} color={colors.muted} />
           <Text className="flex-1 text-xs text-muted">
-            Les tokens permettent d'accéder à l'API en votre nom (en-tête{' '}
-            <Text className="text-foreground">Authorization: Bearer …</Text> ou{' '}
-            <Text className="text-foreground">?apiKey=…</Text>). Le secret n'est affiché qu'une fois.
+            {t('tools.tokens.infoPrefix')}{' '}
+            <Text className="text-foreground">Authorization: Bearer …</Text> {t('tools.tokens.infoOr')}{' '}
+            <Text className="text-foreground">?apiKey=…</Text>{t('tools.tokens.infoSuffix')}
           </Text>
         </View>
 
@@ -83,7 +85,7 @@ export default function ApiTokens() {
             <View className="flex-row items-center gap-2">
               <Ionicon name="checkmark-circle" size={18} color={colors.success} />
               <Text className="flex-1 text-sm font-semibold text-foreground">
-                Token créé — copiez-le maintenant
+                {t('tools.tokens.createdCopyNow')}
               </Text>
               <IconButton name="close" size={18} color={colors.muted} onPress={() => setSecret(null)} />
             </View>
@@ -91,7 +93,7 @@ export default function ApiTokens() {
               {secret}
             </Text>
             <Button
-              title={copied ? 'Copié ✓' : 'Copier le token'}
+              title={copied ? t('tools.tokens.copied') : t('tools.tokens.copyToken')}
               icon={copied ? 'checkmark' : 'copy-outline'}
               variant="secondary"
               onPress={copy}
@@ -101,25 +103,25 @@ export default function ApiTokens() {
 
         {/* Create */}
         <Card className="gap-3">
-          <CardTitle icon="add-circle" color="#6366f1" title="Nouveau token" />
-          <Field label="Nom (optionnel)" placeholder="mon-cli" value={name} onChangeText={setName} autoCapitalize="none" />
-          <Text className="text-sm font-medium text-muted">Expiration</Text>
+          <CardTitle icon="add-circle" color="#6366f1" title={t('tools.tokens.newToken')} />
+          <Field label={t('tools.tokens.nameLabel')} placeholder="mon-cli" value={name} onChangeText={setName} autoCapitalize="none" />
+          <Text className="text-sm font-medium text-muted">{t('tools.tokens.expiration')}</Text>
           <View className="flex-row flex-wrap gap-2">
             {EXPIRIES.map((e) => (
-              <Chip key={e.key} label={e.label} active={expiry === e.key} onPress={() => setExpiry(e.key)} />
+              <Chip key={e.key} label={t(e.labelKey)} active={expiry === e.key} onPress={() => setExpiry(e.key)} />
             ))}
           </View>
-          <Button title="Créer le token" icon="add" loading={create.isPending} onPress={submit} />
+          <Button title={t('tools.tokens.createButton')} icon="add" loading={create.isPending} onPress={submit} />
         </Card>
 
         {/* List */}
-        <Text className="px-1 pt-1 text-xs font-medium uppercase tracking-wider text-muted">Tokens actifs</Text>
+        <Text className="px-1 pt-1 text-xs font-medium uppercase tracking-wider text-muted">{t('tools.tokens.activeTokens')}</Text>
         {q.isLoading ? (
           <Loading />
         ) : q.isError ? (
-          <ErrorState message="Impossible de charger les tokens." onRetry={q.refetch} />
+          <ErrorState message={t('tools.tokens.loadError')} onRetry={q.refetch} />
         ) : !q.data?.length ? (
-          <EmptyState icon="key-outline" title="Aucun token" subtitle="Créez-en un ci-dessus." />
+          <EmptyState icon="key-outline" title={t('tools.tokens.emptyTitle')} subtitle={t('tools.tokens.emptySubtitle')} />
         ) : (
           q.data.map((t: APITokenDTO) => <TokenRow key={t.id} token={t} onRevoke={() => confirmRevoke(t.id!, t.name || t.prefix || '')} loading={revoke.isPending} />)
         )}
@@ -129,6 +131,7 @@ export default function ApiTokens() {
 }
 
 function TokenRow({ token, onRevoke, loading }: { token: APITokenDTO; onRevoke: () => void; loading: boolean }) {
+  const t = useT();
   const colors = useColors();
   const expired = token.expiresAt ? new Date(token.expiresAt).getTime() < Date.now() : false;
   const fmt = (d?: string) => (d ? new Date(d).toLocaleDateString() : '—');
@@ -136,14 +139,14 @@ function TokenRow({ token, onRevoke, loading }: { token: APITokenDTO; onRevoke: 
     <Card className="gap-2">
       <View className="flex-row items-center gap-2">
         <Ionicon name="key" size={18} color={colors.primary} />
-        <Text className="flex-1 text-base font-semibold text-foreground">{token.name || 'Sans nom'}</Text>
-        {expired ? <Badge label="Expiré" tone="danger" /> : null}
-        <IconButton name="trash-outline" size={20} color={colors.danger} onPress={onRevoke} accessibilityLabel="Révoquer" />
+        <Text className="flex-1 text-base font-semibold text-foreground">{token.name || t('tools.tokens.unnamed')}</Text>
+        {expired ? <Badge label={t('tools.tokens.expired')} tone="danger" /> : null}
+        <IconButton name="trash-outline" size={20} color={colors.danger} onPress={onRevoke} accessibilityLabel={t('tools.tokens.revoke')} />
       </View>
       <Text className="text-xs text-muted">
-        {token.prefix ? `${token.prefix}… · ` : ''}créé le {fmt(token.createdAt)}
-        {token.lastUsedAt ? ` · utilisé le ${fmt(token.lastUsedAt)}` : ' · jamais utilisé'}
-        {token.expiresAt ? ` · expire le ${fmt(token.expiresAt)}` : ' · n’expire pas'}
+        {token.prefix ? `${token.prefix}… · ` : ''}{t('tools.tokens.createdOn', { date: fmt(token.createdAt) })}
+        {token.lastUsedAt ? ` · ${t('tools.tokens.usedOn', { date: fmt(token.lastUsedAt) })}` : ` · ${t('tools.tokens.neverUsed')}`}
+        {token.expiresAt ? ` · ${t('tools.tokens.expiresOn', { date: fmt(token.expiresAt) })}` : ` · ${t('tools.tokens.noExpiry')}`}
       </Text>
     </Card>
   );

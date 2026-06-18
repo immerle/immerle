@@ -9,6 +9,7 @@ import { usePlayer } from '../src/audio/store';
 import { Song } from '../src/api/subsonic/types';
 import { formatDuration } from '../src/utils/format';
 import { useColors } from '../src/theme/colors';
+import { useT } from '../src/i18n/store';
 
 function shuffleArray(songs: Song[]): Song[] {
   const a = [...songs];
@@ -24,6 +25,7 @@ function shuffleArray(songs: Song[]): Song[] {
  * endpoint (starred songs). Read-only: play / shuffle, no CRUD.
  */
 export default function Liked() {
+  const t = useT();
   const colors = useColors();
   const q = useStarred();
   const playSongs = usePlayer((s) => s.playSongs);
@@ -34,9 +36,9 @@ export default function Liked() {
   const Header = (
     <View className="w-full max-w-2xl items-center gap-3 self-center px-4 pb-2 pt-2">
       <LikedCover size={200} rounded={16} />
-      <Text className="text-2xl font-bold tracking-tight text-foreground">Titres likés</Text>
+      <Text className="text-2xl font-bold tracking-tight text-foreground">{t('media.liked.title')}</Text>
       <Text className="text-xs text-muted">
-        {songs.length} titres · {formatDuration(totalDuration)}
+        {t('media.liked.trackCount', { count: songs.length })} · {formatDuration(totalDuration)}
       </Text>
       <View className="w-full flex-row items-center justify-between py-2">
         <IconButton
@@ -44,12 +46,12 @@ export default function Liked() {
           size={26}
           color={colors.muted}
           onPress={() => songs.length && playSongs(shuffleArray(songs), 0)}
-          accessibilityLabel="Aléatoire"
+          accessibilityLabel={t('media.liked.shuffle')}
         />
         <PlayButton
           onPress={() => songs.length && playSongs(songs, 0)}
           size={56}
-          accessibilityLabel="Lire les titres likés"
+          accessibilityLabel={t('media.liked.play')}
         />
       </View>
     </View>
@@ -57,16 +59,16 @@ export default function Liked() {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Titres likés' }} />
+      <Stack.Screen options={{ title: t('media.liked.title') }} />
       <View className="flex-1 bg-background">
         {q.isLoading ? (
           <Loading />
         ) : q.isError ? (
-          <ErrorState message="Impossible de charger les titres likés." onRetry={q.refetch} />
+          <ErrorState message={t('media.liked.loadError')} onRetry={q.refetch} />
         ) : songs.length === 0 ? (
           <View className="flex-1">
             {Header}
-            <EmptyState icon="heart-outline" title="Aucun titre liké" subtitle="Appuyez sur ♥ pour en ajouter." />
+            <EmptyState icon="heart-outline" title={t('media.liked.empty')} subtitle={t('media.liked.emptySubtitle')} />
           </View>
         ) : (
           <TrackList songs={songs} header={Header} refreshing={q.isRefetching} onRefresh={q.refetch} />

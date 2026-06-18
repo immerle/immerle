@@ -9,48 +9,49 @@ import { Ionicon } from '../../src/components/Ionicon';
 import { CapabilityFeature } from '../../src/api/immerle/types';
 import { formatBytes, formatCount } from '../../src/utils/format';
 import { useColors } from '../../src/theme/colors';
+import { useT } from '../../src/i18n/store';
 
 // Instance-wide capability flags advertised at `/capabilities` — read-only,
 // shown here (admin) rather than in user settings since they describe the server.
-const FEATURES: { key: CapabilityFeature; label: string; icon: string }[] = [
-  { key: 'immerleAuth', label: 'Auth Immerle', icon: 'key' },
-  { key: 'onDemandCatalog', label: 'Catalogue à la demande', icon: 'cloud-download' },
-  { key: 'dynamicProviders', label: 'Providers dynamiques', icon: 'cube' },
-  { key: 'federation', label: 'Fédération', icon: 'git-network' },
-  { key: 'jam', label: 'Sessions Jam', icon: 'radio' },
-  { key: 'collaborativePlaylists', label: 'Playlists collaboratives', icon: 'people' },
-  { key: 'publicPlaylists', label: 'Playlists publiques', icon: 'globe' },
-  { key: 'social', label: 'Social', icon: 'chatbubbles' },
-  { key: 'adminExtended', label: 'Admin étendue', icon: 'shield-checkmark' },
-  { key: 'offlineDownloads', label: 'Hors-ligne', icon: 'download' },
+const FEATURES: { key: CapabilityFeature; labelKey: string; icon: string }[] = [
+  { key: 'immerleAuth', labelKey: 'home.admin.feature.immerleAuth', icon: 'key' },
+  { key: 'onDemandCatalog', labelKey: 'home.admin.feature.onDemandCatalog', icon: 'cloud-download' },
+  { key: 'dynamicProviders', labelKey: 'home.admin.feature.dynamicProviders', icon: 'cube' },
+  { key: 'federation', labelKey: 'home.admin.feature.federation', icon: 'git-network' },
+  { key: 'jam', labelKey: 'home.admin.feature.jam', icon: 'radio' },
+  { key: 'collaborativePlaylists', labelKey: 'home.admin.feature.collaborativePlaylists', icon: 'people' },
+  { key: 'publicPlaylists', labelKey: 'home.admin.feature.publicPlaylists', icon: 'globe' },
+  { key: 'social', labelKey: 'home.admin.feature.social', icon: 'chatbubbles' },
+  { key: 'adminExtended', labelKey: 'home.admin.feature.adminExtended', icon: 'shield-checkmark' },
+  { key: 'offlineDownloads', labelKey: 'home.admin.feature.offlineDownloads', icon: 'download' },
 ];
 
 interface AdminLink {
   href: string;
   icon: string;
-  title: string;
-  subtitle: string;
+  titleKey: string;
+  subtitleKey: string;
   color: string;
   /** When set, hidden unless the instance advertises this. */
   requires?: 'dynamicProviders' | 'runtimeSettings';
 }
 
 const LINKS: AdminLink[] = [
-  { href: '/admin/users', icon: 'people', title: 'Utilisateurs', subtitle: 'Comptes, rôles, mots de passe', color: '#3b82f6' },
-  { href: '/admin/scan', icon: 'refresh-circle', title: 'Bibliothèque', subtitle: 'Scan & statistiques', color: '#f59e0b' },
+  { href: '/admin/users', icon: 'people', titleKey: 'home.admin.link.users.title', subtitleKey: 'home.admin.link.users.subtitle', color: '#3b82f6' },
+  { href: '/admin/scan', icon: 'refresh-circle', titleKey: 'home.admin.link.library.title', subtitleKey: 'home.admin.link.library.subtitle', color: '#f59e0b' },
   {
     href: '/admin/providers',
     icon: 'cube',
-    title: 'Providers',
-    subtitle: 'Sources de contenu dynamiques',
+    titleKey: 'home.admin.link.providers.title',
+    subtitleKey: 'home.admin.link.providers.subtitle',
     color: '#8b5cf6',
     requires: 'dynamicProviders',
   },
   {
     href: '/admin/settings',
     icon: 'options',
-    title: 'Réglages',
-    subtitle: 'Runtime, transcodage, fédération, nettoyage',
+    titleKey: 'home.admin.link.settings.title',
+    subtitleKey: 'home.admin.link.settings.subtitle',
     color: '#0ea5e9',
     requires: 'runtimeSettings',
   },
@@ -62,6 +63,7 @@ const LINKS: AdminLink[] = [
  * plain Subsonic server, so admins never see dead ends.
  */
 export default function Admin() {
+  const t = useT();
   const colors = useColors();
   const client = useAuth((s) => s.client);
   const stats = useLibraryStats();
@@ -69,7 +71,7 @@ export default function Admin() {
   if (!client?.isAdmin) {
     return (
       <SafeAreaView edges={['top']} className="flex-1 bg-background">
-        <EmptyState icon="lock-closed" title="Accès réservé" subtitle="Section administrateur." />
+        <EmptyState icon="lock-closed" title={t('home.admin.restricted')} subtitle={t('home.admin.restrictedSubtitle')} />
       </SafeAreaView>
     );
   }
@@ -81,28 +83,28 @@ export default function Admin() {
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
         <AdminHeader
           color={colors.primary}
-          title="Administration"
+          title={t('home.admin.title')}
           subtitle={client.serverUrl}
           showBack={false}
           trailing={
             <View className="rounded-full bg-success/15 px-2.5 py-1">
-              <Text className="text-xs font-semibold text-success">Admin</Text>
+              <Text className="text-xs font-semibold text-success">{t('home.admin.badge')}</Text>
             </View>
           }
         />
 
         <View style={{ maxWidth: ADMIN_MAX_WIDTH, width: '100%', alignSelf: 'center' }}>
         {/* Overview stats */}
-        <SectionHeader title="Vue d'ensemble" />
+        <SectionHeader title={t('home.admin.overview')} />
         <View className="flex-row flex-wrap gap-2.5 px-4">
-          <StatTile icon="people" color="#3b82f6" label="Artistes" value={formatCount(stats.data?.artistCount)} />
-          <StatTile icon="albums" color="#8b5cf6" label="Albums" value={formatCount(stats.data?.albumCount)} />
-          <StatTile icon="musical-notes" color="#1ed760" label="Titres" value={formatCount(stats.data?.songCount)} />
-          <StatTile icon="server" color="#f59e0b" label="Espace" value={stats.data ? formatBytes(stats.data.totalSize) : '—'} />
+          <StatTile icon="people" color="#3b82f6" label={t('home.admin.artists')} value={formatCount(stats.data?.artistCount)} />
+          <StatTile icon="albums" color="#8b5cf6" label={t('home.admin.albums')} value={formatCount(stats.data?.albumCount)} />
+          <StatTile icon="musical-notes" color="#1ed760" label={t('home.admin.tracks')} value={formatCount(stats.data?.songCount)} />
+          <StatTile icon="server" color="#f59e0b" label={t('home.admin.storage')} value={stats.data ? formatBytes(stats.data.totalSize) : '—'} />
         </View>
 
         {/* Management grid */}
-        <SectionHeader title="Gestion" />
+        <SectionHeader title={t('home.admin.management')} />
         <View className="flex-row flex-wrap gap-2.5 px-4">
           {visibleLinks.map((l) => (
             <ManageTile key={l.href} link={l} onPress={() => router.push(l.href as never)} />
@@ -110,14 +112,14 @@ export default function Admin() {
         </View>
 
         {/* Instance capabilities (read-only, server-detected) */}
-        <SectionHeader title="Fonctions de l'instance" />
+        <SectionHeader title={t('home.admin.instanceFeatures')} />
         <View className="flex-row flex-wrap gap-2 px-4">
           {FEATURES.map((f) => (
-            <FeaturePill key={f.key} icon={f.icon} label={f.label} on={client.capabilities.features[f.key]} />
+            <FeaturePill key={f.key} icon={f.icon} label={t(f.labelKey)} on={client.capabilities.features[f.key]} />
           ))}
         </View>
         <Text className="px-5 pt-2.5 text-xs text-muted">
-          Détecté automatiquement · {client.capabilities.version}
+          {t('home.admin.autoDetected', { version: client.capabilities.version })}
         </Text>
         </View>
       </ScrollView>
@@ -142,6 +144,7 @@ function StatTile({ icon, color, label, value }: { icon: string; color: string; 
 }
 
 function ManageTile({ link, onPress }: { link: AdminLink; onPress: () => void }) {
+  const t = useT();
   const colors = useColors();
   return (
     <Pressable onPress={onPress} className="min-w-[46%] flex-1 active:opacity-80">
@@ -153,9 +156,9 @@ function ManageTile({ link, onPress }: { link: AdminLink; onPress: () => void })
           <Ionicon name="chevron-forward" size={18} color={colors.muted} />
         </View>
         <View>
-          <Text className="text-base font-semibold text-foreground">{link.title}</Text>
+          <Text className="text-base font-semibold text-foreground">{t(link.titleKey)}</Text>
           <Text className="text-xs text-muted" numberOfLines={2}>
-            {link.subtitle}
+            {t(link.subtitleKey)}
           </Text>
         </View>
       </View>

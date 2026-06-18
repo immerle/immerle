@@ -6,6 +6,7 @@ import { router } from 'expo-router';
 import { Ionicon } from './Ionicon';
 import { useColors } from '../theme/colors';
 import { WIDE_BREAKPOINT } from '../theme/layout';
+import { useT } from '../i18n/store';
 
 /**
  * Shared chrome for admin sub-pages: a centered, max-width scroll container with
@@ -48,6 +49,7 @@ export function AdminHeader({
   trailing?: ReactNode;
   showBack?: boolean;
 }) {
+  const t = useT();
   const colors = useColors();
   const { width } = useWindowDimensions();
   const wide = width >= WIDE_BREAKPOINT;
@@ -74,7 +76,7 @@ export function AdminHeader({
         {showBack && !wide ? (
           <Pressable
             onPress={() => router.back()}
-            accessibilityLabel="Retour"
+            accessibilityLabel={t('components.admin.back')}
             className="h-9 w-9 items-center justify-center rounded-full bg-surface-alt active:opacity-70"
           >
             <Ionicon name="chevron-back" size={20} color={colors.foreground} />

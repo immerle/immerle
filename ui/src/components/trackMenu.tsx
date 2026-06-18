@@ -9,6 +9,7 @@ import { Field } from './ui';
 import { usePlayer } from '../audio/store';
 import { useAddToPlaylist, useCreatePlaylist, usePlaylists } from '../query/playlists';
 import { useColors } from '../theme/colors';
+import { useT } from '../i18n/store';
 
 /** Global target for the contextual track menu. */
 interface TrackMenuState {
@@ -51,6 +52,7 @@ function Action({ icon, label, onPress, tone = 'default' }: ActionProps) {
  * at the app root; opened from anywhere via `useTrackMenu().open(song)`.
  */
 export function TrackMenu() {
+  const t = useT();
   const song = useTrackMenu((s) => s.song);
   const close = useTrackMenu((s) => s.close);
   const playNext = usePlayer((s) => s.playNext);
@@ -93,7 +95,7 @@ export function TrackMenu() {
             <View>
               <Action
                 icon="play"
-                label="Lire maintenant"
+                label={t('components.trackMenu.playNow')}
                 onPress={() => {
                   void usePlayer.getState().playSongs([song], 0);
                   dismiss();
@@ -101,7 +103,7 @@ export function TrackMenu() {
               />
               <Action
                 icon="play-skip-forward"
-                label="Lire ensuite"
+                label={t('components.trackMenu.playNext')}
                 onPress={() => {
                   void playNext([song]);
                   dismiss();
@@ -109,17 +111,17 @@ export function TrackMenu() {
               />
               <Action
                 icon="list"
-                label="Ajouter à la file"
+                label={t('components.trackMenu.addToQueue')}
                 onPress={() => {
                   void enqueue([song]);
                   dismiss();
                 }}
               />
-              <Action icon="add-circle-outline" label="Ajouter à une playlist" onPress={() => setPicker(true)} />
+              <Action icon="add-circle-outline" label={t('components.trackMenu.addToPlaylist')} onPress={() => setPicker(true)} />
               {song.albumId ? (
                 <Action
                   icon="disc-outline"
-                  label="Aller à l'album"
+                  label={t('components.trackMenu.goToAlbum')}
                   onPress={() => {
                     dismiss();
                     router.push(`/album/${song.albumId}`);
@@ -129,7 +131,7 @@ export function TrackMenu() {
               {song.artistId ? (
                 <Action
                   icon="person-outline"
-                  label="Aller à l'artiste"
+                  label={t('components.trackMenu.goToArtist')}
                   onPress={() => {
                     dismiss();
                     router.push(`/artist/${song.artistId}`);
@@ -145,6 +147,7 @@ export function TrackMenu() {
 }
 
 function PlaylistPicker({ song, onDone }: { song: Song; onDone: () => void }) {
+  const t = useT();
   const { data: playlists } = usePlaylists();
   const addTo = useAddToPlaylist();
   const createPlaylist = useCreatePlaylist();
@@ -164,7 +167,7 @@ function PlaylistPicker({ song, onDone }: { song: Song; onDone: () => void }) {
 
   return (
     <View className="px-5 pt-3">
-      <Text className="pb-2 text-sm font-medium text-muted">Choisir une playlist</Text>
+      <Text className="pb-2 text-sm font-medium text-muted">{t('components.trackMenu.choosePlaylist')}</Text>
       <View className="max-h-64">
         {(playlists ?? []).map((p) => (
           <Pressable
@@ -180,8 +183,8 @@ function PlaylistPicker({ song, onDone }: { song: Song; onDone: () => void }) {
       <View className="mt-2 flex-row items-end gap-2">
         <View className="flex-1">
           <Field
-            label="Nouvelle playlist"
-            placeholder="Nom"
+            label={t('components.trackMenu.newPlaylist')}
+            placeholder={t('components.trackMenu.namePlaceholder')}
             value={newName}
             onChangeText={setNewName}
             onSubmitEditing={createAndAdd}
@@ -191,7 +194,7 @@ function PlaylistPicker({ song, onDone }: { song: Song; onDone: () => void }) {
           onPress={createAndAdd}
           className="mb-0.5 rounded-xl bg-primary px-4 py-3 active:opacity-80"
         >
-          <Text className="font-semibold text-primary-foreground">Créer</Text>
+          <Text className="font-semibold text-primary-foreground">{t('components.trackMenu.create')}</Text>
         </Pressable>
       </View>
     </View>

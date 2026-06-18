@@ -7,9 +7,11 @@ import { Badge, Button, Card, ErrorState, Field, IconButton, Loading } from '../
 import { AdminHeader, AdminScroll, CardTitle, colorFor } from '../../src/components/AdminUI';
 import { Ionicon } from '../../src/components/Ionicon';
 import { useColors } from '../../src/theme/colors';
+import { useT } from '../../src/i18n/store';
 
 /** Admin users: list, create, toggle admin role, reset password, delete. */
 export default function AdminUsers() {
+  const t = useT();
   const colors = useColors();
   const q = useUsers();
   const { create, update, remove, resetPassword } = useUserMutations();
@@ -43,9 +45,9 @@ export default function AdminUsers() {
     const doDelete = () => remove.mutate(username);
     if (Platform.OS === 'web') doDelete();
     else
-      Alert.alert('Supprimer cet utilisateur ?', username, [
-        { text: 'Annuler', style: 'cancel' },
-        { text: 'Supprimer', style: 'destructive', onPress: doDelete },
+      Alert.alert(t('admin.users.deleteConfirmTitle'), username, [
+        { text: t('admin.users.cancel'), style: 'cancel' },
+        { text: t('admin.users.delete'), style: 'destructive', onPress: doDelete },
       ]);
   };
 
@@ -76,14 +78,14 @@ export default function AdminUsers() {
       {q.isLoading ? (
         <Loading />
       ) : q.isError ? (
-        <ErrorState message="Impossible de charger les utilisateurs." onRetry={q.refetch} />
+        <ErrorState message={t('admin.users.loadError')} onRetry={q.refetch} />
       ) : (
         <AdminScroll
           header={
             <AdminHeader
               color="#3b82f6"
-              title="Utilisateurs"
-              subtitle={`${users.length} compte${users.length > 1 ? 's' : ''}`}
+              title={t('admin.users.title')}
+              subtitle={t('admin.users.accountCount', { count: users.length })}
               trailing={
                 <IconButton
                   name={showCreate ? 'close' : 'person-add'}
@@ -96,16 +98,16 @@ export default function AdminUsers() {
         >
           {showCreate ? (
             <Card className="gap-3">
-              <CardTitle icon="person-add" color="#3b82f6" title="Nouvel utilisateur" />
-              <Field label="Identifiant" placeholder="utilisateur" autoCapitalize="none" value={form.username} onChangeText={(v) => setForm({ ...form, username: v })} />
-              <Field label="Nom affiché (optionnel)" placeholder="Jean Dupont" value={form.displayName} onChangeText={(v) => setForm({ ...form, displayName: v })} />
-              <Field label="Mot de passe" secureTextEntry value={form.password} onChangeText={(v) => setForm({ ...form, password: v })} />
-              <Field label="Email (optionnel)" keyboardType="email-address" autoCapitalize="none" value={form.email} onChangeText={(v) => setForm({ ...form, email: v })} />
+              <CardTitle icon="person-add" color="#3b82f6" title={t('admin.users.newUser')} />
+              <Field label={t('admin.users.usernameLabel')} placeholder="utilisateur" autoCapitalize="none" value={form.username} onChangeText={(v) => setForm({ ...form, username: v })} />
+              <Field label={t('admin.users.displayNameLabel')} placeholder="Jean Dupont" value={form.displayName} onChangeText={(v) => setForm({ ...form, displayName: v })} />
+              <Field label={t('admin.users.passwordLabel')} secureTextEntry value={form.password} onChangeText={(v) => setForm({ ...form, password: v })} />
+              <Field label={t('admin.users.emailLabel')} keyboardType="email-address" autoCapitalize="none" value={form.email} onChangeText={(v) => setForm({ ...form, email: v })} />
               <View className="flex-row items-center justify-between rounded-xl bg-surface-alt px-3 py-2">
-                <Text className="text-sm text-foreground">Administrateur</Text>
+                <Text className="text-sm text-foreground">{t('admin.users.administrator')}</Text>
                 <Switch value={form.admin} onValueChange={(v) => setForm({ ...form, admin: v })} trackColor={{ true: colors.primary, false: colors.border }} />
               </View>
-              <Button title="Créer l'utilisateur" icon="checkmark" loading={create.isPending} onPress={submitCreate} />
+              <Button title={t('admin.users.createUser')} icon="checkmark" loading={create.isPending} onPress={submitCreate} />
             </Card>
           ) : null}
 
@@ -172,6 +174,7 @@ function UserRow({
   onSubmitReset,
   resetLoading,
 }: UserRowProps) {
+  const t = useT();
   const colors = useColors();
   const isAdmin = !!user.adminRole;
   const shownName = user.displayName || user.username;
@@ -186,10 +189,10 @@ function UserRow({
         <View className="flex-1">
           <View className="flex-row items-center gap-2">
             <Text className="text-base font-semibold text-foreground">{shownName}</Text>
-            {isAdmin ? <Badge label="Admin" tone="success" /> : null}
+            {isAdmin ? <Badge label={t('admin.users.adminBadge')} tone="success" /> : null}
           </View>
           <Text className="text-xs text-muted" numberOfLines={1}>
-            {hasDisplay ? `@${user.username}${user.email ? ` · ${user.email}` : ''}` : user.email || 'Aucun email'}
+            {hasDisplay ? `@${user.username}${user.email ? ` · ${user.email}` : ''}` : user.email || t('admin.users.noEmail')}
           </Text>
         </View>
         <Ionicon name={expanded ? 'chevron-up' : 'chevron-down'} size={18} color={colors.muted} />
@@ -199,34 +202,34 @@ function UserRow({
         <View className="gap-2 px-3 pb-3">
           <View className="flex-row items-end gap-2">
             <View className="flex-1">
-              <Field label="Nom affiché" placeholder={user.username} value={dn} onChangeText={setDn} />
+              <Field label={t('admin.users.displayNameFieldLabel')} placeholder={user.username} value={dn} onChangeText={setDn} />
             </View>
-            <Button title="Enregistrer" size="sm" icon="checkmark" loading={savingDisplayName} onPress={() => onSaveDisplayName(dn)} />
+            <Button title={t('admin.users.save')} size="sm" icon="checkmark" loading={savingDisplayName} onPress={() => onSaveDisplayName(dn)} />
           </View>
 
           <View className="flex-row items-center justify-between rounded-xl bg-surface-alt px-3 py-2">
-            <Text className="text-sm text-foreground">Rôle administrateur</Text>
+            <Text className="text-sm text-foreground">{t('admin.users.adminRole')}</Text>
             <Switch value={isAdmin} onValueChange={onToggleAdmin} trackColor={{ true: colors.primary, false: colors.border }} />
           </View>
 
           {resetting ? (
             <View className="gap-2">
-              <Field label="Nouveau mot de passe" secureTextEntry value={newPassword} onChangeText={onChangePassword} />
+              <Field label={t('admin.users.newPassword')} secureTextEntry value={newPassword} onChangeText={onChangePassword} />
               <View className="flex-row gap-2">
                 <View className="flex-1">
-                  <Button title="Annuler" size="sm" variant="ghost" onPress={onCancelReset} />
+                  <Button title={t('admin.users.cancel')} size="sm" variant="ghost" onPress={onCancelReset} />
                 </View>
                 <View className="flex-1">
-                  <Button title="Valider" size="sm" icon="checkmark" loading={resetLoading} onPress={onSubmitReset} />
+                  <Button title={t('admin.users.validate')} size="sm" icon="checkmark" loading={resetLoading} onPress={onSubmitReset} />
                 </View>
               </View>
             </View>
           ) : (
             <View className="flex-row gap-2">
               <View className="flex-1">
-                <Button title="Réinitialiser le mot de passe" size="sm" icon="key-outline" variant="secondary" onPress={onStartReset} />
+                <Button title={t('admin.users.resetPassword')} size="sm" icon="key-outline" variant="secondary" onPress={onStartReset} />
               </View>
-              <Button title="Supprimer" size="sm" icon="trash-outline" variant="danger" onPress={onDelete} />
+              <Button title={t('admin.users.delete')} size="sm" icon="trash-outline" variant="danger" onPress={onDelete} />
             </View>
           )}
         </View>

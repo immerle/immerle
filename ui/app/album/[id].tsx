@@ -11,9 +11,11 @@ import { usePlayer } from '../../src/audio/store';
 import { useColors } from '../../src/theme/colors';
 import { Song } from '../../src/api/subsonic/types';
 import { formatDuration } from '../../src/utils/format';
+import { useT } from '../../src/i18n/store';
 
 /** Album detail: an immersive Spotify-style hero + virtualized track list. */
 export default function AlbumDetail() {
+  const t = useT();
   const colors = useColors();
   const { width } = useWindowDimensions();
   const wide = width >= 640;
@@ -24,7 +26,7 @@ export default function AlbumDetail() {
 
   if (q.isLoading) return <Loading />;
   if (q.isError || !q.data) {
-    return <ErrorState message="Album introuvable." onRetry={q.refetch} />;
+    return <ErrorState message={t('media.album.notFound')} onRetry={q.refetch} />;
   }
 
   const album = q.data;
@@ -43,7 +45,7 @@ export default function AlbumDetail() {
             <CoverArt coverArt={album.coverArt} size={wide ? 196 : 150} rounded="rounded-md" />
           </View>
           <View className={wide ? 'min-w-0 flex-1' : 'items-center'}>
-            <Text className="text-xs font-semibold uppercase tracking-wide text-white/80">Album</Text>
+            <Text className="text-xs font-semibold uppercase tracking-wide text-white/80">{t('media.album.label')}</Text>
             <Text
               numberOfLines={2}
               className={`font-extrabold tracking-tight text-white ${wide ? 'text-5xl' : 'text-center text-3xl'}`}
@@ -62,7 +64,7 @@ export default function AlbumDetail() {
               >
                 {album.artist}
               </Text>
-              {album.year ? ` · ${album.year}` : ''} · {songs.length} titres · {formatDuration(totalDuration)}
+              {album.year ? ` · ${album.year}` : ''} · {t('media.album.trackCount', { count: songs.length })} · {formatDuration(totalDuration)}
             </Text>
           </View>
         </View>
@@ -70,8 +72,8 @@ export default function AlbumDetail() {
 
       {/* Action bar over the page background. */}
       <View className="flex-row items-center gap-5 px-4 py-4">
-        <PlayButton onPress={playAll} size={56} accessibilityLabel="Lecture de l'album" />
-        <IconButton name="shuffle" size={26} color={colors.muted} onPress={shuffle} accessibilityLabel="Aléatoire" />
+        <PlayButton onPress={playAll} size={56} accessibilityLabel={t('media.album.play')} />
+        <IconButton name="shuffle" size={26} color={colors.muted} onPress={shuffle} accessibilityLabel={t('media.album.shuffle')} />
       </View>
     </View>
   );

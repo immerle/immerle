@@ -5,6 +5,7 @@ import { useAuth } from '../../src/auth/store';
 import { useSearchUI } from '../../src/search/store';
 import { useColors } from '../../src/theme/colors';
 import { WIDE_BREAKPOINT } from '../../src/theme/layout';
+import { useT } from '../../src/i18n/store';
 
 /**
  * Adaptive navigator. On wide screens (web/tablet) the nav becomes a Spotify-
@@ -14,6 +15,7 @@ import { WIDE_BREAKPOINT } from '../../src/theme/layout';
  * the player. Admin/Social tabs appear only when available.
  */
 export default function TabsLayout() {
+  const t = useT();
   const colors = useColors();
   const { width } = useWindowDimensions();
   const wide = width >= WIDE_BREAKPOINT;
@@ -44,7 +46,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Accueil',
+          title: t('home.tabs.home'),
           // On desktop, Home lives in the top bar, not the sidebar.
           href: wide ? null : undefined,
           tabBarIcon: ({ color, size }) => <Ionicon name="home" size={size} color={color} />,
@@ -53,7 +55,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="search"
         options={{
-          title: 'Recherche',
+          title: t('home.tabs.search'),
           // On desktop, search lives in the top bar.
           href: wide ? null : undefined,
           tabBarIcon: ({ color, size }) => <Ionicon name="search" size={size} color={color} />,
@@ -70,7 +72,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="playlists"
         options={{
-          title: 'Playlists',
+          title: t('home.tabs.playlists'),
           tabBarIcon: ({ color, size }) => (
             <Ionicon name="list" size={size} color={color} />
           ),
@@ -79,7 +81,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="social"
         options={{
-          title: 'Social',
+          title: t('home.tabs.social'),
           href: hasSocial ? undefined : null,
           tabBarIcon: ({ color, size }) => <Ionicon name="people" size={size} color={color} />,
         }}
@@ -87,7 +89,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="admin"
         options={{
-          title: 'Admin',
+          title: t('home.tabs.admin'),
           // Admins reach this from the avatar menu on desktop; bottom tab on mobile.
           href: wide || !isAdmin ? null : undefined,
           tabBarIcon: ({ color, size }) => (
@@ -98,7 +100,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="settings"
         options={{
-          title: 'Réglages',
+          title: t('home.tabs.settings'),
           // On desktop, settings is in the avatar menu.
           href: wide ? null : undefined,
           tabBarIcon: ({ color, size }) => (

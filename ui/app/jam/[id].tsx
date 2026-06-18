@@ -9,6 +9,7 @@ import { PlayButton } from '../../src/components/PlayButton';
 import { Button, Card, IconButton } from '../../src/components/ui';
 import { Ionicon } from '../../src/components/Ionicon';
 import { useColors } from '../../src/theme/colors';
+import { useT } from '../../src/i18n/store';
 
 /**
  * Active Jam session. The host's playback drives everyone: the host controls
@@ -17,6 +18,7 @@ import { useColors } from '../../src/theme/colors';
  * the now-playing track, and host controls.
  */
 export default function Jam() {
+  const t = useT();
   const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const client = useAuth((s) => s.client);
@@ -54,9 +56,9 @@ export default function Jam() {
     <>
       <Stack.Screen
         options={{
-          title: session?.name || 'Jam',
+          title: session?.name || t('social.jamScreen.title'),
           headerRight: () => (
-            <IconButton name="exit-outline" color={colors.danger} onPress={onLeave} accessibilityLabel="Quitter" />
+            <IconButton name="exit-outline" color={colors.danger} onPress={onLeave} accessibilityLabel={t('social.jamScreen.leave')} />
           ),
         }}
       />
@@ -64,7 +66,7 @@ export default function Jam() {
         <Card className="items-center gap-3 py-6">
           <View className="flex-row items-center gap-2">
             <Ionicon name="radio" size={18} color={colors.primary} />
-            <Text className="text-sm font-semibold text-primary">{isHost ? 'Vous êtes l’hôte' : 'Écoute synchronisée'}</Text>
+            <Text className="text-sm font-semibold text-primary">{isHost ? t('social.jamScreen.youAreHost') : t('social.jamScreen.synced')}</Text>
           </View>
 
           {song ? (
@@ -79,29 +81,29 @@ export default function Jam() {
                 <Ionicon name="musical-notes" size={48} color={colors.muted} />
               </View>
               <Text className="text-center text-sm text-muted">
-                {isHost ? 'Lancez une lecture (album, recherche…) pour démarrer le Jam.' : "En attente de l'hôte…"}
+                {isHost ? t('social.jamScreen.hostStartHint') : t('social.jamScreen.waitingHost')}
               </Text>
             </View>
           )}
 
           <View className="flex-row items-center gap-2">
             <View className={`h-2 w-2 rounded-full ${isPlaying ? 'bg-success' : 'bg-muted'}`} />
-            <Text className="text-xs text-muted">{isPlaying ? 'En lecture' : 'En pause'}</Text>
+            <Text className="text-xs text-muted">{isPlaying ? t('social.jamScreen.playing') : t('social.jamScreen.paused')}</Text>
           </View>
 
           {isHost ? (
             <View className="flex-row items-center gap-6 pt-1">
-              <IconButton name="play-skip-back" size={28} onPress={previous} accessibilityLabel="Précédent" />
+              <IconButton name="play-skip-back" size={28} onPress={previous} accessibilityLabel={t('social.jamScreen.previous')} />
               <PlayButton playing={isPlaying} onPress={toggle} size={60} />
-              <IconButton name="play-skip-forward" size={28} onPress={next} accessibilityLabel="Suivant" />
+              <IconButton name="play-skip-forward" size={28} onPress={next} accessibilityLabel={t('social.jamScreen.next')} />
             </View>
           ) : (
-            <Text className="pt-1 text-xs text-muted">L'hôte contrôle la lecture.</Text>
+            <Text className="pt-1 text-xs text-muted">{t('social.jamScreen.hostControls')}</Text>
           )}
         </Card>
 
         <Text className="px-1 pb-2 pt-5 text-lg font-bold text-foreground">
-          Participants ({participants.length})
+          {t('social.jamScreen.participants', { count: participants.length })}
         </Text>
         <View className="gap-2">
           {participants.map((p) => (
@@ -112,7 +114,7 @@ export default function Jam() {
               <Text className="flex-1 text-base text-foreground">{p.username}</Text>
               {p.userId === session?.hostId ? (
                 <View className="rounded-full bg-primary/15 px-2 py-0.5">
-                  <Text className="text-xs font-medium text-primary">Hôte</Text>
+                  <Text className="text-xs font-medium text-primary">{t('social.jamScreen.hostBadge')}</Text>
                 </View>
               ) : null}
             </View>
@@ -120,7 +122,7 @@ export default function Jam() {
         </View>
 
         <View className="pt-6">
-          <Button title="Quitter le Jam" variant="secondary" icon="exit-outline" onPress={onLeave} />
+          <Button title={t('social.jamScreen.leaveJam')} variant="secondary" icon="exit-outline" onPress={onLeave} />
         </View>
       </ScrollView>
     </>

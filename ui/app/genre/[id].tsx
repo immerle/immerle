@@ -3,9 +3,11 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import { useSongsByGenre } from '../../src/query/library';
 import { TrackList } from '../../src/components/TrackList';
 import { EmptyState, ErrorState, Loading } from '../../src/components/ui';
+import { useT } from '../../src/i18n/store';
 
 /** Genre detail: a virtualized list of songs tagged with the genre. */
 export default function GenreDetail() {
+  const t = useT();
   const { id } = useLocalSearchParams<{ id: string }>();
   const genre = decodeURIComponent(id ?? '');
   const q = useSongsByGenre(genre);
@@ -17,9 +19,9 @@ export default function GenreDetail() {
         {q.isLoading ? (
           <Loading />
         ) : q.isError ? (
-          <ErrorState message="Impossible de charger ce genre." onRetry={q.refetch} />
+          <ErrorState message={t('media.genre.loadError')} onRetry={q.refetch} />
         ) : !q.data?.length ? (
-          <EmptyState title="Aucun titre" />
+          <EmptyState title={t('media.genre.empty')} />
         ) : (
           <TrackList songs={q.data} refreshing={q.isRefetching} onRefresh={q.refetch} />
         )}

@@ -9,6 +9,7 @@ import { AdminHeader, AdminScroll } from '../../src/components/AdminUI';
 import { Ionicon } from '../../src/components/Ionicon';
 import { useColors } from '../../src/theme/colors';
 import { tError } from '../../src/i18n';
+import { useT } from '../../src/i18n/store';
 
 const SLUG_RE = /^[a-z0-9][a-z0-9_-]*$/;
 
@@ -23,6 +24,7 @@ const byOrder = (a: Provider, b: Provider) =>
  * but never deleted or redefined. Order = priority (drives search fallback).
  */
 export default function AdminProviders() {
+  const t = useT();
   const colors = useColors();
   const client = useAuth((s) => s.client);
   const q = useProviders();
@@ -35,11 +37,11 @@ export default function AdminProviders() {
   if (Platform.OS !== 'web') {
     return (
       <>
-        <Stack.Screen options={{ title: 'Providers' }} />
+        <Stack.Screen options={{ title: t('admin.providers.title') }} />
         <EmptyState
           icon="desktop-outline"
-          title="Disponible sur le web"
-          subtitle="La gestion des providers se fait depuis le client web."
+          title={t('admin.providers.webOnlyTitle')}
+          subtitle={t('admin.providers.webOnlySubtitle')}
         />
       </>
     );
@@ -62,21 +64,21 @@ export default function AdminProviders() {
       {q.isLoading ? (
         <Loading />
       ) : q.isError ? (
-        <ErrorState message="Impossible de charger les providers." onRetry={q.refetch} />
+        <ErrorState message={t('admin.providers.loadError')} onRetry={q.refetch} />
       ) : (
         <AdminScroll
           header={
             <AdminHeader
               color="#8b5cf6"
-              title="Providers"
-              subtitle="Sources de contenu dynamiques"
+              title={t('admin.providers.title')}
+              subtitle={t('admin.providers.headerSubtitle')}
               trailing={
                 <View className="flex-row items-center gap-2">
-                  <Button title="Ajouter" size="sm" icon="add" onPress={() => setEditing('new')} />
+                  <Button title={t('admin.providers.add')} size="sm" icon="add" onPress={() => setEditing('new')} />
                   {hasSettings ? (
                     <Pressable
                       onPress={() => setBehaviourOpen(true)}
-                      accessibilityLabel="Comportement"
+                      accessibilityLabel={t('admin.providers.behaviour')}
                       className="h-9 w-9 items-center justify-center rounded-full bg-surface-alt active:opacity-70"
                     >
                       <Ionicon name="settings-outline" size={18} color={colors.foreground} />
@@ -87,9 +89,9 @@ export default function AdminProviders() {
             />
           }
         >
-          <SectionHeader title="Configurés" />
+          <SectionHeader title={t('admin.providers.configured')} />
           {!ordered.length ? (
-            <EmptyState title="Aucun provider" subtitle="Ajoutez-en un pour commencer." />
+            <EmptyState title={t('admin.providers.emptyTitle')} subtitle={t('admin.providers.emptySubtitle')} />
           ) : (
             ordered.map((p, i) => (
               <ProviderCard
@@ -117,6 +119,7 @@ export default function AdminProviders() {
 /** Global provider behaviour (runtime settings), in a popin opened from the
  * header gear. All fields hot-reload on the server. */
 function BehaviourModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const t = useT();
   const colors = useColors();
   const q = useSettings();
   const update = useUpdateSettings();
@@ -147,24 +150,23 @@ function BehaviourModal({ visible, onClose }: { visible: boolean; onClose: () =>
       <Pressable className="flex-1 items-center justify-center bg-black/60 px-6" onPress={onClose}>
         <Pressable className="w-full max-w-[440px] gap-3 rounded-2xl bg-surface p-5" onPress={(e) => e.stopPropagation()}>
           <View className="flex-row items-center justify-between">
-            <Text className="text-lg font-bold tracking-tight text-foreground">Comportement</Text>
-            <IconButton name="close" color={colors.muted} onPress={onClose} accessibilityLabel="Fermer" />
+            <Text className="text-lg font-bold tracking-tight text-foreground">{t('admin.providers.behaviour')}</Text>
+            <IconButton name="close" color={colors.muted} onPress={onClose} accessibilityLabel={t('admin.providers.close')} />
           </View>
           <Text className="text-sm text-muted">
-            Réglages globaux de recherche et de téléchargement à la demande. Le provider
-            primaire est le premier activé dans l'ordre de la liste.
+            {t('admin.providers.behaviourDescription')}
           </Text>
-          <Field label="Timeout de recherche (s)" keyboardType="number-pad" value={timeoutS} onChangeText={setTimeoutS} />
+          <Field label={t('admin.providers.searchTimeout')} keyboardType="number-pad" value={timeoutS} onChangeText={setTimeoutS} />
           <View className="flex-row items-center justify-between rounded-xl bg-surface-alt px-3 py-2">
-            <Text className="flex-1 pr-2 text-sm text-foreground">Télécharger automatiquement à la lecture</Text>
+            <Text className="flex-1 pr-2 text-sm text-foreground">{t('admin.providers.autoDownload')}</Text>
             <Switch value={auto} onValueChange={setAuto} trackColor={{ true: colors.primary, false: colors.border }} />
           </View>
           <View className="flex-row gap-2 pt-1">
             <View className="flex-1">
-              <Button title="Annuler" variant="ghost" onPress={onClose} />
+              <Button title={t('admin.providers.cancel')} variant="ghost" onPress={onClose} />
             </View>
             <View className="flex-1">
-              <Button title="Enregistrer" icon="save-outline" loading={update.isPending} onPress={save} />
+              <Button title={t('admin.providers.save')} icon="save-outline" loading={update.isPending} onPress={save} />
             </View>
           </View>
         </Pressable>
@@ -188,6 +190,7 @@ function ProviderCard({
   onMoveDown?: () => void;
   reordering: boolean;
 }) {
+  const t = useT();
   const colors = useColors();
   const { setEnabled } = useProviderMutations();
 
@@ -206,13 +209,13 @@ function ProviderCard({
           <Text className="text-base font-semibold text-foreground">{provider.name}</Text>
           {/* Status pills, right under the title */}
           <View className="flex-row flex-wrap items-center gap-1.5">
-            <Badge label={provider.enabled ? 'Activé' : 'Désactivé'} tone={provider.enabled ? 'success' : 'default'} />
+            <Badge label={provider.enabled ? t('admin.providers.enabled') : t('admin.providers.disabled')} tone={provider.enabled ? 'success' : 'default'} />
             {provider.active ? (
-              <Badge label="En ligne" tone="primary" />
+              <Badge label={t('admin.providers.online')} tone="primary" />
             ) : provider.enabled ? (
-              <Badge label="Inactif" tone="danger" />
+              <Badge label={t('admin.providers.inactive')} tone="danger" />
             ) : null}
-            {provider.builtin ? <Badge label="Intégré" tone="default" /> : null}
+            {provider.builtin ? <Badge label={t('admin.providers.builtin')} tone="default" /> : null}
           </View>
           <Text className="text-xs text-muted" numberOfLines={1}>
             {provider.kind} · {provider.endpoint || '—'}
@@ -231,7 +234,7 @@ function ProviderCard({
           <Pressable
             onPress={onEdit}
             disabled={disabledEdit}
-            accessibilityLabel="Paramètres"
+            accessibilityLabel={t('admin.providers.settings')}
             className={`h-9 w-9 items-center justify-center rounded-full bg-surface-alt ${disabledEdit ? 'opacity-40' : 'active:opacity-70'}`}
           >
             <Ionicon name="settings-outline" size={18} color={colors.foreground} />
@@ -256,6 +259,7 @@ function ArrowButton({ icon, onPress, disabled }: { icon: string; onPress?: () =
 }
 
 function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose: () => void }) {
+  const t = useT();
   const colors = useColors();
   const { upsert, remove } = useProviderMutations();
   const isEdit = !!initial;
@@ -267,14 +271,14 @@ function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose
   const [confirming, setConfirming] = useState(false);
 
   const validate = (): string | null => {
-    if (!SLUG_RE.test(name)) return 'Nom invalide (slug : a-z, 0-9, -, _).';
-    if (!/^https?:\/\/.+/.test(endpoint)) return 'Endpoint invalide (http(s)://…).';
+    if (!SLUG_RE.test(name)) return t('admin.providers.invalidName');
+    if (!/^https?:\/\/.+/.test(endpoint)) return t('admin.providers.invalidEndpoint');
     const trimmed = config.trim();
     if (trimmed) {
       try {
         JSON.parse(trimmed);
       } catch {
-        return 'Config JSON invalide.';
+        return t('admin.providers.invalidConfig');
       }
     }
     return null;
@@ -299,9 +303,9 @@ function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose
         <Pressable className="w-full max-w-[460px] overflow-hidden rounded-2xl bg-surface" onPress={(e) => e.stopPropagation()}>
           <View className="flex-row items-center justify-between px-5 pb-2 pt-5">
             <Text className="text-lg font-bold tracking-tight text-foreground">
-              {isEdit ? `Modifier « ${initial?.name} »` : 'Nouveau provider'}
+              {isEdit ? t('admin.providers.editTitle', { name: initial?.name }) : t('admin.providers.newTitle')}
             </Text>
-            <IconButton name="close" color={colors.muted} onPress={onClose} accessibilityLabel="Fermer" />
+            <IconButton name="close" color={colors.muted} onPress={onClose} accessibilityLabel={t('admin.providers.close')} />
           </View>
 
           <ScrollView
@@ -310,17 +314,17 @@ function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose
             keyboardShouldPersistTaps="handled"
           >
             <Field
-              label="Nom (slug)"
+              label={t('admin.providers.nameLabel')}
               placeholder="mon-service"
               autoCapitalize="none"
               autoCorrect={false}
               editable={!isEdit}
-              help={isEdit ? "Le nom n'est pas modifiable." : 'Identifiant unique : a-z, 0-9, -, _.'}
+              help={isEdit ? t('admin.providers.nameHelpLocked') : t('admin.providers.nameHelp')}
               value={name}
               onChangeText={setName}
             />
             <Field
-              label="Endpoint"
+              label={t('admin.providers.endpointLabel')}
               placeholder="https://mon-service.internal"
               autoCapitalize="none"
               autoCorrect={false}
@@ -329,19 +333,19 @@ function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose
               onChangeText={setEndpoint}
             />
             <Field
-              label="Config (JSON)"
+              label={t('admin.providers.configLabel')}
               placeholder='{"headers":{"Authorization":"Bearer …"}}'
               autoCapitalize="none"
               autoCorrect={false}
               multiline
               numberOfLines={5}
               style={{ minHeight: 110, textAlignVertical: 'top' }}
-              help="Optionnel : headers, searchPath/resolvePath/downloadPath, quality, timeoutSeconds."
+              help={t('admin.providers.configHelp')}
               value={config}
               onChangeText={setConfig}
             />
             <View className="flex-row items-center justify-between rounded-xl bg-surface-alt px-3 py-2">
-              <Text className="text-sm font-medium text-foreground">Activer immédiatement</Text>
+              <Text className="text-sm font-medium text-foreground">{t('admin.providers.enableNow')}</Text>
               <Switch value={enabled} onValueChange={setEnabled} trackColor={{ true: colors.primary, false: colors.border }} />
             </View>
 
@@ -349,11 +353,11 @@ function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose
 
             <View className="flex-row gap-2">
               <View className="flex-1">
-                <Button title="Annuler" variant="ghost" onPress={onClose} />
+                <Button title={t('admin.providers.cancel')} variant="ghost" onPress={onClose} />
               </View>
               <View className="flex-1">
                 <Button
-                  title={isEdit ? 'Enregistrer' : 'Créer'}
+                  title={isEdit ? t('admin.providers.save') : t('admin.providers.create')}
                   icon="save-outline"
                   loading={upsert.isPending}
                   onPress={submit}
@@ -365,14 +369,14 @@ function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose
             {isEdit && initial?.deletable ? (
               confirming ? (
                 <Button
-                  title="Confirmer la suppression"
+                  title={t('admin.providers.confirmDelete')}
                   icon="trash"
                   variant="danger"
                   loading={remove.isPending}
                   onPress={() => remove.mutate(initial.name, { onSuccess: onClose })}
                 />
               ) : (
-                <Button title="Supprimer ce provider" icon="trash-outline" variant="danger" onPress={() => setConfirming(true)} />
+                <Button title={t('admin.providers.delete')} icon="trash-outline" variant="danger" onPress={() => setConfirming(true)} />
               )
             ) : null}
           </ScrollView>

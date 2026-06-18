@@ -12,16 +12,17 @@ import { Badge, Button, Card, ErrorState, Field, IconButton, Loading } from '../
 import { AdminHeader, AdminScroll } from '../../src/components/AdminUI';
 import { Ionicon } from '../../src/components/Ionicon';
 import { useColors } from '../../src/theme/colors';
+import { useT } from '../../src/i18n/store';
 
 const num = (s: string) => {
   const n = Number(s);
   return Number.isFinite(n) ? n : 0;
 };
 
-const RESTART_LABELS: Record<string, string> = {
-  transcode: 'Transcodage',
-  'scan.watch': 'Surveillance de la bibliothèque',
-  federation: 'Fédération',
+const RESTART_LABEL_KEYS: Record<string, string> = {
+  transcode: 'admin.settings.restartTranscode',
+  'scan.watch': 'admin.settings.restartScanWatch',
+  federation: 'admin.settings.restartFederation',
 };
 
 type SectionKey = 'auth' | 'server' | 'transcode' | 'federation' | 'cleanup';
@@ -33,14 +34,6 @@ interface Section {
   title: string;
   subtitle: string;
 }
-
-const SECTIONS: Section[] = [
-  { key: 'auth', icon: 'key', color: '#3b82f6', title: 'Authentification', subtitle: "Durée des tokens d'appareil" },
-  { key: 'server', icon: 'server', color: '#0ea5e9', title: 'Serveur', subtitle: 'Origines CORS autorisées' },
-  { key: 'transcode', icon: 'film', color: '#a855f7', title: 'Transcodage', subtitle: 'ffmpeg / ffprobe & profils' },
-  { key: 'federation', icon: 'git-network', color: '#14b8a6', title: 'Fédération', subtitle: 'Hub & synchronisation' },
-  { key: 'cleanup', icon: 'trash-bin', color: '#ef4444', title: 'Nettoyage', subtitle: 'Purge des téléchargements' },
-];
 
 interface Form {
   cors: string;
@@ -75,7 +68,15 @@ function toForm(s: RuntimeSettingsDTO): Form {
 /** Runtime settings admin. Each group opens in a bottom sheet; hot-reload fields
  * apply instantly, restart-only changes raise a "restart pending" banner. */
 export default function AdminSettings() {
+  const t = useT();
   const colors = useColors();
+  const SECTIONS: Section[] = [
+    { key: 'auth', icon: 'key', color: '#3b82f6', title: t('admin.settings.authTitle'), subtitle: t('admin.settings.authSubtitle') },
+    { key: 'server', icon: 'server', color: '#0ea5e9', title: t('admin.settings.serverTitle'), subtitle: t('admin.settings.serverSubtitle') },
+    { key: 'transcode', icon: 'film', color: '#a855f7', title: t('admin.settings.transcodeTitle'), subtitle: t('admin.settings.transcodeSubtitle') },
+    { key: 'federation', icon: 'git-network', color: '#14b8a6', title: t('admin.settings.federationTitle'), subtitle: t('admin.settings.federationSubtitle') },
+    { key: 'cleanup', icon: 'trash-bin', color: '#ef4444', title: t('admin.settings.cleanupTitle'), subtitle: t('admin.settings.cleanupSubtitle') },
+  ];
   const q = useSettings();
   const update = useUpdateSettings();
   const cleanup = useCleanup();
@@ -89,7 +90,7 @@ export default function AdminSettings() {
   }, [q.data?.settings]);
 
   if (q.isLoading || !form) return <Loading />;
-  if (q.isError) return <ErrorState message="Impossible de charger les réglages." onRetry={q.refetch} />;
+  if (q.isError) return <ErrorState message={t('admin.settings.loadError')} onRetry={q.refetch} />;
 
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setForm((f) => (f ? { ...f, [k]: v } : f));
   const save = (patch: RuntimeSettingsDTO) => update.mutate(patch);
@@ -103,18 +104,18 @@ export default function AdminSettings() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <AdminScroll
-        header={<AdminHeader color="#0ea5e9" title="Réglages" subtitle="Configuration runtime de l'instance" />}
+        header={<AdminHeader color="#0ea5e9" title={t('admin.settings.title')} subtitle={t('admin.settings.headerSubtitle')} />}
       >
         {/* Restart-pending banner */}
         {pending.length ? (
           <View className="gap-1.5 rounded-2xl border border-danger/40 bg-danger/10 p-4">
             <View className="flex-row items-center gap-2">
               <Ionicon name="warning" size={18} color="#ef4444" />
-              <Text className="text-sm font-semibold text-foreground">Redémarrage requis</Text>
+              <Text className="text-sm font-semibold text-foreground">{t('admin.settings.restartRequired')}</Text>
             </View>
             <Text className="text-xs text-muted">
-              Des changements ne prendront effet qu'après un redémarrage de l'instance :{' '}
-              {pending.map((p) => RESTART_LABELS[p] ?? p).join(', ')}.
+              {t('admin.settings.restartPending')}{' '}
+              {pending.map((p) => (RESTART_LABEL_KEYS[p] ? t(RESTART_LABEL_KEYS[p]) : p)).join(', ')}.
             </Text>
           </View>
         ) : null}
@@ -137,21 +138,21 @@ export default function AdminSettings() {
                   <Ionicon name={active.icon} size={18} color={active.color} />
                 </View>
                 <Text className="flex-1 text-lg font-bold tracking-tight text-foreground">{active.title}</Text>
-                <IconButton name="close" color={colors.muted} onPress={() => setSheet(null)} accessibilityLabel="Fermer" />
+                <IconButton name="close" color={colors.muted} onPress={() => setSheet(null)} accessibilityLabel={t('admin.settings.close')} />
               </View>
             ) : null}
 
             <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: 8, gap: 12 }} keyboardShouldPersistTaps="handled">
               {sheet === 'auth' ? (
                 <>
-                  <Field label="Durée des tokens d'appareil (s, 0 = jamais)" keyboardType="number-pad" value={form.ttl} onChangeText={(v) => set('ttl', v)} />
+                  <Field label={t('admin.settings.deviceTokenTtl')} keyboardType="number-pad" value={form.ttl} onChangeText={(v) => set('ttl', v)} />
                   <SaveButton loading={update.isPending} onPress={() => save({ auth: { deviceTokenTtlSeconds: num(form.ttl) } })} />
                 </>
               ) : null}
 
               {sheet === 'server' ? (
                 <>
-                  <Field label="Origines CORS autorisées (séparées par des virgules)" autoCapitalize="none" placeholder="*" value={form.cors} onChangeText={(v) => set('cors', v)} help="* pour tout autoriser." />
+                  <Field label={t('admin.settings.corsLabel')} autoCapitalize="none" placeholder="*" value={form.cors} onChangeText={(v) => set('cors', v)} help={t('admin.settings.corsHelp')} />
                   <SaveButton
                     loading={update.isPending}
                     onPress={() => save({ server: { corsAllowedOrigins: form.cors.split(',').map((o) => o.trim()).filter(Boolean) } })}
@@ -161,11 +162,11 @@ export default function AdminSettings() {
 
               {sheet === 'transcode' ? (
                 <>
-                  <Field label="Chemin ffmpeg" autoCapitalize="none" value={form.ffmpeg} onChangeText={(v) => set('ffmpeg', v)} />
-                  <Field label="Chemin ffprobe" autoCapitalize="none" value={form.ffprobe} onChangeText={(v) => set('ffprobe', v)} />
+                  <Field label={t('admin.settings.ffmpegPath')} autoCapitalize="none" value={form.ffmpeg} onChangeText={(v) => set('ffmpeg', v)} />
+                  <Field label={t('admin.settings.ffprobePath')} autoCapitalize="none" value={form.ffprobe} onChangeText={(v) => set('ffprobe', v)} />
                   {profiles.length ? (
                     <View className="gap-1.5 rounded-xl bg-surface-alt p-3">
-                      <Text className="text-xs font-medium uppercase tracking-wider text-muted">Profils</Text>
+                      <Text className="text-xs font-medium uppercase tracking-wider text-muted">{t('admin.settings.profiles')}</Text>
                       {profiles.map((p, i) => (
                         <Text key={i} className="text-sm text-foreground">
                           {p.name} · {p.format?.toUpperCase()} · {p.bitRate} kbps
@@ -173,22 +174,22 @@ export default function AdminSettings() {
                       ))}
                     </View>
                   ) : null}
-                  <SaveButton loading={update.isPending} hint="Redémarrage" onPress={() => save({ transcode: { ffmpegPath: form.ffmpeg, ffprobePath: form.ffprobe } })} />
+                  <SaveButton loading={update.isPending} hint={t('admin.settings.restartHint')} onPress={() => save({ transcode: { ffmpegPath: form.ffmpeg, ffprobePath: form.ffprobe } })} />
                 </>
               ) : null}
 
               {sheet === 'federation' ? (
                 <>
-                  <ToggleRow label="Fédération activée" value={form.fedEnabled} onChange={(v) => set('fedEnabled', v)} />
-                  <Field label="URL du hub" autoCapitalize="none" keyboardType="url" placeholder="https://hub.immerle.fr" value={form.hubUrl} onChangeText={(v) => set('hubUrl', v)} />
-                  <Field label="Clé publique" autoCapitalize="none" autoCorrect={false} value={form.publicKey} onChangeText={(v) => set('publicKey', v)} help="Fournie par le hub à l'onboarding (en-tête X-Instance-ID)." />
-                  <Field label="Clé privée" autoCapitalize="none" autoCorrect={false} secureTextEntry value={form.privateKey} onChangeText={(v) => set('privateKey', v)} help="Fournie par le hub à l'onboarding (Authorization: Bearer)." />
-                  <Field label="Intervalle de synchro (s)" keyboardType="number-pad" value={form.syncInterval} onChangeText={(v) => set('syncInterval', v)} />
-                  <ToggleRow label="Résoudre les titres manquants" value={form.resolveMissing} onChange={(v) => set('resolveMissing', v)} />
-                  <ToggleRow label="Exporter les écoutes (scrobbles)" value={form.exportScrobbles} onChange={(v) => set('exportScrobbles', v)} />
+                  <ToggleRow label={t('admin.settings.federationEnabled')} value={form.fedEnabled} onChange={(v) => set('fedEnabled', v)} />
+                  <Field label={t('admin.settings.hubUrl')} autoCapitalize="none" keyboardType="url" placeholder="https://hub.immerle.fr" value={form.hubUrl} onChangeText={(v) => set('hubUrl', v)} />
+                  <Field label={t('admin.settings.publicKey')} autoCapitalize="none" autoCorrect={false} value={form.publicKey} onChangeText={(v) => set('publicKey', v)} help={t('admin.settings.publicKeyHelp')} />
+                  <Field label={t('admin.settings.privateKey')} autoCapitalize="none" autoCorrect={false} secureTextEntry value={form.privateKey} onChangeText={(v) => set('privateKey', v)} help={t('admin.settings.privateKeyHelp')} />
+                  <Field label={t('admin.settings.syncInterval')} keyboardType="number-pad" value={form.syncInterval} onChangeText={(v) => set('syncInterval', v)} />
+                  <ToggleRow label={t('admin.settings.resolveMissing')} value={form.resolveMissing} onChange={(v) => set('resolveMissing', v)} />
+                  <ToggleRow label={t('admin.settings.exportScrobbles')} value={form.exportScrobbles} onChange={(v) => set('exportScrobbles', v)} />
                   <SaveButton
                     loading={update.isPending}
-                    hint="Redémarrage"
+                    hint={t('admin.settings.restartHint')}
                     onPress={() =>
                       save({
                         federation: {
@@ -209,12 +210,14 @@ export default function AdminSettings() {
               {sheet === 'cleanup' && cleanup.data ? (
                 <>
                   <Text className="text-xs text-muted">
-                    Purge les fichiers téléchargés de plus de {Math.round(cleanup.data.maxAgeSeconds / 86400)} j,
-                    toutes les {Math.round(cleanup.data.intervalSeconds / 3600)} h.
+                    {t('admin.settings.cleanupDescription', {
+                      days: Math.round(cleanup.data.maxAgeSeconds / 86400),
+                      hours: Math.round(cleanup.data.intervalSeconds / 3600),
+                    })}
                   </Text>
-                  <ToggleRow label="Balayage automatique" value={cleanup.data.enabled} onChange={(v) => cleanupM.setEnabled.mutate(v)} />
+                  <ToggleRow label={t('admin.settings.autoSweep')} value={cleanup.data.enabled} onChange={(v) => cleanupM.setEnabled.mutate(v)} />
                   <Button
-                    title={removed != null ? `${removed} supprimé${removed > 1 ? 's' : ''}` : 'Lancer le nettoyage maintenant'}
+                    title={removed != null ? t('admin.settings.removedCount', { count: removed }) : t('admin.settings.runCleanup')}
                     icon="trash-outline"
                     variant="secondary"
                     loading={cleanupM.run.isPending}
@@ -262,10 +265,11 @@ function ToggleRow({ label, hint, value, onChange }: { label: string; hint?: str
 }
 
 function SaveButton({ loading, hint, onPress }: { loading: boolean; hint?: string; onPress: () => void }) {
+  const t = useT();
   return (
     <View className="flex-row items-center justify-end gap-2 pt-1">
       {hint ? <Badge label={hint} tone="default" /> : null}
-      <Button title="Enregistrer" icon="save-outline" loading={loading} onPress={onPress} />
+      <Button title={t('admin.settings.save')} icon="save-outline" loading={loading} onPress={onPress} />
     </View>
   );
 }

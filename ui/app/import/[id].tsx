@@ -9,6 +9,7 @@ import { Ionicon } from '../../src/components/Ionicon';
 import { usePlayer } from '../../src/audio/store';
 import { ImportItemDTO } from '../../src/api/immerleApi';
 import { useColors } from '../../src/theme/colors';
+import { useT } from '../../src/i18n/store';
 
 type Filter = 'all' | 'matched' | 'doubtful' | 'missing' | 'failed';
 
@@ -18,16 +19,11 @@ const ITEM_TONE: Record<string, 'success' | 'primary' | 'danger' | 'default'> = 
   missing: 'default',
   failed: 'danger',
 };
-const ITEM_LABEL: Record<string, string> = {
-  matched: 'Trouvé',
-  doubtful: 'Douteux',
-  missing: 'Manquant',
-  failed: 'Échec',
-};
 
 /** Import detail: per-track items, filterable by status to review the doubtful
  * and missing matches. */
 export default function ImportDetail() {
+  const t = useT();
   const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const q = useImportStatus(id ?? '');
@@ -45,7 +41,7 @@ export default function ImportDetail() {
     return (
       <>
         <Stack.Screen options={{ headerShown: false }} />
-        <ErrorState message="Import introuvable." onRetry={q.refetch} />
+        <ErrorState message={t('tools.importDetail.notFound')} onRetry={q.refetch} />
       </>
     );
   }
@@ -62,11 +58,11 @@ export default function ImportDetail() {
   const shown = filter === 'all' ? items : items.filter((i) => i.status === filter);
 
   const FILTERS: { key: Filter; label: string }[] = [
-    { key: 'all', label: `Tous (${counts.all})` },
-    { key: 'doubtful', label: `Douteux (${counts.doubtful})` },
-    { key: 'missing', label: `Manquants (${counts.missing})` },
-    { key: 'matched', label: `Trouvés (${counts.matched})` },
-    ...(counts.failed ? [{ key: 'failed' as Filter, label: `Échecs (${counts.failed})` }] : []),
+    { key: 'all', label: t('tools.importDetail.filterAll', { count: counts.all }) },
+    { key: 'doubtful', label: t('tools.importDetail.filterDoubtful', { count: counts.doubtful }) },
+    { key: 'missing', label: t('tools.importDetail.filterMissing', { count: counts.missing }) },
+    { key: 'matched', label: t('tools.importDetail.filterMatched', { count: counts.matched }) },
+    ...(counts.failed ? [{ key: 'failed' as Filter, label: t('tools.importDetail.filterFailed', { count: counts.failed }) }] : []),
   ];
 
   return (
@@ -76,14 +72,14 @@ export default function ImportDetail() {
         header={
           <AdminHeader
             color="#1db954"
-            title={imp.sourcePlaylistName || 'Import'}
-            subtitle={`${imp.source ?? ''} · ${counts.matched}/${imp.total ?? 0} trouvés`}
+            title={imp.sourcePlaylistName || t('tools.importDetail.fallbackName')}
+            subtitle={`${imp.source ?? ''} · ${t('tools.importDetail.matchedCount', { matched: counts.matched, total: imp.total ?? 0 })}`}
           />
         }
       >
         {imp.playlistId ? (
           <Button
-            title="Ouvrir la playlist importée"
+            title={t('tools.importDetail.openPlaylist')}
             icon="open-outline"
             variant="secondary"
             onPress={() => router.push(`/playlist/${imp.playlistId}` as never)}
@@ -111,8 +107,7 @@ export default function ImportDetail() {
           <View className="flex-row items-start gap-2 rounded-xl bg-surface-alt p-3">
             <Ionicon name="information-circle" size={18} color={colors.muted} />
             <Text className="flex-1 text-xs text-muted">
-              Correspondances incertaines : vérifiez le titre résolu. La validation / modification
-              manuelle n'est pas encore disponible côté serveur.
+              {t('tools.importDetail.doubtfulHint')}
             </Text>
           </View>
         ) : null}
@@ -121,7 +116,7 @@ export default function ImportDetail() {
           {shown.length ? (
             shown.map((it, i) => <ItemRow key={it.id ?? i} importId={id ?? ''} item={it} first={i === 0} />)
           ) : (
-            <Text className="px-4 py-4 text-sm text-muted">Aucun élément dans cette catégorie.</Text>
+            <Text className="px-4 py-4 text-sm text-muted">{t('tools.importDetail.emptyCategory')}</Text>
           )}
         </Card>
       </AdminScroll>
@@ -130,8 +125,15 @@ export default function ImportDetail() {
 }
 
 function ItemRow({ importId, item, first }: { importId: string; item: ImportItemDTO; first: boolean }) {
+  const t = useT();
   const colors = useColors();
   const status = item.status ?? '';
+  const ITEM_LABEL: Record<string, string> = {
+    matched: t('tools.importDetail.itemMatched'),
+    doubtful: t('tools.importDetail.itemDoubtful'),
+    missing: t('tools.importDetail.itemMissing'),
+    failed: t('tools.importDetail.itemFailed'),
+  };
   const resolve = useResolveImportItem();
   const playTrackById = usePlayer((s) => s.playTrackById);
   const [editing, setEditing] = useState(false);
@@ -171,7 +173,7 @@ function ItemRow({ importId, item, first }: { importId: string; item: ImportItem
                 size={22}
                 color={colors.primary}
                 onPress={() => playTrackById(playId, 0, true)}
-                accessibilityLabel="Écouter"
+                accessibilityLabel={t('tools.importDetail.listen')}
               />
             ) : null}
             <Badge
@@ -184,7 +186,7 @@ function ItemRow({ importId, item, first }: { importId: string; item: ImportItem
               → {resolved}
             </Text>
           ) : status === 'missing' ? (
-            <Text className="text-xs text-muted">Aucune correspondance trouvée.</Text>
+            <Text className="text-xs text-muted">{t('tools.importDetail.noMatch')}</Text>
           ) : null}
           {item.note ? <Text className="text-xs text-muted">{item.note}</Text> : null}
         </View>
@@ -195,7 +197,7 @@ function ItemRow({ importId, item, first }: { importId: string; item: ImportItem
         editing ? (
           <View className="gap-2 pt-1">
             <Field
-              placeholder="artiste titre"
+              placeholder={t('tools.importDetail.searchPlaceholder')}
               autoCapitalize="none"
               autoCorrect={false}
               value={query}
@@ -204,10 +206,10 @@ function ItemRow({ importId, item, first }: { importId: string; item: ImportItem
             />
             <View className="flex-row gap-2">
               <View className="flex-1">
-                <Button title="Annuler" size="sm" variant="ghost" onPress={() => setEditing(false)} />
+                <Button title={t('tools.importDetail.cancel')} size="sm" variant="ghost" onPress={() => setEditing(false)} />
               </View>
               <View className="flex-1">
-                <Button title="Rechercher & ajouter" size="sm" icon="search" loading={resolve.isPending} onPress={modify} />
+                <Button title={t('tools.importDetail.searchAdd')} size="sm" icon="search" loading={resolve.isPending} onPress={modify} />
               </View>
             </View>
           </View>
@@ -215,11 +217,11 @@ function ItemRow({ importId, item, first }: { importId: string; item: ImportItem
           <View className="flex-row gap-2 pt-1">
             {hasCandidate ? (
               <View className="flex-1">
-                <Button title="Valider" size="sm" icon="checkmark" loading={resolve.isPending} onPress={validate} />
+                <Button title={t('tools.importDetail.validate')} size="sm" icon="checkmark" loading={resolve.isPending} onPress={validate} />
               </View>
             ) : null}
             <View className="flex-1">
-              <Button title="Corriger" size="sm" variant="secondary" icon="create-outline" onPress={startEdit} />
+              <Button title={t('tools.importDetail.correct')} size="sm" variant="secondary" icon="create-outline" onPress={startEdit} />
             </View>
           </View>
         )

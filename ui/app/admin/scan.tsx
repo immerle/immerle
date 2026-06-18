@@ -13,9 +13,11 @@ import { AdminHeader, AdminScroll, CardTitle } from '../../src/components/AdminU
 import { Ionicon } from '../../src/components/Ionicon';
 import { formatBytes, formatCount } from '../../src/utils/format';
 import { useColors } from '../../src/theme/colors';
+import { useT } from '../../src/i18n/store';
 
 /** Library admin: stats + full / incremental scan with live progress. */
 export default function AdminScan() {
+  const t = useT();
   const colors = useColors();
   const stats = useLibraryStats();
   const progress = useScanProgress();
@@ -31,17 +33,17 @@ export default function AdminScan() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <AdminScroll
-        header={<AdminHeader color="#f59e0b" title="Bibliothèque" subtitle="Scan & statistiques" />}
+        header={<AdminHeader color="#f59e0b" title={t('admin.scan.title')} subtitle={t('admin.scan.headerSubtitle')} />}
       >
         {/* Stats grid */}
         <View className="flex-row flex-wrap gap-2.5">
-          <StatTile icon="people" color="#3b82f6" label="Artistes" value={formatCount(stats.data?.artistCount)} />
-          <StatTile icon="albums" color="#8b5cf6" label="Albums" value={formatCount(stats.data?.albumCount)} />
-          <StatTile icon="musical-notes" color="#1ed760" label="Titres" value={formatCount(stats.data?.songCount)} />
-          <StatTile icon="server" color="#f59e0b" label="Espace" value={stats.data ? formatBytes(stats.data.totalSize) : '—'} />
+          <StatTile icon="people" color="#3b82f6" label={t('admin.scan.artists')} value={formatCount(stats.data?.artistCount)} />
+          <StatTile icon="albums" color="#8b5cf6" label={t('admin.scan.albums')} value={formatCount(stats.data?.albumCount)} />
+          <StatTile icon="musical-notes" color="#1ed760" label={t('admin.scan.songs')} value={formatCount(stats.data?.songCount)} />
+          <StatTile icon="server" color="#f59e0b" label={t('admin.scan.space')} value={stats.data ? formatBytes(stats.data.totalSize) : '—'} />
         </View>
         {stats.data?.lastScan ? (
-          <Text className="px-1 text-xs text-muted">Dernier scan · {stats.data.lastScan}</Text>
+          <Text className="px-1 text-xs text-muted">{t('admin.scan.lastScan', { date: stats.data.lastScan })}</Text>
         ) : null}
 
         {/* Scan control */}
@@ -49,7 +51,7 @@ export default function AdminScan() {
           <CardTitle
             icon={scanning ? 'sync' : 'checkmark-circle'}
             color={scanning ? '#f59e0b' : colors.success}
-            title={scanning ? 'Scan en cours…' : 'Bibliothèque à jour'}
+            title={scanning ? t('admin.scan.scanning') : t('admin.scan.upToDate')}
           />
 
           {scanning ? (
@@ -58,21 +60,21 @@ export default function AdminScan() {
                 <View className="h-full rounded-full bg-primary" style={{ width: pct != null ? `${pct}%` : '40%' }} />
               </View>
               <Text className="text-xs text-muted">
-                {formatCount(progress.data?.count)} éléments traités
+                {t('admin.scan.itemsProcessed', { value: formatCount(progress.data?.count) })}
                 {pct != null ? ` · ${Math.round(pct)}%` : ''}
                 {progress.data?.phase ? ` · ${progress.data.phase}` : ''}
               </Text>
             </View>
           ) : (
             <Text className="text-sm text-muted">
-              Lancez un scan pour détecter les nouveaux fichiers ou reconstruire l'index complet.
+              {t('admin.scan.idleDescription')}
             </Text>
           )}
 
           <View className="flex-row gap-2 pt-1">
             <View className="flex-1">
               <Button
-                title="Scan incrémental"
+                title={t('admin.scan.incremental')}
                 icon="refresh"
                 variant="secondary"
                 disabled={scanning}
@@ -82,7 +84,7 @@ export default function AdminScan() {
             </View>
             <View className="flex-1">
               <Button
-                title="Scan complet"
+                title={t('admin.scan.full')}
                 icon="refresh-circle"
                 disabled={scanning}
                 loading={startScan.isPending && startScan.variables === true}
@@ -101,6 +103,7 @@ export default function AdminScan() {
 /** Automatic scan cadence (runtime settings). Self-hides when the instance
  * doesn't expose the settings endpoint. */
 function ScanConfigCard() {
+  const t = useT();
   const colors = useColors();
   const q = useSettings();
   const update = useUpdateSettings();
@@ -122,25 +125,25 @@ function ScanConfigCard() {
 
   return (
     <Card className="gap-3">
-      <CardTitle icon="time-outline" color="#0ea5e9" title="Scan automatique" />
+      <CardTitle icon="time-outline" color="#0ea5e9" title={t('admin.scan.autoScan')} />
       <Field
-        label="Intervalle de scan (s, 0 = jamais)"
+        label={t('admin.scan.intervalLabel')}
         keyboardType="number-pad"
         value={interval}
         onChangeText={setIntervalS}
       />
       <View className="flex-row items-center justify-between rounded-xl bg-surface-alt px-3 py-2">
         <View className="flex-1 flex-row items-center gap-2 pr-2">
-          <Text className="text-sm text-foreground">Surveiller les fichiers en continu</Text>
-          <Badge label="Redémarrage" tone="default" />
+          <Text className="text-sm text-foreground">{t('admin.scan.watchFiles')}</Text>
+          <Badge label={t('admin.scan.restart')} tone="default" />
         </View>
         <Switch value={watch} onValueChange={setWatch} trackColor={{ true: colors.primary, false: colors.border }} />
       </View>
       {pendingWatch ? (
-        <Text className="text-xs text-danger">Redémarrez l'instance pour appliquer la surveillance.</Text>
+        <Text className="text-xs text-danger">{t('admin.scan.restartNotice')}</Text>
       ) : null}
       <View className="flex-row justify-end pt-1">
-        <Button title="Enregistrer" size="sm" icon="save-outline" loading={update.isPending} onPress={save} />
+        <Button title={t('admin.scan.save')} size="sm" icon="save-outline" loading={update.isPending} onPress={save} />
       </View>
     </Card>
   );

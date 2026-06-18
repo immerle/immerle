@@ -10,9 +10,11 @@ import { PlayButton } from '../../src/components/PlayButton';
 import { usePlayer } from '../../src/audio/store';
 import { Song } from '../../src/api/subsonic/types';
 import { useColors } from '../../src/theme/colors';
+import { useT } from '../../src/i18n/store';
 
 /** Artist detail: immersive hero + discography grid, with play/shuffle. */
 export default function ArtistDetail() {
+  const t = useT();
   const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { width } = useWindowDimensions();
@@ -22,7 +24,7 @@ export default function ArtistDetail() {
   const [busy, setBusy] = useState(false);
 
   if (q.isLoading) return <Loading />;
-  if (q.isError || !q.data) return <ErrorState message="Artiste introuvable." onRetry={q.refetch} />;
+  if (q.isError || !q.data) return <ErrorState message={t('media.artist.notFound')} onRetry={q.refetch} />;
 
   const artist = q.data;
   const albums = artist.album ?? [];
@@ -64,7 +66,7 @@ export default function ArtistDetail() {
       <ScrollView className="flex-1 bg-background" contentContainerStyle={{ paddingBottom: 24 }}>
         <HeroBackdrop url={heroUrl} height={wide ? 170 : 150}>
           <View className="px-4 pb-3">
-            <Text className="text-[11px] font-semibold uppercase tracking-wide text-white/80">Artiste</Text>
+            <Text className="text-[11px] font-semibold uppercase tracking-wide text-white/80">{t('media.artist.label')}</Text>
             <Text
               numberOfLines={1}
               className={`font-extrabold tracking-tight text-white ${wide ? 'text-4xl' : 'text-3xl'}`}
@@ -72,17 +74,17 @@ export default function ArtistDetail() {
               {artist.name}
             </Text>
             <Text className="pt-1 text-sm text-white/90">
-              {albums.length} album{albums.length > 1 ? 's' : ''}
+              {t('media.artist.albumCount', { count: albums.length })}
             </Text>
           </View>
         </HeroBackdrop>
 
         <View className="flex-row items-center gap-5 px-4 pb-2 pt-3">
-          <PlayButton onPress={() => run(false)} size={56} accessibilityLabel="Lire l'artiste" />
-          <IconButton name="shuffle" size={26} color={busy ? colors.primary : colors.muted} onPress={() => run(true)} accessibilityLabel="Aléatoire" />
+          <PlayButton onPress={() => run(false)} size={56} accessibilityLabel={t('media.artist.play')} />
+          <IconButton name="shuffle" size={26} color={busy ? colors.primary : colors.muted} onPress={() => run(true)} accessibilityLabel={t('media.artist.shuffle')} />
         </View>
 
-        <Text className="px-4 pb-2 text-xl font-bold tracking-tight text-foreground">Discographie</Text>
+        <Text className="px-4 pb-2 text-xl font-bold tracking-tight text-foreground">{t('media.artist.discography')}</Text>
         <View className="flex-row flex-wrap" style={{ paddingHorizontal: gap / 2 }}>
           {albums.map((a) => (
             <View key={a.id} style={{ paddingHorizontal: gap / 2 }}>

@@ -4,6 +4,7 @@ import { usePlayer } from '../src/audio/store';
 import { CoverArt } from '../src/components/CoverArt';
 import { IconButton, EmptyState } from '../src/components/ui';
 import { useColors } from '../src/theme/colors';
+import { useT } from '../src/i18n/store';
 
 /**
  * Reorderable play queue. Tap a row to jump to it; use the arrows to reorder
@@ -11,6 +12,7 @@ import { useColors } from '../src/theme/colors';
  * to the engine via the player store, so the active queue updates live.
  */
 export default function Queue() {
+  const t = useT();
   const colors = useColors();
   const songs = usePlayer((s) => s.songs);
   const index = usePlayer((s) => s.index);
@@ -19,7 +21,7 @@ export default function Queue() {
   const removeAt = usePlayer((s) => s.removeAt);
 
   if (songs.length === 0) {
-    return <EmptyState icon="list" title="File vide" subtitle="Lancez un titre pour commencer." />;
+    return <EmptyState icon="list" title={t('media.queue.empty')} subtitle={t('media.queue.emptySubtitle')} />;
   }
 
   return (

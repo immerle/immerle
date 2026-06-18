@@ -47,3 +47,15 @@ export const useLocale = create<LocaleState>((set) => ({
     void AsyncStorage.setItem(KEY, p);
   },
 }));
+
+/**
+ * Reactive translator hook: subscribes to the locale preference so the calling
+ * component re-renders (and re-translates) when the language changes. Use this
+ * in any component that renders translated text: `const t = useT()`.
+ */
+export function useT(): (scope: string, params?: Record<string, unknown>) => string {
+  useLocale((s) => s.preference);
+  // i18n-js types `t` as `string | T` with a numeric `count`; our interpolation
+  // values are pre-formatted strings, so narrow to a plain string-returning fn.
+  return i18n.t.bind(i18n) as (scope: string, params?: Record<string, unknown>) => string;
+}
