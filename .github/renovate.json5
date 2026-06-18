@@ -1,0 +1,99 @@
+{
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+
+  // Strict, security-first baseline. `config:best-practices` pulls in
+  // config:recommended plus digest pinning for Docker and GitHub Actions,
+  // dependency dashboard, and the recommended PR hygiene.
+  extends: [
+    'config:best-practices',
+    ':semanticCommits', // match the repo's conventional-commit style
+    ':maintainLockFilesWeekly', // keep transitive deps fresh, not just direct
+    'security:openssf-scorecard', // surface supply-chain risk on PRs
+    'helpers:pinGitHubActionDigests', // pin actions to immutable SHAs
+    'docker:pinDigests', // pin base images to digests
+  ],
+
+  timezone: 'Europe/Paris',
+  schedule: ['before 7am on monday'], // batch routine churn into one window
+  semanticCommitType: 'chore',
+  semanticCommitScope: 'deps',
+  commitMessageLowerCase: 'never',
+  labels: ['dependencies'],
+  rebaseWhen: 'behind-base-branch',
+
+  // Throttle noise; the dashboard absorbs the backlog.
+  prConcurrentLimit: 8,
+  prHourlyLimit: 3,
+
+  // Strict supply-chain posture: never adopt a release on day zero, and let
+  // Renovate's own checks gate merges.
+  minimumReleaseAge: '3 days',
+  internalChecksFilter: 'strict',
+
+  // Keep go.mod tidy and npm trees deduped after updates.
+  postUpdateOptions: ['gomodTidy', 'gomodUpdateImportPaths', 'npmDedupe'],
+
+  // OSV-backed alerts; fixes bypass the schedule and ship immediately.
+  osvVulnerabilityAlerts: true,
+  vulnerabilityAlerts: {
+    labels: ['dependencies', 'security'],
+    schedule: ['at any time'],
+    minimumReleaseAge: null,
+    prCreation: 'immediate',
+  },
+
+  packageRules: [
+    // Majors always get a human: clearly labelled, never auto-merged.
+    {
+      matchUpdateTypes: ['major'],
+      labels: ['dependencies', 'major'],
+      automerge: false,
+      minimumReleaseAge: '7 days',
+    },
+
+    // Low-risk maintenance auto-merges once CI is green.
+    {
+      matchUpdateTypes: ['pin', 'digest', 'lockFileMaintenance'],
+      automerge: true,
+      platformAutomerge: true,
+    },
+
+    // Dev tooling: auto-merge non-major after CI passes.
+    {
+      matchDepTypes: ['devDependencies'],
+      matchUpdateTypes: ['minor', 'patch'],
+      automerge: true,
+      platformAutomerge: true,
+    },
+
+    // --- Grouping to keep PR count sane ---------------------------------
+    {
+      matchManagers: ['gomod'],
+      matchUpdateTypes: ['minor', 'patch'],
+      groupName: 'go modules (non-major)',
+    },
+    {
+      matchManagers: ['github-actions'],
+      groupName: 'github actions',
+    },
+    {
+      groupName: 'docusaurus',
+      matchPackageNames: ['@docusaurus/**', 'redocusaurus'],
+    },
+    // Expo / React Native are tightly coupled — group and pin the cadence so a
+    // partial bump can't desync the toolchain.
+    {
+      groupName: 'expo sdk',
+      matchFileNames: ['ui/package.json'],
+      matchPackageNames: ['expo', 'expo-**', 'react-native', 'react-native-**'],
+    },
+
+    // Go itself: track the toolchain but never auto-bump the language major.
+    {
+      matchManagers: ['gomod'],
+      matchDepTypes: ['golang'],
+      matchUpdateTypes: ['major'],
+      enabled: false,
+    },
+  ],
+}
