@@ -31,7 +31,6 @@ export default function AdminProviders() {
   const { reorder } = useProviderMutations();
   const [editing, setEditing] = useState<Provider | 'new' | null>(null);
   const [behaviourOpen, setBehaviourOpen] = useState(false);
-  const [logsFor, setLogsFor] = useState<string | null>(null);
   const hasSettings = !!client?.has('runtimeSettings');
 
   // Admin surfaces are web-only — skip the heavy editor on native.
@@ -99,7 +98,6 @@ export default function AdminProviders() {
                 key={p.name}
                 provider={p}
                 onEdit={() => setEditing(p)}
-                onShowLogs={() => setLogsFor(p.name)}
                 disabledEdit={!!editing}
                 onMoveUp={i > 0 ? () => move(i, -1) : undefined}
                 onMoveDown={i < ordered.length - 1 ? () => move(i, 1) : undefined}
@@ -112,7 +110,6 @@ export default function AdminProviders() {
             <ProviderModal initial={editing === 'new' ? null : editing} onClose={() => setEditing(null)} />
           ) : null}
           <BehaviourModal visible={behaviourOpen} onClose={() => setBehaviourOpen(false)} />
-          <ProviderLogsModal name={logsFor} onClose={() => setLogsFor(null)} />
         </AdminScroll>
       )}
     </>
@@ -178,52 +175,44 @@ function BehaviourModal({ visible, onClose }: { visible: boolean; onClose: () =>
   );
 }
 
-/** Per-provider error/warning log, opened by tapping a provider's name. */
-function ProviderLogsModal({ name, onClose }: { name: string | null; onClose: () => void }) {
+/** Per-provider error/warning log, embedded at the bottom of the settings popin
+ * (only fetched while the popin is open). */
+function ProviderLogsSection({ name }: { name: string }) {
   const t = useT();
-  const colors = useColors();
   const q = useProviderLogs(name);
   const logs = q.data ?? [];
 
   return (
-    <Modal transparent animationType="fade" visible={!!name} onRequestClose={onClose}>
-      <Pressable className="flex-1 items-center justify-center bg-black/60 px-6" onPress={onClose}>
-        <Pressable className="w-full max-w-[520px] gap-3 rounded-2xl bg-surface p-5" onPress={(e) => e.stopPropagation()}>
-          <View className="flex-row items-center justify-between">
-            <Text className="text-lg font-bold tracking-tight text-foreground">{t('admin.providers.logsTitle', { name })}</Text>
-            <IconButton name="close" color={colors.muted} onPress={onClose} accessibilityLabel={t('admin.providers.close')} />
-          </View>
-          <Text className="text-sm text-muted">{t('admin.providers.logsSubtitle')}</Text>
-          {q.isLoading ? (
-            <Loading />
-          ) : q.isError ? (
-            <ErrorState message={t('admin.providers.logsError')} onRetry={q.refetch} />
-          ) : !logs.length ? (
-            <EmptyState title={t('admin.providers.logsEmpty')} />
-          ) : (
-            <ScrollView style={{ maxHeight: 420 }} contentContainerStyle={{ gap: 8 }}>
-              {logs.map((l) => (
-                <View key={l.id} className="gap-1 rounded-xl bg-surface-alt px-3 py-2">
-                  <View className="flex-row items-center gap-2">
-                    <Badge label={l.level} tone={l.level === 'error' ? 'danger' : 'default'} />
-                    <Text className="text-xs font-medium text-foreground">{l.action}</Text>
-                    <Text className="flex-1 text-right text-[11px] text-muted">{new Date(l.createdAt).toLocaleString()}</Text>
-                  </View>
-                  <Text className="text-xs text-muted" selectable>{l.message}</Text>
-                </View>
-              ))}
-            </ScrollView>
-          )}
-        </Pressable>
-      </Pressable>
-    </Modal>
+    <View className="gap-2 border-t border-border pt-3">
+      <Text className="text-sm font-semibold text-foreground">{t('admin.providers.logsTitle')}</Text>
+      <Text className="text-xs text-muted">{t('admin.providers.logsSubtitle')}</Text>
+      {q.isLoading ? (
+        <Loading />
+      ) : q.isError ? (
+        <ErrorState message={t('admin.providers.logsError')} onRetry={q.refetch} />
+      ) : !logs.length ? (
+        <Text className="py-2 text-xs text-muted">{t('admin.providers.logsEmpty')}</Text>
+      ) : (
+        <View className="gap-2">
+          {logs.map((l) => (
+            <View key={l.id} className="gap-1 rounded-xl bg-surface-alt px-3 py-2">
+              <View className="flex-row items-center gap-2">
+                <Badge label={l.level} tone={l.level === 'error' ? 'danger' : 'default'} />
+                <Text className="text-xs font-medium text-foreground">{l.action}</Text>
+                <Text className="flex-1 text-right text-[11px] text-muted">{new Date(l.createdAt).toLocaleString()}</Text>
+              </View>
+              <Text className="text-xs text-muted" selectable>{l.message}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+    </View>
   );
 }
 
 function ProviderCard({
   provider,
   onEdit,
-  onShowLogs,
   disabledEdit,
   onMoveUp,
   onMoveDown,
@@ -231,7 +220,6 @@ function ProviderCard({
 }: {
   provider: Provider;
   onEdit: () => void;
-  onShowLogs: () => void;
   disabledEdit: boolean;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
@@ -253,10 +241,7 @@ function ProviderCard({
         </View>
 
         <View className="flex-1 gap-1.5">
-          {/* Tapping the name opens this provider's error/warning log. */}
-          <Pressable onPress={onShowLogs} accessibilityLabel={t('admin.providers.viewLogs')} className="self-start active:opacity-70">
-            <Text className="text-base font-semibold text-foreground underline decoration-dotted">{provider.name}</Text>
-          </Pressable>
+          <Text className="text-base font-semibold text-foreground">{provider.name}</Text>
           {/* Status pills, right under the title */}
           <View className="flex-row flex-wrap items-center gap-1.5">
             <Badge label={provider.enabled ? t('admin.providers.enabled') : t('admin.providers.disabled')} tone={provider.enabled ? 'success' : 'default'} />
@@ -267,9 +252,12 @@ function ProviderCard({
             ) : null}
             {provider.builtin ? <Badge label={t('admin.providers.builtin')} tone="default" /> : null}
           </View>
-          <Text className="text-xs text-muted" numberOfLines={1}>
-            {provider.kind} · {provider.endpoint || '—'}
-          </Text>
+          {/* Built-ins have no endpoint (the "built-in" badge already labels them). */}
+          {provider.endpoint ? (
+            <Text className="text-xs text-muted" numberOfLines={1}>
+              {provider.endpoint}
+            </Text>
+          ) : null}
         </View>
 
         <Switch
@@ -279,17 +267,16 @@ function ProviderCard({
           trackColor={{ true: colors.primary, false: colors.border }}
         />
 
-        {/* Settings opens the editor — built-ins can't be edited. */}
-        {!provider.builtin ? (
-          <Pressable
-            onPress={onEdit}
-            disabled={disabledEdit}
-            accessibilityLabel={t('admin.providers.settings')}
-            className={`h-9 w-9 items-center justify-center rounded-full bg-surface-alt ${disabledEdit ? 'opacity-40' : 'active:opacity-70'}`}
-          >
-            <Ionicon name="settings-outline" size={18} color={colors.foreground} />
-          </Pressable>
-        ) : null}
+        {/* Settings opens the editor + logs popin (built-ins included: config and
+            logs are still relevant, only the name/endpoint are locked). */}
+        <Pressable
+          onPress={onEdit}
+          disabled={disabledEdit}
+          accessibilityLabel={t('admin.providers.settings')}
+          className={`h-9 w-9 items-center justify-center rounded-full bg-surface-alt ${disabledEdit ? 'opacity-40' : 'active:opacity-70'}`}
+        >
+          <Ionicon name="settings-outline" size={18} color={colors.foreground} />
+        </Pressable>
       </View>
     </Card>
   );
@@ -313,6 +300,7 @@ function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose
   const colors = useColors();
   const { upsert, remove } = useProviderMutations();
   const isEdit = !!initial;
+  const isBuiltin = !!initial?.builtin;
   const [name, setName] = useState(initial?.name ?? '');
   const [endpoint, setEndpoint] = useState(initial?.endpoint ?? '');
   const [config, setConfig] = useState(initial?.config ?? '{}');
@@ -322,7 +310,8 @@ function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose
 
   const validate = (): string | null => {
     if (!SLUG_RE.test(name)) return t('admin.providers.invalidName');
-    if (!/^https?:\/\/.+/.test(endpoint)) return t('admin.providers.invalidEndpoint');
+    // Built-ins have no endpoint (the server compiles in how to reach them).
+    if (!isBuiltin && !/^https?:\/\/.+/.test(endpoint)) return t('admin.providers.invalidEndpoint');
     const trimmed = config.trim();
     if (trimmed) {
       try {
@@ -342,7 +331,7 @@ function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose
     }
     setError(null);
     upsert.mutate(
-      { name, endpoint, config: config.trim() || '{}', enabled, kind: 'http' },
+      { name, endpoint, config: config.trim() || '{}', enabled, kind: isBuiltin ? 'builtin' : 'http' },
       { onSuccess: onClose, onError: (e) => setError(tError(e)) },
     );
   };
@@ -373,15 +362,17 @@ function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose
               value={name}
               onChangeText={setName}
             />
-            <Field
-              label={t('admin.providers.endpointLabel')}
-              placeholder="https://mon-service.internal"
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="url"
-              value={endpoint}
-              onChangeText={setEndpoint}
-            />
+            {!isBuiltin ? (
+              <Field
+                label={t('admin.providers.endpointLabel')}
+                placeholder="https://mon-service.internal"
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="url"
+                value={endpoint}
+                onChangeText={setEndpoint}
+              />
+            ) : null}
             <Field
               label={t('admin.providers.configLabel')}
               placeholder='{"headers":{"Authorization":"Bearer …"}}'
@@ -429,6 +420,9 @@ function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose
                 <Button title={t('admin.providers.delete')} icon="trash-outline" variant="danger" onPress={() => setConfirming(true)} />
               )
             ) : null}
+
+            {/* Recent provider errors/warnings — only for a saved provider. */}
+            {isEdit && initial ? <ProviderLogsSection name={initial.name} /> : null}
           </ScrollView>
         </Pressable>
       </Pressable>
