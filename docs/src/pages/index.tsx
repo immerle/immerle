@@ -73,9 +73,9 @@ export default function Home(): React.ReactElement {
           />
           <p className={styles.kicker}>One small Go binary · up in minutes</p>
           <h1 className={styles.title}>
-            Next-gen,
+            Own every
             <br />
-            self-hosted <span className={styles.sings}>music</span>
+            beat of your <span className={styles.sings}>music</span>
             <Equalizer />
           </h1>
           <p className={styles.lede}>
