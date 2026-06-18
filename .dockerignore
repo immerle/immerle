@@ -1,4 +1,6 @@
 bin/
+dist/
+ui/
 data/
 music/
 *.db
