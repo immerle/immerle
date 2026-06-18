@@ -122,20 +122,25 @@ func (h *Handler) Register(mux chi.Router) {
 		"updateShare":               h.handleUpdateShare,
 		"deleteShare":               h.handleDeleteShare,
 	}
-	for name, fn := range endpoints {
-		handler := h.authenticated(fn)
-		mux.Handle("/rest/"+name, handler)
-		mux.Handle("/rest/"+name+".view", handler)
-	}
+	// All Subsonic endpoints are authenticated; the group middleware applies it
+	// once for the whole set.
+	mux.Group(func(r chi.Router) {
+		r.Use(h.authMiddleware)
+		for name, fn := range endpoints {
+			r.Handle("/rest/"+name, fn)
+			r.Handle("/rest/"+name+".view", fn)
+		}
+	})
 }
 
-// authenticated wraps a handler with Subsonic authentication.
 // maxFormBytes caps a request body parsed as form params, so an unbounded POST
 // body can't exhaust memory.
 const maxFormBytes = 1 << 20 // 1 MiB
 
-func (h *Handler) authenticated(next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+// authMiddleware wraps a handler with Subsonic authentication, injecting the
+// user into the context. On failure it answers a Subsonic error and stops.
+func (h *Handler) authMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.Body = http.MaxBytesReader(w, r.Body, maxFormBytes)
 		if err := r.ParseForm(); err != nil {
 			writeError(w, r, ErrGeneric, "Invalid request")
@@ -156,8 +161,8 @@ func (h *Handler) authenticated(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 		ctx := context.WithValue(r.Context(), userKey, user)
-		next(w, r.WithContext(ctx))
-	}
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
 }
 
 // userFrom returns the authenticated user from the request context.
