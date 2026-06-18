@@ -30,6 +30,7 @@ import {
   ImmerleSession,
   LibraryStats,
   Provider,
+  ProviderLog,
   ScanProgress,
   ServerSettings,
   TranscodeProfile,
@@ -288,6 +289,11 @@ export class ImmerleClient {
     });
     if (error || !data) throw apiErr(error, 'provider_reorder_failed');
     return data.map(toProvider);
+  }
+
+  /** Recent warn/error events for a provider (newest first). Admin-only. */
+  async getProviderLogs(name: string, signal?: AbortSignal): Promise<ProviderLog[]> {
+    return this.request<ProviderLog[]>('GET', `admin/providers/${encodeURIComponent(name)}/logs`, undefined, signal);
   }
 
   // --- Admin: runtime settings --------------------------------------------

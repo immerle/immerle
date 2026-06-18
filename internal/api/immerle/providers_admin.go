@@ -231,6 +231,38 @@ func (h *Handler) handleProviderReorder(w http.ResponseWriter, r *http.Request) 
 	writeResource(w, http.StatusOK, out)
 }
 
+// handleProviderLogs lists recent warn/error events for a provider.
+//
+// @Summary      List a provider's recent warn/error events
+// @Description  Admin only. Returns the most recent provider action failures (search/resolve/download), newest first.
+// @Tags         admin
+// @Security     BearerAuth
+// @Produce      json
+// @Param        name  path  string  true  "Provider name"
+// @Success      200  {array}  models.ProviderLog
+// @Failure      401  {object}  errorResponse
+// @Failure      403  {object}  errorResponse
+// @Failure      503  {object}  errorResponse
+// @Router       /admin/providers/{name}/logs [get]
+func (h *Handler) handleProviderLogs(w http.ResponseWriter, r *http.Request) {
+	if !h.requireAdmin(w, r) || !h.providersAvailable(w) {
+		return
+	}
+	if h.OnDemand == nil {
+		writeResource(w, http.StatusOK, []models.ProviderLog{})
+		return
+	}
+	logs, err := h.OnDemand.ProviderLogs(r.Context(), pathParam(r, "name"), 100)
+	if err != nil {
+		writeInternal(w, err)
+		return
+	}
+	if logs == nil {
+		logs = []models.ProviderLog{}
+	}
+	writeResource(w, http.StatusOK, logs)
+}
+
 func (h *Handler) writeProviderError(w http.ResponseWriter, err error) {
 	if errors.Is(err, persistence.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "not_found", "provider not found")

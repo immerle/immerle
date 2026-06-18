@@ -357,7 +357,12 @@
       "enableNow": "Enable immediately",
       "create": "Create",
       "confirmDelete": "Confirm deletion",
-      "delete": "Delete this provider"
+      "delete": "Delete this provider",
+      "logsTitle": "{{name}} — logs",
+      "logsSubtitle": "Recent errors and warnings for this provider.",
+      "logsEmpty": "No errors or warnings logged.",
+      "logsError": "Could not load logs.",
+      "viewLogs": "View logs"
     },
     "settings": {
       "title": "Settings",

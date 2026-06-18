@@ -97,6 +97,17 @@ export interface Provider {
   sortOrder: number;
 }
 
+/** A persisted warn/error event from a provider action (admin diagnostics). */
+export interface ProviderLog {
+  id: string;
+  provider: string;
+  level: 'warn' | 'error';
+  /** 'search' | 'resolve' | 'download' */
+  action: string;
+  message: string;
+  createdAt: string;
+}
+
 export type DownloadJobStatus =
   | 'queued'
   | 'running'

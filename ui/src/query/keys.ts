@@ -18,6 +18,7 @@ export const qk = {
   libraryStats: ['admin', 'libraryStats'] as const,
   scanProgress: ['admin', 'scanProgress'] as const,
   providers: ['admin', 'providers'] as const,
+  providerLogs: (name: string) => ['admin', 'providers', name, 'logs'] as const,
   jobs: ['admin', 'jobs'] as const,
   federation: ['admin', 'federation'] as const,
   transcodeProfiles: ['admin', 'transcodeProfiles'] as const,

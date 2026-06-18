@@ -256,9 +256,10 @@ func New(cfg config.Config) (*App, error) {
 		Registry:    registry,
 		Scanner:     scan,
 		Settings:    settingsSvc, // hot-reloadable: default/auto-download/timeout
-		DownloadDir: downloadDir,
-		FFmpegPath:  transcodeCfg.FFmpegPath,
-		Logger:      logger,
+		DownloadDir:  downloadDir,
+		FFmpegPath:   transcodeCfg.FFmpegPath,
+		Logger:       logger,
+		ProviderLogs: store.ProviderLogs,
 	})
 	// Downloaded tracks live under downloadDir; scan it too.
 	scanPaths = append(scanPaths, downloadDir)

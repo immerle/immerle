@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Modal, Platform, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { useAuth } from '../../src/auth/store';
-import { useProviderMutations, useProviders, useSettings, useUpdateSettings } from '../../src/query/admin';
+import { useProviderLogs, useProviderMutations, useProviders, useSettings, useUpdateSettings } from '../../src/query/admin';
 import { Provider } from '../../src/api/immerle/types';
 import { Badge, Button, Card, EmptyState, ErrorState, Field, IconButton, Loading, SectionHeader } from '../../src/components/ui';
 import { AdminHeader, AdminScroll } from '../../src/components/AdminUI';
@@ -31,6 +31,7 @@ export default function AdminProviders() {
   const { reorder } = useProviderMutations();
   const [editing, setEditing] = useState<Provider | 'new' | null>(null);
   const [behaviourOpen, setBehaviourOpen] = useState(false);
+  const [logsFor, setLogsFor] = useState<string | null>(null);
   const hasSettings = !!client?.has('runtimeSettings');
 
   // Admin surfaces are web-only — skip the heavy editor on native.
@@ -98,6 +99,7 @@ export default function AdminProviders() {
                 key={p.name}
                 provider={p}
                 onEdit={() => setEditing(p)}
+                onShowLogs={() => setLogsFor(p.name)}
                 disabledEdit={!!editing}
                 onMoveUp={i > 0 ? () => move(i, -1) : undefined}
                 onMoveDown={i < ordered.length - 1 ? () => move(i, 1) : undefined}
@@ -110,6 +112,7 @@ export default function AdminProviders() {
             <ProviderModal initial={editing === 'new' ? null : editing} onClose={() => setEditing(null)} />
           ) : null}
           <BehaviourModal visible={behaviourOpen} onClose={() => setBehaviourOpen(false)} />
+          <ProviderLogsModal name={logsFor} onClose={() => setLogsFor(null)} />
         </AdminScroll>
       )}
     </>
@@ -175,9 +178,52 @@ function BehaviourModal({ visible, onClose }: { visible: boolean; onClose: () =>
   );
 }
 
+/** Per-provider error/warning log, opened by tapping a provider's name. */
+function ProviderLogsModal({ name, onClose }: { name: string | null; onClose: () => void }) {
+  const t = useT();
+  const colors = useColors();
+  const q = useProviderLogs(name);
+  const logs = q.data ?? [];
+
+  return (
+    <Modal transparent animationType="fade" visible={!!name} onRequestClose={onClose}>
+      <Pressable className="flex-1 items-center justify-center bg-black/60 px-6" onPress={onClose}>
+        <Pressable className="w-full max-w-[520px] gap-3 rounded-2xl bg-surface p-5" onPress={(e) => e.stopPropagation()}>
+          <View className="flex-row items-center justify-between">
+            <Text className="text-lg font-bold tracking-tight text-foreground">{t('admin.providers.logsTitle', { name })}</Text>
+            <IconButton name="close" color={colors.muted} onPress={onClose} accessibilityLabel={t('admin.providers.close')} />
+          </View>
+          <Text className="text-sm text-muted">{t('admin.providers.logsSubtitle')}</Text>
+          {q.isLoading ? (
+            <Loading />
+          ) : q.isError ? (
+            <ErrorState message={t('admin.providers.logsError')} onRetry={q.refetch} />
+          ) : !logs.length ? (
+            <EmptyState title={t('admin.providers.logsEmpty')} />
+          ) : (
+            <ScrollView style={{ maxHeight: 420 }} contentContainerStyle={{ gap: 8 }}>
+              {logs.map((l) => (
+                <View key={l.id} className="gap-1 rounded-xl bg-surface-alt px-3 py-2">
+                  <View className="flex-row items-center gap-2">
+                    <Badge label={l.level} tone={l.level === 'error' ? 'danger' : 'default'} />
+                    <Text className="text-xs font-medium text-foreground">{l.action}</Text>
+                    <Text className="flex-1 text-right text-[11px] text-muted">{new Date(l.createdAt).toLocaleString()}</Text>
+                  </View>
+                  <Text className="text-xs text-muted" selectable>{l.message}</Text>
+                </View>
+              ))}
+            </ScrollView>
+          )}
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
 function ProviderCard({
   provider,
   onEdit,
+  onShowLogs,
   disabledEdit,
   onMoveUp,
   onMoveDown,
@@ -185,6 +231,7 @@ function ProviderCard({
 }: {
   provider: Provider;
   onEdit: () => void;
+  onShowLogs: () => void;
   disabledEdit: boolean;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
@@ -206,7 +253,10 @@ function ProviderCard({
         </View>
 
         <View className="flex-1 gap-1.5">
-          <Text className="text-base font-semibold text-foreground">{provider.name}</Text>
+          {/* Tapping the name opens this provider's error/warning log. */}
+          <Pressable onPress={onShowLogs} accessibilityLabel={t('admin.providers.viewLogs')} className="self-start active:opacity-70">
+            <Text className="text-base font-semibold text-foreground underline decoration-dotted">{provider.name}</Text>
+          </Pressable>
           {/* Status pills, right under the title */}
           <View className="flex-row flex-wrap items-center gap-1.5">
             <Badge label={provider.enabled ? t('admin.providers.enabled') : t('admin.providers.disabled')} tone={provider.enabled ? 'success' : 'default'} />

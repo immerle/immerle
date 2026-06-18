@@ -58,6 +58,17 @@ type ProviderConfig struct {
 // be disabled and reordered, but not deleted).
 func (p ProviderConfig) Builtin() bool { return p.Kind == "builtin" }
 
+// ProviderLog is a single warn/error event from a provider action (search,
+// resolve, download), persisted so the admin can inspect failures per provider.
+type ProviderLog struct {
+	ID        string    `json:"id"`
+	Provider  string    `json:"provider"`
+	Level     string    `json:"level"`  // "warn" | "error"
+	Action    string    `json:"action"` // "search" | "resolve" | "download"
+	Message   string    `json:"message"`
+	CreatedAt time.Time `json:"createdAt"`
+}
+
 // RuntimeSettings holds the admin-managed, hot-or-restart configurable settings.
 // They are persisted in data/configuration.yaml and editable via the admin API —
 // as opposed to the bootstrap settings that live in the environment (.env) and
