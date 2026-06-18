@@ -54,7 +54,7 @@ func writeErrorParams(w http.ResponseWriter, status int, code, message string, p
 	if params == nil {
 		params = map[string]any{}
 	}
-	writeResource(w, status, map[string]apiError{"error": {Code: code, Message: message, Params: params}})
+	writeResource(w, status, errorResponse{Error: apiError{Code: code, Message: message, Params: params}})
 }
 
 // writeInternal reports a 500 from an unexpected error.
@@ -64,8 +64,8 @@ func writeInternal(w http.ResponseWriter, err error) {
 
 // writeValidation sends a 400 with per-field details.
 func writeValidation(w http.ResponseWriter, fields []fieldError) {
-	writeResource(w, http.StatusBadRequest, map[string]apiError{
-		"error": {Code: "validation", Message: "validation failed", Params: map[string]any{}, Fields: fields},
+	writeResource(w, http.StatusBadRequest, errorResponse{
+		Error: apiError{Code: "validation", Message: "validation failed", Params: map[string]any{}, Fields: fields},
 	})
 }
 
