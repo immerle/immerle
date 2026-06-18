@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { getSetupStatus, initSetup, SetupFieldError } from '../src/api/setup';
+import { useSelfServer } from '../src/api/selfServer';
 import { normalizeServerUrl } from '../src/api/subsonic/client';
 import { Button, ErrorState, Field, Loading } from '../src/components/ui';
 import { AuthShell } from '../src/components/AuthShell';
@@ -26,7 +27,8 @@ type FieldKey = 'setupToken' | 'username' | 'displayName' | 'password' | 'confir
 export default function Setup() {
   const colors = useColors();
   const [phase, setPhase] = useState<Phase>('url');
-  const [serverUrl, setServerUrl] = useState('');
+  // Pre-fill with the origin when this app is served by its own Immerle binary.
+  const [serverUrl, setServerUrl] = useState(() => useSelfServer.getState().url ?? '');
   const [tokenRequired, setTokenRequired] = useState(false);
   const [reveal, setReveal] = useState(false);
 
@@ -101,11 +103,13 @@ export default function Setup() {
     }
     if (result.ok) {
       setCreatedUser(result.user.username ?? values.username.trim());
+      useSelfServer.setState({ needsSetup: false }); // server is configured now
       setPhase('success');
       return;
     }
     // Map server errors back to the form.
     if (result.status === 409) {
+      useSelfServer.setState({ needsSetup: false });
       setPhase('done');
       return;
     }

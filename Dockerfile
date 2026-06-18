@@ -1,5 +1,13 @@
 # syntax=docker/dockerfile:1
 
+# ---- web app stage ----
+FROM node:20-alpine AS ui
+WORKDIR /ui
+COPY ui/package.json ui/package-lock.json ./
+RUN npm ci
+COPY ui/ ./
+RUN npm run export:web
+
 # ---- build stage ----
 FROM golang:1.25-alpine AS build
 WORKDIR /src
@@ -9,6 +17,8 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
+# Overlay the freshly exported web app so //go:embed picks it up.
+COPY --from=ui /ui/dist ./ui/dist
 ARG VERSION=docker
 RUN CGO_ENABLED=0 go build -ldflags "-s -w -X main.version=${VERSION}" -o /out/immerle ./cmd/immerle
 

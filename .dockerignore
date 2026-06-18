@@ -6,6 +6,9 @@ music/
 *.db-shm
 .git/
 .github/
+# Web app: deps and build output come from the dedicated node stage.
+ui/node_modules/
+ui/dist/
 *.md
 !config.example.yaml
 .golangci.yml

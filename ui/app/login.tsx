@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../src/auth/store';
+import { useSelfServer } from '../src/api/selfServer';
 import { Button, Field } from '../src/components/ui';
 import { AuthShell } from '../src/components/AuthShell';
 import { Ionicon } from '../src/components/Ionicon';
@@ -18,7 +19,8 @@ export default function Login() {
   const login = useAuth((s) => s.login);
   const error = useAuth((s) => s.error);
 
-  const [serverUrl, setServerUrl] = useState('');
+  // Pre-fill with the origin when this app is served by its own Immerle binary.
+  const [serverUrl, setServerUrl] = useState(() => useSelfServer.getState().url ?? '');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [reveal, setReveal] = useState(false);

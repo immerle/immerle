@@ -30,6 +30,7 @@ import (
 	"github.com/immerle/immerle/internal/scanner"
 	"github.com/immerle/immerle/internal/server"
 	"github.com/immerle/immerle/internal/stream"
+	webui "github.com/immerle/immerle/ui"
 )
 
 // App holds the assembled application.
@@ -351,6 +352,9 @@ func New(cfg config.Config) (*App, error) {
 	subHandler.Register(mux)
 	gosHandler.Register(mux)
 	docs.Register(mux) // /openapi.json, /openapi.yaml, /swagger/
+	// Embedded web app: every defined API route wins; anything unmatched falls
+	// through here. No-op (404) until the UI is built into the binary.
+	mux.NotFound(webui.Handler().ServeHTTP)
 
 	return &App{
 		cfg:        cfg,

@@ -10,7 +10,7 @@
     "lint": "eslint . --ext .ts,.tsx",
     "typecheck": "tsc --noEmit",
     "test": "jest",
-    "gen:api": "openapi-typescript http://localhost:4533/openapi.json -o src/api/generated/schema.ts",
+    "gen:api": "openapi-typescript ../internal/api/docs/swagger.json -o src/api/generated/schema.ts",
     "export:web": "expo export --platform web",
     "desktop": "electron electron/main.js",
     "desktop:dev": "concurrently -k -n web,electron \"npm run web\" \"wait-on tcp:8081 && npm run desktop\"",

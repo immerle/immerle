@@ -6,14 +6,21 @@ LDFLAGS     := -s -w -X main.version=$(VERSION)
 
 SWAG := go run github.com/swaggo/swag/v2/cmd/swag@v2.0.0-rc5
 
-.PHONY: all build run test test-race lint fmt vet tidy clean docker docker-up docker-down ci openapi openapi-check
+.PHONY: all build build-web ui run test test-race lint fmt vet tidy clean docker docker-up docker-down ci openapi openapi-check
 
 all: build
 
-## build: compile the server binary
+## build: compile the server binary (embeds whatever is in ui/dist)
 build:
 	@mkdir -p $(BIN_DIR)
 	CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o $(BIN_DIR)/$(BINARY) $(PKG)
+
+## ui: export the web app into ui/dist for embedding
+ui:
+	cd ui && npm ci && npm run export:web
+
+## build-web: build the web app then the binary with the UI embedded
+build-web: ui build
 
 ## run: run the server (loads .env if present)
 run:
