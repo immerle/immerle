@@ -12,13 +12,13 @@ import (
 // UserRepo persists user accounts.
 type UserRepo struct{ *base }
 
-const userColumns = `id, username, password_hash, email, is_admin, scrobble_enabled, activity_privacy, created_at, display_name`
+const userColumns = `id, username, password_hash, email, is_admin, scrobble_enabled, activity_privacy, created_at, display_name, language`
 
 func scanUser(s rowScanner) (models.User, error) {
 	var u models.User
 	var isAdmin, scrobble int
 	var createdAt int64
-	if err := s.Scan(&u.ID, &u.Username, &u.PasswordHash, &u.Email, &isAdmin, &scrobble, &u.ActivityPrivacy, &createdAt, &u.DisplayName); err != nil {
+	if err := s.Scan(&u.ID, &u.Username, &u.PasswordHash, &u.Email, &isAdmin, &scrobble, &u.ActivityPrivacy, &createdAt, &u.DisplayName, &u.Language); err != nil {
 		return u, err
 	}
 	u.IsAdmin = isAdmin != 0
@@ -29,8 +29,8 @@ func scanUser(s rowScanner) (models.User, error) {
 
 // Create inserts a new user.
 func (r *UserRepo) Create(ctx context.Context, u models.User) error {
-	_, err := r.exec(ctx, `INSERT INTO users (`+userColumns+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		u.ID, u.Username, u.PasswordHash, u.Email, db.Bool(u.IsAdmin), db.Bool(u.ScrobbleEnabled), u.ActivityPrivacy, db.Millis(u.CreatedAt), u.DisplayName)
+	_, err := r.exec(ctx, `INSERT INTO users (`+userColumns+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		u.ID, u.Username, u.PasswordHash, u.Email, db.Bool(u.IsAdmin), db.Bool(u.ScrobbleEnabled), u.ActivityPrivacy, db.Millis(u.CreatedAt), u.DisplayName, u.Language)
 	return err
 }
 
@@ -47,8 +47,8 @@ func (r *UserRepo) CreateIfEmpty(ctx context.Context, u models.User) (bool, erro
 		if n > 0 {
 			return nil
 		}
-		if _, err := tx.ExecContext(ctx, r.rebind(`INSERT INTO users (`+userColumns+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`),
-			u.ID, u.Username, u.PasswordHash, u.Email, db.Bool(u.IsAdmin), db.Bool(u.ScrobbleEnabled), u.ActivityPrivacy, db.Millis(u.CreatedAt), u.DisplayName); err != nil {
+		if _, err := tx.ExecContext(ctx, r.rebind(`INSERT INTO users (`+userColumns+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`),
+			u.ID, u.Username, u.PasswordHash, u.Email, db.Bool(u.IsAdmin), db.Bool(u.ScrobbleEnabled), u.ActivityPrivacy, db.Millis(u.CreatedAt), u.DisplayName, u.Language); err != nil {
 			return err
 		}
 		created = true
@@ -59,8 +59,8 @@ func (r *UserRepo) CreateIfEmpty(ctx context.Context, u models.User) (bool, erro
 
 // Update changes mutable user fields.
 func (r *UserRepo) Update(ctx context.Context, u models.User) error {
-	_, err := r.exec(ctx, `UPDATE users SET password_hash=?, email=?, display_name=?, is_admin=?, scrobble_enabled=?, activity_privacy=? WHERE id=?`,
-		u.PasswordHash, u.Email, u.DisplayName, db.Bool(u.IsAdmin), db.Bool(u.ScrobbleEnabled), u.ActivityPrivacy, u.ID)
+	_, err := r.exec(ctx, `UPDATE users SET password_hash=?, email=?, display_name=?, language=?, is_admin=?, scrobble_enabled=?, activity_privacy=? WHERE id=?`,
+		u.PasswordHash, u.Email, u.DisplayName, u.Language, db.Bool(u.IsAdmin), db.Bool(u.ScrobbleEnabled), u.ActivityPrivacy, u.ID)
 	return err
 }
 
