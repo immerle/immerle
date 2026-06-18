@@ -28,6 +28,15 @@ const config: Config = {
 
   presets: [
     [
+      'redocusaurus',
+      {
+        // Read the OpenAPI spec straight from the server's generated docs at
+        // build time, so the API reference never drifts from the handlers.
+        specs: [{spec: '../internal/api/docs/swagger.json', route: '/api/'}],
+        theme: {primaryColor: '#1ed760'},
+      },
+    ],
+    [
       'classic',
       {
         docs: {
@@ -60,6 +69,7 @@ const config: Config = {
           position: 'left',
           label: 'Docs',
         },
+        {to: '/api/', label: 'API', position: 'left'},
         {
           href: 'https://github.com/immerle/immerle',
           label: 'GitHub',
@@ -76,6 +86,7 @@ const config: Config = {
             {label: 'Introduction', to: '/'},
             {label: 'Installation', to: '/installation'},
             {label: 'Configuration', to: '/configuration'},
+            {label: 'API reference', to: '/api/'},
           ],
         },
         {
