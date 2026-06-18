@@ -1,26 +1,33 @@
 # syntax=docker/dockerfile:1
 
 # ---- web app stage ----
-FROM node:20-alpine AS ui
+# Pin to the build platform: the export is static web assets (arch-independent),
+# so we build it once natively instead of emulating it per target arch.
+FROM --platform=$BUILDPLATFORM node:20-alpine AS ui
 WORKDIR /ui
 COPY ui/package.json ui/package-lock.json ./
-RUN npm ci
+RUN --mount=type=cache,target=/root/.npm npm ci
 COPY ui/ ./
 RUN npm run export:web
 
 # ---- build stage ----
-FROM golang:1.25-alpine AS build
+# Also pinned to the build platform; Go cross-compiles to $TARGETARCH natively,
+# which is far faster than running the toolchain under QEMU emulation.
+FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS build
 WORKDIR /src
+ARG TARGETOS TARGETARCH
 
 # Cache modules.
 COPY go.mod go.sum ./
-RUN go mod download
+RUN --mount=type=cache,target=/go/pkg/mod go mod download
 
 COPY . .
 # Overlay the freshly exported web app so //go:embed picks it up.
 COPY --from=ui /ui/dist ./ui/dist
 ARG VERSION=docker
-RUN CGO_ENABLED=0 go build -ldflags "-s -w -X main.version=${VERSION}" -o /out/immerle ./cmd/immerle
+RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
+    go build -ldflags "-s -w -X main.version=${VERSION}" -o /out/immerle ./cmd/immerle
 
 # ---- runtime stage ----
 FROM alpine:3.20
