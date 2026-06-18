@@ -460,9 +460,10 @@ function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose
 
   return (
     <Modal transparent animationType="fade" visible onRequestClose={onClose}>
-      <Pressable className="flex-1 items-center justify-center bg-black/60 px-6" onPress={onClose}>
-        <Pressable className="w-full max-w-[460px] overflow-hidden rounded-2xl bg-surface" onPress={(e) => e.stopPropagation()}>
-          <View className="flex-row items-center justify-between px-5 pb-2 pt-5">
+      <Pressable className="flex-1 flex-row justify-end bg-black/60" onPress={onClose}>
+        {/* Side panel: full height, anchored right — room for the config editor + logs. */}
+        <Pressable className="h-full w-full max-w-[540px] bg-surface" onPress={(e) => e.stopPropagation()}>
+          <View className="flex-row items-center justify-between border-b border-border px-5 py-4">
             <Text className="text-lg font-bold tracking-tight text-foreground">
               {isEdit ? t('admin.providers.editTitle', { name: initial?.name }) : t('admin.providers.newTitle')}
             </Text>
@@ -470,8 +471,8 @@ function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose
           </View>
 
           <ScrollView
-            style={{ maxHeight: 460 }}
-            contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20, gap: 12 }}
+            style={{ flex: 1 }}
+            contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 16, gap: 12 }}
             keyboardShouldPersistTaps="handled"
           >
             <Field
