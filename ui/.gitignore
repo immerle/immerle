@@ -3,7 +3,8 @@ node_modules/
 
 # Expo
 .expo/
-dist/
+dist/*
+!dist/.gitkeep
 web-build/
 expo-env.d.ts
 
