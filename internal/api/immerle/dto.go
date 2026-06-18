@@ -191,12 +191,12 @@ type LibraryStatsDTO struct {
 
 // ImportItemDTO is one source track and the outcome of resolving it.
 type ImportItemDTO struct {
-	ID           string `json:"id"`
-	Position     int    `json:"position"`
-	SourceTitle  string `json:"sourceTitle" example:"Da Funk"`
-	SourceArtist string `json:"sourceArtist" example:"Daft Punk"`
-	SourceAlbum  string `json:"sourceAlbum,omitempty"`
-	Status       string `json:"status" example:"matched"`
+	ID             string `json:"id"`
+	Position       int    `json:"position"`
+	SourceTitle    string `json:"sourceTitle" example:"Da Funk"`
+	SourceArtist   string `json:"sourceArtist" example:"Daft Punk"`
+	SourceAlbum    string `json:"sourceAlbum,omitempty"`
+	Status         string `json:"status" example:"matched"`
 	MatchedTrackID string `json:"matchedTrackId,omitempty"`
 	// CandidateTrackID / CandidateCoverArt let a client preview a doubtful item:
 	// play the candidate (stream accepts the remote track id) and show its cover.
