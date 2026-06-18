@@ -15,7 +15,7 @@ type ProviderConfigRepo struct{ *base }
 
 const providerConfigColumns = `name, kind, endpoint, config, enabled, sort_order, created_at, updated_at`
 
-func scanProviderConfig(s interface{ Scan(...any) error }) (models.ProviderConfig, error) {
+func scanProviderConfig(s rowScanner) (models.ProviderConfig, error) {
 	var p models.ProviderConfig
 	var enabled int
 	var created, updated int64

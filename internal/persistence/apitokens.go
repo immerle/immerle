@@ -15,7 +15,7 @@ type APITokenRepo struct{ *base }
 
 const apiTokenColumns = `id, user_id, name, token_hash, prefix, created_at, last_used_at, expires_at, revoked`
 
-func scanAPIToken(s interface{ Scan(...any) error }) (models.APIToken, error) {
+func scanAPIToken(s rowScanner) (models.APIToken, error) {
 	var t models.APIToken
 	var created int64
 	var lastUsed, expires sql.NullInt64

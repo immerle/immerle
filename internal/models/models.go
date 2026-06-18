@@ -546,12 +546,3 @@ type Device struct {
 	ExpiresAt  *time.Time `json:"expiresAt,omitempty"`
 	Revoked    bool       `json:"revoked"`
 }
-
-// ProviderCacheEntry caches a provider response by query hash.
-type ProviderCacheEntry struct {
-	ID        string    `json:"id"`
-	Provider  string    `json:"provider"`
-	QueryHash string    `json:"queryHash"`
-	Response  []byte    `json:"-"`
-	CreatedAt time.Time `json:"createdAt"`
-}

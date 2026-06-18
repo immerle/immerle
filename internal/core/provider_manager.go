@@ -316,13 +316,11 @@ func (m *ProviderManager) firstOrder(ctx context.Context) int {
 	if err != nil || len(configs) == 0 {
 		return 0
 	}
-	min := configs[0].SortOrder
+	lowest := configs[0].SortOrder
 	for _, c := range configs {
-		if c.SortOrder < min {
-			min = c.SortOrder
-		}
+		lowest = min(lowest, c.SortOrder)
 	}
-	return min - 1
+	return lowest - 1
 }
 
 // reorderFromDB re-applies the persisted order to the live registry (after a

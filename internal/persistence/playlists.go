@@ -25,7 +25,7 @@ const playlistSelect = `
 	       (SELECT COALESCE(SUM(t.duration),0) FROM playlist_tracks pt JOIN tracks t ON t.id = pt.track_id WHERE pt.playlist_id = p.id) AS duration
 	FROM playlists p JOIN users u ON u.id = p.owner_id`
 
-func scanPlaylist(s interface{ Scan(...any) error }) (models.Playlist, error) {
+func scanPlaylist(s rowScanner) (models.Playlist, error) {
 	var p models.Playlist
 	var public, collab, fed int
 	var created, updated int64

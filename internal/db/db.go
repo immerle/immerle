@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"embed"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/pressly/goose/v3"
@@ -27,7 +28,7 @@ type DB struct {
 
 // Open opens a database connection pool for the given driver and DSN.
 // driver is "sqlite" or "postgres".
-func Open(driver, dsn string, maxOpen, maxIdle int, maxLifetime time.Duration) (*DB, error) {
+func Open(driver, dsn string) (*DB, error) {
 	sqlDriver, connStr, dialect, err := resolveDriver(driver, dsn)
 	if err != nil {
 		return nil, err
@@ -38,13 +39,10 @@ func Open(driver, dsn string, maxOpen, maxIdle int, maxLifetime time.Duration) (
 		return nil, fmt.Errorf("open database: %w", err)
 	}
 
-	if maxOpen > 0 {
-		sqlDB.SetMaxOpenConns(maxOpen)
-	}
-	if maxIdle > 0 {
-		sqlDB.SetMaxIdleConns(maxIdle)
-	}
-	sqlDB.SetConnMaxLifetime(maxLifetime)
+	// Single connection: the SQLite file backend serializes writes, and the
+	// app's access patterns don't benefit from a larger pool.
+	sqlDB.SetMaxOpenConns(1)
+	sqlDB.SetMaxIdleConns(1)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -108,7 +106,7 @@ func rebindPositional(query string) string {
 		if query[i] == '?' {
 			n++
 			out = append(out, '$')
-			out = append(out, []byte(fmt.Sprintf("%d", n))...)
+			out = strconv.AppendInt(out, int64(n), 10)
 			continue
 		}
 		out = append(out, query[i])

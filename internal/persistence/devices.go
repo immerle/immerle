@@ -15,7 +15,7 @@ type DeviceRepo struct{ *base }
 
 const deviceColumns = `id, user_id, name, user_agent, created_at, last_seen_at, last_ip, expires_at, revoked`
 
-func scanDevice(s interface{ Scan(...any) error }) (models.Device, error) {
+func scanDevice(s rowScanner) (models.Device, error) {
 	var d models.Device
 	var created int64
 	var lastSeen, expires sql.NullInt64

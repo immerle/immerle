@@ -58,7 +58,7 @@ func TestFetchExternalPlaylist(t *testing.T) {
 	if pl.Name != "My Mix" || len(pl.Tracks) != 2 {
 		t.Fatalf("playlist decode wrong: %+v", pl)
 	}
-	if pl.Tracks[0].Title != "Da Funk" || pl.Tracks[0].Duration != 224 {
+	if pl.Tracks[0].Title != "Da Funk" || pl.Tracks[0].Artist != "Daft Punk" {
 		t.Fatalf("track 0 wrong: %+v", pl.Tracks[0])
 	}
 }

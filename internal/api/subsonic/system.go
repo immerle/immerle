@@ -1,6 +1,9 @@
 package subsonic
 
-import "net/http"
+import (
+	"context"
+	"net/http"
+)
 
 func (h *Handler) handlePing(w http.ResponseWriter, r *http.Request) {
 	writeOK(w, r)
@@ -35,7 +38,8 @@ func (h *Handler) handleStartScan(w http.ResponseWriter, r *http.Request) {
 	}
 	if h.Scanner != nil && len(h.MusicFolderPaths) > 0 {
 		go func() {
-			_, _ = h.Scanner.ScanPaths(contextDetached(), h.MusicFolderPaths)
+			// Detached background context: the scan must outlive this request.
+			_, _ = h.Scanner.ScanPaths(context.Background(), h.MusicFolderPaths)
 		}()
 	}
 	resp := newResponse()

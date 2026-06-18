@@ -14,7 +14,7 @@ type UserRepo struct{ *base }
 
 const userColumns = `id, username, password_hash, email, is_admin, scrobble_enabled, activity_privacy, created_at, display_name`
 
-func scanUser(s interface{ Scan(...any) error }) (models.User, error) {
+func scanUser(s rowScanner) (models.User, error) {
 	var u models.User
 	var isAdmin, scrobble int
 	var createdAt int64

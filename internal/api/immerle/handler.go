@@ -43,7 +43,8 @@ type Deps struct {
 	// Cleanup controls the provider-download eviction sweep (admin API).
 	Cleanup CleanupController
 	// Providers manages runtime-configurable on-demand providers (admin API).
-	Providers ProviderController
+	// nil when on-demand is disabled; handlers guard with a nil check.
+	Providers *core.ProviderManager
 	// Settings manages the DB-backed runtime settings (admin API). It also supplies
 	// the device-session JWT lifetime (a runtime setting).
 	Settings *core.SettingsService
@@ -57,17 +58,6 @@ func (h *Handler) deviceTokenTTL() time.Duration {
 		return h.Settings.DeviceTokenTTL()
 	}
 	return 720 * time.Hour
-}
-
-// ProviderController manages admin-configurable on-demand providers at runtime.
-// Implemented by *core.ProviderManager.
-type ProviderController interface {
-	List(ctx context.Context) ([]models.ProviderConfig, error)
-	Upsert(ctx context.Context, cfg models.ProviderConfig) (models.ProviderConfig, error)
-	SetEnabled(ctx context.Context, name string, enabled bool) (models.ProviderConfig, error)
-	Reorder(ctx context.Context, names []string) error
-	Delete(ctx context.Context, name string) error
-	Active(name string) bool
 }
 
 // FederationStatusProvider reports whether hub federation is enabled (S7).

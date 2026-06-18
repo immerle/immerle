@@ -17,7 +17,7 @@ type CatalogRepo struct{ *base }
 
 // ---- Artists ----
 
-func scanArtist(s interface{ Scan(...any) error }) (models.Artist, error) {
+func scanArtist(s rowScanner) (models.Artist, error) {
 	var a models.Artist
 	var createdAt int64
 	if err := s.Scan(&a.ID, &a.Name, &a.SortName, &a.MBID, &a.CoverArt, &createdAt); err != nil {
@@ -109,7 +109,7 @@ const albumSelect = `
 	       (SELECT COALESCE(SUM(t.duration),0) FROM tracks t WHERE t.album_id = al.id) AS duration
 	FROM albums al JOIN artists ar ON ar.id = al.artist_id`
 
-func scanAlbum(s interface{ Scan(...any) error }) (models.Album, error) {
+func scanAlbum(s rowScanner) (models.Album, error) {
 	var a models.Album
 	var isComp int
 	var createdAt int64
@@ -272,7 +272,7 @@ const trackSelect = `
 	       t.remote, t.provider, t.created_at, t.updated_at
 	FROM tracks t JOIN albums al ON al.id = t.album_id JOIN artists ar ON ar.id = t.artist_id`
 
-func scanTrack(s interface{ Scan(...any) error }) (models.Track, error) {
+func scanTrack(s rowScanner) (models.Track, error) {
 	var t models.Track
 	var remote int
 	var createdAt, updatedAt int64

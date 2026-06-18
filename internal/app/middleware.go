@@ -56,7 +56,7 @@ func loggingMiddleware(logger *slog.Logger, next http.Handler) http.Handler {
 
 // shareHandler serves the public landing for a share secret, incrementing its
 // view count. It returns share metadata as JSON (clients build the playback UI).
-func shareHandler(shares *persistence.ShareRepo, logger *slog.Logger) http.HandlerFunc {
+func shareHandler(shares *persistence.ShareRepo) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		secret := strings.TrimPrefix(r.URL.Path, "/share/")
 		if secret == "" {

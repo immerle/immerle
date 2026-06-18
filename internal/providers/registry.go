@@ -2,7 +2,6 @@ package providers
 
 import (
 	"fmt"
-	"sort"
 	"sync"
 )
 
@@ -42,18 +41,6 @@ func Build(name string, settings map[string]string) (Provider, error) {
 		return nil, fmt.Errorf("no provider factory registered for %q", name)
 	}
 	return f(settings)
-}
-
-// Available returns the registered provider names, sorted.
-func Available() []string {
-	factoriesMu.RLock()
-	defer factoriesMu.RUnlock()
-	out := make([]string, 0, len(factories))
-	for n := range factories {
-		out = append(out, n)
-	}
-	sort.Strings(out)
-	return out
 }
 
 // setting returns settings[key] or a fallback default.

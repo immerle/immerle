@@ -25,13 +25,6 @@ func (r *FriendRepo) Request(ctx context.Context, f models.Friendship) error {
 	return err
 }
 
-// SetStatus updates a friendship's status (accept/block).
-func (r *FriendRepo) SetStatus(ctx context.Context, userID, friendID string, status models.FriendshipStatus) error {
-	_, err := r.exec(ctx, `UPDATE friendships SET status=?, updated_at=? WHERE user_id=? AND friend_id=?`,
-		string(status), db.Millis(time.Now()), userID, friendID)
-	return err
-}
-
 // Accept marks a pending request accepted and creates the reciprocal accepted
 // edge. Returns ErrNotFound if no pending inbound request from requesterID to
 // accepterID exists, so a friendship cannot be forged without a real request.
@@ -215,7 +208,7 @@ func (r *JamRepo) UpdatePlayback(ctx context.Context, id, currentTrackID string,
 	return err
 }
 
-func scanJam(s interface{ Scan(...any) error }) (models.JamSession, error) {
+func scanJam(s rowScanner) (models.JamSession, error) {
 	var j models.JamSession
 	var ids string
 	var created, updated int64

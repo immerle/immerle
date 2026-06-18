@@ -119,7 +119,7 @@ func (r *ShareRepo) Delete(ctx context.Context, id, userID string) error {
 	return err
 }
 
-func scanShare(s interface{ Scan(...any) error }) (models.Share, error) {
+func scanShare(s rowScanner) (models.Share, error) {
 	var sh models.Share
 	var itemType string
 	var expires sql.NullInt64
@@ -134,16 +134,6 @@ func scanShare(s interface{ Scan(...any) error }) (models.Share, error) {
 }
 
 const shareColumns = `id, user_id, item_type, item_id, secret, description, expires_at, created_at, view_count`
-
-// Get returns a share by id.
-func (r *ShareRepo) Get(ctx context.Context, id string) (models.Share, error) {
-	row := r.queryRow(ctx, `SELECT `+shareColumns+` FROM shares WHERE id=?`, id)
-	sh, err := scanShare(row)
-	if errors.Is(err, sql.ErrNoRows) {
-		return sh, ErrNotFound
-	}
-	return sh, err
-}
 
 // GetBySecret returns a share by its public secret.
 func (r *ShareRepo) GetBySecret(ctx context.Context, secret string) (models.Share, error) {

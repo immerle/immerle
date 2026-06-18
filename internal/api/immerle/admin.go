@@ -14,16 +14,6 @@ func (h *Handler) requireAdmin(w http.ResponseWriter, r *http.Request) bool {
 	return true
 }
 
-// cleanupStatus builds the current eviction sweep state from the runtime config.
-func (h *Handler) cleanupStatus() map[string]any {
-	c := h.Settings.Get().Cleanup
-	return map[string]any{
-		"enabled":         c.Enabled,
-		"maxAgeSeconds":   c.MaxAgeSeconds,
-		"intervalSeconds": c.IntervalSeconds,
-	}
-}
-
 // handleCleanup reports or changes the provider-download eviction state. The
 // state lives in the runtime settings (data/configuration.yaml); toggling it is
 // hot.
@@ -62,7 +52,12 @@ func (h *Handler) handleCleanup(w http.ResponseWriter, r *http.Request) {
 		}
 		h.Logger.Info("cleanup sweep toggled", "enabled", enabled, "by", userFrom(r.Context()).Username)
 	}
-	writeJSON(w, http.StatusOK, okBody(h.cleanupStatus()))
+	c := h.Settings.Get().Cleanup
+	writeJSON(w, http.StatusOK, okBody(map[string]any{
+		"enabled":         c.Enabled,
+		"maxAgeSeconds":   c.MaxAgeSeconds,
+		"intervalSeconds": c.IntervalSeconds,
+	}))
 }
 
 // handleCleanupRun triggers an immediate eviction sweep, regardless of whether

@@ -13,6 +13,10 @@ import (
 // ErrNotFound is returned when a lookup matches no row.
 var ErrNotFound = errors.New("not found")
 
+// rowScanner is satisfied by both *sql.Row and *sql.Rows, so scan helpers work
+// with either a single-row lookup or an iterated result set.
+type rowScanner interface{ Scan(...any) error }
+
 // Store groups all repositories.
 type Store struct {
 	db *db.DB
