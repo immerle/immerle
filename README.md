@@ -87,6 +87,17 @@ Issues and pull requests are very welcome! 🙌 Before opening a PR, run `make c
 handler annotations — CI fails on a stale spec. See
 [Development](DOCS.md#development) for the full loop.
 
+## ⚖️ Disclaimer
+
+Immerle's on-demand provider system is **content-neutral** by design: it can be
+pointed at any backend. That neutrality is purely technical and is not an
+endorsement of any particular use. **You are solely responsible** for ensuring
+you have the legal right to access, store and distribute whatever content you
+connect, and for complying with all applicable copyright and other laws. Immerle
+and its maintainers provide the software only and **disclaim all responsibility
+and liability** for how it is used or what content is served through it. See
+[DISCLAIMER.md](DISCLAIMER.md).
+
 ## 📜 License
 
 Immerle is free software, licensed under the **[GNU AGPLv3](LICENSE)**. You’re
