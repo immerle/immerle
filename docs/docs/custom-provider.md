@@ -17,7 +17,24 @@ There are two kinds:
   Immerle calls fixed JSON-over-HTTP endpoints on it. **This is what you build.**
 
 Immerle is content-neutral: it knows nothing about your catalog. It just calls a
-few fixed paths under your base URL and unmarshals the JSON you return.
+few fixed paths under your base URL and unmarshals the JSON you return. This is a
+deliberate design choice — the provider interface lets you put **any** backend
+behind it, so Immerle never has to take a position on what your source is.
+
+:::warning Your content, your responsibility
+
+Because the provider system is content-neutral, it can be pointed at any source.
+That neutrality is purely technical and is **not** an endorsement of any
+particular use.
+
+**You — the operator of the provider and the server — are solely responsible**
+for ensuring you have the legal right to access, store and distribute whatever
+content you connect, and for complying with all applicable copyright and other
+laws in your jurisdiction. Immerle and its maintainers provide the mechanism
+only and **disclaim all responsibility and liability** for the content you
+choose to serve through it.
+
+:::
 
 ## The contract
 
