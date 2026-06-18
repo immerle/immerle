@@ -8,6 +8,7 @@ import { Badge, Button, Card, EmptyState, ErrorState, Field, IconButton, Loading
 import { AdminHeader, AdminScroll } from '../../src/components/AdminUI';
 import { Ionicon } from '../../src/components/Ionicon';
 import { useColors } from '../../src/theme/colors';
+import { tError } from '../../src/i18n';
 
 const SLUG_RE = /^[a-z0-9][a-z0-9_-]*$/;
 
@@ -288,7 +289,7 @@ function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose
     setError(null);
     upsert.mutate(
       { name, endpoint, config: config.trim() || '{}', enabled, kind: 'http' },
-      { onSuccess: onClose },
+      { onSuccess: onClose, onError: (e) => setError(tError(e)) },
     );
   };
 

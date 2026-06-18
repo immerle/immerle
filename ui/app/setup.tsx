@@ -8,6 +8,7 @@ import { Button, ErrorState, Field, Loading } from '../src/components/ui';
 import { AuthShell } from '../src/components/AuthShell';
 import { Ionicon } from '../src/components/Ionicon';
 import { useColors } from '../src/theme/colors';
+import { t } from '../src/i18n';
 
 type Phase = 'url' | 'loading' | 'form' | 'success' | 'done' | 'error';
 
@@ -114,7 +115,7 @@ export default function Setup() {
       return;
     }
     if (result.status === 401) {
-      setErrors({ setupToken: 'Token de setup invalide.' });
+      setErrors({ setupToken: t('errors.invalid_setup_token') });
       setPhase('form');
       return;
     }
@@ -130,7 +131,7 @@ export default function Setup() {
       setPhase('form');
       return;
     }
-    setGlobalError('La création a échoué. Réessayez.');
+    setGlobalError(t(`errors.${result.error}`, { defaultValue: 'La création a échoué. Réessayez.' }));
     setPhase('form');
   };
 

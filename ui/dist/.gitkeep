@@ -1,2 +1,0 @@
-// Placeholder so //go:embed all:dist compiles before the web app is built.
-// The real build (expo export --platform web) overwrites this directory.
