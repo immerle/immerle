@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"strings"
+	"sync"
 
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/providers"
@@ -108,7 +109,6 @@ func (s *CatalogService) RemoteSearchArtists(ctx context.Context, query string, 
 	if s == nil || s.state == nil {
 		return nil, nil
 	}
-	st := s.state
 	if limit <= 0 {
 		limit = 20
 	}
@@ -118,7 +118,132 @@ func (s *CatalogService) RemoteSearchArtists(ctx context.Context, query string, 
 	}
 	ctx, cancel := s.searchCtx(ctx)
 	defer cancel()
+	return s.remoteArtistsFrom(ctx, prov, query, limit), nil
+}
 
+// RemoteSearch3 gathers remote artists, albums and tracks for search3/search2.
+// It queries every active provider in parallel and merges their results into
+// three deduplicated lists (artists by name, albums by artist+name, tracks by
+// id), capped per provider by the given limits. Ordering and the final result
+// caps (combined with the local results) are applied by the caller.
+func (s *CatalogService) RemoteSearch3(ctx context.Context, query string, artistLimit, albumLimit, songLimit int) ([]models.Artist, []models.Album, []models.Track) {
+	if s == nil || s.state == nil {
+		return nil, nil, nil
+	}
+	if artistLimit <= 0 {
+		artistLimit = 20
+	}
+	if albumLimit <= 0 {
+		albumLimit = 20
+	}
+	if songLimit <= 0 {
+		songLimit = 20
+	}
+	provs := s.state.registry.All()
+	if len(provs) == 0 {
+		return nil, nil, nil
+	}
+	ctx, cancel := s.searchCtx(ctx)
+	defer cancel()
+
+	type provResult struct {
+		artists []models.Artist
+		albums  []models.Album
+		tracks  []models.Track
+	}
+	results := make([]provResult, len(provs))
+	var wg sync.WaitGroup
+	for i, prov := range provs {
+		wg.Add(1)
+		go func(i int, prov providers.Provider) {
+			defer wg.Done()
+			// Within a provider, derive in order: artists, then albums (widest
+			// track fetch), then tracks. All three reuse the single cached track
+			// search, so this is one network call per provider.
+			results[i] = provResult{
+				artists: s.remoteArtistsFrom(ctx, prov, query, artistLimit),
+				albums:  s.remoteAlbumsFrom(ctx, prov, query, albumLimit),
+				tracks:  s.remoteTracksFrom(ctx, prov, query, songLimit),
+			}
+		}(i, prov)
+	}
+	wg.Wait()
+
+	// Merge in provider (admin) order; the caller re-sorts by relevance.
+	var artists []models.Artist
+	var albums []models.Album
+	var tracks []models.Track
+	seenArtist := map[string]bool{}
+	seenAlbum := map[string]bool{}
+	seenTrack := map[string]bool{}
+	for _, r := range results {
+		for _, a := range r.artists {
+			k := strings.ToLower(a.Name)
+			if k == "" || seenArtist[k] {
+				continue
+			}
+			seenArtist[k] = true
+			artists = append(artists, a)
+		}
+		for _, al := range r.albums {
+			k := strings.ToLower(al.ArtistName + idSep + al.Name)
+			if seenAlbum[k] {
+				continue
+			}
+			seenAlbum[k] = true
+			albums = append(albums, al)
+		}
+		for _, t := range r.tracks {
+			if seenTrack[t.ID] {
+				continue
+			}
+			seenTrack[t.ID] = true
+			tracks = append(tracks, t)
+		}
+	}
+	return artists, albums, tracks
+}
+
+// remoteAlbumsFrom derives remote albums from a single provider's track results,
+// grouped by (artist, album). Each carries a browsable derived remote album id.
+// The context/timeout is set by the caller; it reuses the cached track search.
+func (s *CatalogService) remoteAlbumsFrom(ctx context.Context, prov providers.Provider, query string, limit int) []models.Album {
+	results, err := s.cachedTrackSearch(ctx, prov, query, limit*4)
+	if err != nil {
+		return nil
+	}
+	seen := map[string]bool{}
+	out := make([]models.Album, 0, limit)
+	for _, res := range results {
+		album := strings.TrimSpace(res.Album)
+		artist := strings.TrimSpace(res.Artist)
+		if album == "" {
+			continue
+		}
+		key := strings.ToLower(artist + idSep + album)
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		out = append(out, models.Album{
+			ID:         encodeRemoteAlbumID(prov.Name(), res.ProviderArtistID, artist, album),
+			Name:       album,
+			ArtistID:   encodeRemoteArtistID(prov.Name(), res.ProviderArtistID, artist),
+			ArtistName: artist,
+			Year:       res.Year,
+			CoverArt:   models.RemoteCoverID(res.CoverImageURL),
+		})
+		if len(out) >= limit {
+			break
+		}
+	}
+	return out
+}
+
+// remoteArtistsFrom searches a single provider for artists, deduplicated against
+// the local library (by name). The context/timeout is set by the caller.
+func (s *CatalogService) remoteArtistsFrom(ctx context.Context, prov providers.Provider, query string, limit int) []models.Artist {
+	st := s.state
 	out := make([]models.Artist, 0, limit)
 	seen := make(map[string]bool)
 	add := func(a models.Artist) bool {
@@ -150,7 +275,7 @@ func (s *CatalogService) RemoteSearchArtists(ctx context.Context, query string, 
 					break
 				}
 			}
-			return out, nil
+			return out
 		}
 	}
 
@@ -158,7 +283,7 @@ func (s *CatalogService) RemoteSearchArtists(ctx context.Context, query string, 
 	// albums. This reuses the song search's cache entry — no extra network call.
 	results, err := s.cachedTrackSearch(ctx, prov, query, limit*4)
 	if err != nil {
-		return out, nil
+		return out
 	}
 	albumsByArtist := map[string]map[string]bool{}
 	var order []providers.Result
@@ -186,7 +311,7 @@ func (s *CatalogService) RemoteSearchArtists(ctx context.Context, query string, 
 			break
 		}
 	}
-	return out, nil
+	return out
 }
 
 // RemoteArtist resolves a remote artist id into an artist plus its albums

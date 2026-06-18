@@ -5,6 +5,7 @@ import (
 	"io"
 	"testing"
 
+	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/providers"
 	"github.com/immerle/immerle/internal/testutil"
 )
@@ -98,6 +99,65 @@ func TestRemoteSearchArtists(t *testing.T) {
 	}
 	if !IsRemoteArtistID(artists[0].ID) {
 		t.Fatalf("artist id should be a remote artist id: %q", artists[0].ID)
+	}
+}
+
+// hasProvider reports whether any track came from the named provider.
+func hasProvider(tracks []models.Track, name string) bool {
+	for _, t := range tracks {
+		if t.Provider == name {
+			return true
+		}
+	}
+	return false
+}
+
+func TestRemoteSearch3QueriesAllProviders(t *testing.T) {
+	store := testutil.NewStore(t)
+	registry := NewProviderRegistry()
+	registry.Register(&browsableProvider{
+		name:         "first",
+		searchResult: []providers.Result{{ProviderTrackID: "f1", Title: "Solo", Artist: "Alpha", Album: "A"}},
+	})
+	registry.Register(&browsableProvider{
+		name:         "second",
+		searchResult: []providers.Result{{ProviderTrackID: "s1", Title: "Hit", Artist: "Beta", Album: "B"}},
+	})
+	svc := NewCatalogService(CatalogServiceConfig{
+		Catalog: store.Catalog, Downloads: store.Downloads, Registry: registry,
+		Settings: StaticProviderSettings{}, Logger: testutil.NewLogger(),
+	})
+
+	_, _, tracks := svc.RemoteSearch3(context.Background(), "x", 4, 10, 10)
+	if !hasProvider(tracks, "first") || !hasProvider(tracks, "second") {
+		t.Fatalf("expected every active provider to contribute, got %+v", tracks)
+	}
+}
+
+func TestRemoteSearch3DerivesAlbums(t *testing.T) {
+	store := testutil.NewStore(t)
+	registry := NewProviderRegistry()
+	registry.Register(&browsableProvider{
+		name: "prov",
+		searchResult: []providers.Result{
+			{ProviderTrackID: "t1", Title: "One", Artist: "Beta", Album: "Greatest"},
+			{ProviderTrackID: "t2", Title: "Two", Artist: "Beta", Album: "Greatest"},
+			{ProviderTrackID: "t3", Title: "Three", Artist: "Beta", Album: "Early"},
+		},
+	})
+	svc := NewCatalogService(CatalogServiceConfig{
+		Catalog: store.Catalog, Downloads: store.Downloads, Registry: registry,
+		Settings: StaticProviderSettings{}, Logger: testutil.NewLogger(),
+	})
+
+	_, albums, _ := svc.RemoteSearch3(context.Background(), "x", 4, 10, 10)
+	if len(albums) != 2 {
+		t.Fatalf("expected 2 distinct derived albums, got %d (%+v)", len(albums), albums)
+	}
+	for _, a := range albums {
+		if !IsRemoteAlbumID(a.ID) {
+			t.Fatalf("derived album should carry a remote album id: %q", a.ID)
+		}
 	}
 }
 

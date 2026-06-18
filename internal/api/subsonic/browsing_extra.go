@@ -176,21 +176,59 @@ func (h *Handler) handleSearch2(w http.ResponseWriter, r *http.Request) {
 		out.Artist = append(out.Artist, ArtistItem{ID: a.ID, Name: a.Name})
 		seenArtist[strings.ToLower(a.Name)] = true
 	}
-	if h.OnDemand != nil && query != "" {
-		if remote, err := h.OnDemand.RemoteSearchArtists(r.Context(), query, artistCount); err == nil {
-			for _, a := range remote {
-				if seenArtist[strings.ToLower(a.Name)] {
-					continue
-				}
-				seenArtist[strings.ToLower(a.Name)] = true
-				out.Artist = append(out.Artist, ArtistItem{ID: a.ID, Name: a.Name})
-			}
-		}
-	}
 	for _, a := range albums {
 		out.Album = append(out.Album, toAlbumChild(a, nil))
 	}
-	out.Song = h.mergeRemoteSongs(r, h.tracksToChildren(r, tracks), query, songCount)
+	out.Song = h.tracksToChildren(r, tracks)
+	// Remote artists, albums and songs from every active provider, merged into
+	// the local lists and deduplicated by name (artists/albums) and id (songs).
+	if h.OnDemand != nil && query != "" {
+		remoteArtists, remoteAlbums, remoteSongs := h.OnDemand.RemoteSearch3(r.Context(), query, maxSearchArtists, maxSearchAlbums, maxSearchSongs)
+		for _, a := range remoteArtists {
+			if seenArtist[strings.ToLower(a.Name)] {
+				continue
+			}
+			seenArtist[strings.ToLower(a.Name)] = true
+			out.Artist = append(out.Artist, ArtistItem{ID: a.ID, Name: a.Name})
+		}
+		seenAlbum := make(map[string]bool, len(out.Album))
+		for _, a := range out.Album {
+			seenAlbum[strings.ToLower(a.Artist+"|"+a.Title)] = true
+		}
+		for _, a := range remoteAlbums {
+			if seenAlbum[strings.ToLower(a.ArtistName+"|"+a.Name)] {
+				continue
+			}
+			seenAlbum[strings.ToLower(a.ArtistName+"|"+a.Name)] = true
+			out.Album = append(out.Album, toAlbumChild(a, nil))
+		}
+		seenSong := make(map[string]bool, len(out.Song))
+		for _, s := range out.Song {
+			seenSong[s.ID] = true
+		}
+		for _, t := range remoteSongs {
+			if seenSong[t.ID] {
+				continue
+			}
+			seenSong[t.ID] = true
+			out.Song = append(out.Song, toChild(t, nil))
+		}
+	}
+
+	// Re-sort the merged lists by relevance to the query, then apply the caps.
+	sort.SliceStable(out.Artist, func(i, j int) bool {
+		return relevance(query, out.Artist[i].Name) < relevance(query, out.Artist[j].Name)
+	})
+	sort.SliceStable(out.Album, func(i, j int) bool {
+		return relevance(query, out.Album[i].Title) < relevance(query, out.Album[j].Title)
+	})
+	sort.SliceStable(out.Song, func(i, j int) bool {
+		return relevance(query, out.Song[i].Title) < relevance(query, out.Song[j].Title)
+	})
+	out.Artist = capSlice(out.Artist, maxSearchArtists)
+	out.Album = capSlice(out.Album, maxSearchAlbums)
+	out.Song = capSlice(out.Song, maxSearchSongs)
+
 	resp := newResponse()
 	resp.SearchResult2 = out
 	write(w, r, resp)

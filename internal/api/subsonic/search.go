@@ -2,11 +2,36 @@ package subsonic
 
 import (
 	"net/http"
+	"sort"
 	"strings"
-	"sync"
 
 	"github.com/immerle/immerle/internal/models"
 )
+
+// Final search result caps: titles and albums to 10, artists to 4. Applied to
+// the merged local+remote lists after re-sorting by relevance.
+const (
+	maxSearchArtists = 4
+	maxSearchAlbums  = 10
+	maxSearchSongs   = 10
+)
+
+// relevance scores how well s matches the query for search ordering: exact (0),
+// prefix (1), substring (2), otherwise (3). Lower is better; ties keep input
+// order (stable sort).
+func relevance(query, s string) int {
+	q, x := strings.ToLower(strings.TrimSpace(query)), strings.ToLower(s)
+	switch {
+	case q == "" || x == q:
+		return 0
+	case strings.HasPrefix(x, q):
+		return 1
+	case strings.Contains(x, q):
+		return 2
+	default:
+		return 3
+	}
+}
 
 func (h *Handler) handleSearch3(w http.ResponseWriter, r *http.Request) {
 	query := strings.TrimSpace(param(r, "query"))
@@ -38,72 +63,71 @@ func (h *Handler) handleSearch3(w http.ResponseWriter, r *http.Request) {
 		out.Song = append(out.Song, toChild(t, annPtr(trackAnn, t.ID)))
 	}
 
-	// Remote songs and artists are fetched concurrently (one provider, but two
-	// API calls for providers like Deezer) so the request isn't serialized.
+	// Remote results from every active provider, merged into the local lists
+	// (deduplicated by name for artists/albums, id for songs).
 	if h.OnDemand != nil && query != "" {
-		var wg sync.WaitGroup
-		var songs []Child
-		var artists []ArtistID3
-		wg.Add(2)
-		go func() { defer wg.Done(); songs = h.mergeRemoteSongs(r, out.Song, query, songCount) }()
-		go func() { defer wg.Done(); artists = h.mergeRemoteArtists(r, out.Artist, query, artistCount) }()
-		wg.Wait()
-		out.Song, out.Artist = songs, artists
+		remoteArtists, remoteAlbums, remoteSongs := h.OnDemand.RemoteSearch3(r.Context(), query, maxSearchArtists, maxSearchAlbums, maxSearchSongs)
+
+		seenA := make(map[string]bool, len(out.Artist))
+		for _, a := range out.Artist {
+			seenA[strings.ToLower(a.Name)] = true
+		}
+		for _, a := range remoteArtists {
+			if seenA[strings.ToLower(a.Name)] {
+				continue
+			}
+			seenA[strings.ToLower(a.Name)] = true
+			out.Artist = append(out.Artist, toArtistID3(a, nil, nil))
+		}
+
+		seenAl := make(map[string]bool, len(out.Album))
+		for _, a := range out.Album {
+			seenAl[strings.ToLower(a.Artist+"|"+a.Name)] = true
+		}
+		for _, a := range remoteAlbums {
+			if seenAl[strings.ToLower(a.ArtistName+"|"+a.Name)] {
+				continue
+			}
+			seenAl[strings.ToLower(a.ArtistName+"|"+a.Name)] = true
+			out.Album = append(out.Album, toAlbumID3(a, nil, nil))
+		}
+
+		seenS := make(map[string]bool, len(out.Song))
+		for _, s := range out.Song {
+			seenS[s.ID] = true
+		}
+		for _, t := range remoteSongs {
+			if seenS[t.ID] {
+				continue
+			}
+			seenS[t.ID] = true
+			out.Song = append(out.Song, toChild(t, nil))
+		}
 	}
+
+	// Re-sort the merged lists by relevance to the query, then apply the caps.
+	sort.SliceStable(out.Artist, func(i, j int) bool {
+		return relevance(query, out.Artist[i].Name) < relevance(query, out.Artist[j].Name)
+	})
+	sort.SliceStable(out.Album, func(i, j int) bool {
+		return relevance(query, out.Album[i].Name) < relevance(query, out.Album[j].Name)
+	})
+	sort.SliceStable(out.Song, func(i, j int) bool {
+		return relevance(query, out.Song[i].Title) < relevance(query, out.Song[j].Title)
+	})
+	out.Artist = capSlice(out.Artist, maxSearchArtists)
+	out.Album = capSlice(out.Album, maxSearchAlbums)
+	out.Song = capSlice(out.Song, maxSearchSongs)
 
 	resp := newResponse()
 	resp.SearchResult3 = out
 	write(w, r, resp)
 }
 
-// mergeRemoteArtists appends provider (remote) artists to the local artist list,
-// deduplicated by name. Remote artists carry self-describing ids and are
-// browsable via getArtist/getMusicDirectory.
-func (h *Handler) mergeRemoteArtists(r *http.Request, local []ArtistID3, query string, artistCount int) []ArtistID3 {
-	if h.OnDemand == nil || query == "" {
-		return local
+// capSlice truncates s to at most n elements.
+func capSlice[T any](s []T, n int) []T {
+	if len(s) > n {
+		return s[:n]
 	}
-	remote, err := h.OnDemand.RemoteSearchArtists(r.Context(), query, artistCount)
-	if err != nil {
-		return local
-	}
-	seen := make(map[string]bool, len(local))
-	for _, a := range local {
-		seen[strings.ToLower(a.Name)] = true
-	}
-	for _, a := range remote {
-		if seen[strings.ToLower(a.Name)] {
-			continue
-		}
-		seen[strings.ToLower(a.Name)] = true
-		local = append(local, toArtistID3(a, nil, nil))
-	}
-	return local
-}
-
-// mergeRemoteSongs appends provider (remote) search results to the local song
-// list, deduplicated by id. Remote results come from every registered provider
-// (merged in remoteSearch); those from downloadable providers are streamable and
-// trigger a background download on first play, while metadata-only providers
-// (e.g. Deezer via ARL) surface the track for discovery.
-func (h *Handler) mergeRemoteSongs(r *http.Request, local []Child, query string, songCount int) []Child {
-	if h.OnDemand == nil || query == "" {
-		return local
-	}
-	remote, err := h.OnDemand.RemoteSearch(r.Context(), query, songCount)
-	if err != nil {
-		return local
-	}
-	seen := make(map[string]bool, len(local))
-	for _, s := range local {
-		seen[s.ID] = true
-	}
-	for _, t := range remote {
-		if seen[t.ID] {
-			continue
-		}
-		seen[t.ID] = true
-		local = append(local, toChild(t, nil))
-	}
-	return local
+	return s
 }
