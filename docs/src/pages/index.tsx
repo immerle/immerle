@@ -75,7 +75,7 @@ export default function Home(): React.ReactElement {
             width={104}
             height={85}
           />
-          <p className={styles.kicker}>One small Go binary · up in minutes</p>
+          <p className={styles.kicker}>Self-hosted · up in minutes</p>
           <h1 className={styles.title}>
             Own every
             <br />
