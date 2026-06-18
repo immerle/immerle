@@ -46,14 +46,28 @@ self-hosted server, for music, that sings: **Immerle**. ✨
 
 ### 🐳 Docker
 
+Uses the prebuilt multi-arch image from GHCR — no local build needed.
+
 ```bash
 # put your music under ./music, then:
-docker compose up --build
+docker compose up -d
 # server on http://localhost:4533 — create the admin via the first-run setup:
 curl -X POST http://localhost:4533/setup/init \
   -H 'Content-Type: application/json' \
   -d '{"username":"me","password":"a-strong-password"}'
 ```
+
+Or without compose:
+
+```bash
+docker run -d -p 4533:4533 \
+  -v "$PWD/music:/music:ro" -v immerle-data:/data \
+  -e DATABASE_DSN=/data/immerle.db -e LIBRARY_DATA_DIR=/data \
+  ghcr.io/immerle/immerle:latest
+```
+
+> Building from your checkout instead? Uncomment `build:` in
+> `docker-compose.yml` and run `docker compose up --build`.
 
 ### 🛠️ From source
 
