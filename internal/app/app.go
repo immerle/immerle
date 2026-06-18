@@ -65,6 +65,9 @@ func builtinProviderDefs() []core.BuiltinDef {
 	all := []core.BuiltinDef{
 		// Public-domain / CC; no credentials → enabled by default.
 		{Name: "internet-archive", DefaultConfig: `{"max_items":"8"}`, DefaultEnabled: true},
+		// CC-licensed; no credentials. Scrapes FMA's public site → disabled by
+		// default since it's more fragile than the API-backed providers.
+		{Name: "free-music-archive", DefaultConfig: `{}`, DefaultEnabled: false},
 		// Needs a free API key → seeded disabled with a token placeholder to fill
 		// in via the admin UI before enabling.
 		{Name: "jamendo", DefaultConfig: `{"client_id":"<JAMENDO_TOKEN>","audioformat":"mp32"}`, DefaultEnabled: false},

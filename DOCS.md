@@ -116,7 +116,7 @@ internal/
   persistence            repositories (one per aggregate) over database/sql
   scanner                filesystem walk, tag extraction, idempotent upserts
   stream                 audio streaming (range/seek), ffmpeg transcoding, cover art
-  providers              pluggable on-demand catalog providers (jamendo, internet-archive, http)
+  providers              pluggable on-demand catalog providers (jamendo, internet-archive, free-music-archive, http)
   core                   business services (auth, annotations, on-demand,
                          activity, jam, now-playing)
   federation             immerle-hub client
@@ -352,8 +352,11 @@ provider, auto-download, search timeout) is also a hot runtime setting.
 Shipped built-in providers (legal, no DRM): **`jamendo`** (Creative Commons
 catalog, free authorized downloads — seeded **disabled** with a
 `{"client_id":"<JAMENDO_TOKEN>","audioformat":"mp32"}` config to fill in and
-enable) and **`internet-archive`** (archive.org: public-domain recordings,
-Creative Commons works and artist-sanctioned live music — no credentials, no DRM).
+enable), **`internet-archive`** (archive.org: public-domain recordings,
+Creative Commons works and artist-sanctioned live music — no credentials, no DRM)
+and **`free-music-archive`** (freemusicarchive.org CC catalog — no credentials;
+scrapes the public site since FMA retired its API, so seeded **disabled** as it's
+more fragile than the API-backed providers).
 
 Other catalogs are added **at runtime** as external services rather than compiled
 in (see *Dynamic providers* below). For example, **Deezer metadata** lives in a

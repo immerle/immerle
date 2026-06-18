@@ -114,8 +114,53 @@ func TestInternetArchiveSearchResolveDownload(t *testing.T) {
 	}
 }
 
+func TestFreeMusicArchiveSearchResolveDownload(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		// Minimal copy of FMA's real row markup: data-track-info JSON + sibling spans.
+		_, _ = w.Write([]byte(`<div class="play-item tid-42" data-track-info='{"id":"42","handle":"My_Song","title":"My Song","artistName":"The Band"}'>
+			<span class="ptxt-album"><a href="/x">Day</a></span>
+			<span class="ptxt-genre"><a href="/g">Jazz</a></span>
+			<span class="pl-6">03:05</span>
+		</div>`))
+	})
+	mux.HandleFunc("/track/My_Song/stream/", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("FMA-AUDIO"))
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	p := NewFreeMusicArchiveProvider(srv.URL)
+	ctx := context.Background()
+
+	res, err := p.Search(ctx, "my song", 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res) != 1 || res[0].Title != "My Song" || res[0].Artist != "The Band" {
+		t.Fatalf("unexpected search result: %+v", res)
+	}
+	if res[0].Album != "Day" || res[0].Genre != "Jazz" || res[0].Duration != 185 || res[0].Suffix != "mp3" {
+		t.Fatalf("unexpected metadata: %+v", res[0])
+	}
+
+	got, err := p.Resolve(ctx, res[0].ProviderTrackID)
+	if err != nil || got.Title != "My Song" || got.Album != "Day" {
+		t.Fatalf("resolve failed: %+v %v", got, err)
+	}
+
+	var buf bytes.Buffer
+	if err := p.Download(ctx, res[0].ProviderTrackID, &buf); err != nil {
+		t.Fatal(err)
+	}
+	if buf.String() != "FMA-AUDIO" {
+		t.Fatalf("download mismatch: %q", buf.String())
+	}
+}
+
 func TestProviderFactoryRegistry(t *testing.T) {
-	for _, name := range []string{"jamendo", "internet-archive"} {
+	for _, name := range []string{"jamendo", "internet-archive", "free-music-archive"} {
 		if !HasFactory(name) {
 			t.Errorf("expected factory %q to be registered", name)
 		}
