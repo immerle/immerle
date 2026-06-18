@@ -71,11 +71,12 @@ export default function Home(): React.ReactElement {
             width={104}
             height={85}
           />
-          <p className={styles.kicker}>One small Go binary · SQLite out of the box</p>
+          <p className={styles.kicker}>One small Go binary · up in minutes</p>
           <h1 className={styles.title}>
-            Your music, self-hosted —
+            The next-gen
             <br />
-            and it <span className={styles.sings}>sings<Equalizer /></span>
+            <span className={styles.sings}>self-hosted music<Equalizer /></span>
+            {' '}solution
           </h1>
           <p className={styles.lede}>
             Fluent Subsonic / OpenSubsonic — your clients just work. Then it
