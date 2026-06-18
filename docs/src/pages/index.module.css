@@ -92,36 +92,6 @@
   color: transparent;
 }
 
-/* full-width equalizer behind the hero, dissolving toward the bottom */
-.eqBg {
-  position: absolute;
-  inset: 0 0 auto 0; /* pinned to the first screen, behind the hero */
-  z-index: -1;
-  display: flex;
-  align-items: flex-end;
-  gap: 0.55%;
-  height: 100vh;
-  padding: 0 2%;
-  opacity: 0.25;
-  /* fade the bars out at their base so they melt into the page */
-  -webkit-mask-image: linear-gradient(to top, transparent 4%, #000 36%, #000 100%);
-  mask-image: linear-gradient(to top, transparent 4%, #000 36%, #000 100%);
-}
-.eqBg > span {
-  flex: 1;
-  height: 52%;
-  border-radius: 4px 4px 0 0;
-  background: linear-gradient(to top, transparent, var(--green) 30%, var(--blue));
-  transform-origin: bottom;
-  animation: bounce 1.5s ease-in-out infinite alternate;
-  /* negative, non-integer stagger → a travelling wave, not a uniform pulse */
-  animation-delay: calc(var(--i) * -0.13s);
-}
-@keyframes bounce {
-  from { transform: scaleY(0.12); }
-  to { transform: scaleY(0.9); }
-}
-
 .lede {
   max-width: 38ch;
   margin: 0 auto 2.4rem;
@@ -275,6 +245,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .aurora, .eqBg > span { animation: none; }
+  .aurora { animation: none; }
   .kicker, .title, .lede, .ctas, .terminal { animation: none; opacity: 1; }
 }

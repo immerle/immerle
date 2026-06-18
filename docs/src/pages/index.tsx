@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import Layout from '@theme/Layout';
 import Link from '@docusaurus/Link';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
@@ -44,24 +44,27 @@ const FEATURES = [
   },
 ];
 
-function EqualizerBackdrop() {
-  // Full-width equalizer behind the hero; decorative, fades out below.
-  return (
-    <div className={styles.eqBg} aria-hidden="true">
-      {Array.from({length: 48}).map((_, i) => (
-        <span key={i} style={{['--i' as string]: i}} />
-      ))}
-    </div>
-  );
-}
-
 export default function Home(): React.ReactElement {
   const {siteConfig} = useDocusaurusContext();
+
+  // Transparent navbar over the hero that turns solid once scrolled.
+  // The `home-page` body class scopes the navbar styling to this page only.
+  useEffect(() => {
+    document.body.classList.add('home-page');
+    const onScroll = () =>
+      document.body.classList.toggle('nav-scrolled', window.scrollY > 8);
+    onScroll();
+    window.addEventListener('scroll', onScroll, {passive: true});
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      document.body.classList.remove('home-page', 'nav-scrolled');
+    };
+  }, []);
+
   return (
     <Layout title="Self-hosted music that sings" description={siteConfig.tagline}>
       <main className={styles.main}>
         <div className={styles.aurora} aria-hidden="true" />
-        <EqualizerBackdrop />
         <div className={styles.grain} aria-hidden="true" />
 
         <section className={styles.hero}>

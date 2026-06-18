@@ -40,6 +40,27 @@
   --ifm-footer-background-color: #0a0a0c;
 }
 
+/* Homepage: navbar overlays the hero — transparent at the top, ink once
+   scrolled. The `home-page` / `nav-scrolled` classes are toggled in index.tsx. */
+body.home-page .navbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  background: transparent;
+  box-shadow: none;
+  transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+body.home-page.nav-scrolled .navbar {
+  background: #0a0a0c;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* No light/dark switch on the homepage (it has its own fixed dark look). */
+body.home-page .navbar [class*='colorModeToggle'] {
+  display: none;
+}
+
 /* For readability concerns, you should choose a lighter palette in dark mode. */
 [data-theme='dark'] {
   --ifm-color-primary: #25c2a0;
