@@ -1,0 +1,38 @@
+name: 🐛 Bug report
+description: Something isn't working as expected
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: A clear description of the bug, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. ...
+        2. ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Immerle version
+      description: Release tag or commit, and how you run it (Docker / from source).
+    validations:
+      required: true
+  - type: input
+    id: client
+    attributes:
+      label: Subsonic client (if relevant)
+      placeholder: Supersonic 0.x, Symfonium, DSub, ...
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Relevant server logs (set LOG_LEVEL=debug if helpful).
+      render: shell
