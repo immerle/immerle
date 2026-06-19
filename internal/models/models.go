@@ -215,15 +215,6 @@ type Library struct {
 	CreatedAt time.Time `json:"createdAt"`
 }
 
-// Folder is a directory within a library, used to model the music-folder tree.
-type Folder struct {
-	ID        string  `json:"id"`
-	LibraryID string  `json:"libraryId"`
-	ParentID  *string `json:"parentId,omitempty"`
-	Path      string  `json:"path"`
-	Name      string  `json:"name"`
-}
-
 // Artist is a performer or album artist.
 type Artist struct {
 	ID         string    `json:"id"`
