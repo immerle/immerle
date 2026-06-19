@@ -38,6 +38,7 @@ type Deps struct {
 	// shared LibraryService.
 	Catalog     *persistence.CatalogRepo
 	Annotations *persistence.AnnotationRepo
+	Genres      *persistence.GenreRepo
 	OnDemand    *core.CatalogService
 	// LibraryStats serves the cached library analytics (counts + total size).
 	LibraryStats *core.LibraryStatsService
@@ -149,10 +150,14 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Put("/admin/radio/stations/{id}", h.handleRadioUpdate)
 			r.Delete("/admin/radio/stations/{id}", h.handleRadioDelete)
 
-			// Catalog browse (artists/albums) over the shared library service.
+			// Catalog browse over the shared library service.
 			r.Get("/artists", h.handleListArtists)
 			r.Get("/artists/{id}", h.handleGetArtist)
+			r.Get("/albums", h.handleListAlbums)
 			r.Get("/albums/{id}", h.handleGetAlbum)
+			r.Get("/songs/{id}", h.handleGetSong)
+			r.Get("/genres", h.handleGetGenres)
+			r.Get("/search", h.handleSearch)
 
 			// Year-in-review ("Wrapped").
 			r.Get("/wrapped", h.handleWrapped)

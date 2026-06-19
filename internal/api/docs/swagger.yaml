@@ -871,6 +871,15 @@ components:
         username:
           type: string
       type: object
+    immerle.genreView:
+      properties:
+        albumCount:
+          type: integer
+        name:
+          type: string
+        songCount:
+          type: integer
+      type: object
     immerle.loginRequest:
       properties:
         device:
@@ -917,6 +926,24 @@ components:
       properties:
         query:
           type: string
+      type: object
+    immerle.searchView:
+      properties:
+        albums:
+          items:
+            $ref: '#/components/schemas/immerle.albumView'
+          type: array
+          uniqueItems: false
+        artists:
+          items:
+            $ref: '#/components/schemas/immerle.artistView'
+          type: array
+          uniqueItems: false
+        songs:
+          items:
+            $ref: '#/components/schemas/immerle.songView'
+          type: array
+          uniqueItems: false
       type: object
     immerle.setEnabledRequest:
       properties:
@@ -2050,6 +2077,65 @@ paths:
       summary: Toggle the Wrapped feature
       tags:
       - admin
+  /albums:
+    get:
+      description: Returns albums filtered/sorted by type (newest, recent, frequent,
+        random, alphabeticalByName, byGenre, byYear, starred) with paging.
+      parameters:
+      - description: List type
+        in: query
+        name: type
+        schema:
+          default: alphabeticalByName
+          type: string
+      - description: Page size
+        in: query
+        name: size
+        schema:
+          default: 10
+          type: integer
+      - description: Offset
+        in: query
+        name: offset
+        schema:
+          type: integer
+      - description: Genre (for byGenre)
+        in: query
+        name: genre
+        schema:
+          type: string
+      - description: From year (for byYear)
+        in: query
+        name: fromYear
+        schema:
+          type: integer
+      - description: To year (for byYear)
+        in: query
+        name: toYear
+        schema:
+          type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  items:
+                    $ref: '#/components/schemas/immerle.albumView'
+                  type: array
+                type: object
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: List albums
+      tags:
+      - catalog
   /albums/{id}:
     get:
       description: Returns an album with its merged (local + remote) tracklist.
@@ -2412,6 +2498,31 @@ paths:
       summary: Accept a friend request
       tags:
       - friends
+  /genres:
+    get:
+      description: Returns every genre with its song and album counts.
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  items:
+                    $ref: '#/components/schemas/immerle.genreView'
+                  type: array
+                type: object
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: List genres
+      tags:
+      - catalog
   /imports:
     get:
       description: Lists the caller's playlist imports (most recent first), without
@@ -3218,6 +3329,53 @@ paths:
       summary: Like a radio station
       tags:
       - radio
+  /search:
+    get:
+      description: Searches artists, albums and songs (merging remote-provider results
+        when enabled).
+      parameters:
+      - description: Search query
+        in: query
+        name: q
+        required: true
+        schema:
+          type: string
+      - description: Max artists
+        in: query
+        name: artistCount
+        schema:
+          default: 20
+          type: integer
+      - description: Max albums
+        in: query
+        name: albumCount
+        schema:
+          default: 20
+          type: integer
+      - description: Max songs
+        in: query
+        name: songCount
+        schema:
+          default: 20
+          type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.searchView'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Search the catalog
+      tags:
+      - catalog
   /setup:
     get:
       description: Unauthenticated. Reports whether the server still needs its first
@@ -3287,6 +3445,40 @@ paths:
       summary: Create the first administrator
       tags:
       - setup
+  /songs/{id}:
+    get:
+      description: Returns a single track by id.
+      parameters:
+      - description: Track id
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.songView'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Not Found
+      security:
+      - BearerAuth: []
+      summary: Get song
+      tags:
+      - catalog
   /theme:
     get:
       responses:

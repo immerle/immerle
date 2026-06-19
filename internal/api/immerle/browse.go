@@ -3,12 +3,27 @@ package immerle
 import (
 	"errors"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 )
+
+// intQuery reads a query parameter as an int, returning def when absent or
+// malformed.
+func intQuery(r *http.Request, name string, def int) int {
+	v := r.URL.Query().Get(name)
+	if v == "" {
+		return def
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil {
+		return def
+	}
+	return n
+}
 
 // This file exposes the catalog browse resources (artists, albums) over the
 // shared core.LibraryService — the same business logic the Subsonic handler
@@ -167,4 +182,133 @@ func (h *Handler) handleGetAlbum(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeResource(w, http.StatusOK, toAlbumView(res.Album, res.Annotation, trackEntriesToSongViews(res.Tracks)))
+}
+
+// handleGetSong returns a single track.
+//
+// @Summary      Get song
+// @Description  Returns a single track by id.
+// @Tags         catalog
+// @Security     BearerAuth
+// @Produce      json
+// @Param        id   path   string  true  "Track id"
+// @Success      200  {object}  songView
+// @Failure      401  {object}  errorResponse
+// @Failure      404  {object}  errorResponse
+// @Router       /songs/{id} [get]
+func (h *Handler) handleGetSong(w http.ResponseWriter, r *http.Request) {
+	te, err := h.library.Song(r.Context(), userFrom(r.Context()).ID, pathParam(r, "id"))
+	if err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	writeResource(w, http.StatusOK, toSongView(te.Track))
+}
+
+// handleListAlbums returns a list of albums by the requested criteria.
+//
+// @Summary      List albums
+// @Description  Returns albums filtered/sorted by type (newest, recent, frequent, random, alphabeticalByName, byGenre, byYear, starred) with paging.
+// @Tags         catalog
+// @Security     BearerAuth
+// @Produce      json
+// @Param        type      query  string  false  "List type"  default(alphabeticalByName)
+// @Param        size      query  int     false  "Page size"  default(10)
+// @Param        offset    query  int     false  "Offset"
+// @Param        genre     query  string  false  "Genre (for byGenre)"
+// @Param        fromYear  query  int     false  "From year (for byYear)"
+// @Param        toYear    query  int     false  "To year (for byYear)"
+// @Success      200  {object}  map[string][]albumView
+// @Failure      401  {object}  errorResponse
+// @Router       /albums [get]
+func (h *Handler) handleListAlbums(w http.ResponseWriter, r *http.Request) {
+	albums, err := h.library.AlbumList(r.Context(), persistence.AlbumListOptions{
+		Type:     r.URL.Query().Get("type"),
+		Size:     intQuery(r, "size", 10),
+		Offset:   intQuery(r, "offset", 0),
+		Genre:    r.URL.Query().Get("genre"),
+		FromYear: intQuery(r, "fromYear", 0),
+		ToYear:   intQuery(r, "toYear", 0),
+		UserID:   userFrom(r.Context()).ID,
+	})
+	if err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	writeResource(w, http.StatusOK, map[string]any{"albums": albumEntriesToView(albums)})
+}
+
+// genreView is the REST representation of a genre with its catalog counts.
+type genreView struct {
+	Name       string `json:"name"`
+	SongCount  int    `json:"songCount"`
+	AlbumCount int    `json:"albumCount"`
+}
+
+// handleGetGenres returns the catalog's genres with their counts.
+//
+// @Summary      List genres
+// @Description  Returns every genre with its song and album counts.
+// @Tags         catalog
+// @Security     BearerAuth
+// @Produce      json
+// @Success      200  {object}  map[string][]genreView
+// @Failure      401  {object}  errorResponse
+// @Router       /genres [get]
+func (h *Handler) handleGetGenres(w http.ResponseWriter, r *http.Request) {
+	genres, err := h.Genres.List(r.Context())
+	if err != nil {
+		writeInternal(w, err)
+		return
+	}
+	out := make([]genreView, 0, len(genres))
+	for _, g := range genres {
+		out = append(out, genreView{Name: g.Name, SongCount: g.SongCount, AlbumCount: g.AlbumCount})
+	}
+	writeResource(w, http.StatusOK, map[string]any{"genres": out})
+}
+
+// searchView is the result of a catalog search.
+type searchView struct {
+	Artists []artistView `json:"artists"`
+	Albums  []albumView  `json:"albums"`
+	Songs   []songView   `json:"songs"`
+}
+
+// handleSearch searches the catalog (merging remote-provider results).
+//
+// @Summary      Search the catalog
+// @Description  Searches artists, albums and songs (merging remote-provider results when enabled).
+// @Tags         catalog
+// @Security     BearerAuth
+// @Produce      json
+// @Param        q            query  string  true   "Search query"
+// @Param        artistCount  query  int     false  "Max artists"  default(20)
+// @Param        albumCount   query  int     false  "Max albums"   default(20)
+// @Param        songCount    query  int     false  "Max songs"    default(20)
+// @Success      200  {object}  searchView
+// @Failure      401  {object}  errorResponse
+// @Router       /search [get]
+func (h *Handler) handleSearch(w http.ResponseWriter, r *http.Request) {
+	res, err := h.library.Search(r.Context(), userFrom(r.Context()).ID, r.URL.Query().Get("q"),
+		intQuery(r, "artistCount", 20), intQuery(r, "albumCount", 20), intQuery(r, "songCount", 20))
+	if err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	out := searchView{
+		Artists: make([]artistView, 0, len(res.Artists)),
+		Albums:  make([]albumView, 0, len(res.Albums)),
+		Songs:   make([]songView, 0, len(res.Tracks)),
+	}
+	for _, a := range res.Artists {
+		out.Artists = append(out.Artists, toArtistView(a, nil, nil))
+	}
+	for _, a := range res.Albums {
+		out.Albums = append(out.Albums, toAlbumView(a, annPtr(res.AlbumAnnotations, a.ID), nil))
+	}
+	for _, t := range res.Tracks {
+		out.Songs = append(out.Songs, toSongView(t))
+	}
+	writeResource(w, http.StatusOK, out)
 }
