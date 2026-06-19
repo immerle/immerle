@@ -83,7 +83,14 @@ type RuntimeSettings struct {
 	Federation FederationRuntime `json:"federation"`
 	Import     ImportRuntime     `json:"import"`
 	Logs       LogsRuntime       `json:"logs"`
+	Radio      RadioRuntime      `json:"radio"`
 	Wrapped    WrappedRuntime    `json:"wrapped"`
+}
+
+// RadioRuntime toggles internet radio stations (hot-reloadable). When disabled,
+// the radio endpoints 404 / return empty and clients hide the section.
+type RadioRuntime struct {
+	Enabled bool `json:"enabled"`
 }
 
 // WrappedRuntime toggles the "Wrapped" year-in-review feature (hot-reloadable).
@@ -199,8 +206,33 @@ func DefaultRuntimeSettings() RuntimeSettings {
 		// future sources that authenticate directly.
 		Import:  ImportRuntime{},
 		Logs:    LogsRuntime{RetentionDays: 30},
+		Radio:   RadioRuntime{Enabled: true},
 		Wrapped: WrappedRuntime{Enabled: true},
 	}
+}
+
+// RadioStation is an internet radio station: a name, an audio stream URL and an
+// optional homepage. Built-in stations ship with the server and can be edited
+// or disabled but not deleted; custom ones are admin-added.
+type RadioStation struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	StreamURL   string `json:"streamUrl"`
+	HomepageURL string `json:"homepageUrl"`
+	// Country is the lower-case group code the station belongs to (e.g. "fr",
+	// "gb", "int"). Used to organize the browse UI by country.
+	Country string `json:"country"`
+	// CoverArt is the station logo: an embedded reference ("embed:fr/covers/x.png")
+	// for built-ins, or a source URL for custom stations (fetched + cached). It is
+	// served locally via the station cover endpoint. Empty means "no logo".
+	CoverArt  string    `json:"coverArt"`
+	Builtin   bool      `json:"builtin"`
+	SortOrder int       `json:"sortOrder"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+	// Liked is a per-request flag (the caller liked this station). Not stored on
+	// the station row — it comes from the user's annotations.
+	Liked bool `json:"liked"`
 }
 
 // Wrapped is a user's year-in-review: totals plus top tracks/artists/genres and

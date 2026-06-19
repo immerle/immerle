@@ -57,6 +57,8 @@ type Deps struct {
 	// Settings manages the DB-backed runtime settings (admin API). It also supplies
 	// the device-session JWT lifetime (a runtime setting).
 	Settings *core.SettingsService
+	// Radio persists internet radio stations (built-in + custom).
+	Radio *persistence.RadioRepo
 	// Wrapped computes the per-user year-in-review from the scrobble history.
 	Wrapped *persistence.WrappedRepo
 	Logger  *slog.Logger
@@ -116,6 +118,8 @@ func (h *Handler) Register(mux chi.Router) {
 		r.Get("/setup", h.handleSetupStatus)
 		r.Post("/setup", h.handleSetupInit)
 		r.Post("/auth/sessions", h.handleLogin)
+		// Station logos are cached public images (loadable as a plain <img>).
+		r.Get("/radio/stations/{id}/cover", h.handleRadioCover)
 
 		// Everything below requires a Bearer token.
 		r.Group(func(r chi.Router) {
@@ -134,6 +138,16 @@ func (h *Handler) Register(mux chi.Router) {
 
 			r.Get("/activity", h.handleActivity)
 			r.Get("/library/stats", h.handleLibraryStats)
+
+			// Internet radio stations (list + like for everyone; CRUD is admin).
+			r.Get("/radio", h.handleRadioList)
+			r.Put("/radio/stations/{id}/like", h.handleRadioLike)
+			r.Delete("/radio/stations/{id}/like", h.handleRadioUnlike)
+			r.Get("/admin/radio", h.handleRadioAdmin)
+			r.Put("/admin/radio", h.handleRadioToggle)
+			r.Post("/admin/radio/stations", h.handleRadioCreate)
+			r.Put("/admin/radio/stations/{id}", h.handleRadioUpdate)
+			r.Delete("/admin/radio/stations/{id}", h.handleRadioDelete)
 
 			// Catalog browse (artists/albums) over the shared library service.
 			r.Get("/artists", h.handleListArtists)

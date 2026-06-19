@@ -5,8 +5,10 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/persistence"
 )
 
 // toAlbumChild renders an album as a directory-style Child (used by file-based
@@ -285,10 +287,102 @@ func (h *Handler) handleGetBookmarks(w http.ResponseWriter, r *http.Request) {
 	write(w, r, resp)
 }
 
+// radioEnabled reports whether the internet-radio feature is on (default on
+// when the toggle is unavailable, e.g. in tests).
+func (h *Handler) radioEnabled() bool {
+	return h.Settings == nil || h.Settings.RadioEnabled()
+}
+
 func (h *Handler) handleGetInternetRadioStations(w http.ResponseWriter, r *http.Request) {
 	resp := newResponse()
 	resp.InternetRadioStations = &InternetRadioStations{}
+	if h.radioEnabled() && h.Radio != nil {
+		stations, err := h.Radio.List(r.Context())
+		if err != nil {
+			h.failInternal(w, r, err)
+			return
+		}
+		for _, s := range stations {
+			resp.InternetRadioStations.InternetRadioStation = append(resp.InternetRadioStations.InternetRadioStation, InternetRadioStation{
+				ID: s.ID, Name: s.Name, StreamURL: s.StreamURL, HomePageURL: s.HomepageURL,
+			})
+		}
+	}
 	write(w, r, resp)
+}
+
+// handleCreateInternetRadioStation adds a station (admin only).
+func (h *Handler) handleCreateInternetRadioStation(w http.ResponseWriter, r *http.Request) {
+	if !requireAdmin(w, r) {
+		return
+	}
+	if h.Radio == nil {
+		writeError(w, r, ErrGeneric, "radio not available")
+		return
+	}
+	streamURL := param(r, "streamUrl")
+	name := param(r, "name")
+	if streamURL == "" || name == "" {
+		writeError(w, r, ErrMissingParameter, "streamUrl and name are required")
+		return
+	}
+	now := time.Now()
+	st := models.RadioStation{
+		ID: persistence.NewStationID(), Name: name, StreamURL: streamURL,
+		HomepageURL: param(r, "homepageUrl"), CreatedAt: now, UpdatedAt: now,
+	}
+	if err := h.Radio.Create(r.Context(), st); err != nil {
+		h.failInternal(w, r, err)
+		return
+	}
+	writeOK(w, r)
+}
+
+// handleUpdateInternetRadioStation edits a station (admin only).
+func (h *Handler) handleUpdateInternetRadioStation(w http.ResponseWriter, r *http.Request) {
+	if !requireAdmin(w, r) {
+		return
+	}
+	if h.Radio == nil {
+		writeError(w, r, ErrGeneric, "radio not available")
+		return
+	}
+	id := param(r, "id")
+	st, err := h.Radio.Get(r.Context(), id)
+	if err != nil {
+		writeError(w, r, ErrDataNotFound, "Station not found")
+		return
+	}
+	if v := param(r, "name"); v != "" {
+		st.Name = v
+	}
+	if v := param(r, "streamUrl"); v != "" {
+		st.StreamURL = v
+	}
+	st.HomepageURL = param(r, "homepageUrl")
+	st.UpdatedAt = time.Now()
+	if err := h.Radio.Update(r.Context(), st); err != nil {
+		h.failInternal(w, r, err)
+		return
+	}
+	writeOK(w, r)
+}
+
+// handleDeleteInternetRadioStation removes a custom station (admin only;
+// built-ins can't be deleted).
+func (h *Handler) handleDeleteInternetRadioStation(w http.ResponseWriter, r *http.Request) {
+	if !requireAdmin(w, r) {
+		return
+	}
+	if h.Radio == nil {
+		writeError(w, r, ErrGeneric, "radio not available")
+		return
+	}
+	if err := h.Radio.Delete(r.Context(), param(r, "id")); err != nil {
+		h.failInternal(w, r, err)
+		return
+	}
+	writeOK(w, r)
 }
 
 func (h *Handler) handleGetChatMessages(w http.ResponseWriter, r *http.Request) {

@@ -33,6 +33,7 @@ import {
   Provider,
   ProviderLog,
   ScanProgress,
+  RadioStation,
   ServerSettings,
   TrackEdit,
   TranscodeProfile,
@@ -385,6 +386,47 @@ export class ImmerleClient {
       restartRequired: data.restartRequired ?? false,
       pendingRestart: data.pendingRestart ?? [],
     };
+  }
+
+  // --- Internet radio -----------------------------------------------------
+
+  async listRadioStations(signal?: AbortSignal): Promise<RadioStation[]> {
+    const r = await this.request<{ stations?: RadioStation[] }>('GET', 'radio', undefined, signal);
+    return r.stations ?? [];
+  }
+
+  /** Public URL of a station's locally-cached logo (no auth needed). The id can
+   * contain ':' (e.g. "builtin:nrj"), which is a valid path char and is sent raw
+   * — matching the admin endpoints (the server also tolerates a %3A-encoded id). */
+  radioCoverUrl(id: string): string {
+    return `${this.serverUrl}/api/v1/radio/stations/${id}/cover`;
+  }
+
+  async createRadioStation(body: { name: string; streamUrl: string; homepageUrl?: string; coverUrl?: string }): Promise<RadioStation> {
+    return this.request<RadioStation>('POST', 'admin/radio/stations', body);
+  }
+
+  async updateRadioStation(id: string, body: { name: string; streamUrl: string; homepageUrl?: string; coverUrl?: string }): Promise<RadioStation> {
+    return this.request<RadioStation>('PUT', `admin/radio/stations/${id}`, body);
+  }
+
+  async deleteRadioStation(id: string): Promise<void> {
+    await this.request<void>('DELETE', `admin/radio/stations/${id}`);
+  }
+
+  /** Favorite / unfavorite a station (kept separate from track stars). */
+  async setRadioLiked(id: string, liked: boolean): Promise<void> {
+    await this.request<void>(liked ? 'PUT' : 'DELETE', `radio/stations/${id}/like`);
+  }
+
+  async getRadioEnabled(signal?: AbortSignal): Promise<boolean> {
+    const r = await this.request<{ enabled: boolean }>('GET', 'admin/radio', undefined, signal);
+    return !!r.enabled;
+  }
+
+  async setRadioEnabled(enabled: boolean): Promise<boolean> {
+    const r = await this.request<{ enabled: boolean }>('PUT', 'admin/radio', { enabled });
+    return !!r.enabled;
   }
 
   // --- Wrapped (year-in-review) -------------------------------------------

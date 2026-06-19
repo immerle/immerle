@@ -7,6 +7,7 @@ import {
   useSettings,
   useUpdateSettings,
 } from '../../src/query/admin';
+import { useRadioAdmin, useSetRadio } from '../../src/query/radio';
 import { useWrappedAdmin, useSetWrapped } from '../../src/query/wrapped';
 import { useAuth } from '../../src/auth/store';
 import { RuntimeSettingsDTO } from '../../src/api/immerleApi';
@@ -88,6 +89,8 @@ export default function AdminSettings() {
   const update = useUpdateSettings();
   const cleanup = useCleanup();
   const cleanupM = useCleanupMutations();
+  const radio = useRadioAdmin();
+  const setRadio = useSetRadio();
   const wrapped = useWrappedAdmin();
   const setWrapped = useSetWrapped();
   const [form, setForm] = useState<Form | null>(null);
@@ -108,7 +111,7 @@ export default function AdminSettings() {
   const profiles = q.data?.settings.transcode?.profiles ?? [];
   const rows = SECTIONS.filter((s) => {
     if (s.key === 'cleanup') return !!cleanup.data;
-    if (s.key === 'features') return !!client?.has('wrapped');
+    if (s.key === 'features') return !!client?.has('internetRadio') || !!client?.has('wrapped');
     return true;
   });
   const active = SECTIONS.find((s) => s.key === sheet);
@@ -237,6 +240,13 @@ export default function AdminSettings() {
               {sheet === 'features' ? (
                 <>
                   <Text className="text-xs text-muted">{t('admin.settings.featuresDescription')}</Text>
+                  {client?.has('internetRadio') ? (
+                    <ToggleRow
+                      label={t('admin.settings.radioEnabled')}
+                      value={radio.data ?? false}
+                      onChange={(v) => setRadio.mutate(v)}
+                    />
+                  ) : null}
                   {client?.has('wrapped') ? (
                     <ToggleRow
                       label={t('admin.settings.wrappedEnabled')}

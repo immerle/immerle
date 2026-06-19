@@ -25,6 +25,7 @@ export const SUBSONIC_ONLY_CAPABILITIES: Capabilities = {
     libraryAdmin: false,
     adminExtended: false,
     offlineDownloads: false,
+    internetRadio: false,
     wrapped: false,
   },
 };
@@ -77,6 +78,7 @@ export function adaptCapabilities(payload: CapabilitiesResponse): Capabilities {
       libraryAdmin: has('libraryAdmin'),
       adminExtended: has('admin') || has('adminExtended'),
       offlineDownloads: has('offlineDownloads'),
+      internetRadio: has('internetRadio'),
       wrapped: has('wrapped'),
     },
   };

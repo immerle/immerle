@@ -1,4 +1,43 @@
 {
+  "radio": {
+    "title": "Radio",
+    "tabSubtitle": "Live internet stations",
+    "manage": "Manage",
+    "manageTitle": "Radio stations",
+    "manageSubtitle": "Your custom stations (built-in ones are managed by the server)",
+    "noCustom": "No custom stations yet. Built-in stations are managed by the server.",
+    "unavailableTitle": "Radio unavailable",
+    "unavailableSubtitle": "This server has it disabled.",
+    "loadError": "Couldn't load radio stations.",
+    "emptyTitle": "No stations",
+    "emptySubtitle": "Ask an admin to add some.",
+    "favorites": "Favorites",
+    "stationCount": "{{count}} stations",
+    "noFavorites": "No favorites yet",
+    "noFavoritesSubtitle": "Tap the heart on a station to add it here.",
+    "like": "Add to favorites",
+    "unlike": "Remove from favorites",
+    "country": {
+      "fr": "France",
+      "es": "Spain",
+      "gb": "United Kingdom",
+      "us": "United States",
+      "ch": "Switzerland",
+      "int": "International"
+    },
+    "add": "Add station",
+    "addTitle": "New station",
+    "editTitle": "Edit station",
+    "builtin": "Built-in",
+    "edit": "Edit",
+    "delete": "Delete",
+    "name": "Name",
+    "streamUrl": "Stream URL",
+    "homepageUrl": "Homepage (optional)",
+    "logoUrl": "Logo URL (optional)",
+    "logoUrlHelp": "Image link; cached and served by the server. Leave empty to remove.",
+    "save": "Save"
+  },
   "wrapped": {
     "entryTitle": "Your Wrapped",
     "entrySubtitle": "Your year in music",
@@ -227,6 +266,10 @@
           "title": "Providers",
           "subtitle": "Dynamic content sources"
         },
+        "radio": {
+          "title": "Radio",
+          "subtitle": "Internet stations (built-in & custom)"
+        },
         "settings": {
           "title": "Settings",
           "subtitle": "Runtime, transcoding, federation, cleanup"
@@ -432,6 +475,7 @@
       "featuresTitle": "Features",
       "featuresSubtitle": "Toggle optional features",
       "featuresDescription": "Enable or disable optional Immerle features for all users.",
+      "radioEnabled": "Internet radio",
       "wrappedEnabled": "Wrapped (year-in-review)",
       "save": "Save"
     },

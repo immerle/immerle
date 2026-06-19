@@ -39,6 +39,7 @@ type Store struct {
 	APITokens       *APITokenRepo
 	Devices         *DeviceRepo
 	Imports         *ImportRepo
+	Radio           *RadioRepo
 	Wrapped         *WrappedRepo
 }
 
@@ -65,6 +66,7 @@ func New(database *db.DB) *Store {
 		APITokens:       &APITokenRepo{base},
 		Devices:         &DeviceRepo{base},
 		Imports:         &ImportRepo{base},
+		Radio:           &RadioRepo{base},
 		Wrapped:         &WrappedRepo{base},
 	}
 }

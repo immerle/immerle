@@ -1262,6 +1262,32 @@
                 },
                 "type": "object"
             },
+            "immerle.radioRequest": {
+                "properties": {
+                    "coverUrl": {
+                        "description": "CoverURL is the station logo source URL (fetched + cached server-side).",
+                        "type": "string"
+                    },
+                    "homepageUrl": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "streamUrl": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.radioToggleRequest": {
+                "properties": {
+                    "enabled": {
+                        "type": "boolean"
+                    }
+                },
+                "type": "object"
+            },
             "immerle.reorderRequest": {
                 "properties": {
                     "order": {
@@ -1343,6 +1369,45 @@
                         "type": "string"
                     },
                     "source": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.stationView": {
+                "properties": {
+                    "builtin": {
+                        "type": "boolean"
+                    },
+                    "country": {
+                        "type": "string"
+                    },
+                    "coverUrl": {
+                        "description": "CoverURL is the external logo source URL (for prefilling the admin edit\nform). Empty for built-ins whose logo is an embedded asset.",
+                        "type": "string"
+                    },
+                    "deletable": {
+                        "description": "Deletable is false for built-in stations (they can be edited, not removed).",
+                        "type": "boolean"
+                    },
+                    "hasCover": {
+                        "description": "HasCover tells clients whether to load the station cover endpoint.",
+                        "type": "boolean"
+                    },
+                    "homepageUrl": {
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "liked": {
+                        "description": "Liked is true when the caller has favorited this station.",
+                        "type": "boolean"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "streamUrl": {
                         "type": "string"
                     }
                 },
@@ -2233,6 +2298,248 @@
                     }
                 ],
                 "summary": "List a provider's recent warn/error events",
+                "tags": [
+                    "admin"
+                ]
+            }
+        },
+        "/admin/radio": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": {
+                                        "type": "boolean"
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Get the radio feature state",
+                "tags": [
+                    "admin"
+                ]
+            },
+            "put": {
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/immerle.radioToggleRequest",
+                                        "summary": "body",
+                                        "description": "Enable or disable"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Enable or disable",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": {
+                                        "type": "boolean"
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Toggle the radio feature",
+                "tags": [
+                    "admin"
+                ]
+            }
+        },
+        "/admin/radio/stations": {
+            "post": {
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/immerle.radioRequest",
+                                        "summary": "body",
+                                        "description": "Station"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Station",
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.stationView"
+                                }
+                            }
+                        },
+                        "description": "Created"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Create a radio station",
+                "tags": [
+                    "admin"
+                ]
+            }
+        },
+        "/admin/radio/stations/{id}": {
+            "delete": {
+                "parameters": [
+                    {
+                        "description": "Station id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Delete a radio station",
+                "tags": [
+                    "admin"
+                ]
+            },
+            "put": {
+                "parameters": [
+                    {
+                        "description": "Station id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/immerle.radioRequest",
+                                        "summary": "body",
+                                        "description": "Station"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Station",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.stationView"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Update a radio station",
                 "tags": [
                     "admin"
                 ]
@@ -4631,6 +4938,150 @@
                 "summary": "Subscribe to a public playlist",
                 "tags": [
                     "playlists"
+                ]
+            }
+        },
+        "/radio": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": {},
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "List internet radio stations",
+                "tags": [
+                    "radio"
+                ]
+            }
+        },
+        "/radio/stations/{id}/cover": {
+            "get": {
+                "parameters": [
+                    {
+                        "description": "Station id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "image/png": {
+                                "schema": {
+                                    "format": "binary",
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "404": {
+                        "content": {
+                            "image/png": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "summary": "Station logo",
+                "tags": [
+                    "radio"
+                ]
+            }
+        },
+        "/radio/stations/{id}/like": {
+            "delete": {
+                "parameters": [
+                    {
+                        "description": "Station id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Unlike a radio station",
+                "tags": [
+                    "radio"
+                ]
+            },
+            "put": {
+                "parameters": [
+                    {
+                        "description": "Station id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Like a radio station",
+                "tags": [
+                    "radio"
                 ]
             }
         },

@@ -1,4 +1,43 @@
 {
+  "radio": {
+    "title": "Radio",
+    "tabSubtitle": "Stations internet en direct",
+    "manage": "Gérer",
+    "manageTitle": "Stations radio",
+    "manageSubtitle": "Vos stations personnalisées (les intégrées sont gérées par le serveur)",
+    "noCustom": "Aucune station personnalisée. Les stations intégrées sont gérées par le serveur.",
+    "unavailableTitle": "Radio indisponible",
+    "unavailableSubtitle": "Ce serveur l'a désactivée.",
+    "loadError": "Impossible de charger les stations radio.",
+    "emptyTitle": "Aucune station",
+    "emptySubtitle": "Demandez à un administrateur d'en ajouter.",
+    "favorites": "Favoris",
+    "stationCount": "{{count}} stations",
+    "noFavorites": "Aucun favori",
+    "noFavoritesSubtitle": "Touchez le cœur d'une station pour l'ajouter ici.",
+    "like": "Ajouter aux favoris",
+    "unlike": "Retirer des favoris",
+    "country": {
+      "fr": "France",
+      "es": "Espagne",
+      "gb": "Royaume-Uni",
+      "us": "États-Unis",
+      "ch": "Suisse",
+      "int": "International"
+    },
+    "add": "Ajouter une station",
+    "addTitle": "Nouvelle station",
+    "editTitle": "Modifier la station",
+    "builtin": "Intégrée",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "name": "Nom",
+    "streamUrl": "URL du flux",
+    "homepageUrl": "Site web (optionnel)",
+    "logoUrl": "URL du logo (optionnel)",
+    "logoUrlHelp": "Lien d'image ; mis en cache et servi par le serveur. Vide pour retirer.",
+    "save": "Enregistrer"
+  },
   "wrapped": {
     "entryTitle": "Votre Wrapped",
     "entrySubtitle": "Votre année en musique",
@@ -227,6 +266,10 @@
           "title": "Providers",
           "subtitle": "Sources de contenu dynamiques"
         },
+        "radio": {
+          "title": "Radio",
+          "subtitle": "Stations internet (intégrées & custom)"
+        },
         "settings": {
           "title": "Réglages",
           "subtitle": "Runtime, transcodage, fédération, nettoyage"
@@ -432,6 +475,7 @@
       "featuresTitle": "Fonctionnalités",
       "featuresSubtitle": "Activer/désactiver les fonctionnalités optionnelles",
       "featuresDescription": "Active ou désactive les fonctionnalités optionnelles d'Immerle pour tous les utilisateurs.",
+      "radioEnabled": "Radio internet",
       "wrappedEnabled": "Wrapped (rétrospective annuelle)",
       "save": "Enregistrer"
     },
