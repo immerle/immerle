@@ -118,7 +118,7 @@ func TestProviderManagerCreateFromURL(t *testing.T) {
 		if r.URL.Path == "/capabilities" {
 			_, _ = w.Write([]byte(`{"version":1,"name":"my-svc","config":{
 				"apikey":{"type":"string","where":"params","required":true},
-				"X-Token":{"type":"string","where":"header","required":false}
+				"X-Token":{"type":"string","where":"headers","required":false}
 			}}`))
 			return
 		}

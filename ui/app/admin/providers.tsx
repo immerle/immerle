@@ -404,14 +404,14 @@ function highlightJson(src: string, pal: { key: string; str: string; num: string
 }
 
 /** Config editor: monospace JSON with syntax highlighting, live validation and a
- * Format button. The unified schema is { header: {…}, params: {…}, … }. A colored
+ * Format button. The unified schema is { headers: {…}, params: {…}, … }. A colored
  * <Text> overlay sits behind a transparent-glyph TextInput (admin is web-only). */
 function JsonConfigField({ value, onChangeText }: { value: string; onChangeText: (v: string) => void }) {
   const t = useT();
   const colors = useColors();
   const { colorScheme } = useColorScheme();
   const pal = colorScheme === 'dark' ? JSON_SYNTAX.dark : JSON_SYNTAX.light;
-  const placeholder = '{\n  "header": {},\n  "params": {}\n}';
+  const placeholder = '{\n  "headers": {},\n  "params": {}\n}';
 
   // Web textarea DOM node, for caret-aware Tab handling.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

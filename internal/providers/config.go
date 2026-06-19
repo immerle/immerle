@@ -9,25 +9,25 @@ import (
 // Config is the unified provider configuration schema, shared by built-in and
 // custom HTTP providers. It is content-neutral:
 //
-//   - Header: static HTTP headers added to every upstream request (e.g. auth).
+//   - Headers: static HTTP headers added to every upstream request (e.g. auth).
 //   - Params: static query parameters appended to every upstream request
 //     (?key=value); there is never a request body.
 //
 // The scalar knobs (Quality/TimeoutSeconds/DownloadRetries) tune HTTP providers.
 // Built-in providers read their own tunables from Params by name, with defaults.
 type Config struct {
-	Header          map[string]string `json:"header,omitempty"`
+	Headers         map[string]string `json:"headers,omitempty"`
 	Params          map[string]string `json:"params,omitempty"`
 	Quality         string            `json:"quality,omitempty"`
 	TimeoutSeconds  int               `json:"timeoutSeconds,omitempty"`
 	DownloadRetries int               `json:"downloadRetries,omitempty"`
 }
 
-// configAux mirrors Config but also accepts the legacy "headers" key so that
-// custom providers configured before the schema change keep authenticating.
+// configAux mirrors Config but also accepts the legacy singular "header" key so
+// that providers configured before it was pluralized keep authenticating.
 type configAux struct {
-	Header          map[string]string `json:"header"`
-	HeadersLegacy   map[string]string `json:"headers"`
+	Headers         map[string]string `json:"headers"`
+	HeaderLegacy    map[string]string `json:"header"`
 	Params          map[string]string `json:"params"`
 	Quality         string            `json:"quality"`
 	TimeoutSeconds  int               `json:"timeoutSeconds"`
@@ -48,12 +48,12 @@ func ParseConfig(s string) (Config, error) {
 	if err := dec.Decode(&aux); err != nil {
 		return Config{}, fmt.Errorf("invalid provider config: %w", err)
 	}
-	header := aux.Header
-	if header == nil {
-		header = aux.HeadersLegacy // legacy "headers" alias
+	headers := aux.Headers
+	if headers == nil {
+		headers = aux.HeaderLegacy // legacy singular "header" alias
 	}
 	return Config{
-		Header:          header,
+		Headers:         headers,
 		Params:          aux.Params,
 		Quality:         aux.Quality,
 		TimeoutSeconds:  aux.TimeoutSeconds,

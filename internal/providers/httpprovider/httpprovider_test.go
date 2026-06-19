@@ -93,14 +93,14 @@ func TestHTTPProviderVerify(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"version":1,"name":"my-svc","config":{
 			"apikey":{"type":"string","where":"params","required":true},
-			"X-Token":{"type":"string","where":"header","required":true}
+			"X-Token":{"type":"string","where":"headers","required":true}
 		}}`))
 	}))
 	t.Cleanup(srv.Close)
 	ctx := context.Background()
 
 	// All required fields supplied in their declared buckets → passes.
-	ok, _ := New("svc", srv.URL, `{"params":{"apikey":"k"},"header":{"X-Token":"t"}}`)
+	ok, _ := New("svc", srv.URL, `{"params":{"apikey":"k"},"headers":{"X-Token":"t"}}`)
 	if err := ok.Verify(ctx); err != nil {
 		t.Fatalf("Verify should pass with all fields: %v", err)
 	}

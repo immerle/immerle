@@ -5,23 +5,23 @@ import "testing"
 func TestParseConfig(t *testing.T) {
 	// Empty / "{}" → zero config.
 	for _, s := range []string{"", "  ", "{}"} {
-		if c, err := ParseConfig(s); err != nil || c.Header != nil || c.Params != nil {
+		if c, err := ParseConfig(s); err != nil || c.Headers != nil || c.Params != nil {
 			t.Fatalf("ParseConfig(%q) = %+v, %v; want zero config", s, c, err)
 		}
 	}
 
 	// New schema.
-	c, err := ParseConfig(`{"header":{"Authorization":"Bearer x"},"params":{"client_id":"abc"},"timeoutSeconds":5}`)
+	c, err := ParseConfig(`{"headers":{"Authorization":"Bearer x"},"params":{"client_id":"abc"},"timeoutSeconds":5}`)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if c.Header["Authorization"] != "Bearer x" || c.Params["client_id"] != "abc" || c.TimeoutSeconds != 5 {
+	if c.Headers["Authorization"] != "Bearer x" || c.Params["client_id"] != "abc" || c.TimeoutSeconds != 5 {
 		t.Fatalf("unexpected parse: %+v", c)
 	}
 
-	// Legacy "headers" alias keeps working.
-	c, err = ParseConfig(`{"headers":{"X-Key":"v"}}`)
-	if err != nil || c.Header["X-Key"] != "v" {
+	// Legacy singular "header" alias keeps working.
+	c, err = ParseConfig(`{"header":{"X-Key":"v"}}`)
+	if err != nil || c.Headers["X-Key"] != "v" {
 		t.Fatalf("legacy alias: %+v, %v", c, err)
 	}
 

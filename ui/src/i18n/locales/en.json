@@ -352,7 +352,7 @@
       "endpointLabel": "Endpoint",
       "createSubtitle": "Enter the service URL. It must expose a /capabilities endpoint — the name and config fields are fetched from it.",
       "configLabel": "Config (JSON)",
-      "configHelp": "Schema: header (sent on every request), params (appended to the query), and optionally quality, timeoutSeconds, downloadRetries.",
+      "configHelp": "Schema: headers (sent on every request), params (appended to the query), and optionally quality, timeoutSeconds, downloadRetries.",
       "configFormat": "Format",
       "configInvalid": "Invalid JSON.",
       "enableNow": "Enable immediately",

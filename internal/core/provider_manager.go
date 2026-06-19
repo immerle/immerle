@@ -323,19 +323,19 @@ func (m *ProviderManager) CreateFromURL(ctx context.Context, endpoint string) (m
 // skeletonConfig builds a { header, params } config payload from a capabilities
 // schema, with every declared field set to null for the admin to fill in.
 func skeletonConfig(caps providers.Capabilities) string {
-	header := map[string]any{}
+	headers := map[string]any{}
 	params := map[string]any{}
 	for key, f := range caps.Config {
 		switch f.Where {
-		case "header":
-			header[key] = nil
+		case "headers":
+			headers[key] = nil
 		case "params":
 			params[key] = nil
 		}
 	}
 	obj := map[string]any{}
-	if len(header) > 0 {
-		obj["header"] = header
+	if len(headers) > 0 {
+		obj["headers"] = headers
 	}
 	if len(params) > 0 {
 		obj["params"] = params

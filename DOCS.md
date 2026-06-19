@@ -357,7 +357,7 @@ Creative Commons works and artist-sanctioned live music — no credentials, no D
 **enabled by default**) and **`free-music-archive`** (freemusicarchive.org CC
 catalog — no credentials; scrapes the public site since FMA retired its API;
 **enabled by default and first** in the priority order). All providers use the
-same config schema (`{ "header": {…}, "params": {…} }`); built-ins read their
+same config schema (`{ "headers": {…}, "params": {…} }`); built-ins read their
 tunables from `params` and their base URL is compiled in (not configurable).
 
 Other catalogs are added **at runtime** as external services rather than compiled
@@ -371,7 +371,7 @@ Deezer downloader.
 
 Beyond the compile-time factories, an **admin** can register **content-neutral
 HTTP providers at runtime** — no restart, no rebuild. A dynamic provider is an
-**HTTP endpoint** plus a `{ header, params }` **JSON config**; the core calls
+**HTTP endpoint** plus a `{ headers, params }` **JSON config**; the core calls
 that endpoint for search/resolve/download and neither knows nor cares what's
 behind it. Its **name comes from the remote's mandatory `/capabilities`**, not
 from the admin. This is the seam for plugging in any out-of-process catalog or
@@ -398,7 +398,7 @@ curl -X POST http://host:4533/api/v1/admin/providers -H 'Authorization: Bearer <
 # 2. fill the config (validated against /capabilities on save)
 curl -X POST http://host:4533/api/v1/admin/providers -H 'Authorization: Bearer <admin>' \
   -H 'Content-Type: application/json' \
-  -d '{"name":"my-service","endpoint":"https://my-service.internal","config":"{\"header\":{\"Authorization\":\"Bearer xxx\"}}"}'
+  -d '{"name":"my-service","endpoint":"https://my-service.internal","config":"{\"headers\":{\"Authorization\":\"Bearer xxx\"}}"}'
 
 # 3. enable it (re-checks capabilities)
 curl -X PUT http://host:4533/api/v1/admin/providers/my-service/enabled \

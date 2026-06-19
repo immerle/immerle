@@ -21,7 +21,7 @@ type Capabilities struct {
 // param), and whether it must be supplied for the provider to work.
 type ConfigField struct {
 	Type     string `json:"type"`
-	Where    string `json:"where"` // "header" | "params"
+	Where    string `json:"where"` // "headers" | "params"
 	Required bool   `json:"required"`
 }
 

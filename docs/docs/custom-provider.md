@@ -61,7 +61,7 @@ live version in the admin. The response:
   "name": "mycatalog",
   "config": {
     "apikey":        { "type": "string", "where": "params", "required": true },
-    "Authorization": { "type": "string", "where": "header", "required": false }
+    "Authorization": { "type": "string", "where": "headers", "required": false }
   }
 }
 ```
@@ -71,7 +71,7 @@ live version in the admin. The response:
 - `name` — the slug Immerle stores the provider under (`^[a-z0-9][a-z0-9_-]*$`).
   **The admin doesn't type a name — this is it.**
 - `config` — the config fields you accept, keyed by field name. Each declares its
-  `type` (free-form, e.g. `"string"`), `where` the value travels (`"header"` or
+  `type` (free-form, e.g. `"string"`), `where` the value travels (`"headers"` or
   `"params"`), and whether it's `required`. Immerle generates the admin's config
   form from this and, on save, rejects a config that's missing any required field.
 
@@ -122,7 +122,7 @@ optional):
 
 ```json
 {
-  "header": { "Authorization": "Bearer your-secret" },
+  "headers": { "Authorization": "Bearer your-secret" },
   "params": { "apikey": "xyz" },
   "quality": "lossless",
   "timeoutSeconds": 60,
@@ -130,15 +130,15 @@ optional):
 }
 ```
 
-- **`header`** — static HTTP headers added to every request (e.g. auth).
+- **`headers`** — static HTTP headers added to every request (e.g. auth).
 - **`params`** — static query params appended to every request (e.g. an API
   key as `?apikey=…`). They never override the protocol params (`q`/`limit`/`id`).
 - `quality` (free-form label), `timeoutSeconds` (per-call, default 60),
   `downloadRetries` (default 3).
 
-Put credentials in `header` or `params` and declare them in your
+Put credentials in `headers` or `params` and declare them in your
 [`/capabilities`](#the-capabilities-endpoint-mandatory) response so the admin
-form prompts for them. The same `header`/`params` are sent on the
+form prompts for them. The same `headers`/`params` are sent on the
 `/capabilities` request too, so authenticated discovery works.
 
 :::note Built-in providers use the same shape
@@ -184,7 +184,7 @@ app.get('/capabilities', (_req, res) => {
     version: 1,
     name: 'mycatalog',
     config: {
-      Authorization: { type: 'string', where: 'header', required: true },
+      Authorization: { type: 'string', where: 'headers', required: true },
     },
   });
 });
@@ -258,7 +258,7 @@ curl -X POST http://localhost:4533/api/v1/admin/providers \
     "name": "mycatalog",
     "kind": "http",
     "endpoint": "https://my-provider.example.com",
-    "config": "{\"header\":{\"Authorization\":\"Bearer your-secret\"}}"
+    "config": "{\"headers\":{\"Authorization\":\"Bearer your-secret\"}}"
   }'
 ```
 

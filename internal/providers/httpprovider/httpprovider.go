@@ -163,12 +163,12 @@ func (p *Provider) Verify(ctx context.Context) error {
 		}
 		var got string
 		switch f.Where {
-		case "header":
-			got = p.cfg.Header[key]
+		case "headers":
+			got = p.cfg.Headers[key]
 		case "params":
 			got = p.cfg.Param(key, "")
 		default:
-			return fmt.Errorf("%s: config field %q has invalid location %q (want \"header\" or \"params\")", p.name, key, f.Where)
+			return fmt.Errorf("%s: config field %q has invalid location %q (want \"headers\" or \"params\")", p.name, key, f.Where)
 		}
 		if strings.TrimSpace(got) == "" {
 			missing = append(missing, fmt.Sprintf("%s (%s)", key, f.Where))
@@ -239,7 +239,7 @@ func (p *Provider) newRequest(ctx context.Context, path string, q url.Values) (*
 	if err != nil {
 		return nil, err
 	}
-	for k, v := range p.cfg.Header {
+	for k, v := range p.cfg.Headers {
 		req.Header.Set(k, v)
 	}
 	return req, nil
