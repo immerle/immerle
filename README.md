@@ -37,7 +37,7 @@ self-hosted server, for music, that sings: **Immerle**. ✨
 - 👯 **Social** — friends, an activity feed with per-event privacy, and
   collaborative or public/subscribable playlists.
 - 🔊 **Jam sessions** — listen together, in sync, streamed live.
-- 📥 **Playlist import** — bring your playlists over (Spotify ships first).
+- 📥 **Playlist import** — bring your playlists over (Spotify and Deezer).
 - 🔗 **Federation (opt-in)** — sync editorial & recommendation playlists via an
   `immerle-hub`.
 - 🔐 **Solid auth** — Subsonic tokens, revocable device JWTs, and personal API
