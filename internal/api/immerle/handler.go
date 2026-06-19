@@ -163,6 +163,12 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Get("/theme", h.handleTheme)
 			r.Patch("/theme", h.handleThemeUpdate)
 
+			// Admin: library track management (list, edit, cover, delete).
+			r.Get("/admin/tracks", h.handleAdminTracks)
+			r.Patch("/admin/tracks/{id}", h.handleAdminTrackUpdate)
+			r.Put("/admin/tracks/{id}/cover", h.handleAdminTrackCover)
+			r.Delete("/admin/tracks/{id}", h.handleAdminTrackDelete)
+
 			// Admin: provider-download eviction sweep.
 			r.Get("/admin/cleanup", h.handleCleanup)
 			r.Put("/admin/cleanup", h.handleCleanupUpdate)

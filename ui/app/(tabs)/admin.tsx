@@ -30,12 +30,20 @@ interface AdminLink {
   subtitleKey: string;
   color: string;
   /** When set, hidden unless the instance advertises this. */
-  requires?: 'dynamicProviders' | 'runtimeSettings';
+  requires?: 'dynamicProviders' | 'runtimeSettings' | 'libraryAdmin';
 }
 
 const LINKS: AdminLink[] = [
   { href: '/admin/users', icon: 'people', titleKey: 'home.admin.link.users.title', subtitleKey: 'home.admin.link.users.subtitle', color: '#3b82f6' },
   { href: '/admin/scan', icon: 'refresh-circle', titleKey: 'home.admin.link.library.title', subtitleKey: 'home.admin.link.library.subtitle', color: '#f59e0b' },
+  {
+    href: '/admin/tracks',
+    icon: 'musical-notes',
+    titleKey: 'home.admin.link.tracks.title',
+    subtitleKey: 'home.admin.link.tracks.subtitle',
+    color: '#1ed760',
+    requires: 'libraryAdmin',
+  },
   {
     href: '/admin/providers',
     icon: 'cube',

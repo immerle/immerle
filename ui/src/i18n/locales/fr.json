@@ -203,6 +203,10 @@
           "title": "Bibliothèque",
           "subtitle": "Scan & statistiques"
         },
+        "tracks": {
+          "title": "Morceaux",
+          "subtitle": "Parcourir, éditer pochettes & métadonnées, supprimer"
+        },
         "providers": {
           "title": "Providers",
           "subtitle": "Sources de contenu dynamiques"
@@ -433,6 +437,26 @@
       "newPassword": "Nouveau mot de passe",
       "validate": "Valider",
       "resetPassword": "Réinitialiser le mot de passe"
+    },
+    "tracks": {
+      "title": "Morceaux",
+      "trackCount": "{{count}} morceau(x)",
+      "searchLabel": "Rechercher",
+      "searchPlaceholder": "Titre, artiste ou album",
+      "loadError": "Impossible de charger les morceaux.",
+      "empty": "Aucun morceau trouvé.",
+      "changeCover": "Changer la pochette",
+      "titleLabel": "Titre",
+      "genreLabel": "Genre",
+      "yearLabel": "Année",
+      "trackNoLabel": "N° de piste",
+      "save": "Enregistrer",
+      "delete": "Supprimer",
+      "cancel": "Annuler",
+      "deleteConfirmTitle": "Supprimer ce morceau ?",
+      "prev": "Précédent",
+      "next": "Suivant",
+      "range": "{{from}}–{{to}} sur {{total}}"
     },
     "scan": {
       "title": "Bibliothèque",
