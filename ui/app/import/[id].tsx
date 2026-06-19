@@ -10,6 +10,7 @@ import { usePlayer } from '../../src/audio/store';
 import { ImportItemDTO } from '../../src/api/immerleApi';
 import { useColors } from '../../src/theme/colors';
 import { useT } from '../../src/i18n/store';
+import { useWebTitle } from '../../src/utils/documentTitle';
 
 type Filter = 'all' | 'matched' | 'doubtful' | 'missing' | 'failed';
 
@@ -28,6 +29,7 @@ export default function ImportDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const q = useImportStatus(id ?? '');
   const [filter, setFilter] = useState<Filter>('all');
+  useWebTitle(q.data?.sourcePlaylistName);
 
   if (q.isLoading) {
     return (

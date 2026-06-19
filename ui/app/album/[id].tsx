@@ -12,6 +12,7 @@ import { useColors } from '../../src/theme/colors';
 import { Song } from '../../src/api/subsonic/types';
 import { formatDuration } from '../../src/utils/format';
 import { useT } from '../../src/i18n/store';
+import { useWebTitle } from '../../src/utils/documentTitle';
 
 /** Album detail: an immersive Spotify-style hero + virtualized track list. */
 export default function AlbumDetail() {
@@ -23,6 +24,7 @@ export default function AlbumDetail() {
   const client = useAuth((s) => s.client);
   const q = useAlbum(id);
   const playSongs = usePlayer((s) => s.playSongs);
+  useWebTitle(q.data?.name);
 
   if (q.isLoading) return <Loading />;
   if (q.isError || !q.data) {

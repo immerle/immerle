@@ -11,6 +11,7 @@ import { usePlayer } from '../../src/audio/store';
 import { Song } from '../../src/api/subsonic/types';
 import { useColors } from '../../src/theme/colors';
 import { useT } from '../../src/i18n/store';
+import { useWebTitle } from '../../src/utils/documentTitle';
 
 /** Artist detail: immersive hero + discography grid, with play/shuffle. */
 export default function ArtistDetail() {
@@ -22,6 +23,7 @@ export default function ArtistDetail() {
   const q = useArtist(id);
   const playSongs = usePlayer((s) => s.playSongs);
   const [busy, setBusy] = useState(false);
+  useWebTitle(q.data?.name);
 
   if (q.isLoading) return <Loading />;
   if (q.isError || !q.data) return <ErrorState message={t('media.artist.notFound')} onRetry={q.refetch} />;

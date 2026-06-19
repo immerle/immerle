@@ -4,6 +4,7 @@ import { useSongsByGenre } from '../../src/query/library';
 import { TrackList } from '../../src/components/TrackList';
 import { EmptyState, ErrorState, Loading } from '../../src/components/ui';
 import { useT } from '../../src/i18n/store';
+import { useWebTitle } from '../../src/utils/documentTitle';
 
 /** Genre detail: a virtualized list of songs tagged with the genre. */
 export default function GenreDetail() {
@@ -11,6 +12,7 @@ export default function GenreDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const genre = decodeURIComponent(id ?? '');
   const q = useSongsByGenre(genre);
+  useWebTitle(genre);
 
   return (
     <>

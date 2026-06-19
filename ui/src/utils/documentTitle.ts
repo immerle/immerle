@@ -1,3 +1,6 @@
+import { useEffect } from 'react';
+import { Platform } from 'react-native';
+
 const APP_NAME = 'Immerle';
 
 // Route-segment → tab title. expo-router disables automatic web document titles
@@ -42,4 +45,15 @@ export function documentTitle(pathname: string): string {
   const label =
     root === 'admin' && seg[1] ? (ADMIN_SUB[seg[1]] ?? 'Admin') : TITLES[root];
   return label ? `${label} · ${APP_NAME}` : APP_NAME;
+}
+
+/**
+ * Web only: override the browser tab title with a loaded entity name, e.g.
+ * "Daft Punk · Immerle". The root layout sets a generic per-route title on
+ * navigation; detail screens call this to replace it once their data resolves.
+ */
+export function useWebTitle(name: string | null | undefined): void {
+  useEffect(() => {
+    if (Platform.OS === 'web' && name) document.title = `${name} · ${APP_NAME}`;
+  }, [name]);
 }

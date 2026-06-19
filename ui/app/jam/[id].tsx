@@ -10,6 +10,7 @@ import { Button, Card, IconButton } from '../../src/components/ui';
 import { Ionicon } from '../../src/components/Ionicon';
 import { useColors } from '../../src/theme/colors';
 import { useT } from '../../src/i18n/store';
+import { useWebTitle } from '../../src/utils/documentTitle';
 
 /**
  * Active Jam session. The host's playback drives everyone: the host controls
@@ -44,6 +45,8 @@ export default function Jam() {
         .catch(() => undefined);
     }
   }, [id, client]);
+
+  useWebTitle(session?.name);
 
   const isPlaying = status === 'playing';
 
