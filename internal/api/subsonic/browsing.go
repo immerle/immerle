@@ -1,13 +1,10 @@
 package subsonic
 
 import (
-	"context"
 	"net/http"
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
-	"time"
 	"unicode"
 
 	"github.com/immerle/immerle/internal/core"
@@ -64,188 +61,52 @@ func (h *Handler) handleGetArtists(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleGetArtist(w http.ResponseWriter, r *http.Request) {
-	id := param(r, "id")
-	if core.IsRemoteArtistID(id) && h.OnDemand != nil {
-		h.respondRemoteArtist(w, r, id)
-		return
-	}
-	artist, err := h.Catalog.GetArtist(r.Context(), id)
-	if err != nil {
-		writeError(w, r, ErrDataNotFound, "Artist not found")
-		return
-	}
-	albums, err := h.Catalog.ListAlbumsByArtist(r.Context(), id)
-	if err != nil {
-		h.failInternal(w, r, err)
-		return
-	}
 	user := userFrom(r.Context())
-	albumAnn, _ := h.Annotations.AnnotationMap(r.Context(), user.ID, models.ItemAlbum)
-	artistAnn, _ := h.Annotations.Get(r.Context(), user.ID, models.ItemArtist, id)
-
-	albumList := make([]AlbumID3, 0, len(albums))
-	seenAlbum := make(map[string]bool, len(albums))
-	for _, a := range albums {
-		ann := annPtr(albumAnn, a.ID)
-		albumList = append(albumList, toAlbumID3(a, ann, nil))
-		seenAlbum[strings.ToLower(a.Name)] = true
+	res, err := h.library.GetArtist(r.Context(), user.ID, param(r, "id"), boolParam(r, "includeSongs", false))
+	if err != nil {
+		h.writeServiceError(w, r, err, "Artist not found")
+		return
 	}
-
-	// Enrich with the rest of the artist's discography from the provider
-	// (deduplicated against the local albums by name). These remote albums are
-	// browsable and stream/download on play.
-	if h.OnDemand != nil {
-		if remote, err := h.OnDemand.RemoteAlbumsForArtist(r.Context(), artist.Name); err == nil {
-			for _, ra := range remote {
-				if seenAlbum[strings.ToLower(ra.Name)] {
-					continue
-				}
-				seenAlbum[strings.ToLower(ra.Name)] = true
-				albumList = append(albumList, toAlbumID3(ra, nil, nil))
-			}
-		}
-	}
-
-	artist.AlbumCount = len(albumList)
-
-	// Optionally inline each album's songs (off by default to keep getArtist
-	// light and Subsonic-standard).
-	if boolParam(r, "includeSongs", false) {
-		h.fillAlbumSongs(r, albumList)
-	}
-
 	resp := newResponse()
-	out := toArtistID3(artist, &artistAnn, albumList)
+	out := toArtistID3(res.Artist, res.Annotation, albumEntriesToID3(res.Albums))
 	resp.Artist = &out
 	write(w, r, resp)
 }
 
-// fillAlbumSongs populates AlbumID3.Song for each album: local albums from the
-// catalog (cheap), remote albums from the provider (fetched concurrently, with
-// a bounded concurrency and an overall timeout so it can't hang).
-func (h *Handler) fillAlbumSongs(r *http.Request, albums []AlbumID3) {
-	ctx := r.Context()
-	user := userFrom(ctx)
-	trackAnn, _ := h.Annotations.AnnotationMap(ctx, user.ID, models.ItemTrack)
-
-	var remote []int
-	for i := range albums {
-		if core.IsRemoteAlbumID(albums[i].ID) {
-			remote = append(remote, i)
-			continue
-		}
-		tracks, err := h.Catalog.ListTracksByAlbum(ctx, albums[i].ID)
-		if err != nil {
-			continue
-		}
-		songs := make([]Child, 0, len(tracks))
-		for _, t := range tracks {
-			songs = append(songs, toChild(t, annPtr(trackAnn, t.ID)))
-		}
-		albums[i].Song = songs
-	}
-
-	if h.OnDemand == nil || len(remote) == 0 {
-		return
-	}
-	rctx, cancel := context.WithTimeout(ctx, 12*time.Second)
-	defer cancel()
-	sem := make(chan struct{}, 6) // bound concurrent provider calls
-	var wg sync.WaitGroup
-	for _, idx := range remote {
-		wg.Add(1)
-		go func(i int) {
-			defer wg.Done()
-			sem <- struct{}{}
-			defer func() { <-sem }()
-			_, tracks, err := h.OnDemand.RemoteAlbum(rctx, albums[i].ID)
-			if err != nil {
-				return
-			}
-			songs := make([]Child, 0, len(tracks))
-			for _, t := range tracks {
-				songs = append(songs, toChild(t, h.localAnn(rctx, trackAnn, t.ID)))
-			}
-			albums[i].Song = songs // distinct index per goroutine — no race
-		}(idx)
-	}
-	wg.Wait()
-}
-
 func (h *Handler) handleGetAlbum(w http.ResponseWriter, r *http.Request) {
-	id := param(r, "id")
-	if core.IsRemoteAlbumID(id) && h.OnDemand != nil {
-		h.respondRemoteAlbum(w, r, id)
-		return
-	}
-	album, err := h.Catalog.GetAlbum(r.Context(), id)
-	if err != nil {
-		writeError(w, r, ErrDataNotFound, "Album not found")
-		return
-	}
 	user := userFrom(r.Context())
-	trackAnn, _ := h.Annotations.AnnotationMap(r.Context(), user.ID, models.ItemTrack)
-	albumAnn, _ := h.Annotations.Get(r.Context(), user.ID, models.ItemAlbum, id)
-
-	songs := h.albumSongs(r, album, trackAnn)
-	// Reflect the enriched (local + remote) tracklist in the album totals.
-	album.SongCount = len(songs)
-	album.Duration = 0
-	for _, s := range songs {
-		album.Duration += s.Duration
+	res, err := h.library.GetAlbum(r.Context(), user.ID, param(r, "id"))
+	if err != nil {
+		h.writeServiceError(w, r, err, "Album not found")
+		return
 	}
-
 	resp := newResponse()
-	out := toAlbumID3(album, &albumAnn, songs)
+	out := toAlbumID3(res.Album, res.Annotation, trackEntriesToChildren(res.Tracks))
 	resp.Album = &out
 	write(w, r, resp)
 }
 
-// albumTrackKey is the dedup key matching a remote track against an owned one
-// (by normalized title).
-func albumTrackKey(title string) string {
-	return strings.ToLower(strings.TrimSpace(title))
+// albumEntriesToID3 renders library album entries as Subsonic AlbumID3, inlining
+// songs when the entry carries them.
+func albumEntriesToID3(entries []core.AlbumEntry) []AlbumID3 {
+	out := make([]AlbumID3, 0, len(entries))
+	for _, e := range entries {
+		out = append(out, toAlbumID3(e.Album, e.Annotation, trackEntriesToChildren(e.Tracks)))
+	}
+	return out
 }
 
-// albumSongs returns an album's songs: the local tracks plus — when a content
-// provider is configured — the rest of the album's tracks fetched from the
-// provider (the ones the user does not own, as remote play-on-demand entries),
-// deduped by title and ordered by disc/track so the album reads in order.
-func (h *Handler) albumSongs(r *http.Request, album models.Album, trackAnn map[string]models.Annotation) []Child {
-	ctx := r.Context()
-	local, _ := h.Catalog.ListTracksByAlbum(ctx, album.ID)
-	songs := make([]Child, 0, len(local))
-	seen := make(map[string]bool, len(local))
-	for _, t := range local {
-		songs = append(songs, toChild(t, annPtr(trackAnn, t.ID)))
-		if k := albumTrackKey(t.Title); k != "" {
-			seen[k] = true
-		}
+// trackEntriesToChildren renders track entries as Subsonic children. It returns
+// nil for an empty list so the album's Song element stays absent.
+func trackEntriesToChildren(entries []core.TrackEntry) []Child {
+	if len(entries) == 0 {
+		return nil
 	}
-
-	if h.OnDemand != nil && strings.TrimSpace(album.Name) != "" {
-		rctx, cancel := context.WithTimeout(ctx, 12*time.Second)
-		defer cancel()
-		if remote, err := h.OnDemand.RemoteTracksForAlbum(rctx, album.ArtistName, album.Name); err == nil {
-			for _, t := range remote {
-				k := albumTrackKey(t.Title)
-				if k == "" || seen[k] {
-					continue
-				}
-				seen[k] = true
-				t.AlbumID = album.ID // keep the client on this album page
-				songs = append(songs, toChild(t, h.localAnn(rctx, trackAnn, t.ID)))
-			}
-		}
+	out := make([]Child, 0, len(entries))
+	for _, e := range entries {
+		out = append(out, toChild(e.Track, e.Annotation))
 	}
-
-	sort.SliceStable(songs, func(i, j int) bool {
-		if songs[i].DiscNumber != songs[j].DiscNumber {
-			return songs[i].DiscNumber < songs[j].DiscNumber
-		}
-		return songs[i].Track < songs[j].Track
-	})
-	return songs
+	return out
 }
 
 func (h *Handler) handleGetAlbumList2(w http.ResponseWriter, r *http.Request) {
