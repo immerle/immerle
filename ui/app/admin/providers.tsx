@@ -410,6 +410,9 @@ function JsonConfigField({ value, onChangeText }: { value: string; onChangeText:
   // Web textarea DOM node, for caret-aware Tab handling.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const inputRef = useRef<any>(null);
+  // Grow the box to the content height so nothing scrolls inside it (the colored
+  // overlay can't scroll in sync with the textarea); the panel scrolls instead.
+  const [contentH, setContentH] = useState(140);
 
   const error = useMemo(() => {
     const s = value.trim();
@@ -456,7 +459,7 @@ function JsonConfigField({ value, onChangeText }: { value: string; onChangeText:
           <Text className="text-xs text-foreground">{t('admin.providers.configFormat')}</Text>
         </Pressable>
       </View>
-      <View style={{ position: 'relative', minHeight: 140, borderWidth: 1, borderColor: error ? colors.danger : colors.border, borderRadius: 12 }}>
+      <View style={{ position: 'relative', borderWidth: 1, borderColor: error ? colors.danger : colors.border, borderRadius: 12, overflow: 'hidden' }}>
         {/* Colored layer behind the input (or the placeholder when empty). */}
         <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
           <Text style={textStyle}>
@@ -468,14 +471,17 @@ function JsonConfigField({ value, onChangeText }: { value: string; onChangeText:
           value={value}
           onChangeText={onChangeText}
           onKeyPress={onKeyPress}
+          onContentSizeChange={(e) => setContentH(e.nativeEvent.contentSize.height)}
           multiline
+          scrollEnabled={false}
           autoCapitalize="none"
           autoCorrect={false}
           spellCheck={false}
+          // Height tracks the content so the box grows instead of scrolling inside.
           // Glyphs invisible (the overlay shows them in color) but the caret stays visible.
           style={[
             textStyle,
-            { flex: 1, minHeight: 140, textAlignVertical: 'top', color: colors.foreground },
+            { height: Math.max(140, contentH), textAlignVertical: 'top', color: colors.foreground },
             // Web-only props (transparent glyphs, visible caret) — not in RN's TextStyle.
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (Platform.OS === 'web'
