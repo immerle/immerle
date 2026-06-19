@@ -16,6 +16,7 @@ import (
 	"github.com/immerle/immerle/internal/importer"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
+	"github.com/immerle/immerle/internal/scanner"
 )
 
 // ProtocolVersion is the immerle extension protocol version.
@@ -39,6 +40,12 @@ type Deps struct {
 	LibraryStats *core.LibraryStatsService
 	// Imports runs playlist imports from external sources (e.g. Spotify).
 	Imports *importer.Service
+	// Scanner ingests user-uploaded ("local") audio files into the catalog.
+	Scanner *scanner.Scanner
+	// UploadsDir is where user-uploaded audio files are written (a scanned dir).
+	UploadsDir string
+	// CoversDir holds cover-art files (custom track covers are written here).
+	CoversDir string
 	// Cleanup controls the provider-download eviction sweep (admin API).
 	Cleanup CleanupController
 	// Providers manages runtime-configurable on-demand providers (admin API).
@@ -114,6 +121,13 @@ func (h *Handler) Register(mux chi.Router) {
 
 			r.Get("/activity", h.handleActivity)
 			r.Get("/library/stats", h.handleLibraryStats)
+
+			// "Local" library: tracks the user uploaded from the web UI.
+			r.Get("/library/local", h.handleLocalSongs)
+			r.Post("/library/uploads", h.handleUpload)
+			r.Patch("/library/tracks/{id}", h.handleTrackUpdate)
+			r.Put("/library/tracks/{id}/cover", h.handleTrackCover)
+			r.Delete("/library/tracks/{id}", h.handleTrackDelete)
 
 			// Playlist imports from external sources (e.g. Spotify).
 			r.Get("/imports/sources", h.handleImportSources)

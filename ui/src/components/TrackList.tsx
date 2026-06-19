@@ -14,6 +14,8 @@ interface TrackListProps {
   footer?: React.ReactElement;
   refreshing?: boolean;
   onRefresh?: () => void;
+  /** When set, each row's menu offers an "Edit" action (used by the local library). */
+  onEditTrack?: (song: Song) => void;
 }
 
 /**
@@ -29,6 +31,7 @@ export function TrackList({
   footer,
   refreshing,
   onRefresh,
+  onEditTrack,
 }: TrackListProps) {
   const playSongs = usePlayer((s) => s.playSongs);
   const current = usePlayer((s) => (s.index >= 0 ? s.songs[s.index]?.id : undefined));
@@ -42,10 +45,10 @@ export function TrackList({
         showArtwork={showArtwork}
         number={index + 1}
         onPress={() => playSongs(songs, index)}
-        onMore={() => openMenu(item)}
+        onMore={() => openMenu(item, onEditTrack ? { onEdit: onEditTrack } : undefined)}
       />
     ),
-    [songs, current, showArtwork, playSongs, openMenu],
+    [songs, current, showArtwork, playSongs, openMenu, onEditTrack],
   );
 
   return (

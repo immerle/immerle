@@ -335,6 +335,9 @@ func New(cfg config.Config) (*App, error) {
 		OnDemand:     onDemand,
 		LibraryStats: libraryStats,
 		Imports:      importSvc,
+		Scanner:      scan,
+		UploadsDir:   filepath.Join(downloadDir, "uploads"),
+		CoversDir:    coversDir,
 		Logger:       logger,
 	})
 

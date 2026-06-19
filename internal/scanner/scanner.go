@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"log/slog"
 	"os"
@@ -168,6 +169,17 @@ func (s *Scanner) ScanFile(ctx context.Context, path string) error {
 	abs, _ := filepath.Abs(path)
 	_, _, err := s.indexFile(ctx, abs)
 	return err
+}
+
+// IngestFile indexes a single file and returns the resulting track id. Used by
+// the upload endpoint, which needs the id to mark ownership.
+func (s *Scanner) IngestFile(ctx context.Context, path string) (string, error) {
+	if _, ok := IsAudioFile(path); !ok {
+		return "", fmt.Errorf("unsupported audio file: %s", filepath.Base(path))
+	}
+	abs, _ := filepath.Abs(path)
+	id, _, err := s.indexFile(ctx, abs)
+	return id, err
 }
 
 // RemoveFile deletes the track for a removed file path.

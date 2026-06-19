@@ -276,10 +276,13 @@ type Track struct {
 	ReplayGainTrack float64 `json:"-"`
 	ReplayGainAlbum float64 `json:"-"`
 	// Remote marks a track that is not yet downloaded but available via a provider.
-	Remote    bool      `json:"-"`
-	Provider  string    `json:"-"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	Remote   bool   `json:"-"`
+	Provider string `json:"-"`
+	// UploadedBy is the id of the user who uploaded this track ("local" library);
+	// empty for scanned or provider-sourced tracks.
+	UploadedBy string    `json:"-"`
+	CreatedAt  time.Time `json:"createdAt"`
+	UpdatedAt  time.Time `json:"updatedAt"`
 }
 
 // Genre is a normalized genre name.
