@@ -336,6 +336,7 @@ func New(cfg config.Config) (*App, error) {
 		Radio:        store.Radio,
 		Wrapped:      store.Wrapped,
 		Catalog:      store.Catalog,
+		Annotations:  store.Annotations,
 		OnDemand:     onDemand,
 		LibraryStats: libraryStats,
 		Imports:      importSvc,

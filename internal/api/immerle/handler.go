@@ -33,9 +33,12 @@ type Deps struct {
 	Setup      *core.SetupService
 	Federation FederationStatusProvider
 	// Catalog and OnDemand enrich activity feed items with titles/cover/etc.
-	// (OnDemand maps a remote favorite to its downloaded local track).
-	Catalog  *persistence.CatalogRepo
-	OnDemand *core.CatalogService
+	// (OnDemand maps a remote favorite to its downloaded local track). Catalog,
+	// Annotations and OnDemand also back the catalog browse resources via the
+	// shared LibraryService.
+	Catalog     *persistence.CatalogRepo
+	Annotations *persistence.AnnotationRepo
+	OnDemand    *core.CatalogService
 	// LibraryStats serves the cached library analytics (counts + total size).
 	LibraryStats *core.LibraryStatsService
 	// Imports runs playlist imports from external sources (e.g. Spotify).
@@ -84,10 +87,18 @@ type CleanupController interface {
 // Handler implements the immerle native API.
 type Handler struct {
 	Deps
+	// library backs the catalog browse resources with the same application
+	// service the Subsonic handler uses.
+	library *core.LibraryService
 }
 
 // NewHandler builds a immerle Handler.
-func NewHandler(d Deps) *Handler { return &Handler{Deps: d} }
+func NewHandler(d Deps) *Handler {
+	return &Handler{
+		Deps:    d,
+		library: core.NewLibraryService(d.Catalog, d.Annotations, d.OnDemand),
+	}
+}
 
 type ctxKey int
 
@@ -137,6 +148,11 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Post("/admin/radio/stations", h.handleRadioCreate)
 			r.Put("/admin/radio/stations/{id}", h.handleRadioUpdate)
 			r.Delete("/admin/radio/stations/{id}", h.handleRadioDelete)
+
+			// Catalog browse (artists/albums) over the shared library service.
+			r.Get("/artists", h.handleListArtists)
+			r.Get("/artists/{id}", h.handleGetArtist)
+			r.Get("/albums/{id}", h.handleGetAlbum)
 
 			// Year-in-review ("Wrapped").
 			r.Get("/wrapped", h.handleWrapped)
