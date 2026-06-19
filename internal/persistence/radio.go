@@ -10,6 +10,7 @@ import (
 
 	"github.com/immerle/immerle/internal/db"
 	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/radio"
 )
 
 // RadioRepo persists internet radio stations.
@@ -77,33 +78,11 @@ func (r *RadioRepo) Delete(ctx context.Context, id string) error {
 	return err
 }
 
-// builtinStations are the curated free streams seeded on first boot. They are
-// well-known public radio streams that work out of the box.
-// ponytail: a fixed seed list; admins curate the rest via the API.
-var builtinStations = []models.RadioStation{
-	// French general/music radios (verified reachable, https mp3).
-	{ID: "builtin:nrj", Name: "NRJ", StreamURL: "https://scdn.nrjaudio.fm/audio1/fr/30001/mp3_128.mp3?origine=immerle", HomepageURL: "https://www.nrj.fr/"},
-	{ID: "builtin:rtl", Name: "RTL", StreamURL: "https://streaming.radio.rtl.fr/rtl-1-44-128", HomepageURL: "https://www.rtl.fr/"},
-	{ID: "builtin:rtl2", Name: "RTL2", StreamURL: "https://streaming.radio.rtl.fr/rtl2-1-44-128", HomepageURL: "https://www.rtl2.fr/"},
-	{ID: "builtin:funradio", Name: "Fun Radio", StreamURL: "https://streaming.radio.funradio.fr/fun-1-44-128", HomepageURL: "https://www.funradio.fr/"},
-	{ID: "builtin:skyrock", Name: "Skyrock", StreamURL: "https://icecast.skyrock.net/s/natio_mp3_128k", HomepageURL: "https://www.skyrock.fm/"},
-	{ID: "builtin:europe1", Name: "Europe 1", StreamURL: "https://stream.europe1.fr/europe1.mp3", HomepageURL: "https://www.europe1.fr/"},
-	// Radio France (public service).
-	{ID: "builtin:franceinter", Name: "France Inter", StreamURL: "https://icecast.radiofrance.fr/franceinter-midfi.mp3", HomepageURL: "https://www.radiofrance.fr/franceinter"},
-	{ID: "builtin:franceinfo", Name: "France Info", StreamURL: "https://icecast.radiofrance.fr/franceinfo-midfi.mp3", HomepageURL: "https://www.radiofrance.fr/franceinfo"},
-	{ID: "builtin:franceculture", Name: "France Culture", StreamURL: "https://icecast.radiofrance.fr/franceculture-midfi.mp3", HomepageURL: "https://www.radiofrance.fr/franceculture"},
-	{ID: "builtin:francemusique", Name: "France Musique", StreamURL: "https://icecast.radiofrance.fr/francemusique-midfi.mp3", HomepageURL: "https://www.radiofrance.fr/francemusique"},
-	{ID: "builtin:fip", Name: "FIP", StreamURL: "https://icecast.radiofrance.fr/fip-midfi.mp3", HomepageURL: "https://www.fip.fr/"},
-	// International (free / CC-friendly).
-	{ID: "builtin:radioparadise-main", Name: "Radio Paradise — Main Mix", StreamURL: "https://stream.radioparadise.com/mp3-128", HomepageURL: "https://radioparadise.com/"},
-	{ID: "builtin:somafm-groovesalad", Name: "SomaFM — Groove Salad", StreamURL: "https://ice.somafm.com/groovesalad-128-mp3", HomepageURL: "https://somafm.com/groovesalad/"},
-	{ID: "builtin:somafm-dronezone", Name: "SomaFM — Drone Zone", StreamURL: "https://ice.somafm.com/dronezone-128-mp3", HomepageURL: "https://somafm.com/dronezone/"},
-}
-
 // EnsureBuiltins seeds the built-in stations once (idempotent). Existing rows
 // (including admin edits) are left untouched; only missing built-ins are added.
+// The curated list lives in the embedded radio/stations.json (see radio.Builtins).
 func (r *RadioRepo) EnsureBuiltins(ctx context.Context) error {
-	for i, s := range builtinStations {
+	for i, s := range radio.Builtins() {
 		var exists int
 		if err := r.queryRow(ctx, `SELECT COUNT(1) FROM radio_stations WHERE id=?`, s.ID).Scan(&exists); err != nil {
 			return err
