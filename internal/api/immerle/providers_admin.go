@@ -292,5 +292,5 @@ func (h *Handler) writeProviderError(w http.ResponseWriter, err error) {
 		writeError(w, http.StatusNotFound, "not_found", "provider not found")
 		return
 	}
-	writeErrorParams(w, http.StatusBadRequest, "bad_request", err.Error(), map[string]any{"detail": err.Error()})
+	writeErrorParams(w, http.StatusBadRequest, "provider_invalid_config", err.Error(), map[string]any{"detail": err.Error()})
 }
