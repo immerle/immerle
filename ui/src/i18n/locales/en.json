@@ -186,15 +186,12 @@
       "autoDetected": "Auto-detected · {{version}}",
       "feature": {
         "immerleAuth": "Immerle Auth",
-        "onDemandCatalog": "On-demand catalog",
         "dynamicProviders": "Dynamic providers",
         "federation": "Federation",
         "jam": "Jam sessions",
         "collaborativePlaylists": "Collaborative playlists",
         "publicPlaylists": "Public playlists",
-        "social": "Social",
-        "adminExtended": "Extended admin",
-        "offlineDownloads": "Offline"
+        "social": "Social"
       },
       "link": {
         "users": {

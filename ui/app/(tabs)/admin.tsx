@@ -15,15 +15,12 @@ import { useT } from '../../src/i18n/store';
 // shown here (admin) rather than in user settings since they describe the server.
 const FEATURES: { key: CapabilityFeature; labelKey: string; icon: string }[] = [
   { key: 'immerleAuth', labelKey: 'home.admin.feature.immerleAuth', icon: 'key' },
-  { key: 'onDemandCatalog', labelKey: 'home.admin.feature.onDemandCatalog', icon: 'cloud-download' },
   { key: 'dynamicProviders', labelKey: 'home.admin.feature.dynamicProviders', icon: 'cube' },
   { key: 'federation', labelKey: 'home.admin.feature.federation', icon: 'git-network' },
   { key: 'jam', labelKey: 'home.admin.feature.jam', icon: 'radio' },
   { key: 'collaborativePlaylists', labelKey: 'home.admin.feature.collaborativePlaylists', icon: 'people' },
   { key: 'publicPlaylists', labelKey: 'home.admin.feature.publicPlaylists', icon: 'globe' },
   { key: 'social', labelKey: 'home.admin.feature.social', icon: 'chatbubbles' },
-  { key: 'adminExtended', labelKey: 'home.admin.feature.adminExtended', icon: 'shield-checkmark' },
-  { key: 'offlineDownloads', labelKey: 'home.admin.feature.offlineDownloads', icon: 'download' },
 ];
 
 interface AdminLink {
