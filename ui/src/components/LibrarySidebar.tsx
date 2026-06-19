@@ -5,6 +5,7 @@ import { usePlaylists, useCreatePlaylist } from '../query/playlists';
 import { useAuth } from '../auth/store';
 import { PlaylistMosaic } from './PlaylistMosaic';
 import { LikedCover } from './LikedCover';
+import { LocalCover } from './LocalCover';
 import { Ionicon } from './Ionicon';
 import { IconButton, Field, Button } from './ui';
 import { useUI } from '../stores/ui';
@@ -58,6 +59,7 @@ export function LibrarySidebar() {
     [playlists, q, sort],
   );
   const likedMatches = 'titres likés'.includes(q);
+  const localMatches = 'musiques locales'.includes(q);
 
   return (
     <View style={{ width }} className="border-r border-border bg-surface">
@@ -159,6 +161,16 @@ export function LibrarySidebar() {
             onPress={() => router.push('/liked' as never)}
           />
         ) : null}
+        {localMatches ? (
+          <Row
+            active={pathname === '/local'}
+            collapsed={collapsed}
+            cover={<LocalCover size={48} rounded={6} />}
+            title={t('components.sidebar.localSongs')}
+            subtitle={t('components.sidebar.playlist')}
+            onPress={() => router.push('/local' as never)}
+          />
+        ) : null}
         {filtered.map((p: Playlist) => (
           <Row
             key={p.id}
@@ -170,7 +182,7 @@ export function LibrarySidebar() {
             onPress={() => router.push(`/playlist/${p.id}` as never)}
           />
         ))}
-        {!collapsed && filtered.length === 0 && !likedMatches ? (
+        {!collapsed && filtered.length === 0 && !likedMatches && !localMatches ? (
           <Text className="px-3 py-4 text-sm text-muted">{t('components.sidebar.noResults')}</Text>
         ) : null}
       </ScrollView>

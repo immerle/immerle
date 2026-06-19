@@ -269,7 +269,7 @@ const trackSelect = `
 	SELECT t.id, t.title, t.album_id, al.name, t.artist_id, ar.name, t.track_no, t.disc_no,
 	       t.genre, t.year, t.duration, t.bitrate, t.path, t.suffix, t.content_type, t.size,
 	       t.mbid, t.file_hash, t.cover_art, t.bpm, t.replaygain_track, t.replaygain_album,
-	       t.remote, t.provider, t.created_at, t.updated_at
+	       t.remote, t.provider, t.uploaded_by, t.created_at, t.updated_at
 	FROM tracks t JOIN albums al ON al.id = t.album_id JOIN artists ar ON ar.id = t.artist_id`
 
 func scanTrack(s rowScanner) (models.Track, error) {
@@ -279,7 +279,7 @@ func scanTrack(s rowScanner) (models.Track, error) {
 	if err := s.Scan(&t.ID, &t.Title, &t.AlbumID, &t.AlbumName, &t.ArtistID, &t.ArtistName, &t.TrackNo, &t.DiscNo,
 		&t.Genre, &t.Year, &t.Duration, &t.BitRate, &t.Path, &t.Suffix, &t.ContentType, &t.Size,
 		&t.MBID, &t.FileHash, &t.CoverArt, &t.BPM, &t.ReplayGainTrack, &t.ReplayGainAlbum,
-		&remote, &t.Provider, &createdAt, &updatedAt); err != nil {
+		&remote, &t.Provider, &t.UploadedBy, &createdAt, &updatedAt); err != nil {
 		return t, err
 	}
 	t.Remote = remote != 0
@@ -388,6 +388,30 @@ func (r *CatalogRepo) GetTrack(ctx context.Context, id string) (models.Track, er
 		return t, ErrNotFound
 	}
 	return t, err
+}
+
+// ListUploadedBy returns the tracks a user uploaded ("local" library), newest
+// first.
+func (r *CatalogRepo) ListUploadedBy(ctx context.Context, userID string) ([]models.Track, error) {
+	return r.listTracks(ctx, trackSelect+` WHERE t.uploaded_by=? ORDER BY t.created_at DESC`, userID)
+}
+
+// SetTrackOwner marks a track as uploaded by a user.
+func (r *CatalogRepo) SetTrackOwner(ctx context.Context, trackID, userID string) error {
+	_, err := r.exec(ctx, `UPDATE tracks SET uploaded_by=? WHERE id=?`, userID, trackID)
+	return err
+}
+
+// SetTrackTitle renames a track.
+func (r *CatalogRepo) SetTrackTitle(ctx context.Context, trackID, title string) error {
+	_, err := r.exec(ctx, `UPDATE tracks SET title=?, updated_at=? WHERE id=?`, title, db.Millis(time.Now()), trackID)
+	return err
+}
+
+// SetTrackCover points a track at a custom cover id (a file under coversDir).
+func (r *CatalogRepo) SetTrackCover(ctx context.Context, trackID, coverArt string) error {
+	_, err := r.exec(ctx, `UPDATE tracks SET cover_art=?, updated_at=? WHERE id=?`, coverArt, db.Millis(time.Now()), trackID)
+	return err
 }
 
 // GetTracks returns multiple tracks preserving the requested order.

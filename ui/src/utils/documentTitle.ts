@@ -20,6 +20,7 @@ const TITLES: Record<string, string> = {
   genre: 'Genre',
   playlist: 'Playlist',
   liked: 'Titres likés',
+  local: 'Musiques locales',
   jam: 'Jam',
   player: 'Lecture en cours',
   queue: 'File de lecture',

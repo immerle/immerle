@@ -14,14 +14,17 @@ import { useT } from '../i18n/store';
 /** Global target for the contextual track menu. */
 interface TrackMenuState {
   song: Song | null;
-  open: (song: Song) => void;
+  /** Optional "Edit" callback, set per-open (e.g. on the local library screen). */
+  onEdit?: (song: Song) => void;
+  open: (song: Song, opts?: { onEdit?: (song: Song) => void }) => void;
   close: () => void;
 }
 
 export const useTrackMenu = create<TrackMenuState>((set) => ({
   song: null,
-  open: (song) => set({ song }),
-  close: () => set({ song: null }),
+  onEdit: undefined,
+  open: (song, opts) => set({ song, onEdit: opts?.onEdit }),
+  close: () => set({ song: null, onEdit: undefined }),
 }));
 
 interface ActionProps {
@@ -54,6 +57,7 @@ function Action({ icon, label, onPress, tone = 'default' }: ActionProps) {
 export function TrackMenu() {
   const t = useT();
   const song = useTrackMenu((s) => s.song);
+  const onEdit = useTrackMenu((s) => s.onEdit);
   const close = useTrackMenu((s) => s.close);
   const playNext = usePlayer((s) => s.playNext);
   const enqueue = usePlayer((s) => s.enqueue);
@@ -118,6 +122,17 @@ export function TrackMenu() {
                 }}
               />
               <Action icon="add-circle-outline" label={t('components.trackMenu.addToPlaylist')} onPress={() => setPicker(true)} />
+              {onEdit ? (
+                <Action
+                  icon="create-outline"
+                  label={t('components.trackMenu.edit')}
+                  onPress={() => {
+                    const target = song;
+                    dismiss();
+                    onEdit(target);
+                  }}
+                />
+              ) : null}
               {song.albumId ? (
                 <Action
                   icon="disc-outline"

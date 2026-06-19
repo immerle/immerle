@@ -535,6 +535,23 @@
       "previous": "Previous",
       "next": "Next",
       "shuffle": "Shuffle"
+    },
+    "local": {
+      "title": "Local music",
+      "trackCount": "{{count}} tracks",
+      "play": "Play local music",
+      "loadError": "Could not load your local music.",
+      "empty": "No local music yet",
+      "emptySubtitle": "Drag and drop your audio files above to import them.",
+      "dropHere": "Drop your audio files here",
+      "dropHint": "or click to browse",
+      "uploading": "Uploading…",
+      "webOnly": "Drag-and-drop upload is available from the web app.",
+      "editTitle": "Edit track",
+      "name": "Name",
+      "changeCover": "Change cover",
+      "save": "Save",
+      "cancel": "Cancel"
     }
   },
   "tools": {
@@ -647,7 +664,8 @@
       "noResults": "No results.",
       "playlistNamePlaceholder": "Playlist name",
       "cancel": "Cancel",
-      "create": "Create"
+      "create": "Create",
+      "localSongs": "Local music"
     },
     "player": {
       "nothingPlaying": "Nothing playing",
@@ -692,7 +710,8 @@
       "choosePlaylist": "Choose a playlist",
       "newPlaylist": "New playlist",
       "namePlaceholder": "Name",
-      "create": "Create"
+      "create": "Create",
+      "edit": "Edit"
     },
     "search": {
       "searchTitle": "Search",

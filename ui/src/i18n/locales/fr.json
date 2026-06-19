@@ -535,6 +535,23 @@
       "previous": "Précédent",
       "next": "Suivant",
       "shuffle": "Lecture aléatoire"
+    },
+    "local": {
+      "title": "Musiques locales",
+      "trackCount": "{{count}} titres",
+      "play": "Lire les musiques locales",
+      "loadError": "Impossible de charger les musiques locales.",
+      "empty": "Aucune musique locale",
+      "emptySubtitle": "Glissez-déposez vos fichiers audio ci-dessus pour les importer.",
+      "dropHere": "Déposez vos fichiers audio ici",
+      "dropHint": "ou cliquez pour parcourir",
+      "uploading": "Import en cours…",
+      "webOnly": "L'import par glisser-déposer est disponible depuis le navigateur.",
+      "editTitle": "Modifier la musique",
+      "name": "Nom",
+      "changeCover": "Changer la pochette",
+      "save": "Enregistrer",
+      "cancel": "Annuler"
     }
   },
   "tools": {
@@ -647,7 +664,8 @@
       "noResults": "Aucun résultat.",
       "playlistNamePlaceholder": "Nom de la playlist",
       "cancel": "Annuler",
-      "create": "Créer"
+      "create": "Créer",
+      "localSongs": "Musiques locales"
     },
     "player": {
       "nothingPlaying": "Aucune lecture en cours",
@@ -692,7 +710,8 @@
       "choosePlaylist": "Choisir une playlist",
       "newPlaylist": "Nouvelle playlist",
       "namePlaceholder": "Nom",
-      "create": "Créer"
+      "create": "Créer",
+      "edit": "Modifier"
     },
     "search": {
       "searchTitle": "Rechercher",

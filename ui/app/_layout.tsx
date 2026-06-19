@@ -128,6 +128,7 @@ export default function RootLayout() {
                   <Stack.Screen name="genre/[id]" options={{ title: 'Genre', headerShown: !wide }} />
                   <Stack.Screen name="playlist/[id]" options={{ title: 'Playlist', headerShown: !wide }} />
                   <Stack.Screen name="liked" options={{ title: 'Titres likés', headerShown: !wide }} />
+                  <Stack.Screen name="local" options={{ title: 'Musiques locales', headerShown: !wide }} />
                   <Stack.Screen name="jam/[id]" options={{ title: 'Jam', headerShown: !wide }} />
                   <Stack.Screen
                     name="player"

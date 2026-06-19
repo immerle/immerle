@@ -1,4 +1,5 @@
 import { SubsonicClient } from '../subsonic/client';
+import { Song } from '../subsonic/types';
 import {
   ActivityEventDTO,
   APITokenDTO,
@@ -664,6 +665,57 @@ export class ImmerleClient {
     const { data, error } = await this.api.PATCH('/theme', { body: { accentColor } });
     if (error || !data) throw apiErr(error, 'theme_update_failed');
     return data;
+  }
+
+  // --- "Local" library: user-uploaded tracks -----------------------------
+
+  /** The tracks the caller uploaded ("local" virtual playlist), newest first. */
+  async listLocalSongs(signal?: AbortSignal): Promise<Song[]> {
+    const data = await this.request<{ songs?: Song[] }>('GET', 'library/local', undefined, signal);
+    return data.songs ?? [];
+  }
+
+  /** Upload an audio file; returns the ingested track. Web: pass a File. */
+  async uploadTrack(file: File, signal?: AbortSignal): Promise<Song> {
+    const form = new FormData();
+    form.append('file', file, file.name);
+    return this.uploadForm<Song>('POST', 'library/uploads', form, signal);
+  }
+
+  /** Rename one of the caller's uploaded tracks. */
+  async renameTrack(id: string, title: string): Promise<Song> {
+    return this.request<Song>('PATCH', `library/tracks/${encodeURIComponent(id)}`, { title });
+  }
+
+  /** Replace the cover art of one of the caller's uploaded tracks. */
+  async setTrackCover(id: string, image: File): Promise<Song> {
+    const form = new FormData();
+    form.append('file', image, image.name);
+    return this.uploadForm<Song>('PUT', `library/tracks/${encodeURIComponent(id)}/cover`, form);
+  }
+
+  // Multipart sibling of `request`: lets the browser set the multipart boundary
+  // (so we must NOT set Content-Type ourselves).
+  private async uploadForm<T>(method: string, path: string, form: FormData, signal?: AbortSignal): Promise<T> {
+    const url = `${this.serverUrl}/api/v1/${path.replace(/^\/+/, '')}`;
+    const headers: Record<string, string> = { Accept: 'application/json' };
+    if (this.session?.token) headers.Authorization = `Bearer ${this.session.token}`;
+    const res = await fetch(url, { method, headers, body: form, signal });
+    if (!res.ok) {
+      let message = `HTTP ${res.status}`;
+      let code: string | undefined;
+      let params: Record<string, unknown> | undefined;
+      try {
+        const j = (await res.json()) as { error?: ApiError };
+        code = j.error?.code;
+        params = j.error?.params;
+        message = j.error?.message ?? code ?? message;
+      } catch {
+        /* ignore non-JSON error bodies */
+      }
+      throw new ImmerleApiError(res.status, message, code, params);
+    }
+    return (await res.json()) as T;
   }
 }
 
