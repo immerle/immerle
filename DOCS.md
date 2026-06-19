@@ -351,12 +351,14 @@ provider, auto-download, search timeout) is also a hot runtime setting.
 
 Shipped built-in providers (legal, no DRM): **`jamendo`** (Creative Commons
 catalog, free authorized downloads — seeded **disabled** with a
-`{"client_id":"<JAMENDO_TOKEN>","audioformat":"mp32"}` config to fill in and
-enable), **`internet-archive`** (archive.org: public-domain recordings,
-Creative Commons works and artist-sanctioned live music — no credentials, no DRM)
-and **`free-music-archive`** (freemusicarchive.org CC catalog — no credentials;
-scrapes the public site since FMA retired its API, so seeded **disabled** as it's
-more fragile than the API-backed providers).
+`{"params":{"client_id":"<JAMENDO_TOKEN>","audioformat":"mp32"}}` config to fill
+in and enable), **`internet-archive`** (archive.org: public-domain recordings,
+Creative Commons works and artist-sanctioned live music — no credentials, no DRM;
+**enabled by default**) and **`free-music-archive`** (freemusicarchive.org CC
+catalog — no credentials; scrapes the public site since FMA retired its API;
+**enabled by default and first** in the priority order). All providers use the
+same config schema (`{ "header": {…}, "params": {…} }`); built-ins read their
+tunables from `params` and their base URL is compiled in (not configurable).
 
 Other catalogs are added **at runtime** as external services rather than compiled
 in (see *Dynamic providers* below). For example, **Deezer metadata** lives in a
@@ -368,50 +370,52 @@ Deezer downloader.
 ### Dynamic providers (runtime, admin-managed)
 
 Beyond the compile-time factories, an **admin** can register **content-neutral
-HTTP providers at runtime** — no restart, no rebuild. A dynamic provider is just
-a **name**, an **HTTP endpoint** and an opaque **JSON config**; the core calls
+HTTP providers at runtime** — no restart, no rebuild. A dynamic provider is an
+**HTTP endpoint** plus a `{ header, params }` **JSON config**; the core calls
 that endpoint for search/resolve/download and neither knows nor cares what's
-behind it. This is the seam for plugging in any out-of-process catalog or
+behind it. Its **name comes from the remote's mandatory `/capabilities`**, not
+from the admin. This is the seam for plugging in any out-of-process catalog or
 downloader you operate and have the rights to use. The admin endpoints return
 **403** for non-admins.
 
 The same API also surfaces the **built-in** providers (compiled-in factories).
 You can **edit their JSON config** (e.g. set a credential), **disable** and
-**reorder** them — but **not delete** them. Their credentials live in the config
-JSON, edited via the same `POST /admin/providers`.
+**reorder** them — but **not delete** them.
 
 | Method | Endpoint | Description |
 | ------ | -------- | ----------- |
-| `GET`  | `/admin/providers` | List all providers (built-in + dynamic) with `enabled`, `active`, `builtin`, `deletable`, `sortOrder`. |
-| `POST` | `/admin/providers` | Create/update a dynamic provider, or edit a built-in's `config`/`enabled` (`name`, `endpoint`, `config`, `enabled`). |
-| `POST` | `/admin/providers/enable` | Toggle any provider (`name`, `enabled`). |
-| `POST` | `/admin/providers/reorder` | Set priority (`order` = comma-separated names, each once). |
-| `POST` | `/admin/providers/delete` | Remove a **dynamic** provider (built-ins → 400). |
+| `GET`  | `/admin/providers` | List all providers with `enabled`, `active`, `builtin`, `deletable`, `sortOrder`, and the live `version` (dynamic ones, probed in parallel). |
+| `POST` | `/admin/providers` | **Create from URL** when only `endpoint` is sent (probes `/capabilities`, takes the name, seeds a null-valued config skeleton, **created disabled**), or **update** when a `name` is sent (HTTP config is validated against `/capabilities`). |
+| `PUT`  | `/admin/providers/order` | Set priority (`{"order": [names…]}`, each once). |
+| `PUT`  | `/admin/providers/{name}/enabled` | Toggle (`{"enabled": <bool>}`); enabling re-checks the capabilities. |
+| `DELETE` | `/admin/providers/{name}` | Remove a **dynamic** provider (built-ins → 400). |
 
 ```bash
-# create/update a provider named "manual" (enabled & registered immediately)
-curl -X POST "http://host:4533/admin/providers?u=admin&p=pw&c=app" \
-  --data-urlencode name=manual \
-  --data-urlencode endpoint=https://my-service.internal \
-  --data-urlencode 'config={"headers":{"Authorization":"Bearer xxx"}}'
+# 1. create from URL only — name + config skeleton come from /capabilities (disabled)
+curl -X POST http://host:4533/api/v1/admin/providers -H 'Authorization: Bearer <admin>' \
+  -H 'Content-Type: application/json' -d '{"endpoint":"https://my-service.internal"}'
 
-curl     "http://host:4533/admin/providers?u=admin&p=pw&c=app"                       # list
-curl -X POST "http://host:4533/admin/providers/enable?u=admin&p=pw&c=app&name=jamendo&enabled=false"
-curl -X POST "http://host:4533/admin/providers/reorder?u=admin&p=pw&c=app&order=manual,jamendo,deezer"
-curl -X POST "http://host:4533/admin/providers/delete?u=admin&p=pw&c=app&name=manual"
+# 2. fill the config (validated against /capabilities on save)
+curl -X POST http://host:4533/api/v1/admin/providers -H 'Authorization: Bearer <admin>' \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"my-service","endpoint":"https://my-service.internal","config":"{\"header\":{\"Authorization\":\"Bearer xxx\"}}"}'
+
+# 3. enable it (re-checks capabilities)
+curl -X PUT http://host:4533/api/v1/admin/providers/my-service/enabled \
+  -H 'Authorization: Bearer <admin>' -H 'Content-Type: application/json' -d '{"enabled":true}'
 ```
 
 Config and order are persisted (`provider_configs`) and reloaded on boot; an
 enabled config is live in the registry, a disabled one is removed. **Order is the
 priority** — the first enabled provider is the one search/enrichment uses (there
-is no separate "default" setting). A **newly added provider is placed first**
-(highest priority) so it takes effect immediately without a manual reorder;
-editing an existing provider keeps its position. Dynamic names must be slugs and
-may not shadow a built-in. The remote service implements three endpoints (paths
-configurable): `GET {endpoint}/search?q=&limit=` → `{"results":[<track>]}`,
+is no separate "default" setting). A **newly created provider is placed first**
+(highest priority) but **disabled** until its config is filled and it's enabled;
+editing an existing provider keeps its position. The remote service must
+implement `GET {endpoint}/capabilities` (**mandatory** — `{version,name,config}`)
+plus `GET {endpoint}/search?q=&limit=` → `{"results":[<track>]}`,
 `GET {endpoint}/resolve?id=` → `<track>`, and `GET {endpoint}/download?id=` → raw
-audio bytes. See the OpenAPI spec and `internal/providers/httpprovider` for the
-exact `<track>` shape.
+audio bytes. See `docs/docs/custom-provider.md`, the OpenAPI spec and
+`internal/providers/httpprovider` for the exact shapes.
 
 A download whose **open phase** fails transiently (network error, or a non-2xx
 status — e.g. the remote momentarily failing to mint a token) is **retried**

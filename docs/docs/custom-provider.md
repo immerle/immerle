@@ -40,8 +40,8 @@ choose to serve through it.
 
 Immerle issues plain **`GET` requests with query params only** (no request
 bodies) to fixed paths under your configured `endpoint` (any trailing slash is
-stripped). Every request carries the headers you set in the provider config (see
-[Auth](#auth)).
+stripped). Every request carries the static **headers** and **query params** you
+set in the provider config (see [Config & auth](#config--auth)).
 
 - Any response status `>= 300` is an error — **except `404`**, which on an
   optional endpoint means "not supported" and is silently treated as empty.
@@ -49,7 +49,33 @@ stripped). Every request carries the headers you set in the provider config (see
 - Responses must be `application/json` (except `/download`, which returns raw
   audio bytes).
 
-### Required endpoints
+### The capabilities endpoint (mandatory)
+
+Every `http` provider **must** serve `GET /capabilities`. Immerle calls it when
+you add the provider (to derive its name and config form) and again to show its
+live version in the admin. The response:
+
+```json
+{
+  "version": 1,
+  "name": "mycatalog",
+  "config": {
+    "apikey":        { "type": "string", "where": "params", "required": true },
+    "Authorization": { "type": "string", "where": "header", "required": false }
+  }
+}
+```
+
+- `version` — the protocol version you implement. Must be **`1`** (the version
+  Immerle currently speaks); otherwise the provider is rejected.
+- `name` — the slug Immerle stores the provider under (`^[a-z0-9][a-z0-9_-]*$`).
+  **The admin doesn't type a name — this is it.**
+- `config` — the config fields you accept, keyed by field name. Each declares its
+  `type` (free-form, e.g. `"string"`), `where` the value travels (`"header"` or
+  `"params"`), and whether it's `required`. Immerle generates the admin's config
+  form from this and, on save, rejects a config that's missing any required field.
+
+### Other required endpoints
 
 These three make a usable provider.
 
@@ -89,18 +115,37 @@ These three make a usable provider.
 Only `providerTrackId` is strictly required; rows without it are dropped. Image
 URLs must be absolute and publicly reachable.
 
-### Auth
+### Config & auth
 
-There is no separate API-key mechanism for `http` providers — put credentials in
-**headers**, set in the provider's `config` blob. They are sent verbatim on
-every request:
+The provider `config` is a single JSON object with this shape (every key
+optional):
 
 ```json
-{ "headers": { "Authorization": "Bearer your-secret" } }
+{
+  "header": { "Authorization": "Bearer your-secret" },
+  "params": { "apikey": "xyz" },
+  "quality": "lossless",
+  "timeoutSeconds": 60,
+  "downloadRetries": 3
+}
 ```
 
-Other config keys (all optional): `quality` (free-form label), `timeoutSeconds`
-(per-call, default 60), `downloadRetries` (default 3).
+- **`header`** — static HTTP headers added to every request (e.g. auth).
+- **`params`** — static query params appended to every request (e.g. an API
+  key as `?apikey=…`). They never override the protocol params (`q`/`limit`/`id`).
+- `quality` (free-form label), `timeoutSeconds` (per-call, default 60),
+  `downloadRetries` (default 3).
+
+Put credentials in `header` or `params` and declare them in your
+[`/capabilities`](#the-capabilities-endpoint-mandatory) response so the admin
+form prompts for them. The same `header`/`params` are sent on the
+`/capabilities` request too, so authenticated discovery works.
+
+:::note Built-in providers use the same shape
+Built-ins (Jamendo, Internet Archive…) read their tunables from `params` too —
+e.g. Jamendo's config is `{"params":{"client_id":"<token>","audioformat":"mp32"}}`.
+Their base URL is compiled in and is **not** configurable.
+:::
 
 ### Optional endpoints (richer browsing)
 
@@ -132,6 +177,18 @@ import express from 'express';
 const app = express();
 
 const AUTH = 'Bearer your-secret';
+
+// /capabilities is public (no auth) so Immerle can discover the provider.
+app.get('/capabilities', (_req, res) => {
+  res.json({
+    version: 1,
+    name: 'mycatalog',
+    config: {
+      Authorization: { type: 'string', where: 'header', required: true },
+    },
+  });
+});
+
 app.use((req, res, next) =>
   req.get('authorization') === AUTH ? next() : res.sendStatus(401));
 
@@ -173,31 +230,55 @@ app.listen(8080);
 ## Registering it
 
 Providers are admin-managed at runtime (see [Configuration](./configuration.md)).
-Register yours via the admin API:
+Adding one is a three-step flow — you never type a name or config by hand.
+
+**1. Create from the URL.** Send just the endpoint; no name, no config. The
+server calls your `/capabilities`, takes the declared `name`, seeds a config
+skeleton with every declared field set to `null`, and creates the provider
+**disabled**:
 
 ```bash
 curl -X POST http://localhost:4533/api/v1/admin/providers \
   -H 'Authorization: Bearer <admin-token>' \
   -H 'Content-Type: application/json' \
+  -d '{ "endpoint": "https://my-provider.example.com" }'
+```
+
+If `/capabilities` is unreachable, advertises the wrong `version`, or returns a
+non-slug `name`, the create is rejected.
+
+**2. Fill the config.** Update the provider with the values for the declared
+fields (`config` is a **JSON string**). On save, the config is validated against
+`/capabilities` — a missing required field is rejected:
+
+```bash
+curl -X POST http://localhost:4533/api/v1/admin/providers \
+  -H 'Authorization: Bearer <admin-token>' -H 'Content-Type: application/json' \
   -d '{
     "name": "mycatalog",
     "kind": "http",
     "endpoint": "https://my-provider.example.com",
-    "config": "{\"headers\":{\"Authorization\":\"Bearer your-secret\"}}",
-    "enabled": true
+    "config": "{\"header\":{\"Authorization\":\"Bearer your-secret\"}}"
   }'
 ```
 
-- `name` must match `^[a-z0-9][a-z0-9_-]{0,62}$` and be unique.
-- `config` is a **JSON string** (note the escaped quotes).
-- The provider is built once at registration to reject a bad endpoint/config
-  before it's saved, then placed at the front of the priority order.
+**3. Enable it.** Enabling re-runs the capability check, so a provider with an
+incomplete config can't go live:
+
+```bash
+curl -X PUT http://localhost:4533/api/v1/admin/providers/mycatalog/enabled \
+  -H 'Authorization: Bearer <admin-token>' -H 'Content-Type: application/json' \
+  -d '{ "enabled": true }'
+```
+
+In the admin UI this is: **Add** (a dialog asking only for the URL) → the gear
+(a settings panel to fill the config) → the card's switch to enable.
 
 Other admin endpoints:
 
 | Method & path | Purpose |
 | ------------- | ------- |
-| `GET /admin/providers` | List providers (with live `active`/`builtin`/`deletable`) |
+| `GET /admin/providers` | List providers (with live `active`/`builtin`/`deletable`/`version`) |
 | `PUT /admin/providers/order` | Reorder: `{"order": ["name1","name2",…]}` (lower = higher priority) |
 | `PUT /admin/providers/{name}/enabled` | `{"enabled": <bool>}` |
 | `DELETE /admin/providers/{name}` | Remove (http providers only; disable built-ins instead) |
