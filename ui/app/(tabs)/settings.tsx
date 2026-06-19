@@ -213,6 +213,9 @@ export default function Settings() {
       {/* Account & access */}
       <Card className="gap-2">
         <CardTitle icon="key" color="#14b8a6" title={t('settings.access')} />
+        {client?.has('wrapped') ? (
+          <NavRow icon="sparkles-outline" title={t('wrapped.entryTitle')} subtitle={t('wrapped.entrySubtitle')} onPress={() => router.push('/wrapped' as never)} />
+        ) : null}
         {client?.has('playlistImport') ? (
           <NavRow icon="cloud-download-outline" title={t('settings.importTitle')} subtitle={t('settings.importSubtitle')} onPress={() => router.push('/import' as never)} />
         ) : null}

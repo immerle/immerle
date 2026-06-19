@@ -38,6 +38,8 @@ export interface Capabilities {
     adminExtended: boolean;
     /** Per-track / per-album offline download endpoints. */
     offlineDownloads: boolean;
+    /** Year-in-review ("Wrapped") stats endpoint (`/wrapped`). */
+    wrapped: boolean;
   };
   /** Transcode formats the server can produce, for the quality picker. */
   transcoding?: { format: string; maxBitRate: number }[];
@@ -171,6 +173,31 @@ export interface ServerSettings {
   scrobblingEnabled: boolean;
   /** Maximum bitrate streamed without explicit override. */
   maxStreamBitRate?: number;
+}
+
+// --- Wrapped (year-in-review) ----------------------------------------------
+
+export interface WrappedTrack {
+  id: string;
+  title: string;
+  artist: string;
+  plays: number;
+}
+
+export interface WrappedCount {
+  name: string;
+  plays: number;
+}
+
+export interface Wrapped {
+  year: number;
+  totalPlays: number;
+  totalSeconds: number;
+  topTracks: WrappedTrack[] | null;
+  topArtists: WrappedCount[] | null;
+  topGenres: WrappedCount[] | null;
+  /** Plays per calendar month, index 0 = January .. 11 = December. */
+  byMonth: number[];
 }
 
 /** Thrown when a Immerle REST endpoint returns a non-2xx. */

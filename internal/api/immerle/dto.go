@@ -131,6 +131,31 @@ type CleanupRunDTO struct {
 	Removed int `json:"removed" example:"3"`
 }
 
+// WrappedTrackDTO is one entry in the Wrapped top-tracks chart.
+type WrappedTrackDTO struct {
+	ID     string `json:"id"`
+	Title  string `json:"title" example:"One More Time"`
+	Artist string `json:"artist" example:"Daft Punk"`
+	Plays  int    `json:"plays" example:"42"`
+}
+
+// WrappedCountDTO is a labelled play count (an artist or a genre).
+type WrappedCountDTO struct {
+	Name  string `json:"name" example:"Daft Punk"`
+	Plays int    `json:"plays" example:"120"`
+}
+
+// WrappedDTO is a user's year-in-review.
+type WrappedDTO struct {
+	Year         int               `json:"year" example:"2025"`
+	TotalPlays   int               `json:"totalPlays" example:"1234"`
+	TotalSeconds int64             `json:"totalSeconds" example:"987654"`
+	TopTracks    []WrappedTrackDTO `json:"topTracks"`
+	TopArtists   []WrappedCountDTO `json:"topArtists"`
+	TopGenres    []WrappedCountDTO `json:"topGenres"`
+	ByMonth      []int             `json:"byMonth"`
+}
+
 // CapabilityDTO describes one supported capability.
 type CapabilityDTO struct {
 	Version int `json:"version" example:"1"`

@@ -331,6 +331,7 @@ func New(cfg config.Config) (*App, error) {
 		Cleanup:      evictor,
 		Providers:    providerMgr,
 		Settings:     settingsSvc,
+		Wrapped:      store.Wrapped,
 		Catalog:      store.Catalog,
 		OnDemand:     onDemand,
 		LibraryStats: libraryStats,

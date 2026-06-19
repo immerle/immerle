@@ -1000,6 +1000,84 @@
                 },
                 "type": "object"
             },
+            "immerle.WrappedCountDTO": {
+                "properties": {
+                    "name": {
+                        "example": "Daft Punk",
+                        "type": "string"
+                    },
+                    "plays": {
+                        "example": 120,
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.WrappedDTO": {
+                "properties": {
+                    "byMonth": {
+                        "items": {
+                            "type": "integer"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "topArtists": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.WrappedCountDTO"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "topGenres": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.WrappedCountDTO"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "topTracks": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.WrappedTrackDTO"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "totalPlays": {
+                        "example": 1234,
+                        "type": "integer"
+                    },
+                    "totalSeconds": {
+                        "example": 987654,
+                        "type": "integer"
+                    },
+                    "year": {
+                        "example": 2025,
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.WrappedTrackDTO": {
+                "properties": {
+                    "artist": {
+                        "example": "Daft Punk",
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "plays": {
+                        "example": 42,
+                        "type": "integer"
+                    },
+                    "title": {
+                        "example": "One More Time",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "immerle.addCollaboratorBody": {
                 "properties": {
                     "username": {
@@ -1150,6 +1228,14 @@
                     },
                     "source": {
                         "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.toggleRequest": {
+                "properties": {
+                    "enabled": {
+                        "type": "boolean"
                     }
                 },
                 "type": "object"
@@ -2552,6 +2638,90 @@
                     }
                 ],
                 "summary": "Upload track cover",
+                "tags": [
+                    "admin"
+                ]
+            }
+        },
+        "/admin/wrapped": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": {
+                                        "type": "boolean"
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Get the Wrapped feature state",
+                "tags": [
+                    "admin"
+                ]
+            },
+            "put": {
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/immerle.toggleRequest",
+                                        "summary": "body",
+                                        "description": "Enable or disable"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Enable or disable",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": {
+                                        "type": "boolean"
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Toggle the Wrapped feature",
                 "tags": [
                     "admin"
                 ]
@@ -4659,6 +4829,62 @@
                 "summary": "User profile",
                 "tags": [
                     "users"
+                ]
+            }
+        },
+        "/wrapped": {
+            "get": {
+                "description": "Returns the caller's listening stats for a calendar year: totals, top tracks/artists/genres and a per-month histogram. 404 when the feature is disabled.",
+                "parameters": [
+                    {
+                        "description": "Calendar year (default: current)",
+                        "in": "query",
+                        "name": "year",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.WrappedDTO"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Year-in-review (\"Wrapped\")",
+                "tags": [
+                    "wrapped"
                 ]
             }
         }

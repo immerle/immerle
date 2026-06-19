@@ -1,4 +1,20 @@
 {
+  "wrapped": {
+    "entryTitle": "Your Wrapped",
+    "entrySubtitle": "Your year in music",
+    "title": "Wrapped",
+    "loadError": "Could not load your Wrapped.",
+    "emptyTitle": "Nothing to wrap yet",
+    "emptySubtitle": "Play some music this year and check back.",
+    "plays": "Plays",
+    "hours": "Hours",
+    "byMonth": "By month",
+    "topTracks": "Top tracks",
+    "topArtists": "Top artists",
+    "topGenres": "Top genres",
+    "playsShort": "{{count}} plays",
+    "month": { "jan": "J", "feb": "F", "mar": "M", "apr": "A", "may": "M", "jun": "J", "jul": "J", "aug": "A", "sep": "S", "oct": "O", "nov": "N", "dec": "D" }
+  },
   "settings": {
     "title": "Settings",
     "subtitle": "Account & preferences",
@@ -413,6 +429,10 @@
       "logsDescription": "A daily sweep deletes persisted logs (provider errors and warnings) older than the retention window.",
       "logRetention": "Retention (days)",
       "logRetentionHelp": "0 keeps logs forever.",
+      "featuresTitle": "Features",
+      "featuresSubtitle": "Toggle optional features",
+      "featuresDescription": "Enable or disable optional Immerle features for all users.",
+      "wrappedEnabled": "Wrapped (year-in-review)",
       "save": "Save"
     },
     "users": {

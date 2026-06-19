@@ -1,4 +1,20 @@
 {
+  "wrapped": {
+    "entryTitle": "Votre Wrapped",
+    "entrySubtitle": "Votre année en musique",
+    "title": "Wrapped",
+    "loadError": "Impossible de charger votre Wrapped.",
+    "emptyTitle": "Rien à résumer pour l'instant",
+    "emptySubtitle": "Écoutez de la musique cette année et revenez ici.",
+    "plays": "Écoutes",
+    "hours": "Heures",
+    "byMonth": "Par mois",
+    "topTracks": "Top titres",
+    "topArtists": "Top artistes",
+    "topGenres": "Top genres",
+    "playsShort": "{{count}} écoutes",
+    "month": { "jan": "J", "feb": "F", "mar": "M", "apr": "A", "may": "M", "jun": "J", "jul": "J", "aug": "A", "sep": "S", "oct": "O", "nov": "N", "dec": "D" }
+  },
   "settings": {
     "title": "Réglages",
     "subtitle": "Compte & préférences",
@@ -413,6 +429,10 @@
       "logsDescription": "Un balayage quotidien supprime les journaux persistés (erreurs et avertissements des providers) plus anciens que la fenêtre de rétention.",
       "logRetention": "Rétention (jours)",
       "logRetentionHelp": "0 conserve les journaux indéfiniment.",
+      "featuresTitle": "Fonctionnalités",
+      "featuresSubtitle": "Activer/désactiver les fonctionnalités optionnelles",
+      "featuresDescription": "Active ou désactive les fonctionnalités optionnelles d'Immerle pour tous les utilisateurs.",
+      "wrappedEnabled": "Wrapped (rétrospective annuelle)",
       "save": "Enregistrer"
     },
     "users": {
