@@ -85,6 +85,16 @@ duration probing and on-demand tag embedding).
 Then point any Subsonic client at `http://<host>:4533` with the credentials you
 just created — and enjoy. 🎈
 
+### 💻 Desktop app
+
+Grab the installer for your OS from the
+[latest release](../../releases/latest) (`.dmg`, `.exe`, `.AppImage`/`.deb`).
+
+> **macOS:** the build is ad-hoc signed but not notarized, so the first launch
+> is blocked. **Right-click the app → Open** (then confirm) — Gatekeeper
+> remembers your choice from then on. If macOS still says it's *“damaged”*, run
+> `xattr -cr /Applications/Immerle.app` to clear the download quarantine.
+
 ## 📚 Going further
 
 The friendly bit ends here; the full reference lives in **[DOCS.md](DOCS.md)**:

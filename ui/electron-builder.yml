@@ -26,6 +26,10 @@ asar: true
 mac:
   category: public.app-category.music
   icon: assets/icon.png
+  # ponytail: ad-hoc sign (no paid Apple cert). Stops the "is damaged" Gatekeeper
+  # error on Apple Silicon; users still right-click > Open once. Full notarization
+  # needs an Apple Developer account.
+  identity: null
   target:
     - target: dmg
       arch: [x64, arm64]
