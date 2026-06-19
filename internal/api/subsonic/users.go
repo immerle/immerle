@@ -28,19 +28,9 @@ func toUser(u models.User) User {
 }
 
 func (h *Handler) handleGetUser(w http.ResponseWriter, r *http.Request) {
-	caller := userFrom(r.Context())
-	username := param(r, "username")
-	if username == "" {
-		username = caller.Username
-	}
-	// Non-admins may only query themselves.
-	if username != caller.Username && !caller.IsAdmin {
-		writeError(w, r, ErrUnauthorizedAction, "Not authorized")
-		return
-	}
-	u, err := h.Users.GetByUsername(r.Context(), username)
+	u, err := h.userSvc.GetUser(r.Context(), userFrom(r.Context()), param(r, "username"))
 	if err != nil {
-		writeError(w, r, ErrDataNotFound, "User not found")
+		h.writeServiceError(w, r, err, "User not found")
 		return
 	}
 	resp := newResponse()
@@ -50,12 +40,9 @@ func (h *Handler) handleGetUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleGetUsers(w http.ResponseWriter, r *http.Request) {
-	if !requireAdmin(w, r) {
-		return
-	}
-	users, err := h.Users.List(r.Context())
+	users, err := h.userSvc.ListUsers(r.Context(), userFrom(r.Context()))
 	if err != nil {
-		h.failInternal(w, r, err)
+		h.writeServiceError(w, r, err, "User not found")
 		return
 	}
 	resp := newResponse()
@@ -68,93 +55,65 @@ func (h *Handler) handleGetUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleCreateUser(w http.ResponseWriter, r *http.Request) {
-	if !requireAdmin(w, r) {
-		return
-	}
 	username := param(r, "username")
 	password := param(r, "password")
 	if username == "" || password == "" {
 		writeError(w, r, ErrMissingParameter, "username and password are required")
 		return
 	}
-	admin := boolParam(r, "adminRole", false)
-	email := param(r, "email")
-	displayName := param(r, "displayName")
-	if _, err := h.Auth.CreateUser(r.Context(), username, decodeEncParam(password), email, displayName, admin); err != nil {
-		h.failInternal(w, r, err)
+	err := h.userSvc.CreateUser(r.Context(), userFrom(r.Context()), username, decodeEncParam(password),
+		param(r, "email"), param(r, "displayName"), boolParam(r, "adminRole", false))
+	if err != nil {
+		h.writeServiceError(w, r, err, "User not found")
 		return
 	}
 	writeOK(w, r)
 }
 
 func (h *Handler) handleUpdateUser(w http.ResponseWriter, r *http.Request) {
-	if !requireAdmin(w, r) {
-		return
-	}
-	username := param(r, "username")
-	u, err := h.Users.GetByUsername(r.Context(), username)
-	if err != nil {
-		writeError(w, r, ErrDataNotFound, "User not found")
-		return
-	}
+	upd := core.UserUpdate{}
 	if _, ok := r.Form["email"]; ok {
-		u.Email = param(r, "email")
+		v := param(r, "email")
+		upd.Email = &v
 	}
 	if _, ok := r.Form["displayName"]; ok {
-		u.DisplayName = core.NormalizeDisplayName(param(r, "displayName"))
+		v := param(r, "displayName")
+		upd.DisplayName = &v
 	}
 	if _, ok := r.Form["adminRole"]; ok {
-		u.IsAdmin = boolParam(r, "adminRole", u.IsAdmin)
+		v := param(r, "adminRole")
+		upd.AdminRaw = &v
 	}
 	if _, ok := r.Form["scrobblingEnabled"]; ok {
-		u.ScrobbleEnabled = boolParam(r, "scrobblingEnabled", u.ScrobbleEnabled)
-	}
-	if err := h.Users.Update(r.Context(), u); err != nil {
-		h.failInternal(w, r, err)
-		return
+		v := param(r, "scrobblingEnabled")
+		upd.ScrobbleRaw = &v
 	}
 	if pw := param(r, "password"); pw != "" {
-		_ = h.Auth.SetPassword(r.Context(), u.ID, decodeEncParam(pw))
+		upd.Password = decodeEncParam(pw)
+	}
+	if err := h.userSvc.UpdateUser(r.Context(), userFrom(r.Context()), param(r, "username"), upd); err != nil {
+		h.writeServiceError(w, r, err, "User not found")
+		return
 	}
 	writeOK(w, r)
 }
 
 func (h *Handler) handleDeleteUser(w http.ResponseWriter, r *http.Request) {
-	if !requireAdmin(w, r) {
-		return
-	}
-	username := param(r, "username")
-	u, err := h.Users.GetByUsername(r.Context(), username)
-	if err != nil {
-		writeError(w, r, ErrDataNotFound, "User not found")
-		return
-	}
-	if err := h.Users.Delete(r.Context(), u.ID); err != nil {
-		h.failInternal(w, r, err)
+	if err := h.userSvc.DeleteUser(r.Context(), userFrom(r.Context()), param(r, "username")); err != nil {
+		h.writeServiceError(w, r, err, "User not found")
 		return
 	}
 	writeOK(w, r)
 }
 
 func (h *Handler) handleChangePassword(w http.ResponseWriter, r *http.Request) {
-	caller := userFrom(r.Context())
-	username := param(r, "username")
 	password := param(r, "password")
 	if password == "" {
 		writeError(w, r, ErrMissingParameter, "password is required")
 		return
 	}
-	if username != caller.Username && !caller.IsAdmin {
-		writeError(w, r, ErrUnauthorizedAction, "Not authorized")
-		return
-	}
-	u, err := h.Users.GetByUsername(r.Context(), username)
-	if err != nil {
-		writeError(w, r, ErrDataNotFound, "User not found")
-		return
-	}
-	if err := h.Auth.SetPassword(r.Context(), u.ID, decodeEncParam(password)); err != nil {
-		h.failInternal(w, r, err)
+	if err := h.userSvc.ChangePassword(r.Context(), userFrom(r.Context()), param(r, "username"), decodeEncParam(password)); err != nil {
+		h.writeServiceError(w, r, err, "User not found")
 		return
 	}
 	writeOK(w, r)

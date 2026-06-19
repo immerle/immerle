@@ -38,6 +38,61 @@
     "op": { "is": "is", "isNot": "is not", "contains": "contains", "gte": "at least", "lte": "at most" },
     "sort": { "none": "Default", "random": "Random", "playCount": "Play count", "recentlyAdded": "Recently added", "recentlyPlayed": "Recently played", "year": "Year", "title": "Title", "bpm": "BPM" }
   },
+  "radio": {
+    "title": "Radio",
+    "tabSubtitle": "Live internet stations",
+    "manage": "Manage",
+    "manageTitle": "Radio stations",
+    "manageSubtitle": "Your custom stations (built-in ones are managed by the server)",
+    "noCustom": "No custom stations yet. Built-in stations are managed by the server.",
+    "unavailableTitle": "Radio unavailable",
+    "unavailableSubtitle": "This server has it disabled.",
+    "loadError": "Couldn't load radio stations.",
+    "emptyTitle": "No stations",
+    "emptySubtitle": "Ask an admin to add some.",
+    "favorites": "Favorites",
+    "stationCount": "{{count}} stations",
+    "noFavorites": "No favorites yet",
+    "noFavoritesSubtitle": "Tap the heart on a station to add it here.",
+    "like": "Add to favorites",
+    "unlike": "Remove from favorites",
+    "country": {
+      "fr": "France",
+      "es": "Spain",
+      "gb": "United Kingdom",
+      "us": "United States",
+      "ch": "Switzerland",
+      "int": "International"
+    },
+    "add": "Add station",
+    "addTitle": "New station",
+    "editTitle": "Edit station",
+    "builtin": "Built-in",
+    "edit": "Edit",
+    "delete": "Delete",
+    "name": "Name",
+    "streamUrl": "Stream URL",
+    "homepageUrl": "Homepage (optional)",
+    "logoUrl": "Logo URL (optional)",
+    "logoUrlHelp": "Image link; cached and served by the server. Leave empty to remove.",
+    "save": "Save"
+  },
+  "wrapped": {
+    "entryTitle": "Your Wrapped",
+    "entrySubtitle": "Your year in music",
+    "title": "Wrapped",
+    "loadError": "Could not load your Wrapped.",
+    "emptyTitle": "Nothing to wrap yet",
+    "emptySubtitle": "Play some music this year and check back.",
+    "plays": "Plays",
+    "hours": "Hours",
+    "byMonth": "By month",
+    "topTracks": "Top tracks",
+    "topArtists": "Top artists",
+    "topGenres": "Top genres",
+    "playsShort": "{{count}} plays",
+    "month": { "jan": "J", "feb": "F", "mar": "M", "apr": "A", "may": "M", "jun": "J", "jul": "J", "aug": "A", "sep": "S", "oct": "O", "nov": "N", "dec": "D" }
+  },
   "settings": {
     "title": "Settings",
     "subtitle": "Account & preferences",
@@ -250,6 +305,10 @@
           "title": "Providers",
           "subtitle": "Dynamic content sources"
         },
+        "radio": {
+          "title": "Radio",
+          "subtitle": "Internet stations (built-in & custom)"
+        },
         "settings": {
           "title": "Settings",
           "subtitle": "Runtime, transcoding, federation, cleanup"
@@ -456,6 +515,8 @@
       "featuresSubtitle": "Toggle optional features",
       "featuresDescription": "Enable or disable optional Immerle features for all users.",
       "smartPlaylistsEnabled": "Smart playlists",
+      "radioEnabled": "Internet radio",
+      "wrappedEnabled": "Wrapped (year-in-review)",
       "save": "Save"
     },
     "users": {

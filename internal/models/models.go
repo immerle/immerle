@@ -84,11 +84,25 @@ type RuntimeSettings struct {
 	Import         ImportRuntime         `json:"import"`
 	Logs           LogsRuntime           `json:"logs"`
 	SmartPlaylists SmartPlaylistsRuntime `json:"smartPlaylists"`
+	Radio          RadioRuntime          `json:"radio"`
+	Wrapped        WrappedRuntime        `json:"wrapped"`
 }
 
 // SmartPlaylistsRuntime toggles rule-based "smart" playlists (hot-reloadable).
 // When disabled, the smart-playlist endpoints 404 and clients hide them.
 type SmartPlaylistsRuntime struct {
+	Enabled bool `json:"enabled"`
+}
+
+// RadioRuntime toggles internet radio stations (hot-reloadable). When disabled,
+// the radio endpoints 404 / return empty and clients hide the section.
+type RadioRuntime struct {
+	Enabled bool `json:"enabled"`
+}
+
+// WrappedRuntime toggles the "Wrapped" year-in-review feature (hot-reloadable).
+// When disabled, the wrapped endpoint 404s and clients hide the entry point.
+type WrappedRuntime struct {
 	Enabled bool `json:"enabled"`
 }
 
@@ -200,6 +214,8 @@ func DefaultRuntimeSettings() RuntimeSettings {
 		Import:         ImportRuntime{},
 		Logs:           LogsRuntime{RetentionDays: 30},
 		SmartPlaylists: SmartPlaylistsRuntime{Enabled: true},
+		Radio:          RadioRuntime{Enabled: true},
+		Wrapped:        WrappedRuntime{Enabled: true},
 	}
 }
 
@@ -237,6 +253,57 @@ type SmartCondition struct {
 	Value string `json:"value"`
 }
 
+// RadioStation is an internet radio station: a name, an audio stream URL and an
+// optional homepage. Built-in stations ship with the server and can be edited
+// or disabled but not deleted; custom ones are admin-added.
+type RadioStation struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	StreamURL   string `json:"streamUrl"`
+	HomepageURL string `json:"homepageUrl"`
+	// Country is the lower-case group code the station belongs to (e.g. "fr",
+	// "gb", "int"). Used to organize the browse UI by country.
+	Country string `json:"country"`
+	// CoverArt is the station logo: an embedded reference ("embed:fr/covers/x.png")
+	// for built-ins, or a source URL for custom stations (fetched + cached). It is
+	// served locally via the station cover endpoint. Empty means "no logo".
+	CoverArt  string    `json:"coverArt"`
+	Builtin   bool      `json:"builtin"`
+	SortOrder int       `json:"sortOrder"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+	// Liked is a per-request flag (the caller liked this station). Not stored on
+	// the station row — it comes from the user's annotations.
+	Liked bool `json:"liked"`
+}
+
+// Wrapped is a user's year-in-review: totals plus top tracks/artists/genres and
+// a per-month play histogram. Computed on demand from the scrobble history.
+type Wrapped struct {
+	Year         int            `json:"year"`
+	TotalPlays   int            `json:"totalPlays"`
+	TotalSeconds int64          `json:"totalSeconds"`
+	TopTracks    []WrappedTrack `json:"topTracks"`
+	TopArtists   []WrappedCount `json:"topArtists"`
+	TopGenres    []WrappedCount `json:"topGenres"`
+	// ByMonth is plays per calendar month, index 0 = January .. 11 = December.
+	ByMonth [12]int `json:"byMonth"`
+}
+
+// WrappedTrack is one entry in the top-tracks chart.
+type WrappedTrack struct {
+	ID     string `json:"id"`
+	Title  string `json:"title"`
+	Artist string `json:"artist"`
+	Plays  int    `json:"plays"`
+}
+
+// WrappedCount is a labelled play count (an artist or a genre).
+type WrappedCount struct {
+	Name  string `json:"name"`
+	Plays int    `json:"plays"`
+}
+
 // LibraryStats is a snapshot of the library analytics: catalog cardinalities
 // plus the aggregate on-disk size (bytes) and duration (seconds). It is cached
 // and recomputed at each scan rather than on every request.
@@ -255,15 +322,6 @@ type Library struct {
 	Name      string    `json:"name"`
 	Path      string    `json:"path"`
 	CreatedAt time.Time `json:"createdAt"`
-}
-
-// Folder is a directory within a library, used to model the music-folder tree.
-type Folder struct {
-	ID        string  `json:"id"`
-	LibraryID string  `json:"libraryId"`
-	ParentID  *string `json:"parentId,omitempty"`
-	Path      string  `json:"path"`
-	Name      string  `json:"name"`
 }
 
 // Artist is a performer or album artist.

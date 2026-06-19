@@ -33,9 +33,13 @@ type Deps struct {
 	Setup      *core.SetupService
 	Federation FederationStatusProvider
 	// Catalog and OnDemand enrich activity feed items with titles/cover/etc.
-	// (OnDemand maps a remote favorite to its downloaded local track).
-	Catalog  *persistence.CatalogRepo
-	OnDemand *core.CatalogService
+	// (OnDemand maps a remote favorite to its downloaded local track). Catalog,
+	// Annotations and OnDemand also back the catalog browse resources via the
+	// shared LibraryService.
+	Catalog     *persistence.CatalogRepo
+	Annotations *persistence.AnnotationRepo
+	Genres      *persistence.GenreRepo
+	OnDemand    *core.CatalogService
 	// LibraryStats serves the cached library analytics (counts + total size).
 	LibraryStats *core.LibraryStatsService
 	// Imports runs playlist imports from external sources (e.g. Spotify).
@@ -56,7 +60,11 @@ type Deps struct {
 	Settings *core.SettingsService
 	// SmartPlaylists persists and evaluates rule-based playlists.
 	SmartPlaylists *persistence.SmartPlaylistRepo
-	Logger         *slog.Logger
+	// Radio persists internet radio stations (built-in + custom).
+	Radio *persistence.RadioRepo
+	// Wrapped computes the per-user year-in-review from the scrobble history.
+	Wrapped *persistence.WrappedRepo
+	Logger  *slog.Logger
 }
 
 // deviceTokenTTL returns the device-session JWT lifetime from the runtime
@@ -82,10 +90,18 @@ type CleanupController interface {
 // Handler implements the immerle native API.
 type Handler struct {
 	Deps
+	// library backs the catalog browse resources with the same application
+	// service the Subsonic handler uses.
+	library *core.LibraryService
 }
 
 // NewHandler builds a immerle Handler.
-func NewHandler(d Deps) *Handler { return &Handler{Deps: d} }
+func NewHandler(d Deps) *Handler {
+	return &Handler{
+		Deps:    d,
+		library: core.NewLibraryService(d.Catalog, d.Annotations, d.OnDemand),
+	}
+}
 
 type ctxKey int
 
@@ -105,6 +121,8 @@ func (h *Handler) Register(mux chi.Router) {
 		r.Get("/setup", h.handleSetupStatus)
 		r.Post("/setup", h.handleSetupInit)
 		r.Post("/auth/sessions", h.handleLogin)
+		// Station logos are cached public images (loadable as a plain <img>).
+		r.Get("/radio/stations/{id}/cover", h.handleRadioCover)
 
 		// Everything below requires a Bearer token.
 		r.Group(func(r chi.Router) {
@@ -123,6 +141,28 @@ func (h *Handler) Register(mux chi.Router) {
 
 			r.Get("/activity", h.handleActivity)
 			r.Get("/library/stats", h.handleLibraryStats)
+
+			// Internet radio stations (list + like for everyone; CRUD is admin).
+			r.Get("/radio", h.handleRadioList)
+			r.Put("/radio/stations/{id}/like", h.handleRadioLike)
+			r.Delete("/radio/stations/{id}/like", h.handleRadioUnlike)
+			r.Get("/admin/radio", h.handleRadioAdmin)
+			r.Put("/admin/radio", h.handleRadioToggle)
+			r.Post("/admin/radio/stations", h.handleRadioCreate)
+			r.Put("/admin/radio/stations/{id}", h.handleRadioUpdate)
+			r.Delete("/admin/radio/stations/{id}", h.handleRadioDelete)
+
+			// Catalog browse over the shared library service.
+			r.Get("/artists", h.handleListArtists)
+			r.Get("/artists/{id}", h.handleGetArtist)
+			r.Get("/albums", h.handleListAlbums)
+			r.Get("/albums/{id}", h.handleGetAlbum)
+			r.Get("/songs/{id}", h.handleGetSong)
+			r.Get("/genres", h.handleGetGenres)
+			r.Get("/search", h.handleSearch)
+
+			// Year-in-review ("Wrapped").
+			r.Get("/wrapped", h.handleWrapped)
 
 			// "Local" library: tracks the user uploaded from the web UI.
 			r.Get("/library/local", h.handleLocalSongs)
@@ -199,6 +239,10 @@ func (h *Handler) Register(mux chi.Router) {
 			// Admin: smart-playlists feature toggle.
 			r.Get("/admin/smart-playlists", h.handleSmartPlaylistsAdmin)
 			r.Put("/admin/smart-playlists", h.handleSmartPlaylistsToggle)
+
+			// Admin: Wrapped feature toggle.
+			r.Get("/admin/wrapped", h.handleWrappedAdmin)
+			r.Put("/admin/wrapped", h.handleWrappedUpdate)
 		})
 	})
 }

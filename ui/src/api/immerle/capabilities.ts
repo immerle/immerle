@@ -26,6 +26,8 @@ export const SUBSONIC_ONLY_CAPABILITIES: Capabilities = {
     adminExtended: false,
     offlineDownloads: false,
     smartPlaylists: false,
+    internetRadio: false,
+    wrapped: false,
   },
 };
 
@@ -78,6 +80,8 @@ export function adaptCapabilities(payload: CapabilitiesResponse): Capabilities {
       adminExtended: has('admin') || has('adminExtended'),
       offlineDownloads: has('offlineDownloads'),
       smartPlaylists: has('smartPlaylists'),
+      internetRadio: has('internetRadio'),
+      wrapped: has('wrapped'),
     },
   };
 }

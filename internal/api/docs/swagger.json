@@ -1072,10 +1072,130 @@
                 },
                 "type": "object"
             },
+            "immerle.WrappedCountDTO": {
+                "properties": {
+                    "name": {
+                        "example": "Daft Punk",
+                        "type": "string"
+                    },
+                    "plays": {
+                        "example": 120,
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.WrappedDTO": {
+                "properties": {
+                    "byMonth": {
+                        "items": {
+                            "type": "integer"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "topArtists": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.WrappedCountDTO"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "topGenres": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.WrappedCountDTO"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "topTracks": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.WrappedTrackDTO"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "totalPlays": {
+                        "example": 1234,
+                        "type": "integer"
+                    },
+                    "totalSeconds": {
+                        "example": 987654,
+                        "type": "integer"
+                    },
+                    "year": {
+                        "example": 2025,
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.WrappedTrackDTO": {
+                "properties": {
+                    "artist": {
+                        "example": "Daft Punk",
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "plays": {
+                        "example": 42,
+                        "type": "integer"
+                    },
+                    "title": {
+                        "example": "One More Time",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "immerle.addCollaboratorBody": {
                 "properties": {
                     "username": {
                         "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.albumView": {
+                "properties": {
+                    "artist": {
+                        "type": "string"
+                    },
+                    "artistId": {
+                        "type": "string"
+                    },
+                    "coverArt": {
+                        "type": "string"
+                    },
+                    "duration": {
+                        "type": "integer"
+                    },
+                    "genre": {
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "songCount": {
+                        "type": "integer"
+                    },
+                    "starred": {
+                        "type": "string"
+                    },
+                    "tracks": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.songView"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "year": {
+                        "type": "integer"
                     }
                 },
                 "type": "object"
@@ -1099,6 +1219,33 @@
                         "additionalProperties": {},
                         "description": "i18n interpolation values; always present ({} when none)",
                         "type": "object"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.artistView": {
+                "properties": {
+                    "albumCount": {
+                        "type": "integer"
+                    },
+                    "albums": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.albumView"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "coverArt": {
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "starred": {
+                        "type": "string"
                     }
                 },
                 "type": "object"
@@ -1165,6 +1312,20 @@
                 },
                 "type": "object"
             },
+            "immerle.genreView": {
+                "properties": {
+                    "albumCount": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "songCount": {
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
             "immerle.loginRequest": {
                 "properties": {
                     "device": {
@@ -1183,6 +1344,32 @@
                     },
                     "username": {
                         "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.radioRequest": {
+                "properties": {
+                    "coverUrl": {
+                        "description": "CoverURL is the station logo source URL (fetched + cached server-side).",
+                        "type": "string"
+                    },
+                    "homepageUrl": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "streamUrl": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.radioToggleRequest": {
+                "properties": {
+                    "enabled": {
+                        "type": "boolean"
                     }
                 },
                 "type": "object"
@@ -1207,6 +1394,32 @@
                 },
                 "type": "object"
             },
+            "immerle.searchView": {
+                "properties": {
+                    "albums": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.albumView"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "artists": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.artistView"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "songs": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.songView"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "type": "object"
+            },
             "immerle.setEnabledRequest": {
                 "properties": {
                     "enabled": {
@@ -1223,6 +1436,53 @@
                 },
                 "type": "object"
             },
+            "immerle.songView": {
+                "properties": {
+                    "album": {
+                        "type": "string"
+                    },
+                    "albumId": {
+                        "type": "string"
+                    },
+                    "artist": {
+                        "type": "string"
+                    },
+                    "artistId": {
+                        "type": "string"
+                    },
+                    "contentType": {
+                        "type": "string"
+                    },
+                    "coverArt": {
+                        "type": "string"
+                    },
+                    "duration": {
+                        "type": "integer"
+                    },
+                    "genre": {
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "size": {
+                        "type": "integer"
+                    },
+                    "suffix": {
+                        "type": "string"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "track": {
+                        "type": "integer"
+                    },
+                    "year": {
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
             "immerle.startImportRequest": {
                 "properties": {
                     "ref": {
@@ -1230,6 +1490,53 @@
                     },
                     "source": {
                         "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.stationView": {
+                "properties": {
+                    "builtin": {
+                        "type": "boolean"
+                    },
+                    "country": {
+                        "type": "string"
+                    },
+                    "coverUrl": {
+                        "description": "CoverURL is the external logo source URL (for prefilling the admin edit\nform). Empty for built-ins whose logo is an embedded asset.",
+                        "type": "string"
+                    },
+                    "deletable": {
+                        "description": "Deletable is false for built-in stations (they can be edited, not removed).",
+                        "type": "boolean"
+                    },
+                    "hasCover": {
+                        "description": "HasCover tells clients whether to load the station cover endpoint.",
+                        "type": "boolean"
+                    },
+                    "homepageUrl": {
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "liked": {
+                        "description": "Liked is true when the caller has favorited this station.",
+                        "type": "boolean"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "streamUrl": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.toggleRequest": {
+                "properties": {
+                    "enabled": {
+                        "type": "boolean"
                     }
                 },
                 "type": "object"
@@ -2116,6 +2423,248 @@
                 ]
             }
         },
+        "/admin/radio": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": {
+                                        "type": "boolean"
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Get the radio feature state",
+                "tags": [
+                    "admin"
+                ]
+            },
+            "put": {
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/immerle.radioToggleRequest",
+                                        "summary": "body",
+                                        "description": "Enable or disable"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Enable or disable",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": {
+                                        "type": "boolean"
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Toggle the radio feature",
+                "tags": [
+                    "admin"
+                ]
+            }
+        },
+        "/admin/radio/stations": {
+            "post": {
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/immerle.radioRequest",
+                                        "summary": "body",
+                                        "description": "Station"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Station",
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.stationView"
+                                }
+                            }
+                        },
+                        "description": "Created"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Create a radio station",
+                "tags": [
+                    "admin"
+                ]
+            }
+        },
+        "/admin/radio/stations/{id}": {
+            "delete": {
+                "parameters": [
+                    {
+                        "description": "Station id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Delete a radio station",
+                "tags": [
+                    "admin"
+                ]
+            },
+            "put": {
+                "parameters": [
+                    {
+                        "description": "Station id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/immerle.radioRequest",
+                                        "summary": "body",
+                                        "description": "Station"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Station",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.stationView"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Update a radio station",
+                "tags": [
+                    "admin"
+                ]
+            }
+        },
         "/admin/settings": {
             "get": {
                 "description": "Admin only. Returns the current runtime settings (provider behaviour, artist avatars, scan cadence, federation) plus whether a restart is pending.",
@@ -2721,6 +3270,348 @@
                 ]
             }
         },
+        "/admin/wrapped": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": {
+                                        "type": "boolean"
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Get the Wrapped feature state",
+                "tags": [
+                    "admin"
+                ]
+            },
+            "put": {
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/immerle.toggleRequest",
+                                        "summary": "body",
+                                        "description": "Enable or disable"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Enable or disable",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": {
+                                        "type": "boolean"
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Toggle the Wrapped feature",
+                "tags": [
+                    "admin"
+                ]
+            }
+        },
+        "/albums": {
+            "get": {
+                "description": "Returns albums filtered/sorted by type (newest, recent, frequent, random, alphabeticalByName, byGenre, byYear, starred) with paging.",
+                "parameters": [
+                    {
+                        "description": "List type",
+                        "in": "query",
+                        "name": "type",
+                        "schema": {
+                            "default": "alphabeticalByName",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Page size",
+                        "in": "query",
+                        "name": "size",
+                        "schema": {
+                            "default": 10,
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "description": "Offset",
+                        "in": "query",
+                        "name": "offset",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "description": "Genre (for byGenre)",
+                        "in": "query",
+                        "name": "genre",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "From year (for byYear)",
+                        "in": "query",
+                        "name": "fromYear",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "description": "To year (for byYear)",
+                        "in": "query",
+                        "name": "toYear",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": {
+                                        "items": {
+                                            "$ref": "#/components/schemas/immerle.albumView"
+                                        },
+                                        "type": "array"
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "List albums",
+                "tags": [
+                    "catalog"
+                ]
+            }
+        },
+        "/albums/{id}": {
+            "get": {
+                "description": "Returns an album with its merged (local + remote) tracklist.",
+                "parameters": [
+                    {
+                        "description": "Album id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.albumView"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Get album",
+                "tags": [
+                    "catalog"
+                ]
+            }
+        },
+        "/artists": {
+            "get": {
+                "description": "Returns every artist in the catalog with the caller's per-artist starred state.",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": {
+                                        "items": {
+                                            "$ref": "#/components/schemas/immerle.artistView"
+                                        },
+                                        "type": "array"
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "List artists",
+                "tags": [
+                    "catalog"
+                ]
+            }
+        },
+        "/artists/{id}": {
+            "get": {
+                "description": "Returns an artist with its (local + remote) albums. With ?songs=true each album's tracks are inlined.",
+                "parameters": [
+                    {
+                        "description": "Artist id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Inline each album's tracks",
+                        "in": "query",
+                        "name": "songs",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.artistView"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Get artist",
+                "tags": [
+                    "catalog"
+                ]
+            }
+        },
         "/auth/sessions": {
             "post": {
                 "description": "Authenticates with username + password (or Subsonic token auth) and returns a device-session JWT carrying a unique id (jti). Use it as \"Authorization: Bearer \u003cjwt\u003e\". The session is tracked in the devices registry and can be revoked.",
@@ -3154,6 +4045,48 @@
                 "summary": "Accept a friend request",
                 "tags": [
                     "friends"
+                ]
+            }
+        },
+        "/genres": {
+            "get": {
+                "description": "Returns every genre with its song and album counts.",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": {
+                                        "items": {
+                                            "$ref": "#/components/schemas/immerle.genreView"
+                                        },
+                                        "type": "array"
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "List genres",
+                "tags": [
+                    "catalog"
                 ]
             }
         },
@@ -4348,6 +5281,224 @@
                 ]
             }
         },
+        "/radio": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": {},
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "List internet radio stations",
+                "tags": [
+                    "radio"
+                ]
+            }
+        },
+        "/radio/stations/{id}/cover": {
+            "get": {
+                "parameters": [
+                    {
+                        "description": "Station id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "image/png": {
+                                "schema": {
+                                    "format": "binary",
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "404": {
+                        "content": {
+                            "image/png": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "summary": "Station logo",
+                "tags": [
+                    "radio"
+                ]
+            }
+        },
+        "/radio/stations/{id}/like": {
+            "delete": {
+                "parameters": [
+                    {
+                        "description": "Station id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Unlike a radio station",
+                "tags": [
+                    "radio"
+                ]
+            },
+            "put": {
+                "parameters": [
+                    {
+                        "description": "Station id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Like a radio station",
+                "tags": [
+                    "radio"
+                ]
+            }
+        },
+        "/search": {
+            "get": {
+                "description": "Searches artists, albums and songs (merging remote-provider results when enabled).",
+                "parameters": [
+                    {
+                        "description": "Search query",
+                        "in": "query",
+                        "name": "q",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Max artists",
+                        "in": "query",
+                        "name": "artistCount",
+                        "schema": {
+                            "default": 20,
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "description": "Max albums",
+                        "in": "query",
+                        "name": "albumCount",
+                        "schema": {
+                            "default": 20,
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "description": "Max songs",
+                        "in": "query",
+                        "name": "songCount",
+                        "schema": {
+                            "default": 20,
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.searchView"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Search the catalog",
+                "tags": [
+                    "catalog"
+                ]
+            }
+        },
         "/setup": {
             "get": {
                 "description": "Unauthenticated. Reports whether the server still needs its first admin and whether a setup token is required.",
@@ -4723,6 +5874,63 @@
                 ]
             }
         },
+        "/songs/{id}": {
+            "get": {
+                "description": "Returns a single track by id.",
+                "parameters": [
+                    {
+                        "description": "Track id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.songView"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Get song",
+                "tags": [
+                    "catalog"
+                ]
+            }
+        },
         "/theme": {
             "get": {
                 "responses": {
@@ -5088,6 +6296,62 @@
                 "summary": "User profile",
                 "tags": [
                     "users"
+                ]
+            }
+        },
+        "/wrapped": {
+            "get": {
+                "description": "Returns the caller's listening stats for a calendar year: totals, top tracks/artists/genres and a per-month histogram. 404 when the feature is disabled.",
+                "parameters": [
+                    {
+                        "description": "Calendar year (default: current)",
+                        "in": "query",
+                        "name": "year",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.WrappedDTO"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Year-in-review (\"Wrapped\")",
+                "tags": [
+                    "wrapped"
                 ]
             }
         }

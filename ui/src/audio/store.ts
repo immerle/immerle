@@ -62,6 +62,8 @@ interface AudioState {
   hydrateSettings: () => Promise<void>;
 
   playSongs: (songs: Song[], startIndex?: number) => Promise<void>;
+  /** Play an internet radio station by its raw stream URL (single live track). */
+  playRadio: (station: { id: string; name: string; streamUrl: string }) => Promise<void>;
   playNext: (songs: Song[]) => Promise<void>;
   enqueue: (songs: Song[]) => Promise<void>;
   /** Load a single track by id and seek to a position — used by Jam followers. */
@@ -150,6 +152,19 @@ export const usePlayer = create<AudioState>((set, get) => ({
     await engine.setQueue(tracks, startIndex);
     sendNowPlaying(get);
     scheduleSaveQueue(get);
+  },
+
+  playRadio: async (station) => {
+    const engine = get().engine;
+    if (!engine || !station.streamUrl) return;
+    // Live streams aren't scrobbled and have no real duration. The raw URL is
+    // played directly (not routed through the Subsonic stream endpoint).
+    const track: PlayableTrack = { id: station.id, url: station.streamUrl, title: station.name, artist: '', duration: 0 };
+    const song = { id: station.id, title: station.name, artist: '' } as Song;
+    orderBackup = null;
+    scrobble = { nowPlayingSent: true, submitted: true };
+    set({ songs: [song], index: 0, position: 0 });
+    await engine.setQueue([track], 0);
   },
 
   playTrackById: async (id, positionSec, autoplay) => {

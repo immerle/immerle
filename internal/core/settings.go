@@ -271,3 +271,9 @@ func (s *SettingsService) LogRetention() time.Duration {
 
 // SmartPlaylistsEnabled reports whether rule-based playlists are on (read live).
 func (s *SettingsService) SmartPlaylistsEnabled() bool { return s.Get().SmartPlaylists.Enabled }
+
+// RadioEnabled reports whether internet radio stations are on (read live).
+func (s *SettingsService) RadioEnabled() bool { return s.Get().Radio.Enabled }
+
+// WrappedEnabled reports whether the year-in-review feature is on (read live).
+func (s *SettingsService) WrappedEnabled() bool { return s.Get().Wrapped.Enabled }

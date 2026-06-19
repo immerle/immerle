@@ -40,7 +40,7 @@ func (s *searcherProvider) SearchArtists(_ context.Context, _ string, _ int) ([]
 	return s.artists, nil
 }
 
-func TestRemoteSearchArtistsAlbumCount(t *testing.T) {
+func TestRemoteSearch3ArtistAlbumCount(t *testing.T) {
 	store := testutil.NewStore(t)
 	registry := NewProviderRegistry()
 	registry.Register(&searcherProvider{
@@ -54,10 +54,7 @@ func TestRemoteSearchArtistsAlbumCount(t *testing.T) {
 		Settings: StaticProviderSettings{}, Logger: testutil.NewLogger(),
 	})
 
-	artists, err := svc.RemoteSearchArtists(context.Background(), "famous", 10)
-	if err != nil {
-		t.Fatal(err)
-	}
+	artists, _, _ := svc.RemoteSearch3(context.Background(), "famous", 10, 10, 10)
 	if len(artists) != 1 || artists[0].AlbumCount != 14 {
 		t.Fatalf("expected remote artist with albumCount=14, got %+v", artists)
 	}
@@ -88,12 +85,9 @@ func newBrowseService(t *testing.T) *CatalogService {
 	})
 }
 
-func TestRemoteSearchArtists(t *testing.T) {
+func TestRemoteSearch3DerivesArtists(t *testing.T) {
 	svc := newBrowseService(t)
-	artists, err := svc.RemoteSearchArtists(context.Background(), "famous", 10)
-	if err != nil {
-		t.Fatal(err)
-	}
+	artists, _, _ := svc.RemoteSearch3(context.Background(), "famous", 10, 10, 10)
 	if len(artists) != 1 || artists[0].Name != "Famous" {
 		t.Fatalf("expected 1 remote artist 'Famous', got %+v", artists)
 	}
@@ -165,7 +159,7 @@ func TestRemoteArtistAndAlbumBrowse(t *testing.T) {
 	svc := newBrowseService(t)
 	ctx := context.Background()
 
-	artists, _ := svc.RemoteSearchArtists(ctx, "famous", 10)
+	artists, _, _ := svc.RemoteSearch3(ctx, "famous", 10, 10, 10)
 	rartID := artists[0].ID
 
 	// Browse the artist → 2 albums (Greatest: 2 songs, Early Days: 1 song).

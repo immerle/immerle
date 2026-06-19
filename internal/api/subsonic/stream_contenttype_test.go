@@ -4,17 +4,17 @@ import "testing"
 
 func TestAudioContentType(t *testing.T) {
 	cases := []struct {
-		format, suffix, want string
+		suffix, want string
 	}{
-		{"mp3", "flac", "audio/mpeg"}, // requested format wins (the "lie")
-		{"", "flac", "audio/flac"},    // no format → provider suffix
-		{"raw", "mp3", "audio/mpeg"},  // raw → provider suffix
-		{"opus", "mp3", "audio/ogg"},  //
-		{"", "weird", "application/octet-stream"},
+		{"flac", "audio/flac"},
+		{"mp3", "audio/mpeg"},
+		{"opus", "audio/ogg"},
+		{"m4a", "audio/mp4"},
+		{"weird", "application/octet-stream"},
 	}
 	for _, c := range cases {
-		if got := audioContentType(c.format, c.suffix); got != c.want {
-			t.Errorf("audioContentType(%q,%q)=%q want %q", c.format, c.suffix, got, c.want)
+		if got := audioContentType(c.suffix); got != c.want {
+			t.Errorf("audioContentType(%q)=%q want %q", c.suffix, got, c.want)
 		}
 	}
 }

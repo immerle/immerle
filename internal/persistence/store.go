@@ -40,6 +40,8 @@ type Store struct {
 	Devices         *DeviceRepo
 	Imports         *ImportRepo
 	SmartPlaylists  *SmartPlaylistRepo
+	Radio           *RadioRepo
+	Wrapped         *WrappedRepo
 }
 
 // New builds a Store over the given database.
@@ -66,6 +68,8 @@ func New(database *db.DB) *Store {
 		Devices:         &DeviceRepo{base},
 		Imports:         &ImportRepo{base},
 		SmartPlaylists:  &SmartPlaylistRepo{base},
+		Radio:           &RadioRepo{base},
+		Wrapped:         &WrappedRepo{base},
 	}
 }
 

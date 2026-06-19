@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	chi "github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
 
 	"github.com/immerle/immerle/internal/api/httputil"
 	"github.com/immerle/immerle/internal/core"
@@ -19,6 +18,10 @@ import (
 	"github.com/immerle/immerle/internal/scanner"
 	"github.com/immerle/immerle/internal/stream"
 )
+
+// RadioToggle reports whether internet radio is enabled (a runtime setting).
+// Implemented by *core.SettingsService; nil-safe checks treat absence as on.
+type RadioToggle interface{ RadioEnabled() bool }
 
 // Deps holds the dependencies of the Subsonic handler. Optional fields (OnDemand)
 // may be nil when the feature is disabled.
@@ -32,6 +35,8 @@ type Deps struct {
 	Scrobbles   *persistence.ScrobbleRepo
 	Shares      *persistence.ShareRepo
 	Users       *persistence.UserRepo
+	Radio       *persistence.RadioRepo
+	Settings    RadioToggle
 	Cover       *stream.CoverService
 	Streamer    *stream.Streamer
 	NowPlaying  *core.NowPlayingTracker
@@ -48,11 +53,28 @@ type Deps struct {
 // Handler implements the Subsonic REST API.
 type Handler struct {
 	Deps
+	// library holds the shared catalog browsing/search business logic, playback
+	// the shared favorite/rating/scrobble logic. The Subsonic handlers are a
+	// presentation layer over them.
+	library      *core.LibraryService
+	playback     *core.PlaybackService
+	playlistSvc  *core.PlaylistService
+	userSvc      *core.UserService
+	shareSvc     *core.ShareService
+	playQueueSvc *core.PlayQueueService
 }
 
 // NewHandler builds a Subsonic handler.
 func NewHandler(d Deps) *Handler {
-	return &Handler{Deps: d}
+	return &Handler{
+		Deps:         d,
+		library:      core.NewLibraryService(d.Catalog, d.Annotations, d.OnDemand),
+		playback:     core.NewPlaybackService(d.Catalog, d.Annotations, d.Scrobbles, d.OnDemand, d.Activity, d.NowPlaying),
+		playlistSvc:  core.NewPlaylistService(d.Playlists, d.Annotations, d.Activity),
+		userSvc:      core.NewUserService(d.Users, d.Auth),
+		shareSvc:     core.NewShareService(d.Shares, d.Catalog, d.Playlists),
+		playQueueSvc: core.NewPlayQueueService(d.PlayQueues, d.Catalog, d.Annotations),
+	}
 }
 
 type ctxKey int
@@ -62,66 +84,69 @@ const userKey ctxKey = iota
 // Register mounts all Subsonic endpoints on mux under /rest/.
 func (h *Handler) Register(mux chi.Router) {
 	endpoints := map[string]http.HandlerFunc{
-		"ping":                      h.handlePing,
-		"getLicense":                h.handleGetLicense,
-		"getOpenSubsonicExtensions": h.handleGetOpenSubsonicExtensions,
-		"getScanStatus":             h.handleGetScanStatus,
-		"startScan":                 h.handleStartScan,
-		"getMusicFolders":           h.handleGetMusicFolders,
-		"getIndexes":                h.handleGetIndexes,
-		"getArtists":                h.handleGetArtists,
-		"getArtist":                 h.handleGetArtist,
-		"getAlbum":                  h.handleGetAlbum,
-		"getAlbumList":              h.handleGetAlbumList,
-		"getAlbumList2":             h.handleGetAlbumList2,
-		"getSong":                   h.handleGetSong,
-		"getGenres":                 h.handleGetGenres,
-		"getMusicDirectory":         h.handleGetMusicDirectory,
-		"getSongsByGenre":           h.handleGetSongsByGenre,
-		"getRandomSongs":            h.handleGetRandomSongs,
-		"getStarred":                h.handleGetStarred,
-		"getTopSongs":               h.handleGetTopSongs,
-		"getSimilarSongs":           h.handleGetSimilarSongs,
-		"getSimilarSongs2":          h.handleGetSimilarSongs2,
-		"getArtistInfo":             h.handleGetArtistInfo,
-		"getArtistInfo2":            h.handleGetArtistInfo2,
-		"getAlbumInfo":              h.handleGetAlbumInfo,
-		"getAlbumInfo2":             h.handleGetAlbumInfo,
-		"getLyrics":                 h.handleGetLyrics,
-		"getLyricsBySongId":         h.handleGetLyricsBySongID,
-		"getVideos":                 h.handleGetVideos,
-		"getBookmarks":              h.handleGetBookmarks,
-		"getInternetRadioStations":  h.handleGetInternetRadioStations,
-		"getChatMessages":           h.handleGetChatMessages,
-		"search":                    h.handleSearch2,
-		"search2":                   h.handleSearch2,
-		"search3":                   h.handleSearch3,
-		"getCoverArt":               h.handleGetCoverArt,
-		"stream":                    h.handleStream,
-		"download":                  h.handleDownload,
-		"scrobble":                  h.handleScrobble,
-		"getNowPlaying":             h.handleGetNowPlaying,
-		"star":                      h.handleStar,
-		"unstar":                    h.handleUnstar,
-		"setRating":                 h.handleSetRating,
-		"getStarred2":               h.handleGetStarred2,
-		"getPlaylists":              h.handleGetPlaylists,
-		"getPlaylist":               h.handleGetPlaylist,
-		"createPlaylist":            h.handleCreatePlaylist,
-		"updatePlaylist":            h.handleUpdatePlaylist,
-		"deletePlaylist":            h.handleDeletePlaylist,
-		"getPlayQueue":              h.handleGetPlayQueue,
-		"savePlayQueue":             h.handleSavePlayQueue,
-		"getUser":                   h.handleGetUser,
-		"getUsers":                  h.handleGetUsers,
-		"createUser":                h.handleCreateUser,
-		"updateUser":                h.handleUpdateUser,
-		"deleteUser":                h.handleDeleteUser,
-		"changePassword":            h.handleChangePassword,
-		"getShares":                 h.handleGetShares,
-		"createShare":               h.handleCreateShare,
-		"updateShare":               h.handleUpdateShare,
-		"deleteShare":               h.handleDeleteShare,
+		"ping":                       h.handlePing,
+		"getLicense":                 h.handleGetLicense,
+		"getOpenSubsonicExtensions":  h.handleGetOpenSubsonicExtensions,
+		"getScanStatus":              h.handleGetScanStatus,
+		"startScan":                  h.handleStartScan,
+		"getMusicFolders":            h.handleGetMusicFolders,
+		"getIndexes":                 h.handleGetIndexes,
+		"getArtists":                 h.handleGetArtists,
+		"getArtist":                  h.handleGetArtist,
+		"getAlbum":                   h.handleGetAlbum,
+		"getAlbumList":               h.handleGetAlbumList,
+		"getAlbumList2":              h.handleGetAlbumList2,
+		"getSong":                    h.handleGetSong,
+		"getGenres":                  h.handleGetGenres,
+		"getMusicDirectory":          h.handleGetMusicDirectory,
+		"getSongsByGenre":            h.handleGetSongsByGenre,
+		"getRandomSongs":             h.handleGetRandomSongs,
+		"getStarred":                 h.handleGetStarred,
+		"getTopSongs":                h.handleGetTopSongs,
+		"getSimilarSongs":            h.handleGetSimilarSongs,
+		"getSimilarSongs2":           h.handleGetSimilarSongs2,
+		"getArtistInfo":              h.handleGetArtistInfo,
+		"getArtistInfo2":             h.handleGetArtistInfo2,
+		"getAlbumInfo":               h.handleGetAlbumInfo,
+		"getAlbumInfo2":              h.handleGetAlbumInfo,
+		"getLyrics":                  h.handleGetLyrics,
+		"getLyricsBySongId":          h.handleGetLyricsBySongID,
+		"getVideos":                  h.handleGetVideos,
+		"getBookmarks":               h.handleGetBookmarks,
+		"getInternetRadioStations":   h.handleGetInternetRadioStations,
+		"createInternetRadioStation": h.handleCreateInternetRadioStation,
+		"updateInternetRadioStation": h.handleUpdateInternetRadioStation,
+		"deleteInternetRadioStation": h.handleDeleteInternetRadioStation,
+		"getChatMessages":            h.handleGetChatMessages,
+		"search":                     h.handleSearch2,
+		"search2":                    h.handleSearch2,
+		"search3":                    h.handleSearch3,
+		"getCoverArt":                h.handleGetCoverArt,
+		"stream":                     h.handleStream,
+		"download":                   h.handleDownload,
+		"scrobble":                   h.handleScrobble,
+		"getNowPlaying":              h.handleGetNowPlaying,
+		"star":                       h.handleStar,
+		"unstar":                     h.handleUnstar,
+		"setRating":                  h.handleSetRating,
+		"getStarred2":                h.handleGetStarred2,
+		"getPlaylists":               h.handleGetPlaylists,
+		"getPlaylist":                h.handleGetPlaylist,
+		"createPlaylist":             h.handleCreatePlaylist,
+		"updatePlaylist":             h.handleUpdatePlaylist,
+		"deletePlaylist":             h.handleDeletePlaylist,
+		"getPlayQueue":               h.handleGetPlayQueue,
+		"savePlayQueue":              h.handleSavePlayQueue,
+		"getUser":                    h.handleGetUser,
+		"getUsers":                   h.handleGetUsers,
+		"createUser":                 h.handleCreateUser,
+		"updateUser":                 h.handleUpdateUser,
+		"deleteUser":                 h.handleDeleteUser,
+		"changePassword":             h.handleChangePassword,
+		"getShares":                  h.handleGetShares,
+		"createShare":                h.handleCreateShare,
+		"updateShare":                h.handleUpdateShare,
+		"deleteShare":                h.handleDeleteShare,
 	}
 	// All Subsonic endpoints are authenticated; the group middleware applies it
 	// once for the whole set.
@@ -202,6 +227,23 @@ func boolParam(r *http.Request, name string, def bool) bool {
 	return b
 }
 
+// writeServiceError maps an application-layer error to a Subsonic error
+// envelope: not-found → "data not found", forbidden → "unauthorized action",
+// unauthorized → "wrong credentials", anything else logged and genericized.
+// notFoundMsg is the message used for the not-found case.
+func (h *Handler) writeServiceError(w http.ResponseWriter, r *http.Request, err error, notFoundMsg string) {
+	switch {
+	case isNotFound(err):
+		writeError(w, r, ErrDataNotFound, notFoundMsg)
+	case errors.Is(err, core.ErrForbidden):
+		writeError(w, r, ErrUnauthorizedAction, "User is not authorized for this operation")
+	case errors.Is(err, core.ErrUnauthorized):
+		writeError(w, r, ErrWrongCredentials, "Wrong username or password")
+	default:
+		h.failInternal(w, r, err)
+	}
+}
+
 // requireAdmin writes an error and returns false if the user is not an admin.
 func requireAdmin(w http.ResponseWriter, r *http.Request) bool {
 	if !userFrom(r.Context()).IsAdmin {
@@ -215,9 +257,6 @@ func requireAdmin(w http.ResponseWriter, r *http.Request) bool {
 func isNotFound(err error) bool {
 	return errors.Is(err, persistence.ErrNotFound)
 }
-
-// newID generates a unique identifier for new entities.
-func newID() string { return uuid.NewString() }
 
 // decodeEncParam decodes a Subsonic "enc:<hex>" encoded password value.
 func decodeEncParam(p string) string {
