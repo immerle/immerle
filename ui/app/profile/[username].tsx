@@ -10,6 +10,7 @@ import { Ionicon } from '../../src/components/Ionicon';
 import { ActivityEventDTO, ProfilePlaylistDTO } from '../../src/api/immerleApi';
 import { formatRelativeTime, formatDuration } from '../../src/utils/format';
 import { useT } from '../../src/i18n/store';
+import { useWebTitle } from '../../src/utils/documentTitle';
 
 function activityStyle(type?: string): { icon: string; color: string } {
   switch (type) {
@@ -53,6 +54,7 @@ export default function Profile() {
   const { username } = useLocalSearchParams<{ username: string }>();
   const q = useProfile(username ?? '');
   const { request } = useFriendMutations();
+  useWebTitle(q.data?.user.displayName ?? q.data?.user.username ?? username);
 
   if (q.isLoading) {
     return (

@@ -1,7 +1,7 @@
 import '../global.css';
 
 import { useEffect } from 'react';
-import { ActivityIndicator, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Platform, useWindowDimensions, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -24,6 +24,7 @@ import { useLocale } from '../src/i18n/store';
 import { useSelfServer } from '../src/api/selfServer';
 import { palette } from '../src/theme/colors';
 import { WIDE_BREAKPOINT } from '../src/theme/layout';
+import { documentTitle } from '../src/utils/documentTitle';
 
 /**
  * Root layout: wires global providers (gesture handler, safe area, query
@@ -58,6 +59,12 @@ export default function RootLayout() {
     void hydrateLocale();
     void detectSelf();
   }, [hydrateTheme, restore, hydratePlayer, initPlayer, loadRecents, hydrateUI, hydrateLocale, detectSelf]);
+
+  // Web only: expo-router disables automatic document titles, so set the
+  // browser tab title from the current route.
+  useEffect(() => {
+    if (Platform.OS === 'web') document.title = documentTitle(pathname);
+  }, [pathname]);
 
   // Once the session is authenticated, the server is the source of truth for
   // the accent — pull it so the choice follows the user across devices.

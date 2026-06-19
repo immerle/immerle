@@ -21,6 +21,7 @@ import { Song } from '../../src/api/subsonic/types';
 import { formatDuration } from '../../src/utils/format';
 import { useColors } from '../../src/theme/colors';
 import { useT } from '../../src/i18n/store';
+import { useWebTitle } from '../../src/utils/documentTitle';
 
 /**
  * Playlist detail with full CRUD. View mode plays the playlist; edit mode lets
@@ -58,6 +59,7 @@ export default function PlaylistDetail() {
       setIsPublic(!!q.data.public);
     }
   }, [q.data]);
+  useWebTitle(q.data?.name);
 
   if (q.isLoading) return <Loading />;
   if (q.isError || !q.data) return <ErrorState message={t('media.playlist.notFound')} onRetry={q.refetch} />;
