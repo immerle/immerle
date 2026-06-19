@@ -116,10 +116,7 @@ func (e *Extractor) Extract(ctx context.Context, path string) (Metadata, error) 
 }
 
 func baseNameNoExt(path string) string {
-	name := path
-	if i := strings.LastIndexAny(name, "/\\"); i >= 0 {
-		name = name[i+1:]
-	}
+	name := filepath.Base(path)
 	if i := strings.LastIndexByte(name, '.'); i > 0 {
 		name = name[:i]
 	}
