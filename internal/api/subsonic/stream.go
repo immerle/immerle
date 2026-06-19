@@ -71,7 +71,7 @@ func (h *Handler) serveLocal(w http.ResponseWriter, r *http.Request, track model
 // e.g. raw FLAC labelled audio/mpeg. Seeking is disabled until the local copy is
 // ready; later plays go through the seekable, transcoding local path.
 func (h *Handler) streamProgressive(w http.ResponseWriter, r *http.Request, pending *core.PendingDownload, opts stream.Options) {
-	w.Header().Set("Content-Type", audioContentType("", pending.Suffix()))
+	w.Header().Set("Content-Type", audioContentType(pending.Suffix()))
 	w.Header().Set("Accept-Ranges", "none")
 	if err := h.OnDemand.StreamPending(r.Context(), pending, w); err != nil {
 		// Headers/bytes have already started; nothing to do but log.
@@ -79,15 +79,10 @@ func (h *Handler) streamProgressive(w http.ResponseWriter, r *http.Request, pend
 	}
 }
 
-// audioContentType returns the MIME type to advertise. The requested format wins
-// (so the client sees the transcode it asked for), falling back to the provider's
-// actual suffix when no real format was requested.
-func audioContentType(format, suffix string) string {
-	f := strings.ToLower(format)
-	if f == "" || f == "raw" {
-		f = strings.ToLower(suffix)
-	}
-	switch f {
+// audioContentType returns the MIME type to advertise for the provider's actual
+// bytes, derived from its file suffix.
+func audioContentType(suffix string) string {
+	switch strings.ToLower(suffix) {
 	case "mp3", "mpeg":
 		return "audio/mpeg"
 	case "flac":
