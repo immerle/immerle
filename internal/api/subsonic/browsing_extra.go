@@ -296,4 +296,3 @@ func (h *Handler) handleGetChatMessages(w http.ResponseWriter, r *http.Request) 
 	resp.ChatMessages = &ChatMessages{}
 	write(w, r, resp)
 }
-
