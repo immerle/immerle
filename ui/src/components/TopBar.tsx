@@ -62,7 +62,7 @@ export function TopBar({ wide }: { wide: boolean }) {
       className="flex-row items-center gap-3 border-b border-border bg-background px-4"
       style={{ paddingTop: insets.top, height: 56 + insets.top }}
     >
-      {/* Left — logo, then back + forward */}
+      {/* Left — logo */}
       <Pressable onPress={() => go('/')} accessibilityRole="button" accessibilityLabel="Immerle">
         <Image
           source={require('../../assets/logo.png')}
@@ -70,12 +70,8 @@ export function TopBar({ wide }: { wide: boolean }) {
           resizeMode="contain"
         />
       </Pressable>
-      <View className="flex-row items-center gap-2">
-        <CircleButton icon="chevron-back" onPress={() => router.back()} label={t('components.topbar.back')} />
-        <CircleButton icon="chevron-forward" onPress={goForward} label={t('components.topbar.forward')} />
-      </View>
 
-      {/* Center — home + live search input */}
+      {/* Center — home + live search input, then back/forward */}
       <View className="flex-1 flex-row items-center justify-center gap-2">
         <CircleButton icon="home" onPress={() => go('/')} active={pathname === '/'} label={t('components.topbar.home')} />
         <View
@@ -103,6 +99,8 @@ export function TopBar({ wide }: { wide: boolean }) {
             <IconButton name="close-circle" size={18} color={colors.muted} onPress={closeSearch} accessibilityLabel={t('components.topbar.clear')} />
           ) : null}
         </View>
+        <CircleButton icon="chevron-back" onPress={() => router.back()} label={t('components.topbar.back')} />
+        <CircleButton icon="chevron-forward" onPress={goForward} label={t('components.topbar.forward')} />
       </View>
 
       {/* Right — social + avatar */}
