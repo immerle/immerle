@@ -51,16 +51,18 @@ type Handler struct {
 	// library holds the shared catalog browsing/search business logic, playback
 	// the shared favorite/rating/scrobble logic. The Subsonic handlers are a
 	// presentation layer over them.
-	library  *core.LibraryService
-	playback *core.PlaybackService
+	library     *core.LibraryService
+	playback    *core.PlaybackService
+	playlistSvc *core.PlaylistService
 }
 
 // NewHandler builds a Subsonic handler.
 func NewHandler(d Deps) *Handler {
 	return &Handler{
-		Deps:     d,
-		library:  core.NewLibraryService(d.Catalog, d.Annotations, d.OnDemand),
-		playback: core.NewPlaybackService(d.Catalog, d.Annotations, d.Scrobbles, d.OnDemand, d.Activity, d.NowPlaying),
+		Deps:        d,
+		library:     core.NewLibraryService(d.Catalog, d.Annotations, d.OnDemand),
+		playback:    core.NewPlaybackService(d.Catalog, d.Annotations, d.Scrobbles, d.OnDemand, d.Activity, d.NowPlaying),
+		playlistSvc: core.NewPlaylistService(d.Playlists, d.Annotations, d.Activity),
 	}
 }
 
