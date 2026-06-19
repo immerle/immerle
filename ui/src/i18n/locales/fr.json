@@ -233,6 +233,10 @@
           "title": "Providers",
           "subtitle": "Sources de contenu dynamiques"
         },
+        "radio": {
+          "title": "Radio",
+          "subtitle": "Stations internet (intégrées & custom)"
+        },
         "settings": {
           "title": "Réglages",
           "subtitle": "Runtime, transcodage, fédération, nettoyage"

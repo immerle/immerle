@@ -233,6 +233,10 @@
           "title": "Providers",
           "subtitle": "Dynamic content sources"
         },
+        "radio": {
+          "title": "Radio",
+          "subtitle": "Internet stations (built-in & custom)"
+        },
         "settings": {
           "title": "Settings",
           "subtitle": "Runtime, transcoding, federation, cleanup"

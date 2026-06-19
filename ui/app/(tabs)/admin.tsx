@@ -30,7 +30,7 @@ interface AdminLink {
   subtitleKey: string;
   color: string;
   /** When set, hidden unless the instance advertises this. */
-  requires?: 'dynamicProviders' | 'runtimeSettings' | 'libraryAdmin';
+  requires?: 'dynamicProviders' | 'runtimeSettings' | 'libraryAdmin' | 'internetRadio';
 }
 
 const LINKS: AdminLink[] = [
@@ -51,6 +51,14 @@ const LINKS: AdminLink[] = [
     subtitleKey: 'home.admin.link.providers.subtitle',
     color: '#8b5cf6',
     requires: 'dynamicProviders',
+  },
+  {
+    href: '/admin/radio',
+    icon: 'radio',
+    titleKey: 'home.admin.link.radio.title',
+    subtitleKey: 'home.admin.link.radio.subtitle',
+    color: '#ec4899',
+    requires: 'internetRadio',
   },
   {
     href: '/admin/settings',

@@ -43,6 +43,7 @@ export function LibrarySidebar() {
   const collapsed = useUI((s) => s.sidebarCollapsed);
   const toggle = useUI((s) => s.toggleSidebar);
   const canDiscover = useAuth((s) => s.client?.has('publicPlaylists') ?? false);
+  const canRadio = useAuth((s) => s.client?.has('internetRadio') ?? false);
   const { data: playlists } = usePlaylists();
   const [creating, setCreating] = useState(false);
   const [filter, setFilter] = useState('');
@@ -60,6 +61,7 @@ export function LibrarySidebar() {
   );
   const likedMatches = 'titres likés'.includes(q);
   const localMatches = 'musiques locales'.includes(q);
+  const radioMatches = canRadio && (t('radio.title').toLowerCase().includes(q) || 'radio'.includes(q));
 
   return (
     <View style={{ width }} className="border-r border-border bg-surface">
@@ -171,6 +173,20 @@ export function LibrarySidebar() {
             onPress={() => router.push('/local' as never)}
           />
         ) : null}
+        {radioMatches ? (
+          <Row
+            active={pathname === '/radio'}
+            collapsed={collapsed}
+            cover={
+              <View className="h-12 w-12 items-center justify-center rounded-md bg-primary/15">
+                <Ionicon name="radio" size={24} color={colors.primary} />
+              </View>
+            }
+            title={t('radio.title')}
+            subtitle={t('radio.tabSubtitle')}
+            onPress={() => router.push('/radio' as never)}
+          />
+        ) : null}
         {filtered.map((p: Playlist) => (
           <Row
             key={p.id}
@@ -182,7 +198,7 @@ export function LibrarySidebar() {
             onPress={() => router.push(`/playlist/${p.id}` as never)}
           />
         ))}
-        {!collapsed && filtered.length === 0 && !likedMatches && !localMatches ? (
+        {!collapsed && filtered.length === 0 && !likedMatches && !localMatches && !radioMatches ? (
           <Text className="px-3 py-4 text-sm text-muted">{t('components.sidebar.noResults')}</Text>
         ) : null}
       </ScrollView>
