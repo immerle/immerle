@@ -92,6 +92,9 @@ class NativeAudioEngine implements AudioEngine {
     TrackPlayer.addEventListener(Event.PlaybackState, ({ state }) => {
       this.status = mapState(state);
       this.emitState();
+      // End of queue: rewind to the first track and pause (track 1 for a
+      // playlist), cursor at the start with the play button ready to replay.
+      if (state === State.Ended) void this.resetToStart();
     });
     TrackPlayer.addEventListener(Event.PlaybackActiveTrackChanged, (e) => {
       if (typeof e.index === 'number') {
@@ -146,6 +149,15 @@ class NativeAudioEngine implements AudioEngine {
 
   async next(): Promise<void> {
     await TrackPlayer.skipToNext().catch(() => undefined);
+  }
+
+  private async resetToStart(): Promise<void> {
+    const queue = await TrackPlayer.getQueue();
+    if (!queue.length) return;
+    await TrackPlayer.skip(0);
+    await TrackPlayer.seekTo(0);
+    await TrackPlayer.pause();
+    this.index = 0;
   }
 
   async previous(): Promise<void> {
