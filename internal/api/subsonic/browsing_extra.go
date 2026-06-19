@@ -10,11 +10,6 @@ import (
 	"github.com/immerle/immerle/internal/models"
 )
 
-// trimQuery normalizes a Subsonic search query (clients may quote it; "" means all).
-func trimQuery(q string) string {
-	return strings.Trim(strings.TrimSpace(q), "\"")
-}
-
 // toAlbumChild renders an album as a directory-style Child (used by file-based
 // browsing and the v1 list/search endpoints).
 func toAlbumChild(a models.Album, ann *models.Annotation) Child {
@@ -161,73 +156,29 @@ func (h *Handler) handleGetStarred(w http.ResponseWriter, r *http.Request) {
 	write(w, r, resp)
 }
 
+// handleSearch2 is the file-based (non-ID3) twin of handleSearch3: same merged
+// local+remote search via the library service, rendered as directory-style
+// children. (Album annotations are intentionally not surfaced here, matching the
+// historical search2 shape.)
 func (h *Handler) handleSearch2(w http.ResponseWriter, r *http.Request) {
-	query := trimQuery(param(r, "query"))
-	artistCount, songCount := intParam(r, "artistCount", 20), intParam(r, "songCount", 20)
-	artists, albums, tracks, err := h.Catalog.Search(r.Context(), query,
-		artistCount, intParam(r, "albumCount", 20), songCount)
+	user := userFrom(r.Context())
+	res, err := h.library.Search(r.Context(), user.ID, param(r, "query"),
+		intParam(r, "artistCount", 20), intParam(r, "albumCount", 20), intParam(r, "songCount", 20))
 	if err != nil {
 		h.failInternal(w, r, err)
 		return
 	}
+
 	out := &SearchResult2{}
-	seenArtist := map[string]bool{}
-	for _, a := range artists {
+	for _, a := range res.Artists {
 		out.Artist = append(out.Artist, ArtistItem{ID: a.ID, Name: a.Name})
-		seenArtist[strings.ToLower(a.Name)] = true
 	}
-	for _, a := range albums {
+	for _, a := range res.Albums {
 		out.Album = append(out.Album, toAlbumChild(a, nil))
 	}
-	out.Song = h.tracksToChildren(r, tracks)
-	// Remote artists, albums and songs from every active provider, merged into
-	// the local lists and deduplicated by name (artists/albums) and id (songs).
-	if h.OnDemand != nil && query != "" {
-		remoteArtists, remoteAlbums, remoteSongs := h.OnDemand.RemoteSearch3(r.Context(), query, maxSearchArtists, maxSearchAlbums, maxSearchSongs)
-		for _, a := range remoteArtists {
-			if seenArtist[strings.ToLower(a.Name)] {
-				continue
-			}
-			seenArtist[strings.ToLower(a.Name)] = true
-			out.Artist = append(out.Artist, ArtistItem{ID: a.ID, Name: a.Name})
-		}
-		seenAlbum := make(map[string]bool, len(out.Album))
-		for _, a := range out.Album {
-			seenAlbum[strings.ToLower(a.Artist+"|"+a.Title)] = true
-		}
-		for _, a := range remoteAlbums {
-			if seenAlbum[strings.ToLower(a.ArtistName+"|"+a.Name)] {
-				continue
-			}
-			seenAlbum[strings.ToLower(a.ArtistName+"|"+a.Name)] = true
-			out.Album = append(out.Album, toAlbumChild(a, nil))
-		}
-		seenSong := make(map[string]bool, len(out.Song))
-		for _, s := range out.Song {
-			seenSong[s.ID] = true
-		}
-		for _, t := range remoteSongs {
-			if seenSong[t.ID] {
-				continue
-			}
-			seenSong[t.ID] = true
-			out.Song = append(out.Song, toChild(t, nil))
-		}
+	for _, t := range res.Tracks {
+		out.Song = append(out.Song, toChild(t, annPtr(res.TrackAnnotations, t.ID)))
 	}
-
-	// Re-sort the merged lists by relevance to the query, then apply the caps.
-	sort.SliceStable(out.Artist, func(i, j int) bool {
-		return relevance(query, out.Artist[i].Name) < relevance(query, out.Artist[j].Name)
-	})
-	sort.SliceStable(out.Album, func(i, j int) bool {
-		return relevance(query, out.Album[i].Title) < relevance(query, out.Album[j].Title)
-	})
-	sort.SliceStable(out.Song, func(i, j int) bool {
-		return relevance(query, out.Song[i].Title) < relevance(query, out.Song[j].Title)
-	})
-	out.Artist = capSlice(out.Artist, maxSearchArtists)
-	out.Album = capSlice(out.Album, maxSearchAlbums)
-	out.Song = capSlice(out.Song, maxSearchSongs)
 
 	resp := newResponse()
 	resp.SearchResult2 = out

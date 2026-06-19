@@ -48,11 +48,17 @@ type Deps struct {
 // Handler implements the Subsonic REST API.
 type Handler struct {
 	Deps
+	// library holds the shared catalog browsing/search business logic. The
+	// Subsonic handlers are a presentation layer over it.
+	library *core.LibraryService
 }
 
 // NewHandler builds a Subsonic handler.
 func NewHandler(d Deps) *Handler {
-	return &Handler{Deps: d}
+	return &Handler{
+		Deps:    d,
+		library: core.NewLibraryService(d.Catalog, d.Annotations, d.OnDemand),
+	}
 }
 
 type ctxKey int
