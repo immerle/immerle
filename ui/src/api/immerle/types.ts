@@ -99,15 +99,6 @@ export interface Provider {
   version?: number;
 }
 
-/** A remote HTTP provider's advertised capabilities (from /capabilities). */
-export interface ProviderCapabilities {
-  version: number;
-  /** Slug the remote declares for itself — becomes the provider's name. */
-  name: string;
-  /** Config fields keyed by name, each declaring its type, location and need. */
-  config: Record<string, { type: string; where: 'header' | 'params'; required: boolean }>;
-}
-
 /** A persisted warn/error event from a provider action (admin diagnostics). */
 export interface ProviderLog {
   id: string;

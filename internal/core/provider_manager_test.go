@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/immerle/immerle/internal/models"
@@ -101,6 +102,50 @@ func TestProviderManagerVerifiesHTTPCapabilities(t *testing.T) {
 	t.Cleanup(none.Close)
 	if _, err := mgr.Upsert(ctx, models.ProviderConfig{Name: "nocaps", Endpoint: none.URL, Config: "{}", Enabled: true}); err == nil {
 		t.Fatal("upsert must fail without a /capabilities endpoint")
+	}
+}
+
+func TestProviderManagerCreateFromURL(t *testing.T) {
+	store := testutil.NewStore(t)
+	reg := NewProviderRegistry()
+	build := func(c models.ProviderConfig) (providers.Provider, error) {
+		return httpprovider.New(c.Name, c.Endpoint, c.Config)
+	}
+	mgr := NewProviderManager(store.ProviderConfigs, reg, build, nil, testutil.NewLogger())
+	ctx := context.Background()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/capabilities" {
+			_, _ = w.Write([]byte(`{"version":1,"name":"my-svc","config":{
+				"apikey":{"type":"string","where":"params","required":true},
+				"X-Token":{"type":"string","where":"header","required":false}
+			}}`))
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	t.Cleanup(srv.Close)
+
+	saved, err := mgr.CreateFromURL(ctx, srv.URL)
+	if err != nil {
+		t.Fatalf("create from url: %v", err)
+	}
+	if saved.Name != "my-svc" || saved.Enabled {
+		t.Fatalf("expected name from caps, created disabled: %+v", saved)
+	}
+	// Skeleton config carries the declared fields in their buckets.
+	if !strings.Contains(saved.Config, `"apikey"`) || !strings.Contains(saved.Config, `"X-Token"`) {
+		t.Fatalf("skeleton missing fields: %s", saved.Config)
+	}
+	// Creating the same service again → already exists.
+	if _, err := mgr.CreateFromURL(ctx, srv.URL); err == nil {
+		t.Fatal("second create should fail (already exists)")
+	}
+	// A URL with no /capabilities → rejected (it is mandatory).
+	none := httptest.NewServer(http.NotFoundHandler())
+	t.Cleanup(none.Close)
+	if _, err := mgr.CreateFromURL(ctx, none.URL); err == nil {
+		t.Fatal("create should fail without /capabilities")
 	}
 }
 

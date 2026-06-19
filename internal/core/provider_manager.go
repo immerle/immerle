@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"regexp"
@@ -208,13 +209,11 @@ func (m *ProviderManager) Upsert(ctx context.Context, cfg models.ProviderConfig)
 	if err != nil {
 		return cfg, err
 	}
-	// The capabilities check gates activation: an enabled HTTP provider must have
-	// a reachable /capabilities, speak the protocol, and supply every required
-	// config field. A disabled provider can be saved as a draft without it.
-	if cfg.Enabled {
-		if err := verifyProvider(ctx, built); err != nil {
-			return cfg, err
-		}
+	// On save, an HTTP provider's config must be coherent with its /capabilities
+	// (the protocol matches and every required field is supplied). Built-ins have
+	// no capabilities endpoint, so this is a no-op for them.
+	if err := verifyProvider(ctx, built); err != nil {
+		return cfg, err
 	}
 	if err := m.repo.Upsert(ctx, cfg); err != nil {
 		return cfg, err
@@ -274,19 +273,75 @@ func verifyProvider(ctx context.Context, p providers.Provider) error {
 	return nil
 }
 
-// Capabilities builds a transient HTTP provider for the given endpoint/config and
-// fetches its advertised capabilities. Used by the admin add flow to derive the
-// provider name and generate the config skeleton before anything is persisted.
-func (m *ProviderManager) Capabilities(ctx context.Context, endpoint, config string) (providers.Capabilities, error) {
-	prov, err := m.build(models.ProviderConfig{Name: "probe", Kind: "http", Endpoint: endpoint, Config: config})
+// CreateFromURL creates a dynamic HTTP provider from just its base URL. It
+// probes the mandatory /capabilities endpoint to confirm the service exists and
+// speaks the protocol, takes the provider name the remote declares, and seeds
+// the config with the declared fields set to null (the admin fills them in
+// later via the settings panel). The provider is created disabled.
+func (m *ProviderManager) CreateFromURL(ctx context.Context, endpoint string) (models.ProviderConfig, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	prov, err := m.build(models.ProviderConfig{Name: "probe", Kind: "http", Endpoint: endpoint, Config: "{}"})
 	if err != nil {
-		return providers.Capabilities{}, err
+		return models.ProviderConfig{}, err
 	}
 	cp, ok := prov.(providers.CapabilityProvider)
 	if !ok {
-		return providers.Capabilities{}, fmt.Errorf("provider does not expose capabilities")
+		return models.ProviderConfig{}, fmt.Errorf("provider does not expose capabilities")
 	}
-	return cp.Capabilities(ctx)
+	caps, err := cp.Capabilities(ctx)
+	if err != nil {
+		return models.ProviderConfig{}, err
+	}
+	if caps.Version != providers.ProtocolVersion {
+		return models.ProviderConfig{}, fmt.Errorf("remote protocol version %d unsupported (expected %d)", caps.Version, providers.ProtocolVersion)
+	}
+	if !providerNameRe.MatchString(caps.Name) {
+		return models.ProviderConfig{}, fmt.Errorf("capabilities name %q is not a valid slug", caps.Name)
+	}
+	if _, err := m.repo.Get(ctx, caps.Name); err == nil {
+		return models.ProviderConfig{}, fmt.Errorf("provider %q already exists", caps.Name)
+	}
+
+	cfg := models.ProviderConfig{
+		Name:      caps.Name,
+		Kind:      "http",
+		Endpoint:  strings.TrimRight(strings.TrimSpace(endpoint), "/"),
+		Config:    skeletonConfig(caps),
+		Enabled:   false, // created disabled; the admin fills the config then enables
+		SortOrder: m.firstOrder(ctx),
+	}
+	if err := m.repo.Upsert(ctx, cfg); err != nil {
+		return models.ProviderConfig{}, err
+	}
+	m.reorderFromDB(ctx)
+	m.logger.Info("provider created from url", "provider", cfg.Name, "endpoint", endpoint)
+	return m.repo.Get(ctx, caps.Name)
+}
+
+// skeletonConfig builds a { header, params } config payload from a capabilities
+// schema, with every declared field set to null for the admin to fill in.
+func skeletonConfig(caps providers.Capabilities) string {
+	header := map[string]any{}
+	params := map[string]any{}
+	for key, f := range caps.Config {
+		switch f.Where {
+		case "header":
+			header[key] = nil
+		case "params":
+			params[key] = nil
+		}
+	}
+	obj := map[string]any{}
+	if len(header) > 0 {
+		obj["header"] = header
+	}
+	if len(params) > 0 {
+		obj["params"] = params
+	}
+	b, _ := json.Marshal(obj)
+	return string(b)
 }
 
 // Versions fetches each dynamic (HTTP) provider's live protocol version in

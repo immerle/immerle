@@ -2,6 +2,10 @@ package providers
 
 import "context"
 
+// ProtocolVersion is the capabilities protocol HTTP providers must implement.
+// A remote's /capabilities must advertise this exact version.
+const ProtocolVersion = 1
+
 // Capabilities is the contract a remote HTTP provider advertises at its
 // mandatory /capabilities endpoint. It states the protocol version it speaks,
 // its slug name (which becomes the provider's name in immerle), and the config

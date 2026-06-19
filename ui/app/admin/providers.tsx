@@ -4,7 +4,7 @@ import { useColorScheme } from 'nativewind';
 import { Stack } from 'expo-router';
 import { useAuth } from '../../src/auth/store';
 import { useProviderLogs, useProviderMutations, useProviders, useSettings, useUpdateSettings } from '../../src/query/admin';
-import { Provider, ProviderCapabilities } from '../../src/api/immerle/types';
+import { Provider } from '../../src/api/immerle/types';
 import { Badge, Button, Card, EmptyState, ErrorState, Field, IconButton, Loading, SectionHeader } from '../../src/components/ui';
 import { AdminHeader, AdminScroll } from '../../src/components/AdminUI';
 import { Ionicon } from '../../src/components/Ionicon';
@@ -30,7 +30,8 @@ export default function AdminProviders() {
   const client = useAuth((s) => s.client);
   const q = useProviders();
   const { reorder } = useProviderMutations();
-  const [editing, setEditing] = useState<Provider | 'new' | null>(null);
+  const [editing, setEditing] = useState<Provider | null>(null);
+  const [creating, setCreating] = useState(false);
   const [behaviourOpen, setBehaviourOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const hasSettings = !!client?.has('runtimeSettings');
@@ -83,7 +84,7 @@ export default function AdminProviders() {
               subtitle={t('admin.providers.headerSubtitle')}
               trailing={
                 <View className="flex-row items-center gap-2">
-                  <Button title={t('admin.providers.add')} size="sm" icon="add" onPress={() => setEditing('new')} />
+                  <Button title={t('admin.providers.add')} size="sm" icon="add" onPress={() => setCreating(true)} />
                   {hasSettings ? (
                     <Pressable
                       onPress={() => setBehaviourOpen(true)}
@@ -116,9 +117,8 @@ export default function AdminProviders() {
             ))
           )}
 
-          {editing ? (
-            <ProviderModal initial={editing === 'new' ? null : editing} onClose={() => setEditing(null)} />
-          ) : null}
+          {editing ? <ProviderModal initial={editing} onClose={() => setEditing(null)} /> : null}
+          <CreateProviderModal visible={creating} onClose={() => setCreating(false)} />
           <BehaviourModal visible={behaviourOpen} onClose={() => setBehaviourOpen(false)} />
         </AdminScroll>
       )}
@@ -187,6 +187,59 @@ function BehaviourModal({ visible, onClose }: { visible: boolean; onClose: () =>
               <Button title={t('admin.providers.save')} icon="save-outline" loading={update.isPending} onPress={save} />
             </View>
           </View>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
+/** Create a dynamic provider from just its URL (centered modal). The server
+ * probes /capabilities to derive the name and seed the config skeleton; the
+ * provider is created disabled, then configured via the settings panel. */
+function CreateProviderModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const t = useT();
+  const colors = useColors();
+  const { create } = useProviderMutations();
+  const [url, setUrl] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  // Reset on each open.
+  useEffect(() => {
+    if (visible) {
+      setUrl('');
+      setError(null);
+    }
+  }, [visible]);
+
+  const submit = () => {
+    if (!/^https?:\/\/.+/.test(url)) {
+      setError(t('admin.providers.invalidEndpoint'));
+      return;
+    }
+    setError(null);
+    create.mutate(url.trim(), { onSuccess: onClose, onError: (e) => setError(tError(e)) });
+  };
+
+  return (
+    <Modal transparent animationType="fade" visible={visible} onRequestClose={onClose}>
+      <Pressable className="flex-1 items-center justify-center bg-black/60 px-6" onPress={onClose}>
+        <Pressable className="w-full max-w-[440px] gap-3 rounded-2xl bg-surface p-5" onPress={(e) => e.stopPropagation()}>
+          <View className="flex-row items-center justify-between">
+            <Text className="text-lg font-bold tracking-tight text-foreground">{t('admin.providers.newTitle')}</Text>
+            <IconButton name="close" color={colors.muted} onPress={onClose} accessibilityLabel={t('admin.providers.close')} />
+          </View>
+          <Text className="text-sm text-muted">{t('admin.providers.createSubtitle')}</Text>
+          <Field
+            label={t('admin.providers.endpointLabel')}
+            placeholder="https://mon-service.internal"
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="url"
+            value={url}
+            onChangeText={setUrl}
+          />
+          {error ? <Text className="text-xs text-danger">{error}</Text> : null}
+          <Button title={t('admin.providers.create')} icon="add" loading={create.isPending} onPress={submit} />
         </Pressable>
       </Pressable>
     </Modal>
@@ -444,59 +497,17 @@ function JsonConfigField({ value, onChangeText }: { value: string; onChangeText:
   );
 }
 
-/** Generate a { header, params } config skeleton from a capabilities schema,
- * keeping any values the admin already entered. */
-function skeletonFromCaps(caps: ProviderCapabilities, existing: string): string {
-  let prev: { header?: Record<string, string>; params?: Record<string, string> } = {};
-  try {
-    prev = JSON.parse(existing || '{}');
-  } catch {
-    prev = {};
-  }
-  const header = { ...(prev.header ?? {}) };
-  const params = { ...(prev.params ?? {}) };
-  for (const [key, f] of Object.entries(caps.config ?? {})) {
-    if (f.where === 'header' && !(key in header)) header[key] = '';
-    else if (f.where === 'params' && !(key in params)) params[key] = '';
-  }
-  const obj: Record<string, unknown> = {};
-  if (Object.keys(header).length) obj.header = header;
-  if (Object.keys(params).length) obj.params = params;
-  return JSON.stringify(obj, null, 2);
-}
-
-function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose: () => void }) {
+/** Settings side panel for an existing provider: edit the config (validated
+ * against /capabilities on save for HTTP providers), reorder is on the card. */
+function ProviderModal({ initial, onClose }: { initial: Provider; onClose: () => void }) {
   const t = useT();
   const colors = useColors();
-  const client = useAuth((s) => s.client);
   const { upsert, remove } = useProviderMutations();
-  const isEdit = !!initial;
-  const isBuiltin = !!initial?.builtin;
-  const [name, setName] = useState(initial?.name ?? '');
-  const [endpoint, setEndpoint] = useState(initial?.endpoint ?? '');
-  const [config, setConfig] = useState(initial?.config ?? '{}');
-  const [enabled, setEnabled] = useState(initial?.enabled ?? true);
+  const isBuiltin = initial.builtin;
+  const [endpoint, setEndpoint] = useState(initial.endpoint);
+  const [config, setConfig] = useState(initial.config || '{}');
   const [error, setError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
-  // New-provider detection: the name + config skeleton come from /capabilities.
-  const [detecting, setDetecting] = useState(false);
-  const [detected, setDetected] = useState<ProviderCapabilities | null>(null);
-
-  const detect = async () => {
-    setError(null);
-    setDetecting(true);
-    try {
-      const caps = await client!.fetchProviderCapabilities(endpoint);
-      setDetected(caps);
-      setName(caps.name);
-      setConfig(skeletonFromCaps(caps, config));
-    } catch (e) {
-      setDetected(null);
-      setError(tError(e));
-    } finally {
-      setDetecting(false);
-    }
-  };
 
   // Slide-in-from-the-right animation (RN Modal has no lateral slide).
   const PANEL_W = 540;
@@ -516,9 +527,6 @@ function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose
     ]).start(() => onClose());
 
   const validate = (): string | null => {
-    // A new provider's name comes from the capabilities probe — detect first.
-    if (!isEdit && !detected) return t('admin.providers.detectFirst');
-    if (!SLUG_RE.test(name)) return t('admin.providers.invalidName');
     // Built-ins have no endpoint (the server compiles in how to reach them).
     if (!isBuiltin && !/^https?:\/\/.+/.test(endpoint)) return t('admin.providers.invalidEndpoint');
     const trimmed = config.trim();
@@ -539,8 +547,15 @@ function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose
       return;
     }
     setError(null);
+    // Preserve the current enabled state — enabling is done from the card switch.
     upsert.mutate(
-      { name, endpoint, config: config.trim() || '{}', enabled, kind: isBuiltin ? 'builtin' : 'http' },
+      {
+        name: initial.name,
+        endpoint,
+        config: config.trim() || '{}',
+        enabled: initial.enabled,
+        kind: isBuiltin ? 'builtin' : 'http',
+      },
       { onSuccess: close, onError: (e) => setError(tError(e)) },
     );
   };
@@ -555,7 +570,7 @@ function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose
           <Pressable className="h-full bg-surface" onPress={(e) => e.stopPropagation()}>
           <View className="flex-row items-center justify-between border-b border-border px-5 py-4">
             <Text className="text-lg font-bold tracking-tight text-foreground">
-              {isEdit ? t('admin.providers.editTitle', { name: initial?.name }) : t('admin.providers.newTitle')}
+              {t('admin.providers.editTitle', { name: initial.name })}
             </Text>
             <IconButton name="close" color={colors.muted} onPress={close} accessibilityLabel={t('admin.providers.close')} />
           </View>
@@ -565,65 +580,36 @@ function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose
             contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 16, gap: 12 }}
             keyboardShouldPersistTaps="handled"
           >
-            {/* Name: locked on edit; for a new provider it comes from the
-                detected capabilities (no manual name field). */}
-            {isEdit ? (
-              <Field
-                label={t('admin.providers.nameLabel')}
-                editable={false}
-                help={t('admin.providers.nameHelpLocked')}
-                value={name}
-                onChangeText={setName}
-              />
-            ) : detected ? (
-              <View className="rounded-xl bg-surface-alt px-3 py-2">
-                <Text className="text-xs text-muted">{t('admin.providers.nameLabel')}</Text>
-                <Text className="text-sm font-semibold text-foreground">
-                  {detected.name} · v{detected.version}
-                </Text>
-              </View>
-            ) : null}
-
+            <Field
+              label={t('admin.providers.nameLabel')}
+              editable={false}
+              help={t('admin.providers.nameHelpLocked')}
+              value={initial.name}
+            />
             {!isBuiltin ? (
-              <View className="gap-2">
-                <Field
-                  label={t('admin.providers.endpointLabel')}
-                  placeholder="https://mon-service.internal"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  keyboardType="url"
-                  help={isEdit ? undefined : t('admin.providers.endpointHelp')}
-                  value={endpoint}
-                  onChangeText={setEndpoint}
-                />
-                {!isEdit ? (
-                  <Button
-                    title={t('admin.providers.detect')}
-                    icon="search"
-                    variant="secondary"
-                    loading={detecting}
-                    onPress={detect}
-                  />
-                ) : null}
-              </View>
+              <Field
+                label={t('admin.providers.endpointLabel')}
+                placeholder="https://mon-service.internal"
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="url"
+                value={endpoint}
+                onChangeText={setEndpoint}
+              />
             ) : null}
             <JsonConfigField value={config} onChangeText={setConfig} />
-            <View className="flex-row items-center justify-between rounded-xl bg-surface-alt px-3 py-2">
-              <Text className="text-sm font-medium text-foreground">{t('admin.providers.enableNow')}</Text>
-              <Switch value={enabled} onValueChange={setEnabled} trackColor={{ true: colors.primary, false: colors.border }} />
-            </View>
 
             {error ? <Text className="text-xs text-danger">{error}</Text> : null}
 
             <Button
-              title={isEdit ? t('admin.providers.save') : t('admin.providers.create')}
+              title={t('admin.providers.save')}
               icon="save-outline"
               loading={upsert.isPending}
               onPress={submit}
             />
 
             {/* Delete lives here (built-ins are never deletable). */}
-            {isEdit && initial?.deletable ? (
+            {initial.deletable ? (
               confirming ? (
                 <Button
                   title={t('admin.providers.confirmDelete')}
@@ -637,8 +623,7 @@ function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose
               )
             ) : null}
 
-            {/* Recent provider errors/warnings — only for a saved provider. */}
-            {isEdit && initial ? <ProviderLogsSection name={initial.name} /> : null}
+            <ProviderLogsSection name={initial.name} />
           </ScrollView>
           </Pressable>
         </Animated.View>

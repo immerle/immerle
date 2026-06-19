@@ -70,10 +70,6 @@ const (
 	artistImagePath   = "/artist/image"
 )
 
-// ProtocolVersion is the HTTP-provider protocol this client speaks. A remote's
-// /capabilities must advertise this exact version.
-const ProtocolVersion = 1
-
 // slugRe constrains the name a remote declares for itself.
 var slugRe = regexp.MustCompile(`^[a-z0-9][a-z0-9_-]*$`)
 
@@ -154,8 +150,8 @@ func (p *Provider) Verify(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if caps.Version != ProtocolVersion {
-		return fmt.Errorf("%s: remote protocol version %d unsupported (expected %d)", p.name, caps.Version, ProtocolVersion)
+	if caps.Version != providers.ProtocolVersion {
+		return fmt.Errorf("%s: remote protocol version %d unsupported (expected %d)", p.name, caps.Version, providers.ProtocolVersion)
 	}
 	if !slugRe.MatchString(caps.Name) {
 		return fmt.Errorf("%s: capabilities name %q is not a valid slug", p.name, caps.Name)

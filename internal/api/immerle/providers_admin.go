@@ -72,45 +72,6 @@ func (h *Handler) handleProviders(w http.ResponseWriter, r *http.Request) {
 	writeResource(w, http.StatusOK, out)
 }
 
-// capabilitiesRequest is the body for POST /admin/providers/capabilities.
-type capabilitiesRequest struct {
-	Endpoint string `json:"endpoint"`
-	Config   string `json:"config"`
-}
-
-// handleProviderCapabilities fetches a remote HTTP provider's advertised
-// capabilities (version, name, config schema) so the admin add flow can derive
-// the provider name and generate the config skeleton before saving.
-//
-// @Summary      Fetch a remote provider's capabilities
-// @Description  Admin only. Probes the given endpoint's mandatory /capabilities endpoint and returns the advertised contract.
-// @Tags         admin
-// @Security     BearerAuth
-// @Accept       json
-// @Produce      json
-// @Param        body  body  capabilitiesRequest  true  "Endpoint to probe"
-// @Success      200  {object}  ProviderCapabilitiesDTO
-// @Failure      400  {object}  errorResponse
-// @Failure      401  {object}  errorResponse
-// @Failure      403  {object}  errorResponse
-// @Failure      503  {object}  errorResponse
-// @Router       /admin/providers/capabilities [post]
-func (h *Handler) handleProviderCapabilities(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) || !h.providersAvailable(w) {
-		return
-	}
-	var req capabilitiesRequest
-	if !decodeJSON(w, r, &req) {
-		return
-	}
-	caps, err := h.Providers.Capabilities(r.Context(), req.Endpoint, req.Config)
-	if err != nil {
-		writeErrorParams(w, http.StatusBadRequest, "bad_request", err.Error(), map[string]any{"detail": err.Error()})
-		return
-	}
-	writeResource(w, http.StatusOK, caps)
-}
-
 // upsertProviderRequest is the body for POST /admin/providers.
 type upsertProviderRequest struct {
 	Name     string `json:"name"`
@@ -120,10 +81,14 @@ type upsertProviderRequest struct {
 	Enabled  *bool  `json:"enabled"`
 }
 
-// handleProviderUpsert creates or updates an on-demand provider.
+// handleProviderUpsert creates or updates an on-demand provider. A request with
+// no name and an endpoint creates a dynamic HTTP provider from its URL: the
+// server probes /capabilities, takes the declared name and seeds the config
+// skeleton (created disabled). A request with a name updates that provider; for
+// HTTP providers the config is then validated against /capabilities.
 //
 // @Summary      Create or update an on-demand provider
-// @Description  Admin only. A provider is content-neutral: a name, an HTTP endpoint and an opaque JSON config. Applied immediately — an enabled provider is registered live, a disabled one is removed.
+// @Description  Admin only. With only an endpoint (no name), creates an HTTP provider from its URL by probing /capabilities. With a name, updates it (HTTP config is validated against /capabilities).
 // @Tags         admin
 // @Security     BearerAuth
 // @Accept       json
@@ -141,6 +106,17 @@ func (h *Handler) handleProviderUpsert(w http.ResponseWriter, r *http.Request) {
 	}
 	var req upsertProviderRequest
 	if !decodeJSON(w, r, &req) {
+		return
+	}
+	// No name + an endpoint → create a dynamic provider from its URL.
+	if req.Name == "" && req.Endpoint != "" {
+		saved, err := h.Providers.CreateFromURL(r.Context(), req.Endpoint)
+		if err != nil {
+			writeErrorParams(w, http.StatusBadRequest, "bad_request", err.Error(), map[string]any{"detail": err.Error()})
+			return
+		}
+		h.Logger.Info("provider created from url", "provider", saved.Name, "by", userFrom(r.Context()).Username)
+		writeResource(w, http.StatusOK, h.providerView(saved, nil))
 		return
 	}
 	enabled := true

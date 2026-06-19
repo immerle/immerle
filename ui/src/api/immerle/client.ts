@@ -30,7 +30,6 @@ import {
   ImmerleSession,
   LibraryStats,
   Provider,
-  ProviderCapabilities,
   ProviderLog,
   ScanProgress,
   ServerSettings,
@@ -263,18 +262,13 @@ export class ImmerleClient {
     return this.listProviders();
   }
 
-  /** Probe a remote provider's mandatory /capabilities (used by the add flow to
-   * derive the name and generate the config skeleton). */
-  async fetchProviderCapabilities(endpoint: string, config?: string): Promise<ProviderCapabilities> {
-    const { data, error } = await this.api.POST('/admin/providers/capabilities', {
-      body: { endpoint, config },
-    });
-    if (error || !data) throw apiErr(error, 'provider_capabilities_failed');
-    return {
-      version: data.version ?? 0,
-      name: data.name ?? '',
-      config: (data.config ?? {}) as ProviderCapabilities['config'],
-    };
+  /** Create a dynamic HTTP provider from just its URL. The server probes the
+   * remote's /capabilities to derive the name and seed the config skeleton; the
+   * provider is created disabled. Returns the refreshed list. */
+  async createProvider(endpoint: string): Promise<Provider[]> {
+    const { error } = await this.api.POST('/admin/providers', { body: { endpoint } });
+    if (error) throw apiErr(error, 'provider_create_failed');
+    return this.listProviders();
   }
 
   /** Toggle a provider on/off; applied to the live registry immediately. */
