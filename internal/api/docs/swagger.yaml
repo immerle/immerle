@@ -897,6 +897,45 @@ components:
         username:
           type: string
       type: object
+    immerle.nowPlayingView:
+      properties:
+        minutesAgo:
+          type: integer
+        song:
+          $ref: '#/components/schemas/immerle.songView'
+        username:
+          type: string
+      type: object
+    immerle.playQueueRequest:
+      properties:
+        client:
+          type: string
+        current:
+          type: string
+        ids:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+        position:
+          type: integer
+      type: object
+    immerle.playQueueView:
+      properties:
+        changedAt:
+          type: string
+        changedBy:
+          type: string
+        current:
+          type: string
+        entries:
+          items:
+            $ref: '#/components/schemas/immerle.songView'
+          type: array
+          uniqueItems: false
+        position:
+          type: integer
+      type: object
     immerle.radioRequest:
       properties:
         coverUrl:
@@ -3185,6 +3224,86 @@ paths:
       summary: Update your account
       tags:
       - users
+  /now-playing:
+    get:
+      description: Returns the tracks every user is currently playing, newest first.
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  items:
+                    $ref: '#/components/schemas/immerle.nowPlayingView'
+                  type: array
+                type: object
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Now playing
+      tags:
+      - playback
+  /play-queue:
+    get:
+      description: Returns the caller's saved cross-device play queue with its tracks.
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.playQueueView'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Get play queue
+      tags:
+      - playback
+    put:
+      description: Replaces the caller's saved play queue (tracks, current track and
+        position).
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/immerle.playQueueRequest'
+                description: Play queue
+                summary: body
+        description: Play queue
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Save play queue
+      tags:
+      - playback
   /playlists/{id}/collaborators:
     post:
       description: Owner-only. Marks the playlist collaborative and grants edit rights

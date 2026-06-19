@@ -339,6 +339,7 @@ func New(cfg config.Config) (*App, error) {
 		Annotations:  store.Annotations,
 		Genres:       store.Genres,
 		Scrobbles:    store.Scrobbles,
+		PlayQueues:   store.PlayQueues,
 		NowPlaying:   nowPlaying,
 		OnDemand:     onDemand,
 		LibraryStats: libraryStats,
