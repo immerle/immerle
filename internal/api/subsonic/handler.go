@@ -54,6 +54,7 @@ type Handler struct {
 	library     *core.LibraryService
 	playback    *core.PlaybackService
 	playlistSvc *core.PlaylistService
+	userSvc     *core.UserService
 }
 
 // NewHandler builds a Subsonic handler.
@@ -63,6 +64,7 @@ func NewHandler(d Deps) *Handler {
 		library:     core.NewLibraryService(d.Catalog, d.Annotations, d.OnDemand),
 		playback:    core.NewPlaybackService(d.Catalog, d.Annotations, d.Scrobbles, d.OnDemand, d.Activity, d.NowPlaying),
 		playlistSvc: core.NewPlaylistService(d.Playlists, d.Annotations, d.Activity),
+		userSvc:     core.NewUserService(d.Users, d.Auth),
 	}
 }
 
