@@ -42,27 +42,14 @@ import (
 	"github.com/immerle/immerle/internal/providers"
 )
 
-// Config is the JSON config payload supplied per provider. Every field is
-// optional; only Headers typically needs setting (to authenticate to the
-// service). Endpoint paths are fixed by the protocol (see the path constants).
-type Config struct {
-	// Headers are sent on every request (e.g. {"Authorization": "Bearer ..."}).
-	Headers map[string]string `json:"headers,omitempty"`
-	// Quality is a free-form label reported as the provider's MaxQuality.
-	Quality string `json:"quality,omitempty"`
-	// TimeoutSeconds bounds each HTTP call (default 60).
-	TimeoutSeconds int `json:"timeoutSeconds,omitempty"`
-	// DownloadRetries is the number of attempts for a download before giving up
-	// (default 3). Only the pre-stream phase (request + status) is retried; once
-	// audio bytes start flowing to the caller they are never replayed.
-	DownloadRetries int `json:"downloadRetries,omitempty"`
-}
-
-// Provider is a generic HTTP-backed provider.
+// Provider is a generic HTTP-backed provider. Its config uses the shared
+// providers.Config schema: Header are sent on every request, Params are appended
+// to every request's query string. DownloadRetries: only the pre-stream phase
+// (request + status) is retried; once audio bytes flow they are never replayed.
 type Provider struct {
 	name     string
 	endpoint string
-	cfg      Config
+	cfg      providers.Config
 	http     *http.Client
 }
 
@@ -92,11 +79,9 @@ func New(name, endpoint, configJSON string) (*Provider, error) {
 		return nil, fmt.Errorf("httpprovider: endpoint must be an absolute http(s) URL")
 	}
 
-	var cfg Config
-	if s := strings.TrimSpace(configJSON); s != "" {
-		if err := json.Unmarshal([]byte(s), &cfg); err != nil {
-			return nil, fmt.Errorf("httpprovider: invalid config JSON: %w", err)
-		}
+	cfg, err := providers.ParseConfig(configJSON)
+	if err != nil {
+		return nil, fmt.Errorf("httpprovider: %w", err)
 	}
 	timeout := 60 * time.Second
 	if cfg.TimeoutSeconds > 0 {
@@ -169,6 +154,13 @@ func (t track) toResult() providers.Result {
 }
 
 func (p *Provider) newRequest(ctx context.Context, path string, q url.Values) (*http.Request, error) {
+	// Merge static config params, without overriding the protocol params
+	// (q/limit/id) the caller already set.
+	for k, v := range p.cfg.Params {
+		if q.Get(k) == "" {
+			q.Set(k, v)
+		}
+	}
 	u := p.endpoint + path
 	if len(q) > 0 {
 		u += "?" + q.Encode()
@@ -177,7 +169,7 @@ func (p *Provider) newRequest(ctx context.Context, path string, q url.Values) (*
 	if err != nil {
 		return nil, err
 	}
-	for k, v := range p.cfg.Headers {
+	for k, v := range p.cfg.Header {
 		req.Header.Set(k, v)
 	}
 	return req, nil

@@ -39,12 +39,13 @@ func NewJamendoProvider(clientID, audioFormat, baseURL string) *JamendoProvider 
 }
 
 func init() {
-	RegisterFactory("jamendo", func(settings map[string]string) (Provider, error) {
-		clientID := setting(settings, "client_id", "")
+	RegisterFactory("jamendo", func(cfg Config) (Provider, error) {
+		clientID := cfg.Param("client_id", "")
 		if clientID == "" {
 			return nil, fmt.Errorf("jamendo: client_id is required (free key from developer.jamendo.com)")
 		}
-		return NewJamendoProvider(clientID, setting(settings, "audioformat", "mp32"), setting(settings, "base_url", "")), nil
+		// base_url is hardcoded in the constructor; not configurable.
+		return NewJamendoProvider(clientID, cfg.Param("audioformat", "mp32"), ""), nil
 	})
 }
 

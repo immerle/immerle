@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
-import { Modal, Platform, Pressable, ScrollView, Switch, Text, View } from 'react-native';
+import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Modal, Platform, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
+import { useColorScheme } from 'nativewind';
 import { Stack } from 'expo-router';
 import { useAuth } from '../../src/auth/store';
 import { useProviderLogs, useProviderMutations, useProviders, useSettings, useUpdateSettings } from '../../src/query/admin';
@@ -295,6 +296,127 @@ function ArrowButton({ icon, onPress, disabled }: { icon: string; onPress?: () =
   );
 }
 
+// JSON syntax-highlight palette (token → hex), tuned for both themes.
+const JSON_SYNTAX = {
+  light: { key: '#0b7285', str: '#2b8a3e', num: '#e8590c', lit: '#9c36b5', punct: '#868e96' },
+  dark: { key: '#66d9e8', str: '#69db7c', num: '#ffa94d', lit: '#da77f2', punct: '#909296' },
+} as const;
+
+// One regex pass: object keys ("…":), strings, true/false/null, numbers, punctuation.
+const JSON_TOKEN_RE =
+  /("(?:\\.|[^"\\])*"\s*:)|("(?:\\.|[^"\\])*")|(\b(?:true|false|null)\b)|(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)|([{}[\],:])/g;
+
+/** Tokenize JSON source into colored <Text> spans (best-effort; never throws). */
+function highlightJson(src: string, pal: { key: string; str: string; num: string; lit: string; punct: string }, fallback: string) {
+  const out: ReactNode[] = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
+  JSON_TOKEN_RE.lastIndex = 0;
+  while ((m = JSON_TOKEN_RE.exec(src))) {
+    if (m.index > last) out.push(<Text key={last} style={{ color: fallback }}>{src.slice(last, m.index)}</Text>);
+    const [full, key, str, lit, num] = m;
+    const color = key ? pal.key : str ? pal.str : lit ? pal.lit : num ? pal.num : pal.punct;
+    out.push(<Text key={m.index} style={{ color }}>{full}</Text>);
+    last = m.index + full.length;
+  }
+  if (last < src.length) out.push(<Text key="tail" style={{ color: fallback }}>{src.slice(last)}</Text>);
+  return out;
+}
+
+/** Config editor: monospace JSON with syntax highlighting, live validation and a
+ * Format button. The unified schema is { header: {…}, params: {…}, … }. A colored
+ * <Text> overlay sits behind a transparent-glyph TextInput (admin is web-only). */
+function JsonConfigField({ value, onChangeText }: { value: string; onChangeText: (v: string) => void }) {
+  const t = useT();
+  const colors = useColors();
+  const { colorScheme } = useColorScheme();
+  const pal = colorScheme === 'dark' ? JSON_SYNTAX.dark : JSON_SYNTAX.light;
+  const placeholder = '{\n  "header": {},\n  "params": {}\n}';
+
+  // Web textarea DOM node, for caret-aware Tab handling.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const inputRef = useRef<any>(null);
+
+  const error = useMemo(() => {
+    const s = value.trim();
+    if (!s) return null;
+    try {
+      JSON.parse(s);
+      return null;
+    } catch (e) {
+      return (e as Error).message;
+    }
+  }, [value]);
+
+  // Tab inserts two spaces at the caret instead of moving focus (web-only).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const onKeyPress = (e: any) => {
+    if (e?.nativeEvent?.key !== 'Tab') return;
+    e.preventDefault?.();
+    const el = inputRef.current;
+    const start = el?.selectionStart ?? value.length;
+    const end = el?.selectionEnd ?? start;
+    onChangeText(value.slice(0, start) + '  ' + value.slice(end));
+    requestAnimationFrame(() => {
+      if (el && typeof el.setSelectionRange === 'function') el.setSelectionRange(start + 2, start + 2);
+    });
+  };
+
+  // Shared text metrics so the overlay lines up exactly with the input.
+  const textStyle = {
+    fontFamily: Platform.select({ web: 'monospace', default: 'Courier' }),
+    fontSize: 13,
+    lineHeight: 20,
+    padding: 10,
+  } as const;
+
+  return (
+    <View className="gap-1.5">
+      <View className="flex-row items-center justify-between">
+        <Text className="text-sm font-medium text-foreground">{t('admin.providers.configLabel')}</Text>
+        <Pressable
+          onPress={() => onChangeText(JSON.stringify(JSON.parse(value), null, 2))}
+          disabled={!!error || !value.trim()}
+          className={`rounded-lg px-2 py-1 ${error || !value.trim() ? 'opacity-40' : 'bg-surface-alt active:opacity-70'}`}
+        >
+          <Text className="text-xs text-foreground">{t('admin.providers.configFormat')}</Text>
+        </Pressable>
+      </View>
+      <View style={{ position: 'relative', minHeight: 140, borderWidth: 1, borderColor: error ? colors.danger : colors.border, borderRadius: 12 }}>
+        {/* Colored layer behind the input (or the placeholder when empty). */}
+        <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
+          <Text style={textStyle}>
+            {value ? highlightJson(value, pal, colors.foreground) : <Text style={{ color: colors.muted }}>{placeholder}</Text>}
+          </Text>
+        </View>
+        <TextInput
+          ref={inputRef}
+          value={value}
+          onChangeText={onChangeText}
+          onKeyPress={onKeyPress}
+          multiline
+          autoCapitalize="none"
+          autoCorrect={false}
+          spellCheck={false}
+          // Glyphs invisible (the overlay shows them in color) but the caret stays visible.
+          style={[
+            textStyle,
+            { flex: 1, minHeight: 140, textAlignVertical: 'top', color: colors.foreground },
+            // Web-only props (transparent glyphs, visible caret) — not in RN's TextStyle.
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (Platform.OS === 'web'
+              ? { WebkitTextFillColor: 'transparent', caretColor: colors.foreground }
+              : null) as any,
+          ]}
+        />
+      </View>
+      <Text className={`text-xs ${error ? 'text-danger' : 'text-muted'}`}>
+        {error ? t('admin.providers.configInvalid') : t('admin.providers.configHelp')}
+      </Text>
+    </View>
+  );
+}
+
 function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose: () => void }) {
   const t = useT();
   const colors = useColors();
@@ -307,6 +429,23 @@ function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose
   const [enabled, setEnabled] = useState(initial?.enabled ?? true);
   const [error, setError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
+
+  // Slide-in-from-the-right animation (RN Modal has no lateral slide).
+  const PANEL_W = 540;
+  const slide = useRef(new Animated.Value(PANEL_W)).current;
+  const fade = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(slide, { toValue: 0, duration: 220, useNativeDriver: false }),
+      Animated.timing(fade, { toValue: 1, duration: 220, useNativeDriver: false }),
+    ]).start();
+  }, [slide, fade]);
+  // Animate out, then let the parent unmount us.
+  const close = () =>
+    Animated.parallel([
+      Animated.timing(slide, { toValue: PANEL_W, duration: 180, useNativeDriver: false }),
+      Animated.timing(fade, { toValue: 0, duration: 180, useNativeDriver: false }),
+    ]).start(() => onClose());
 
   const validate = (): string | null => {
     if (!SLUG_RE.test(name)) return t('admin.providers.invalidName');
@@ -332,24 +471,28 @@ function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose
     setError(null);
     upsert.mutate(
       { name, endpoint, config: config.trim() || '{}', enabled, kind: isBuiltin ? 'builtin' : 'http' },
-      { onSuccess: onClose, onError: (e) => setError(tError(e)) },
+      { onSuccess: close, onError: (e) => setError(tError(e)) },
     );
   };
 
   return (
-    <Modal transparent animationType="fade" visible onRequestClose={onClose}>
-      <Pressable className="flex-1 items-center justify-center bg-black/60 px-6" onPress={onClose}>
-        <Pressable className="w-full max-w-[460px] overflow-hidden rounded-2xl bg-surface" onPress={(e) => e.stopPropagation()}>
-          <View className="flex-row items-center justify-between px-5 pb-2 pt-5">
+    <Modal transparent animationType="none" visible onRequestClose={close}>
+      <Pressable className="flex-1 flex-row justify-end" onPress={close}>
+        {/* Dimmed backdrop fades in/out with the panel. */}
+        <Animated.View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', opacity: fade }} />
+        {/* Side panel slides in from the right — room for the config editor + logs. */}
+        <Animated.View style={{ height: '100%', width: '100%', maxWidth: PANEL_W, transform: [{ translateX: slide }] }}>
+          <Pressable className="h-full bg-surface" onPress={(e) => e.stopPropagation()}>
+          <View className="flex-row items-center justify-between border-b border-border px-5 py-4">
             <Text className="text-lg font-bold tracking-tight text-foreground">
               {isEdit ? t('admin.providers.editTitle', { name: initial?.name }) : t('admin.providers.newTitle')}
             </Text>
-            <IconButton name="close" color={colors.muted} onPress={onClose} accessibilityLabel={t('admin.providers.close')} />
+            <IconButton name="close" color={colors.muted} onPress={close} accessibilityLabel={t('admin.providers.close')} />
           </View>
 
           <ScrollView
-            style={{ maxHeight: 460 }}
-            contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20, gap: 12 }}
+            style={{ flex: 1 }}
+            contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 16, gap: 12 }}
             keyboardShouldPersistTaps="handled"
           >
             <Field
@@ -373,18 +516,7 @@ function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose
                 onChangeText={setEndpoint}
               />
             ) : null}
-            <Field
-              label={t('admin.providers.configLabel')}
-              placeholder='{"headers":{"Authorization":"Bearer …"}}'
-              autoCapitalize="none"
-              autoCorrect={false}
-              multiline
-              numberOfLines={5}
-              style={{ minHeight: 110, textAlignVertical: 'top' }}
-              help={t('admin.providers.configHelp')}
-              value={config}
-              onChangeText={setConfig}
-            />
+            <JsonConfigField value={config} onChangeText={setConfig} />
             <View className="flex-row items-center justify-between rounded-xl bg-surface-alt px-3 py-2">
               <Text className="text-sm font-medium text-foreground">{t('admin.providers.enableNow')}</Text>
               <Switch value={enabled} onValueChange={setEnabled} trackColor={{ true: colors.primary, false: colors.border }} />
@@ -392,19 +524,12 @@ function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose
 
             {error ? <Text className="text-xs text-danger">{error}</Text> : null}
 
-            <View className="flex-row gap-2">
-              <View className="flex-1">
-                <Button title={t('admin.providers.cancel')} variant="ghost" onPress={onClose} />
-              </View>
-              <View className="flex-1">
-                <Button
-                  title={isEdit ? t('admin.providers.save') : t('admin.providers.create')}
-                  icon="save-outline"
-                  loading={upsert.isPending}
-                  onPress={submit}
-                />
-              </View>
-            </View>
+            <Button
+              title={isEdit ? t('admin.providers.save') : t('admin.providers.create')}
+              icon="save-outline"
+              loading={upsert.isPending}
+              onPress={submit}
+            />
 
             {/* Delete lives here (built-ins are never deletable). */}
             {isEdit && initial?.deletable ? (
@@ -414,7 +539,7 @@ function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose
                   icon="trash"
                   variant="danger"
                   loading={remove.isPending}
-                  onPress={() => remove.mutate(initial.name, { onSuccess: onClose })}
+                  onPress={() => remove.mutate(initial.name, { onSuccess: close })}
                 />
               ) : (
                 <Button title={t('admin.providers.delete')} icon="trash-outline" variant="danger" onPress={() => setConfirming(true)} />
@@ -424,7 +549,8 @@ function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose
             {/* Recent provider errors/warnings — only for a saved provider. */}
             {isEdit && initial ? <ProviderLogsSection name={initial.name} /> : null}
           </ScrollView>
-        </Pressable>
+          </Pressable>
+        </Animated.View>
       </Pressable>
     </Modal>
   );

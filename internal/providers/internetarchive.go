@@ -38,9 +38,10 @@ func NewInternetArchiveProvider(baseURL string, maxItems int) *InternetArchivePr
 }
 
 func init() {
-	RegisterFactory("internet-archive", func(settings map[string]string) (Provider, error) {
-		maxItems, _ := strconv.Atoi(setting(settings, "max_items", "8"))
-		return NewInternetArchiveProvider(setting(settings, "base_url", ""), maxItems), nil
+	RegisterFactory("internet-archive", func(cfg Config) (Provider, error) {
+		maxItems, _ := strconv.Atoi(cfg.Param("max_items", "8"))
+		// base_url is hardcoded in the constructor; not configurable.
+		return NewInternetArchiveProvider("", maxItems), nil
 	})
 }
 

@@ -4,7 +4,6 @@ package app
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -64,14 +63,14 @@ type App struct {
 // a registered factory are surfaced.
 func builtinProviderDefs() []core.BuiltinDef {
 	all := []core.BuiltinDef{
+		// CC-licensed; no credentials. First in order (highest search priority) and
+		// enabled by default.
+		{Name: "free-music-archive", DefaultConfig: `{}`, DefaultEnabled: true},
 		// Public-domain / CC; no credentials → enabled by default.
-		{Name: "internet-archive", DefaultConfig: `{"max_items":"8"}`, DefaultEnabled: true},
-		// CC-licensed; no credentials. Scrapes FMA's public site → disabled by
-		// default since it's more fragile than the API-backed providers.
-		{Name: "free-music-archive", DefaultConfig: `{}`, DefaultEnabled: false},
+		{Name: "internet-archive", DefaultConfig: `{"params":{"max_items":"8"}}`, DefaultEnabled: true},
 		// Needs a free API key → seeded disabled with a token placeholder to fill
 		// in via the admin UI before enabling.
-		{Name: "jamendo", DefaultConfig: `{"client_id":"<JAMENDO_TOKEN>","audioformat":"mp32"}`, DefaultEnabled: false},
+		{Name: "jamendo", DefaultConfig: `{"params":{"client_id":"<JAMENDO_TOKEN>","audioformat":"mp32"}}`, DefaultEnabled: false},
 	}
 	out := make([]core.BuiltinDef, 0, len(all))
 	for _, d := range all {
@@ -115,20 +114,6 @@ func (h hubPlaylistFetcher) FetchPlaylist(ctx context.Context, source, ref strin
 		pl.Tracks = append(pl.Tracks, importer.Track{Title: t.Title, Artist: t.Artist, Album: t.Album})
 	}
 	return pl, nil
-}
-
-// jsonToSettings flattens a provider config JSON object into the string settings
-// map consumed by built-in provider factories.
-func jsonToSettings(configJSON string) map[string]string {
-	out := map[string]string{}
-	var raw map[string]any
-	if err := json.Unmarshal([]byte(configJSON), &raw); err != nil {
-		return out
-	}
-	for k, v := range raw {
-		out[k] = fmt.Sprint(v)
-	}
-	return out
 }
 
 // transcodeConfig maps the runtime transcode settings to the streamer's config
@@ -242,7 +227,11 @@ func New(cfg config.Config) (*App, error) {
 	// provider is a content-neutral HTTP service.
 	build := func(c models.ProviderConfig) (providers.Provider, error) {
 		if c.Builtin() {
-			return providers.Build(c.Name, jsonToSettings(c.Config))
+			cfg, err := providers.ParseConfig(c.Config)
+			if err != nil {
+				return nil, err
+			}
+			return providers.Build(c.Name, cfg)
 		}
 		return httpprovider.New(c.Name, c.Endpoint, c.Config)
 	}
