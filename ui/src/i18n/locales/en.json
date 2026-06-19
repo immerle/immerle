@@ -19,6 +19,8 @@
     "name": "Name",
     "streamUrl": "Stream URL",
     "homepageUrl": "Homepage (optional)",
+    "logoUrl": "Logo URL (optional)",
+    "logoUrlHelp": "Image link; cached and served by the server. Leave empty to remove.",
     "save": "Save"
   },
   "settings": {

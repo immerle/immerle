@@ -394,11 +394,16 @@ export class ImmerleClient {
     return r.stations ?? [];
   }
 
-  async createRadioStation(body: { name: string; streamUrl: string; homepageUrl?: string }): Promise<RadioStation> {
+  /** Public URL of a station's locally-cached logo (no auth needed). */
+  radioCoverUrl(id: string): string {
+    return `${this.serverUrl}/api/v1/radio/stations/${encodeURIComponent(id)}/cover`;
+  }
+
+  async createRadioStation(body: { name: string; streamUrl: string; homepageUrl?: string; coverUrl?: string }): Promise<RadioStation> {
     return this.request<RadioStation>('POST', 'admin/radio/stations', body);
   }
 
-  async updateRadioStation(id: string, body: { name: string; streamUrl: string; homepageUrl?: string }): Promise<RadioStation> {
+  async updateRadioStation(id: string, body: { name: string; streamUrl: string; homepageUrl?: string; coverUrl?: string }): Promise<RadioStation> {
     return this.request<RadioStation>('PUT', `admin/radio/stations/${id}`, body);
   }
 

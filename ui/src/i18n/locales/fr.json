@@ -19,6 +19,8 @@
     "name": "Nom",
     "streamUrl": "URL du flux",
     "homepageUrl": "Site web (optionnel)",
+    "logoUrl": "URL du logo (optionnel)",
+    "logoUrlHelp": "Lien d'image ; mis en cache et servi par le serveur. Vide pour retirer.",
     "save": "Enregistrer"
   },
   "settings": {

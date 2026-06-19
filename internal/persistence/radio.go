@@ -16,13 +16,13 @@ import (
 // RadioRepo persists internet radio stations.
 type RadioRepo struct{ *base }
 
-const radioCols = `id, name, stream_url, homepage_url, builtin, sort_order, created_at, updated_at`
+const radioCols = `id, name, stream_url, homepage_url, cover_art, builtin, sort_order, created_at, updated_at`
 
 func scanStation(s rowScanner) (models.RadioStation, error) {
 	var st models.RadioStation
 	var builtin int
 	var created, updated int64
-	if err := s.Scan(&st.ID, &st.Name, &st.StreamURL, &st.HomepageURL, &builtin, &st.SortOrder, &created, &updated); err != nil {
+	if err := s.Scan(&st.ID, &st.Name, &st.StreamURL, &st.HomepageURL, &st.CoverArt, &builtin, &st.SortOrder, &created, &updated); err != nil {
 		return st, err
 	}
 	st.Builtin = builtin != 0
@@ -60,15 +60,15 @@ func (r *RadioRepo) Get(ctx context.Context, id string) (models.RadioStation, er
 
 // Create inserts a station.
 func (r *RadioRepo) Create(ctx context.Context, st models.RadioStation) error {
-	_, err := r.exec(ctx, `INSERT INTO radio_stations (`+radioCols+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		st.ID, st.Name, st.StreamURL, st.HomepageURL, db.Bool(st.Builtin), st.SortOrder, db.Millis(st.CreatedAt), db.Millis(st.UpdatedAt))
+	_, err := r.exec(ctx, `INSERT INTO radio_stations (`+radioCols+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		st.ID, st.Name, st.StreamURL, st.HomepageURL, st.CoverArt, db.Bool(st.Builtin), st.SortOrder, db.Millis(st.CreatedAt), db.Millis(st.UpdatedAt))
 	return err
 }
 
 // Update changes a station's name, stream and homepage.
 func (r *RadioRepo) Update(ctx context.Context, st models.RadioStation) error {
-	_, err := r.exec(ctx, `UPDATE radio_stations SET name=?, stream_url=?, homepage_url=?, updated_at=? WHERE id=?`,
-		st.Name, st.StreamURL, st.HomepageURL, db.Millis(st.UpdatedAt), st.ID)
+	_, err := r.exec(ctx, `UPDATE radio_stations SET name=?, stream_url=?, homepage_url=?, cover_art=?, updated_at=? WHERE id=?`,
+		st.Name, st.StreamURL, st.HomepageURL, st.CoverArt, db.Millis(st.UpdatedAt), st.ID)
 	return err
 }
 

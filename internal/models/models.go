@@ -207,14 +207,18 @@ func DefaultRuntimeSettings() RuntimeSettings {
 // optional homepage. Built-in stations ship with the server and can be edited
 // or disabled but not deleted; custom ones are admin-added.
 type RadioStation struct {
-	ID          string    `json:"id"`
-	Name        string    `json:"name"`
-	StreamURL   string    `json:"streamUrl"`
-	HomepageURL string    `json:"homepageUrl"`
-	Builtin     bool      `json:"builtin"`
-	SortOrder   int       `json:"sortOrder"`
-	CreatedAt   time.Time `json:"createdAt"`
-	UpdatedAt   time.Time `json:"updatedAt"`
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	StreamURL   string `json:"streamUrl"`
+	HomepageURL string `json:"homepageUrl"`
+	// CoverArt is the station logo source URL. It is fetched and cached on the
+	// server and served locally via the station cover endpoint (so clients don't
+	// hotlink external logos). Empty means "no logo" (clients show a fallback).
+	CoverArt  string    `json:"coverArt"`
+	Builtin   bool      `json:"builtin"`
+	SortOrder int       `json:"sortOrder"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // LibraryStats is a snapshot of the library analytics: catalog cardinalities

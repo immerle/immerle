@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth/store';
 import { qk } from './keys';
 
-type StationBody = { name: string; streamUrl: string; homepageUrl?: string };
+type StationBody = { name: string; streamUrl: string; homepageUrl?: string; coverUrl?: string };
 
 export function useRadioStations() {
   const client = useAuth((s) => s.client);

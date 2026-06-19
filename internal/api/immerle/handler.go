@@ -105,6 +105,8 @@ func (h *Handler) Register(mux chi.Router) {
 		r.Get("/setup", h.handleSetupStatus)
 		r.Post("/setup", h.handleSetupInit)
 		r.Post("/auth/sessions", h.handleLogin)
+		// Station logos are cached public images (loadable as a plain <img>).
+		r.Get("/radio/stations/{id}/cover", h.handleRadioCover)
 
 		// Everything below requires a Bearer token.
 		r.Group(func(r chi.Router) {

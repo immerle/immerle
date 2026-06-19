@@ -1117,6 +1117,10 @@
             },
             "immerle.radioRequest": {
                 "properties": {
+                    "coverUrl": {
+                        "description": "CoverURL is the station logo source URL (fetched + cached server-side).",
+                        "type": "string"
+                    },
                     "homepageUrl": {
                         "type": "string"
                     },
@@ -1183,6 +1187,10 @@
                     },
                     "deletable": {
                         "description": "Deletable is false for built-in stations (they can be edited, not removed).",
+                        "type": "boolean"
+                    },
+                    "hasCover": {
+                        "description": "HasCover tells clients whether to load the station cover endpoint.",
                         "type": "boolean"
                     },
                     "homepageUrl": {
@@ -4503,6 +4511,48 @@
                     }
                 ],
                 "summary": "List internet radio stations",
+                "tags": [
+                    "radio"
+                ]
+            }
+        },
+        "/radio/stations/{id}/cover": {
+            "get": {
+                "parameters": [
+                    {
+                        "description": "Station id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "image/png": {
+                                "schema": {
+                                    "format": "binary",
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "404": {
+                        "content": {
+                            "image/png": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "summary": "Station logo",
                 "tags": [
                     "radio"
                 ]

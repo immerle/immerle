@@ -1,13 +1,24 @@
 package immerle
 
 import (
+	"context"
+	"fmt"
+	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 )
+
+// radioCoverClient fetches station logos with a bounded timeout.
+var radioCoverClient = &http.Client{Timeout: 12 * time.Second}
+
+// maxRadioCoverBytes caps a fetched station logo (5 MiB).
+const maxRadioCoverBytes = 5 << 20
 
 // radioEnabled reports whether internet radio is on (default on when settings
 // are unavailable, e.g. in tests).
@@ -23,10 +34,14 @@ type stationView struct {
 	Builtin     bool   `json:"builtin"`
 	// Deletable is false for built-in stations (they can be edited, not removed).
 	Deletable bool `json:"deletable"`
+	// HasCover tells clients whether to load the station cover endpoint.
+	HasCover bool `json:"hasCover"`
+	// CoverURL is the logo source URL (for prefilling the admin edit form).
+	CoverURL string `json:"coverUrl"`
 }
 
 func toStationView(s models.RadioStation) stationView {
-	return stationView{ID: s.ID, Name: s.Name, StreamURL: s.StreamURL, HomepageURL: s.HomepageURL, Builtin: s.Builtin, Deletable: !s.Builtin}
+	return stationView{ID: s.ID, Name: s.Name, StreamURL: s.StreamURL, HomepageURL: s.HomepageURL, Builtin: s.Builtin, Deletable: !s.Builtin, HasCover: s.CoverArt != "", CoverURL: s.CoverArt}
 }
 
 // handleRadioList lists the radio stations (any authenticated user).
@@ -60,6 +75,8 @@ type radioRequest struct {
 	Name        string `json:"name"`
 	StreamURL   string `json:"streamUrl"`
 	HomepageURL string `json:"homepageUrl"`
+	// CoverURL is the station logo source URL (fetched + cached server-side).
+	CoverURL string `json:"coverUrl"`
 }
 
 func (req radioRequest) valid() bool {
@@ -95,7 +112,7 @@ func (h *Handler) handleRadioCreate(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
 	st := models.RadioStation{
 		ID: persistence.NewStationID(), Name: strings.TrimSpace(req.Name), StreamURL: strings.TrimSpace(req.StreamURL),
-		HomepageURL: strings.TrimSpace(req.HomepageURL), CreatedAt: now, UpdatedAt: now,
+		HomepageURL: strings.TrimSpace(req.HomepageURL), CoverArt: strings.TrimSpace(req.CoverURL), CreatedAt: now, UpdatedAt: now,
 	}
 	if err := h.Radio.Create(r.Context(), st); err != nil {
 		writeInternal(w, err)
@@ -139,6 +156,13 @@ func (h *Handler) handleRadioUpdate(w http.ResponseWriter, r *http.Request) {
 		st.StreamURL = strings.TrimSpace(req.StreamURL)
 	}
 	st.HomepageURL = strings.TrimSpace(req.HomepageURL)
+	newCover := strings.TrimSpace(req.CoverURL)
+	if newCover != st.CoverArt {
+		// The logo changed: drop the stale cached image so the next request
+		// re-fetches from the new source.
+		_ = os.Remove(radioCoverPath(h.CoversDir, st.ID))
+		st.CoverArt = newCover
+	}
 	st.UpdatedAt = time.Now()
 	if err := h.Radio.Update(r.Context(), st); err != nil {
 		writeInternal(w, err)
@@ -178,7 +202,86 @@ func (h *Handler) handleRadioDelete(w http.ResponseWriter, r *http.Request) {
 		writeInternal(w, err)
 		return
 	}
+	_ = os.Remove(radioCoverPath(h.CoversDir, id)) // drop the cached logo too
 	writeResource(w, http.StatusNoContent, nil)
+}
+
+// --- station logo (cached + served locally) ---
+
+// radioCoverPath is the on-disk cache path for a station's logo. The id may
+// contain ':' (e.g. "builtin:nrj"), so it is sanitized for the filesystem.
+func radioCoverPath(coversDir, id string) string {
+	safe := strings.NewReplacer("/", "_", ":", "_", "\\", "_").Replace(id)
+	return filepath.Join(coversDir, "radio", safe)
+}
+
+// handleRadioCover serves a station's logo. On the first request it fetches the
+// station's source URL and caches the bytes locally; later requests serve the
+// cached file. Public (logos aren't sensitive) so clients load it as a plain
+// image without auth headers, and the server fetches http-only logos for clients
+// on https (no mixed-content).
+//
+// @Summary      Station logo
+// @Tags         radio
+// @Produce      image/png
+// @Param        id  path  string  true  "Station id"
+// @Success      200
+// @Failure      404  {object}  errorResponse
+// @Router       /radio/stations/{id}/cover [get]
+func (h *Handler) handleRadioCover(w http.ResponseWriter, r *http.Request) {
+	if h.Radio == nil {
+		http.NotFound(w, r)
+		return
+	}
+	id := pathParam(r, "id")
+	path := radioCoverPath(h.CoversDir, id)
+	if _, err := os.Stat(path); err == nil {
+		w.Header().Set("Cache-Control", "public, max-age=86400")
+		http.ServeFile(w, r, path)
+		return
+	}
+	st, err := h.Radio.Get(r.Context(), id)
+	if err != nil || st.CoverArt == "" {
+		http.NotFound(w, r)
+		return
+	}
+	data, ctype, err := fetchRadioCover(r.Context(), st.CoverArt)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err == nil {
+		_ = os.WriteFile(path, data, 0o644)
+	}
+	w.Header().Set("Content-Type", ctype)
+	w.Header().Set("Cache-Control", "public, max-age=86400")
+	_, _ = w.Write(data)
+}
+
+// fetchRadioCover downloads a logo, enforcing an image content-type and a size cap.
+func fetchRadioCover(ctx context.Context, url string) ([]byte, string, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, "", err
+	}
+	req.Header.Set("User-Agent", "immerle")
+	resp, err := radioCoverClient.Do(req)
+	if err != nil {
+		return nil, "", err
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusOK {
+		return nil, "", fmt.Errorf("cover fetch %s: %s", url, resp.Status)
+	}
+	ctype := resp.Header.Get("Content-Type")
+	if !strings.HasPrefix(ctype, "image/") {
+		return nil, "", fmt.Errorf("cover is not an image: %s", ctype)
+	}
+	data, err := io.ReadAll(io.LimitReader(resp.Body, maxRadioCoverBytes))
+	if err != nil {
+		return nil, "", err
+	}
+	return data, ctype, nil
 }
 
 // --- feature toggle ---

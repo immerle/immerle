@@ -185,6 +185,10 @@ export interface RadioStation {
   builtin: boolean;
   /** False for built-ins (editable but not removable). */
   deletable: boolean;
+  /** True when the station has a logo (served by the cover endpoint). */
+  hasCover?: boolean;
+  /** Logo source URL (for prefilling the admin edit form). */
+  coverUrl?: string;
 }
 
 /** Thrown when a Immerle REST endpoint returns a non-2xx. */

@@ -14,14 +14,19 @@ import (
 //go:embed stations.json
 var stationsJSON []byte
 
-// seedStation mirrors one entry of stations.json. Country is documentation only
-// (used to group the file by region); it is not persisted.
+// seedStation mirrors one entry of stations.json. Country and Verified are
+// documentation only (Country groups the file by region; Verified flags streams
+// not yet confirmed reachable). Neither is persisted.
 type seedStation struct {
 	ID          string `json:"id"`
 	Country     string `json:"country"`
 	Name        string `json:"name"`
 	StreamURL   string `json:"streamUrl"`
 	HomepageURL string `json:"homepageUrl"`
+	// Logo is the station logo source URL (cached + served locally by the server).
+	Logo string `json:"logo"`
+	// Verified is false for streams that ship unverified (defaults to true).
+	Verified *bool `json:"verified"`
 }
 
 // Builtins returns the curated built-in stations parsed from the embedded JSON.
@@ -40,6 +45,7 @@ func Builtins() []models.RadioStation {
 			Name:        s.Name,
 			StreamURL:   s.StreamURL,
 			HomepageURL: s.HomepageURL,
+			CoverArt:    s.Logo,
 		})
 	}
 	return out
