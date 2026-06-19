@@ -3,24 +3,28 @@
     "id": "builtin:los40",
     "name": "LOS40",
     "streamUrl": "https://playerservices.streamtheworld.com/api/livestream-redirect/LOS40.mp3",
-    "homepageUrl": "https://los40.com/"
+    "homepageUrl": "https://los40.com/",
+    "logo": "los40.webp"
   },
   {
     "id": "builtin:cadenaser",
     "name": "Cadena SER",
     "streamUrl": "https://playerservices.streamtheworld.com/api/livestream-redirect/CADENASER.mp3",
-    "homepageUrl": "https://cadenaser.com/"
+    "homepageUrl": "https://cadenaser.com/",
+    "logo": "cadenaser.webp"
   },
   {
     "id": "builtin:cadenadial",
     "name": "Cadena Dial",
     "streamUrl": "https://playerservices.streamtheworld.com/api/livestream-redirect/CADENADIAL.mp3",
-    "homepageUrl": "https://www.cadenadial.com/"
+    "homepageUrl": "https://www.cadenadial.com/",
+    "logo": "cadenadial.webp"
   },
   {
     "id": "builtin:m80radio",
     "name": "M80 Radio",
     "streamUrl": "https://playerservices.streamtheworld.com/api/livestream-redirect/M80RADIO.mp3",
-    "homepageUrl": "https://www.m80radio.com/"
+    "homepageUrl": "https://www.m80radio.com/",
+    "logo": "m80radio.webp"
   }
 ]

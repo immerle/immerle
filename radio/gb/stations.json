@@ -3,30 +3,35 @@
     "id": "builtin:capitalfm",
     "name": "Capital FM",
     "streamUrl": "https://media-ssl.musicradio.com/CapitalMP3",
-    "homepageUrl": "https://www.capitalfm.com/"
+    "homepageUrl": "https://www.capitalfm.com/",
+    "logo": "capitalfm.webp"
   },
   {
     "id": "builtin:heart",
     "name": "Heart",
     "streamUrl": "https://media-ssl.musicradio.com/HeartLondonMP3",
-    "homepageUrl": "https://www.heart.co.uk/"
+    "homepageUrl": "https://www.heart.co.uk/",
+    "logo": "heart.webp"
   },
   {
     "id": "builtin:classicfm",
     "name": "Classic FM",
     "streamUrl": "https://media-ssl.musicradio.com/ClassicFMMP3",
-    "homepageUrl": "https://www.classicfm.com/"
+    "homepageUrl": "https://www.classicfm.com/",
+    "logo": "classicfm.webp"
   },
   {
     "id": "builtin:lbc",
     "name": "LBC",
     "streamUrl": "https://media-ssl.musicradio.com/LBCLondonMP3",
-    "homepageUrl": "https://www.lbc.co.uk/"
+    "homepageUrl": "https://www.lbc.co.uk/",
+    "logo": "lbc.webp"
   },
   {
     "id": "builtin:bbc-ws",
     "name": "BBC World Service",
     "streamUrl": "https://stream.live.vc.bbcmedia.co.uk/bbc_world_service",
-    "homepageUrl": "https://www.bbc.co.uk/worldserviceradio"
+    "homepageUrl": "https://www.bbc.co.uk/worldserviceradio",
+    "logo": "bbc-ws.webp"
   }
 ]
