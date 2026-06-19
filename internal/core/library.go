@@ -153,6 +153,29 @@ func capSlice[T any](s []T, n int) []T {
 	return s
 }
 
+// Song returns a single track with the caller's annotation attached (always
+// non-nil, so absent per-user state reads as zero). Returns
+// persistence.ErrNotFound when the track does not exist.
+func (s *LibraryService) Song(ctx context.Context, userID, id string) (TrackEntry, error) {
+	t, err := s.catalog.GetTrack(ctx, id)
+	if err != nil {
+		return TrackEntry{}, err
+	}
+	ann, _ := s.annotations.Get(ctx, userID, models.ItemTrack, id)
+	return TrackEntry{Track: t, Annotation: &ann}, nil
+}
+
+// Artists returns every artist plus the caller's per-artist starred state. The
+// presentation layer decides how to group/paginate them.
+func (s *LibraryService) Artists(ctx context.Context, userID string) ([]models.Artist, map[string]models.Annotation, error) {
+	artists, err := s.catalog.ListArtists(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	starred, _ := s.annotations.AnnotationMap(ctx, userID, models.ItemArtist)
+	return artists, starred, nil
+}
+
 // ---- artist / album detail ----
 
 // TrackEntry pairs a track with the caller's resolved annotation (star/rating/
