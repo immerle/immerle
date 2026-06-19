@@ -1,13 +1,11 @@
 package subsonic
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"net/http"
 	"strings"
 	"time"
 
-	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/core"
 )
 
 func (h *Handler) shareURL(secret string) string {
@@ -15,7 +13,8 @@ func (h *Handler) shareURL(secret string) string {
 	return base + "/share/" + secret
 }
 
-func (h *Handler) toShare(r *http.Request, s models.Share) Share {
+func (h *Handler) toShare(r *http.Request, swe core.ShareWithEntries) Share {
+	s := swe.Share
 	out := Share{
 		ID:          s.ID,
 		URL:         h.shareURL(s.Secret),
@@ -27,89 +26,60 @@ func (h *Handler) toShare(r *http.Request, s models.Share) Share {
 	if s.ExpiresAt != nil {
 		out.Expires = formatTime(*s.ExpiresAt)
 	}
-	// Resolve the shared entry into entries.
-	switch s.ItemType {
-	case models.ItemTrack:
-		if t, err := h.Catalog.GetTrack(r.Context(), s.ItemID); err == nil {
-			out.Entry = append(out.Entry, toChild(t, nil))
-		}
-	case models.ItemAlbum:
-		if tracks, err := h.Catalog.ListTracksByAlbum(r.Context(), s.ItemID); err == nil {
-			for _, t := range tracks {
-				out.Entry = append(out.Entry, toChild(t, nil))
-			}
-		}
-	case models.ItemPlaylist:
-		if tracks, err := h.Playlists.Tracks(r.Context(), s.ItemID); err == nil {
-			for _, t := range tracks {
-				out.Entry = append(out.Entry, toChild(t, nil))
-			}
-		}
+	for _, t := range swe.Entries {
+		out.Entry = append(out.Entry, toChild(t, nil))
 	}
 	return out
 }
 
+// shareExpiry reads the optional Subsonic "expires" param (epoch millis) into a
+// time pointer; absent or non-positive means no expiry.
+func shareExpiry(r *http.Request) *time.Time {
+	if exp := intParam(r, "expires", 0); exp > 0 {
+		t := time.UnixMilli(int64(exp))
+		return &t
+	}
+	return nil
+}
+
 func (h *Handler) handleGetShares(w http.ResponseWriter, r *http.Request) {
-	user := userFrom(r.Context())
-	shares, err := h.Shares.ListByUser(r.Context(), user.ID)
+	shares, err := h.shareSvc.List(r.Context(), userFrom(r.Context()).ID)
 	if err != nil {
 		h.failInternal(w, r, err)
 		return
 	}
 	resp := newResponse()
 	out := &Shares{}
-	for _, s := range shares {
-		out.Share = append(out.Share, h.toShare(r, s))
+	for _, swe := range shares {
+		out.Share = append(out.Share, h.toShare(r, swe))
 	}
 	resp.Shares = out
 	write(w, r, resp)
 }
 
 func (h *Handler) handleCreateShare(w http.ResponseWriter, r *http.Request) {
-	user := userFrom(r.Context())
 	ids := r.Form["id"]
 	if len(ids) == 0 {
 		writeError(w, r, ErrMissingParameter, "Required parameter id is missing")
 		return
 	}
-	id := ids[0]
-	itemType := h.classifyItem(r, id)
-
-	share := models.Share{
-		ID:          newID(),
-		UserID:      user.ID,
-		ItemType:    itemType,
-		ItemID:      id,
-		Secret:      randomSecret(),
-		Description: param(r, "description"),
-		CreatedAt:   time.Now(),
-	}
-	if exp := intParam(r, "expires", 0); exp > 0 {
-		t := time.UnixMilli(int64(exp))
-		share.ExpiresAt = &t
-	}
-	if err := h.Shares.Create(r.Context(), share); err != nil {
+	swe, err := h.shareSvc.Create(r.Context(), userFrom(r.Context()).ID, ids[0], param(r, "description"), shareExpiry(r))
+	if err != nil {
 		h.failInternal(w, r, err)
 		return
 	}
 	resp := newResponse()
-	resp.Shares = &Shares{Share: []Share{h.toShare(r, share)}}
+	resp.Shares = &Shares{Share: []Share{h.toShare(r, swe)}}
 	write(w, r, resp)
 }
 
 func (h *Handler) handleUpdateShare(w http.ResponseWriter, r *http.Request) {
-	user := userFrom(r.Context())
 	id := param(r, "id")
 	if id == "" {
 		writeError(w, r, ErrMissingParameter, "Required parameter id is missing")
 		return
 	}
-	var expires *time.Time
-	if exp := intParam(r, "expires", 0); exp > 0 {
-		t := time.UnixMilli(int64(exp))
-		expires = &t
-	}
-	if err := h.Shares.Update(r.Context(), id, user.ID, param(r, "description"), expires); err != nil {
+	if err := h.shareSvc.Update(r.Context(), id, userFrom(r.Context()).ID, param(r, "description"), shareExpiry(r)); err != nil {
 		h.failInternal(w, r, err)
 		return
 	}
@@ -117,28 +87,9 @@ func (h *Handler) handleUpdateShare(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleDeleteShare(w http.ResponseWriter, r *http.Request) {
-	user := userFrom(r.Context())
-	id := param(r, "id")
-	if err := h.Shares.Delete(r.Context(), id, user.ID); err != nil {
+	if err := h.shareSvc.Delete(r.Context(), param(r, "id"), userFrom(r.Context()).ID); err != nil {
 		h.failInternal(w, r, err)
 		return
 	}
 	writeOK(w, r)
-}
-
-// classifyItem determines whether an id is a track, album or playlist.
-func (h *Handler) classifyItem(r *http.Request, id string) models.ItemType {
-	if _, err := h.Catalog.GetAlbum(r.Context(), id); err == nil {
-		return models.ItemAlbum
-	}
-	if _, err := h.Playlists.Get(r.Context(), id); err == nil {
-		return models.ItemPlaylist
-	}
-	return models.ItemTrack
-}
-
-func randomSecret() string {
-	b := make([]byte, 12)
-	_, _ = rand.Read(b)
-	return hex.EncodeToString(b)
 }
