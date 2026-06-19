@@ -1,0 +1,71 @@
+import { createEngine } from './engine.web';
+import { PlayableTrack } from './types';
+
+// Minimal HTMLAudioElement stand-in: records listeners so the test can fire
+// 'ended', and tracks just enough state for the engine.
+class FakeAudio {
+  private listeners: Record<string, (() => void)[]> = {};
+  src = '';
+  currentTime = 0;
+  duration = 100;
+  volume = 1;
+  playbackRate = 1;
+  preload = '';
+  addEventListener(type: string, cb: () => void) {
+    (this.listeners[type] ||= []).push(cb);
+  }
+  removeAttribute() {}
+  load() {}
+  async play() {
+    this.fire('playing');
+  }
+  pause() {
+    this.fire('pause');
+  }
+  fire(type: string) {
+    (this.listeners[type] ?? []).forEach((c) => c());
+  }
+}
+
+let lastAudio: FakeAudio;
+(global as unknown as { Audio: unknown }).Audio = function Audio() {
+  lastAudio = new FakeAudio();
+  return lastAudio;
+};
+
+const flush = () => new Promise((r) => setTimeout(r, 0));
+const track = (id: string): PlayableTrack => ({ id, url: `http://x/${id}`, title: id });
+
+describe('web engine end of queue', () => {
+  it('auto-advances between tracks, then rewinds to track 1 and pauses at the end', async () => {
+    const engine = createEngine();
+    await engine.setup();
+    await engine.setQueue([track('a'), track('b')], 0);
+    expect(engine.getState().index).toBe(0);
+
+    // First track ends → advance to the second.
+    lastAudio.fire('ended');
+    await flush();
+    expect(engine.getState().index).toBe(1);
+    expect(engine.getState().status).toBe('playing');
+
+    // Last track ends → back to track 1, paused, cursor at the start.
+    lastAudio.fire('ended');
+    await flush();
+    expect(engine.getState().index).toBe(0);
+    expect(engine.getState().status).toBe('paused');
+    expect(engine.getState().position).toBe(0);
+  });
+
+  it('rewinds a single track to the start and pauses when it ends', async () => {
+    const engine = createEngine();
+    await engine.setup();
+    await engine.setQueue([track('solo')], 0);
+
+    lastAudio.fire('ended');
+    await flush();
+    expect(engine.getState().index).toBe(0);
+    expect(engine.getState().status).toBe('paused');
+    expect(engine.getState().position).toBe(0);
+  });
+});

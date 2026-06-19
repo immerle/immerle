@@ -115,7 +115,18 @@ class WebAudioEngine implements AudioEngine {
     const nextIndex = this.index + 1;
     if (nextIndex < this.queue.length) return this.skipTo(nextIndex);
     if (this.repeat === 'queue' && this.queue.length) return this.skipTo(0);
-    this.stop();
+    return this.resetToStart();
+  }
+
+  // End of queue: instead of tearing down, rewind to the first track and pause.
+  // The cursor sits at the start with the play button ready to replay — for a
+  // playlist this means track 1.
+  private async resetToStart(): Promise<void> {
+    if (!this.queue.length) return this.stop();
+    this.index = 0;
+    await this.load(0);
+    this.setStatus('paused');
+    this.emitter.emit('trackChange', 0);
   }
 
   async previous(): Promise<void> {
