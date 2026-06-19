@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 )
 
@@ -129,6 +130,22 @@ func TestHTTPProviderVerify(t *testing.T) {
 	pv, _ := New("svc", bad.URL, "{}")
 	if err := pv.Verify(ctx); err == nil {
 		t.Fatal("Verify should fail on an unsupported protocol version")
+	}
+}
+
+func TestHTTPProviderStatusErrorIncludesBody(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		http.Error(w, "upstream gateway timed out", http.StatusBadGateway)
+	}))
+	t.Cleanup(srv.Close)
+
+	p, _ := New("deezer", srv.URL, "{}")
+	_, err := p.Search(context.Background(), "song", 5)
+	if err == nil {
+		t.Fatal("expected an error on 502")
+	}
+	if !strings.Contains(err.Error(), "status 502") || !strings.Contains(err.Error(), "upstream gateway timed out") {
+		t.Fatalf("error should carry status and body: %v", err)
 	}
 }
 

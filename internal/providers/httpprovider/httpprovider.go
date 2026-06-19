@@ -245,6 +245,22 @@ func (p *Provider) newRequest(ctx context.Context, path string, q url.Values) (*
 	return req, nil
 }
 
+// statusError builds the error for a non-2xx response, appending the response
+// body — it carries the upstream's real reason and is shown in full in the admin
+// provider logs, so "deezer: search status 502" becomes
+// "deezer: search status 502: <body>".
+// ponytail: body capped at 8 KiB — the whole body for any real error response
+// while bounding a pathological one; raise the cap if a provider needs more.
+func (p *Provider) statusError(op string, resp *http.Response) error {
+	const maxBody = 8 << 10
+	raw, _ := io.ReadAll(io.LimitReader(resp.Body, maxBody))
+	body := strings.TrimSpace(string(raw))
+	if body == "" {
+		return fmt.Errorf("%s: %s status %d", p.name, op, resp.StatusCode)
+	}
+	return fmt.Errorf("%s: %s status %d: %s", p.name, op, resp.StatusCode, body)
+}
+
 // Search implements providers.Provider.
 func (p *Provider) Search(ctx context.Context, query string, limit int) ([]providers.Result, error) {
 	if limit <= 0 {
@@ -261,7 +277,7 @@ func (p *Provider) Search(ctx context.Context, query string, limit int) ([]provi
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("%s: search status %d", p.name, resp.StatusCode)
+		return nil, p.statusError("search", resp)
 	}
 	var body struct {
 		Results []track `json:"results"`
@@ -292,7 +308,7 @@ func (p *Provider) Resolve(ctx context.Context, providerTrackID string) (provide
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 300 {
-		return providers.Result{}, fmt.Errorf("%s: resolve status %d", p.name, resp.StatusCode)
+		return providers.Result{}, p.statusError("resolve", resp)
 	}
 	raw, err := io.ReadAll(io.LimitReader(resp.Body, providers.MaxMetadataBytes))
 	if err != nil {
@@ -368,8 +384,9 @@ func (p *Provider) openDownload(ctx context.Context, providerTrackID string) (*h
 		return nil, err
 	}
 	if resp.StatusCode >= 300 {
+		err := p.statusError("download", resp)
 		resp.Body.Close()
-		return nil, fmt.Errorf("%s: download status %d", p.name, resp.StatusCode)
+		return nil, err
 	}
 	return resp, nil
 }
