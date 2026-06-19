@@ -39,6 +39,8 @@ type Deps struct {
 	Catalog     *persistence.CatalogRepo
 	Annotations *persistence.AnnotationRepo
 	Genres      *persistence.GenreRepo
+	Scrobbles   *persistence.ScrobbleRepo
+	NowPlaying  *core.NowPlayingTracker
 	OnDemand    *core.CatalogService
 	// LibraryStats serves the cached library analytics (counts + total size).
 	LibraryStats *core.LibraryStatsService
@@ -88,16 +90,19 @@ type CleanupController interface {
 // Handler implements the immerle native API.
 type Handler struct {
 	Deps
-	// library backs the catalog browse resources with the same application
-	// service the Subsonic handler uses.
-	library *core.LibraryService
+	// library and playback back the catalog browse resources and the
+	// favorite/rating/scrobble mutations with the same application services the
+	// Subsonic handler uses.
+	library  *core.LibraryService
+	playback *core.PlaybackService
 }
 
 // NewHandler builds a immerle Handler.
 func NewHandler(d Deps) *Handler {
 	return &Handler{
-		Deps:    d,
-		library: core.NewLibraryService(d.Catalog, d.Annotations, d.OnDemand),
+		Deps:     d,
+		library:  core.NewLibraryService(d.Catalog, d.Annotations, d.OnDemand),
+		playback: core.NewPlaybackService(d.Catalog, d.Annotations, d.Scrobbles, d.OnDemand, d.Activity, d.NowPlaying),
 	}
 }
 
@@ -158,6 +163,23 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Get("/songs/{id}", h.handleGetSong)
 			r.Get("/genres", h.handleGetGenres)
 			r.Get("/search", h.handleSearch)
+
+			// Favorites (star) and ratings on catalog items.
+			r.Put("/songs/{id}/star", h.handleStarSong)
+			r.Delete("/songs/{id}/star", h.handleUnstarSong)
+			r.Put("/albums/{id}/star", h.handleStarAlbum)
+			r.Delete("/albums/{id}/star", h.handleUnstarAlbum)
+			r.Put("/artists/{id}/star", h.handleStarArtist)
+			r.Delete("/artists/{id}/star", h.handleUnstarArtist)
+			r.Put("/songs/{id}/rating", h.handleSetRating)
+			r.Delete("/songs/{id}/rating", h.handleClearRating)
+			r.Put("/albums/{id}/rating", h.handleSetRating)
+			r.Delete("/albums/{id}/rating", h.handleClearRating)
+			r.Put("/artists/{id}/rating", h.handleSetRating)
+			r.Delete("/artists/{id}/rating", h.handleClearRating)
+
+			// Scrobble a play (sets now-playing and, on submission, records it).
+			r.Post("/scrobbles", h.handleScrobble)
 
 			// Year-in-review ("Wrapped").
 			r.Get("/wrapped", h.handleWrapped)

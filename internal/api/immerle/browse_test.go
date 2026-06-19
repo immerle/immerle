@@ -12,13 +12,15 @@ import (
 	chi "github.com/go-chi/chi/v5"
 
 	"github.com/immerle/immerle/internal/core"
+	"github.com/immerle/immerle/internal/persistence"
 	"github.com/immerle/immerle/internal/scanner"
 	"github.com/immerle/immerle/internal/testutil"
 )
 
-// newBrowseEnv builds a handler wired with the catalog browse dependencies and a
-// scanned fixture library, plus a logged-in admin token.
-func newBrowseEnv(t *testing.T) (*httptest.Server, string) {
+// newBrowseEnv builds a handler wired with the catalog browse/mutation
+// dependencies and a scanned fixture library, plus a logged-in admin token. The
+// store is returned so tests can assert persisted state directly.
+func newBrowseEnv(t *testing.T) (*httptest.Server, string, *persistence.Store) {
 	t.Helper()
 	if !testutil.FFmpegAvailable() {
 		t.Skip("ffmpeg required")
@@ -52,13 +54,15 @@ func newBrowseEnv(t *testing.T) (*httptest.Server, string) {
 		Catalog:     store.Catalog,
 		Annotations: store.Annotations,
 		Genres:      store.Genres,
+		Scrobbles:   store.Scrobbles,
+		NowPlaying:  core.NewNowPlayingTracker(0),
 		Logger:      testutil.NewLogger(),
 	})
 	mux := chi.NewRouter()
 	h.Register(mux)
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
-	return srv, login(t, srv, "admin")
+	return srv, login(t, srv, "admin"), store
 }
 
 // getJSON performs an authenticated GET and decodes the body into out.
@@ -73,7 +77,7 @@ func getJSON(t *testing.T, srv *httptest.Server, token, path string, out any) in
 }
 
 func TestBrowseArtistsAndAlbums(t *testing.T) {
-	srv, token := newBrowseEnv(t)
+	srv, token, _ := newBrowseEnv(t)
 
 	var list struct {
 		Artists []artistView `json:"artists"`
@@ -113,7 +117,7 @@ func TestBrowseArtistsAndAlbums(t *testing.T) {
 }
 
 func TestBrowseAuthAndNotFound(t *testing.T) {
-	srv, token := newBrowseEnv(t)
+	srv, token, _ := newBrowseEnv(t)
 
 	if st := doStatus(t, srv, http.MethodGet, "/artists", "", nil); st != http.StatusUnauthorized {
 		t.Fatalf("no token: expected 401, got %d", st)
@@ -127,7 +131,7 @@ func TestBrowseAuthAndNotFound(t *testing.T) {
 }
 
 func TestBrowseListsSearchAndSong(t *testing.T) {
-	srv, token := newBrowseEnv(t)
+	srv, token, _ := newBrowseEnv(t)
 
 	// Album list (alphabetical) returns both albums.
 	var albums struct {
