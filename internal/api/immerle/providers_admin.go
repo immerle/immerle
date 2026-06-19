@@ -9,7 +9,9 @@ import (
 )
 
 // providerView serializes a provider config plus its live status for the API.
-func (h *Handler) providerView(p models.ProviderConfig) map[string]any {
+// version is the live protocol version fetched from the remote's /capabilities
+// (nil when unknown / not an HTTP provider).
+func (h *Handler) providerView(p models.ProviderConfig, version *int) map[string]any {
 	return map[string]any{
 		"name":      p.Name,
 		"kind":      p.Kind,
@@ -20,6 +22,7 @@ func (h *Handler) providerView(p models.ProviderConfig) map[string]any {
 		"builtin":   p.Builtin(),
 		"deletable": !p.Builtin(), // built-ins can be disabled but not removed
 		"sortOrder": p.SortOrder,
+		"version":   version,
 		"createdAt": p.CreatedAt,
 		"updatedAt": p.UpdatedAt,
 	}
@@ -56,9 +59,15 @@ func (h *Handler) handleProviders(w http.ResponseWriter, r *http.Request) {
 		writeInternal(w, err)
 		return
 	}
+	// Live protocol version of each dynamic provider, fetched in parallel.
+	versions := h.Providers.Versions(r.Context())
 	out := make([]map[string]any, 0, len(list))
 	for _, p := range list {
-		out = append(out, h.providerView(p))
+		var v *int
+		if ver, ok := versions[p.Name]; ok {
+			v = &ver
+		}
+		out = append(out, h.providerView(p, v))
 	}
 	writeResource(w, http.StatusOK, out)
 }
@@ -72,10 +81,14 @@ type upsertProviderRequest struct {
 	Enabled  *bool  `json:"enabled"`
 }
 
-// handleProviderUpsert creates or updates an on-demand provider.
+// handleProviderUpsert creates or updates an on-demand provider. A request with
+// no name and an endpoint creates a dynamic HTTP provider from its URL: the
+// server probes /capabilities, takes the declared name and seeds the config
+// skeleton (created disabled). A request with a name updates that provider; for
+// HTTP providers the config is then validated against /capabilities.
 //
 // @Summary      Create or update an on-demand provider
-// @Description  Admin only. A provider is content-neutral: a name, an HTTP endpoint and an opaque JSON config. Applied immediately — an enabled provider is registered live, a disabled one is removed.
+// @Description  Admin only. With only an endpoint (no name), creates an HTTP provider from its URL by probing /capabilities. With a name, updates it (HTTP config is validated against /capabilities).
 // @Tags         admin
 // @Security     BearerAuth
 // @Accept       json
@@ -95,6 +108,17 @@ func (h *Handler) handleProviderUpsert(w http.ResponseWriter, r *http.Request) {
 	if !decodeJSON(w, r, &req) {
 		return
 	}
+	// No name + an endpoint → create a dynamic provider from its URL.
+	if req.Name == "" && req.Endpoint != "" {
+		saved, err := h.Providers.CreateFromURL(r.Context(), req.Endpoint)
+		if err != nil {
+			writeErrorParams(w, http.StatusBadRequest, "provider_invalid_config", err.Error(), map[string]any{"detail": err.Error()})
+			return
+		}
+		h.Logger.Info("provider created from url", "provider", saved.Name, "by", userFrom(r.Context()).Username)
+		writeResource(w, http.StatusOK, h.providerView(saved, nil))
+		return
+	}
 	enabled := true
 	if req.Enabled != nil {
 		enabled = *req.Enabled
@@ -107,11 +131,11 @@ func (h *Handler) handleProviderUpsert(w http.ResponseWriter, r *http.Request) {
 		Enabled:  enabled,
 	})
 	if err != nil {
-		writeErrorParams(w, http.StatusBadRequest, "bad_request", err.Error(), map[string]any{"detail": err.Error()})
+		writeErrorParams(w, http.StatusBadRequest, "provider_invalid_config", err.Error(), map[string]any{"detail": err.Error()})
 		return
 	}
 	h.Logger.Info("provider upserted", "provider", saved.Name, "enabled", saved.Enabled, "by", userFrom(r.Context()).Username)
-	writeResource(w, http.StatusOK, h.providerView(saved))
+	writeResource(w, http.StatusOK, h.providerView(saved, nil))
 }
 
 // setEnabledRequest is the body for PUT /admin/providers/{name}/enabled.
@@ -155,7 +179,7 @@ func (h *Handler) handleProviderEnable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.Logger.Info("provider toggled", "provider", name, "enabled", *req.Enabled, "by", userFrom(r.Context()).Username)
-	writeResource(w, http.StatusOK, h.providerView(saved))
+	writeResource(w, http.StatusOK, h.providerView(saved, nil))
 }
 
 // handleProviderDelete removes a provider.
@@ -225,7 +249,7 @@ func (h *Handler) handleProviderReorder(w http.ResponseWriter, r *http.Request) 
 	}
 	out := make([]map[string]any, 0, len(list))
 	for _, p := range list {
-		out = append(out, h.providerView(p))
+		out = append(out, h.providerView(p, nil))
 	}
 	h.Logger.Info("providers reordered", "order", req.Order, "by", userFrom(r.Context()).Username)
 	writeResource(w, http.StatusOK, out)
@@ -268,5 +292,5 @@ func (h *Handler) writeProviderError(w http.ResponseWriter, err error) {
 		writeError(w, http.StatusNotFound, "not_found", "provider not found")
 		return
 	}
-	writeErrorParams(w, http.StatusBadRequest, "bad_request", err.Error(), map[string]any{"detail": err.Error()})
+	writeErrorParams(w, http.StatusBadRequest, "provider_invalid_config", err.Error(), map[string]any{"detail": err.Error()})
 }

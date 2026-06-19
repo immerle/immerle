@@ -427,6 +427,12 @@ components:
         sortOrder:
           example: 3
           type: integer
+        version:
+          description: |-
+            Version is the remote's live protocol version (HTTP providers), null when
+            unknown or for built-ins.
+          example: 1
+          type: integer
       type: object
     immerle.ProviderLogDTO:
       properties:
@@ -1018,9 +1024,9 @@ paths:
       tags:
       - admin
     post:
-      description: 'Admin only. A provider is content-neutral: a name, an HTTP endpoint
-        and an opaque JSON config. Applied immediately — an enabled provider is registered
-        live, a disabled one is removed.'
+      description: Admin only. With only an endpoint (no name), creates an HTTP provider
+        from its URL by probing /capabilities. With a name, updates it (HTTP config
+        is validated against /capabilities).
       requestBody:
         content:
           application/json:

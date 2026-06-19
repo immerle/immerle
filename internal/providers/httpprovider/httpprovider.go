@@ -35,6 +35,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -54,8 +55,11 @@ type Provider struct {
 }
 
 // Endpoint paths on the remote service — fixed by the protocol. The remote must
-// implement these exact paths under its base URL.
+// implement these exact paths under its base URL. /capabilities is mandatory and
+// validated when the provider is created (see Verify); the rest are called at
+// use time.
 const (
+	capabilitiesPath  = "/capabilities"
 	searchPath        = "/search"
 	resolvePath       = "/resolve"
 	downloadPath      = "/download"
@@ -65,6 +69,9 @@ const (
 	albumTracksPath   = "/album/tracks"
 	artistImagePath   = "/artist/image"
 )
+
+// slugRe constrains the name a remote declares for itself.
+var slugRe = regexp.MustCompile(`^[a-z0-9][a-z0-9_-]*$`)
 
 // New builds an HTTP provider. endpoint must be an absolute http(s) URL;
 // configJSON is the raw config payload ("" or "{}" for defaults).
@@ -108,6 +115,69 @@ func (p *Provider) MaxQuality() string {
 		return p.cfg.Quality
 	}
 	return "remote"
+}
+
+// Capabilities implements providers.CapabilityProvider: it fetches the remote's
+// mandatory /capabilities endpoint and returns its advertised contract. Used by
+// the admin to generate the config skeleton and display the live version, and by
+// Verify. The request carries the configured header/params (authed discovery).
+func (p *Provider) Capabilities(ctx context.Context) (providers.Capabilities, error) {
+	req, err := p.newRequest(ctx, capabilitiesPath, url.Values{})
+	if err != nil {
+		return providers.Capabilities{}, err
+	}
+	resp, err := p.http.Do(req)
+	if err != nil {
+		return providers.Capabilities{}, fmt.Errorf("%s: capabilities request failed (a /capabilities endpoint is required): %w", p.name, err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 300 {
+		return providers.Capabilities{}, fmt.Errorf("%s: /capabilities returned status %d (a /capabilities endpoint is required)", p.name, resp.StatusCode)
+	}
+	var caps providers.Capabilities
+	if err := json.NewDecoder(io.LimitReader(resp.Body, providers.MaxMetadataBytes)).Decode(&caps); err != nil {
+		return providers.Capabilities{}, fmt.Errorf("%s: decode capabilities: %w", p.name, err)
+	}
+	return caps, nil
+}
+
+// Verify implements providers.Verifier. It fetches /capabilities and checks the
+// protocol version matches, the declared name is a slug, and every field marked
+// required is present in the config in its declared location (header or params).
+// A failure rejects activation of the provider.
+func (p *Provider) Verify(ctx context.Context) error {
+	caps, err := p.Capabilities(ctx)
+	if err != nil {
+		return err
+	}
+	if caps.Version != providers.ProtocolVersion {
+		return fmt.Errorf("%s: remote protocol version %d unsupported (expected %d)", p.name, caps.Version, providers.ProtocolVersion)
+	}
+	if !slugRe.MatchString(caps.Name) {
+		return fmt.Errorf("%s: capabilities name %q is not a valid slug", p.name, caps.Name)
+	}
+	var missing []string
+	for key, f := range caps.Config {
+		if !f.Required {
+			continue
+		}
+		var got string
+		switch f.Where {
+		case "headers":
+			got = p.cfg.Headers[key]
+		case "params":
+			got = p.cfg.Param(key, "")
+		default:
+			return fmt.Errorf("%s: config field %q has invalid location %q (want \"headers\" or \"params\")", p.name, key, f.Where)
+		}
+		if strings.TrimSpace(got) == "" {
+			missing = append(missing, fmt.Sprintf("%s (%s)", key, f.Where))
+		}
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf("%s: missing required config field(s): %s", p.name, strings.Join(missing, ", "))
+	}
+	return nil
 }
 
 // track is the wire shape of a result returned by the remote service.
@@ -169,7 +239,7 @@ func (p *Provider) newRequest(ctx context.Context, path string, q url.Values) (*
 	if err != nil {
 		return nil, err
 	}
-	for k, v := range p.cfg.Header {
+	for k, v := range p.cfg.Headers {
 		req.Header.Set(k, v)
 	}
 	return req, nil

@@ -83,6 +83,55 @@ func TestHTTPProviderSearchResolveDownload(t *testing.T) {
 	}
 }
 
+func TestHTTPProviderVerify(t *testing.T) {
+	// Service whose /capabilities requires an "apikey" param and an "X-Token" header.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != capabilitiesPath {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"version":1,"name":"my-svc","config":{
+			"apikey":{"type":"string","where":"params","required":true},
+			"X-Token":{"type":"string","where":"headers","required":true}
+		}}`))
+	}))
+	t.Cleanup(srv.Close)
+	ctx := context.Background()
+
+	// All required fields supplied in their declared buckets → passes.
+	ok, _ := New("svc", srv.URL, `{"params":{"apikey":"k"},"headers":{"X-Token":"t"}}`)
+	if err := ok.Verify(ctx); err != nil {
+		t.Fatalf("Verify should pass with all fields: %v", err)
+	}
+
+	// Missing the header field → rejected.
+	missing, _ := New("svc", srv.URL, `{"params":{"apikey":"k"}}`)
+	if err := missing.Verify(ctx); err == nil {
+		t.Fatal("Verify should fail when a required field is missing")
+	}
+
+	// No /capabilities endpoint at all → rejected (it is mandatory).
+	none := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		http.Error(w, "no", http.StatusNotFound)
+	}))
+	t.Cleanup(none.Close)
+	p, _ := New("svc", none.URL, "{}")
+	if err := p.Verify(ctx); err == nil {
+		t.Fatal("Verify should fail without a /capabilities endpoint")
+	}
+
+	// Wrong protocol version → rejected.
+	bad := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"version":99,"name":"my-svc"}`))
+	}))
+	t.Cleanup(bad.Close)
+	pv, _ := New("svc", bad.URL, "{}")
+	if err := pv.Verify(ctx); err == nil {
+		t.Fatal("Verify should fail on an unsupported protocol version")
+	}
+}
+
 func TestHTTPProviderMergesStaticParams(t *testing.T) {
 	var gotQuery url.Values
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

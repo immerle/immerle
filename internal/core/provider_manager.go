@@ -2,11 +2,13 @@ package core
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
@@ -207,6 +209,12 @@ func (m *ProviderManager) Upsert(ctx context.Context, cfg models.ProviderConfig)
 	if err != nil {
 		return cfg, err
 	}
+	// On save, an HTTP provider's config must be coherent with its /capabilities
+	// (the protocol matches and every required field is supplied). Built-ins have
+	// no capabilities endpoint, so this is a no-op for them.
+	if err := verifyProvider(ctx, built); err != nil {
+		return cfg, err
+	}
 	if err := m.repo.Upsert(ctx, cfg); err != nil {
 		return cfg, err
 	}
@@ -229,20 +237,153 @@ func (m *ProviderManager) SetEnabled(ctx context.Context, name string, enabled b
 	if err != nil {
 		return cfg, err
 	}
-	if err := m.repo.SetEnabled(ctx, name, enabled); err != nil {
-		return cfg, err
-	}
-	cfg.Enabled = enabled
 	if enabled {
-		if err := m.activate(cfg); err != nil {
+		// Verify before persisting the enabled flag, so a provider whose
+		// capabilities aren't satisfied stays disabled (nothing half-applied).
+		built, err := m.build(cfg)
+		if err != nil {
 			return cfg, err
 		}
+		if err := verifyProvider(ctx, built); err != nil {
+			return cfg, err
+		}
+		if err := m.repo.SetEnabled(ctx, name, true); err != nil {
+			return cfg, err
+		}
+		cfg.Enabled = true
+		m.registry.Register(built)
 		m.reorderFromDB(ctx)
 	} else {
+		if err := m.repo.SetEnabled(ctx, name, false); err != nil {
+			return cfg, err
+		}
+		cfg.Enabled = false
 		m.registry.Unregister(name)
 	}
 	m.logger.Info("provider toggled", "provider", name, "enabled", enabled)
 	return m.repo.Get(ctx, name)
+}
+
+// verifyProvider runs a provider's capability check if it implements Verifier
+// (HTTP providers do; built-ins don't).
+func verifyProvider(ctx context.Context, p providers.Provider) error {
+	if v, ok := p.(providers.Verifier); ok {
+		return v.Verify(ctx)
+	}
+	return nil
+}
+
+// CreateFromURL creates a dynamic HTTP provider from just its base URL. It
+// probes the mandatory /capabilities endpoint to confirm the service exists and
+// speaks the protocol, takes the provider name the remote declares, and seeds
+// the config with the declared fields set to null (the admin fills them in
+// later via the settings panel). The provider is created disabled.
+func (m *ProviderManager) CreateFromURL(ctx context.Context, endpoint string) (models.ProviderConfig, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	prov, err := m.build(models.ProviderConfig{Name: "probe", Kind: "http", Endpoint: endpoint, Config: "{}"})
+	if err != nil {
+		return models.ProviderConfig{}, err
+	}
+	cp, ok := prov.(providers.CapabilityProvider)
+	if !ok {
+		return models.ProviderConfig{}, fmt.Errorf("provider does not expose capabilities")
+	}
+	caps, err := cp.Capabilities(ctx)
+	if err != nil {
+		return models.ProviderConfig{}, err
+	}
+	if caps.Version != providers.ProtocolVersion {
+		return models.ProviderConfig{}, fmt.Errorf("remote protocol version %d unsupported (expected %d)", caps.Version, providers.ProtocolVersion)
+	}
+	if !providerNameRe.MatchString(caps.Name) {
+		return models.ProviderConfig{}, fmt.Errorf("capabilities name %q is not a valid slug", caps.Name)
+	}
+	if _, err := m.repo.Get(ctx, caps.Name); err == nil {
+		return models.ProviderConfig{}, fmt.Errorf("provider %q already exists", caps.Name)
+	}
+
+	cfg := models.ProviderConfig{
+		Name:      caps.Name,
+		Kind:      "http",
+		Endpoint:  strings.TrimRight(strings.TrimSpace(endpoint), "/"),
+		Config:    skeletonConfig(caps),
+		Enabled:   false, // created disabled; the admin fills the config then enables
+		SortOrder: m.firstOrder(ctx),
+	}
+	if err := m.repo.Upsert(ctx, cfg); err != nil {
+		return models.ProviderConfig{}, err
+	}
+	m.reorderFromDB(ctx)
+	m.logger.Info("provider created from url", "provider", cfg.Name, "endpoint", endpoint)
+	return m.repo.Get(ctx, caps.Name)
+}
+
+// skeletonConfig builds a { header, params } config payload from a capabilities
+// schema, with every declared field set to null for the admin to fill in.
+func skeletonConfig(caps providers.Capabilities) string {
+	headers := map[string]any{}
+	params := map[string]any{}
+	for key, f := range caps.Config {
+		switch f.Where {
+		case "headers":
+			headers[key] = nil
+		case "params":
+			params[key] = nil
+		}
+	}
+	obj := map[string]any{}
+	if len(headers) > 0 {
+		obj["headers"] = headers
+	}
+	if len(params) > 0 {
+		obj["params"] = params
+	}
+	b, _ := json.Marshal(obj)
+	return string(b)
+}
+
+// Versions fetches each dynamic (HTTP) provider's live protocol version in
+// parallel, best-effort: unreachable providers are simply omitted. Time-bounded
+// so the admin list stays responsive. Does not take the manager lock (read-only
+// introspection, no network call while holding it).
+func (m *ProviderManager) Versions(ctx context.Context) map[string]int {
+	configs, err := m.repo.List(ctx)
+	if err != nil {
+		return nil
+	}
+	ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
+	defer cancel()
+	out := map[string]int{}
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+	for _, c := range configs {
+		if c.Builtin() {
+			continue
+		}
+		wg.Add(1)
+		go func(c models.ProviderConfig) {
+			defer wg.Done()
+			prov, err := m.build(c)
+			if err != nil {
+				return
+			}
+			cp, ok := prov.(providers.CapabilityProvider)
+			if !ok {
+				return
+			}
+			caps, err := cp.Capabilities(ctx)
+			if err != nil {
+				return
+			}
+			mu.Lock()
+			out[c.Name] = caps.Version
+			mu.Unlock()
+		}(c)
+	}
+	wg.Wait()
+	return out
 }
 
 // Reorder sets the provider priority to the given name order. Every persisted

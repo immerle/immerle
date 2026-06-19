@@ -342,7 +342,7 @@ export interface paths {
         put?: never;
         /**
          * Create or update an on-demand provider
-         * @description Admin only. A provider is content-neutral: a name, an HTTP endpoint and an opaque JSON config. Applied immediately — an enabled provider is registered live, a disabled one is removed.
+         * @description Admin only. With only an endpoint (no name), creates an HTTP provider from its URL by probing /capabilities. With a name, updates it (HTTP config is validated against /capabilities).
          */
         post: {
             parameters: {
@@ -3211,6 +3211,12 @@ export interface components {
             name?: string;
             /** @example 3 */
             sortOrder?: number;
+            /**
+             * @description Version is the remote's live protocol version (HTTP providers), null when
+             *     unknown or for built-ins.
+             * @example 1
+             */
+            version?: number;
         };
         "immerle.ProviderLogDTO": {
             /** @example download */

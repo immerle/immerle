@@ -30,9 +30,18 @@ export default function AdminProviders() {
   const client = useAuth((s) => s.client);
   const q = useProviders();
   const { reorder } = useProviderMutations();
-  const [editing, setEditing] = useState<Provider | 'new' | null>(null);
+  const [editing, setEditing] = useState<Provider | null>(null);
+  const [creating, setCreating] = useState(false);
   const [behaviourOpen, setBehaviourOpen] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
   const hasSettings = !!client?.has('runtimeSettings');
+
+  // Auto-dismiss the error toast.
+  useEffect(() => {
+    if (!toast) return;
+    const id = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(id);
+  }, [toast]);
 
   // Admin surfaces are web-only — skip the heavy editor on native.
   if (Platform.OS !== 'web') {
@@ -75,7 +84,7 @@ export default function AdminProviders() {
               subtitle={t('admin.providers.headerSubtitle')}
               trailing={
                 <View className="flex-row items-center gap-2">
-                  <Button title={t('admin.providers.add')} size="sm" icon="add" onPress={() => setEditing('new')} />
+                  <Button title={t('admin.providers.add')} size="sm" icon="add" onPress={() => setCreating(true)} />
                   {hasSettings ? (
                     <Pressable
                       onPress={() => setBehaviourOpen(true)}
@@ -103,16 +112,24 @@ export default function AdminProviders() {
                 onMoveUp={i > 0 ? () => move(i, -1) : undefined}
                 onMoveDown={i < ordered.length - 1 ? () => move(i, 1) : undefined}
                 reordering={reorder.isPending}
+                onToast={setToast}
               />
             ))
           )}
 
-          {editing ? (
-            <ProviderModal initial={editing === 'new' ? null : editing} onClose={() => setEditing(null)} />
-          ) : null}
+          {editing ? <ProviderModal initial={editing} onClose={() => setEditing(null)} /> : null}
+          <CreateProviderModal visible={creating} onClose={() => setCreating(false)} />
           <BehaviourModal visible={behaviourOpen} onClose={() => setBehaviourOpen(false)} />
         </AdminScroll>
       )}
+      {toast ? (
+        <View pointerEvents="none" className="absolute inset-x-0 bottom-6 items-center px-6">
+          <View className="max-w-[460px] flex-row items-center gap-2 rounded-xl bg-danger px-4 py-3 shadow-lg">
+            <Ionicon name="alert-circle" size={18} color="#fff" />
+            <Text className="flex-1 text-sm font-medium text-white">{toast}</Text>
+          </View>
+        </View>
+      ) : null}
     </>
   );
 }
@@ -176,6 +193,59 @@ function BehaviourModal({ visible, onClose }: { visible: boolean; onClose: () =>
   );
 }
 
+/** Create a dynamic provider from just its URL (centered modal). The server
+ * probes /capabilities to derive the name and seed the config skeleton; the
+ * provider is created disabled, then configured via the settings panel. */
+function CreateProviderModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const t = useT();
+  const colors = useColors();
+  const { create } = useProviderMutations();
+  const [url, setUrl] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  // Reset on each open.
+  useEffect(() => {
+    if (visible) {
+      setUrl('');
+      setError(null);
+    }
+  }, [visible]);
+
+  const submit = () => {
+    if (!/^https?:\/\/.+/.test(url)) {
+      setError(t('admin.providers.invalidEndpoint'));
+      return;
+    }
+    setError(null);
+    create.mutate(url.trim(), { onSuccess: onClose, onError: (e) => setError(tError(e)) });
+  };
+
+  return (
+    <Modal transparent animationType="fade" visible={visible} onRequestClose={onClose}>
+      <Pressable className="flex-1 items-center justify-center bg-black/60 px-6" onPress={onClose}>
+        <Pressable className="w-full max-w-[440px] gap-3 rounded-2xl bg-surface p-5" onPress={(e) => e.stopPropagation()}>
+          <View className="flex-row items-center justify-between">
+            <Text className="text-lg font-bold tracking-tight text-foreground">{t('admin.providers.newTitle')}</Text>
+            <IconButton name="close" color={colors.muted} onPress={onClose} accessibilityLabel={t('admin.providers.close')} />
+          </View>
+          <Text className="text-sm text-muted">{t('admin.providers.createSubtitle')}</Text>
+          <Field
+            label={t('admin.providers.endpointLabel')}
+            placeholder="https://mon-service.internal"
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="url"
+            value={url}
+            onChangeText={setUrl}
+          />
+          {error ? <Text className="text-xs text-danger">{error}</Text> : null}
+          <Button title={t('admin.providers.create')} icon="add" loading={create.isPending} onPress={submit} />
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
 /** Per-provider error/warning log, embedded at the bottom of the settings popin
  * (only fetched while the popin is open). */
 function ProviderLogsSection({ name }: { name: string }) {
@@ -218,6 +288,7 @@ function ProviderCard({
   onMoveUp,
   onMoveDown,
   reordering,
+  onToast,
 }: {
   provider: Provider;
   onEdit: () => void;
@@ -225,6 +296,7 @@ function ProviderCard({
   onMoveUp?: () => void;
   onMoveDown?: () => void;
   reordering: boolean;
+  onToast: (msg: string) => void;
 }) {
   const t = useT();
   const colors = useColors();
@@ -252,19 +324,21 @@ function ProviderCard({
               <Badge label={t('admin.providers.inactive')} tone="danger" />
             ) : null}
             {provider.builtin ? <Badge label={t('admin.providers.builtin')} tone="default" /> : null}
+            {/* Live protocol version from the remote's /capabilities. */}
+            {provider.version != null ? <Badge label={`v${provider.version}`} tone="default" /> : null}
           </View>
-          {/* Built-ins have no endpoint (the "built-in" badge already labels them). */}
-          {provider.endpoint ? (
-            <Text className="text-xs text-muted" numberOfLines={1}>
-              {provider.endpoint}
-            </Text>
-          ) : null}
         </View>
 
         <Switch
           value={provider.enabled}
           disabled={setEnabled.isPending}
-          onValueChange={(v) => setEnabled.mutate({ name: provider.name, enabled: v })}
+          // Enabling runs the server capability check; a failure keeps it off and toasts.
+          onValueChange={(v) =>
+            setEnabled.mutate(
+              { name: provider.name, enabled: v },
+              { onError: (e) => onToast(tError(e)) },
+            )
+          }
           trackColor={{ true: colors.primary, false: colors.border }}
         />
 
@@ -324,18 +398,21 @@ function highlightJson(src: string, pal: { key: string; str: string; num: string
 }
 
 /** Config editor: monospace JSON with syntax highlighting, live validation and a
- * Format button. The unified schema is { header: {…}, params: {…}, … }. A colored
+ * Format button. The unified schema is { headers: {…}, params: {…}, … }. A colored
  * <Text> overlay sits behind a transparent-glyph TextInput (admin is web-only). */
 function JsonConfigField({ value, onChangeText }: { value: string; onChangeText: (v: string) => void }) {
   const t = useT();
   const colors = useColors();
   const { colorScheme } = useColorScheme();
   const pal = colorScheme === 'dark' ? JSON_SYNTAX.dark : JSON_SYNTAX.light;
-  const placeholder = '{\n  "header": {},\n  "params": {}\n}';
+  const placeholder = '{\n  "headers": {},\n  "params": {}\n}';
 
   // Web textarea DOM node, for caret-aware Tab handling.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const inputRef = useRef<any>(null);
+  // Grow the box to the content height so nothing scrolls inside it (the colored
+  // overlay can't scroll in sync with the textarea); the panel scrolls instead.
+  const [contentH, setContentH] = useState(140);
 
   const error = useMemo(() => {
     const s = value.trim();
@@ -382,7 +459,7 @@ function JsonConfigField({ value, onChangeText }: { value: string; onChangeText:
           <Text className="text-xs text-foreground">{t('admin.providers.configFormat')}</Text>
         </Pressable>
       </View>
-      <View style={{ position: 'relative', minHeight: 140, borderWidth: 1, borderColor: error ? colors.danger : colors.border, borderRadius: 12 }}>
+      <View style={{ position: 'relative', borderWidth: 1, borderColor: error ? colors.danger : colors.border, borderRadius: 12, overflow: 'hidden' }}>
         {/* Colored layer behind the input (or the placeholder when empty). */}
         <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
           <Text style={textStyle}>
@@ -394,14 +471,17 @@ function JsonConfigField({ value, onChangeText }: { value: string; onChangeText:
           value={value}
           onChangeText={onChangeText}
           onKeyPress={onKeyPress}
+          onContentSizeChange={(e) => setContentH(e.nativeEvent.contentSize.height)}
           multiline
+          scrollEnabled={false}
           autoCapitalize="none"
           autoCorrect={false}
           spellCheck={false}
+          // Height tracks the content so the box grows instead of scrolling inside.
           // Glyphs invisible (the overlay shows them in color) but the caret stays visible.
           style={[
             textStyle,
-            { flex: 1, minHeight: 140, textAlignVertical: 'top', color: colors.foreground },
+            { height: Math.max(140, contentH), textAlignVertical: 'top', color: colors.foreground },
             // Web-only props (transparent glyphs, visible caret) — not in RN's TextStyle.
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (Platform.OS === 'web'
@@ -417,16 +497,23 @@ function JsonConfigField({ value, onChangeText }: { value: string; onChangeText:
   );
 }
 
-function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose: () => void }) {
+/** Settings side panel for an existing provider: edit the config (validated
+ * against /capabilities on save for HTTP providers), reorder is on the card. */
+function ProviderModal({ initial, onClose }: { initial: Provider; onClose: () => void }) {
   const t = useT();
   const colors = useColors();
   const { upsert, remove } = useProviderMutations();
-  const isEdit = !!initial;
-  const isBuiltin = !!initial?.builtin;
-  const [name, setName] = useState(initial?.name ?? '');
-  const [endpoint, setEndpoint] = useState(initial?.endpoint ?? '');
-  const [config, setConfig] = useState(initial?.config ?? '{}');
-  const [enabled, setEnabled] = useState(initial?.enabled ?? true);
+  const isBuiltin = initial.builtin;
+  const [endpoint, setEndpoint] = useState(initial.endpoint);
+  // Pretty-print the stored config once, when the panel opens (not on every keystroke).
+  const [config, setConfig] = useState(() => {
+    const raw = initial.config || '{}';
+    try {
+      return JSON.stringify(JSON.parse(raw), null, 2);
+    } catch {
+      return raw;
+    }
+  });
   const [error, setError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
 
@@ -448,7 +535,6 @@ function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose
     ]).start(() => onClose());
 
   const validate = (): string | null => {
-    if (!SLUG_RE.test(name)) return t('admin.providers.invalidName');
     // Built-ins have no endpoint (the server compiles in how to reach them).
     if (!isBuiltin && !/^https?:\/\/.+/.test(endpoint)) return t('admin.providers.invalidEndpoint');
     const trimmed = config.trim();
@@ -469,8 +555,15 @@ function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose
       return;
     }
     setError(null);
+    // Preserve the current enabled state — enabling is done from the card switch.
     upsert.mutate(
-      { name, endpoint, config: config.trim() || '{}', enabled, kind: isBuiltin ? 'builtin' : 'http' },
+      {
+        name: initial.name,
+        endpoint,
+        config: config.trim() || '{}',
+        enabled: initial.enabled,
+        kind: isBuiltin ? 'builtin' : 'http',
+      },
       { onSuccess: close, onError: (e) => setError(tError(e)) },
     );
   };
@@ -485,7 +578,7 @@ function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose
           <Pressable className="h-full bg-surface" onPress={(e) => e.stopPropagation()}>
           <View className="flex-row items-center justify-between border-b border-border px-5 py-4">
             <Text className="text-lg font-bold tracking-tight text-foreground">
-              {isEdit ? t('admin.providers.editTitle', { name: initial?.name }) : t('admin.providers.newTitle')}
+              {t('admin.providers.editTitle', { name: initial.name })}
             </Text>
             <IconButton name="close" color={colors.muted} onPress={close} accessibilityLabel={t('admin.providers.close')} />
           </View>
@@ -497,13 +590,9 @@ function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose
           >
             <Field
               label={t('admin.providers.nameLabel')}
-              placeholder="mon-service"
-              autoCapitalize="none"
-              autoCorrect={false}
-              editable={!isEdit}
-              help={isEdit ? t('admin.providers.nameHelpLocked') : t('admin.providers.nameHelp')}
-              value={name}
-              onChangeText={setName}
+              editable={false}
+              help={t('admin.providers.nameHelpLocked')}
+              value={initial.name}
             />
             {!isBuiltin ? (
               <Field
@@ -517,22 +606,18 @@ function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose
               />
             ) : null}
             <JsonConfigField value={config} onChangeText={setConfig} />
-            <View className="flex-row items-center justify-between rounded-xl bg-surface-alt px-3 py-2">
-              <Text className="text-sm font-medium text-foreground">{t('admin.providers.enableNow')}</Text>
-              <Switch value={enabled} onValueChange={setEnabled} trackColor={{ true: colors.primary, false: colors.border }} />
-            </View>
 
             {error ? <Text className="text-xs text-danger">{error}</Text> : null}
 
             <Button
-              title={isEdit ? t('admin.providers.save') : t('admin.providers.create')}
+              title={t('admin.providers.save')}
               icon="save-outline"
               loading={upsert.isPending}
               onPress={submit}
             />
 
             {/* Delete lives here (built-ins are never deletable). */}
-            {isEdit && initial?.deletable ? (
+            {initial.deletable ? (
               confirming ? (
                 <Button
                   title={t('admin.providers.confirmDelete')}
@@ -546,8 +631,7 @@ function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose
               )
             ) : null}
 
-            {/* Recent provider errors/warnings — only for a saved provider. */}
-            {isEdit && initial ? <ProviderLogsSection name={initial.name} /> : null}
+            <ProviderLogsSection name={initial.name} />
           </ScrollView>
           </Pressable>
         </Animated.View>

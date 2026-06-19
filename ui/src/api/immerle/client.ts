@@ -57,6 +57,7 @@ function toProvider(dto: ProviderDTO): Provider {
     builtin: dto.builtin ?? false,
     deletable: dto.deletable ?? true,
     sortOrder: dto.sortOrder ?? 0,
+    version: dto.version ?? undefined,
   };
 }
 
@@ -258,6 +259,15 @@ export class ImmerleClient {
       },
     });
     if (error) throw apiErr(error, 'provider_upsert_failed');
+    return this.listProviders();
+  }
+
+  /** Create a dynamic HTTP provider from just its URL. The server probes the
+   * remote's /capabilities to derive the name and seed the config skeleton; the
+   * provider is created disabled. Returns the refreshed list. */
+  async createProvider(endpoint: string): Promise<Provider[]> {
+    const { error } = await this.api.POST('/admin/providers', { body: { endpoint } });
+    if (error) throw apiErr(error, 'provider_create_failed');
     return this.listProviders();
   }
 

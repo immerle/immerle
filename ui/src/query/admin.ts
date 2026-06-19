@@ -110,6 +110,12 @@ export function useProviderMutations() {
     onSuccess: invalidate,
   });
 
+  // Create a dynamic HTTP provider from its URL (server probes /capabilities).
+  const create = useMutation({
+    mutationFn: (endpoint: string) => client!.createProvider(endpoint),
+    onSuccess: invalidate,
+  });
+
   const setEnabled = useMutation({
     mutationFn: (p: { name: string; enabled: boolean }) =>
       client!.setProviderEnabled(p.name, p.enabled),
@@ -126,7 +132,7 @@ export function useProviderMutations() {
     onSuccess: invalidate,
   });
 
-  return { upsert, setEnabled, remove, reorder };
+  return { upsert, create, setEnabled, remove, reorder };
 }
 
 /** Recent warn/error events for one provider; only fetched while the popin is open. */

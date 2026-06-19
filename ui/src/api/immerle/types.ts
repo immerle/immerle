@@ -95,6 +95,8 @@ export interface Provider {
   deletable: boolean;
   /** Priority order (lower = higher priority); drives search fallback. */
   sortOrder: number;
+  /** Live protocol version from the remote's /capabilities (HTTP providers). */
+  version?: number;
 }
 
 /** A persisted warn/error event from a provider action (admin diagnostics). */
