@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	chi "github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
 
 	"github.com/immerle/immerle/internal/api/httputil"
 	"github.com/immerle/immerle/internal/core"
@@ -55,6 +54,7 @@ type Handler struct {
 	playback    *core.PlaybackService
 	playlistSvc *core.PlaylistService
 	userSvc     *core.UserService
+	shareSvc    *core.ShareService
 }
 
 // NewHandler builds a Subsonic handler.
@@ -65,6 +65,7 @@ func NewHandler(d Deps) *Handler {
 		playback:    core.NewPlaybackService(d.Catalog, d.Annotations, d.Scrobbles, d.OnDemand, d.Activity, d.NowPlaying),
 		playlistSvc: core.NewPlaylistService(d.Playlists, d.Annotations, d.Activity),
 		userSvc:     core.NewUserService(d.Users, d.Auth),
+		shareSvc:    core.NewShareService(d.Shares, d.Catalog, d.Playlists),
 	}
 }
 
@@ -245,9 +246,6 @@ func requireAdmin(w http.ResponseWriter, r *http.Request) bool {
 func isNotFound(err error) bool {
 	return errors.Is(err, persistence.ErrNotFound)
 }
-
-// newID generates a unique identifier for new entities.
-func newID() string { return uuid.NewString() }
 
 // decodeEncParam decodes a Subsonic "enc:<hex>" encoded password value.
 func decodeEncParam(p string) string {
