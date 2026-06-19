@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	chi "github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
 
 	"github.com/immerle/immerle/internal/api/httputil"
 	"github.com/immerle/immerle/internal/core"
@@ -54,11 +53,28 @@ type Deps struct {
 // Handler implements the Subsonic REST API.
 type Handler struct {
 	Deps
+	// library holds the shared catalog browsing/search business logic, playback
+	// the shared favorite/rating/scrobble logic. The Subsonic handlers are a
+	// presentation layer over them.
+	library      *core.LibraryService
+	playback     *core.PlaybackService
+	playlistSvc  *core.PlaylistService
+	userSvc      *core.UserService
+	shareSvc     *core.ShareService
+	playQueueSvc *core.PlayQueueService
 }
 
 // NewHandler builds a Subsonic handler.
 func NewHandler(d Deps) *Handler {
-	return &Handler{Deps: d}
+	return &Handler{
+		Deps:         d,
+		library:      core.NewLibraryService(d.Catalog, d.Annotations, d.OnDemand),
+		playback:     core.NewPlaybackService(d.Catalog, d.Annotations, d.Scrobbles, d.OnDemand, d.Activity, d.NowPlaying),
+		playlistSvc:  core.NewPlaylistService(d.Playlists, d.Annotations, d.Activity),
+		userSvc:      core.NewUserService(d.Users, d.Auth),
+		shareSvc:     core.NewShareService(d.Shares, d.Catalog, d.Playlists),
+		playQueueSvc: core.NewPlayQueueService(d.PlayQueues, d.Catalog, d.Annotations),
+	}
 }
 
 type ctxKey int
@@ -211,6 +227,23 @@ func boolParam(r *http.Request, name string, def bool) bool {
 	return b
 }
 
+// writeServiceError maps an application-layer error to a Subsonic error
+// envelope: not-found → "data not found", forbidden → "unauthorized action",
+// unauthorized → "wrong credentials", anything else logged and genericized.
+// notFoundMsg is the message used for the not-found case.
+func (h *Handler) writeServiceError(w http.ResponseWriter, r *http.Request, err error, notFoundMsg string) {
+	switch {
+	case isNotFound(err):
+		writeError(w, r, ErrDataNotFound, notFoundMsg)
+	case errors.Is(err, core.ErrForbidden):
+		writeError(w, r, ErrUnauthorizedAction, "User is not authorized for this operation")
+	case errors.Is(err, core.ErrUnauthorized):
+		writeError(w, r, ErrWrongCredentials, "Wrong username or password")
+	default:
+		h.failInternal(w, r, err)
+	}
+}
+
 // requireAdmin writes an error and returns false if the user is not an admin.
 func requireAdmin(w http.ResponseWriter, r *http.Request) bool {
 	if !userFrom(r.Context()).IsAdmin {
@@ -224,9 +257,6 @@ func requireAdmin(w http.ResponseWriter, r *http.Request) bool {
 func isNotFound(err error) bool {
 	return errors.Is(err, persistence.ErrNotFound)
 }
-
-// newID generates a unique identifier for new entities.
-func newID() string { return uuid.NewString() }
 
 // decodeEncParam decodes a Subsonic "enc:<hex>" encoded password value.
 func decodeEncParam(p string) string {

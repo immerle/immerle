@@ -334,6 +334,7 @@ func New(cfg config.Config) (*App, error) {
 		Providers:    providerMgr,
 		Settings:     settingsSvc,
 		Radio:        store.Radio,
+		Wrapped:      store.Wrapped,
 		Catalog:      store.Catalog,
 		OnDemand:     onDemand,
 		LibraryStats: libraryStats,

@@ -71,7 +71,7 @@ func (h *Handler) serveLocal(w http.ResponseWriter, r *http.Request, track model
 // e.g. raw FLAC labelled audio/mpeg. Seeking is disabled until the local copy is
 // ready; later plays go through the seekable, transcoding local path.
 func (h *Handler) streamProgressive(w http.ResponseWriter, r *http.Request, pending *core.PendingDownload, opts stream.Options) {
-	w.Header().Set("Content-Type", audioContentType("", pending.Suffix()))
+	w.Header().Set("Content-Type", audioContentType(pending.Suffix()))
 	w.Header().Set("Accept-Ranges", "none")
 	if err := h.OnDemand.StreamPending(r.Context(), pending, w); err != nil {
 		// Headers/bytes have already started; nothing to do but log.
@@ -79,15 +79,10 @@ func (h *Handler) streamProgressive(w http.ResponseWriter, r *http.Request, pend
 	}
 }
 
-// audioContentType returns the MIME type to advertise. The requested format wins
-// (so the client sees the transcode it asked for), falling back to the provider's
-// actual suffix when no real format was requested.
-func audioContentType(format, suffix string) string {
-	f := strings.ToLower(format)
-	if f == "" || f == "raw" {
-		f = strings.ToLower(suffix)
-	}
-	switch f {
+// audioContentType returns the MIME type to advertise for the provider's actual
+// bytes, derived from its file suffix.
+func audioContentType(suffix string) string {
+	switch strings.ToLower(suffix) {
 	case "mp3", "mpeg":
 		return "audio/mpeg"
 	case "flac":
@@ -103,57 +98,17 @@ func audioContentType(format, suffix string) string {
 	}
 }
 
-// resolveTrackForPlayback fetches a local track, or for a remote (provider) id
-// triggers the on-demand download and returns the resulting local track.
-func (h *Handler) resolveTrackForPlayback(r *http.Request, id string) (models.Track, error) {
-	if core.IsRemoteID(id) && h.OnDemand != nil {
-		user := userFrom(r.Context())
-		track, _, _, err := h.OnDemand.Resolve(r.Context(), user.ID, id)
-		return track, err
-	}
-	return h.Catalog.GetTrack(r.Context(), id)
-}
-
 func (h *Handler) handleScrobble(w http.ResponseWriter, r *http.Request) {
-	user := userFrom(r.Context())
 	ids := r.Form["id"]
 	if len(ids) == 0 {
 		writeError(w, r, ErrMissingParameter, "Required parameter id is missing")
 		return
 	}
-	submission := boolParam(r, "submission", true)
-
-	for _, id := range ids {
-		// Resolve remote ids to local so stats attach to a real track.
-		track, err := h.resolveTrackForPlayback(r, id)
-		if err != nil {
-			continue
-		}
-		if h.NowPlaying != nil {
-			h.NowPlaying.Set(user.ID, user.Username, track.ID)
-		}
-		if !submission {
-			continue
-		}
-		if user.ScrobbleEnabled {
-			at := time.Now()
-			if t := intParam(r, "time", 0); t > 0 {
-				at = time.UnixMilli(int64(t))
-			}
-			_ = h.Scrobbles.Insert(r.Context(), models.Scrobble{
-				ID:        newID(),
-				UserID:    user.ID,
-				TrackID:   track.ID,
-				PlayedAt:  at,
-				Submitted: true,
-			})
-			_ = h.Annotations.IncrementPlay(r.Context(), user.ID, models.ItemTrack, track.ID, at)
-			_ = h.Annotations.IncrementPlay(r.Context(), user.ID, models.ItemAlbum, track.AlbumID, at)
-		}
-		if h.Activity != nil {
-			_ = h.Activity.Record(r.Context(), user, "listen", models.ItemTrack, track.ID)
-		}
+	at := time.Now()
+	if t := intParam(r, "time", 0); t > 0 {
+		at = time.UnixMilli(int64(t))
 	}
+	h.playback.Scrobble(r.Context(), userFrom(r.Context()), ids, boolParam(r, "submission", true), at)
 	writeOK(w, r)
 }
 

@@ -35,38 +35,6 @@ func (h *Handler) remoteSongs(r *http.Request, tracks []models.Track) []Child {
 	return songs
 }
 
-// respondRemoteArtist renders a provider (remote) artist surfaced in search,
-// with its albums grouped from the provider's tracks.
-func (h *Handler) respondRemoteArtist(w http.ResponseWriter, r *http.Request, id string) {
-	artist, albums, err := h.OnDemand.RemoteArtist(r.Context(), id)
-	if err != nil || artist.Name == "" {
-		writeError(w, r, ErrDataNotFound, "Artist not found")
-		return
-	}
-	albumList := make([]AlbumID3, 0, len(albums))
-	for _, a := range albums {
-		albumList = append(albumList, toAlbumID3(a, nil, nil))
-	}
-	resp := newResponse()
-	out := toArtistID3(artist, nil, albumList)
-	resp.Artist = &out
-	write(w, r, resp)
-}
-
-// respondRemoteAlbum renders a provider (remote) album with its tracks.
-func (h *Handler) respondRemoteAlbum(w http.ResponseWriter, r *http.Request, id string) {
-	album, tracks, err := h.OnDemand.RemoteAlbum(r.Context(), id)
-	if err != nil || album.Name == "" {
-		writeError(w, r, ErrDataNotFound, "Album not found")
-		return
-	}
-	songs := h.remoteSongs(r, tracks)
-	resp := newResponse()
-	out := toAlbumID3(album, nil, songs)
-	resp.Album = &out
-	write(w, r, resp)
-}
-
 // remoteMusicDirectory serves getMusicDirectory for a remote artist (albums as
 // sub-directories) or a remote album (songs).
 func (h *Handler) remoteMusicDirectory(w http.ResponseWriter, r *http.Request, id string) bool {

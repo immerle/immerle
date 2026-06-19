@@ -24,7 +24,7 @@ PORT=4533
 # --- Auth ---
 # If unset, a random secret is generated at startup and persisted.
 # AUTH_SECRET=
-AUTH_REQUIRE_SETUP_TOKEN=false   # gate first-run admin behind a startup token
+AUTH_REQUIRE_SETUP_TOKEN=false   # gate first-run admin behind a startup token (see note below)
 
 # --- Database ---
 DATABASE_DRIVER=sqlite
@@ -41,6 +41,25 @@ LOG_FORMAT=text    # text | json
 LIBRARY_PATHS=/music
 LIBRARY_DATA_DIR=data
 ```
+
+:::info First-run admin setup
+
+`AUTH_REQUIRE_SETUP_TOKEN` defaults to `false` on purpose. The first time the
+server starts with no users, `POST /api/v1/setup` lets you create the admin
+account straight from the web UI — no token to copy out of the logs. This keeps
+onboarding simple for non-technical, self-hosting users.
+
+The setup endpoint **self-locks the moment any user exists**, so it can only be
+used once. The only exposure window is between the instance first becoming
+reachable on the network and you finishing setup: if someone reaches it before
+you do, they could claim the admin account.
+
+If your instance is exposed to the public internet before you've initialized it,
+either set `AUTH_REQUIRE_SETUP_TOKEN=true` (the server then prints a one-time
+token you must supply to create the admin) or keep the instance off the public
+network until setup is complete.
+
+:::
 
 ## Runtime (admin API)
 

@@ -84,11 +84,18 @@ type RuntimeSettings struct {
 	Import     ImportRuntime     `json:"import"`
 	Logs       LogsRuntime       `json:"logs"`
 	Radio      RadioRuntime      `json:"radio"`
+	Wrapped    WrappedRuntime    `json:"wrapped"`
 }
 
 // RadioRuntime toggles internet radio stations (hot-reloadable). When disabled,
 // the radio endpoints 404 / return empty and clients hide the section.
 type RadioRuntime struct {
+	Enabled bool `json:"enabled"`
+}
+
+// WrappedRuntime toggles the "Wrapped" year-in-review feature (hot-reloadable).
+// When disabled, the wrapped endpoint 404s and clients hide the entry point.
+type WrappedRuntime struct {
 	Enabled bool `json:"enabled"`
 }
 
@@ -197,9 +204,10 @@ func DefaultRuntimeSettings() RuntimeSettings {
 		// Import sources that go through the hub (e.g. spotify) need no per-source
 		// config here — they use the federation hub credentials. This map is for
 		// future sources that authenticate directly.
-		Import: ImportRuntime{},
-		Logs:   LogsRuntime{RetentionDays: 30},
-		Radio:  RadioRuntime{Enabled: true},
+		Import:  ImportRuntime{},
+		Logs:    LogsRuntime{RetentionDays: 30},
+		Radio:   RadioRuntime{Enabled: true},
+		Wrapped: WrappedRuntime{Enabled: true},
 	}
 }
 
@@ -227,6 +235,33 @@ type RadioStation struct {
 	Liked bool `json:"liked"`
 }
 
+// Wrapped is a user's year-in-review: totals plus top tracks/artists/genres and
+// a per-month play histogram. Computed on demand from the scrobble history.
+type Wrapped struct {
+	Year         int            `json:"year"`
+	TotalPlays   int            `json:"totalPlays"`
+	TotalSeconds int64          `json:"totalSeconds"`
+	TopTracks    []WrappedTrack `json:"topTracks"`
+	TopArtists   []WrappedCount `json:"topArtists"`
+	TopGenres    []WrappedCount `json:"topGenres"`
+	// ByMonth is plays per calendar month, index 0 = January .. 11 = December.
+	ByMonth [12]int `json:"byMonth"`
+}
+
+// WrappedTrack is one entry in the top-tracks chart.
+type WrappedTrack struct {
+	ID     string `json:"id"`
+	Title  string `json:"title"`
+	Artist string `json:"artist"`
+	Plays  int    `json:"plays"`
+}
+
+// WrappedCount is a labelled play count (an artist or a genre).
+type WrappedCount struct {
+	Name  string `json:"name"`
+	Plays int    `json:"plays"`
+}
+
 // LibraryStats is a snapshot of the library analytics: catalog cardinalities
 // plus the aggregate on-disk size (bytes) and duration (seconds). It is cached
 // and recomputed at each scan rather than on every request.
@@ -245,15 +280,6 @@ type Library struct {
 	Name      string    `json:"name"`
 	Path      string    `json:"path"`
 	CreatedAt time.Time `json:"createdAt"`
-}
-
-// Folder is a directory within a library, used to model the music-folder tree.
-type Folder struct {
-	ID        string  `json:"id"`
-	LibraryID string  `json:"libraryId"`
-	ParentID  *string `json:"parentId,omitempty"`
-	Path      string  `json:"path"`
-	Name      string  `json:"name"`
 }
 
 // Artist is a performer or album artist.

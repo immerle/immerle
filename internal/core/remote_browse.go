@@ -102,25 +102,6 @@ func toRemoteTrack(provider string, res providers.Result) models.Track {
 	}
 }
 
-// RemoteSearchArtists returns artists found at the registered providers, derived
-// from their track search results and deduplicated against the local library
-// (by name). Each carries a self-describing remote id so it can be browsed.
-func (s *CatalogService) RemoteSearchArtists(ctx context.Context, query string, limit int) ([]models.Artist, error) {
-	if s == nil || s.state == nil {
-		return nil, nil
-	}
-	if limit <= 0 {
-		limit = 20
-	}
-	prov, ok := s.searchProvider()
-	if !ok {
-		return nil, nil
-	}
-	ctx, cancel := s.searchCtx(ctx)
-	defer cancel()
-	return s.remoteArtistsFrom(ctx, prov, query, limit), nil
-}
-
 // RemoteSearch3 gathers remote artists, albums and tracks for search3/search2.
 // It queries every active provider in parallel and merges their results into
 // three deduplicated lists (artists by name, albums by artist+name, tracks by
