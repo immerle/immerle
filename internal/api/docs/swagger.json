@@ -890,6 +890,78 @@
                 },
                 "type": "object"
             },
+            "immerle.SmartConditionDTO": {
+                "properties": {
+                    "field": {
+                        "example": "genre",
+                        "type": "string"
+                    },
+                    "op": {
+                        "example": "is",
+                        "type": "string"
+                    },
+                    "value": {
+                        "example": "House",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.SmartPlaylistDTO": {
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "example": "Heavy rotation",
+                        "type": "string"
+                    },
+                    "rules": {
+                        "$ref": "#/components/schemas/immerle.SmartRulesDTO"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.SmartPlaylistRequestDTO": {
+                "properties": {
+                    "name": {
+                        "example": "Heavy rotation",
+                        "type": "string"
+                    },
+                    "rules": {
+                        "$ref": "#/components/schemas/immerle.SmartRulesDTO"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.SmartRulesDTO": {
+                "properties": {
+                    "conditions": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.SmartConditionDTO"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "limit": {
+                        "example": 100,
+                        "type": "integer"
+                    },
+                    "match": {
+                        "example": "all",
+                        "type": "string"
+                    },
+                    "order": {
+                        "example": "desc",
+                        "type": "string"
+                    },
+                    "sort": {
+                        "example": "playCount",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "immerle.ThemeDTO": {
                 "properties": {
                     "accentColor": {
@@ -1136,6 +1208,14 @@
                 "type": "object"
             },
             "immerle.setEnabledRequest": {
+                "properties": {
+                    "enabled": {
+                        "type": "boolean"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.smartToggleRequest": {
                 "properties": {
                     "enabled": {
                         "type": "boolean"
@@ -2181,6 +2261,90 @@
                     }
                 ],
                 "summary": "Update runtime settings",
+                "tags": [
+                    "admin"
+                ]
+            }
+        },
+        "/admin/smart-playlists": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": {
+                                        "type": "boolean"
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Get the smart-playlists feature state",
+                "tags": [
+                    "admin"
+                ]
+            },
+            "put": {
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/immerle.smartToggleRequest",
+                                        "summary": "body",
+                                        "description": "Enable or disable"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Enable or disable",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": {
+                                        "type": "boolean"
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Toggle the smart-playlists feature",
                 "tags": [
                     "admin"
                 ]
@@ -4291,6 +4455,271 @@
                 "summary": "Create the first administrator",
                 "tags": [
                     "setup"
+                ]
+            }
+        },
+        "/smart-playlists": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": {},
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "List smart playlists",
+                "tags": [
+                    "smartPlaylists"
+                ]
+            },
+            "post": {
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/immerle.SmartPlaylistRequestDTO",
+                                        "summary": "body",
+                                        "description": "Name + rules"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Name + rules",
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.SmartPlaylistDTO"
+                                }
+                            }
+                        },
+                        "description": "Created"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Create a smart playlist",
+                "tags": [
+                    "smartPlaylists"
+                ]
+            }
+        },
+        "/smart-playlists/preview": {
+            "post": {
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/immerle.SmartPlaylistRequestDTO",
+                                        "summary": "body",
+                                        "description": "Rules to preview"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Rules to preview",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": {},
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Preview smart-playlist rules",
+                "tags": [
+                    "smartPlaylists"
+                ]
+            }
+        },
+        "/smart-playlists/{id}": {
+            "delete": {
+                "parameters": [
+                    {
+                        "description": "Smart playlist id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Delete a smart playlist",
+                "tags": [
+                    "smartPlaylists"
+                ]
+            },
+            "put": {
+                "parameters": [
+                    {
+                        "description": "Smart playlist id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/immerle.SmartPlaylistRequestDTO",
+                                        "summary": "body",
+                                        "description": "Name + rules"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Name + rules",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.SmartPlaylistDTO"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Update a smart playlist",
+                "tags": [
+                    "smartPlaylists"
+                ]
+            }
+        },
+        "/smart-playlists/{id}/tracks": {
+            "get": {
+                "parameters": [
+                    {
+                        "description": "Smart playlist id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": {},
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Resolve a smart playlist's tracks",
+                "tags": [
+                    "smartPlaylists"
                 ]
             }
         },

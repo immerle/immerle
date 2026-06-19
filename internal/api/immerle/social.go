@@ -34,6 +34,7 @@ func (h *Handler) handleCapabilities(w http.ResponseWriter, r *http.Request) {
 			needsSetup = !initialized
 		}
 	}
+	smart := h.smartEnabled() && h.SmartPlaylists != nil
 	writeResource(w, http.StatusOK, map[string]any{
 		"server":          "immerle",
 		"protocolVersion": ProtocolVersion,
@@ -53,8 +54,9 @@ func (h *Handler) handleCapabilities(w http.ResponseWriter, r *http.Request) {
 			"devices":                map[string]any{"version": 1, "auth": "jwt"},
 			"theme":                  map[string]any{"version": 1, "properties": []string{"accentColor"}},
 			"dynamicProviders":       map[string]any{"version": 1, "kinds": []string{"http"}, "admin": true},
-			"runtimeSettings":        map[string]any{"version": 1, "admin": true, "groups": []string{"providers", "scan", "cleanup", "federation", "import"}},
+			"runtimeSettings":        map[string]any{"version": 1, "admin": true, "groups": []string{"providers", "scan", "cleanup", "federation", "import", "smartPlaylists"}},
 			"federation":             map[string]any{"version": 1, "enabled": federation},
+			"smartPlaylists":         map[string]any{"version": 1, "admin": true, "enabled": smart},
 		},
 	})
 }

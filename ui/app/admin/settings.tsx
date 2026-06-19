@@ -7,6 +7,8 @@ import {
   useSettings,
   useUpdateSettings,
 } from '../../src/query/admin';
+import { useSmartPlaylistsAdmin, useSetSmartPlaylists } from '../../src/query/smartPlaylists';
+import { useAuth } from '../../src/auth/store';
 import { RuntimeSettingsDTO } from '../../src/api/immerleApi';
 import { Badge, Button, Card, ErrorState, Field, IconButton, Loading } from '../../src/components/ui';
 import { AdminHeader, AdminScroll } from '../../src/components/AdminUI';
@@ -25,7 +27,7 @@ const RESTART_LABEL_KEYS: Record<string, string> = {
   federation: 'admin.settings.restartFederation',
 };
 
-type SectionKey = 'auth' | 'server' | 'transcode' | 'federation' | 'cleanup' | 'logs';
+type SectionKey = 'auth' | 'server' | 'transcode' | 'federation' | 'cleanup' | 'logs' | 'features';
 
 interface Section {
   key: SectionKey;
@@ -79,11 +81,15 @@ export default function AdminSettings() {
     { key: 'federation', icon: 'git-network', color: '#14b8a6', title: t('admin.settings.federationTitle'), subtitle: t('admin.settings.federationSubtitle') },
     { key: 'cleanup', icon: 'trash-bin', color: '#ef4444', title: t('admin.settings.cleanupTitle'), subtitle: t('admin.settings.cleanupSubtitle') },
     { key: 'logs', icon: 'document-text', color: '#f59e0b', title: t('admin.settings.logsTitle'), subtitle: t('admin.settings.logsSubtitle') },
+    { key: 'features', icon: 'sparkles', color: '#8b5cf6', title: t('admin.settings.featuresTitle'), subtitle: t('admin.settings.featuresSubtitle') },
   ];
+  const client = useAuth((s) => s.client);
   const q = useSettings();
   const update = useUpdateSettings();
   const cleanup = useCleanup();
   const cleanupM = useCleanupMutations();
+  const smart = useSmartPlaylistsAdmin();
+  const setSmart = useSetSmartPlaylists();
   const [form, setForm] = useState<Form | null>(null);
   const [sheet, setSheet] = useState<SectionKey | null>(null);
   const [removed, setRemoved] = useState<number | null>(null);
@@ -100,7 +106,11 @@ export default function AdminSettings() {
 
   const pending = q.data?.pendingRestart ?? [];
   const profiles = q.data?.settings.transcode?.profiles ?? [];
-  const rows = SECTIONS.filter((s) => s.key !== 'cleanup' || !!cleanup.data);
+  const rows = SECTIONS.filter((s) => {
+    if (s.key === 'cleanup') return !!cleanup.data;
+    if (s.key === 'features') return !!client?.has('smartPlaylists');
+    return true;
+  });
   const active = SECTIONS.find((s) => s.key === sheet);
 
   return (
@@ -221,6 +231,19 @@ export default function AdminSettings() {
                     help={t('admin.settings.logRetentionHelp')}
                   />
                   <SaveButton loading={update.isPending} onPress={() => save({ logs: { retentionDays: num(form.logRetention) } })} />
+                </>
+              ) : null}
+
+              {sheet === 'features' ? (
+                <>
+                  <Text className="text-xs text-muted">{t('admin.settings.featuresDescription')}</Text>
+                  {client?.has('smartPlaylists') ? (
+                    <ToggleRow
+                      label={t('admin.settings.smartPlaylistsEnabled')}
+                      value={smart.data ?? false}
+                      onChange={(v) => setSmart.mutate(v)}
+                    />
+                  ) : null}
                 </>
               ) : null}
 

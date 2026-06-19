@@ -39,6 +39,7 @@ type Store struct {
 	APITokens       *APITokenRepo
 	Devices         *DeviceRepo
 	Imports         *ImportRepo
+	SmartPlaylists  *SmartPlaylistRepo
 }
 
 // New builds a Store over the given database.
@@ -64,6 +65,7 @@ func New(database *db.DB) *Store {
 		APITokens:       &APITokenRepo{base},
 		Devices:         &DeviceRepo{base},
 		Imports:         &ImportRepo{base},
+		SmartPlaylists:  &SmartPlaylistRepo{base},
 	}
 }
 

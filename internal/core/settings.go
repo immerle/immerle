@@ -268,3 +268,6 @@ func (s *SettingsService) CleanupInterval() time.Duration {
 func (s *SettingsService) LogRetention() time.Duration {
 	return time.Duration(s.Get().Logs.RetentionDays) * 24 * time.Hour
 }
+
+// SmartPlaylistsEnabled reports whether rule-based playlists are on (read live).
+func (s *SettingsService) SmartPlaylistsEnabled() bool { return s.Get().SmartPlaylists.Enabled }

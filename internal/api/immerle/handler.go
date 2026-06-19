@@ -54,7 +54,9 @@ type Deps struct {
 	// Settings manages the DB-backed runtime settings (admin API). It also supplies
 	// the device-session JWT lifetime (a runtime setting).
 	Settings *core.SettingsService
-	Logger   *slog.Logger
+	// SmartPlaylists persists and evaluates rule-based playlists.
+	SmartPlaylists *persistence.SmartPlaylistRepo
+	Logger         *slog.Logger
 }
 
 // deviceTokenTTL returns the device-session JWT lifetime from the runtime
@@ -136,6 +138,14 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Get("/imports/{id}", h.handleImportStatus)
 			r.Post("/imports/{id}/items/{itemId}/resolve", h.handleImportItemResolve)
 
+			// Rule-based "smart" playlists.
+			r.Get("/smart-playlists", h.handleSmartPlaylists)
+			r.Post("/smart-playlists", h.handleSmartPlaylistCreate)
+			r.Post("/smart-playlists/preview", h.handleSmartPlaylistPreview)
+			r.Put("/smart-playlists/{id}", h.handleSmartPlaylistUpdate)
+			r.Delete("/smart-playlists/{id}", h.handleSmartPlaylistDelete)
+			r.Get("/smart-playlists/{id}/tracks", h.handleSmartPlaylistTracks)
+
 			// Collaborative / public playlists (extensions over the Subsonic API).
 			r.Get("/playlists/public", h.handlePublicPlaylists)
 			r.Put("/playlists/{id}/subscription", h.handleSubscribePlaylist)
@@ -185,6 +195,10 @@ func (h *Handler) Register(mux chi.Router) {
 			// Admin: DB-backed runtime settings.
 			r.Get("/admin/settings", h.handleSettings)
 			r.Patch("/admin/settings", h.handleSettingsUpdate)
+
+			// Admin: smart-playlists feature toggle.
+			r.Get("/admin/smart-playlists", h.handleSmartPlaylistsAdmin)
+			r.Put("/admin/smart-playlists", h.handleSmartPlaylistsToggle)
 		})
 	})
 }

@@ -131,6 +131,35 @@ type CleanupRunDTO struct {
 	Removed int `json:"removed" example:"3"`
 }
 
+// SmartConditionDTO is one smart-playlist filter.
+type SmartConditionDTO struct {
+	Field string `json:"field" example:"genre"`
+	Op    string `json:"op" example:"is"`
+	Value string `json:"value" example:"House"`
+}
+
+// SmartRulesDTO describes how a smart playlist selects and orders tracks.
+type SmartRulesDTO struct {
+	Match      string              `json:"match" example:"all"`
+	Conditions []SmartConditionDTO `json:"conditions"`
+	Sort       string              `json:"sort" example:"playCount"`
+	Order      string              `json:"order" example:"desc"`
+	Limit      int                 `json:"limit" example:"100"`
+}
+
+// SmartPlaylistDTO is a saved rule-based playlist.
+type SmartPlaylistDTO struct {
+	ID    string        `json:"id"`
+	Name  string        `json:"name" example:"Heavy rotation"`
+	Rules SmartRulesDTO `json:"rules"`
+}
+
+// SmartPlaylistRequestDTO is the create/update/preview body.
+type SmartPlaylistRequestDTO struct {
+	Name  string        `json:"name" example:"Heavy rotation"`
+	Rules SmartRulesDTO `json:"rules"`
+}
+
 // CapabilityDTO describes one supported capability.
 type CapabilityDTO struct {
 	Version int `json:"version" example:"1"`
