@@ -383,27 +383,28 @@ func groupArtistsLegacy(artists []models.Artist) []Index {
 		letter := indexLetter(a.Name)
 		buckets[letter] = append(buckets[letter], ArtistItem{ID: a.ID, Name: a.Name})
 	}
-	letters := make([]string, 0, len(buckets))
-	for k := range buckets {
-		letters = append(letters, k)
-	}
-	sort.Strings(letters)
-	out := make([]Index, 0, len(letters))
-	for _, l := range letters {
-		out = append(out, Index{Name: l, Artist: buckets[l]})
-	}
-	return out
+	return sortedIndex(buckets, func(l string, items []ArtistItem) Index {
+		return Index{Name: l, Artist: items}
+	})
 }
 
 func sortedIndexID3(buckets map[string][]ArtistID3) []IndexID3 {
+	return sortedIndex(buckets, func(l string, items []ArtistID3) IndexID3 {
+		return IndexID3{Name: l, Artist: items}
+	})
+}
+
+// sortedIndex emits an alphabetically-sorted index list from letter→items
+// buckets, building each entry with mk.
+func sortedIndex[V, R any](buckets map[string][]V, mk func(letter string, items []V) R) []R {
 	letters := make([]string, 0, len(buckets))
 	for k := range buckets {
 		letters = append(letters, k)
 	}
 	sort.Strings(letters)
-	out := make([]IndexID3, 0, len(letters))
+	out := make([]R, 0, len(letters))
 	for _, l := range letters {
-		out = append(out, IndexID3{Name: l, Artist: buckets[l]})
+		out = append(out, mk(l, buckets[l]))
 	}
 	return out
 }
