@@ -1086,6 +1086,48 @@
                 },
                 "type": "object"
             },
+            "immerle.albumView": {
+                "properties": {
+                    "artist": {
+                        "type": "string"
+                    },
+                    "artistId": {
+                        "type": "string"
+                    },
+                    "coverArt": {
+                        "type": "string"
+                    },
+                    "duration": {
+                        "type": "integer"
+                    },
+                    "genre": {
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "songCount": {
+                        "type": "integer"
+                    },
+                    "starred": {
+                        "type": "string"
+                    },
+                    "tracks": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.songView"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "year": {
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
             "immerle.apiError": {
                 "properties": {
                     "code": {
@@ -1105,6 +1147,33 @@
                         "additionalProperties": {},
                         "description": "i18n interpolation values; always present ({} when none)",
                         "type": "object"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.artistView": {
+                "properties": {
+                    "albumCount": {
+                        "type": "integer"
+                    },
+                    "albums": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.albumView"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "coverArt": {
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "starred": {
+                        "type": "string"
                     }
                 },
                 "type": "object"
@@ -1217,6 +1286,53 @@
                 "properties": {
                     "enabled": {
                         "type": "boolean"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.songView": {
+                "properties": {
+                    "album": {
+                        "type": "string"
+                    },
+                    "albumId": {
+                        "type": "string"
+                    },
+                    "artist": {
+                        "type": "string"
+                    },
+                    "artistId": {
+                        "type": "string"
+                    },
+                    "contentType": {
+                        "type": "string"
+                    },
+                    "coverArt": {
+                        "type": "string"
+                    },
+                    "duration": {
+                        "type": "integer"
+                    },
+                    "genre": {
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "size": {
+                        "type": "integer"
+                    },
+                    "suffix": {
+                        "type": "string"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "track": {
+                        "type": "integer"
+                    },
+                    "year": {
+                        "type": "integer"
                     }
                 },
                 "type": "object"
@@ -2724,6 +2840,170 @@
                 "summary": "Toggle the Wrapped feature",
                 "tags": [
                     "admin"
+                ]
+            }
+        },
+        "/albums/{id}": {
+            "get": {
+                "description": "Returns an album with its merged (local + remote) tracklist.",
+                "parameters": [
+                    {
+                        "description": "Album id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.albumView"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Get album",
+                "tags": [
+                    "catalog"
+                ]
+            }
+        },
+        "/artists": {
+            "get": {
+                "description": "Returns every artist in the catalog with the caller's per-artist starred state.",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": {
+                                        "items": {
+                                            "$ref": "#/components/schemas/immerle.artistView"
+                                        },
+                                        "type": "array"
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "List artists",
+                "tags": [
+                    "catalog"
+                ]
+            }
+        },
+        "/artists/{id}": {
+            "get": {
+                "description": "Returns an artist with its (local + remote) albums. With ?songs=true each album's tracks are inlined.",
+                "parameters": [
+                    {
+                        "description": "Artist id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Inline each album's tracks",
+                        "in": "query",
+                        "name": "songs",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.artistView"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Get artist",
+                "tags": [
+                    "catalog"
                 ]
             }
         },

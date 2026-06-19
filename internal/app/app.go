@@ -333,6 +333,7 @@ func New(cfg config.Config) (*App, error) {
 		Settings:     settingsSvc,
 		Wrapped:      store.Wrapped,
 		Catalog:      store.Catalog,
+		Annotations:  store.Annotations,
 		OnDemand:     onDemand,
 		LibraryStats: libraryStats,
 		Imports:      importSvc,
