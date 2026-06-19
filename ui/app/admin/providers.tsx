@@ -505,7 +505,15 @@ function ProviderModal({ initial, onClose }: { initial: Provider; onClose: () =>
   const { upsert, remove } = useProviderMutations();
   const isBuiltin = initial.builtin;
   const [endpoint, setEndpoint] = useState(initial.endpoint);
-  const [config, setConfig] = useState(initial.config || '{}');
+  // Pretty-print the stored config once, when the panel opens (not on every keystroke).
+  const [config, setConfig] = useState(() => {
+    const raw = initial.config || '{}';
+    try {
+      return JSON.stringify(JSON.parse(raw), null, 2);
+    } catch {
+      return raw;
+    }
+  });
   const [error, setError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
 

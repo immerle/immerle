@@ -124,8 +124,8 @@ func TestProvidersRejectsBadConfig(t *testing.T) {
 	if status != http.StatusBadRequest {
 		t.Fatalf("bad config should be 400, got %d", status)
 	}
-	if errObj, _ := body["error"].(map[string]any); errObj["code"] != "bad_request" {
-		t.Fatalf("expected bad_request error, got %+v", body)
+	if errObj, _ := body["error"].(map[string]any); errObj["code"] != "provider_invalid_config" {
+		t.Fatalf("expected provider_invalid_config error, got %+v", body)
 	}
 }
 

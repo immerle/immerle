@@ -112,7 +112,7 @@ func (h *Handler) handleProviderUpsert(w http.ResponseWriter, r *http.Request) {
 	if req.Name == "" && req.Endpoint != "" {
 		saved, err := h.Providers.CreateFromURL(r.Context(), req.Endpoint)
 		if err != nil {
-			writeErrorParams(w, http.StatusBadRequest, "bad_request", err.Error(), map[string]any{"detail": err.Error()})
+			writeErrorParams(w, http.StatusBadRequest, "provider_invalid_config", err.Error(), map[string]any{"detail": err.Error()})
 			return
 		}
 		h.Logger.Info("provider created from url", "provider", saved.Name, "by", userFrom(r.Context()).Username)
@@ -131,7 +131,7 @@ func (h *Handler) handleProviderUpsert(w http.ResponseWriter, r *http.Request) {
 		Enabled:  enabled,
 	})
 	if err != nil {
-		writeErrorParams(w, http.StatusBadRequest, "bad_request", err.Error(), map[string]any{"detail": err.Error()})
+		writeErrorParams(w, http.StatusBadRequest, "provider_invalid_config", err.Error(), map[string]any{"detail": err.Error()})
 		return
 	}
 	h.Logger.Info("provider upserted", "provider", saved.Name, "enabled", saved.Enabled, "by", userFrom(r.Context()).Username)
