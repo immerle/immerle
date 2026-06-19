@@ -25,6 +25,7 @@ import { useSelfServer } from '../src/api/selfServer';
 import { palette } from '../src/theme/colors';
 import { WIDE_BREAKPOINT } from '../src/theme/layout';
 import { documentTitle } from '../src/utils/documentTitle';
+import { installRouterKeyStripper } from '../src/utils/routerKey';
 
 /**
  * Root layout: wires global providers (gesture handler, safe area, query
@@ -50,6 +51,7 @@ export default function RootLayout() {
   const themeHydrated = useTheme((s) => s.hydrated);
 
   useEffect(() => {
+    installRouterKeyStripper();
     void hydrateTheme();
     void restore();
     void hydratePlayer();
