@@ -327,12 +327,6 @@ function ProviderCard({
             {/* Live protocol version from the remote's /capabilities. */}
             {provider.version != null ? <Badge label={`v${provider.version}`} tone="default" /> : null}
           </View>
-          {/* Built-ins have no endpoint (the "built-in" badge already labels them). */}
-          {provider.endpoint ? (
-            <Text className="text-xs text-muted" numberOfLines={1}>
-              {provider.endpoint}
-            </Text>
-          ) : null}
         </View>
 
         <Switch
