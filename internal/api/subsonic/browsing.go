@@ -31,28 +31,24 @@ func musicFolderID(i int) string {
 }
 
 func (h *Handler) handleGetIndexes(w http.ResponseWriter, r *http.Request) {
-	artists, err := h.Catalog.ListArtists(r.Context())
+	artists, _, err := h.library.Artists(r.Context(), userFrom(r.Context()).ID)
 	if err != nil {
 		h.failInternal(w, r, err)
 		return
 	}
 	resp := newResponse()
 	idx := &Indexes{IgnoredArticles: "The El La Los Las Le Les"}
-	grouped := groupArtistsLegacy(artists)
-	idx.Index = grouped
+	idx.Index = groupArtistsLegacy(artists)
 	resp.Indexes = idx
 	write(w, r, resp)
 }
 
 func (h *Handler) handleGetArtists(w http.ResponseWriter, r *http.Request) {
-	artists, err := h.Catalog.ListArtists(r.Context())
+	artists, starred, err := h.library.Artists(r.Context(), userFrom(r.Context()).ID)
 	if err != nil {
 		h.failInternal(w, r, err)
 		return
 	}
-	user := userFrom(r.Context())
-	starred, _ := h.Annotations.AnnotationMap(r.Context(), user.ID, models.ItemArtist)
-
 	resp := newResponse()
 	out := &ArtistsID3{IgnoredArticles: "The El La Los Las Le Les"}
 	out.Index = groupArtistsID3(artists, starred)
@@ -122,16 +118,13 @@ func (h *Handler) handleGetAlbumList2(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleGetSong(w http.ResponseWriter, r *http.Request) {
-	id := param(r, "id")
-	t, err := h.Catalog.GetTrack(r.Context(), id)
+	te, err := h.library.Song(r.Context(), userFrom(r.Context()).ID, param(r, "id"))
 	if err != nil {
-		writeError(w, r, ErrDataNotFound, "Song not found")
+		h.writeServiceError(w, r, err, "Song not found")
 		return
 	}
-	user := userFrom(r.Context())
-	ann, _ := h.Annotations.Get(r.Context(), user.ID, models.ItemTrack, id)
 	resp := newResponse()
-	child := toChild(t, &ann)
+	child := toChild(te.Track, te.Annotation)
 	resp.Song = &child
 	write(w, r, resp)
 }
