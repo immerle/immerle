@@ -111,15 +111,13 @@ func (h *Handler) handleGetMusicDirectory(w http.ResponseWriter, r *http.Request
 	}
 
 	// Album directory → songs (local + provider enrichment, same as getAlbum).
-	if album, err := h.Catalog.GetAlbum(ctx, id); err == nil {
-		user := userFrom(ctx)
-		trackAnn, _ := h.Annotations.AnnotationMap(ctx, user.ID, models.ItemTrack)
+	if res, err := h.library.GetAlbum(ctx, user.ID, id); err == nil {
 		resp := newResponse()
 		resp.Directory = &Directory{
-			ID:     album.ID,
-			Name:   album.Name,
-			Parent: album.ArtistID,
-			Child:  h.albumSongs(r, album, trackAnn),
+			ID:     res.Album.ID,
+			Name:   res.Album.Name,
+			Parent: res.Album.ArtistID,
+			Child:  trackEntriesToChildren(res.Tracks),
 		}
 		write(w, r, resp)
 		return

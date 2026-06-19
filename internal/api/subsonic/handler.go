@@ -208,6 +208,23 @@ func boolParam(r *http.Request, name string, def bool) bool {
 	return b
 }
 
+// writeServiceError maps an application-layer error to a Subsonic error
+// envelope: not-found → "data not found", forbidden → "unauthorized action",
+// unauthorized → "wrong credentials", anything else logged and genericized.
+// notFoundMsg is the message used for the not-found case.
+func (h *Handler) writeServiceError(w http.ResponseWriter, r *http.Request, err error, notFoundMsg string) {
+	switch {
+	case isNotFound(err):
+		writeError(w, r, ErrDataNotFound, notFoundMsg)
+	case errors.Is(err, core.ErrForbidden):
+		writeError(w, r, ErrUnauthorizedAction, "User is not authorized for this operation")
+	case errors.Is(err, core.ErrUnauthorized):
+		writeError(w, r, ErrWrongCredentials, "Wrong username or password")
+	default:
+		h.failInternal(w, r, err)
+	}
+}
+
 // requireAdmin writes an error and returns false if the user is not an admin.
 func requireAdmin(w http.ResponseWriter, r *http.Request) bool {
 	if !userFrom(r.Context()).IsAdmin {
