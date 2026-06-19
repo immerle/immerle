@@ -95,6 +95,17 @@ export interface Provider {
   deletable: boolean;
   /** Priority order (lower = higher priority); drives search fallback. */
   sortOrder: number;
+  /** Live protocol version from the remote's /capabilities (HTTP providers). */
+  version?: number;
+}
+
+/** A remote HTTP provider's advertised capabilities (from /capabilities). */
+export interface ProviderCapabilities {
+  version: number;
+  /** Slug the remote declares for itself — becomes the provider's name. */
+  name: string;
+  /** Config fields keyed by name, each declaring its type, location and need. */
+  config: Record<string, { type: string; where: 'header' | 'params'; required: boolean }>;
 }
 
 /** A persisted warn/error event from a provider action (admin diagnostics). */

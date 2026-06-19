@@ -91,10 +91,10 @@ func TestHTTPProviderVerify(t *testing.T) {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"version":1,"name":"my-svc","requiredFields":[
-			{"name":"apikey","in":"params"},
-			{"name":"X-Token","in":"header"}
-		]}`))
+		_, _ = w.Write([]byte(`{"version":1,"name":"my-svc","config":{
+			"apikey":{"type":"string","where":"params","required":true},
+			"X-Token":{"type":"string","where":"header","required":true}
+		}}`))
 	}))
 	t.Cleanup(srv.Close)
 	ctx := context.Background()

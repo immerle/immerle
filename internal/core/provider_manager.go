@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
@@ -207,11 +208,11 @@ func (m *ProviderManager) Upsert(ctx context.Context, cfg models.ProviderConfig)
 	if err != nil {
 		return cfg, err
 	}
-	// Providers that expose a capabilities endpoint (HTTP providers) must verify
-	// at create/update time: the remote has to be reachable, speak the protocol,
-	// and have every required config field supplied. Rejected before persisting.
-	if v, ok := built.(providers.Verifier); ok {
-		if err := v.Verify(ctx); err != nil {
+	// The capabilities check gates activation: an enabled HTTP provider must have
+	// a reachable /capabilities, speak the protocol, and supply every required
+	// config field. A disabled provider can be saved as a draft without it.
+	if cfg.Enabled {
+		if err := verifyProvider(ctx, built); err != nil {
 			return cfg, err
 		}
 	}
@@ -237,20 +238,97 @@ func (m *ProviderManager) SetEnabled(ctx context.Context, name string, enabled b
 	if err != nil {
 		return cfg, err
 	}
-	if err := m.repo.SetEnabled(ctx, name, enabled); err != nil {
-		return cfg, err
-	}
-	cfg.Enabled = enabled
 	if enabled {
-		if err := m.activate(cfg); err != nil {
+		// Verify before persisting the enabled flag, so a provider whose
+		// capabilities aren't satisfied stays disabled (nothing half-applied).
+		built, err := m.build(cfg)
+		if err != nil {
 			return cfg, err
 		}
+		if err := verifyProvider(ctx, built); err != nil {
+			return cfg, err
+		}
+		if err := m.repo.SetEnabled(ctx, name, true); err != nil {
+			return cfg, err
+		}
+		cfg.Enabled = true
+		m.registry.Register(built)
 		m.reorderFromDB(ctx)
 	} else {
+		if err := m.repo.SetEnabled(ctx, name, false); err != nil {
+			return cfg, err
+		}
+		cfg.Enabled = false
 		m.registry.Unregister(name)
 	}
 	m.logger.Info("provider toggled", "provider", name, "enabled", enabled)
 	return m.repo.Get(ctx, name)
+}
+
+// verifyProvider runs a provider's capability check if it implements Verifier
+// (HTTP providers do; built-ins don't).
+func verifyProvider(ctx context.Context, p providers.Provider) error {
+	if v, ok := p.(providers.Verifier); ok {
+		return v.Verify(ctx)
+	}
+	return nil
+}
+
+// Capabilities builds a transient HTTP provider for the given endpoint/config and
+// fetches its advertised capabilities. Used by the admin add flow to derive the
+// provider name and generate the config skeleton before anything is persisted.
+func (m *ProviderManager) Capabilities(ctx context.Context, endpoint, config string) (providers.Capabilities, error) {
+	prov, err := m.build(models.ProviderConfig{Name: "probe", Kind: "http", Endpoint: endpoint, Config: config})
+	if err != nil {
+		return providers.Capabilities{}, err
+	}
+	cp, ok := prov.(providers.CapabilityProvider)
+	if !ok {
+		return providers.Capabilities{}, fmt.Errorf("provider does not expose capabilities")
+	}
+	return cp.Capabilities(ctx)
+}
+
+// Versions fetches each dynamic (HTTP) provider's live protocol version in
+// parallel, best-effort: unreachable providers are simply omitted. Time-bounded
+// so the admin list stays responsive. Does not take the manager lock (read-only
+// introspection, no network call while holding it).
+func (m *ProviderManager) Versions(ctx context.Context) map[string]int {
+	configs, err := m.repo.List(ctx)
+	if err != nil {
+		return nil
+	}
+	ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
+	defer cancel()
+	out := map[string]int{}
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+	for _, c := range configs {
+		if c.Builtin() {
+			continue
+		}
+		wg.Add(1)
+		go func(c models.ProviderConfig) {
+			defer wg.Done()
+			prov, err := m.build(c)
+			if err != nil {
+				return
+			}
+			cp, ok := prov.(providers.CapabilityProvider)
+			if !ok {
+				return
+			}
+			caps, err := cp.Capabilities(ctx)
+			if err != nil {
+				return
+			}
+			mu.Lock()
+			out[c.Name] = caps.Version
+			mu.Unlock()
+		}(c)
+	}
+	wg.Wait()
+	return out
 }
 
 // Reorder sets the provider priority to the given name order. Every persisted

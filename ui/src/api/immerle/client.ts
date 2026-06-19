@@ -30,6 +30,7 @@ import {
   ImmerleSession,
   LibraryStats,
   Provider,
+  ProviderCapabilities,
   ProviderLog,
   ScanProgress,
   ServerSettings,
@@ -57,6 +58,7 @@ function toProvider(dto: ProviderDTO): Provider {
     builtin: dto.builtin ?? false,
     deletable: dto.deletable ?? true,
     sortOrder: dto.sortOrder ?? 0,
+    version: dto.version ?? undefined,
   };
 }
 
@@ -259,6 +261,20 @@ export class ImmerleClient {
     });
     if (error) throw apiErr(error, 'provider_upsert_failed');
     return this.listProviders();
+  }
+
+  /** Probe a remote provider's mandatory /capabilities (used by the add flow to
+   * derive the name and generate the config skeleton). */
+  async fetchProviderCapabilities(endpoint: string, config?: string): Promise<ProviderCapabilities> {
+    const { data, error } = await this.api.POST('/admin/providers/capabilities', {
+      body: { endpoint, config },
+    });
+    if (error || !data) throw apiErr(error, 'provider_capabilities_failed');
+    return {
+      version: data.version ?? 0,
+      name: data.name ?? '',
+      config: (data.config ?? {}) as ProviderCapabilities['config'],
+    };
   }
 
   /** Toggle a provider on/off; applied to the live registry immediately. */

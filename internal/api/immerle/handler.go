@@ -157,6 +157,7 @@ func (h *Handler) Register(mux chi.Router) {
 			// Admin: runtime-configurable on-demand providers.
 			r.Get("/admin/providers", h.handleProviders)
 			r.Post("/admin/providers", h.handleProviderUpsert)
+			r.Post("/admin/providers/capabilities", h.handleProviderCapabilities)
 			r.Put("/admin/providers/order", h.handleProviderReorder)
 			r.Put("/admin/providers/{name}/enabled", h.handleProviderEnable)
 			r.Delete("/admin/providers/{name}", h.handleProviderDelete)

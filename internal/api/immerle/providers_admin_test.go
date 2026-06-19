@@ -2,6 +2,7 @@ package immerle
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -15,6 +16,21 @@ import (
 	"github.com/immerle/immerle/internal/testutil"
 )
 
+// stubProvider stands in for a built provider so the CRUD/reorder tests don't
+// hit the network: it is not a providers.Verifier, so the capabilities check on
+// enable is skipped (that wiring is covered in the core package).
+type stubProvider struct{ name string }
+
+func (s stubProvider) Name() string { return s.name }
+func (s stubProvider) Search(context.Context, string, int) ([]providers.Result, error) {
+	return nil, nil
+}
+func (s stubProvider) Resolve(context.Context, string) (providers.Result, error) {
+	return providers.Result{}, nil
+}
+func (s stubProvider) Download(context.Context, string, io.Writer) error { return nil }
+func (s stubProvider) MaxQuality() string                                { return "remote" }
+
 func newProvidersEnv(t *testing.T) *httptest.Server {
 	store := testutil.NewStore(t)
 	ctx := context.Background()
@@ -27,7 +43,10 @@ func newProvidersEnv(t *testing.T) *httptest.Server {
 	}
 	reg := core.NewProviderRegistry()
 	build := func(c models.ProviderConfig) (providers.Provider, error) {
-		return httpprovider.New(c.Name, c.Endpoint, c.Config)
+		if _, err := httpprovider.New(c.Name, c.Endpoint, c.Config); err != nil {
+			return nil, err
+		}
+		return stubProvider{name: c.Name}, nil
 	}
 	mgr := core.NewProviderManager(store.ProviderConfigs, reg, build, nil, testutil.NewLogger())
 	h := NewHandler(Deps{Auth: auth, Users: store.Users, Providers: mgr, Logger: testutil.NewLogger()})
@@ -117,10 +136,14 @@ func TestProvidersBuiltinAndReorder(t *testing.T) {
 	_, _ = auth.CreateUser(ctx, "admin", "adminpw", "", "", true)
 	reg := core.NewProviderRegistry()
 	build := func(c models.ProviderConfig) (providers.Provider, error) {
+		endpoint := c.Endpoint
 		if c.Builtin() {
-			return httpprovider.New(c.Name, "https://example.test", "{}") // stand-in instance
+			endpoint = "https://example.test" // stand-in instance
 		}
-		return httpprovider.New(c.Name, c.Endpoint, c.Config)
+		if _, err := httpprovider.New(c.Name, endpoint, c.Config); err != nil {
+			return nil, err
+		}
+		return stubProvider{name: c.Name}, nil
 	}
 	// A built-in provider declared with a default config + enabled state.
 	mgr := core.NewProviderManager(store.ProviderConfigs, reg, build,

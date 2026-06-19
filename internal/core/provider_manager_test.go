@@ -77,7 +77,7 @@ func TestProviderManagerVerifiesHTTPCapabilities(t *testing.T) {
 	// Service whose /capabilities requires an "apikey" param.
 	good := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/capabilities" {
-			_, _ = w.Write([]byte(`{"version":1,"name":"svc","requiredFields":[{"name":"apikey","in":"params"}]}`))
+			_, _ = w.Write([]byte(`{"version":1,"name":"svc","config":{"apikey":{"type":"string","where":"params","required":true}}}`))
 			return
 		}
 		http.NotFound(w, r)

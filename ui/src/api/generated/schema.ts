@@ -411,6 +411,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/providers/capabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Fetch a remote provider's capabilities
+         * @description Admin only. Probes the given endpoint's mandatory /capabilities endpoint and returns the advertised contract.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Endpoint to probe */
+            requestBody: {
+                content: {
+                    "application/json": Record<string, never> | components["schemas"]["immerle.capabilitiesRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.ProviderCapabilitiesDTO"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/providers/order": {
         parameters: {
             query?: never;
@@ -3192,6 +3272,23 @@ export interface components {
             /** @example 24 */
             songCount?: number;
         };
+        "immerle.ProviderCapabilitiesDTO": {
+            config?: {
+                [key: string]: components["schemas"]["immerle.ProviderConfigFieldDTO"];
+            };
+            /** @example deezer-bridge */
+            name?: string;
+            /** @example 1 */
+            version?: number;
+        };
+        "immerle.ProviderConfigFieldDTO": {
+            /** @example true */
+            required?: boolean;
+            /** @example string */
+            type?: string;
+            /** @example params */
+            where?: string;
+        };
         "immerle.ProviderDTO": {
             /** @example true */
             active?: boolean;
@@ -3211,6 +3308,12 @@ export interface components {
             name?: string;
             /** @example 3 */
             sortOrder?: number;
+            /**
+             * @description Version is the remote's live protocol version (HTTP providers), null when
+             *     unknown or for built-ins.
+             * @example 1
+             */
+            version?: number;
         };
         "immerle.ProviderLogDTO": {
             /** @example download */
@@ -3360,6 +3463,10 @@ export interface components {
             params?: {
                 [key: string]: unknown;
             };
+        };
+        "immerle.capabilitiesRequest": {
+            config?: string;
+            endpoint?: string;
         };
         "immerle.cleanupUpdateRequest": {
             enabled?: boolean;

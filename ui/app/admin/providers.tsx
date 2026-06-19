@@ -4,7 +4,7 @@ import { useColorScheme } from 'nativewind';
 import { Stack } from 'expo-router';
 import { useAuth } from '../../src/auth/store';
 import { useProviderLogs, useProviderMutations, useProviders, useSettings, useUpdateSettings } from '../../src/query/admin';
-import { Provider } from '../../src/api/immerle/types';
+import { Provider, ProviderCapabilities } from '../../src/api/immerle/types';
 import { Badge, Button, Card, EmptyState, ErrorState, Field, IconButton, Loading, SectionHeader } from '../../src/components/ui';
 import { AdminHeader, AdminScroll } from '../../src/components/AdminUI';
 import { Ionicon } from '../../src/components/Ionicon';
@@ -32,7 +32,15 @@ export default function AdminProviders() {
   const { reorder } = useProviderMutations();
   const [editing, setEditing] = useState<Provider | 'new' | null>(null);
   const [behaviourOpen, setBehaviourOpen] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
   const hasSettings = !!client?.has('runtimeSettings');
+
+  // Auto-dismiss the error toast.
+  useEffect(() => {
+    if (!toast) return;
+    const id = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(id);
+  }, [toast]);
 
   // Admin surfaces are web-only — skip the heavy editor on native.
   if (Platform.OS !== 'web') {
@@ -103,6 +111,7 @@ export default function AdminProviders() {
                 onMoveUp={i > 0 ? () => move(i, -1) : undefined}
                 onMoveDown={i < ordered.length - 1 ? () => move(i, 1) : undefined}
                 reordering={reorder.isPending}
+                onToast={setToast}
               />
             ))
           )}
@@ -113,6 +122,14 @@ export default function AdminProviders() {
           <BehaviourModal visible={behaviourOpen} onClose={() => setBehaviourOpen(false)} />
         </AdminScroll>
       )}
+      {toast ? (
+        <View pointerEvents="none" className="absolute inset-x-0 bottom-6 items-center px-6">
+          <View className="max-w-[460px] flex-row items-center gap-2 rounded-xl bg-danger px-4 py-3 shadow-lg">
+            <Ionicon name="alert-circle" size={18} color="#fff" />
+            <Text className="flex-1 text-sm font-medium text-white">{toast}</Text>
+          </View>
+        </View>
+      ) : null}
     </>
   );
 }
@@ -218,6 +235,7 @@ function ProviderCard({
   onMoveUp,
   onMoveDown,
   reordering,
+  onToast,
 }: {
   provider: Provider;
   onEdit: () => void;
@@ -225,6 +243,7 @@ function ProviderCard({
   onMoveUp?: () => void;
   onMoveDown?: () => void;
   reordering: boolean;
+  onToast: (msg: string) => void;
 }) {
   const t = useT();
   const colors = useColors();
@@ -252,6 +271,8 @@ function ProviderCard({
               <Badge label={t('admin.providers.inactive')} tone="danger" />
             ) : null}
             {provider.builtin ? <Badge label={t('admin.providers.builtin')} tone="default" /> : null}
+            {/* Live protocol version from the remote's /capabilities. */}
+            {provider.version != null ? <Badge label={`v${provider.version}`} tone="default" /> : null}
           </View>
           {/* Built-ins have no endpoint (the "built-in" badge already labels them). */}
           {provider.endpoint ? (
@@ -264,7 +285,13 @@ function ProviderCard({
         <Switch
           value={provider.enabled}
           disabled={setEnabled.isPending}
-          onValueChange={(v) => setEnabled.mutate({ name: provider.name, enabled: v })}
+          // Enabling runs the server capability check; a failure keeps it off and toasts.
+          onValueChange={(v) =>
+            setEnabled.mutate(
+              { name: provider.name, enabled: v },
+              { onError: (e) => onToast(tError(e)) },
+            )
+          }
           trackColor={{ true: colors.primary, false: colors.border }}
         />
 
@@ -417,9 +444,31 @@ function JsonConfigField({ value, onChangeText }: { value: string; onChangeText:
   );
 }
 
+/** Generate a { header, params } config skeleton from a capabilities schema,
+ * keeping any values the admin already entered. */
+function skeletonFromCaps(caps: ProviderCapabilities, existing: string): string {
+  let prev: { header?: Record<string, string>; params?: Record<string, string> } = {};
+  try {
+    prev = JSON.parse(existing || '{}');
+  } catch {
+    prev = {};
+  }
+  const header = { ...(prev.header ?? {}) };
+  const params = { ...(prev.params ?? {}) };
+  for (const [key, f] of Object.entries(caps.config ?? {})) {
+    if (f.where === 'header' && !(key in header)) header[key] = '';
+    else if (f.where === 'params' && !(key in params)) params[key] = '';
+  }
+  const obj: Record<string, unknown> = {};
+  if (Object.keys(header).length) obj.header = header;
+  if (Object.keys(params).length) obj.params = params;
+  return JSON.stringify(obj, null, 2);
+}
+
 function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose: () => void }) {
   const t = useT();
   const colors = useColors();
+  const client = useAuth((s) => s.client);
   const { upsert, remove } = useProviderMutations();
   const isEdit = !!initial;
   const isBuiltin = !!initial?.builtin;
@@ -429,6 +478,25 @@ function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose
   const [enabled, setEnabled] = useState(initial?.enabled ?? true);
   const [error, setError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
+  // New-provider detection: the name + config skeleton come from /capabilities.
+  const [detecting, setDetecting] = useState(false);
+  const [detected, setDetected] = useState<ProviderCapabilities | null>(null);
+
+  const detect = async () => {
+    setError(null);
+    setDetecting(true);
+    try {
+      const caps = await client!.fetchProviderCapabilities(endpoint);
+      setDetected(caps);
+      setName(caps.name);
+      setConfig(skeletonFromCaps(caps, config));
+    } catch (e) {
+      setDetected(null);
+      setError(tError(e));
+    } finally {
+      setDetecting(false);
+    }
+  };
 
   // Slide-in-from-the-right animation (RN Modal has no lateral slide).
   const PANEL_W = 540;
@@ -448,6 +516,8 @@ function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose
     ]).start(() => onClose());
 
   const validate = (): string | null => {
+    // A new provider's name comes from the capabilities probe — detect first.
+    if (!isEdit && !detected) return t('admin.providers.detectFirst');
     if (!SLUG_RE.test(name)) return t('admin.providers.invalidName');
     // Built-ins have no endpoint (the server compiles in how to reach them).
     if (!isBuiltin && !/^https?:\/\/.+/.test(endpoint)) return t('admin.providers.invalidEndpoint');
@@ -495,26 +565,47 @@ function ProviderModal({ initial, onClose }: { initial: Provider | null; onClose
             contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 16, gap: 12 }}
             keyboardShouldPersistTaps="handled"
           >
-            <Field
-              label={t('admin.providers.nameLabel')}
-              placeholder="mon-service"
-              autoCapitalize="none"
-              autoCorrect={false}
-              editable={!isEdit}
-              help={isEdit ? t('admin.providers.nameHelpLocked') : t('admin.providers.nameHelp')}
-              value={name}
-              onChangeText={setName}
-            />
-            {!isBuiltin ? (
+            {/* Name: locked on edit; for a new provider it comes from the
+                detected capabilities (no manual name field). */}
+            {isEdit ? (
               <Field
-                label={t('admin.providers.endpointLabel')}
-                placeholder="https://mon-service.internal"
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="url"
-                value={endpoint}
-                onChangeText={setEndpoint}
+                label={t('admin.providers.nameLabel')}
+                editable={false}
+                help={t('admin.providers.nameHelpLocked')}
+                value={name}
+                onChangeText={setName}
               />
+            ) : detected ? (
+              <View className="rounded-xl bg-surface-alt px-3 py-2">
+                <Text className="text-xs text-muted">{t('admin.providers.nameLabel')}</Text>
+                <Text className="text-sm font-semibold text-foreground">
+                  {detected.name} · v{detected.version}
+                </Text>
+              </View>
+            ) : null}
+
+            {!isBuiltin ? (
+              <View className="gap-2">
+                <Field
+                  label={t('admin.providers.endpointLabel')}
+                  placeholder="https://mon-service.internal"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="url"
+                  help={isEdit ? undefined : t('admin.providers.endpointHelp')}
+                  value={endpoint}
+                  onChangeText={setEndpoint}
+                />
+                {!isEdit ? (
+                  <Button
+                    title={t('admin.providers.detect')}
+                    icon="search"
+                    variant="secondary"
+                    loading={detecting}
+                    onPress={detect}
+                  />
+                ) : null}
+              </View>
             ) : null}
             <JsonConfigField value={config} onChangeText={setConfig} />
             <View className="flex-row items-center justify-between rounded-xl bg-surface-alt px-3 py-2">

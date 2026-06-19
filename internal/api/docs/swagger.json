@@ -569,6 +569,42 @@
                 },
                 "type": "object"
             },
+            "immerle.ProviderCapabilitiesDTO": {
+                "properties": {
+                    "config": {
+                        "additionalProperties": {
+                            "$ref": "#/components/schemas/immerle.ProviderConfigFieldDTO"
+                        },
+                        "type": "object"
+                    },
+                    "name": {
+                        "example": "deezer-bridge",
+                        "type": "string"
+                    },
+                    "version": {
+                        "example": 1,
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.ProviderConfigFieldDTO": {
+                "properties": {
+                    "required": {
+                        "example": true,
+                        "type": "boolean"
+                    },
+                    "type": {
+                        "example": "string",
+                        "type": "string"
+                    },
+                    "where": {
+                        "example": "params",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "immerle.ProviderDTO": {
                 "properties": {
                     "active": {
@@ -605,6 +641,11 @@
                     },
                     "sortOrder": {
                         "example": 3,
+                        "type": "integer"
+                    },
+                    "version": {
+                        "description": "Version is the remote's live protocol version (HTTP providers), null when\nunknown or for built-ins.",
+                        "example": 1,
                         "type": "integer"
                     }
                 },
@@ -941,6 +982,17 @@
                         "additionalProperties": {},
                         "description": "i18n interpolation values; always present ({} when none)",
                         "type": "object"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.capabilitiesRequest": {
+                "properties": {
+                    "config": {
+                        "type": "string"
+                    },
+                    "endpoint": {
+                        "type": "string"
                     }
                 },
                 "type": "object"
@@ -1569,6 +1621,92 @@
                     }
                 ],
                 "summary": "Create or update an on-demand provider",
+                "tags": [
+                    "admin"
+                ]
+            }
+        },
+        "/admin/providers/capabilities": {
+            "post": {
+                "description": "Admin only. Probes the given endpoint's mandatory /capabilities endpoint and returns the advertised contract.",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/immerle.capabilitiesRequest",
+                                        "summary": "body",
+                                        "description": "Endpoint to probe"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Endpoint to probe",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.ProviderCapabilitiesDTO"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "503": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Service Unavailable"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Fetch a remote provider's capabilities",
                 "tags": [
                     "admin"
                 ]

@@ -77,22 +77,6 @@ const ProtocolVersion = 1
 // slugRe constrains the name a remote declares for itself.
 var slugRe = regexp.MustCompile(`^[a-z0-9][a-z0-9_-]*$`)
 
-// Capabilities is the mandatory /capabilities response a remote HTTP provider
-// must serve. It states the protocol version it implements, its slug name, and
-// the config fields it requires — each tagged with where the value is sent
-// (a request header or a query param), matching the { header, params } config.
-type Capabilities struct {
-	Version        int             `json:"version"`
-	Name           string          `json:"name"`
-	RequiredFields []RequiredField `json:"requiredFields"`
-}
-
-// RequiredField names a config value the remote needs and where it travels.
-type RequiredField struct {
-	Name string `json:"name"`
-	In   string `json:"in"` // "header" | "params"
-}
-
 // New builds an HTTP provider. endpoint must be an absolute http(s) URL;
 // configJSON is the raw config payload ("" or "{}" for defaults).
 func New(name, endpoint, configJSON string) (*Provider, error) {
@@ -137,13 +121,36 @@ func (p *Provider) MaxQuality() string {
 	return "remote"
 }
 
-// Verify implements providers.Verifier. It fetches the remote's mandatory
-// /capabilities endpoint and checks: the protocol version matches, the declared
-// name is a slug, and every required field is present in the config in its
-// declared location (header or params). A failure rejects the provider at
-// create/update time.
+// Capabilities implements providers.CapabilityProvider: it fetches the remote's
+// mandatory /capabilities endpoint and returns its advertised contract. Used by
+// the admin to generate the config skeleton and display the live version, and by
+// Verify. The request carries the configured header/params (authed discovery).
+func (p *Provider) Capabilities(ctx context.Context) (providers.Capabilities, error) {
+	req, err := p.newRequest(ctx, capabilitiesPath, url.Values{})
+	if err != nil {
+		return providers.Capabilities{}, err
+	}
+	resp, err := p.http.Do(req)
+	if err != nil {
+		return providers.Capabilities{}, fmt.Errorf("%s: capabilities request failed (a /capabilities endpoint is required): %w", p.name, err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 300 {
+		return providers.Capabilities{}, fmt.Errorf("%s: /capabilities returned status %d (a /capabilities endpoint is required)", p.name, resp.StatusCode)
+	}
+	var caps providers.Capabilities
+	if err := json.NewDecoder(io.LimitReader(resp.Body, providers.MaxMetadataBytes)).Decode(&caps); err != nil {
+		return providers.Capabilities{}, fmt.Errorf("%s: decode capabilities: %w", p.name, err)
+	}
+	return caps, nil
+}
+
+// Verify implements providers.Verifier. It fetches /capabilities and checks the
+// protocol version matches, the declared name is a slug, and every field marked
+// required is present in the config in its declared location (header or params).
+// A failure rejects activation of the provider.
 func (p *Provider) Verify(ctx context.Context) error {
-	caps, err := p.fetchCapabilities(ctx)
+	caps, err := p.Capabilities(ctx)
 	if err != nil {
 		return err
 	}
@@ -154,44 +161,27 @@ func (p *Provider) Verify(ctx context.Context) error {
 		return fmt.Errorf("%s: capabilities name %q is not a valid slug", p.name, caps.Name)
 	}
 	var missing []string
-	for _, f := range caps.RequiredFields {
+	for key, f := range caps.Config {
+		if !f.Required {
+			continue
+		}
 		var got string
-		switch f.In {
+		switch f.Where {
 		case "header":
-			got = p.cfg.Header[f.Name]
+			got = p.cfg.Header[key]
 		case "params":
-			got = p.cfg.Param(f.Name, "")
+			got = p.cfg.Param(key, "")
 		default:
-			return fmt.Errorf("%s: required field %q has invalid location %q (want \"header\" or \"params\")", p.name, f.Name, f.In)
+			return fmt.Errorf("%s: config field %q has invalid location %q (want \"header\" or \"params\")", p.name, key, f.Where)
 		}
 		if strings.TrimSpace(got) == "" {
-			missing = append(missing, fmt.Sprintf("%s (%s)", f.Name, f.In))
+			missing = append(missing, fmt.Sprintf("%s (%s)", key, f.Where))
 		}
 	}
 	if len(missing) > 0 {
 		return fmt.Errorf("%s: missing required config field(s): %s", p.name, strings.Join(missing, ", "))
 	}
 	return nil
-}
-
-func (p *Provider) fetchCapabilities(ctx context.Context) (Capabilities, error) {
-	req, err := p.newRequest(ctx, capabilitiesPath, url.Values{})
-	if err != nil {
-		return Capabilities{}, err
-	}
-	resp, err := p.http.Do(req)
-	if err != nil {
-		return Capabilities{}, fmt.Errorf("%s: capabilities request failed (a /capabilities endpoint is required): %w", p.name, err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode >= 300 {
-		return Capabilities{}, fmt.Errorf("%s: /capabilities returned status %d (a /capabilities endpoint is required)", p.name, resp.StatusCode)
-	}
-	var caps Capabilities
-	if err := json.NewDecoder(io.LimitReader(resp.Body, providers.MaxMetadataBytes)).Decode(&caps); err != nil {
-		return Capabilities{}, fmt.Errorf("%s: decode capabilities: %w", p.name, err)
-	}
-	return caps, nil
 }
 
 // track is the wire shape of a result returned by the remote service.

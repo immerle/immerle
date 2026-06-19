@@ -9,7 +9,9 @@ import (
 )
 
 // providerView serializes a provider config plus its live status for the API.
-func (h *Handler) providerView(p models.ProviderConfig) map[string]any {
+// version is the live protocol version fetched from the remote's /capabilities
+// (nil when unknown / not an HTTP provider).
+func (h *Handler) providerView(p models.ProviderConfig, version *int) map[string]any {
 	return map[string]any{
 		"name":      p.Name,
 		"kind":      p.Kind,
@@ -20,6 +22,7 @@ func (h *Handler) providerView(p models.ProviderConfig) map[string]any {
 		"builtin":   p.Builtin(),
 		"deletable": !p.Builtin(), // built-ins can be disabled but not removed
 		"sortOrder": p.SortOrder,
+		"version":   version,
 		"createdAt": p.CreatedAt,
 		"updatedAt": p.UpdatedAt,
 	}
@@ -56,11 +59,56 @@ func (h *Handler) handleProviders(w http.ResponseWriter, r *http.Request) {
 		writeInternal(w, err)
 		return
 	}
+	// Live protocol version of each dynamic provider, fetched in parallel.
+	versions := h.Providers.Versions(r.Context())
 	out := make([]map[string]any, 0, len(list))
 	for _, p := range list {
-		out = append(out, h.providerView(p))
+		var v *int
+		if ver, ok := versions[p.Name]; ok {
+			v = &ver
+		}
+		out = append(out, h.providerView(p, v))
 	}
 	writeResource(w, http.StatusOK, out)
+}
+
+// capabilitiesRequest is the body for POST /admin/providers/capabilities.
+type capabilitiesRequest struct {
+	Endpoint string `json:"endpoint"`
+	Config   string `json:"config"`
+}
+
+// handleProviderCapabilities fetches a remote HTTP provider's advertised
+// capabilities (version, name, config schema) so the admin add flow can derive
+// the provider name and generate the config skeleton before saving.
+//
+// @Summary      Fetch a remote provider's capabilities
+// @Description  Admin only. Probes the given endpoint's mandatory /capabilities endpoint and returns the advertised contract.
+// @Tags         admin
+// @Security     BearerAuth
+// @Accept       json
+// @Produce      json
+// @Param        body  body  capabilitiesRequest  true  "Endpoint to probe"
+// @Success      200  {object}  ProviderCapabilitiesDTO
+// @Failure      400  {object}  errorResponse
+// @Failure      401  {object}  errorResponse
+// @Failure      403  {object}  errorResponse
+// @Failure      503  {object}  errorResponse
+// @Router       /admin/providers/capabilities [post]
+func (h *Handler) handleProviderCapabilities(w http.ResponseWriter, r *http.Request) {
+	if !h.requireAdmin(w, r) || !h.providersAvailable(w) {
+		return
+	}
+	var req capabilitiesRequest
+	if !decodeJSON(w, r, &req) {
+		return
+	}
+	caps, err := h.Providers.Capabilities(r.Context(), req.Endpoint, req.Config)
+	if err != nil {
+		writeErrorParams(w, http.StatusBadRequest, "bad_request", err.Error(), map[string]any{"detail": err.Error()})
+		return
+	}
+	writeResource(w, http.StatusOK, caps)
 }
 
 // upsertProviderRequest is the body for POST /admin/providers.
@@ -111,7 +159,7 @@ func (h *Handler) handleProviderUpsert(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.Logger.Info("provider upserted", "provider", saved.Name, "enabled", saved.Enabled, "by", userFrom(r.Context()).Username)
-	writeResource(w, http.StatusOK, h.providerView(saved))
+	writeResource(w, http.StatusOK, h.providerView(saved, nil))
 }
 
 // setEnabledRequest is the body for PUT /admin/providers/{name}/enabled.
@@ -155,7 +203,7 @@ func (h *Handler) handleProviderEnable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.Logger.Info("provider toggled", "provider", name, "enabled", *req.Enabled, "by", userFrom(r.Context()).Username)
-	writeResource(w, http.StatusOK, h.providerView(saved))
+	writeResource(w, http.StatusOK, h.providerView(saved, nil))
 }
 
 // handleProviderDelete removes a provider.
@@ -225,7 +273,7 @@ func (h *Handler) handleProviderReorder(w http.ResponseWriter, r *http.Request) 
 	}
 	out := make([]map[string]any, 0, len(list))
 	for _, p := range list {
-		out = append(out, h.providerView(p))
+		out = append(out, h.providerView(p, nil))
 	}
 	h.Logger.Info("providers reordered", "order", req.Order, "by", userFrom(r.Context()).Username)
 	writeResource(w, http.StatusOK, out)

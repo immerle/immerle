@@ -24,6 +24,24 @@ type ProviderDTO struct {
 	Builtin   bool   `json:"builtin" example:"false"`
 	Deletable bool   `json:"deletable" example:"true"`
 	SortOrder int    `json:"sortOrder" example:"3"`
+	// Version is the remote's live protocol version (HTTP providers), null when
+	// unknown or for built-ins.
+	Version *int `json:"version" example:"1"`
+}
+
+// ProviderCapabilitiesDTO is a remote HTTP provider's advertised capabilities,
+// returned by the capabilities probe used in the admin add flow.
+type ProviderCapabilitiesDTO struct {
+	Version int                               `json:"version" example:"1"`
+	Name    string                            `json:"name" example:"deezer-bridge"`
+	Config  map[string]ProviderConfigFieldDTO `json:"config"`
+}
+
+// ProviderConfigFieldDTO declares one config field a remote understands.
+type ProviderConfigFieldDTO struct {
+	Type     string `json:"type" example:"string"`
+	Where    string `json:"where" example:"params"`
+	Required bool   `json:"required" example:"true"`
 }
 
 // RuntimeSettingsDTO mirrors the admin-managed runtime settings.
