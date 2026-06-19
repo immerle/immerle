@@ -1302,6 +1302,14 @@
                 },
                 "type": "object"
             },
+            "immerle.ratingRequest": {
+                "properties": {
+                    "rating": {
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
             "immerle.reorderRequest": {
                 "properties": {
                     "order": {
@@ -1318,6 +1326,24 @@
                 "properties": {
                     "query": {
                         "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.scrobbleRequest": {
+                "properties": {
+                    "ids": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "playedAt": {
+                        "type": "integer"
+                    },
+                    "submission": {
+                        "type": "boolean"
                     }
                 },
                 "type": "object"
@@ -3341,6 +3367,82 @@
                 ]
             }
         },
+        "/albums/{id}/star": {
+            "delete": {
+                "parameters": [
+                    {
+                        "description": "Album id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Unfavorite an album",
+                "tags": [
+                    "favorites"
+                ]
+            },
+            "put": {
+                "parameters": [
+                    {
+                        "description": "Album id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Favorite an album",
+                "tags": [
+                    "favorites"
+                ]
+            }
+        },
         "/artists": {
             "get": {
                 "description": "Returns every artist in the catalog with the caller's per-artist starred state.",
@@ -3445,6 +3547,82 @@
                 "summary": "Get artist",
                 "tags": [
                     "catalog"
+                ]
+            }
+        },
+        "/artists/{id}/star": {
+            "delete": {
+                "parameters": [
+                    {
+                        "description": "Artist id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Unfavorite an artist",
+                "tags": [
+                    "favorites"
+                ]
+            },
+            "put": {
+                "parameters": [
+                    {
+                        "description": "Artist id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Favorite an artist",
+                "tags": [
+                    "favorites"
                 ]
             }
         },
@@ -5261,6 +5439,65 @@
                 ]
             }
         },
+        "/scrobbles": {
+            "post": {
+                "description": "Records playback for one or more tracks (now-playing + optional submission).",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/immerle.scrobbleRequest",
+                                        "summary": "body",
+                                        "description": "Scrobble"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Scrobble",
+                    "required": true
+                },
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Scrobble plays",
+                "tags": [
+                    "plays"
+                ]
+            }
+        },
         "/search": {
             "get": {
                 "description": "Searches artists, albums and songs (merging remote-provider results when enabled).",
@@ -5499,6 +5736,189 @@
                 "summary": "Get song",
                 "tags": [
                     "catalog"
+                ]
+            }
+        },
+        "/songs/{id}/rating": {
+            "delete": {
+                "parameters": [
+                    {
+                        "description": "Item id (song, album or artist)",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Clear an item's rating",
+                "tags": [
+                    "ratings"
+                ]
+            },
+            "put": {
+                "description": "Sets the caller's rating (0–5) on the item. The item type is detected from the id.",
+                "parameters": [
+                    {
+                        "description": "Item id (song, album or artist)",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/immerle.ratingRequest",
+                                        "summary": "body",
+                                        "description": "Rating"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Rating",
+                    "required": true
+                },
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Rate an item",
+                "tags": [
+                    "ratings"
+                ]
+            }
+        },
+        "/songs/{id}/star": {
+            "delete": {
+                "parameters": [
+                    {
+                        "description": "Track id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Unfavorite a song",
+                "tags": [
+                    "favorites"
+                ]
+            },
+            "put": {
+                "parameters": [
+                    {
+                        "description": "Track id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Favorite a song",
+                "tags": [
+                    "favorites"
                 ]
             }
         },
