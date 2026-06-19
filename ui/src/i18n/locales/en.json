@@ -551,7 +551,9 @@
       "name": "Name",
       "changeCover": "Change cover",
       "save": "Save",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "deleteConfirm": "Delete this track permanently?"
     }
   },
   "tools": {

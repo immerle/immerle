@@ -551,7 +551,9 @@
       "name": "Nom",
       "changeCover": "Changer la pochette",
       "save": "Enregistrer",
-      "cancel": "Annuler"
+      "cancel": "Annuler",
+      "delete": "Supprimer",
+      "deleteConfirm": "Supprimer cette musique définitivement ?"
     }
   },
   "tools": {

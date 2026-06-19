@@ -1,12 +1,24 @@
 import { useEffect, useState } from 'react';
-import { Modal, Platform, Pressable, Text, View } from 'react-native';
+import { Alert, Modal, Platform, Pressable, Text, View } from 'react-native';
 import { Song } from '../api/subsonic/types';
 import { CoverArt } from './CoverArt';
 import { Ionicon } from './Ionicon';
 import { Field } from './ui';
-import { useRenameTrack, useSetTrackCover } from '../query/local';
+import { useDeleteTrack, useRenameTrack, useSetTrackCover } from '../query/local';
 import { useColors } from '../theme/colors';
 import { useT } from '../i18n/store';
+
+/** Cross-platform yes/no confirm (window.confirm on web, Alert on native). */
+function confirm(message: string, onYes: () => void) {
+  if (Platform.OS === 'web') {
+    if (window.confirm(message)) onYes();
+    return;
+  }
+  Alert.alert(message, undefined, [
+    { text: 'Annuler', style: 'cancel' },
+    { text: 'OK', style: 'destructive', onPress: onYes },
+  ]);
+}
 
 /** Pick a single image File via a transient input (web only). */
 function pickImage(): Promise<File | null> {
@@ -29,6 +41,7 @@ export function LocalTrackEditModal({ song, onClose }: { song: Song | null; onCl
   const colors = useColors();
   const rename = useRenameTrack();
   const setCover = useSetTrackCover();
+  const del = useDeleteTrack();
   const [title, setTitle] = useState('');
   const [coverArt, setCoverArt] = useState<string | undefined>(undefined);
 
@@ -52,6 +65,10 @@ export function LocalTrackEditModal({ song, onClose }: { song: Song | null; onCl
       { id: song.id, image },
       { onSuccess: (updated) => setCoverArt(updated.coverArt) },
     );
+  };
+
+  const remove = () => {
+    confirm(t('media.local.deleteConfirm'), () => del.mutate(song.id, { onSuccess: onClose }));
   };
 
   return (
@@ -88,10 +105,19 @@ export function LocalTrackEditModal({ song, onClose }: { song: Song | null; onCl
             placeholder={song.title}
           />
 
-          <View className="mt-4 flex-row justify-end gap-2">
-            <Pressable onPress={onClose} className="rounded-xl px-4 py-3 active:opacity-70">
-              <Text className="font-medium text-muted">{t('media.local.cancel')}</Text>
+          <View className="mt-4 flex-row items-center justify-between gap-2">
+            <Pressable
+              onPress={remove}
+              disabled={del.isPending}
+              className="flex-row items-center gap-2 rounded-xl px-3 py-3 active:opacity-70"
+            >
+              <Ionicon name="trash-outline" size={18} color={colors.danger} />
+              <Text className="font-medium text-danger">{t('media.local.delete')}</Text>
             </Pressable>
+            <View className="flex-row gap-2">
+              <Pressable onPress={onClose} className="rounded-xl px-4 py-3 active:opacity-70">
+                <Text className="font-medium text-muted">{t('media.local.cancel')}</Text>
+              </Pressable>
             <Pressable
               onPress={save}
               disabled={rename.isPending || !title.trim()}
@@ -99,6 +125,7 @@ export function LocalTrackEditModal({ song, onClose }: { song: Song | null; onCl
             >
               <Text className="font-semibold text-primary-foreground">{t('media.local.save')}</Text>
             </Pressable>
+            </View>
           </View>
         </Pressable>
       </Pressable>

@@ -30,7 +30,7 @@ func seedTrack(t *testing.T, store *persistence.Store, title, ownerID string) st
 	albumID, _ := store.Catalog.UpsertAlbum(ctx, models.Album{ID: uuid.NewString(), Name: "Al", ArtistID: artistID, CreatedAt: time.Now()})
 	id, err := store.Catalog.UpsertTrack(ctx, models.Track{
 		ID: uuid.NewString(), Title: title, AlbumID: albumID, ArtistID: artistID,
-		Path: "/" + uuid.NewString() + ".mp3", Duration: 100, CreatedAt: time.Now(), UpdatedAt: time.Now(),
+		Path: filepath.Join(t.TempDir(), uuid.NewString()+".mp3"), Duration: 100, CreatedAt: time.Now(), UpdatedAt: time.Now(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -181,6 +181,47 @@ func TestSetTrackCover(t *testing.T) {
 	bad.Body.Close()
 	if bad.StatusCode != http.StatusUnsupportedMediaType {
 		t.Fatalf("expected 415 for non-image, got %d", bad.StatusCode)
+	}
+}
+
+func TestDeleteTrackOwnerOnly(t *testing.T) {
+	srv, store, _, _ := newLibraryServer(t)
+	ctx := context.Background()
+	alice := login(t, srv, "alice")
+	bob := login(t, srv, "bob")
+	aliceID, _ := store.Users.GetByUsername(ctx, "alice")
+	id := seedTrack(t, store, "song", aliceID.ID)
+
+	// Drop an audio file on disk that the delete should remove.
+	tr, _ := store.Catalog.GetTrack(ctx, id)
+	if err := os.WriteFile(tr.Path, []byte("audio"), 0o644); err != nil {
+		t.Skip("cannot write temp audio file: " + err.Error())
+	}
+
+	// Non-owner cannot delete.
+	resp := do(t, srv, http.MethodDelete, "/library/tracks/"+id, bob, nil)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("expected 403 for non-owner delete, got %d", resp.StatusCode)
+	}
+
+	// Owner deletes: 204, row gone, file removed.
+	resp = do(t, srv, http.MethodDelete, "/library/tracks/"+id, alice, nil)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusNoContent {
+		t.Fatalf("expected 204 on delete, got %d", resp.StatusCode)
+	}
+	if _, err := store.Catalog.GetTrack(ctx, id); err == nil {
+		t.Fatalf("track row should be gone")
+	}
+	if _, err := os.Stat(tr.Path); !os.IsNotExist(err) {
+		t.Fatalf("audio file should be removed, stat err=%v", err)
+	}
+	// Already gone -> 404.
+	resp = do(t, srv, http.MethodDelete, "/library/tracks/"+id, alice, nil)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("expected 404 deleting missing track, got %d", resp.StatusCode)
 	}
 }
 

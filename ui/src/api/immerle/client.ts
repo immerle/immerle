@@ -694,6 +694,11 @@ export class ImmerleClient {
     return this.uploadForm<Song>('PUT', `library/tracks/${encodeURIComponent(id)}/cover`, form);
   }
 
+  /** Delete one of the caller's uploaded tracks (catalog row + file). */
+  async deleteTrack(id: string): Promise<void> {
+    await this.request<void>('DELETE', `library/tracks/${encodeURIComponent(id)}`);
+  }
+
   // Multipart sibling of `request`: lets the browser set the multipart boundary
   // (so we must NOT set Content-Type ourselves).
   private async uploadForm<T>(method: string, path: string, form: FormData, signal?: AbortSignal): Promise<T> {

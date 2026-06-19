@@ -204,6 +204,26 @@ func (h *Handler) handleTrackCover(w http.ResponseWriter, r *http.Request) {
 	writeResource(w, http.StatusOK, toSongView(updated))
 }
 
+// handleTrackDelete removes a track the caller uploaded: its catalog row, the
+// audio file on disk (so a rescan won't re-ingest it), and any custom cover.
+func (h *Handler) handleTrackDelete(w http.ResponseWriter, r *http.Request) {
+	t, ok := h.ownedTrack(w, r)
+	if !ok {
+		return
+	}
+	if err := h.Catalog.DeleteTrack(r.Context(), t.ID); err != nil {
+		writeInternal(w, err)
+		return
+	}
+	if t.Path != "" {
+		_ = os.Remove(t.Path)
+	}
+	if t.CoverArt != "" && t.CoverArt != t.AlbumID {
+		_ = os.Remove(filepath.Join(h.CoversDir, t.CoverArt))
+	}
+	writeResource(w, http.StatusNoContent, nil)
+}
+
 // ownedTrack loads the {id} track and asserts the caller uploaded it. On any
 // failure it writes the response and returns ok=false.
 func (h *Handler) ownedTrack(w http.ResponseWriter, r *http.Request) (models.Track, bool) {

@@ -127,6 +127,7 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Post("/library/uploads", h.handleUpload)
 			r.Patch("/library/tracks/{id}", h.handleTrackUpdate)
 			r.Put("/library/tracks/{id}/cover", h.handleTrackCover)
+			r.Delete("/library/tracks/{id}", h.handleTrackDelete)
 
 			// Playlist imports from external sources (e.g. Spotify).
 			r.Get("/imports/sources", h.handleImportSources)

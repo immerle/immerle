@@ -42,3 +42,12 @@ export function useSetTrackCover() {
     onSuccess: () => qc.invalidateQueries({ queryKey: qk.local }),
   });
 }
+
+export function useDeleteTrack() {
+  const client = useAuth((s) => s.client);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => client!.deleteTrack(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.local }),
+  });
+}
