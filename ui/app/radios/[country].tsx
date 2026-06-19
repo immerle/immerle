@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, Text } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useRadioStations, useRadioLike } from '../../src/query/radio';
 import { useAuth } from '../../src/auth/store';
@@ -24,7 +24,10 @@ export default function CountryRadios() {
 
   const isFav = country === 'favorites';
   const stations = useMemo(
-    () => (q.data ?? []).filter((s) => (isFav ? s.liked : (s.country || 'int') === country)),
+    () =>
+      (q.data ?? [])
+        .filter((s) => (isFav ? s.liked : (s.country || 'int') === country))
+        .sort((a, b) => a.name.localeCompare(b.name)),
     [q.data, country, isFav],
   );
   const title = isFav ? t('radio.favorites') : t(`radio.country.${country}`);
@@ -46,10 +49,7 @@ export default function CountryRadios() {
               className="flex-row items-center gap-3 rounded-xl bg-surface px-3 py-2 active:opacity-70"
             >
               <StationCover uri={s.hasCover && client ? client.radioCoverUrl(s.id) : undefined} size={48} rounded={8} />
-              <View className="flex-1">
-                <Text numberOfLines={1} className="text-base font-semibold text-foreground">{s.name}</Text>
-                <Text numberOfLines={1} className="text-xs text-muted">{s.homepageUrl?.replace(/^https?:\/\//, '') ?? ''}</Text>
-              </View>
+              <Text numberOfLines={1} className="flex-1 text-base font-semibold text-foreground">{s.name}</Text>
               <IconButton
                 name={s.liked ? 'heart' : 'heart-outline'}
                 color={s.liked ? colors.primary : colors.muted}
