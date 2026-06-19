@@ -16,7 +16,7 @@
     "typecheck": "tsc --noEmit",
     "test": "jest",
     "gen:api": "openapi-typescript ../internal/api/docs/swagger.json -o src/api/generated/schema.ts",
-    "export:web": "expo export --platform web",
+    "export:web": "expo export --platform web && node -e \"require('fs').writeFileSync('dist/.gitkeep','')\"",
     "desktop": "electron electron/main.js",
     "desktop:dev": "concurrently -k -n web,electron \"npm run web\" \"wait-on tcp:8081 && npm run desktop\"",
     "desktop:pack": "npm run export:web && electron-builder --dir",
