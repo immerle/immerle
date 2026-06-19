@@ -90,10 +90,16 @@ just created — and enjoy. 🎈
 Grab the installer for your OS from the
 [latest release](../../releases/latest) (`.dmg`, `.exe`, `.AppImage`/`.deb`).
 
-> **macOS:** the build is ad-hoc signed but not notarized, so the first launch
-> is blocked. **Right-click the app → Open** (then confirm) — Gatekeeper
-> remembers your choice from then on. If macOS still says it's *“damaged”*, run
-> `xattr -cr /Applications/Immerle.app` to clear the download quarantine.
+> **macOS:** the build is ad-hoc signed but not notarized, so Gatekeeper blocks
+> the first launch (and on recent macOS the old right-click → Open trick no
+> longer offers an override). Clear the download quarantine, then open it:
+>
+> ```bash
+> xattr -dr com.apple.quarantine /Applications/Immerle.app
+> ```
+>
+> Or, without the terminal: try to open it once, then go to **System Settings →
+> Privacy & Security → Open Anyway**.
 
 ## 📚 Going further
 
