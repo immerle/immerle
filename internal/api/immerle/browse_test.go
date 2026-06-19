@@ -51,6 +51,7 @@ func newBrowseEnv(t *testing.T) (*httptest.Server, string) {
 		Users:       store.Users,
 		Catalog:     store.Catalog,
 		Annotations: store.Annotations,
+		Genres:      store.Genres,
 		Logger:      testutil.NewLogger(),
 	})
 	mux := chi.NewRouter()
@@ -122,5 +123,50 @@ func TestBrowseAuthAndNotFound(t *testing.T) {
 	}
 	if st := doStatus(t, srv, http.MethodGet, "/artists/does-not-exist", token, nil); st != http.StatusNotFound {
 		t.Fatalf("expected 404, got %d", st)
+	}
+}
+
+func TestBrowseListsSearchAndSong(t *testing.T) {
+	srv, token := newBrowseEnv(t)
+
+	// Album list (alphabetical) returns both albums.
+	var albums struct {
+		Albums []albumView `json:"albums"`
+	}
+	if st := getJSON(t, srv, token, "/albums?type=alphabeticalByName&size=10", &albums); st != http.StatusOK {
+		t.Fatalf("list albums: status %d", st)
+	}
+	if len(albums.Albums) != 2 {
+		t.Fatalf("expected 2 albums, got %d", len(albums.Albums))
+	}
+
+	// Genres include House and Jazz.
+	var genres struct {
+		Genres []struct {
+			Name string `json:"name"`
+		} `json:"genres"`
+	}
+	if st := getJSON(t, srv, token, "/genres", &genres); st != http.StatusOK {
+		t.Fatalf("genres: status %d", st)
+	}
+	if len(genres.Genres) < 2 {
+		t.Fatalf("expected >=2 genres, got %d", len(genres.Genres))
+	}
+
+	// Search finds the track and the single resource resolves it.
+	var search searchView
+	if st := getJSON(t, srv, token, "/search?q=So+What", &search); st != http.StatusOK {
+		t.Fatalf("search: status %d", st)
+	}
+	if len(search.Songs) != 1 || search.Songs[0].Title != "So What" {
+		t.Fatalf("search songs: %+v", search.Songs)
+	}
+
+	var song songView
+	if st := getJSON(t, srv, token, "/songs/"+search.Songs[0].ID, &song); st != http.StatusOK {
+		t.Fatalf("get song: status %d", st)
+	}
+	if song.Title != "So What" {
+		t.Fatalf("song title = %q", song.Title)
 	}
 }
