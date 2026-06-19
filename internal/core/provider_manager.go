@@ -207,6 +207,14 @@ func (m *ProviderManager) Upsert(ctx context.Context, cfg models.ProviderConfig)
 	if err != nil {
 		return cfg, err
 	}
+	// Providers that expose a capabilities endpoint (HTTP providers) must verify
+	// at create/update time: the remote has to be reachable, speak the protocol,
+	// and have every required config field supplied. Rejected before persisting.
+	if v, ok := built.(providers.Verifier); ok {
+		if err := v.Verify(ctx); err != nil {
+			return cfg, err
+		}
+	}
 	if err := m.repo.Upsert(ctx, cfg); err != nil {
 		return cfg, err
 	}

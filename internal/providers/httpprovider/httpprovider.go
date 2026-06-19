@@ -35,6 +35,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -54,8 +55,11 @@ type Provider struct {
 }
 
 // Endpoint paths on the remote service — fixed by the protocol. The remote must
-// implement these exact paths under its base URL.
+// implement these exact paths under its base URL. /capabilities is mandatory and
+// validated when the provider is created (see Verify); the rest are called at
+// use time.
 const (
+	capabilitiesPath  = "/capabilities"
 	searchPath        = "/search"
 	resolvePath       = "/resolve"
 	downloadPath      = "/download"
@@ -65,6 +69,29 @@ const (
 	albumTracksPath   = "/album/tracks"
 	artistImagePath   = "/artist/image"
 )
+
+// ProtocolVersion is the HTTP-provider protocol this client speaks. A remote's
+// /capabilities must advertise this exact version.
+const ProtocolVersion = 1
+
+// slugRe constrains the name a remote declares for itself.
+var slugRe = regexp.MustCompile(`^[a-z0-9][a-z0-9_-]*$`)
+
+// Capabilities is the mandatory /capabilities response a remote HTTP provider
+// must serve. It states the protocol version it implements, its slug name, and
+// the config fields it requires — each tagged with where the value is sent
+// (a request header or a query param), matching the { header, params } config.
+type Capabilities struct {
+	Version        int             `json:"version"`
+	Name           string          `json:"name"`
+	RequiredFields []RequiredField `json:"requiredFields"`
+}
+
+// RequiredField names a config value the remote needs and where it travels.
+type RequiredField struct {
+	Name string `json:"name"`
+	In   string `json:"in"` // "header" | "params"
+}
 
 // New builds an HTTP provider. endpoint must be an absolute http(s) URL;
 // configJSON is the raw config payload ("" or "{}" for defaults).
@@ -108,6 +135,63 @@ func (p *Provider) MaxQuality() string {
 		return p.cfg.Quality
 	}
 	return "remote"
+}
+
+// Verify implements providers.Verifier. It fetches the remote's mandatory
+// /capabilities endpoint and checks: the protocol version matches, the declared
+// name is a slug, and every required field is present in the config in its
+// declared location (header or params). A failure rejects the provider at
+// create/update time.
+func (p *Provider) Verify(ctx context.Context) error {
+	caps, err := p.fetchCapabilities(ctx)
+	if err != nil {
+		return err
+	}
+	if caps.Version != ProtocolVersion {
+		return fmt.Errorf("%s: remote protocol version %d unsupported (expected %d)", p.name, caps.Version, ProtocolVersion)
+	}
+	if !slugRe.MatchString(caps.Name) {
+		return fmt.Errorf("%s: capabilities name %q is not a valid slug", p.name, caps.Name)
+	}
+	var missing []string
+	for _, f := range caps.RequiredFields {
+		var got string
+		switch f.In {
+		case "header":
+			got = p.cfg.Header[f.Name]
+		case "params":
+			got = p.cfg.Param(f.Name, "")
+		default:
+			return fmt.Errorf("%s: required field %q has invalid location %q (want \"header\" or \"params\")", p.name, f.Name, f.In)
+		}
+		if strings.TrimSpace(got) == "" {
+			missing = append(missing, fmt.Sprintf("%s (%s)", f.Name, f.In))
+		}
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf("%s: missing required config field(s): %s", p.name, strings.Join(missing, ", "))
+	}
+	return nil
+}
+
+func (p *Provider) fetchCapabilities(ctx context.Context) (Capabilities, error) {
+	req, err := p.newRequest(ctx, capabilitiesPath, url.Values{})
+	if err != nil {
+		return Capabilities{}, err
+	}
+	resp, err := p.http.Do(req)
+	if err != nil {
+		return Capabilities{}, fmt.Errorf("%s: capabilities request failed (a /capabilities endpoint is required): %w", p.name, err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 300 {
+		return Capabilities{}, fmt.Errorf("%s: /capabilities returned status %d (a /capabilities endpoint is required)", p.name, resp.StatusCode)
+	}
+	var caps Capabilities
+	if err := json.NewDecoder(io.LimitReader(resp.Body, providers.MaxMetadataBytes)).Decode(&caps); err != nil {
+		return Capabilities{}, fmt.Errorf("%s: decode capabilities: %w", p.name, err)
+	}
+	return caps, nil
 }
 
 // track is the wire shape of a result returned by the remote service.

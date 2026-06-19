@@ -104,6 +104,16 @@ type AlbumBrowser interface {
 	AlbumTracks(ctx context.Context, providerAlbumID string, limit int) ([]Result, error)
 }
 
+// Verifier is an optional capability: a provider that can validate, at
+// registration time, that its remote service is reachable and correctly
+// configured. The provider manager calls Verify before persisting/registering
+// an upserted provider, so a misconfigured one is rejected with a clear error
+// instead of silently failing later. HTTP providers implement this against the
+// remote's mandatory /capabilities endpoint.
+type Verifier interface {
+	Verify(ctx context.Context) error
+}
+
 // Provider is one external catalog (Jamendo, Internet Archive, or a runtime
 // HTTP provider).
 // Implementations must be safe for concurrent use.

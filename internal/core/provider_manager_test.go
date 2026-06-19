@@ -3,6 +3,8 @@ package core
 import (
 	"context"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/immerle/immerle/internal/models"
@@ -20,7 +22,13 @@ func newManager(t *testing.T, builtins ...BuiltinDef) (*ProviderManager, *Provid
 		if c.Builtin() {
 			return &fakeProvider{name: c.Name}, nil
 		}
-		return httpprovider.New(c.Name, c.Endpoint, c.Config)
+		// Validate endpoint/config like the real build, but return a fake (which is
+		// not a providers.Verifier) so these manager-logic tests don't need a live
+		// /capabilities server. The verify wiring is covered separately below.
+		if _, err := httpprovider.New(c.Name, c.Endpoint, c.Config); err != nil {
+			return nil, err
+		}
+		return &fakeProvider{name: c.Name}, nil
 	}
 	mgr := NewProviderManager(store.ProviderConfigs, reg, build, builtins, testutil.NewLogger())
 	return mgr, reg, store
@@ -53,6 +61,46 @@ func TestProviderManagerUpsertRegistersWhenEnabled(t *testing.T) {
 	list, _ := mgr.List(ctx)
 	if len(list) != 1 {
 		t.Fatalf("config should persist while disabled, got %d", len(list))
+	}
+}
+
+func TestProviderManagerVerifiesHTTPCapabilities(t *testing.T) {
+	store := testutil.NewStore(t)
+	reg := NewProviderRegistry()
+	// Real build so the manager exercises httpprovider.Verify (the capabilities check).
+	build := func(c models.ProviderConfig) (providers.Provider, error) {
+		return httpprovider.New(c.Name, c.Endpoint, c.Config)
+	}
+	mgr := NewProviderManager(store.ProviderConfigs, reg, build, nil, testutil.NewLogger())
+	ctx := context.Background()
+
+	// Service whose /capabilities requires an "apikey" param.
+	good := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/capabilities" {
+			_, _ = w.Write([]byte(`{"version":1,"name":"svc","requiredFields":[{"name":"apikey","in":"params"}]}`))
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	t.Cleanup(good.Close)
+
+	// Missing the required field → rejected, nothing persisted.
+	if _, err := mgr.Upsert(ctx, models.ProviderConfig{Name: "svc", Endpoint: good.URL, Config: "{}", Enabled: true}); err == nil {
+		t.Fatal("upsert must fail when a required capability field is missing")
+	}
+	if _, err := store.ProviderConfigs.Get(ctx, "svc"); !errors.Is(err, persistence.ErrNotFound) {
+		t.Fatal("rejected provider must not be persisted")
+	}
+	// Supplying it → accepted.
+	if _, err := mgr.Upsert(ctx, models.ProviderConfig{Name: "svc", Endpoint: good.URL, Config: `{"params":{"apikey":"k"}}`, Enabled: true}); err != nil {
+		t.Fatalf("upsert should pass once the field is supplied: %v", err)
+	}
+
+	// No /capabilities endpoint at all → rejected (it is mandatory).
+	none := httptest.NewServer(http.NotFoundHandler())
+	t.Cleanup(none.Close)
+	if _, err := mgr.Upsert(ctx, models.ProviderConfig{Name: "nocaps", Endpoint: none.URL, Config: "{}", Enabled: true}); err == nil {
+		t.Fatal("upsert must fail without a /capabilities endpoint")
 	}
 }
 
