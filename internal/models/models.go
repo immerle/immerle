@@ -83,6 +83,13 @@ type RuntimeSettings struct {
 	Federation FederationRuntime `json:"federation"`
 	Import     ImportRuntime     `json:"import"`
 	Logs       LogsRuntime       `json:"logs"`
+	Wrapped    WrappedRuntime    `json:"wrapped"`
+}
+
+// WrappedRuntime toggles the "Wrapped" year-in-review feature (hot-reloadable).
+// When disabled, the wrapped endpoint 404s and clients hide the entry point.
+type WrappedRuntime struct {
+	Enabled bool `json:"enabled"`
 }
 
 // LogsRuntime configures retention of persisted diagnostic logs (provider logs
@@ -190,9 +197,37 @@ func DefaultRuntimeSettings() RuntimeSettings {
 		// Import sources that go through the hub (e.g. spotify) need no per-source
 		// config here — they use the federation hub credentials. This map is for
 		// future sources that authenticate directly.
-		Import: ImportRuntime{},
-		Logs:   LogsRuntime{RetentionDays: 30},
+		Import:  ImportRuntime{},
+		Logs:    LogsRuntime{RetentionDays: 30},
+		Wrapped: WrappedRuntime{Enabled: true},
 	}
+}
+
+// Wrapped is a user's year-in-review: totals plus top tracks/artists/genres and
+// a per-month play histogram. Computed on demand from the scrobble history.
+type Wrapped struct {
+	Year         int            `json:"year"`
+	TotalPlays   int            `json:"totalPlays"`
+	TotalSeconds int64          `json:"totalSeconds"`
+	TopTracks    []WrappedTrack `json:"topTracks"`
+	TopArtists   []WrappedCount `json:"topArtists"`
+	TopGenres    []WrappedCount `json:"topGenres"`
+	// ByMonth is plays per calendar month, index 0 = January .. 11 = December.
+	ByMonth [12]int `json:"byMonth"`
+}
+
+// WrappedTrack is one entry in the top-tracks chart.
+type WrappedTrack struct {
+	ID     string `json:"id"`
+	Title  string `json:"title"`
+	Artist string `json:"artist"`
+	Plays  int    `json:"plays"`
+}
+
+// WrappedCount is a labelled play count (an artist or a genre).
+type WrappedCount struct {
+	Name  string `json:"name"`
+	Plays int    `json:"plays"`
 }
 
 // LibraryStats is a snapshot of the library analytics: catalog cardinalities

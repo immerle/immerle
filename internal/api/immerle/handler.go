@@ -54,7 +54,9 @@ type Deps struct {
 	// Settings manages the DB-backed runtime settings (admin API). It also supplies
 	// the device-session JWT lifetime (a runtime setting).
 	Settings *core.SettingsService
-	Logger   *slog.Logger
+	// Wrapped computes the per-user year-in-review from the scrobble history.
+	Wrapped *persistence.WrappedRepo
+	Logger  *slog.Logger
 }
 
 // deviceTokenTTL returns the device-session JWT lifetime from the runtime
@@ -122,6 +124,9 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Get("/activity", h.handleActivity)
 			r.Get("/library/stats", h.handleLibraryStats)
 
+			// Year-in-review ("Wrapped").
+			r.Get("/wrapped", h.handleWrapped)
+
 			// "Local" library: tracks the user uploaded from the web UI.
 			r.Get("/library/local", h.handleLocalSongs)
 			r.Post("/library/uploads", h.handleUpload)
@@ -185,6 +190,10 @@ func (h *Handler) Register(mux chi.Router) {
 			// Admin: DB-backed runtime settings.
 			r.Get("/admin/settings", h.handleSettings)
 			r.Patch("/admin/settings", h.handleSettingsUpdate)
+
+			// Admin: Wrapped feature toggle.
+			r.Get("/admin/wrapped", h.handleWrappedAdmin)
+			r.Put("/admin/wrapped", h.handleWrappedUpdate)
 		})
 	})
 }

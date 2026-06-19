@@ -268,3 +268,6 @@ func (s *SettingsService) CleanupInterval() time.Duration {
 func (s *SettingsService) LogRetention() time.Duration {
 	return time.Duration(s.Get().Logs.RetentionDays) * 24 * time.Hour
 }
+
+// WrappedEnabled reports whether the year-in-review feature is on (read live).
+func (s *SettingsService) WrappedEnabled() bool { return s.Get().Wrapped.Enabled }

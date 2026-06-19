@@ -36,6 +36,7 @@ import {
   ServerSettings,
   TrackEdit,
   TranscodeProfile,
+  Wrapped,
 } from './types';
 
 /**
@@ -384,6 +385,26 @@ export class ImmerleClient {
       restartRequired: data.restartRequired ?? false,
       pendingRestart: data.pendingRestart ?? [],
     };
+  }
+
+  // --- Wrapped (year-in-review) -------------------------------------------
+
+  /** The caller's year-in-review (defaults to the current year server-side). */
+  async getWrapped(year?: number, signal?: AbortSignal): Promise<Wrapped> {
+    const path = year ? `wrapped?year=${year}` : 'wrapped';
+    return this.request<Wrapped>('GET', path, undefined, signal);
+  }
+
+  /** Admin: whether the Wrapped feature is enabled. */
+  async getWrappedEnabled(signal?: AbortSignal): Promise<boolean> {
+    const r = await this.request<{ enabled: boolean }>('GET', 'admin/wrapped', undefined, signal);
+    return !!r.enabled;
+  }
+
+  /** Admin: turn the Wrapped feature on or off. */
+  async setWrappedEnabled(enabled: boolean): Promise<boolean> {
+    const r = await this.request<{ enabled: boolean }>('PUT', 'admin/wrapped', { enabled });
+    return !!r.enabled;
   }
 
   // --- Admin: downloads cleanup (eviction sweep) --------------------------

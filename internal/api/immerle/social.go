@@ -28,6 +28,7 @@ func (h *Handler) handleCapabilities(w http.ResponseWriter, r *http.Request) {
 	if h.Federation != nil {
 		federation = h.Federation.Enabled()
 	}
+	wrapped := h.wrappedEnabled() && h.Wrapped != nil
 	needsSetup := false
 	if h.Setup != nil {
 		if initialized, err := h.Setup.IsInitialized(r.Context()); err == nil {
@@ -53,8 +54,9 @@ func (h *Handler) handleCapabilities(w http.ResponseWriter, r *http.Request) {
 			"devices":                map[string]any{"version": 1, "auth": "jwt"},
 			"theme":                  map[string]any{"version": 1, "properties": []string{"accentColor"}},
 			"dynamicProviders":       map[string]any{"version": 1, "kinds": []string{"http"}, "admin": true},
-			"runtimeSettings":        map[string]any{"version": 1, "admin": true, "groups": []string{"providers", "scan", "cleanup", "federation", "import"}},
+			"runtimeSettings":        map[string]any{"version": 1, "admin": true, "groups": []string{"providers", "scan", "cleanup", "federation", "import", "wrapped"}},
 			"federation":             map[string]any{"version": 1, "enabled": federation},
+			"wrapped":                map[string]any{"version": 1, "admin": true, "enabled": wrapped},
 		},
 	})
 }
