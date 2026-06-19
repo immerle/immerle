@@ -42,6 +42,7 @@ func (h *Handler) handleCapabilities(w http.ResponseWriter, r *http.Request) {
 			"friendships":            map[string]any{"version": 1},
 			"profiles":               map[string]any{"version": 1, "selfEditable": []string{"displayName", "email"}},
 			"libraryStats":           map[string]any{"version": 1, "fields": []string{"artists", "albums", "tracks", "totalSize", "totalDuration"}},
+			"libraryAdmin":           map[string]any{"version": 1, "admin": true, "actions": []string{"list", "editMetadata", "editCover", "delete"}},
 			"activityFeed":           map[string]any{"version": 1, "privacy": []string{"public", "friends", "private"}},
 			"collaborativePlaylists": map[string]any{"version": 1},
 			"publicPlaylists":        map[string]any{"version": 1, "subscribe": true},

@@ -451,6 +451,83 @@ func (r *CatalogRepo) ListTracksByGenre(ctx context.Context, genre string, count
 	return r.listTracks(ctx, trackSelect+` WHERE t.genre=? ORDER BY ar.name, al.name, t.disc_no, t.track_no LIMIT ? OFFSET ?`, genre, count, offset)
 }
 
+// TrackListOptions controls the admin "all tracks" listing.
+type TrackListOptions struct {
+	Query  string // case-insensitive LIKE over title/artist/album
+	Size   int
+	Offset int
+}
+
+// ListAllTracks returns downloaded (local) tracks, newest first, with optional
+// search and pagination — powers the admin library management screen. Remote
+// (not-yet-downloaded) provider placeholders are excluded.
+func (r *CatalogRepo) ListAllTracks(ctx context.Context, opt TrackListOptions) ([]models.Track, error) {
+	if opt.Size <= 0 {
+		opt.Size = 50
+	}
+	q := trackSelect + " WHERE t.remote=0"
+	var args []any
+	if opt.Query != "" {
+		like := "%" + strings.ToLower(opt.Query) + "%"
+		q += " AND (LOWER(t.title) LIKE ? OR LOWER(ar.name) LIKE ? OR LOWER(al.name) LIKE ?)"
+		args = append(args, like, like, like)
+	}
+	q += " ORDER BY t.created_at DESC, t.title LIMIT ? OFFSET ?"
+	args = append(args, opt.Size, opt.Offset)
+	return r.listTracks(ctx, q, args...)
+}
+
+// CountTracks returns the number of downloaded tracks matching the same filter
+// as ListAllTracks (for pagination totals).
+func (r *CatalogRepo) CountTracks(ctx context.Context, query string) (int, error) {
+	q := `SELECT COUNT(*) FROM tracks t JOIN albums al ON al.id=t.album_id JOIN artists ar ON ar.id=t.artist_id WHERE t.remote=0`
+	var args []any
+	if query != "" {
+		like := "%" + strings.ToLower(query) + "%"
+		q += " AND (LOWER(t.title) LIKE ? OR LOWER(ar.name) LIKE ? OR LOWER(al.name) LIKE ?)"
+		args = append(args, like, like, like)
+	}
+	var n int
+	if err := r.queryRow(ctx, q, args...).Scan(&n); err != nil {
+		return 0, err
+	}
+	return n, nil
+}
+
+// UpdateTrackMetadata edits the directly-editable track fields (admin). Album
+// and artist relationships are intentionally not touched here.
+func (r *CatalogRepo) UpdateTrackMetadata(ctx context.Context, id string, title, genre string, year, trackNo, discNo int) error {
+	res, err := r.exec(ctx, `UPDATE tracks SET title=?, genre=?, year=?, track_no=?, disc_no=?, updated_at=? WHERE id=?`,
+		title, genre, year, trackNo, discNo, db.Millis(time.Now()), id)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// DeleteTrackCascade removes a track and the rows that reference it but are not
+// covered by an ON DELETE CASCADE foreign key (annotations, shares,
+// activity_events, download_jobs). playlist_tracks and scrobbles cascade via FK.
+func (r *CatalogRepo) DeleteTrackCascade(ctx context.Context, id string) error {
+	return r.withTx(ctx, func(tx *sql.Tx) error {
+		for _, q := range []string{
+			`DELETE FROM annotations WHERE item_type='track' AND item_id=?`,
+			`DELETE FROM shares WHERE item_type='track' AND item_id=?`,
+			`DELETE FROM activity_events WHERE item_type='track' AND item_id=?`,
+			`DELETE FROM download_jobs WHERE track_id=?`,
+			`DELETE FROM tracks WHERE id=?`,
+		} {
+			if _, err := tx.ExecContext(ctx, r.rebind(q), id); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
 // RandomTracks returns up to count random tracks, optionally filtered by genre
 // and/or year range (powers getRandomSongs).
 func (r *CatalogRepo) RandomTracks(ctx context.Context, count int, genre string, fromYear, toYear int) ([]models.Track, error) {

@@ -91,6 +91,34 @@ type ProviderLogDTO struct {
 	CreatedAt string `json:"createdAt" example:"2026-06-18T20:00:00Z"`
 }
 
+// TrackDTO is a library track in the admin management API. It mirrors the
+// Subsonic-compatible song shape returned by toSongView (shared with the
+// user-facing "local" uploads endpoints).
+type TrackDTO struct {
+	ID          string `json:"id"`
+	Title       string `json:"title" example:"One More Time"`
+	Album       string `json:"album" example:"Discovery"`
+	Artist      string `json:"artist" example:"Daft Punk"`
+	AlbumID     string `json:"albumId"`
+	ArtistID    string `json:"artistId"`
+	CoverArt    string `json:"coverArt"`
+	Duration    int    `json:"duration" example:"320"`
+	Track       int    `json:"track,omitempty" example:"1"`
+	Year        int    `json:"year,omitempty" example:"2001"`
+	Genre       string `json:"genre,omitempty" example:"House"`
+	Suffix      string `json:"suffix,omitempty" example:"flac"`
+	ContentType string `json:"contentType,omitempty" example:"audio/flac"`
+	Size        int64  `json:"size,omitempty" example:"8123456"`
+}
+
+// TrackListDTO is a page of library tracks.
+type TrackListDTO struct {
+	Tracks []TrackDTO `json:"tracks"`
+	Total  int        `json:"total" example:"1560"`
+	Limit  int        `json:"limit" example:"50"`
+	Offset int        `json:"offset" example:"0"`
+}
+
 // CleanupStatusDTO reports the provider-download eviction sweep state.
 type CleanupStatusDTO struct {
 	Enabled         bool  `json:"enabled" example:"true"`

@@ -885,6 +885,333 @@ export interface paths {
         };
         trace?: never;
     };
+    "/admin/tracks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List library tracks
+         * @description Admin only. Lists downloaded (local) tracks, newest first, with optional search and pagination.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Case-insensitive search over title/artist/album */
+                    query?: string;
+                    /** @description Page size (default 50, max 200) */
+                    limit?: number;
+                    /** @description Offset for pagination */
+                    offset?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.TrackListDTO"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/tracks/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete a track
+         * @description Admin only. Removes the audio file and the track and all rows referencing it (annotations, shares, activity, downloads, playlist entries, scrobbles).
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Track id */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        /**
+         * Edit track metadata
+         * @description Admin only. Edits a track's title, genre, year and track/disc number. Album and artist links are not changed.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Track id */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description Fields to update (all optional) */
+            requestBody: {
+                content: {
+                    "application/json": Record<string, never> | components["schemas"]["immerle.trackUpdateRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.TrackDTO"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/admin/tracks/{id}/cover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Upload track cover
+         * @description Admin only. Replaces a single track's cover art with an uploaded image (multipart form field "file").
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Track id */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description Cover image (jpeg/png/gif/webp) */
+            requestBody: {
+                content: {
+                    "application/x-www-form-urlencoded": Record<string, never>;
+                    "multipart/form-data": Record<string, never>;
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.TrackDTO"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Unsupported Media Type */
+                415: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/sessions": {
         parameters: {
             query?: never;
@@ -3346,6 +3673,41 @@ export interface components {
             /** @example #3b82f6 */
             accentColor?: string;
         };
+        "immerle.TrackDTO": {
+            /** @example Discovery */
+            album?: string;
+            albumId?: string;
+            /** @example Daft Punk */
+            artist?: string;
+            artistId?: string;
+            /** @example audio/flac */
+            contentType?: string;
+            coverArt?: string;
+            /** @example 320 */
+            duration?: number;
+            /** @example House */
+            genre?: string;
+            id?: string;
+            /** @example 8123456 */
+            size?: number;
+            /** @example flac */
+            suffix?: string;
+            /** @example One More Time */
+            title?: string;
+            /** @example 1 */
+            track?: number;
+            /** @example 2001 */
+            year?: number;
+        };
+        "immerle.TrackListDTO": {
+            /** @example 50 */
+            limit?: number;
+            /** @example 0 */
+            offset?: number;
+            /** @example 1560 */
+            total?: number;
+            tracks?: components["schemas"]["immerle.TrackDTO"][];
+        };
         "immerle.UserDTO": {
             /** @example Kilian Smiti */
             displayName?: string;
@@ -3413,6 +3775,13 @@ export interface components {
         "immerle.startImportRequest": {
             ref?: string;
             source?: string;
+        };
+        "immerle.trackUpdateRequest": {
+            discNo?: number;
+            genre?: string;
+            title?: string;
+            trackNo?: number;
+            year?: number;
         };
         "immerle.updateAccountRequest": {
             displayName?: string;

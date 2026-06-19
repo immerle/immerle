@@ -32,6 +32,8 @@ export interface Capabilities {
     playlistImport: boolean;
     /** Friends / activity feed. */
     social: boolean;
+    /** Admin track management: list/edit metadata/edit cover/delete. */
+    libraryAdmin: boolean;
     /** Richer admin surface (providers, jobs, transcode profiles). */
     adminExtended: boolean;
     /** Per-track / per-album offline download endpoints. */
@@ -62,6 +64,15 @@ export interface LibraryStats {
   /** Bytes used by the media library. */
   totalSize: number;
   lastScan?: string;
+}
+
+/** Editable track metadata fields (all optional for partial updates). */
+export interface TrackEdit {
+  title?: string;
+  genre?: string;
+  year?: number;
+  trackNo?: number;
+  discNo?: number;
 }
 
 export interface ScanProgress {

@@ -203,6 +203,10 @@
           "title": "Library",
           "subtitle": "Scan & statistics"
         },
+        "tracks": {
+          "title": "Tracks",
+          "subtitle": "Browse, edit covers & metadata, delete"
+        },
         "providers": {
           "title": "Providers",
           "subtitle": "Dynamic content sources"
@@ -433,6 +437,26 @@
       "newPassword": "New password",
       "validate": "Confirm",
       "resetPassword": "Reset password"
+    },
+    "tracks": {
+      "title": "Tracks",
+      "trackCount": "{{count}} track(s)",
+      "searchLabel": "Search",
+      "searchPlaceholder": "Title, artist or album",
+      "loadError": "Could not load the tracks.",
+      "empty": "No tracks found.",
+      "changeCover": "Change cover",
+      "titleLabel": "Title",
+      "genreLabel": "Genre",
+      "yearLabel": "Year",
+      "trackNoLabel": "Track no.",
+      "save": "Save",
+      "delete": "Delete",
+      "cancel": "Cancel",
+      "deleteConfirmTitle": "Delete this track?",
+      "prev": "Previous",
+      "next": "Next",
+      "range": "{{from}}–{{to}} of {{total}}"
     },
     "scan": {
       "title": "Library",

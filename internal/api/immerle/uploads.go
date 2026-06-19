@@ -1,6 +1,7 @@
 package immerle
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"os"
@@ -160,48 +161,64 @@ func (h *Handler) handleTrackCover(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	r.Body = http.MaxBytesReader(w, r.Body, maxCoverBytes)
-	file, _, err := r.FormFile("file")
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_body", "missing image file (multipart field \"file\")")
+	data, ok := readCoverUpload(w, r)
+	if !ok {
 		return
 	}
-	defer func() { _ = file.Close() }()
-	data, err := io.ReadAll(file)
-	if err != nil {
-		writeInternal(w, err)
-		return
-	}
-	if !strings.HasPrefix(http.DetectContentType(data), "image/") {
-		writeError(w, http.StatusUnsupportedMediaType, "unsupported_type", "cover must be an image")
-		return
-	}
-
-	// A fresh cover id each time sidesteps the cover cache (keyed by id), so the
-	// new image shows immediately without invalidation.
-	coverID := uuid.NewString()
-	if err := os.MkdirAll(h.CoversDir, 0o755); err != nil {
-		writeInternal(w, err)
-		return
-	}
-	if err := os.WriteFile(filepath.Join(h.CoversDir, coverID), data, 0o644); err != nil {
-		writeInternal(w, err)
-		return
-	}
-	// Drop the previous custom cover file (not the shared album cover).
-	if t.CoverArt != "" && t.CoverArt != t.AlbumID {
-		_ = os.Remove(filepath.Join(h.CoversDir, t.CoverArt))
-	}
-	if err := h.Catalog.SetTrackCover(r.Context(), t.ID, coverID); err != nil {
-		writeInternal(w, err)
-		return
-	}
-	updated, err := h.Catalog.GetTrack(r.Context(), t.ID)
+	updated, err := h.saveCustomCover(r.Context(), t, data)
 	if err != nil {
 		writeInternal(w, err)
 		return
 	}
 	writeResource(w, http.StatusOK, toSongView(updated))
+}
+
+// coverPath is the on-disk path of a custom cover file.
+func coverPath(coversDir, coverID string) string {
+	return filepath.Join(coversDir, coverID)
+}
+
+// readCoverUpload reads and validates the "file" multipart field as an image.
+// On any failure it writes the response and returns ok=false.
+func readCoverUpload(w http.ResponseWriter, r *http.Request) ([]byte, bool) {
+	r.Body = http.MaxBytesReader(w, r.Body, maxCoverBytes)
+	file, _, err := r.FormFile("file")
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_body", "missing image file (multipart field \"file\")")
+		return nil, false
+	}
+	defer func() { _ = file.Close() }()
+	data, err := io.ReadAll(file)
+	if err != nil {
+		writeInternal(w, err)
+		return nil, false
+	}
+	if !strings.HasPrefix(http.DetectContentType(data), "image/") {
+		writeError(w, http.StatusUnsupportedMediaType, "unsupported_type", "cover must be an image")
+		return nil, false
+	}
+	return data, true
+}
+
+// saveCustomCover writes image data as a fresh cover file, points the track at it
+// and removes the track's previous custom cover (never a shared album cover). A
+// fresh id each time sidesteps the cover cache (keyed by id), so the new image
+// shows immediately. Returns the refreshed track.
+func (h *Handler) saveCustomCover(ctx context.Context, t models.Track, data []byte) (models.Track, error) {
+	coverID := uuid.NewString()
+	if err := os.MkdirAll(h.CoversDir, 0o755); err != nil {
+		return models.Track{}, err
+	}
+	if err := os.WriteFile(coverPath(h.CoversDir, coverID), data, 0o644); err != nil {
+		return models.Track{}, err
+	}
+	if t.CoverArt != "" && t.CoverArt != t.AlbumID {
+		_ = os.Remove(coverPath(h.CoversDir, t.CoverArt))
+	}
+	if err := h.Catalog.SetTrackCover(ctx, t.ID, coverID); err != nil {
+		return models.Track{}, err
+	}
+	return h.Catalog.GetTrack(ctx, t.ID)
 }
 
 // handleTrackDelete removes a track the caller uploaded: its catalog row, the

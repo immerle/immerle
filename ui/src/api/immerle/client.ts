@@ -34,6 +34,7 @@ import {
   ProviderLog,
   ScanProgress,
   ServerSettings,
+  TrackEdit,
   TranscodeProfile,
 } from './types';
 
@@ -228,6 +229,62 @@ export class ImmerleClient {
       count: s.count ?? 0,
       phase: s.scanning ? 'scanning' : 'idle',
     };
+  }
+
+  // --- Admin: library tracks (manage ANY track) ---------------------------
+
+  /** List downloaded tracks (paginated, searchable). Admin-only. */
+  async adminListTracks(
+    opts: { query?: string; limit?: number; offset?: number } = {},
+    signal?: AbortSignal,
+  ): Promise<{ tracks: Song[]; total: number; limit: number; offset: number }> {
+    const { data, error } = await this.api.GET('/admin/tracks', {
+      params: { query: { query: opts.query, limit: opts.limit, offset: opts.offset } },
+      signal,
+    });
+    if (error || !data) throw apiErr(error, 'tracks_failed');
+    return {
+      tracks: (data.tracks ?? []) as Song[],
+      total: data.total ?? 0,
+      limit: data.limit ?? 0,
+      offset: data.offset ?? 0,
+    };
+  }
+
+  /** Edit any track's simple metadata (title/genre/year/track/disc). Admin-only. */
+  async adminUpdateTrack(id: string, edit: TrackEdit): Promise<Song> {
+    const { data, error } = await this.api.PATCH('/admin/tracks/{id}', {
+      params: { path: { id } },
+      body: edit,
+    });
+    if (error || !data) throw apiErr(error, 'track_update_failed');
+    return data as Song;
+  }
+
+  /**
+   * Replace any track's cover from a local image. `uri` is a file/content URI
+   * (image-picker result); reuses {@link uploadForm} for the multipart plumbing.
+   * Admin-only.
+   */
+  async adminSetTrackCover(id: string, uri: string, mime = 'image/jpeg'): Promise<Song> {
+    const form = new FormData();
+    const name = `cover.${mime.split('/')[1] ?? 'jpg'}`;
+    // React Native FormData accepts {uri,name,type}; web needs a real Blob.
+    if (uri.startsWith('data:') || uri.startsWith('blob:') || uri.startsWith('http')) {
+      const blob = await (await fetch(uri)).blob();
+      form.append('file', blob, name);
+    } else {
+      form.append('file', { uri, name, type: mime } as unknown as Blob);
+    }
+    return this.uploadForm<Song>('PUT', `admin/tracks/${encodeURIComponent(id)}/cover`, form);
+  }
+
+  /** Delete any track: its file, DB row and references. Admin-only. */
+  async adminDeleteTrack(id: string): Promise<void> {
+    const { error } = await this.api.DELETE('/admin/tracks/{id}', {
+      params: { path: { id } },
+    });
+    if (error) throw apiErr(error, 'track_delete_failed');
   }
 
   // --- Admin: dynamic providers (typed via OpenAPI) -----------------------

@@ -635,6 +635,64 @@ components:
           example: '#3b82f6'
           type: string
       type: object
+    immerle.TrackDTO:
+      properties:
+        album:
+          example: Discovery
+          type: string
+        albumId:
+          type: string
+        artist:
+          example: Daft Punk
+          type: string
+        artistId:
+          type: string
+        contentType:
+          example: audio/flac
+          type: string
+        coverArt:
+          type: string
+        duration:
+          example: 320
+          type: integer
+        genre:
+          example: House
+          type: string
+        id:
+          type: string
+        size:
+          example: 8123456
+          type: integer
+        suffix:
+          example: flac
+          type: string
+        title:
+          example: One More Time
+          type: string
+        track:
+          example: 1
+          type: integer
+        year:
+          example: 2001
+          type: integer
+      type: object
+    immerle.TrackListDTO:
+      properties:
+        limit:
+          example: 50
+          type: integer
+        offset:
+          example: 0
+          type: integer
+        total:
+          example: 1560
+          type: integer
+        tracks:
+          items:
+            $ref: '#/components/schemas/immerle.TrackDTO'
+          type: array
+          uniqueItems: false
+      type: object
     immerle.UserDTO:
       properties:
         displayName:
@@ -753,6 +811,19 @@ components:
           type: string
         source:
           type: string
+      type: object
+    immerle.trackUpdateRequest:
+      properties:
+        discNo:
+          type: integer
+        genre:
+          type: string
+        title:
+          type: string
+        trackNo:
+          type: integer
+        year:
+          type: integer
       type: object
     immerle.updateAccountRequest:
       properties:
@@ -1380,6 +1451,232 @@ paths:
       security:
       - BearerAuth: []
       summary: Update runtime settings
+      tags:
+      - admin
+  /admin/tracks:
+    get:
+      description: Admin only. Lists downloaded (local) tracks, newest first, with
+        optional search and pagination.
+      parameters:
+      - description: Case-insensitive search over title/artist/album
+        in: query
+        name: query
+        schema:
+          type: string
+      - description: Page size (default 50, max 200)
+        in: query
+        name: limit
+        schema:
+          type: integer
+      - description: Offset for pagination
+        in: query
+        name: offset
+        schema:
+          type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.TrackListDTO'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Forbidden
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Internal Server Error
+      security:
+      - BearerAuth: []
+      summary: List library tracks
+      tags:
+      - admin
+  /admin/tracks/{id}:
+    delete:
+      description: Admin only. Removes the audio file and the track and all rows referencing
+        it (annotations, shares, activity, downloads, playlist entries, scrobbles).
+      parameters:
+      - description: Track id
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Forbidden
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Internal Server Error
+      security:
+      - BearerAuth: []
+      summary: Delete a track
+      tags:
+      - admin
+    patch:
+      description: Admin only. Edits a track's title, genre, year and track/disc number.
+        Album and artist links are not changed.
+      parameters:
+      - description: Track id
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/immerle.trackUpdateRequest'
+                description: Fields to update (all optional)
+                summary: body
+        description: Fields to update (all optional)
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.TrackDTO'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Forbidden
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Internal Server Error
+      security:
+      - BearerAuth: []
+      summary: Edit track metadata
+      tags:
+      - admin
+  /admin/tracks/{id}/cover:
+    put:
+      description: Admin only. Replaces a single track's cover art with an uploaded
+        image (multipart form field "file").
+      parameters:
+      - description: Track id
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              title: file
+              type: file
+          multipart/form-data:
+            schema:
+              type: object
+        description: Cover image (jpeg/png/gif/webp)
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.TrackDTO'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Forbidden
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Not Found
+        "415":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unsupported Media Type
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Internal Server Error
+      security:
+      - BearerAuth: []
+      summary: Upload track cover
       tags:
       - admin
   /auth/sessions:
