@@ -34,6 +34,7 @@ func (h *Handler) handleCapabilities(w http.ResponseWriter, r *http.Request) {
 			needsSetup = !initialized
 		}
 	}
+	radio := h.radioEnabled() && h.Radio != nil
 	writeResource(w, http.StatusOK, map[string]any{
 		"server":          "immerle",
 		"protocolVersion": ProtocolVersion,
@@ -53,8 +54,9 @@ func (h *Handler) handleCapabilities(w http.ResponseWriter, r *http.Request) {
 			"devices":                map[string]any{"version": 1, "auth": "jwt"},
 			"theme":                  map[string]any{"version": 1, "properties": []string{"accentColor"}},
 			"dynamicProviders":       map[string]any{"version": 1, "kinds": []string{"http"}, "admin": true},
-			"runtimeSettings":        map[string]any{"version": 1, "admin": true, "groups": []string{"providers", "scan", "cleanup", "federation", "import"}},
+			"runtimeSettings":        map[string]any{"version": 1, "admin": true, "groups": []string{"providers", "scan", "cleanup", "federation", "import", "radio"}},
 			"federation":             map[string]any{"version": 1, "enabled": federation},
+			"internetRadio":          map[string]any{"version": 1, "admin": true, "enabled": radio},
 		},
 	})
 }

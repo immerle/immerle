@@ -1,0 +1,84 @@
+import { useState } from 'react';
+import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
+import { Stack } from 'expo-router';
+import { useRadioStations, useRadioMutations } from '../../src/query/radio';
+import { RadioStation } from '../../src/api/immerle/types';
+import { Badge, Button, Card, ErrorState, Field, IconButton, Loading } from '../../src/components/ui';
+import { AdminHeader, AdminScroll } from '../../src/components/AdminUI';
+import { Ionicon } from '../../src/components/Ionicon';
+import { useColors } from '../../src/theme/colors';
+import { useT } from '../../src/i18n/store';
+
+interface Draft {
+  id?: string;
+  name: string;
+  streamUrl: string;
+  homepageUrl: string;
+}
+
+const EMPTY: Draft = { name: '', streamUrl: '', homepageUrl: '' };
+
+/** Admin: manage internet radio stations (add custom, edit any, delete custom). */
+export default function AdminRadio() {
+  const t = useT();
+  const colors = useColors();
+  const q = useRadioStations();
+  const { create, update, remove } = useRadioMutations();
+  const [draft, setDraft] = useState<Draft | null>(null);
+
+  if (q.isLoading) return <Loading />;
+  if (q.isError) return <ErrorState message={t('radio.loadError')} onRetry={q.refetch} />;
+
+  const valid = !!draft && draft.name.trim() !== '' && /^https?:\/\//.test(draft.streamUrl.trim());
+  const save = () => {
+    if (!draft || !valid) return;
+    const body = { name: draft.name.trim(), streamUrl: draft.streamUrl.trim(), homepageUrl: draft.homepageUrl.trim() };
+    const after = () => setDraft(null);
+    if (draft.id) update.mutate({ id: draft.id, ...body }, { onSuccess: after });
+    else create.mutate(body, { onSuccess: after });
+  };
+
+  return (
+    <>
+      <Stack.Screen options={{ headerShown: false }} />
+      <AdminScroll header={<AdminHeader color={colors.primary} title={t('radio.manageTitle')} subtitle={t('radio.manageSubtitle')} />}>
+        <Button title={t('radio.add')} icon="add" onPress={() => setDraft({ ...EMPTY })} />
+        {(q.data ?? []).map((s: RadioStation) => (
+          <Card key={s.id} className="flex-row items-center gap-3">
+            <View className="h-10 w-10 items-center justify-center rounded-xl bg-primary/15">
+              <Ionicon name="radio" size={20} color={colors.primary} />
+            </View>
+            <View className="flex-1">
+              <View className="flex-row items-center gap-2">
+                <Text numberOfLines={1} className="text-base font-semibold text-foreground">{s.name}</Text>
+                {s.builtin ? <Badge label={t('radio.builtin')} tone="default" /> : null}
+              </View>
+              <Text numberOfLines={1} className="text-xs text-muted">{s.streamUrl}</Text>
+            </View>
+            <IconButton name="create-outline" color={colors.muted} onPress={() => setDraft({ id: s.id, name: s.name, streamUrl: s.streamUrl, homepageUrl: s.homepageUrl })} accessibilityLabel={t('radio.edit')} />
+            {s.deletable ? (
+              <IconButton name="trash-outline" color={colors.danger} onPress={() => remove.mutate(s.id)} accessibilityLabel={t('radio.delete')} />
+            ) : null}
+          </Card>
+        ))}
+      </AdminScroll>
+
+      <Modal transparent visible={!!draft} animationType="slide" onRequestClose={() => setDraft(null)}>
+        <Pressable className="flex-1 justify-end bg-black/50" onPress={() => setDraft(null)}>
+          <Pressable className="max-h-[85%] rounded-t-3xl bg-surface pb-6 pt-2" onPress={(e) => e.stopPropagation()}>
+            <View className="mb-1 items-center pt-1">
+              <View className="h-1 w-10 rounded-full bg-border" />
+            </View>
+            <Text className="px-5 pb-2 pt-1 text-lg font-bold text-foreground">{draft?.id ? t('radio.editTitle') : t('radio.addTitle')}</Text>
+            <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: 8, gap: 12 }} keyboardShouldPersistTaps="handled">
+              <Field label={t('radio.name')} value={draft?.name ?? ''} onChangeText={(v) => setDraft((d) => (d ? { ...d, name: v } : d))} />
+              <Field label={t('radio.streamUrl')} autoCapitalize="none" autoCorrect={false} keyboardType="url" placeholder="https://…" value={draft?.streamUrl ?? ''} onChangeText={(v) => setDraft((d) => (d ? { ...d, streamUrl: v } : d))} />
+              <Field label={t('radio.homepageUrl')} autoCapitalize="none" autoCorrect={false} keyboardType="url" value={draft?.homepageUrl ?? ''} onChangeText={(v) => setDraft((d) => (d ? { ...d, homepageUrl: v } : d))} />
+              <Button title={t('radio.save')} icon="save-outline" disabled={!valid} loading={create.isPending || update.isPending} onPress={save} />
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </>
+  );
+}

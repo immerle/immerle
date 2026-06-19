@@ -308,6 +308,8 @@ func New(cfg config.Config) (*App, error) {
 		Scrobbles:        store.Scrobbles,
 		Shares:           store.Shares,
 		Users:            store.Users,
+		Radio:            store.Radio,
+		Settings:         settingsSvc,
 		Cover:            coverSvc,
 		Streamer:         streamer,
 		NowPlaying:       nowPlaying,
@@ -331,6 +333,7 @@ func New(cfg config.Config) (*App, error) {
 		Cleanup:      evictor,
 		Providers:    providerMgr,
 		Settings:     settingsSvc,
+		Radio:        store.Radio,
 		Catalog:      store.Catalog,
 		OnDemand:     onDemand,
 		LibraryStats: libraryStats,
@@ -345,6 +348,11 @@ func New(cfg config.Config) (*App, error) {
 	// hook keeps it fresh thereafter).
 	if _, err := libraryStats.Refresh(ctx); err != nil {
 		logger.Warn("initial library stats failed", "error", err)
+	}
+
+	// Seed the built-in internet radio stations (idempotent).
+	if err := store.Radio.EnsureBuiltins(ctx); err != nil {
+		logger.Warn("seeding built-in radio stations failed", "error", err)
 	}
 
 	mux := chi.NewRouter()

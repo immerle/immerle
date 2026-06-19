@@ -787,6 +787,20 @@ components:
         username:
           type: string
       type: object
+    immerle.radioRequest:
+      properties:
+        homepageUrl:
+          type: string
+        name:
+          type: string
+        streamUrl:
+          type: string
+      type: object
+    immerle.radioToggleRequest:
+      properties:
+        enabled:
+          type: boolean
+      type: object
     immerle.reorderRequest:
       properties:
         order:
@@ -810,6 +824,23 @@ components:
         ref:
           type: string
         source:
+          type: string
+      type: object
+    immerle.stationView:
+      properties:
+        builtin:
+          type: boolean
+        deletable:
+          description: Deletable is false for built-in stations (they can be edited,
+            not removed).
+          type: boolean
+        homepageUrl:
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+        streamUrl:
           type: string
       type: object
     immerle.trackUpdateRequest:
@@ -1358,6 +1389,145 @@ paths:
       security:
       - BearerAuth: []
       summary: Reorder providers
+      tags:
+      - admin
+  /admin/radio:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: boolean
+                type: object
+          description: OK
+      security:
+      - BearerAuth: []
+      summary: Get the radio feature state
+      tags:
+      - admin
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/immerle.radioToggleRequest'
+                description: Enable or disable
+                summary: body
+        description: Enable or disable
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: boolean
+                type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Bad Request
+      security:
+      - BearerAuth: []
+      summary: Toggle the radio feature
+      tags:
+      - admin
+  /admin/radio/stations:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/immerle.radioRequest'
+                description: Station
+                summary: body
+        description: Station
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.stationView'
+          description: Created
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Bad Request
+      security:
+      - BearerAuth: []
+      summary: Create a radio station
+      tags:
+      - admin
+  /admin/radio/stations/{id}:
+    delete:
+      parameters:
+      - description: Station id
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Bad Request
+      security:
+      - BearerAuth: []
+      summary: Delete a radio station
+      tags:
+      - admin
+    put:
+      parameters:
+      - description: Station id
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/immerle.radioRequest'
+                description: Station
+                summary: body
+        description: Station
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.stationView'
+          description: OK
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Not Found
+      security:
+      - BearerAuth: []
+      summary: Update a radio station
       tags:
       - admin
   /admin/settings:
@@ -2661,6 +2831,27 @@ paths:
       summary: Browse public playlists
       tags:
       - playlists
+  /radio:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                additionalProperties: {}
+                type: object
+          description: OK
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Not Found
+      security:
+      - BearerAuth: []
+      summary: List internet radio stations
+      tags:
+      - radio
   /setup:
     get:
       description: Unauthenticated. Reports whether the server still needs its first

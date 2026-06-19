@@ -83,6 +83,13 @@ type RuntimeSettings struct {
 	Federation FederationRuntime `json:"federation"`
 	Import     ImportRuntime     `json:"import"`
 	Logs       LogsRuntime       `json:"logs"`
+	Radio      RadioRuntime      `json:"radio"`
+}
+
+// RadioRuntime toggles internet radio stations (hot-reloadable). When disabled,
+// the radio endpoints 404 / return empty and clients hide the section.
+type RadioRuntime struct {
+	Enabled bool `json:"enabled"`
 }
 
 // LogsRuntime configures retention of persisted diagnostic logs (provider logs
@@ -192,7 +199,22 @@ func DefaultRuntimeSettings() RuntimeSettings {
 		// future sources that authenticate directly.
 		Import: ImportRuntime{},
 		Logs:   LogsRuntime{RetentionDays: 30},
+		Radio:  RadioRuntime{Enabled: true},
 	}
+}
+
+// RadioStation is an internet radio station: a name, an audio stream URL and an
+// optional homepage. Built-in stations ship with the server and can be edited
+// or disabled but not deleted; custom ones are admin-added.
+type RadioStation struct {
+	ID          string    `json:"id"`
+	Name        string    `json:"name"`
+	StreamURL   string    `json:"streamUrl"`
+	HomepageURL string    `json:"homepageUrl"`
+	Builtin     bool      `json:"builtin"`
+	SortOrder   int       `json:"sortOrder"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
 // LibraryStats is a snapshot of the library analytics: catalog cardinalities

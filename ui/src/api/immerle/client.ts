@@ -33,6 +33,7 @@ import {
   Provider,
   ProviderLog,
   ScanProgress,
+  RadioStation,
   ServerSettings,
   TrackEdit,
   TranscodeProfile,
@@ -384,6 +385,35 @@ export class ImmerleClient {
       restartRequired: data.restartRequired ?? false,
       pendingRestart: data.pendingRestart ?? [],
     };
+  }
+
+  // --- Internet radio -----------------------------------------------------
+
+  async listRadioStations(signal?: AbortSignal): Promise<RadioStation[]> {
+    const r = await this.request<{ stations?: RadioStation[] }>('GET', 'radio', undefined, signal);
+    return r.stations ?? [];
+  }
+
+  async createRadioStation(body: { name: string; streamUrl: string; homepageUrl?: string }): Promise<RadioStation> {
+    return this.request<RadioStation>('POST', 'admin/radio/stations', body);
+  }
+
+  async updateRadioStation(id: string, body: { name: string; streamUrl: string; homepageUrl?: string }): Promise<RadioStation> {
+    return this.request<RadioStation>('PUT', `admin/radio/stations/${id}`, body);
+  }
+
+  async deleteRadioStation(id: string): Promise<void> {
+    await this.request<void>('DELETE', `admin/radio/stations/${id}`);
+  }
+
+  async getRadioEnabled(signal?: AbortSignal): Promise<boolean> {
+    const r = await this.request<{ enabled: boolean }>('GET', 'admin/radio', undefined, signal);
+    return !!r.enabled;
+  }
+
+  async setRadioEnabled(enabled: boolean): Promise<boolean> {
+    const r = await this.request<{ enabled: boolean }>('PUT', 'admin/radio', { enabled });
+    return !!r.enabled;
   }
 
   // --- Admin: downloads cleanup (eviction sweep) --------------------------

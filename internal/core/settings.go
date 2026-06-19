@@ -268,3 +268,6 @@ func (s *SettingsService) CleanupInterval() time.Duration {
 func (s *SettingsService) LogRetention() time.Duration {
 	return time.Duration(s.Get().Logs.RetentionDays) * 24 * time.Hour
 }
+
+// RadioEnabled reports whether internet radio stations are on (read live).
+func (s *SettingsService) RadioEnabled() bool { return s.Get().Radio.Enabled }

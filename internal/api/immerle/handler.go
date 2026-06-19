@@ -54,7 +54,9 @@ type Deps struct {
 	// Settings manages the DB-backed runtime settings (admin API). It also supplies
 	// the device-session JWT lifetime (a runtime setting).
 	Settings *core.SettingsService
-	Logger   *slog.Logger
+	// Radio persists internet radio stations (built-in + custom).
+	Radio  *persistence.RadioRepo
+	Logger *slog.Logger
 }
 
 // deviceTokenTTL returns the device-session JWT lifetime from the runtime
@@ -121,6 +123,14 @@ func (h *Handler) Register(mux chi.Router) {
 
 			r.Get("/activity", h.handleActivity)
 			r.Get("/library/stats", h.handleLibraryStats)
+
+			// Internet radio stations (list for everyone; CRUD is admin).
+			r.Get("/radio", h.handleRadioList)
+			r.Get("/admin/radio", h.handleRadioAdmin)
+			r.Put("/admin/radio", h.handleRadioToggle)
+			r.Post("/admin/radio/stations", h.handleRadioCreate)
+			r.Put("/admin/radio/stations/{id}", h.handleRadioUpdate)
+			r.Delete("/admin/radio/stations/{id}", h.handleRadioDelete)
 
 			// "Local" library: tracks the user uploaded from the web UI.
 			r.Get("/library/local", h.handleLocalSongs)

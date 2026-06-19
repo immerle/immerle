@@ -1,4 +1,26 @@
 {
+  "radio": {
+    "title": "Radio",
+    "tabSubtitle": "Live internet stations",
+    "manage": "Manage",
+    "manageTitle": "Radio stations",
+    "manageSubtitle": "Add, edit or remove stations",
+    "unavailableTitle": "Radio unavailable",
+    "unavailableSubtitle": "This server has it disabled.",
+    "loadError": "Couldn't load radio stations.",
+    "emptyTitle": "No stations",
+    "emptySubtitle": "Ask an admin to add some.",
+    "add": "Add station",
+    "addTitle": "New station",
+    "editTitle": "Edit station",
+    "builtin": "Built-in",
+    "edit": "Edit",
+    "delete": "Delete",
+    "name": "Name",
+    "streamUrl": "Stream URL",
+    "homepageUrl": "Homepage (optional)",
+    "save": "Save"
+  },
   "settings": {
     "title": "Settings",
     "subtitle": "Account & preferences",
@@ -413,6 +435,10 @@
       "logsDescription": "A daily sweep deletes persisted logs (provider errors and warnings) older than the retention window.",
       "logRetention": "Retention (days)",
       "logRetentionHelp": "0 keeps logs forever.",
+      "featuresTitle": "Features",
+      "featuresSubtitle": "Toggle optional features",
+      "featuresDescription": "Enable or disable optional Immerle features for all users.",
+      "radioEnabled": "Internet radio",
       "save": "Save"
     },
     "users": {

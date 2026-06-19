@@ -38,6 +38,8 @@ export interface Capabilities {
     adminExtended: boolean;
     /** Per-track / per-album offline download endpoints. */
     offlineDownloads: boolean;
+    /** Internet radio stations (built-in + admin-managed custom). */
+    internetRadio: boolean;
   };
   /** Transcode formats the server can produce, for the quality picker. */
   transcoding?: { format: string; maxBitRate: number }[];
@@ -171,6 +173,18 @@ export interface ServerSettings {
   scrobblingEnabled: boolean;
   /** Maximum bitrate streamed without explicit override. */
   maxStreamBitRate?: number;
+}
+
+// --- Internet radio --------------------------------------------------------
+
+export interface RadioStation {
+  id: string;
+  name: string;
+  streamUrl: string;
+  homepageUrl: string;
+  builtin: boolean;
+  /** False for built-ins (editable but not removable). */
+  deletable: boolean;
 }
 
 /** Thrown when a Immerle REST endpoint returns a non-2xx. */

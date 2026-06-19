@@ -11,6 +11,9 @@ export const qk = {
   starred: ['starred'] as const,
   local: ['local'] as const,
 
+  radio: ['radio'] as const,
+  radioAdmin: ['admin', 'radio'] as const,
+
   playlists: ['playlists'] as const,
   playlist: (id: string) => ['playlist', id] as const,
   publicPlaylists: ['playlists', 'public'] as const,
