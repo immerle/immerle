@@ -414,22 +414,6 @@ func (r *CatalogRepo) SetTrackCover(ctx context.Context, trackID, coverArt strin
 	return err
 }
 
-// GetTracks returns multiple tracks preserving the requested order.
-func (r *CatalogRepo) GetTracks(ctx context.Context, ids []string) ([]models.Track, error) {
-	out := make([]models.Track, 0, len(ids))
-	for _, id := range ids {
-		t, err := r.GetTrack(ctx, id)
-		if errors.Is(err, ErrNotFound) {
-			continue
-		}
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, t)
-	}
-	return out, nil
-}
-
 // ListTracksByAlbum returns an album's tracks ordered by disc/track number.
 func (r *CatalogRepo) ListTracksByAlbum(ctx context.Context, albumID string) ([]models.Track, error) {
 	return r.listTracks(ctx, trackSelect+` WHERE t.album_id=? ORDER BY t.disc_no, t.track_no, t.title`, albumID)
