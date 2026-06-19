@@ -3,7 +3,6 @@ package subsonic
 import (
 	"net/http"
 	"net/url"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -41,42 +40,39 @@ func (h *Handler) handleGetSongsByGenre(w http.ResponseWriter, r *http.Request) 
 		writeError(w, r, ErrMissingParameter, "Required parameter genre is missing")
 		return
 	}
-	count := intParam(r, "count", 10)
-	offset := intParam(r, "offset", 0)
-	tracks, err := h.Catalog.ListTracksByGenre(r.Context(), genre, count, offset)
+	user := userFrom(r.Context())
+	tracks, err := h.library.SongsByGenre(r.Context(), user.ID, genre, intParam(r, "count", 10), intParam(r, "offset", 0))
 	if err != nil {
 		h.failInternal(w, r, err)
 		return
 	}
 	resp := newResponse()
-	resp.SongsByGenre = &Songs{Song: h.tracksToChildren(r, tracks)}
+	resp.SongsByGenre = &Songs{Song: trackEntriesToChildren(tracks)}
 	write(w, r, resp)
 }
 
 func (h *Handler) handleGetRandomSongs(w http.ResponseWriter, r *http.Request) {
-	size := intParam(r, "size", 10)
-	tracks, err := h.Catalog.RandomTracks(r.Context(), size, param(r, "genre"), intParam(r, "fromYear", 0), intParam(r, "toYear", 0))
+	user := userFrom(r.Context())
+	tracks, err := h.library.RandomSongs(r.Context(), user.ID, intParam(r, "size", 10), param(r, "genre"), intParam(r, "fromYear", 0), intParam(r, "toYear", 0))
 	if err != nil {
 		h.failInternal(w, r, err)
 		return
 	}
 	resp := newResponse()
-	resp.RandomSongs = &Songs{Song: h.tracksToChildren(r, tracks)}
+	resp.RandomSongs = &Songs{Song: trackEntriesToChildren(tracks)}
 	write(w, r, resp)
 }
 
 func (h *Handler) handleGetAlbumList(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
-	opt := buildAlbumListOptions(r, user.ID)
-	albums, err := h.Catalog.ListAlbums(r.Context(), opt)
+	albums, err := h.library.AlbumList(r.Context(), buildAlbumListOptions(r, user.ID))
 	if err != nil {
 		h.failInternal(w, r, err)
 		return
 	}
-	albumAnn, _ := h.Annotations.AnnotationMap(r.Context(), user.ID, models.ItemAlbum)
 	list := make([]Child, 0, len(albums))
-	for _, a := range albums {
-		list = append(list, toAlbumChild(a, annPtr(albumAnn, a.ID)))
+	for _, e := range albums {
+		list = append(list, toAlbumChild(e.Album, e.Annotation))
 	}
 	resp := newResponse()
 	resp.AlbumList = &AlbumList{Album: list}
@@ -128,28 +124,18 @@ func (h *Handler) handleGetMusicDirectory(w http.ResponseWriter, r *http.Request
 
 func (h *Handler) handleGetStarred(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
-	ctx := r.Context()
-	resp := newResponse()
+	st := h.library.Starred(r.Context(), user.ID)
 	out := &Starred{}
-
-	artistIDs, _ := h.Annotations.ListStarred(ctx, user.ID, models.ItemArtist)
-	for _, id := range artistIDs {
-		if a, err := h.Catalog.GetArtist(ctx, id); err == nil {
-			out.Artist = append(out.Artist, ArtistItem{ID: a.ID, Name: a.Name})
-		}
+	for _, a := range st.Artists {
+		out.Artist = append(out.Artist, ArtistItem{ID: a.ID, Name: a.Name})
 	}
-	albumIDs, _ := h.Annotations.ListStarred(ctx, user.ID, models.ItemAlbum)
-	for _, id := range albumIDs {
-		if a, err := h.Catalog.GetAlbum(ctx, id); err == nil {
-			out.Album = append(out.Album, toAlbumChild(a, nil))
-		}
+	for _, a := range st.Albums {
+		out.Album = append(out.Album, toAlbumChild(a, nil))
 	}
-	songIDs, _ := h.Annotations.ListStarred(ctx, user.ID, models.ItemTrack)
-	for _, id := range songIDs {
-		if t, err := h.Catalog.GetTrack(ctx, id); err == nil {
-			out.Song = append(out.Song, toChild(t, nil))
-		}
+	for _, t := range st.Songs {
+		out.Song = append(out.Song, toChild(t, nil))
 	}
+	resp := newResponse()
 	resp.Starred = out
 	write(w, r, resp)
 }
@@ -184,26 +170,10 @@ func (h *Handler) handleSearch2(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleGetTopSongs(w http.ResponseWriter, r *http.Request) {
-	artistName := param(r, "artist")
-	count := intParam(r, "count", 50)
 	user := userFrom(r.Context())
+	tracks := h.library.TopSongs(r.Context(), user.ID, param(r, "artist"), intParam(r, "count", 50))
 	resp := newResponse()
-	out := &Songs{}
-	if artist, err := h.Catalog.FindArtistByName(r.Context(), artistName); err == nil {
-		// Pull the artist's catalog, then rank by the user's play count.
-		tracks, _ := h.Catalog.ListTracksByArtist(r.Context(), artist.ID, 1000)
-		ann, _ := h.Annotations.AnnotationMap(r.Context(), user.ID, models.ItemTrack)
-		sort.SliceStable(tracks, func(i, j int) bool {
-			return ann[tracks[i].ID].PlayCount > ann[tracks[j].ID].PlayCount
-		})
-		if len(tracks) > count {
-			tracks = tracks[:count]
-		}
-		for _, t := range tracks {
-			out.Song = append(out.Song, toChild(t, annPtr(ann, t.ID)))
-		}
-	}
-	resp.TopSongs = out
+	resp.TopSongs = &Songs{Song: trackEntriesToChildren(tracks)}
 	write(w, r, resp)
 }
 
@@ -221,19 +191,10 @@ func (h *Handler) handleGetSimilarSongs2(w http.ResponseWriter, r *http.Request)
 	write(w, r, resp)
 }
 
-// similarSongs is a lightweight heuristic: songs sharing the seed item's genre
-// (falling back to random) since no external recommendation source is wired.
 func (h *Handler) similarSongs(r *http.Request) []Child {
-	count := intParam(r, "count", 50)
-	genre := ""
-	if t, err := h.Catalog.GetTrack(r.Context(), param(r, "id")); err == nil {
-		genre = t.Genre
-	}
-	tracks, err := h.Catalog.RandomTracks(r.Context(), count, genre, 0, 0)
-	if err != nil {
-		return nil
-	}
-	return h.tracksToChildren(r, tracks)
+	user := userFrom(r.Context())
+	tracks := h.library.SimilarSongs(r.Context(), user.ID, param(r, "id"), intParam(r, "count", 50))
+	return trackEntriesToChildren(tracks)
 }
 
 func (h *Handler) handleGetArtistInfo(w http.ResponseWriter, r *http.Request) {
@@ -336,14 +297,3 @@ func (h *Handler) handleGetChatMessages(w http.ResponseWriter, r *http.Request) 
 	write(w, r, resp)
 }
 
-// tracksToChildren converts tracks to Child entries enriched with the caller's
-// annotations.
-func (h *Handler) tracksToChildren(r *http.Request, tracks []models.Track) []Child {
-	user := userFrom(r.Context())
-	ann, _ := h.Annotations.AnnotationMap(r.Context(), user.ID, models.ItemTrack)
-	out := make([]Child, 0, len(tracks))
-	for _, t := range tracks {
-		out = append(out, toChild(t, annPtr(ann, t.ID)))
-	}
-	return out
-}

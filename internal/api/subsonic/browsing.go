@@ -111,19 +111,13 @@ func trackEntriesToChildren(entries []core.TrackEntry) []Child {
 
 func (h *Handler) handleGetAlbumList2(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
-	opt := buildAlbumListOptions(r, user.ID)
-	albums, err := h.Catalog.ListAlbums(r.Context(), opt)
+	albums, err := h.library.AlbumList(r.Context(), buildAlbumListOptions(r, user.ID))
 	if err != nil {
 		h.failInternal(w, r, err)
 		return
 	}
-	albumAnn, _ := h.Annotations.AnnotationMap(r.Context(), user.ID, models.ItemAlbum)
-	list := make([]AlbumID3, 0, len(albums))
-	for _, a := range albums {
-		list = append(list, toAlbumID3(a, annPtr(albumAnn, a.ID), nil))
-	}
 	resp := newResponse()
-	resp.AlbumList2 = &AlbumList2{Album: list}
+	resp.AlbumList2 = &AlbumList2{Album: albumEntriesToID3(albums)}
 	write(w, r, resp)
 }
 
@@ -159,28 +153,18 @@ func (h *Handler) handleGetGenres(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) handleGetStarred2(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
-	ctx := r.Context()
-	resp := newResponse()
+	st := h.library.Starred(r.Context(), user.ID)
 	out := &Starred2{}
-
-	artistIDs, _ := h.Annotations.ListStarred(ctx, user.ID, models.ItemArtist)
-	for _, id := range artistIDs {
-		if a, err := h.Catalog.GetArtist(ctx, id); err == nil {
-			out.Artist = append(out.Artist, toArtistID3(a, nil, nil))
-		}
+	for _, a := range st.Artists {
+		out.Artist = append(out.Artist, toArtistID3(a, nil, nil))
 	}
-	albumIDs, _ := h.Annotations.ListStarred(ctx, user.ID, models.ItemAlbum)
-	for _, id := range albumIDs {
-		if a, err := h.Catalog.GetAlbum(ctx, id); err == nil {
-			out.Album = append(out.Album, toAlbumID3(a, nil, nil))
-		}
+	for _, a := range st.Albums {
+		out.Album = append(out.Album, toAlbumID3(a, nil, nil))
 	}
-	songIDs, _ := h.Annotations.ListStarred(ctx, user.ID, models.ItemTrack)
-	for _, id := range songIDs {
-		if t, err := h.Catalog.GetTrack(ctx, id); err == nil {
-			out.Song = append(out.Song, toChild(t, nil))
-		}
+	for _, t := range st.Songs {
+		out.Song = append(out.Song, toChild(t, nil))
 	}
+	resp := newResponse()
 	resp.Starred2 = out
 	write(w, r, resp)
 }
