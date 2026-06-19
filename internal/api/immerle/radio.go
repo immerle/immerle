@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -25,6 +26,17 @@ const maxRadioCoverBytes = 5 << 20
 // are unavailable, e.g. in tests).
 func (h *Handler) radioEnabled() bool {
 	return h.Settings == nil || h.Settings.RadioEnabled()
+}
+
+// radioPathID returns the {id} path param, percent-decoded so station ids that
+// contain ':' (e.g. "builtin:nrj") match whether or not the client encoded them
+// (chi does not decode path params).
+func radioPathID(r *http.Request) string {
+	id := pathParam(r, "id")
+	if dec, err := url.PathUnescape(id); err == nil {
+		return dec
+	}
+	return id
 }
 
 type stationView struct {
@@ -111,7 +123,7 @@ func (h *Handler) setRadioLike(w http.ResponseWriter, r *http.Request, liked boo
 		writeError(w, http.StatusNotFound, "disabled", "radio is disabled")
 		return
 	}
-	id := pathParam(r, "id")
+	id := radioPathID(r)
 	if _, err := h.Radio.Get(r.Context(), id); err != nil {
 		writeError(w, http.StatusNotFound, "not_found", "station not found")
 		return
@@ -193,7 +205,7 @@ func (h *Handler) handleRadioUpdate(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	st, err := h.Radio.Get(r.Context(), pathParam(r, "id"))
+	st, err := h.Radio.Get(r.Context(), radioPathID(r))
 	if err != nil {
 		writeError(w, http.StatusNotFound, "not_found", "station not found")
 		return
@@ -241,7 +253,7 @@ func (h *Handler) handleRadioDelete(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	id := pathParam(r, "id")
+	id := radioPathID(r)
 	st, err := h.Radio.Get(r.Context(), id)
 	if err != nil {
 		writeError(w, http.StatusNotFound, "not_found", "station not found")
@@ -286,7 +298,7 @@ func (h *Handler) handleRadioCover(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	id := pathParam(r, "id")
+	id := radioPathID(r)
 	path := radioCoverPath(h.CoversDir, id)
 	if _, err := os.Stat(path); err == nil {
 		w.Header().Set("Cache-Control", "public, max-age=86400")

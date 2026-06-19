@@ -16,12 +16,11 @@
   { "id": "builtin:fipjazz",        "name": "FIP Jazz",       "streamUrl": "https://stream.radiofrance.fr/fipjazz/fipjazz_hifi.m3u8",               "homepageUrl": "https://www.radiofrance.fr/fip" },
   { "id": "builtin:fipnouveautes",  "name": "FIP Nouveautés", "streamUrl": "https://stream.radiofrance.fr/fipnouveautes/fipnouveautes_hifi.m3u8",   "homepageUrl": "https://www.radiofrance.fr/fip" },
   { "id": "builtin:fipelectro",     "name": "FIP Electro",    "streamUrl": "https://stream.radiofrance.fr/fipelectro/fipelectro_hifi.m3u8",         "homepageUrl": "https://www.radiofrance.fr/fip" },
-  { "id": "builtin:rmc",            "verified": false, "name": "RMC",             "streamUrl": "http://rmc.scdn.arkena.com/rmc.mp3",                     "homepageUrl": "https://rmc.bfmtv.com/" },
-  { "id": "builtin:virginradio",    "verified": false, "name": "Virgin Radio",    "streamUrl": "http://vr-live-aac-64.scdn.arkena.com/virginradio.aac",   "homepageUrl": "https://www.virginradio.fr/", "logo": "virginradio.png" },
-  { "id": "builtin:rfm",            "verified": false, "name": "RFM",             "streamUrl": "http://rfm-live-aac-64.scdn.arkena.com/rfm.aac",          "homepageUrl": "https://www.rfm.fr/", "logo": "rfm.png" },
-  { "id": "builtin:radionova",      "verified": false, "name": "Radio Nova",      "streamUrl": "http://broadcast.infomaniak.net/radionova.aac",          "homepageUrl": "https://www.nova.fr/" },
-  { "id": "builtin:latina",         "verified": false, "name": "Latina",          "streamUrl": "http://broadcast.infomaniak.net/start-latina-high.aac",   "homepageUrl": "https://www.latina.fr/", "logo": "latina.jpg" },
-  { "id": "builtin:radioclassique", "verified": false, "name": "Radio Classique", "streamUrl": "http://broadcast.infomaniak.net/radioclassique-high.aac", "homepageUrl": "https://www.radioclassique.fr/" },
-  { "id": "builtin:jazzradio",      "verified": false, "name": "Jazz Radio",      "streamUrl": "http://broadcast.infomaniak.net/jazzradio-high.aac",      "homepageUrl": "https://www.jazzradio.fr/", "logo": "jazzradio.png" },
-  { "id": "builtin:bfmbusiness",    "verified": false, "name": "BFM Business",    "streamUrl": "http://bfmbusiness.cdn.dvmr.fr/bfmbusiness",              "homepageUrl": "https://www.bfmtv.com/economie/bfm-business/" }
+  { "id": "builtin:rmc",            "name": "RMC",             "streamUrl": "https://audio.bfmtv.com/rmcradio_128.mp3",                                          "homepageUrl": "https://rmc.bfmtv.com/" },
+  { "id": "builtin:virginradio",    "name": "Virgin Radio",    "streamUrl": "https://playerservices.streamtheworld.com/api/livestream-redirect/VIRGIN_RADIO.mp3", "homepageUrl": "https://www.virginradio.fr/", "logo": "virginradio.png" },
+  { "id": "builtin:rfm",            "name": "RFM",             "streamUrl": "https://rfm.lmn.fm/rfm.mp3",                                                        "homepageUrl": "https://www.rfm.fr/", "logo": "rfm.png" },
+  { "id": "builtin:radionova",      "name": "Radio Nova",      "streamUrl": "https://novazz.ice.infomaniak.ch/novazz-128.mp3",                                   "homepageUrl": "https://www.nova.fr/" },
+  { "id": "builtin:radioclassique", "name": "Radio Classique", "streamUrl": "https://radioclassique.ice.infomaniak.ch/radioclassique-high.aac",                  "homepageUrl": "https://www.radioclassique.fr/" },
+  { "id": "builtin:jazzradio",      "name": "Jazz Radio",      "streamUrl": "https://start-jazzradio.ice.infomaniak.ch/jazzradio-high.mp3",                      "homepageUrl": "https://www.jazzradio.fr/", "logo": "jazzradio.png" },
+  { "id": "builtin:bfmbusiness",    "name": "BFM Business",    "streamUrl": "https://audio.bfmtv.com/bfmbusiness_128.mp3",                                       "homepageUrl": "https://www.bfmtv.com/economie/bfm-business/" }
 ]

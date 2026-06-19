@@ -127,11 +127,13 @@ func (r *RadioRepo) LikedIDs(ctx context.Context, userID string) (map[string]boo
 	return out, rows.Err()
 }
 
-// EnsureBuiltins seeds the built-in stations (idempotent). New stations are
-// inserted; for stations that already exist it backfills the country grouping
-// and, only when the row has no logo yet, the embedded cover — without clobbering
-// an admin's custom edits. The curated list lives in the embedded per-country
-// radio/<cc>/stations.json (see radio.Builtins).
+// EnsureBuiltins seeds the built-in stations from the embedded per-country
+// radio/<cc>/stations.json (see radio.Builtins). New stations are inserted; for
+// stations that already exist it refreshes the curated fields (name, stream URL,
+// homepage, country) so fixes ship on upgrade — the embedded JSON is the source
+// of truth for built-ins. The cover is only set when the row has none, so a
+// custom admin logo survives. (Admins wanting a permanently custom station
+// should add one rather than edit a built-in.)
 func (r *RadioRepo) EnsureBuiltins(ctx context.Context) error {
 	for i, s := range radio.Builtins() {
 		var exists int
@@ -139,7 +141,8 @@ func (r *RadioRepo) EnsureBuiltins(ctx context.Context) error {
 			return err
 		}
 		if exists > 0 {
-			if _, err := r.exec(ctx, `UPDATE radio_stations SET country=? WHERE id=? AND builtin=1`, s.Country, s.ID); err != nil {
+			if _, err := r.exec(ctx, `UPDATE radio_stations SET name=?, stream_url=?, homepage_url=?, country=?, updated_at=? WHERE id=? AND builtin=1`,
+				s.Name, s.StreamURL, s.HomepageURL, s.Country, db.Millis(time.Now()), s.ID); err != nil {
 				return err
 			}
 			if _, err := r.exec(ctx, `UPDATE radio_stations SET cover_art=? WHERE id=? AND builtin=1 AND cover_art=''`, s.CoverArt, s.ID); err != nil {

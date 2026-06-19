@@ -394,9 +394,11 @@ export class ImmerleClient {
     return r.stations ?? [];
   }
 
-  /** Public URL of a station's locally-cached logo (no auth needed). */
+  /** Public URL of a station's locally-cached logo (no auth needed). The id can
+   * contain ':' (e.g. "builtin:nrj"), which is a valid path char and is sent raw
+   * — matching the admin endpoints (the server also tolerates a %3A-encoded id). */
   radioCoverUrl(id: string): string {
-    return `${this.serverUrl}/api/v1/radio/stations/${encodeURIComponent(id)}/cover`;
+    return `${this.serverUrl}/api/v1/radio/stations/${id}/cover`;
   }
 
   async createRadioStation(body: { name: string; streamUrl: string; homepageUrl?: string; coverUrl?: string }): Promise<RadioStation> {
@@ -413,7 +415,7 @@ export class ImmerleClient {
 
   /** Favorite / unfavorite a station (kept separate from track stars). */
   async setRadioLiked(id: string, liked: boolean): Promise<void> {
-    await this.request<void>(liked ? 'PUT' : 'DELETE', `radio/stations/${encodeURIComponent(id)}/like`);
+    await this.request<void>(liked ? 'PUT' : 'DELETE', `radio/stations/${id}/like`);
   }
 
   async getRadioEnabled(signal?: AbortSignal): Promise<boolean> {
