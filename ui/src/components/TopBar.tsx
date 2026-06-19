@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Modal, Pressable, Text, TextInput, View } from 'react-native';
+import { Image, Modal, Pressable, Text, TextInput, View } from 'react-native';
 import { router, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicon } from './Ionicon';
@@ -62,7 +62,14 @@ export function TopBar({ wide }: { wide: boolean }) {
       className="flex-row items-center gap-3 border-b border-border bg-background px-4"
       style={{ paddingTop: insets.top, height: 56 + insets.top }}
     >
-      {/* Left — back + forward */}
+      {/* Left — logo, then back + forward */}
+      <Pressable onPress={() => go('/')} accessibilityRole="button" accessibilityLabel="Immerle">
+        <Image
+          source={require('../../assets/logo.png')}
+          style={{ height: 32, width: 32 * (480 / 391) }}
+          resizeMode="contain"
+        />
+      </Pressable>
       <View className="flex-row items-center gap-2">
         <CircleButton icon="chevron-back" onPress={() => router.back()} label={t('components.topbar.back')} />
         <CircleButton icon="chevron-forward" onPress={goForward} label={t('components.topbar.forward')} />
