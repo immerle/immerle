@@ -10,7 +10,7 @@ import { Ionicon } from '../src/components/Ionicon';
 import { ImportDTO } from '../src/api/immerleApi';
 import { useT } from '../src/i18n/store';
 
-const SOURCE_LABELS: Record<string, string> = { spotify: 'Spotify' };
+const SOURCE_LABELS: Record<string, string> = { spotify: 'Spotify', deezer: 'Deezer' };
 const label = (s?: string) => (s ? SOURCE_LABELS[s] ?? s : '');
 
 const statusTone = (s?: string): 'success' | 'danger' | 'primary' =>
