@@ -411,6 +411,11 @@ export class ImmerleClient {
     await this.request<void>('DELETE', `admin/radio/stations/${id}`);
   }
 
+  /** Favorite / unfavorite a station (kept separate from track stars). */
+  async setRadioLiked(id: string, liked: boolean): Promise<void> {
+    await this.request<void>(liked ? 'PUT' : 'DELETE', `radio/stations/${encodeURIComponent(id)}/like`);
+  }
+
   async getRadioEnabled(signal?: AbortSignal): Promise<boolean> {
     const r = await this.request<{ enabled: boolean }>('GET', 'admin/radio', undefined, signal);
     return !!r.enabled;

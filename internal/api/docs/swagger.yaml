@@ -833,6 +833,13 @@ components:
       properties:
         builtin:
           type: boolean
+        country:
+          type: string
+        coverUrl:
+          description: |-
+            CoverURL is the external logo source URL (for prefilling the admin edit
+            form). Empty for built-ins whose logo is an embedded asset.
+          type: string
         deletable:
           description: Deletable is false for built-in stations (they can be edited,
             not removed).
@@ -844,6 +851,9 @@ components:
           type: string
         id:
           type: string
+        liked:
+          description: Liked is true when the caller has favorited this station.
+          type: boolean
         name:
           type: string
         streamUrl:
@@ -2882,6 +2892,45 @@ paths:
                 $ref: '#/components/schemas/immerle.errorResponse'
           description: Not Found
       summary: Station logo
+      tags:
+      - radio
+  /radio/stations/{id}/like:
+    delete:
+      parameters:
+      - description: Station id
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      responses:
+        "204":
+          description: No Content
+      security:
+      - BearerAuth: []
+      summary: Unlike a radio station
+      tags:
+      - radio
+    put:
+      parameters:
+      - description: Station id
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      responses:
+        "204":
+          description: No Content
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Not Found
+      security:
+      - BearerAuth: []
+      summary: Like a radio station
       tags:
       - radio
   /setup:

@@ -42,7 +42,7 @@ function RadioRow() {
   const colors = useColors();
   return (
     <Pressable
-      onPress={() => router.push('/radio' as never)}
+      onPress={() => router.push('/radios' as never)}
       className="flex-row items-center gap-3 border-b border-border px-4 py-2 active:bg-surface-alt"
     >
       <View className="h-14 w-14 items-center justify-center rounded-lg bg-primary/15">

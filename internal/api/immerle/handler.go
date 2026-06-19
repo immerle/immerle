@@ -126,8 +126,10 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Get("/activity", h.handleActivity)
 			r.Get("/library/stats", h.handleLibraryStats)
 
-			// Internet radio stations (list for everyone; CRUD is admin).
+			// Internet radio stations (list + like for everyone; CRUD is admin).
 			r.Get("/radio", h.handleRadioList)
+			r.Put("/radio/stations/{id}/like", h.handleRadioLike)
+			r.Delete("/radio/stations/{id}/like", h.handleRadioUnlike)
 			r.Get("/admin/radio", h.handleRadioAdmin)
 			r.Put("/admin/radio", h.handleRadioToggle)
 			r.Post("/admin/radio/stations", h.handleRadioCreate)

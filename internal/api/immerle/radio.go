@@ -12,6 +12,7 @@ import (
 
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
+	"github.com/immerle/immerle/radio"
 )
 
 // radioCoverClient fetches station logos with a bounded timeout.
@@ -31,17 +32,29 @@ type stationView struct {
 	Name        string `json:"name"`
 	StreamURL   string `json:"streamUrl"`
 	HomepageURL string `json:"homepageUrl"`
+	Country     string `json:"country"`
 	Builtin     bool   `json:"builtin"`
 	// Deletable is false for built-in stations (they can be edited, not removed).
 	Deletable bool `json:"deletable"`
 	// HasCover tells clients whether to load the station cover endpoint.
 	HasCover bool `json:"hasCover"`
-	// CoverURL is the logo source URL (for prefilling the admin edit form).
+	// CoverURL is the external logo source URL (for prefilling the admin edit
+	// form). Empty for built-ins whose logo is an embedded asset.
 	CoverURL string `json:"coverUrl"`
+	// Liked is true when the caller has favorited this station.
+	Liked bool `json:"liked"`
 }
 
 func toStationView(s models.RadioStation) stationView {
-	return stationView{ID: s.ID, Name: s.Name, StreamURL: s.StreamURL, HomepageURL: s.HomepageURL, Builtin: s.Builtin, Deletable: !s.Builtin, HasCover: s.CoverArt != "", CoverURL: s.CoverArt}
+	coverURL := ""
+	if strings.HasPrefix(s.CoverArt, "http") {
+		coverURL = s.CoverArt
+	}
+	return stationView{
+		ID: s.ID, Name: s.Name, StreamURL: s.StreamURL, HomepageURL: s.HomepageURL,
+		Country: s.Country, Builtin: s.Builtin, Deletable: !s.Builtin,
+		HasCover: s.CoverArt != "", CoverURL: coverURL, Liked: s.Liked,
+	}
 }
 
 // handleRadioList lists the radio stations (any authenticated user).
@@ -58,7 +71,7 @@ func (h *Handler) handleRadioList(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "disabled", "radio is disabled")
 		return
 	}
-	stations, err := h.Radio.List(r.Context())
+	stations, err := h.Radio.ListForUser(r.Context(), userFrom(r.Context()).ID)
 	if err != nil {
 		writeInternal(w, err)
 		return
@@ -68,6 +81,46 @@ func (h *Handler) handleRadioList(w http.ResponseWriter, r *http.Request) {
 		views = append(views, toStationView(s))
 	}
 	writeResource(w, http.StatusOK, map[string]any{"stations": views})
+}
+
+// handleRadioLike favorites a station for the caller.
+//
+// @Summary      Like a radio station
+// @Tags         radio
+// @Security     BearerAuth
+// @Param        id  path  string  true  "Station id"
+// @Success      204
+// @Failure      404  {object}  errorResponse
+// @Router       /radio/stations/{id}/like [put]
+func (h *Handler) handleRadioLike(w http.ResponseWriter, r *http.Request) { h.setRadioLike(w, r, true) }
+
+// handleRadioUnlike removes a station from the caller's favorites.
+//
+// @Summary      Unlike a radio station
+// @Tags         radio
+// @Security     BearerAuth
+// @Param        id  path  string  true  "Station id"
+// @Success      204
+// @Router       /radio/stations/{id}/like [delete]
+func (h *Handler) handleRadioUnlike(w http.ResponseWriter, r *http.Request) {
+	h.setRadioLike(w, r, false)
+}
+
+func (h *Handler) setRadioLike(w http.ResponseWriter, r *http.Request, liked bool) {
+	if !h.radioEnabled() || h.Radio == nil {
+		writeError(w, http.StatusNotFound, "disabled", "radio is disabled")
+		return
+	}
+	id := pathParam(r, "id")
+	if _, err := h.Radio.Get(r.Context(), id); err != nil {
+		writeError(w, http.StatusNotFound, "not_found", "station not found")
+		return
+	}
+	if err := h.Radio.SetLiked(r.Context(), userFrom(r.Context()).ID, id, liked); err != nil {
+		writeInternal(w, err)
+		return
+	}
+	writeResource(w, http.StatusNoContent, nil)
 }
 
 // radioRequest is the admin create/update body.
@@ -243,6 +296,13 @@ func (h *Handler) handleRadioCover(w http.ResponseWriter, r *http.Request) {
 	st, err := h.Radio.Get(r.Context(), id)
 	if err != nil || st.CoverArt == "" {
 		http.NotFound(w, r)
+		return
+	}
+	// Built-in logos are embedded in the binary — serve them straight from there.
+	if data, ctype, ok := radio.CoverFile(st.CoverArt); ok {
+		w.Header().Set("Content-Type", ctype)
+		w.Header().Set("Cache-Control", "public, max-age=604800")
+		_, _ = w.Write(data)
 		return
 	}
 	data, ctype, err := fetchRadioCover(r.Context(), st.CoverArt)

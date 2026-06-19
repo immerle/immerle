@@ -1,0 +1,7 @@
+[
+  { "id": "builtin:capitalfm", "name": "Capital FM",         "streamUrl": "https://media-ssl.musicradio.com/CapitalMP3",             "homepageUrl": "https://www.capitalfm.com/" },
+  { "id": "builtin:heart",     "name": "Heart",              "streamUrl": "https://media-ssl.musicradio.com/HeartLondonMP3",         "homepageUrl": "https://www.heart.co.uk/" },
+  { "id": "builtin:classicfm", "name": "Classic FM",         "streamUrl": "https://media-ssl.musicradio.com/ClassicFMMP3",           "homepageUrl": "https://www.classicfm.com/" },
+  { "id": "builtin:lbc",       "name": "LBC",                "streamUrl": "https://media-ssl.musicradio.com/LBCLondonMP3",           "homepageUrl": "https://www.lbc.co.uk/" },
+  { "id": "builtin:bbc-ws",    "name": "BBC World Service",  "streamUrl": "https://stream.live.vc.bbcmedia.co.uk/bbc_world_service", "homepageUrl": "https://www.bbc.co.uk/worldserviceradio" }
+]

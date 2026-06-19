@@ -175,7 +175,7 @@ export function LibrarySidebar() {
         ) : null}
         {radioMatches ? (
           <Row
-            active={pathname === '/radio'}
+            active={pathname === '/radios'}
             collapsed={collapsed}
             cover={
               <View className="h-12 w-12 items-center justify-center rounded-md bg-primary/15">
@@ -184,7 +184,7 @@ export function LibrarySidebar() {
             }
             title={t('radio.title')}
             subtitle={t('radio.tabSubtitle')}
-            onPress={() => router.push('/radio' as never)}
+            onPress={() => router.push('/radios' as never)}
           />
         ) : null}
         {filtered.map((p: Playlist) => (

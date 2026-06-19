@@ -211,14 +211,20 @@ type RadioStation struct {
 	Name        string `json:"name"`
 	StreamURL   string `json:"streamUrl"`
 	HomepageURL string `json:"homepageUrl"`
-	// CoverArt is the station logo source URL. It is fetched and cached on the
-	// server and served locally via the station cover endpoint (so clients don't
-	// hotlink external logos). Empty means "no logo" (clients show a fallback).
+	// Country is the lower-case group code the station belongs to (e.g. "fr",
+	// "gb", "int"). Used to organize the browse UI by country.
+	Country string `json:"country"`
+	// CoverArt is the station logo: an embedded reference ("embed:fr/covers/x.png")
+	// for built-ins, or a source URL for custom stations (fetched + cached). It is
+	// served locally via the station cover endpoint. Empty means "no logo".
 	CoverArt  string    `json:"coverArt"`
 	Builtin   bool      `json:"builtin"`
 	SortOrder int       `json:"sortOrder"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
+	// Liked is a per-request flag (the caller liked this station). Not stored on
+	// the station row — it comes from the user's annotations.
+	Liked bool `json:"liked"`
 }
 
 // LibraryStats is a snapshot of the library analytics: catalog cardinalities

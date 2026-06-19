@@ -1,0 +1,5 @@
+[
+  { "id": "builtin:radioparadise-main", "name": "Radio Paradise — Main Mix", "streamUrl": "https://stream.radioparadise.com/mp3-128",   "homepageUrl": "https://radioparadise.com/" },
+  { "id": "builtin:somafm-groovesalad", "name": "SomaFM — Groove Salad",     "streamUrl": "https://ice.somafm.com/groovesalad-128-mp3", "homepageUrl": "https://somafm.com/groovesalad/" },
+  { "id": "builtin:somafm-dronezone",   "name": "SomaFM — Drone Zone",       "streamUrl": "https://ice.somafm.com/dronezone-128-mp3",   "homepageUrl": "https://somafm.com/dronezone/" }
+]

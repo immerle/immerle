@@ -189,6 +189,10 @@ export interface RadioStation {
   hasCover?: boolean;
   /** Logo source URL (for prefilling the admin edit form). */
   coverUrl?: string;
+  /** Country group code (e.g. "fr", "gb", "int"). */
+  country?: string;
+  /** True when the caller has favorited this station. */
+  liked?: boolean;
 }
 
 /** Thrown when a Immerle REST endpoint returns a non-2xx. */

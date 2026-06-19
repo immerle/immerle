@@ -1,0 +1,5 @@
+[
+  { "id": "builtin:kexp", "name": "KEXP 90.3 Seattle", "streamUrl": "https://kexp-mp3-128.streamguys1.com/kexp128.mp3", "homepageUrl": "https://www.kexp.org/" },
+  { "id": "builtin:wnyc", "name": "WNYC 93.9 FM",      "streamUrl": "https://fm939.wnyc.org/wnycfm",                    "homepageUrl": "https://www.wnyc.org/" },
+  { "id": "builtin:wfmu", "name": "WFMU Freeform",     "streamUrl": "https://stream0.wfmu.org/freeform-128k",           "homepageUrl": "https://wfmu.org/" }
+]
