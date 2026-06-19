@@ -78,5 +78,8 @@
     "typescript": "~5.3.3",
     "wait-on": "^8.0.1"
   },
-  "private": true
+  "private": true,
+  "overrides": {
+    "undici": "^6.27.0"
+  }
 }
