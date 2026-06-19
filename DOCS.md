@@ -253,6 +253,12 @@ left disabled. The `ref` accepts a playlist id, a `spotify:playlist:…` URI, or
 authenticates directly instead can still use `import.sources.<name>` for its own
 config.
 
+**Deezer goes directly**, not through the hub: Deezer's public API needs no
+auth for public playlists, so the source fetches `api.deezer.com/playlist/{id}`
+itself and is **always available** (no hub or credentials required). The `ref`
+accepts a bare playlist id or a `deezer.com/playlist/…` URL; short links
+(`deezer.page.link/…`) aren't resolved — paste the full playlist URL.
+
 ### Device sessions (JWT)
 
 A client logs in and gets a **JWT** carrying a unique id (`jti`). Each JWT is
