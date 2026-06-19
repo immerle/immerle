@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -135,7 +136,25 @@ func (r *RadioRepo) LikedIDs(ctx context.Context, userID string) (map[string]boo
 // custom admin logo survives. (Admins wanting a permanently custom station
 // should add one rather than edit a built-in.)
 func (r *RadioRepo) EnsureBuiltins(ctx context.Context) error {
-	for i, s := range radio.Builtins() {
+	builtins := radio.Builtins()
+	// Prune built-ins that are no longer in the embedded list (e.g. a station
+	// removed from stations.json), so removals reach existing installs.
+	ids := make([]string, 0, len(builtins))
+	for _, s := range builtins {
+		ids = append(ids, s.ID)
+	}
+	if len(ids) > 0 {
+		ph := make([]string, len(ids))
+		args := make([]any, len(ids))
+		for i, id := range ids {
+			ph[i] = "?"
+			args[i] = id
+		}
+		if _, err := r.exec(ctx, `DELETE FROM radio_stations WHERE builtin=1 AND id NOT IN (`+strings.Join(ph, ",")+`)`, args...); err != nil {
+			return err
+		}
+	}
+	for i, s := range builtins {
 		var exists int
 		if err := r.queryRow(ctx, `SELECT COUNT(1) FROM radio_stations WHERE id=?`, s.ID).Scan(&exists); err != nil {
 			return err

@@ -18,8 +18,16 @@ func TestRadioBuiltinsAndCRUD(t *testing.T) {
 	if err := store.Radio.EnsureBuiltins(ctx); err != nil {
 		t.Fatal(err)
 	}
+	// A built-in no longer in the embedded list must be pruned on the next seed.
+	orphan := models.RadioStation{ID: "builtin:gone", Name: "Gone", StreamURL: "https://x/s", Country: "fr", Builtin: true, CreatedAt: time.Now(), UpdatedAt: time.Now()}
+	if err := store.Radio.Create(ctx, orphan); err != nil {
+		t.Fatal(err)
+	}
 	if err := store.Radio.EnsureBuiltins(ctx); err != nil {
 		t.Fatal(err)
+	}
+	if _, err := store.Radio.Get(ctx, orphan.ID); err != persistence.ErrNotFound {
+		t.Fatalf("orphan built-in not pruned: err=%v", err)
 	}
 	seeded, err := store.Radio.List(ctx)
 	if err != nil {

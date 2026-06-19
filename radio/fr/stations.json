@@ -1,26 +1,151 @@
 [
-  { "id": "builtin:nrj",            "name": "NRJ",            "streamUrl": "https://scdn.nrjaudio.fm/audio1/fr/30001/mp3_128.mp3?origine=immerle", "homepageUrl": "https://www.nrj.fr/" },
-  { "id": "builtin:rtl",            "name": "RTL",            "streamUrl": "https://streaming.radio.rtl.fr/rtl-1-44-128",                          "homepageUrl": "https://www.rtl.fr/" },
-  { "id": "builtin:rtl2",           "name": "RTL2",           "streamUrl": "https://streaming.radio.rtl.fr/rtl2-1-44-128",                         "homepageUrl": "https://www.rtl2.fr/" },
-  { "id": "builtin:funradio",       "name": "Fun Radio",      "streamUrl": "https://streaming.radio.funradio.fr/fun-1-44-128",                     "homepageUrl": "https://www.funradio.fr/", "logo": "funradio.png" },
-  { "id": "builtin:skyrock",        "name": "Skyrock",        "streamUrl": "https://icecast.skyrock.net/s/natio_mp3_128k",                         "homepageUrl": "https://www.skyrock.fm/" },
-  { "id": "builtin:europe1",        "name": "Europe 1",       "streamUrl": "https://stream.europe1.fr/europe1.mp3",                                "homepageUrl": "https://www.europe1.fr/" },
-  { "id": "builtin:franceinter",    "name": "France Inter",   "streamUrl": "https://icecast.radiofrance.fr/franceinter-midfi.mp3",                 "homepageUrl": "https://www.radiofrance.fr/franceinter" },
-  { "id": "builtin:franceinfo",     "name": "France Info",    "streamUrl": "https://icecast.radiofrance.fr/franceinfo-midfi.mp3",                  "homepageUrl": "https://www.radiofrance.fr/franceinfo" },
-  { "id": "builtin:franceculture",  "name": "France Culture", "streamUrl": "https://icecast.radiofrance.fr/franceculture-midfi.mp3",               "homepageUrl": "https://www.radiofrance.fr/franceculture" },
-  { "id": "builtin:francemusique",  "name": "France Musique", "streamUrl": "https://icecast.radiofrance.fr/francemusique-midfi.mp3",               "homepageUrl": "https://www.radiofrance.fr/francemusique" },
-  { "id": "builtin:fip",            "name": "FIP",            "streamUrl": "https://icecast.radiofrance.fr/fip-midfi.mp3",                         "homepageUrl": "https://www.fip.fr/" },
-  { "id": "builtin:radiofg",        "name": "Radio FG",       "streamUrl": "https://radiofg.impek.com/fg",                                         "homepageUrl": "https://www.radiofg.com/", "logo": "radiofg.png" },
-  { "id": "builtin:radiomeuh",      "name": "Radio Meuh",     "streamUrl": "http://radiomeuh.ice.infomaniak.ch/radiomeuh-128.mp3",                  "homepageUrl": "https://www.radiomeuh.com/" },
-  { "id": "builtin:fiprock",        "name": "FIP Rock",       "streamUrl": "https://stream.radiofrance.fr/fiprock/fiprock_hifi.m3u8",               "homepageUrl": "https://www.radiofrance.fr/fip" },
-  { "id": "builtin:fipjazz",        "name": "FIP Jazz",       "streamUrl": "https://stream.radiofrance.fr/fipjazz/fipjazz_hifi.m3u8",               "homepageUrl": "https://www.radiofrance.fr/fip" },
-  { "id": "builtin:fipnouveautes",  "name": "FIP Nouveautés", "streamUrl": "https://stream.radiofrance.fr/fipnouveautes/fipnouveautes_hifi.m3u8",   "homepageUrl": "https://www.radiofrance.fr/fip" },
-  { "id": "builtin:fipelectro",     "name": "FIP Electro",    "streamUrl": "https://stream.radiofrance.fr/fipelectro/fipelectro_hifi.m3u8",         "homepageUrl": "https://www.radiofrance.fr/fip" },
-  { "id": "builtin:rmc",            "name": "RMC",             "streamUrl": "https://audio.bfmtv.com/rmcradio_128.mp3",                                          "homepageUrl": "https://rmc.bfmtv.com/" },
-  { "id": "builtin:virginradio",    "name": "Virgin Radio",    "streamUrl": "https://playerservices.streamtheworld.com/api/livestream-redirect/VIRGIN_RADIO.mp3", "homepageUrl": "https://www.virginradio.fr/", "logo": "virginradio.png" },
-  { "id": "builtin:rfm",            "name": "RFM",             "streamUrl": "https://rfm.lmn.fm/rfm.mp3",                                                        "homepageUrl": "https://www.rfm.fr/", "logo": "rfm.png" },
-  { "id": "builtin:radionova",      "name": "Radio Nova",      "streamUrl": "https://novazz.ice.infomaniak.ch/novazz-128.mp3",                                   "homepageUrl": "https://www.nova.fr/" },
-  { "id": "builtin:radioclassique", "name": "Radio Classique", "streamUrl": "https://radioclassique.ice.infomaniak.ch/radioclassique-high.aac",                  "homepageUrl": "https://www.radioclassique.fr/" },
-  { "id": "builtin:jazzradio",      "name": "Jazz Radio",      "streamUrl": "https://start-jazzradio.ice.infomaniak.ch/jazzradio-high.mp3",                      "homepageUrl": "https://www.jazzradio.fr/", "logo": "jazzradio.png" },
-  { "id": "builtin:bfmbusiness",    "name": "BFM Business",    "streamUrl": "https://audio.bfmtv.com/bfmbusiness_128.mp3",                                       "homepageUrl": "https://www.bfmtv.com/economie/bfm-business/" }
+  {
+    "id": "builtin:nrj",
+    "name": "NRJ",
+    "streamUrl": "https://scdn.nrjaudio.fm/audio1/fr/30001/mp3_128.mp3?origine=immerle",
+    "homepageUrl": "https://www.nrj.fr/"
+  },
+  {
+    "id": "builtin:rtl",
+    "name": "RTL",
+    "streamUrl": "https://streaming.radio.rtl.fr/rtl-1-44-128",
+    "homepageUrl": "https://www.rtl.fr/"
+  },
+  {
+    "id": "builtin:rtl2",
+    "name": "RTL2",
+    "streamUrl": "https://streaming.radio.rtl.fr/rtl2-1-44-128",
+    "homepageUrl": "https://www.rtl2.fr/"
+  },
+  {
+    "id": "builtin:funradio",
+    "name": "Fun Radio",
+    "streamUrl": "https://streaming.radio.funradio.fr/fun-1-44-128",
+    "homepageUrl": "https://www.funradio.fr/",
+    "logo": "funradio.webp"
+  },
+  {
+    "id": "builtin:skyrock",
+    "name": "Skyrock",
+    "streamUrl": "https://icecast.skyrock.net/s/natio_mp3_128k",
+    "homepageUrl": "https://www.skyrock.fm/"
+  },
+  {
+    "id": "builtin:europe1",
+    "name": "Europe 1",
+    "streamUrl": "https://stream.europe1.fr/europe1.mp3",
+    "homepageUrl": "https://www.europe1.fr/"
+  },
+  {
+    "id": "builtin:franceinter",
+    "name": "France Inter",
+    "streamUrl": "https://icecast.radiofrance.fr/franceinter-midfi.mp3",
+    "homepageUrl": "https://www.radiofrance.fr/franceinter"
+  },
+  {
+    "id": "builtin:franceinfo",
+    "name": "France Info",
+    "streamUrl": "https://icecast.radiofrance.fr/franceinfo-midfi.mp3",
+    "homepageUrl": "https://www.radiofrance.fr/franceinfo"
+  },
+  {
+    "id": "builtin:franceculture",
+    "name": "France Culture",
+    "streamUrl": "https://icecast.radiofrance.fr/franceculture-midfi.mp3",
+    "homepageUrl": "https://www.radiofrance.fr/franceculture"
+  },
+  {
+    "id": "builtin:francemusique",
+    "name": "France Musique",
+    "streamUrl": "https://icecast.radiofrance.fr/francemusique-midfi.mp3",
+    "homepageUrl": "https://www.radiofrance.fr/francemusique"
+  },
+  {
+    "id": "builtin:fip",
+    "name": "FIP",
+    "streamUrl": "https://icecast.radiofrance.fr/fip-midfi.mp3",
+    "homepageUrl": "https://www.fip.fr/"
+  },
+  {
+    "id": "builtin:radiofg",
+    "name": "Radio FG",
+    "streamUrl": "https://radiofg.impek.com/fg",
+    "homepageUrl": "https://www.radiofg.com/",
+    "logo": "radiofg.webp"
+  },
+  {
+    "id": "builtin:radiomeuh",
+    "name": "Radio Meuh",
+    "streamUrl": "http://radiomeuh.ice.infomaniak.ch/radiomeuh-128.mp3",
+    "homepageUrl": "https://www.radiomeuh.com/"
+  },
+  {
+    "id": "builtin:fiprock",
+    "name": "FIP Rock",
+    "streamUrl": "https://stream.radiofrance.fr/fiprock/fiprock_hifi.m3u8",
+    "homepageUrl": "https://www.radiofrance.fr/fip"
+  },
+  {
+    "id": "builtin:fipjazz",
+    "name": "FIP Jazz",
+    "streamUrl": "https://stream.radiofrance.fr/fipjazz/fipjazz_hifi.m3u8",
+    "homepageUrl": "https://www.radiofrance.fr/fip"
+  },
+  {
+    "id": "builtin:fipnouveautes",
+    "name": "FIP Nouveautés",
+    "streamUrl": "https://stream.radiofrance.fr/fipnouveautes/fipnouveautes_hifi.m3u8",
+    "homepageUrl": "https://www.radiofrance.fr/fip"
+  },
+  {
+    "id": "builtin:fipelectro",
+    "name": "FIP Electro",
+    "streamUrl": "https://stream.radiofrance.fr/fipelectro/fipelectro_hifi.m3u8",
+    "homepageUrl": "https://www.radiofrance.fr/fip"
+  },
+  {
+    "id": "builtin:rmc",
+    "name": "RMC",
+    "streamUrl": "https://audio.bfmtv.com/rmcradio_128.mp3",
+    "homepageUrl": "https://rmc.bfmtv.com/"
+  },
+  {
+    "id": "builtin:virginradio",
+    "name": "Virgin Radio",
+    "streamUrl": "https://playerservices.streamtheworld.com/api/livestream-redirect/VIRGIN_RADIO.mp3",
+    "homepageUrl": "https://www.virginradio.fr/",
+    "logo": "virginradio.webp"
+  },
+  {
+    "id": "builtin:rfm",
+    "name": "RFM",
+    "streamUrl": "https://rfm.lmn.fm/rfm.mp3",
+    "homepageUrl": "https://www.rfm.fr/",
+    "logo": "rfm.webp"
+  },
+  {
+    "id": "builtin:radionova",
+    "name": "Radio Nova",
+    "streamUrl": "https://novazz.ice.infomaniak.ch/novazz-128.mp3",
+    "homepageUrl": "https://www.nova.fr/"
+  },
+  {
+    "id": "builtin:radioclassique",
+    "name": "Radio Classique",
+    "streamUrl": "https://radioclassique.ice.infomaniak.ch/radioclassique-high.aac",
+    "homepageUrl": "https://www.radioclassique.fr/"
+  },
+  {
+    "id": "builtin:jazzradio",
+    "name": "Jazz Radio",
+    "streamUrl": "https://start-jazzradio.ice.infomaniak.ch/jazzradio-high.mp3",
+    "homepageUrl": "https://www.jazzradio.fr/",
+    "logo": "jazzradio.webp"
+  },
+  {
+    "id": "builtin:bfmbusiness",
+    "name": "BFM Business",
+    "streamUrl": "https://audio.bfmtv.com/bfmbusiness_128.mp3",
+    "homepageUrl": "https://www.bfmtv.com/economie/bfm-business/"
+  }
 ]

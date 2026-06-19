@@ -25,10 +25,14 @@ func TestBuiltinsParse(t *testing.T) {
 			t.Fatalf("duplicate station id: %q", s.ID)
 		}
 		seen[s.ID] = true
-		// Embedded logo references must resolve to real bytes.
+		// Embedded logos are standardized as .webp and must resolve to real bytes.
 		if s.CoverArt != "" {
-			if data, _, ok := CoverFile(s.CoverArt); !ok || len(data) == 0 {
-				t.Fatalf("station %q cover %q does not resolve", s.Name, s.CoverArt)
+			if !strings.HasSuffix(s.CoverArt, ".webp") {
+				t.Fatalf("station %q cover %q is not .webp", s.Name, s.CoverArt)
+			}
+			data, ct, ok := CoverFile(s.CoverArt)
+			if !ok || len(data) == 0 || ct != "image/webp" {
+				t.Fatalf("station %q cover %q does not resolve to webp", s.Name, s.CoverArt)
 			}
 		}
 	}

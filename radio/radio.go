@@ -80,9 +80,6 @@ func CoverFile(ref string) (data []byte, contentType string, ok bool) {
 	if err != nil {
 		return nil, "", false
 	}
-	ct := "image/png"
-	if strings.HasSuffix(path, ".jpg") || strings.HasSuffix(path, ".jpeg") {
-		ct = "image/jpeg"
-	}
-	return b, ct, true
+	// Built-in covers are standardized as 64x64 WebP.
+	return b, "image/webp", true
 }
