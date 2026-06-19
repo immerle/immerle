@@ -210,6 +210,12 @@ func (h *Handler) handleRadioUpdate(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "not_found", "station not found")
 		return
 	}
+	if st.Builtin {
+		// Built-ins are server-managed (refreshed from the embedded JSON on boot);
+		// they cannot be edited via the API.
+		writeError(w, http.StatusBadRequest, "validation", "built-in stations cannot be edited")
+		return
+	}
 	var req radioRequest
 	if !decodeJSON(w, r, &req) {
 		return

@@ -4,7 +4,7 @@ import { Stack } from 'expo-router';
 import { useRadioStations, useRadioMutations } from '../../src/query/radio';
 import { useAuth } from '../../src/auth/store';
 import { RadioStation } from '../../src/api/immerle/types';
-import { Badge, Button, Card, ErrorState, Field, IconButton, Loading } from '../../src/components/ui';
+import { Button, Card, ErrorState, Field, IconButton, Loading } from '../../src/components/ui';
 import { AdminHeader, AdminScroll } from '../../src/components/AdminUI';
 import { StationCover } from '../../src/components/StationCover';
 import { useColors } from '../../src/theme/colors';
@@ -41,27 +41,30 @@ export default function AdminRadio() {
     else create.mutate(body, { onSuccess: after });
   };
 
+  const custom = (q.data ?? []).filter((s) => !s.builtin);
+
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <AdminScroll header={<AdminHeader color={colors.primary} title={t('radio.manageTitle')} subtitle={t('radio.manageSubtitle')} />}>
         <Button title={t('radio.add')} icon="add" onPress={() => setDraft({ ...EMPTY })} />
-        {(q.data ?? []).map((s: RadioStation) => (
-          <Card key={s.id} className="flex-row items-center gap-3">
-            <StationCover uri={s.hasCover && client ? client.radioCoverUrl(s.id) : undefined} size={40} rounded={10} />
-            <View className="flex-1">
-              <View className="flex-row items-center gap-2">
+        {/* Built-in stations are server-managed (from the embedded list) and not
+            editable; the admin only manages custom stations here. */}
+        {custom.length === 0 ? (
+          <Text className="px-1 pt-2 text-sm text-muted">{t('radio.noCustom')}</Text>
+        ) : (
+          custom.map((s: RadioStation) => (
+            <Card key={s.id} className="flex-row items-center gap-3">
+              <StationCover uri={s.hasCover && client ? client.radioCoverUrl(s.id) : undefined} size={40} rounded={10} />
+              <View className="flex-1">
                 <Text numberOfLines={1} className="text-base font-semibold text-foreground">{s.name}</Text>
-                {s.builtin ? <Badge label={t('radio.builtin')} tone="default" /> : null}
+                <Text numberOfLines={1} className="text-xs text-muted">{s.streamUrl}</Text>
               </View>
-              <Text numberOfLines={1} className="text-xs text-muted">{s.streamUrl}</Text>
-            </View>
-            <IconButton name="create-outline" color={colors.muted} onPress={() => setDraft({ id: s.id, name: s.name, streamUrl: s.streamUrl, homepageUrl: s.homepageUrl, coverUrl: s.coverUrl ?? '' })} accessibilityLabel={t('radio.edit')} />
-            {s.deletable ? (
+              <IconButton name="create-outline" color={colors.muted} onPress={() => setDraft({ id: s.id, name: s.name, streamUrl: s.streamUrl, homepageUrl: s.homepageUrl, coverUrl: s.coverUrl ?? '' })} accessibilityLabel={t('radio.edit')} />
               <IconButton name="trash-outline" color={colors.danger} onPress={() => remove.mutate(s.id)} accessibilityLabel={t('radio.delete')} />
-            ) : null}
-          </Card>
-        ))}
+            </Card>
+          ))
+        )}
       </AdminScroll>
 
       <Modal transparent visible={!!draft} animationType="slide" onRequestClose={() => setDraft(null)}>
