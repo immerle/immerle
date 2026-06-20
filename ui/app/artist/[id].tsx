@@ -39,8 +39,8 @@ export default function ArtistDetail() {
   // artist has no image of its own.
   const heroUrl =
     artist.artistImageUrl ??
-    client?.subsonic.coverArtUrl(artist.coverArt, 700) ??
-    client?.subsonic.coverArtUrl(albums[0]?.coverArt, 700);
+    client?.coverArtUrl(artist.coverArt, 700) ??
+    client?.coverArtUrl(albums[0]?.coverArt, 700);
 
   // Artist-level play gathers tracks from every album on demand (no top-songs
   // data in plain Subsonic libraries).

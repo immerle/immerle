@@ -56,5 +56,5 @@ export function CoverArt({ coverArt, url, size, rounded = 'rounded-lg', fallback
 function useCoverUrl(coverArt: string | undefined, size: number): string | undefined {
   const client = useAuth((s) => s.client);
   if (!coverArt || !client) return undefined;
-  return client.subsonic.coverArtUrl(coverArt, size);
+  return client.coverArtUrl(coverArt, size);
 }

@@ -34,7 +34,7 @@ export default function AlbumDetail() {
   const album = q.data;
   const songs = album.song ?? [];
   const totalDuration = songs.reduce((n, s) => n + (s.duration ?? 0), 0);
-  const coverUrl = client?.subsonic.coverArtUrl(album.coverArt, 700);
+  const coverUrl = client?.coverArtUrl(album.coverArt, 700);
 
   const playAll = () => songs.length && playSongs(songs, 0);
   const shuffle = () => songs.length && playSongs(shuffleArray(songs), 0);

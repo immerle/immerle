@@ -21,19 +21,23 @@ function shuffled<T>(arr: T[]): T[] {
   return a;
 }
 
-/** Build a player track from a Subsonic song at the chosen quality. */
-function songToTrack(client: ImmerleClient, song: Song, qualityId: string): PlayableTrack {
+/**
+ * Build a player track from a song at the chosen quality. Async because the
+ * stream URL is a short-lived signed URL minted from the server (no credential
+ * in the URL). The player mints one per track when (re)building the queue.
+ */
+async function songToTrack(client: ImmerleClient, song: Song, qualityId: string): Promise<PlayableTrack> {
   const preset = presetById(qualityId);
   return {
     id: song.id,
-    url: client.subsonic.streamUrl(song.id, {
+    url: await client.streamUrl(song.id, {
       maxBitRate: preset.maxBitRate || undefined,
       format: preset.format,
     }),
     title: song.title,
     artist: song.artist,
     album: song.album,
-    artwork: client.subsonic.coverArtUrl(song.coverArt ?? song.id, 512),
+    artwork: client.coverArtUrl(song.coverArt ?? song.id, 512),
     duration: song.duration,
   };
 }
@@ -145,7 +149,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
     const c = client();
     const engine = get().engine;
     if (!c || !engine || songs.length === 0) return;
-    const tracks = songs.map((s) => songToTrack(c, s, get().qualityId));
+    const tracks = await Promise.all(songs.map((s) => songToTrack(c, s, get().qualityId)));
     orderBackup = null; // new playback context invalidates any shuffle backup
     set({ songs, index: startIndex, position: 0 });
     scrobble = { nowPlayingSent: false, submitted: false };
@@ -175,7 +179,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
     orderBackup = null;
     scrobble = { nowPlayingSent: false, submitted: false };
     set({ songs: [song], index: 0, position: positionSec });
-    await engine.setQueue([songToTrack(c, song, get().qualityId)], 0);
+    await engine.setQueue([await songToTrack(c, song, get().qualityId)], 0);
     await engine.seekTo(positionSec);
     if (!autoplay) await engine.pause();
     sendNowPlaying(get);
@@ -192,7 +196,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
     next.splice(at, 0, ...songs);
     set({ songs: next });
     // Engine has no insert-at; append then move into place.
-    await engine.add(songs.map((s) => songToTrack(c, s, get().qualityId)));
+    await engine.add(await Promise.all(songs.map((s) => songToTrack(c, s, get().qualityId))));
     for (let i = 0; i < songs.length; i += 1) {
       await engine.move(get().songs.length - 1, at + i);
     }
@@ -204,7 +208,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
     if (!c || !engine) return;
     if (get().songs.length === 0) return get().playSongs(songs);
     set({ songs: [...get().songs, ...songs] });
-    await engine.add(songs.map((s) => songToTrack(c, s, get().qualityId)));
+    await engine.add(await Promise.all(songs.map((s) => songToTrack(c, s, get().qualityId))));
   },
 
   toggle: async () => {
@@ -288,7 +292,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
     if (nextSongs.length === 0) return;
     // Rebuild the engine queue around the (unchanged) current track, then
     // restore the playback position so the music doesn't visibly restart.
-    const tracks = nextSongs.map((s) => songToTrack(c, s, get().qualityId));
+    const tracks = await Promise.all(nextSongs.map((s) => songToTrack(c, s, get().qualityId)));
     await engine.setQueue(tracks, nextIndex);
     await engine.seekTo(position);
   },
@@ -310,7 +314,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
     if (!c || !engine || get().songs.length === 0) return;
     const pos = get().position;
     const idx = get().index;
-    const tracks = get().songs.map((s) => songToTrack(c, s, id));
+    const tracks = await Promise.all(get().songs.map((s) => songToTrack(c, s, id)));
     await engine.setQueue(tracks, idx);
     await engine.seekTo(pos);
   },
