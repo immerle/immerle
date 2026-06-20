@@ -61,7 +61,7 @@ export default function Player() {
 
       <View className="flex-1 justify-center px-6">
         <View className="items-center">
-          <CoverArt coverArt={song.coverArt} size={300} rounded="rounded-3xl" />
+          <CoverArt coverArt={song.coverArt} url={song.coverUrl} size={300} rounded="rounded-3xl" />
         </View>
 
         <View className="pt-8">
