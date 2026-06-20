@@ -476,6 +476,18 @@ export class ImmerleClient {
   }
 
   /**
+   * Short-lived signed URL to download the track's original (untranscoded) bytes.
+   * Same `/stream-url` endpoint as {@link streamUrl}, but returns the `download`
+   * path. The URL carries its own exp/sig, so it needs no auth header — usable
+   * directly with expo-file-system. Used by the offline-downloads feature.
+   */
+  async downloadUrl(id: string, signal?: AbortSignal): Promise<string> {
+    const { data, error } = await this.api.GET('/songs/{id}/stream-url', { params: { path: { id } }, signal });
+    if (error || !data?.download) throw apiErr(error, 'download.url');
+    return `${this.serverUrl}${data.download}`;
+  }
+
+  /**
    * Library-wide stats (counts + on-disk size in bytes) from `/library/stats`.
    * Falls back to deriving counts from Subsonic on a plain server (no size).
    */
