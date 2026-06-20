@@ -37,6 +37,7 @@ type Deps struct {
 	Shares      *persistence.ShareRepo
 	Users       *persistence.UserRepo
 	Radio       *persistence.RadioRepo
+	Podcasts    *core.PodcastService
 	Settings    RadioToggle
 	Cover       *stream.CoverService
 	Streamer    *stream.Streamer
@@ -121,6 +122,14 @@ func (h *Handler) Register(mux chi.Router) {
 		"updateInternetRadioStation": h.handleUpdateInternetRadioStation,
 		"deleteInternetRadioStation": h.handleDeleteInternetRadioStation,
 		"getChatMessages":            h.handleGetChatMessages,
+		"getPodcasts":                h.handleGetPodcasts,
+		"getNewestPodcasts":          h.handleGetNewestPodcasts,
+		"getPodcastEpisode":          h.handleGetPodcastEpisode,
+		"refreshPodcasts":            h.handleRefreshPodcasts,
+		"createPodcastChannel":       h.handleCreatePodcastChannel,
+		"deletePodcastChannel":       h.handleDeletePodcastChannel,
+		"deletePodcastEpisode":       h.handleDeletePodcastEpisode,
+		"downloadPodcastEpisode":     h.handleDownloadPodcastEpisode,
 		"search":                     h.handleSearch2,
 		"search2":                    h.handleSearch2,
 		"search3":                    h.handleSearch3,
