@@ -103,6 +103,7 @@ type Handler struct {
 	playback    *core.PlaybackService
 	playQueue   *core.PlayQueueService
 	playlistSvc *core.PlaylistService
+	userSvc     *core.UserService
 	media       *media.Server
 }
 
@@ -114,6 +115,7 @@ func NewHandler(d Deps) *Handler {
 		playback:    core.NewPlaybackService(d.Catalog, d.Annotations, d.Scrobbles, d.OnDemand, d.Activity, d.NowPlaying),
 		playQueue:   core.NewPlayQueueService(d.PlayQueues, d.Catalog, d.Annotations),
 		playlistSvc: core.NewPlaylistService(d.Playlists, d.Annotations, d.Activity),
+		userSvc:     core.NewUserService(d.Users, d.Auth),
 		media:       media.NewServer(d.Catalog, d.Streamer, d.Cover, d.OnDemand, d.NowPlaying, d.Logger),
 	}
 }
@@ -146,7 +148,15 @@ func (h *Handler) Register(mux chi.Router) {
 			// Own account / other users' profiles.
 			r.Get("/me", h.handleAccount)
 			r.Patch("/me", h.handleAccountUpdate)
+			r.Put("/me/password", h.handleChangePassword)
 			r.Get("/users/{username}", h.handleProfile)
+
+			// Admin: user management.
+			r.Get("/admin/users", h.handleListUsers)
+			r.Post("/admin/users", h.handleCreateUser)
+			r.Get("/admin/users/{username}", h.handleGetUser)
+			r.Patch("/admin/users/{username}", h.handleUpdateUser)
+			r.Delete("/admin/users/{username}", h.handleDeleteUser)
 
 			// Friendships.
 			r.Get("/friends", h.handleFriends)
