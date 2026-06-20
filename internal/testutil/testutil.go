@@ -58,10 +58,13 @@ type AudioTags struct {
 	Artist      string
 	Album       string
 	AlbumArtist string
+	Composer    string
 	Genre       string
 	Year        int
 	Track       int
 	Disc        int
+	BPM         int
+	ReplayGain  string // track gain, e.g. "-6.50 dB"
 	MBID        string
 }
 
@@ -93,6 +96,15 @@ func GenerateAudio(t *testing.T, path string, tags AudioTags) {
 	}
 	if tags.Disc != 0 {
 		args = append(args, "-metadata", fmt.Sprintf("disc=%d", tags.Disc))
+	}
+	if tags.Composer != "" {
+		args = append(args, "-metadata", "composer="+tags.Composer)
+	}
+	if tags.BPM != 0 {
+		args = append(args, "-metadata", fmt.Sprintf("TBPM=%d", tags.BPM))
+	}
+	if tags.ReplayGain != "" {
+		args = append(args, "-metadata", "replaygain_track_gain="+tags.ReplayGain)
 	}
 	if tags.MBID != "" {
 		args = append(args, "-metadata", "MUSICBRAINZ_TRACKID="+tags.MBID)

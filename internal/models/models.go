@@ -370,6 +370,7 @@ type Track struct {
 	ArtistName      string  `json:"artist"`
 	TrackNo         int     `json:"track,omitempty"`
 	DiscNo          int     `json:"discNumber,omitempty"`
+	Composer        string  `json:"composer,omitempty"`
 	Genre           string  `json:"genre,omitempty"`
 	Year            int     `json:"year,omitempty"`
 	Duration        int     `json:"duration"`

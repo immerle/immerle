@@ -292,7 +292,7 @@ func (r *CatalogRepo) listAlbums(ctx context.Context, q string, args ...any) ([]
 // RandomTracks, Search, and the smart-playlist evaluator) stays hand-written.
 const trackSelect = `
 	SELECT t.id, t.title, t.album_id, al.name, t.artist_id, ar.name, t.track_no, t.disc_no,
-	       t.genre, t.year, t.duration, t.bitrate, t.path, t.suffix, t.content_type, t.size,
+	       t.composer, t.genre, t.year, t.duration, t.bitrate, t.path, t.suffix, t.content_type, t.size,
 	       t.mbid, t.file_hash, t.cover_art, t.bpm, t.replaygain_track, t.replaygain_album,
 	       t.remote, t.provider, t.uploaded_by, t.created_at, t.updated_at
 	FROM tracks t JOIN albums al ON al.id = t.album_id JOIN artists ar ON ar.id = t.artist_id`
@@ -302,7 +302,7 @@ func scanTrack(s rowScanner) (models.Track, error) {
 	var remote int
 	var createdAt, updatedAt int64
 	if err := s.Scan(&t.ID, &t.Title, &t.AlbumID, &t.AlbumName, &t.ArtistID, &t.ArtistName, &t.TrackNo, &t.DiscNo,
-		&t.Genre, &t.Year, &t.Duration, &t.BitRate, &t.Path, &t.Suffix, &t.ContentType, &t.Size,
+		&t.Composer, &t.Genre, &t.Year, &t.Duration, &t.BitRate, &t.Path, &t.Suffix, &t.ContentType, &t.Size,
 		&t.MBID, &t.FileHash, &t.CoverArt, &t.BPM, &t.ReplayGainTrack, &t.ReplayGainAlbum,
 		&remote, &t.Provider, &t.UploadedBy, &createdAt, &updatedAt); err != nil {
 		return t, err
@@ -323,7 +323,7 @@ func (r *CatalogRepo) UpsertTrack(ctx context.Context, t models.Track) (string, 
 	if found {
 		_, err := r.bexec(ctx, r.mel.NewUpdate("tracks").
 			Set("title", t.Title).Set("album_id", t.AlbumID).Set("artist_id", t.ArtistID).Set("track_no", t.TrackNo).
-			Set("disc_no", t.DiscNo).Set("genre", t.Genre).Set("year", t.Year).Set("duration", t.Duration).
+			Set("disc_no", t.DiscNo).Set("composer", t.Composer).Set("genre", t.Genre).Set("year", t.Year).Set("duration", t.Duration).
 			Set("bitrate", t.BitRate).Set("path", t.Path).Set("suffix", t.Suffix).Set("content_type", t.ContentType).
 			Set("size", t.Size).Set("mbid", t.MBID).Set("file_hash", t.FileHash).Set("cover_art", t.CoverArt).
 			Set("bpm", t.BPM).Set("replaygain_track", t.ReplayGainTrack).Set("replaygain_album", t.ReplayGainAlbum).
@@ -333,7 +333,7 @@ func (r *CatalogRepo) UpsertTrack(ctx context.Context, t models.Track) (string, 
 	}
 	_, err = r.bexec(ctx, r.mel.NewInsert("tracks").
 		Set("id", t.ID).Set("title", t.Title).Set("album_id", t.AlbumID).Set("artist_id", t.ArtistID).
-		Set("track_no", t.TrackNo).Set("disc_no", t.DiscNo).Set("genre", t.Genre).Set("year", t.Year).
+		Set("track_no", t.TrackNo).Set("disc_no", t.DiscNo).Set("composer", t.Composer).Set("genre", t.Genre).Set("year", t.Year).
 		Set("duration", t.Duration).Set("bitrate", t.BitRate).Set("path", t.Path).Set("suffix", t.Suffix).
 		Set("content_type", t.ContentType).Set("size", t.Size).Set("mbid", t.MBID).Set("file_hash", t.FileHash).
 		Set("cover_art", t.CoverArt).Set("bpm", t.BPM).Set("replaygain_track", t.ReplayGainTrack).

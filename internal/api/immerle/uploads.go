@@ -27,20 +27,24 @@ const maxCoverBytes = 10 << 20
 // It mirrors the Subsonic `Child`, with the cover-art id falling back to the
 // album id (as the Subsonic serializer does).
 type songView struct {
-	ID          string `json:"id"`
-	Title       string `json:"title"`
-	Album       string `json:"album"`
-	Artist      string `json:"artist"`
-	AlbumID     string `json:"albumId"`
-	ArtistID    string `json:"artistId"`
-	CoverArt    string `json:"coverArt"`
-	Duration    int    `json:"duration"`
-	Track       int    `json:"track,omitempty"`
-	Year        int    `json:"year,omitempty"`
-	Genre       string `json:"genre,omitempty"`
-	Suffix      string `json:"suffix,omitempty"`
-	ContentType string `json:"contentType,omitempty"`
-	Size        int64  `json:"size,omitempty"`
+	ID              string  `json:"id"`
+	Title           string  `json:"title"`
+	Album           string  `json:"album"`
+	Artist          string  `json:"artist"`
+	AlbumID         string  `json:"albumId"`
+	ArtistID        string  `json:"artistId"`
+	CoverArt        string  `json:"coverArt"`
+	Duration        int     `json:"duration"`
+	Track           int     `json:"track,omitempty"`
+	Year            int     `json:"year,omitempty"`
+	Composer        string  `json:"composer,omitempty"`
+	Genre           string  `json:"genre,omitempty"`
+	BPM             int     `json:"bpm,omitempty"`
+	ReplayGainTrack float64 `json:"replayGainTrack,omitempty"`
+	ReplayGainAlbum float64 `json:"replayGainAlbum,omitempty"`
+	Suffix          string  `json:"suffix,omitempty"`
+	ContentType     string  `json:"contentType,omitempty"`
+	Size            int64   `json:"size,omitempty"`
 	// Per-user annotation state, populated only on catalog reads (album/artist/
 	// song/search/playlist). Absent on upload/admin views, where it is not loaded.
 	Starred   *time.Time `json:"starred,omitempty"`
@@ -56,8 +60,9 @@ func toSongView(t models.Track) songView {
 	return songView{
 		ID: t.ID, Title: t.Title, Album: t.AlbumName, Artist: t.ArtistName,
 		AlbumID: t.AlbumID, ArtistID: t.ArtistID, CoverArt: cover, Duration: t.Duration,
-		Track: t.TrackNo, Year: t.Year, Genre: t.Genre, Suffix: t.Suffix,
+		Track: t.TrackNo, Year: t.Year, Composer: t.Composer, Genre: t.Genre, Suffix: t.Suffix,
 		ContentType: t.ContentType, Size: t.Size,
+		BPM: t.BPM, ReplayGainTrack: t.ReplayGainTrack, ReplayGainAlbum: t.ReplayGainAlbum,
 	}
 }
 

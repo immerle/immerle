@@ -46,6 +46,11 @@ func toChild(t models.Track, ann *models.Annotation) Child {
 		ArtistID:      t.ArtistID,
 		Type:          "music",
 		MusicBrainzID: t.MBID,
+		Composer:      t.Composer,
+		BPM:           t.BPM,
+	}
+	if t.ReplayGainTrack != 0 || t.ReplayGainAlbum != 0 {
+		c.ReplayGain = &ReplayGain{TrackGain: t.ReplayGainTrack, AlbumGain: t.ReplayGainAlbum}
 	}
 	if ann != nil {
 		c.PlayCount = ann.PlayCount

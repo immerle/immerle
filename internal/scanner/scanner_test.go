@@ -38,6 +38,30 @@ func newScanner(t *testing.T) *Scanner {
 	return New(store.Catalog, store.Genres, NewExtractor("ffprobe"), coversDir, logger)
 }
 
+func TestExtractEnrichedMetadata(t *testing.T) {
+	if !testutil.FFmpegAvailable() {
+		t.Skip("ffmpeg not available")
+	}
+	path := filepath.Join(t.TempDir(), "track.mp3")
+	testutil.GenerateAudio(t, path, testutil.AudioTags{
+		Title: "Clair de Lune", Artist: "Various", Album: "Suite Bergamasque",
+		Composer: "Claude Debussy", BPM: 132, ReplayGain: "-6.50 dB",
+	})
+	md, err := NewExtractor("ffprobe").Extract(context.Background(), path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if md.Composer != "Claude Debussy" {
+		t.Errorf("composer = %q, want Claude Debussy", md.Composer)
+	}
+	if md.BPM != 132 {
+		t.Errorf("bpm = %d, want 132", md.BPM)
+	}
+	if md.ReplayGainTrack != -6.5 {
+		t.Errorf("replaygain track = %v, want -6.5", md.ReplayGainTrack)
+	}
+}
+
 func TestFullScanCounts(t *testing.T) {
 	if !testutil.FFmpegAvailable() {
 		t.Skip("ffmpeg not available")

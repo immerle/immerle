@@ -15,22 +15,26 @@ import (
 
 // Metadata is the normalized set of fields extracted from an audio file.
 type Metadata struct {
-	Title       string
-	Album       string
-	Artist      string
-	AlbumArtist string
-	Genre       string
-	Year        int
-	TrackNo     int
-	DiscNo      int
-	Duration    int // seconds
-	BitRate     int // kbps
-	MBTrackID   string
-	MBAlbumID   string
-	MBArtistID  string
-	Compilation bool
-	HasPicture  bool
-	Picture     []byte
+	Title           string
+	Album           string
+	Artist          string
+	AlbumArtist     string
+	Composer        string
+	Genre           string
+	Year            int
+	TrackNo         int
+	DiscNo          int
+	BPM             int
+	Duration        int     // seconds
+	BitRate         int     // kbps
+	ReplayGainTrack float64 // dB
+	ReplayGainAlbum float64 // dB
+	MBTrackID       string
+	MBAlbumID       string
+	MBArtistID      string
+	Compilation     bool
+	HasPicture      bool
+	Picture         []byte
 }
 
 // audioExtensions are the file suffixes treated as audio.
@@ -89,6 +93,7 @@ func (e *Extractor) Extract(ctx context.Context, path string) (Metadata, error) 
 		md.Album = m.Album()
 		md.Artist = m.Artist()
 		md.AlbumArtist = m.AlbumArtist()
+		md.Composer = m.Composer()
 		md.Genre = m.Genre()
 		md.Year = m.Year()
 		md.TrackNo, _ = m.Track()
@@ -218,6 +223,21 @@ func (e *Extractor) augmentWithFFprobe(ctx context.Context, path string, md *Met
 	if md.DiscNo == 0 {
 		md.DiscNo = parseLeadingInt(tags["disc"])
 	}
+	if md.Composer == "" {
+		md.Composer = tags["composer"]
+	}
+	if md.BPM == 0 {
+		md.BPM = parseLeadingInt(firstNonEmpty(tags["bpm"], tags["tbpm"]))
+	}
+	// ponytail: only the standard ReplayGain dB tags. R128_*_GAIN (Opus/Vorbis,
+	// Q7.8 fixed-point referenced to -23 LUFS) needs a different conversion; add
+	// that branch if Opus files with R128 gain show up.
+	if md.ReplayGainTrack == 0 {
+		md.ReplayGainTrack = parseGainDB(tags["replaygain_track_gain"])
+	}
+	if md.ReplayGainAlbum == 0 {
+		md.ReplayGainAlbum = parseGainDB(tags["replaygain_album_gain"])
+	}
 	md.MBTrackID = firstNonEmpty(md.MBTrackID, tags["musicbrainz_trackid"], tags["musicbrainz_releasetrackid"])
 	md.MBAlbumID = firstNonEmpty(md.MBAlbumID, tags["musicbrainz_albumid"])
 	md.MBArtistID = firstNonEmpty(md.MBArtistID, tags["musicbrainz_artistid"])
@@ -250,6 +270,13 @@ func parseYear(s string) int {
 		}
 	}
 	return 0
+}
+
+// parseGainDB parses a ReplayGain value like "-6.50 dB" into a float of dB.
+func parseGainDB(s string) float64 {
+	s = strings.TrimSpace(strings.TrimSuffix(strings.TrimSpace(s), "dB"))
+	f, _ := strconv.ParseFloat(strings.TrimSpace(s), 64)
+	return f
 }
 
 func parseLeadingInt(s string) int {
