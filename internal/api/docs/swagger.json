@@ -1451,6 +1451,17 @@
                 },
                 "type": "object"
             },
+            "immerle.participantView": {
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "role": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "immerle.passwordRequest": {
                 "properties": {
                     "password": {
@@ -1791,6 +1802,12 @@
                     "artistId": {
                         "type": "string"
                     },
+                    "bpm": {
+                        "type": "integer"
+                    },
+                    "composer": {
+                        "type": "string"
+                    },
                     "contentType": {
                         "type": "string"
                     },
@@ -1806,11 +1823,33 @@
                     "id": {
                         "type": "string"
                     },
+                    "lyrics": {
+                        "type": "string"
+                    },
+                    "movementName": {
+                        "type": "string"
+                    },
+                    "movementNumber": {
+                        "type": "integer"
+                    },
+                    "participants": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.participantView"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
                     "playCount": {
                         "type": "integer"
                     },
                     "rating": {
                         "type": "integer"
+                    },
+                    "replayGainAlbum": {
+                        "type": "number"
+                    },
+                    "replayGainTrack": {
+                        "type": "number"
                     },
                     "size": {
                         "type": "integer"
@@ -1825,8 +1864,14 @@
                     "title": {
                         "type": "string"
                     },
+                    "titleSort": {
+                        "type": "string"
+                    },
                     "track": {
                         "type": "integer"
+                    },
+                    "work": {
+                        "type": "string"
                     },
                     "year": {
                         "type": "integer"

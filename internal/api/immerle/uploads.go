@@ -46,11 +46,11 @@ type songView struct {
 	Work            string               `json:"work,omitempty"`
 	MovementName    string               `json:"movementName,omitempty"`
 	MovementNo      int                  `json:"movementNumber,omitempty"`
-	Lyrics          string               `json:"lyrics,omitempty"`
-	Participants    []models.Participant `json:"participants,omitempty"`
-	Suffix          string               `json:"suffix,omitempty"`
-	ContentType     string               `json:"contentType,omitempty"`
-	Size            int64                `json:"size,omitempty"`
+	Lyrics          string            `json:"lyrics,omitempty"`
+	Participants    []participantView `json:"participants,omitempty"`
+	Suffix          string            `json:"suffix,omitempty"`
+	ContentType     string            `json:"contentType,omitempty"`
+	Size            int64             `json:"size,omitempty"`
 	// Per-user annotation state, populated only on catalog reads (album/artist/
 	// song/search/playlist). Absent on upload/admin views, where it is not loaded.
 	Starred   *time.Time `json:"starred,omitempty"`
@@ -58,10 +58,21 @@ type songView struct {
 	PlayCount int        `json:"playCount,omitempty"`
 }
 
+// participantView mirrors models.Participant locally so the OpenAPI generator
+// (swag) can resolve it without cross-package parsing. Same JSON shape.
+type participantView struct {
+	Role string `json:"role"`
+	Name string `json:"name"`
+}
+
 func toSongView(t models.Track) songView {
 	cover := t.CoverArt
 	if cover == "" {
 		cover = t.AlbumID
+	}
+	var participants []participantView
+	for _, p := range t.Participants {
+		participants = append(participants, participantView{Role: p.Role, Name: p.Name})
 	}
 	return songView{
 		ID: t.ID, Title: t.Title, Album: t.AlbumName, Artist: t.ArtistName,
@@ -70,7 +81,7 @@ func toSongView(t models.Track) songView {
 		ContentType: t.ContentType, Size: t.Size,
 		BPM: t.BPM, ReplayGainTrack: t.ReplayGainTrack, ReplayGainAlbum: t.ReplayGainAlbum,
 		TitleSort: t.TitleSort, Work: t.Work, MovementName: t.MovementName, MovementNo: t.MovementNo,
-		Lyrics: t.Lyrics, Participants: t.Participants,
+		Lyrics: t.Lyrics, Participants: participants,
 	}
 }
 
