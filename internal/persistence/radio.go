@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -144,20 +143,14 @@ func (r *RadioRepo) LikedIDs(ctx context.Context, userID string) (map[string]boo
 func (r *RadioRepo) EnsureBuiltins(ctx context.Context) error {
 	builtins := radio.Builtins()
 	// Prune built-ins that are no longer in the embedded list (e.g. a station
-	// removed from stations.json), so removals reach existing installs. The
-	// NOT IN over a runtime-sized id list stays hand-written.
-	ids := make([]string, 0, len(builtins))
+	// removed from stations.json), so removals reach existing installs.
+	ids := make([]any, 0, len(builtins))
 	for _, s := range builtins {
 		ids = append(ids, s.ID)
 	}
 	if len(ids) > 0 {
-		ph := make([]string, len(ids))
-		args := make([]any, len(ids))
-		for i, id := range ids {
-			ph[i] = "?"
-			args[i] = id
-		}
-		if _, err := r.exec(ctx, `DELETE FROM radio_stations WHERE builtin=1 AND id NOT IN (`+strings.Join(ph, ",")+`)`, args...); err != nil {
+		if _, err := r.bexec(ctx, r.mel.NewDelete("radio_stations").
+			Where("builtin", "=", 1).Where("id", "NOT IN", ids...)); err != nil {
 			return err
 		}
 	}
