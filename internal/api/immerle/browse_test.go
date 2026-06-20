@@ -64,6 +64,7 @@ func newBrowseEnv(t *testing.T) (*httptest.Server, string, *persistence.Store) {
 		Cover:       stream.NewCoverService(store.Catalog, coversDir),
 		Shares:      store.Shares,
 		BaseURL:     "https://music.example",
+		SigningKey:  "test-media-secret",
 		Logger:      testutil.NewLogger(),
 	})
 	mux := chi.NewRouter()

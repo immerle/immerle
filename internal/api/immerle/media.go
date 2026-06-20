@@ -1,11 +1,68 @@
 package immerle
 
 import (
+	"context"
 	"errors"
 	"net/http"
 
+	chi "github.com/go-chi/chi/v5"
+
+	"github.com/immerle/immerle/internal/api/httputil"
+	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/stream"
 )
+
+// mediaAuthMiddleware authorizes a stream/download request by EITHER a valid
+// short-lived signed URL (exp+sig query, no user attached — the client scrobbles
+// separately) OR a Bearer token (a real user, attributed to now-playing). On
+// failure it answers 401.
+func (h *Handler) mediaAuthMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = r.ParseForm() // expose exp/sig/apiKey from the query
+		if h.media.VerifyToken(chi.URLParam(r, "id"), r.Form.Get("exp"), r.Form.Get("sig")) {
+			next.ServeHTTP(w, r)
+			return
+		}
+		user, err := h.Auth.Authenticate(r.Context(), core.Credentials{
+			APIToken:  httputil.APITokenFromRequest(r),
+			RemoteIP:  httputil.ClientIP(r),
+			UserAgent: r.UserAgent(),
+		})
+		if err != nil {
+			writeError(w, http.StatusUnauthorized, "unauthorized", "authentication required")
+			return
+		}
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), userKey, user)))
+	})
+}
+
+// streamURLs is the signed media URLs minted for a track.
+type streamURLs struct {
+	Stream   string `json:"stream"`
+	Download string `json:"download"`
+}
+
+// handleStreamURL mints short-lived signed stream/download URLs for the track,
+// usable directly as an <audio>/<video> src (no Authorization header needed).
+//
+// @Summary  Mint signed media URLs
+// @Description  Returns short-lived signed stream and download URLs for the track (usable as a plain media src). They expire after a few minutes.
+// @Tags     media
+// @Security BearerAuth
+// @Produce  json
+// @Param    id   path  string  true  "Track id"
+// @Success  200  {object}  streamURLs
+// @Failure  401  {object}  errorResponse
+// @Router   /songs/{id}/stream-url [get]
+func (h *Handler) handleStreamURL(w http.ResponseWriter, r *http.Request) {
+	id := pathParam(r, "id")
+	exp, sig := h.media.SignToken(id)
+	q := "?exp=" + exp + "&sig=" + sig
+	writeResource(w, http.StatusOK, streamURLs{
+		Stream:   "/api/v1/songs/" + id + "/stream" + q,
+		Download: "/api/v1/songs/" + id + "/download" + q,
+	})
+}
 
 // This file exposes audio streaming/download and cover art over the shared
 // media server (the same code the Subsonic stream/download/getCoverArt

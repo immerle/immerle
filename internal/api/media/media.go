@@ -23,11 +23,21 @@ type Server struct {
 	onDemand   *core.CatalogService
 	nowPlaying *core.NowPlayingTracker
 	logger     *slog.Logger
+	// signKey signs short-lived stream/download URLs so an <audio>/<img> src can
+	// carry a one-track, time-limited capability instead of a reusable credential.
+	// Empty disables signing (the Subsonic handler, which uses its own auth).
+	signKey []byte
 }
 
-// NewServer wires the media server. onDemand and nowPlaying may be nil.
-func NewServer(catalog *persistence.CatalogRepo, streamer *stream.Streamer, cover *stream.CoverService, onDemand *core.CatalogService, nowPlaying *core.NowPlayingTracker, logger *slog.Logger) *Server {
-	return &Server{catalog: catalog, streamer: streamer, cover: cover, onDemand: onDemand, nowPlaying: nowPlaying, logger: logger}
+// NewServer wires the media server. onDemand and nowPlaying may be nil. secret,
+// when non-empty, enables signed stream URLs (a per-server key is derived from
+// it, so the raw auth secret is never used directly as the HMAC key).
+func NewServer(catalog *persistence.CatalogRepo, streamer *stream.Streamer, cover *stream.CoverService, onDemand *core.CatalogService, nowPlaying *core.NowPlayingTracker, logger *slog.Logger, secret string) *Server {
+	var key []byte
+	if secret != "" {
+		key = deriveSignKey(secret)
+	}
+	return &Server{catalog: catalog, streamer: streamer, cover: cover, onDemand: onDemand, nowPlaying: nowPlaying, logger: logger, signKey: key}
 }
 
 // ServeAudio serves a track for playback/download. For a remote (provider) track
@@ -59,7 +69,9 @@ func (s *Server) ServeAudio(w http.ResponseWriter, r *http.Request, user models.
 }
 
 func (s *Server) serveLocal(w http.ResponseWriter, r *http.Request, user models.User, track models.Track, opts stream.Options) {
-	if s.nowPlaying != nil {
+	// A signed-URL stream carries no user (the client scrobbles separately), so
+	// only attribute now-playing when a real user is present.
+	if s.nowPlaying != nil && user.ID != "" {
 		s.nowPlaying.Set(user.ID, user.Username, track.ID)
 	}
 	if err := s.streamer.Serve(w, r, track, opts); err != nil && s.logger != nil {
