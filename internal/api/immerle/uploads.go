@@ -27,25 +27,25 @@ const maxCoverBytes = 10 << 20
 // It mirrors the Subsonic `Child`, with the cover-art id falling back to the
 // album id (as the Subsonic serializer does).
 type songView struct {
-	ID              string               `json:"id"`
-	Title           string               `json:"title"`
-	Album           string               `json:"album"`
-	Artist          string               `json:"artist"`
-	AlbumID         string               `json:"albumId"`
-	ArtistID        string               `json:"artistId"`
-	CoverArt        string               `json:"coverArt"`
-	Duration        int                  `json:"duration"`
-	Track           int                  `json:"track,omitempty"`
-	Year            int                  `json:"year,omitempty"`
-	Composer        string               `json:"composer,omitempty"`
-	Genre           string               `json:"genre,omitempty"`
-	BPM             int                  `json:"bpm,omitempty"`
-	ReplayGainTrack float64              `json:"replayGainTrack,omitempty"`
-	ReplayGainAlbum float64              `json:"replayGainAlbum,omitempty"`
-	TitleSort       string               `json:"titleSort,omitempty"`
-	Work            string               `json:"work,omitempty"`
-	MovementName    string               `json:"movementName,omitempty"`
-	MovementNo      int                  `json:"movementNumber,omitempty"`
+	ID              string            `json:"id"`
+	Title           string            `json:"title"`
+	Album           string            `json:"album"`
+	Artist          string            `json:"artist"`
+	AlbumID         string            `json:"albumId"`
+	ArtistID        string            `json:"artistId"`
+	CoverArt        string            `json:"coverArt"`
+	Duration        int               `json:"duration"`
+	Track           int               `json:"track,omitempty"`
+	Year            int               `json:"year,omitempty"`
+	Composer        string            `json:"composer,omitempty"`
+	Genre           string            `json:"genre,omitempty"`
+	BPM             int               `json:"bpm,omitempty"`
+	ReplayGainTrack float64           `json:"replayGainTrack,omitempty"`
+	ReplayGainAlbum float64           `json:"replayGainAlbum,omitempty"`
+	TitleSort       string            `json:"titleSort,omitempty"`
+	Work            string            `json:"work,omitempty"`
+	MovementName    string            `json:"movementName,omitempty"`
+	MovementNo      int               `json:"movementNumber,omitempty"`
 	Lyrics          string            `json:"lyrics,omitempty"`
 	Participants    []participantView `json:"participants,omitempty"`
 	Suffix          string            `json:"suffix,omitempty"`
