@@ -30,6 +30,10 @@ import { useT } from '../i18n/store';
 // and pre-auth screens).
 const HIDDEN_ON = ['/player', '/queue', '/login', '/setup'];
 
+// Main tab routes. On mobile these render their own player *above* the tab bar
+// (see the tabs layout), so the root-docked bar yields to that embedded copy.
+export const TAB_ROUTES = ['/', '/search', '/playlists', '/social', '/admin', '/settings'];
+
 /**
  * Persistent, full-featured player docked at the bottom of every screen while
  * something is loaded. On wide layouts (web/tablet) it's a three-column Spotify-
@@ -37,7 +41,7 @@ const HIDDEN_ON = ['/player', '/queue', '/login', '/setup'];
  * narrow layouts it collapses to a compact bar that opens the full-screen
  * player on tap.
  */
-export function PlayerBar() {
+export function PlayerBar({ embedded = false }: { embedded?: boolean } = {}) {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const pathname = usePathname();
@@ -49,6 +53,9 @@ export function PlayerBar() {
 
   if (HIDDEN_ON.includes(pathname)) return null;
   const wide = width >= WIDE_BREAKPOINT;
+  // On mobile tab screens the tabs layout renders an embedded player above the
+  // tab bar; the root-docked copy steps aside so there's only one.
+  if (!embedded && !wide && TAB_ROUTES.includes(pathname)) return null;
   // On wide layouts the bottom strip is permanently the player (Spotify-style),
   // even when idle; on narrow it only appears while something is loaded.
   if (!song && !wide) return null;
@@ -56,7 +63,8 @@ export function PlayerBar() {
   return (
     <View
       className="border-t border-border bg-surface"
-      style={{ paddingBottom: insets.bottom }}
+      // Embedded copy sits above the tab bar, which already owns the bottom inset.
+      style={{ paddingBottom: embedded ? 0 : insets.bottom }}
     >
       {!wide ? (
         <CompactBar song={song!} status={status} position={position} duration={duration} />

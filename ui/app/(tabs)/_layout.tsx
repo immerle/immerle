@@ -1,6 +1,10 @@
-import { useWindowDimensions } from 'react-native';
+import { useWindowDimensions, View } from 'react-native';
 import { Tabs } from 'expo-router';
+import { BottomTabBar } from '@react-navigation/bottom-tabs';
+import { SafeAreaInsetsContext, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicon } from '../../src/components/Ionicon';
+import { MobileHeader } from '../../src/components/MobileHeader';
+import { PlayerBar } from '../../src/components/PlayerBar';
 import { useAuth } from '../../src/auth/store';
 import { useSearchUI } from '../../src/search/store';
 import { useColors } from '../../src/theme/colors';
@@ -19,12 +23,23 @@ export default function TabsLayout() {
   const colors = useColors();
   const { width } = useWindowDimensions();
   const wide = width >= WIDE_BREAKPOINT;
+  const insets = useSafeAreaInsets();
   const isAdmin = useAuth((s) => s.client?.isAdmin ?? false);
   const hasSocial = useAuth((s) => s.client?.has('social') ?? false);
   const openSearch = useSearchUI((s) => s.openSearch);
 
-  return (
+  const tabs = (
     <Tabs
+      // On mobile, dock the now-playing bar just above the tab bar; on desktop
+      // there's no bottom bar (nav lives in the sidebar), so render nothing.
+      tabBar={(props) =>
+        wide ? null : (
+          <View>
+            <PlayerBar embedded />
+            <BottomTabBar {...props} />
+          </View>
+        )
+      }
       screenOptions={{
         // Screens render their own titles; no nav header (Spotify-style).
         headerShown: false,
@@ -109,5 +124,18 @@ export default function TabsLayout() {
         }}
       />
     </Tabs>
+  );
+
+  if (wide) return tabs;
+
+  // Mobile: a global header above the tabs. It owns the top safe-area, so the
+  // tab subtree's top inset is zeroed to avoid a double gap under the notch.
+  return (
+    <View className="flex-1 bg-background">
+      <MobileHeader />
+      <SafeAreaInsetsContext.Provider value={{ top: 0, left: insets.left, right: insets.right, bottom: insets.bottom }}>
+        {tabs}
+      </SafeAreaInsetsContext.Provider>
+    </View>
   );
 }
