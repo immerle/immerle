@@ -104,6 +104,7 @@ function CompactBar({ song, status, position, duration }: BarProps) {
   const next = usePlayer((s) => s.next);
   const progress = duration > 0 ? Math.min(position / duration, 1) : 0;
   const isPlaying = status === 'playing';
+  const isRadio = useIsRadio(song.id);
 
   return (
     <View>
@@ -121,7 +122,7 @@ function CompactBar({ song, status, position, duration }: BarProps) {
           </Text>
         </View>
         <IconButton name={isPlaying ? 'pause' : 'play'} size={26} onPress={toggle} accessibilityLabel={isPlaying ? t('components.player.pause') : t('components.player.play')} />
-        <IconButton name="play-skip-forward" size={22} onPress={next} accessibilityLabel={t('components.player.next')} />
+        <IconButton name="play-skip-forward" size={22} onPress={next} disabled={isRadio} accessibilityLabel={t('components.player.next')} />
       </Pressable>
       <View className="mx-2 mb-1 h-1 overflow-hidden rounded-full bg-white/15">
         <View className="h-full rounded-full bg-foreground" style={{ width: `${progress * 100}%` }} />
@@ -145,6 +146,8 @@ function WideBar({ song, status, position, duration }: BarProps) {
   const isPlaying = status === 'playing';
   const [scrub, setScrub] = useState<number | null>(null);
   const shown = scrub ?? position;
+  // A live radio has no queue, no seeking and no prev/next: grey those out.
+  const isRadio = useIsRadio(song.id);
 
   return (
     <View className="flex-row items-center gap-4 px-4 py-2">
@@ -162,7 +165,7 @@ function WideBar({ song, status, position, duration }: BarProps) {
           </Text>
         </View>
         <LikeButton key={song.id} song={song} />
-        <AddToPlaylistButton song={song} />
+        <AddToPlaylistButton song={song} disabled={isRadio} />
       </View>
 
       {/* Center — transport + seek */}
@@ -173,17 +176,19 @@ function WideBar({ song, status, position, duration }: BarProps) {
             size={20}
             color={shuffle ? colors.primary : colors.muted}
             onPress={toggleShuffle}
+            disabled={isRadio}
             accessibilityLabel={t('components.player.shuffle')}
           />
-          <IconButton name="play-skip-back" size={22} onPress={previous} accessibilityLabel={t('components.player.previous')} />
+          <IconButton name="play-skip-back" size={22} onPress={previous} disabled={isRadio} accessibilityLabel={t('components.player.previous')} />
           <PlayButton playing={isPlaying} onPress={toggle} size={40} />
-          <IconButton name="play-skip-forward" size={22} onPress={next} accessibilityLabel={t('components.player.next')} />
+          <IconButton name="play-skip-forward" size={22} onPress={next} disabled={isRadio} accessibilityLabel={t('components.player.next')} />
           <View>
             <IconButton
               name={repeat === 'track' ? 'repeat-outline' : 'repeat'}
               size={20}
               color={repeat !== 'off' ? colors.primary : colors.muted}
               onPress={cycleRepeat}
+              disabled={isRadio}
               accessibilityLabel={t('components.player.repeat')}
             />
             {repeat === 'track' ? (
@@ -194,7 +199,8 @@ function WideBar({ song, status, position, duration }: BarProps) {
         <View className="w-full max-w-xl flex-row items-center gap-2">
           <Text className="w-10 text-right text-[11px] text-muted">{formatDuration(shown)}</Text>
           <Slider
-            style={{ flex: 1 }}
+            style={{ flex: 1, opacity: isRadio ? 0.4 : 1 }}
+            disabled={isRadio}
             minimumValue={0}
             maximumValue={duration > 0 ? duration : 1}
             value={shown}
@@ -213,7 +219,7 @@ function WideBar({ song, status, position, duration }: BarProps) {
 
       {/* Right — queue + volume + fullscreen */}
       <View className="flex-1 flex-row items-center justify-end gap-3">
-        <IconButton name="list" size={22} onPress={() => router.push('/queue')} accessibilityLabel={t('components.player.queue')} />
+        <IconButton name="list" size={22} onPress={() => router.push('/queue')} disabled={isRadio} accessibilityLabel={t('components.player.queue')} />
         <VolumeControl />
         <IconButton name="expand" size={20} onPress={() => router.push('/player')} accessibilityLabel={t('components.player.fullscreen')} />
       </View>
@@ -271,10 +277,18 @@ function VolumeBar({ volume, onChange }: { volume: number; onChange: (v: number)
   );
 }
 
-function LikeButton({ song }: { song: Song }) {
-  // A playing radio is a fake Song carrying the station id; like it as a station.
+/** A playing radio is a fake Song carrying the station id — find that station. */
+function useStation(id: string): RadioStation | undefined {
   const { data: stations } = useRadioStations();
-  const station = stations?.find((s) => s.id === song.id);
+  return stations?.find((s) => s.id === id);
+}
+
+function useIsRadio(id: string) {
+  return !!useStation(id);
+}
+
+function LikeButton({ song }: { song: Song }) {
+  const station = useStation(song.id);
   if (station) return <RadioLikeButton station={station} />;
   return <SongLikeButton song={song} />;
 }
@@ -326,7 +340,7 @@ function SongLikeButton({ song }: { song: Song }) {
 
 /** Circular "+" that opens a dropdown of playlists with checkboxes — ticking a
  * playlist adds the track, unticking removes it. A button opens a create popin. */
-function AddToPlaylistButton({ song }: { song: Song }) {
+function AddToPlaylistButton({ song, disabled }: { song: Song; disabled?: boolean }) {
   const t = useT();
   const colors = useColors();
   const { height: screenH } = useWindowDimensions();
@@ -353,8 +367,10 @@ function AddToPlaylistButton({ song }: { song: Song }) {
       <Pressable
         ref={anchorRef}
         onPress={open}
+        disabled={disabled}
+        accessibilityState={{ disabled: !!disabled }}
         accessibilityLabel={t('components.player.addToPlaylist')}
-        className="h-8 w-8 items-center justify-center rounded-full border border-border active:opacity-70"
+        className={`h-8 w-8 items-center justify-center rounded-full border border-border ${disabled ? 'opacity-40' : 'active:opacity-70'}`}
       >
         <Ionicon name="add" size={18} color={colors.foreground} />
       </Pressable>

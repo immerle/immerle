@@ -94,6 +94,7 @@ export function IconButton({
   onPress,
   hitSlop = 12,
   accessibilityLabel,
+  disabled,
 }: {
   name: string;
   size?: number;
@@ -101,15 +102,18 @@ export function IconButton({
   onPress?: () => void;
   hitSlop?: number;
   accessibilityLabel?: string;
+  disabled?: boolean;
 }) {
   const colors = useColors();
   return (
     <Pressable
       onPress={onPress}
       hitSlop={hitSlop}
+      disabled={disabled}
       accessibilityRole="button"
+      accessibilityState={{ disabled: !!disabled }}
       accessibilityLabel={accessibilityLabel}
-      className="active:opacity-60"
+      className={disabled ? 'opacity-40' : 'active:opacity-60'}
     >
       <Ionicon name={name} size={size} color={color ?? colors.foreground} />
     </Pressable>
