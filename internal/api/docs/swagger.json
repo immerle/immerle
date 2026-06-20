@@ -1356,6 +1356,32 @@
                 },
                 "type": "object"
             },
+            "immerle.favoritesView": {
+                "properties": {
+                    "albums": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.albumView"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "artists": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.artistView"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "songs": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.songView"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "type": "object"
+            },
             "immerle.fieldError": {
                 "properties": {
                     "field": {
@@ -5941,6 +5967,42 @@
                 "summary": "Update your account",
                 "tags": [
                     "users"
+                ]
+            }
+        },
+        "/me/favorites": {
+            "get": {
+                "description": "Returns the artists, albums and songs the caller has starred.",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.favoritesView"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "List favorites",
+                "tags": [
+                    "catalog"
                 ]
             }
         },
