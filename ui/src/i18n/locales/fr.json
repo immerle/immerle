@@ -93,6 +93,15 @@
     "playsShort": "{{count}} écoutes",
     "month": { "jan": "J", "feb": "F", "mar": "M", "apr": "A", "may": "M", "jun": "J", "jul": "J", "aug": "A", "sep": "S", "oct": "O", "nov": "N", "dec": "D" }
   },
+  "offline": {
+    "title": "Téléchargements hors-ligne",
+    "subtitle": "Titres enregistrés sur cet appareil",
+    "summary": "{{count}} titres · {{size}}",
+    "emptyTitle": "Aucun téléchargement",
+    "emptySubtitle": "Utilisez le menu ··· d'un titre pour le télécharger et l'écouter hors-ligne.",
+    "clearAll": "Tout supprimer",
+    "remove": "Retirer le téléchargement"
+  },
   "settings": {
     "title": "Réglages",
     "subtitle": "Compte & préférences",
@@ -843,7 +852,10 @@
       "newPlaylist": "Nouvelle playlist",
       "namePlaceholder": "Nom",
       "create": "Créer",
-      "edit": "Modifier"
+      "edit": "Modifier",
+      "download": "Télécharger hors-ligne",
+      "downloading": "Téléchargement…",
+      "removeDownload": "Retirer le téléchargement"
     },
     "search": {
       "searchTitle": "Rechercher",

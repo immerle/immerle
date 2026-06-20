@@ -93,6 +93,15 @@
     "playsShort": "{{count}} plays",
     "month": { "jan": "J", "feb": "F", "mar": "M", "apr": "A", "may": "M", "jun": "J", "jul": "J", "aug": "A", "sep": "S", "oct": "O", "nov": "N", "dec": "D" }
   },
+  "offline": {
+    "title": "Offline downloads",
+    "subtitle": "Tracks saved on this device",
+    "summary": "{{count}} tracks · {{size}}",
+    "emptyTitle": "No downloads yet",
+    "emptySubtitle": "Use the ··· menu on a track to download it for offline playback.",
+    "clearAll": "Remove all downloads",
+    "remove": "Remove download"
+  },
   "settings": {
     "title": "Settings",
     "subtitle": "Account & preferences",
@@ -843,7 +852,10 @@
       "newPlaylist": "New playlist",
       "namePlaceholder": "Name",
       "create": "Create",
-      "edit": "Edit"
+      "edit": "Edit",
+      "download": "Download for offline",
+      "downloading": "Downloading…",
+      "removeDownload": "Remove download"
     },
     "search": {
       "searchTitle": "Search",
