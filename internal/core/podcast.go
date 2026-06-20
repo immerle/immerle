@@ -409,8 +409,6 @@ func (s *PodcastService) download(ctx context.Context, url, path string) (int64,
 
 // --- feed parsing (stdlib encoding/xml; minimal RSS + iTunes namespace) ---
 
-const itunesNS = "http://www.itunes.com/dtds/podcast-1.0.dtd"
-
 type rssFeed struct {
 	Channel struct {
 		Title       string `xml:"title"`
