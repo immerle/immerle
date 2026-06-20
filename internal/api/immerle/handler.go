@@ -332,6 +332,10 @@ func (h *Handler) Register(mux chi.Router) {
 			// Admin: Wrapped feature toggle.
 			r.Get("/admin/wrapped", h.handleWrappedAdmin)
 			r.Put("/admin/wrapped", h.handleWrappedUpdate)
+
+			// Admin: offline-downloads feature toggle.
+			r.Get("/admin/offline", h.handleOfflineAdmin)
+			r.Put("/admin/offline", h.handleOfflineUpdate)
 		})
 	})
 }

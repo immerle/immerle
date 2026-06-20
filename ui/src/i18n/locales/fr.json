@@ -519,6 +519,7 @@
       "smartPlaylistsEnabled": "Playlists intelligentes",
       "radioEnabled": "Radio internet",
       "wrappedEnabled": "Wrapped (rétrospective annuelle)",
+      "offlineEnabled": "Téléchargements hors-ligne",
       "save": "Enregistrer"
     },
     "users": {
