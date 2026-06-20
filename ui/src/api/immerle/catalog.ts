@@ -1,10 +1,20 @@
-import type { AlbumView, ArtistView, FavoritesView, GenreView, SearchView, SongView } from '../immerleApi';
+import type {
+  AlbumView,
+  ArtistView,
+  FavoritesView,
+  GenreView,
+  PlaylistView,
+  SearchView,
+  SongView,
+} from '../immerleApi';
 import type {
   Album,
   AlbumWithSongs,
   Artist,
   ArtistWithAlbums,
   Genre,
+  Playlist,
+  PlaylistWithSongs,
   SearchResult3,
   Song,
 } from '../subsonic/types';
@@ -95,4 +105,23 @@ export function toSearchResult(v: SearchView): SearchResult3 {
     album: v.albums?.map(toAlbum),
     song: v.songs?.map(toSong),
   };
+}
+
+export function toPlaylist(v: PlaylistView): Playlist {
+  return {
+    id: v.id ?? '',
+    name: v.name ?? '',
+    comment: v.comment,
+    owner: v.owner,
+    public: v.public,
+    songCount: v.songCount,
+    duration: v.duration,
+    created: v.createdAt,
+    changed: v.changedAt,
+    coverArts: v.coverArts,
+  };
+}
+
+export function toPlaylistWithSongs(v: PlaylistView): PlaylistWithSongs {
+  return { ...toPlaylist(v), entry: v.tracks?.map(toSong) };
 }

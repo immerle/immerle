@@ -5,6 +5,8 @@ import {
   Artist,
   ArtistWithAlbums,
   Genre,
+  Playlist,
+  PlaylistWithSongs,
   SearchResult3,
   Song,
 } from '../subsonic/types';
@@ -15,6 +17,8 @@ import {
   toArtist,
   toArtistWithAlbums,
   toGenre,
+  toPlaylist,
+  toPlaylistWithSongs,
   toSearchResult,
   toSong,
   toStarred,
@@ -270,6 +274,56 @@ export class ImmerleClient {
     const { data, error } = await this.api.GET('/search', { params: { query: { q: query } }, signal });
     if (error) throw apiErr(error, 'search');
     return toSearchResult(data);
+  }
+
+  /**
+   * Playlist CRUD over the native REST API, normalized into the app's domain
+   * types — drop-in replacements for the Subsonic playlist methods. (Public /
+   * collaborative playlist ops live in their own native methods below.)
+   */
+  async getPlaylists(signal?: AbortSignal): Promise<Playlist[]> {
+    const { data, error } = await this.api.GET('/playlists', { signal });
+    if (error) throw apiErr(error, 'playlist.list');
+    return (data.playlists ?? []).map(toPlaylist);
+  }
+
+  async getPlaylist(id: string, signal?: AbortSignal): Promise<PlaylistWithSongs> {
+    const { data, error } = await this.api.GET('/playlists/{id}', { params: { path: { id } }, signal });
+    if (error) throw apiErr(error, 'playlist.get');
+    return toPlaylistWithSongs(data);
+  }
+
+  async createPlaylist(name: string, songIds: string[] = []): Promise<void> {
+    const { error } = await this.api.POST('/playlists', { body: { name, ids: songIds } });
+    if (error) throw apiErr(error, 'playlist.create');
+  }
+
+  async updatePlaylist(
+    id: string,
+    opts: {
+      name?: string;
+      comment?: string;
+      public?: boolean;
+      songIdToAdd?: string[];
+      songIndexToRemove?: number[];
+    },
+  ): Promise<void> {
+    const { error } = await this.api.PATCH('/playlists/{id}', {
+      params: { path: { id } },
+      body: {
+        name: opts.name,
+        comment: opts.comment,
+        public: opts.public,
+        addIds: opts.songIdToAdd,
+        removeIndexes: opts.songIndexToRemove,
+      },
+    });
+    if (error) throw apiErr(error, 'playlist.update');
+  }
+
+  async deletePlaylist(id: string): Promise<void> {
+    const { error } = await this.api.DELETE('/playlists/{id}', { params: { path: { id } } });
+    if (error) throw apiErr(error, 'playlist.delete');
   }
 
   /**

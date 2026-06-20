@@ -8,7 +8,7 @@ export function usePlaylists() {
   return useQuery({
     queryKey: qk.playlists,
     enabled: !!client,
-    queryFn: () => client!.subsonic.getPlaylists(),
+    queryFn: () => client!.getPlaylists(),
   });
 }
 
@@ -17,7 +17,7 @@ export function usePlaylist(id: string) {
   return useQuery({
     queryKey: qk.playlist(id),
     enabled: !!client && !!id,
-    queryFn: () => client!.subsonic.getPlaylist(id),
+    queryFn: () => client!.getPlaylist(id),
   });
 }
 
@@ -26,7 +26,7 @@ export function useCreatePlaylist() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ name, songIds }: { name: string; songIds?: string[] }) =>
-      client!.subsonic.createPlaylist(name, songIds ?? []),
+      client!.createPlaylist(name, songIds ?? []),
     onSuccess: () => qc.invalidateQueries({ queryKey: qk.playlists }),
   });
 }
@@ -35,7 +35,7 @@ export function useDeletePlaylist() {
   const client = useAuth((s) => s.client);
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => client!.subsonic.deletePlaylist(id),
+    mutationFn: (id: string) => client!.deletePlaylist(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: qk.playlists }),
   });
 }
@@ -45,7 +45,7 @@ export function useRenamePlaylist() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, name, comment }: { id: string; name?: string; comment?: string }) =>
-      client!.subsonic.updatePlaylist(id, { name, comment }),
+      client!.updatePlaylist(id, { name, comment }),
     onSuccess: (_d, v) => {
       qc.invalidateQueries({ queryKey: qk.playlists });
       qc.invalidateQueries({ queryKey: qk.playlist(v.id) });
@@ -58,7 +58,7 @@ export function useAddToPlaylist() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, songIds }: { id: string; songIds: string[] }) =>
-      client!.subsonic.updatePlaylist(id, { songIdToAdd: songIds }),
+      client!.updatePlaylist(id, { songIdToAdd: songIds }),
     onSuccess: (_d, v) => qc.invalidateQueries({ queryKey: qk.playlist(v.id) }),
   });
 }
@@ -68,7 +68,7 @@ export function useRemoveFromPlaylist() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, indices }: { id: string; indices: number[] }) =>
-      client!.subsonic.updatePlaylist(id, { songIndexToRemove: indices }),
+      client!.updatePlaylist(id, { songIndexToRemove: indices }),
     onSuccess: (_d, v) => qc.invalidateQueries({ queryKey: qk.playlist(v.id) }),
   });
 }
@@ -114,7 +114,7 @@ export function useSetPlaylistPublic() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, isPublic }: { id: string; isPublic: boolean }) =>
-      client!.subsonic.updatePlaylist(id, { public: isPublic }),
+      client!.updatePlaylist(id, { public: isPublic }),
     onSuccess: (_d, v) => {
       qc.invalidateQueries({ queryKey: qk.playlist(v.id) });
       qc.invalidateQueries({ queryKey: qk.publicPlaylists });
@@ -128,8 +128,8 @@ export function useReorderPlaylist() {
   return useMutation({
     mutationFn: async ({ id, ordered }: { id: string; ordered: Song[] }) => {
       const indices = ordered.map((_, i) => i);
-      await client!.subsonic.updatePlaylist(id, { songIndexToRemove: indices });
-      await client!.subsonic.updatePlaylist(id, {
+      await client!.updatePlaylist(id, { songIndexToRemove: indices });
+      await client!.updatePlaylist(id, {
         songIdToAdd: ordered.map((s) => s.id),
       });
     },
