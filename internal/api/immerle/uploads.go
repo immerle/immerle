@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -40,6 +41,11 @@ type songView struct {
 	Suffix      string `json:"suffix,omitempty"`
 	ContentType string `json:"contentType,omitempty"`
 	Size        int64  `json:"size,omitempty"`
+	// Per-user annotation state, populated only on catalog reads (album/artist/
+	// song/search/playlist). Absent on upload/admin views, where it is not loaded.
+	Starred   *time.Time `json:"starred,omitempty"`
+	Rating    int        `json:"rating,omitempty"`
+	PlayCount int        `json:"playCount,omitempty"`
 }
 
 func toSongView(t models.Track) songView {

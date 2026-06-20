@@ -90,9 +90,21 @@ func trackEntriesToSongViews(entries []core.TrackEntry) []songView {
 	}
 	out := make([]songView, 0, len(entries))
 	for _, e := range entries {
-		out = append(out, toSongView(e.Track))
+		out = append(out, toSongViewAnnotated(e.Track, e.Annotation))
 	}
 	return out
+}
+
+// toSongViewAnnotated is toSongView plus the caller's per-user annotation state
+// (star/rating/play count). A nil annotation leaves those fields empty.
+func toSongViewAnnotated(t models.Track, ann *models.Annotation) songView {
+	v := toSongView(t)
+	if ann != nil {
+		v.Starred = ann.Starred
+		v.Rating = ann.Rating
+		v.PlayCount = ann.PlayCount
+	}
+	return v
 }
 
 // annPtr returns a pointer to the annotation for id, or nil when absent.
@@ -202,7 +214,7 @@ func (h *Handler) handleGetSong(w http.ResponseWriter, r *http.Request) {
 		writeServiceError(w, err)
 		return
 	}
-	writeResource(w, http.StatusOK, toSongView(te.Track))
+	writeResource(w, http.StatusOK, toSongViewAnnotated(te.Track, te.Annotation))
 }
 
 // handleListAlbums returns a list of albums by the requested criteria.
@@ -308,7 +320,7 @@ func (h *Handler) handleSearch(w http.ResponseWriter, r *http.Request) {
 		out.Albums = append(out.Albums, toAlbumView(a, annPtr(res.AlbumAnnotations, a.ID), nil))
 	}
 	for _, t := range res.Tracks {
-		out.Songs = append(out.Songs, toSongView(t))
+		out.Songs = append(out.Songs, toSongViewAnnotated(t, annPtr(res.TrackAnnotations, t.ID)))
 	}
 	writeResource(w, http.StatusOK, out)
 }

@@ -1780,8 +1780,18 @@
                     "id": {
                         "type": "string"
                     },
+                    "playCount": {
+                        "type": "integer"
+                    },
+                    "rating": {
+                        "type": "integer"
+                    },
                     "size": {
                         "type": "integer"
+                    },
+                    "starred": {
+                        "description": "Per-user annotation state, populated only on catalog reads (album/artist/\nsong/search/playlist). Absent on upload/admin views, where it is not loaded.",
+                        "type": "string"
                     },
                     "suffix": {
                         "type": "string"
