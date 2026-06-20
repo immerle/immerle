@@ -1,4 +1,3 @@
-import { SubsonicClient } from '../subsonic/client';
 import {
   Album,
   AlbumWithSongs,
@@ -95,15 +94,10 @@ function toProvider(dto: ProviderDTO): Provider {
 }
 
 /**
- * Capability-aware client that composes the raw Subsonic surface with the
- * Immerle REST API (mounted under `/api/v1`).
- *
- * Standard music operations are delegated to the embedded {@link SubsonicClient}
- * (`api.subsonic.*`). Immerle-specific operations live here and are guarded by
- * {@link has} so the UI can hide what the instance does not advertise.
- *
- * Every Immerle REST call is authenticated with the session's Bearer token (a
- * device JWT obtained at login by exchanging the Subsonic salted token).
+ * The client for the Immerle REST API (mounted under `/api/v1`). Every call is
+ * authenticated with the session's Bearer token — a personal API token minted at
+ * login. Optional features are guarded by {@link has} so the UI can hide what the
+ * instance does not advertise.
  */
 export class ImmerleClient {
   /** Admin status derived from the Subsonic user's adminRole (set post-construction). */
@@ -114,7 +108,8 @@ export class ImmerleClient {
   private _apiToken?: string;
 
   constructor(
-    public readonly subsonic: SubsonicClient,
+    private readonly serverUrlValue: string,
+    private readonly usernameValue: string,
     public readonly capabilities: Capabilities,
     private session: ImmerleSession | null = null,
   ) {}
@@ -130,11 +125,11 @@ export class ImmerleClient {
   }
 
   get serverUrl(): string {
-    return this.subsonic.serverUrl;
+    return this.serverUrlValue;
   }
 
   get username(): string {
-    return this.subsonic.username;
+    return this.usernameValue;
   }
 
   /** Name to show in the UI: the display name if set, else the username. */
@@ -485,52 +480,24 @@ export class ImmerleClient {
    * Falls back to deriving counts from Subsonic on a plain server (no size).
    */
   async getLibraryStats(signal?: AbortSignal): Promise<LibraryStats> {
-    try {
-      const { data, error } = await this.api.GET('/library/stats', { signal });
-      if (!error && data) {
-        return {
-          artistCount: data.artists ?? 0,
-          albumCount: data.albums ?? 0,
-          songCount: data.tracks ?? 0,
-          totalSize: data.totalSize ?? 0,
-          lastScan: data.updatedAt,
-        };
-      }
-    } catch {
-      /* fall through to the Subsonic-derived counts */
-    }
-    // Degraded path: best-effort counts via Subsonic (no on-disk size).
-    const [artists, albums] = await Promise.all([
-      this.subsonic.getArtists(),
-      this.subsonic.getAlbumList('alphabeticalByName', { size: 500 }),
-    ]);
+    const { data, error } = await this.api.GET('/library/stats', { signal });
+    if (error || !data) throw apiErr(error, 'library.stats');
     return {
-      artistCount: artists.length,
-      albumCount: albums.length,
-      songCount: albums.reduce((n, a) => n + (a.songCount ?? 0), 0),
-      totalSize: 0,
+      artistCount: data.artists ?? 0,
+      albumCount: data.albums ?? 0,
+      songCount: data.tracks ?? 0,
+      totalSize: data.totalSize ?? 0,
+      lastScan: data.updatedAt,
     };
   }
 
   /** Trigger a scan. `full=false` requests an incremental scan when supported. */
   async startScan(full = false): Promise<ScanProgress> {
-    if (this.has('adminExtended')) {
-      return this.request<ScanProgress>('POST', 'admin/library/scan', { full });
-    }
-    const s = await this.subsonic.startScan();
-    return { scanning: s.scanning, count: s.count ?? 0, phase: 'scanning' };
+    return this.request<ScanProgress>('POST', 'admin/library/scan', { full });
   }
 
   async getScanProgress(signal?: AbortSignal): Promise<ScanProgress> {
-    if (this.has('adminExtended')) {
-      return this.request<ScanProgress>('GET', 'admin/library/scan', undefined, signal);
-    }
-    const s = await this.subsonic.getScanStatus();
-    return {
-      scanning: s.scanning,
-      count: s.count ?? 0,
-      phase: s.scanning ? 'scanning' : 'idle',
-    };
+    return this.request<ScanProgress>('GET', 'admin/library/scan', undefined, signal);
   }
 
   // --- Admin: library tracks (manage ANY track) ---------------------------
