@@ -94,18 +94,20 @@ type Handler struct {
 	// library and playback back the catalog browse resources and the
 	// favorite/rating/scrobble mutations with the same application services the
 	// Subsonic handler uses.
-	library   *core.LibraryService
-	playback  *core.PlaybackService
-	playQueue *core.PlayQueueService
+	library     *core.LibraryService
+	playback    *core.PlaybackService
+	playQueue   *core.PlayQueueService
+	playlistSvc *core.PlaylistService
 }
 
 // NewHandler builds a immerle Handler.
 func NewHandler(d Deps) *Handler {
 	return &Handler{
-		Deps:      d,
-		library:   core.NewLibraryService(d.Catalog, d.Annotations, d.OnDemand),
-		playback:  core.NewPlaybackService(d.Catalog, d.Annotations, d.Scrobbles, d.OnDemand, d.Activity, d.NowPlaying),
-		playQueue: core.NewPlayQueueService(d.PlayQueues, d.Catalog, d.Annotations),
+		Deps:        d,
+		library:     core.NewLibraryService(d.Catalog, d.Annotations, d.OnDemand),
+		playback:    core.NewPlaybackService(d.Catalog, d.Annotations, d.Scrobbles, d.OnDemand, d.Activity, d.NowPlaying),
+		playQueue:   core.NewPlayQueueService(d.PlayQueues, d.Catalog, d.Annotations),
+		playlistSvc: core.NewPlaylistService(d.Playlists, d.Annotations, d.Activity),
 	}
 }
 
@@ -205,6 +207,14 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Post("/imports", h.handleImportStart)
 			r.Get("/imports/{id}", h.handleImportStatus)
 			r.Post("/imports/{id}/items/{itemId}/resolve", h.handleImportItemResolve)
+
+			// Playlist CRUD over the shared playlist service.
+			r.Get("/playlists", h.handleListPlaylists)
+			r.Post("/playlists", h.handleCreatePlaylist)
+			r.Get("/playlists/{id}", h.handleGetPlaylist)
+			r.Patch("/playlists/{id}", h.handleUpdatePlaylist)
+			r.Delete("/playlists/{id}", h.handleDeletePlaylist)
+			r.Put("/playlists/{id}/tracks", h.handleReplacePlaylistTracks)
 
 			// Collaborative / public playlists (extensions over the Subsonic API).
 			r.Get("/playlists/public", h.handlePublicPlaylists)
