@@ -16,10 +16,10 @@ func (s stubLDAPConfig) LDAPConfig() models.LDAPRuntime { return models.LDAPRunt
 
 func TestLDAPAuthFailsClosed(t *testing.T) {
 	cases := map[string]models.LDAPRuntime{
-		"disabled":       {Enabled: false, URL: "ldap://127.0.0.1:1", BindDNTemplate: "uid=%s,dc=x"},
-		"missing url":    {Enabled: true, BindDNTemplate: "uid=%s,dc=x"},
-		"missing tmpl":   {Enabled: true, URL: "ldap://127.0.0.1:1"},
-		"unreachable":    {Enabled: true, URL: "ldap://127.0.0.1:1", BindDNTemplate: "uid=%s,dc=x"},
+		"disabled":     {Enabled: false, URL: "ldap://127.0.0.1:1", BindDNTemplate: "uid=%s,dc=x"},
+		"missing url":  {Enabled: true, BindDNTemplate: "uid=%s,dc=x"},
+		"missing tmpl": {Enabled: true, URL: "ldap://127.0.0.1:1"},
+		"unreachable":  {Enabled: true, URL: "ldap://127.0.0.1:1", BindDNTemplate: "uid=%s,dc=x"},
 	}
 	for name, cfg := range cases {
 		l := &ldapAuth{cfg: stubLDAPConfig(cfg)}
