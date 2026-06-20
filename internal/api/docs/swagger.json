@@ -1348,6 +1348,169 @@
                 },
                 "type": "object"
             },
+            "immerle.nowPlayingView": {
+                "properties": {
+                    "minutesAgo": {
+                        "type": "integer"
+                    },
+                    "song": {
+                        "$ref": "#/components/schemas/immerle.songView"
+                    },
+                    "username": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.playQueueRequest": {
+                "properties": {
+                    "client": {
+                        "type": "string"
+                    },
+                    "current": {
+                        "type": "string"
+                    },
+                    "ids": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "position": {
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.playQueueView": {
+                "properties": {
+                    "changedAt": {
+                        "type": "string"
+                    },
+                    "changedBy": {
+                        "type": "string"
+                    },
+                    "current": {
+                        "type": "string"
+                    },
+                    "entries": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.songView"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "position": {
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.playlistCreateRequest": {
+                "properties": {
+                    "ids": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "name": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.playlistTracksRequest": {
+                "properties": {
+                    "ids": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.playlistUpdateRequest": {
+                "properties": {
+                    "addIds": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "comment": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "public": {
+                        "type": "boolean"
+                    },
+                    "removeIndexes": {
+                        "items": {
+                            "type": "integer"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.playlistView": {
+                "properties": {
+                    "changedAt": {
+                        "type": "string"
+                    },
+                    "collaborative": {
+                        "type": "boolean"
+                    },
+                    "comment": {
+                        "type": "string"
+                    },
+                    "coverArts": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "createdAt": {
+                        "type": "string"
+                    },
+                    "duration": {
+                        "type": "integer"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "owner": {
+                        "type": "string"
+                    },
+                    "public": {
+                        "type": "boolean"
+                    },
+                    "songCount": {
+                        "type": "integer"
+                    },
+                    "tracks": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.songView"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "type": "object"
+            },
             "immerle.radioRequest": {
                 "properties": {
                     "coverUrl": {
@@ -1374,6 +1537,14 @@
                 },
                 "type": "object"
             },
+            "immerle.ratingRequest": {
+                "properties": {
+                    "rating": {
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
             "immerle.reorderRequest": {
                 "properties": {
                     "order": {
@@ -1390,6 +1561,24 @@
                 "properties": {
                     "query": {
                         "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.scrobbleRequest": {
+                "properties": {
+                    "ids": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "playedAt": {
+                        "type": "integer"
+                    },
+                    "submission": {
+                        "type": "boolean"
                     }
                 },
                 "type": "object"
@@ -3505,6 +3694,82 @@
                 ]
             }
         },
+        "/albums/{id}/star": {
+            "delete": {
+                "parameters": [
+                    {
+                        "description": "Album id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Unfavorite an album",
+                "tags": [
+                    "favorites"
+                ]
+            },
+            "put": {
+                "parameters": [
+                    {
+                        "description": "Album id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Favorite an album",
+                "tags": [
+                    "favorites"
+                ]
+            }
+        },
         "/artists": {
             "get": {
                 "description": "Returns every artist in the catalog with the caller's per-artist starred state.",
@@ -3609,6 +3874,82 @@
                 "summary": "Get artist",
                 "tags": [
                     "catalog"
+                ]
+            }
+        },
+        "/artists/{id}/star": {
+            "delete": {
+                "parameters": [
+                    {
+                        "description": "Artist id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Unfavorite an artist",
+                "tags": [
+                    "favorites"
+                ]
+            },
+            "put": {
+                "parameters": [
+                    {
+                        "description": "Artist id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Favorite an artist",
+                "tags": [
+                    "favorites"
                 ]
             }
         },
@@ -5008,6 +5349,246 @@
                 ]
             }
         },
+        "/now-playing": {
+            "get": {
+                "description": "Returns the tracks every user is currently playing, newest first.",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": {
+                                        "items": {
+                                            "$ref": "#/components/schemas/immerle.nowPlayingView"
+                                        },
+                                        "type": "array"
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Now playing",
+                "tags": [
+                    "playback"
+                ]
+            }
+        },
+        "/play-queue": {
+            "get": {
+                "description": "Returns the caller's saved cross-device play queue with its tracks.",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.playQueueView"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Get play queue",
+                "tags": [
+                    "playback"
+                ]
+            },
+            "put": {
+                "description": "Replaces the caller's saved play queue (tracks, current track and position).",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/immerle.playQueueRequest",
+                                        "summary": "body",
+                                        "description": "Play queue"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Play queue",
+                    "required": true
+                },
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Save play queue",
+                "tags": [
+                    "playback"
+                ]
+            }
+        },
+        "/playlists": {
+            "get": {
+                "description": "Returns the playlists the caller owns, subscribes to or collaborates on.",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": {
+                                        "items": {
+                                            "$ref": "#/components/schemas/immerle.playlistView"
+                                        },
+                                        "type": "array"
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "List playlists",
+                "tags": [
+                    "playlists"
+                ]
+            },
+            "post": {
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/immerle.playlistCreateRequest",
+                                        "summary": "body",
+                                        "description": "Playlist"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Playlist",
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.playlistView"
+                                }
+                            }
+                        },
+                        "description": "Created"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Create playlist",
+                "tags": [
+                    "playlists"
+                ]
+            }
+        },
         "/playlists/public": {
             "get": {
                 "description": "Lists public playlists (not owned by the caller) available to subscribe to. Each entry includes whether the caller is already subscribed.",
@@ -5052,6 +5633,207 @@
                     }
                 ],
                 "summary": "Browse public playlists",
+                "tags": [
+                    "playlists"
+                ]
+            }
+        },
+        "/playlists/{id}": {
+            "delete": {
+                "parameters": [
+                    {
+                        "description": "Playlist id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Delete playlist",
+                "tags": [
+                    "playlists"
+                ]
+            },
+            "get": {
+                "parameters": [
+                    {
+                        "description": "Playlist id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.playlistView"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Get playlist",
+                "tags": [
+                    "playlists"
+                ]
+            },
+            "patch": {
+                "description": "Edits metadata and appends/removes tracks. Owner/admin/collaborator only.",
+                "parameters": [
+                    {
+                        "description": "Playlist id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/immerle.playlistUpdateRequest",
+                                        "summary": "body",
+                                        "description": "Changes"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Changes",
+                    "required": true
+                },
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Update playlist",
                 "tags": [
                     "playlists"
                 ]
@@ -5281,6 +6063,92 @@
                 ]
             }
         },
+        "/playlists/{id}/tracks": {
+            "put": {
+                "parameters": [
+                    {
+                        "description": "Playlist id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/immerle.playlistTracksRequest",
+                                        "summary": "body",
+                                        "description": "Track ids"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Track ids",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.playlistView"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Replace playlist tracks",
+                "tags": [
+                    "playlists"
+                ]
+            }
+        },
         "/radio": {
             "get": {
                 "responses": {
@@ -5422,6 +6290,65 @@
                 "summary": "Like a radio station",
                 "tags": [
                     "radio"
+                ]
+            }
+        },
+        "/scrobbles": {
+            "post": {
+                "description": "Records playback for one or more tracks (now-playing + optional submission).",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/immerle.scrobbleRequest",
+                                        "summary": "body",
+                                        "description": "Scrobble"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Scrobble",
+                    "required": true
+                },
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Scrobble plays",
+                "tags": [
+                    "plays"
                 ]
             }
         },
@@ -5928,6 +6855,189 @@
                 "summary": "Get song",
                 "tags": [
                     "catalog"
+                ]
+            }
+        },
+        "/songs/{id}/rating": {
+            "delete": {
+                "parameters": [
+                    {
+                        "description": "Item id (song, album or artist)",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Clear an item's rating",
+                "tags": [
+                    "ratings"
+                ]
+            },
+            "put": {
+                "description": "Sets the caller's rating (0–5) on the item. The item type is detected from the id.",
+                "parameters": [
+                    {
+                        "description": "Item id (song, album or artist)",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/immerle.ratingRequest",
+                                        "summary": "body",
+                                        "description": "Rating"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Rating",
+                    "required": true
+                },
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Rate an item",
+                "tags": [
+                    "ratings"
+                ]
+            }
+        },
+        "/songs/{id}/star": {
+            "delete": {
+                "parameters": [
+                    {
+                        "description": "Track id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Unfavorite a song",
+                "tags": [
+                    "favorites"
+                ]
+            },
+            "put": {
+                "parameters": [
+                    {
+                        "description": "Track id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Favorite a song",
+                "tags": [
+                    "favorites"
                 ]
             }
         },

@@ -39,6 +39,9 @@ type Deps struct {
 	Catalog     *persistence.CatalogRepo
 	Annotations *persistence.AnnotationRepo
 	Genres      *persistence.GenreRepo
+	Scrobbles   *persistence.ScrobbleRepo
+	PlayQueues  *persistence.PlayQueueRepo
+	NowPlaying  *core.NowPlayingTracker
 	OnDemand    *core.CatalogService
 	// LibraryStats serves the cached library analytics (counts + total size).
 	LibraryStats *core.LibraryStatsService
@@ -90,16 +93,23 @@ type CleanupController interface {
 // Handler implements the immerle native API.
 type Handler struct {
 	Deps
-	// library backs the catalog browse resources with the same application
-	// service the Subsonic handler uses.
-	library *core.LibraryService
+	// library and playback back the catalog browse resources and the
+	// favorite/rating/scrobble mutations with the same application services the
+	// Subsonic handler uses.
+	library     *core.LibraryService
+	playback    *core.PlaybackService
+	playQueue   *core.PlayQueueService
+	playlistSvc *core.PlaylistService
 }
 
 // NewHandler builds a immerle Handler.
 func NewHandler(d Deps) *Handler {
 	return &Handler{
-		Deps:    d,
-		library: core.NewLibraryService(d.Catalog, d.Annotations, d.OnDemand),
+		Deps:        d,
+		library:     core.NewLibraryService(d.Catalog, d.Annotations, d.OnDemand),
+		playback:    core.NewPlaybackService(d.Catalog, d.Annotations, d.Scrobbles, d.OnDemand, d.Activity, d.NowPlaying),
+		playQueue:   core.NewPlayQueueService(d.PlayQueues, d.Catalog, d.Annotations),
+		playlistSvc: core.NewPlaylistService(d.Playlists, d.Annotations, d.Activity),
 	}
 }
 
@@ -161,6 +171,28 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Get("/genres", h.handleGetGenres)
 			r.Get("/search", h.handleSearch)
 
+			// Favorites (star) and ratings on catalog items.
+			r.Put("/songs/{id}/star", h.handleStarSong)
+			r.Delete("/songs/{id}/star", h.handleUnstarSong)
+			r.Put("/albums/{id}/star", h.handleStarAlbum)
+			r.Delete("/albums/{id}/star", h.handleUnstarAlbum)
+			r.Put("/artists/{id}/star", h.handleStarArtist)
+			r.Delete("/artists/{id}/star", h.handleUnstarArtist)
+			r.Put("/songs/{id}/rating", h.handleSetRating)
+			r.Delete("/songs/{id}/rating", h.handleClearRating)
+			r.Put("/albums/{id}/rating", h.handleSetRating)
+			r.Delete("/albums/{id}/rating", h.handleClearRating)
+			r.Put("/artists/{id}/rating", h.handleSetRating)
+			r.Delete("/artists/{id}/rating", h.handleClearRating)
+
+			// Scrobble a play (sets now-playing and, on submission, records it).
+			r.Post("/scrobbles", h.handleScrobble)
+
+			// Saved play queue (cross-device) and the now-playing feed.
+			r.Get("/play-queue", h.handleGetPlayQueue)
+			r.Put("/play-queue", h.handleSavePlayQueue)
+			r.Get("/now-playing", h.handleNowPlaying)
+
 			// Year-in-review ("Wrapped").
 			r.Get("/wrapped", h.handleWrapped)
 
@@ -185,6 +217,14 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Put("/smart-playlists/{id}", h.handleSmartPlaylistUpdate)
 			r.Delete("/smart-playlists/{id}", h.handleSmartPlaylistDelete)
 			r.Get("/smart-playlists/{id}/tracks", h.handleSmartPlaylistTracks)
+
+			// Playlist CRUD over the shared playlist service.
+			r.Get("/playlists", h.handleListPlaylists)
+			r.Post("/playlists", h.handleCreatePlaylist)
+			r.Get("/playlists/{id}", h.handleGetPlaylist)
+			r.Patch("/playlists/{id}", h.handleUpdatePlaylist)
+			r.Delete("/playlists/{id}", h.handleDeletePlaylist)
+			r.Put("/playlists/{id}/tracks", h.handleReplacePlaylistTracks)
 
 			// Collaborative / public playlists (extensions over the Subsonic API).
 			r.Get("/playlists/public", h.handlePublicPlaylists)
