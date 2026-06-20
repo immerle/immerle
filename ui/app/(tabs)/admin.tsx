@@ -6,6 +6,7 @@ import { useLibraryStats } from '../../src/query/admin';
 import { EmptyState, SectionHeader } from '../../src/components/ui';
 import { ADMIN_MAX_WIDTH, AdminHeader } from '../../src/components/AdminUI';
 import { Ionicon } from '../../src/components/Ionicon';
+import { ADMIN_LINKS, AdminLink } from '../../src/nav/adminLinks';
 import { CapabilityFeature } from '../../src/api/immerle/types';
 import { formatBytes, formatCount } from '../../src/utils/format';
 import { useColors } from '../../src/theme/colors';
@@ -21,53 +22,6 @@ const FEATURES: { key: CapabilityFeature; labelKey: string; icon: string }[] = [
   { key: 'collaborativePlaylists', labelKey: 'home.admin.feature.collaborativePlaylists', icon: 'people' },
   { key: 'publicPlaylists', labelKey: 'home.admin.feature.publicPlaylists', icon: 'globe' },
   { key: 'social', labelKey: 'home.admin.feature.social', icon: 'chatbubbles' },
-];
-
-interface AdminLink {
-  href: string;
-  icon: string;
-  titleKey: string;
-  subtitleKey: string;
-  color: string;
-  /** When set, hidden unless the instance advertises this. */
-  requires?: 'dynamicProviders' | 'runtimeSettings' | 'libraryAdmin' | 'internetRadio';
-}
-
-const LINKS: AdminLink[] = [
-  { href: '/admin/users', icon: 'people', titleKey: 'home.admin.link.users.title', subtitleKey: 'home.admin.link.users.subtitle', color: '#3b82f6' },
-  { href: '/admin/scan', icon: 'refresh-circle', titleKey: 'home.admin.link.library.title', subtitleKey: 'home.admin.link.library.subtitle', color: '#f59e0b' },
-  {
-    href: '/admin/tracks',
-    icon: 'musical-notes',
-    titleKey: 'home.admin.link.tracks.title',
-    subtitleKey: 'home.admin.link.tracks.subtitle',
-    color: '#1ed760',
-    requires: 'libraryAdmin',
-  },
-  {
-    href: '/admin/providers',
-    icon: 'cube',
-    titleKey: 'home.admin.link.providers.title',
-    subtitleKey: 'home.admin.link.providers.subtitle',
-    color: '#8b5cf6',
-    requires: 'dynamicProviders',
-  },
-  {
-    href: '/admin/radio',
-    icon: 'radio',
-    titleKey: 'home.admin.link.radio.title',
-    subtitleKey: 'home.admin.link.radio.subtitle',
-    color: '#ec4899',
-    requires: 'internetRadio',
-  },
-  {
-    href: '/admin/settings',
-    icon: 'options',
-    titleKey: 'home.admin.link.settings.title',
-    subtitleKey: 'home.admin.link.settings.subtitle',
-    color: '#0ea5e9',
-    requires: 'runtimeSettings',
-  },
 ];
 
 /**
@@ -89,7 +43,7 @@ export default function Admin() {
     );
   }
 
-  const visibleLinks = LINKS.filter((l) => !l.requires || client.has(l.requires));
+  const visibleLinks = ADMIN_LINKS.filter((l) => !l.requires || client.has(l.requires));
 
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-background">

@@ -20,6 +20,7 @@ import { TopBar } from '../src/components/TopBar';
 import { SearchOverlay } from '../src/components/SearchOverlay';
 import { AccentScope } from '../src/components/AccentScope';
 import { LibrarySidebar } from '../src/components/LibrarySidebar';
+import { AdminSidebar } from '../src/components/AdminSidebar';
 import { useUI } from '../src/stores/ui';
 import { useLocale } from '../src/i18n/store';
 import { useSelfServer } from '../src/api/selfServer';
@@ -82,6 +83,9 @@ export default function RootLayout() {
   // except on the immersive full-screen surfaces (player / queue).
   const immersive = pathname === '/player' || pathname === '/queue';
   const showSidebar = wide && authStatus === 'authenticated' && !immersive;
+  // Inside the admin section the left rail becomes a page-nav menu instead of
+  // the playlist library (immich-style).
+  const inAdmin = pathname === '/admin' || pathname.startsWith('/admin/');
 
   // Hold a themed splash until the persisted theme is applied, so the UI never
   // flashes unthemed (light) content on reload.
@@ -109,7 +113,7 @@ export default function RootLayout() {
             {/* On desktop, the library sidebar sits beside the navigator content
                 and persists across screens; on mobile the navigator is full width. */}
             <View style={{ flex: 1, flexDirection: 'row' }}>
-              {showSidebar ? <LibrarySidebar /> : null}
+              {showSidebar ? inAdmin ? <AdminSidebar /> : <LibrarySidebar /> : null}
               <View style={{ flex: 1 }}>
                 <Stack
                   screenOptions={{
