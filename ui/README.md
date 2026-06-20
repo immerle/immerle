@@ -90,7 +90,7 @@ pour suivre l'écoute entre appareils.
 | **W3** Playlists (CRUD, ajout/retrait partout, réordonnancement, détail) | ✅ |
 | **W4** Administration (users CRUD+reset MDP, scan+progression+stats, providers+jobs, fédération, serveur/transcodage — gaté par rôle) | ✅ |
 | **W5** Social + catalogue à la demande (Jam, flux, playlists collaboratives, recherche distante) | ⏳ à venir |
-| **W6** Reco/éditoriales, offline, finition (PWA, cache hors-ligne) | ⏳ à venir |
+| **W6** Reco/éditoriales, offline, finition (PWA, cache hors-ligne) | 🚧 offline natif + PWA faits ; reco/éditoriales à venir |
 
 > Les écrans admin providers/jobs/fédération/serveur dépendent d'endpoints
 > Immerle côté serveur (S4/S5/S7). Ils sont câblés et capability-gated : ils

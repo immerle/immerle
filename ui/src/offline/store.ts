@@ -32,6 +32,8 @@ interface DownloadsState {
   hydrate: () => Promise<void>;
   /** Download a track for offline playback (no-op on web / when disabled). */
   download: (song: Song) => Promise<void>;
+  /** Download several tracks in sequence (already-downloaded ones are skipped). */
+  downloadMany: (songs: Song[]) => Promise<void>;
   /** Delete a downloaded track (file + registry entry). */
   remove: (id: string) => Promise<void>;
   /** Delete every downloaded track. */
@@ -95,6 +97,14 @@ export const useDownloads = create<DownloadsState>((set, get) => ({
         delete progress[id];
         return { progress };
       });
+    }
+  },
+
+  downloadMany: async (songs) => {
+    // Sequential so a "download album/playlist" doesn't fire dozens of parallel
+    // fetches. download() already skips ones that are done or in flight.
+    for (const song of songs) {
+      await get().download(song);
     }
   },
 

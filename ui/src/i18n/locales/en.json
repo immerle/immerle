@@ -610,6 +610,8 @@
     }
   },
   "media": {
+    "download": "Download for offline",
+    "downloaded": "Downloaded",
     "album": {
       "notFound": "Album not found.",
       "label": "Album",

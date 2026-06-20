@@ -610,6 +610,8 @@
     }
   },
   "media": {
+    "download": "Télécharger hors-ligne",
+    "downloaded": "Téléchargé",
     "album": {
       "notFound": "Album introuvable.",
       "label": "Album",

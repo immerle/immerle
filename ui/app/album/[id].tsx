@@ -7,6 +7,7 @@ import { HeroBackdrop } from '../../src/components/HeroBackdrop';
 import { TrackList } from '../../src/components/TrackList';
 import { ErrorState, IconButton, Loading } from '../../src/components/ui';
 import { PlayButton } from '../../src/components/PlayButton';
+import { DownloadButton } from '../../src/components/DownloadButton';
 import { usePlayer } from '../../src/audio/store';
 import { useColors } from '../../src/theme/colors';
 import { Song } from '../../src/api/subsonic/types';
@@ -76,6 +77,7 @@ export default function AlbumDetail() {
       <View className="flex-row items-center gap-5 px-4 py-4">
         <PlayButton onPress={playAll} size={56} accessibilityLabel={t('media.album.play')} />
         <IconButton name="shuffle" size={26} color={colors.muted} onPress={shuffle} accessibilityLabel={t('media.album.shuffle')} />
+        <DownloadButton songs={songs} size={26} />
       </View>
     </View>
   );
