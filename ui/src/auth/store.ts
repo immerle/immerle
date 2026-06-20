@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { normalizeServerUrl } from '../api/subsonic/client';
+import { normalizeServerUrl } from '../utils/serverUrl';
 import { createAuthedImmerleApi, createImmerleApi } from '../api/immerleApi';
 import { ImmerleClient } from '../api/immerle/client';
 import { probeCapabilities } from '../api/immerle/capabilities';

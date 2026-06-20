@@ -3,7 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { getSetupStatus, initSetup, SetupFieldError } from '../src/api/setup';
 import { useSelfServer } from '../src/api/selfServer';
-import { normalizeServerUrl } from '../src/api/subsonic/client';
+import { normalizeServerUrl } from '../src/utils/serverUrl';
 import { Button, ErrorState, Field, Loading } from '../src/components/ui';
 import { AuthShell } from '../src/components/AuthShell';
 import { Ionicon } from '../src/components/Ionicon';
