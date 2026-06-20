@@ -13,6 +13,7 @@ import { useAuth } from '../src/auth/store';
 import { useTheme } from '../src/theme/store';
 import { usePlayer } from '../src/audio/store';
 import { useSearchUI } from '../src/search/store';
+import { useDownloads } from '../src/offline/store';
 import { TrackMenu } from '../src/components/trackMenu';
 import { PlayerBar } from '../src/components/PlayerBar';
 import { TopBar } from '../src/components/TopBar';
@@ -46,6 +47,7 @@ export default function RootLayout() {
   const loadRecents = useSearchUI((s) => s.loadRecents);
   const hydrateUI = useUI((s) => s.hydrate);
   const hydrateLocale = useLocale((s) => s.hydrate);
+  const hydrateDownloads = useDownloads((s) => s.hydrate);
   const detectSelf = useSelfServer((s) => s.detect);
   const authStatus = useAuth((s) => s.status);
   const themeHydrated = useTheme((s) => s.hydrated);
@@ -59,8 +61,9 @@ export default function RootLayout() {
     void loadRecents();
     void hydrateUI();
     void hydrateLocale();
+    void hydrateDownloads();
     void detectSelf();
-  }, [hydrateTheme, restore, hydratePlayer, initPlayer, loadRecents, hydrateUI, hydrateLocale, detectSelf]);
+  }, [hydrateTheme, restore, hydratePlayer, initPlayer, loadRecents, hydrateUI, hydrateLocale, hydrateDownloads, detectSelf]);
 
   // Web only: expo-router disables automatic document titles, so set the
   // browser tab title from the current route.
