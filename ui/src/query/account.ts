@@ -41,7 +41,7 @@ export function useNowPlaying() {
     queryKey: KEYS.nowPlaying,
     enabled: !!client,
     refetchInterval: 10000,
-    queryFn: () => client!.subsonic.getNowPlaying(),
+    queryFn: () => client!.getNowPlaying(),
   });
 }
 

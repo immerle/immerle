@@ -3,6 +3,7 @@ import type {
   ArtistView,
   FavoritesView,
   GenreView,
+  NowPlayingView,
   PlaylistView,
   SearchView,
   SongView,
@@ -13,6 +14,7 @@ import type {
   Artist,
   ArtistWithAlbums,
   Genre,
+  NowPlayingEntry,
   Playlist,
   PlaylistWithSongs,
   SearchResult3,
@@ -124,4 +126,12 @@ export function toPlaylist(v: PlaylistView): Playlist {
 
 export function toPlaylistWithSongs(v: PlaylistView): PlaylistWithSongs {
   return { ...toPlaylist(v), entry: v.tracks?.map(toSong) };
+}
+
+export function toNowPlaying(v: NowPlayingView): NowPlayingEntry {
+  return {
+    ...(v.song ? toSong(v.song) : { id: '', title: '' }),
+    username: v.username,
+    minutesAgo: v.minutesAgo,
+  };
 }

@@ -332,7 +332,7 @@ function sendNowPlaying(get: () => AudioState): void {
   const song = get().current();
   if (!c || !song || scrobble.nowPlayingSent) return;
   scrobble.nowPlayingSent = true;
-  void c.subsonic.scrobble(song.id, false).catch(() => undefined);
+  void c.scrobble(song.id, false).catch(() => undefined);
 }
 
 /** Submit a real scrobble once playback passes the half / 4-minute mark. */
@@ -344,7 +344,7 @@ function maybeScrobble(get: () => AudioState, position: number, duration: number
   const song = get().current();
   if (!c || !song) return;
   scrobble.submitted = true;
-  void c.subsonic
+  void c
     .scrobble(song.id, true)
     .then(() => {
       // The play now counts: refresh the "recently played" / "most played"
@@ -362,7 +362,7 @@ function scheduleSaveQueue(get: () => AudioState): void {
     const c = client();
     const { songs, index, position } = get();
     if (!c || songs.length === 0 || index < 0) return;
-    void c.subsonic
+    void c
       .savePlayQueue(
         songs.map((s) => s.id),
         songs[index]?.id,
