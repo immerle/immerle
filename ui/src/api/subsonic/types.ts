@@ -66,6 +66,9 @@ export interface Song {
   year?: number;
   genre?: string;
   coverArt?: string;
+  /** Pre-built cover URL for non-Subsonic art (e.g. radio logos), bypassing the
+   * coverArt-id resolution. */
+  coverUrl?: string;
   size?: number;
   contentType?: string;
   suffix?: string;

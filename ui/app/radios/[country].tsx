@@ -45,7 +45,7 @@ export default function CountryRadios() {
           stations.map((s: RadioStation) => (
             <Pressable
               key={s.id}
-              onPress={() => playRadio({ id: s.id, name: s.name, streamUrl: s.streamUrl })}
+              onPress={() => playRadio({ id: s.id, name: s.name, streamUrl: s.streamUrl, hasCover: s.hasCover })}
               className="flex-row items-center gap-3 rounded-xl bg-surface px-3 py-2 active:opacity-70"
             >
               <StationCover uri={s.hasCover && client ? client.radioCoverUrl(s.id) : undefined} size={48} rounded={8} />

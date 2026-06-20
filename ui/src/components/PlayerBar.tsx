@@ -109,7 +109,7 @@ function CompactBar({ song, status, position, duration }: BarProps) {
         onPress={() => router.push('/player')}
         className="flex-row items-center gap-3 px-3 py-2 active:opacity-90"
       >
-        <CoverArt coverArt={song.coverArt} size={44} rounded="rounded-md" />
+        <CoverArt coverArt={song.coverArt} url={song.coverUrl} size={44} rounded="rounded-md" />
         <View className="flex-1">
           <Text numberOfLines={1} className="text-sm font-semibold text-foreground">
             {song.title}
@@ -149,7 +149,7 @@ function WideBar({ song, status, position, duration }: BarProps) {
       {/* Left — now playing */}
       <View className="min-w-0 flex-1 flex-row items-center gap-3">
         <Pressable onPress={() => router.push('/player')} className="active:opacity-80">
-          <CoverArt coverArt={song.coverArt} size={56} rounded="rounded-md" />
+          <CoverArt coverArt={song.coverArt} url={song.coverUrl} size={56} rounded="rounded-md" />
         </Pressable>
         <View className="min-w-0 flex-1">
           <Text numberOfLines={1} className="text-sm font-semibold text-foreground">
