@@ -219,7 +219,7 @@ func (s *Scanner) indexFile(ctx context.Context, path string) (string, bool, err
 	albumArtistID, err := s.catalog.UpsertArtist(ctx, models.Artist{
 		ID:        uuid.NewString(),
 		Name:      albumArtistName,
-		SortName:  albumArtistName,
+		SortName:  firstNonEmpty(md.AlbumArtistSort, md.ArtistSort, albumArtistName),
 		MBID:      md.MBArtistID,
 		CreatedAt: now,
 	})
@@ -232,7 +232,7 @@ func (s *Scanner) indexFile(ctx context.Context, path string) (string, bool, err
 		trackArtistID, err = s.catalog.UpsertArtist(ctx, models.Artist{
 			ID:        uuid.NewString(),
 			Name:      md.Artist,
-			SortName:  md.Artist,
+			SortName:  firstNonEmpty(md.ArtistSort, md.Artist),
 			CreatedAt: now,
 		})
 		if err != nil {
@@ -243,6 +243,7 @@ func (s *Scanner) indexFile(ctx context.Context, path string) (string, bool, err
 	albumID, err := s.catalog.UpsertAlbum(ctx, models.Album{
 		ID:            uuid.NewString(),
 		Name:          md.Album,
+		SortName:      firstNonEmpty(md.AlbumSort, md.Album),
 		ArtistID:      albumArtistID,
 		MBID:          md.MBAlbumID,
 		Year:          md.Year,
@@ -295,6 +296,12 @@ func (s *Scanner) indexFile(ctx context.Context, path string) (string, bool, err
 		BPM:             md.BPM,
 		Duration:        md.Duration,
 		BitRate:         md.BitRate,
+		TitleSort:       md.TitleSort,
+		Work:            md.Work,
+		MovementName:    md.MovementName,
+		MovementNo:      md.MovementNo,
+		Lyrics:          md.Lyrics,
+		Participants:    md.Participants,
 		ReplayGainTrack: md.ReplayGainTrack,
 		ReplayGainAlbum: md.ReplayGainAlbum,
 		Path:            path,

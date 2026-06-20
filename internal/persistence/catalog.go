@@ -3,6 +3,7 @@ package persistence
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"strings"
 	"time"
@@ -112,7 +113,7 @@ func (r *CatalogRepo) ListArtists(ctx context.Context) ([]models.Artist, error) 
 // every read built on it (GetAlbum, ListAlbumsByArtist, ListAlbums, Search)
 // stays hand-written.
 const albumSelect = `
-	SELECT al.id, al.name, al.artist_id, ar.name, al.mbid, al.year, al.genre,
+	SELECT al.id, al.name, al.sort_name, al.artist_id, ar.name, al.mbid, al.year, al.genre,
 	       COALESCE(NULLIF(al.cover_art,''),
 	                (SELECT t.cover_art FROM tracks t
 	                 WHERE t.album_id = al.id AND t.cover_art <> ''
@@ -126,7 +127,7 @@ func scanAlbum(s rowScanner) (models.Album, error) {
 	var a models.Album
 	var isComp int
 	var createdAt int64
-	if err := s.Scan(&a.ID, &a.Name, &a.ArtistID, &a.ArtistName, &a.MBID, &a.Year, &a.Genre, &a.CoverArt, &isComp, &createdAt, &a.SongCount, &a.Duration); err != nil {
+	if err := s.Scan(&a.ID, &a.Name, &a.SortName, &a.ArtistID, &a.ArtistName, &a.MBID, &a.Year, &a.Genre, &a.CoverArt, &isComp, &createdAt, &a.SongCount, &a.Duration); err != nil {
 		return a, err
 	}
 	a.IsCompilation = isComp != 0
@@ -155,6 +156,7 @@ func (r *CatalogRepo) UpsertAlbum(ctx context.Context, a models.Album) (string, 
 		// overwritten outright.
 		if _, err := r.bexec(ctx, r.mel.NewUpdate("albums").
 			SetRaw("year", "COALESCE(NULLIF(?,0), year)", a.Year).
+			SetRaw("sort_name", "COALESCE(NULLIF(?,''), sort_name)", a.SortName).
 			SetRaw("genre", "COALESCE(NULLIF(?,''), genre)", a.Genre).
 			SetRaw("cover_art", "CASE WHEN cover_art='' THEN ? ELSE cover_art END", a.CoverArt).
 			Set("is_compilation", db.Bool(a.IsCompilation)).
@@ -168,7 +170,7 @@ func (r *CatalogRepo) UpsertAlbum(ctx context.Context, a models.Album) (string, 
 		return "", err
 	}
 	_, err = r.bexec(ctx, r.mel.NewInsert("albums").
-		Set("id", a.ID).Set("name", a.Name).Set("artist_id", a.ArtistID).Set("mbid", a.MBID).Set("year", a.Year).
+		Set("id", a.ID).Set("name", a.Name).Set("sort_name", a.SortName).Set("artist_id", a.ArtistID).Set("mbid", a.MBID).Set("year", a.Year).
 		Set("genre", a.Genre).Set("cover_art", a.CoverArt).Set("is_compilation", db.Bool(a.IsCompilation)).
 		Set("created_at", db.Millis(a.CreatedAt)))
 	if err != nil {
@@ -293,6 +295,7 @@ func (r *CatalogRepo) listAlbums(ctx context.Context, q string, args ...any) ([]
 const trackSelect = `
 	SELECT t.id, t.title, t.album_id, al.name, t.artist_id, ar.name, t.track_no, t.disc_no,
 	       t.composer, t.genre, t.year, t.duration, t.bitrate, t.path, t.suffix, t.content_type, t.size,
+	       t.title_sort, t.work, t.movement_name, t.movement_no, t.lyrics, t.participants,
 	       t.mbid, t.file_hash, t.cover_art, t.bpm, t.replaygain_track, t.replaygain_album,
 	       t.remote, t.provider, t.uploaded_by, t.created_at, t.updated_at
 	FROM tracks t JOIN albums al ON al.id = t.album_id JOIN artists ar ON ar.id = t.artist_id`
@@ -301,16 +304,34 @@ func scanTrack(s rowScanner) (models.Track, error) {
 	var t models.Track
 	var remote int
 	var createdAt, updatedAt int64
+	var participants string
 	if err := s.Scan(&t.ID, &t.Title, &t.AlbumID, &t.AlbumName, &t.ArtistID, &t.ArtistName, &t.TrackNo, &t.DiscNo,
 		&t.Composer, &t.Genre, &t.Year, &t.Duration, &t.BitRate, &t.Path, &t.Suffix, &t.ContentType, &t.Size,
+		&t.TitleSort, &t.Work, &t.MovementName, &t.MovementNo, &t.Lyrics, &participants,
 		&t.MBID, &t.FileHash, &t.CoverArt, &t.BPM, &t.ReplayGainTrack, &t.ReplayGainAlbum,
 		&remote, &t.Provider, &t.UploadedBy, &createdAt, &updatedAt); err != nil {
 		return t, err
+	}
+	if participants != "" {
+		_ = json.Unmarshal([]byte(participants), &t.Participants)
 	}
 	t.Remote = remote != 0
 	t.CreatedAt = db.FromMillis(createdAt)
 	t.UpdatedAt = db.FromMillis(updatedAt)
 	return t, nil
+}
+
+// marshalParticipants serializes track participants for the JSON column ("" when
+// none, so the column stays empty rather than holding "null").
+func marshalParticipants(p []models.Participant) string {
+	if len(p) == 0 {
+		return ""
+	}
+	b, err := json.Marshal(p)
+	if err != nil {
+		return ""
+	}
+	return string(b)
 }
 
 // UpsertTrack inserts or updates a track, matching by path, then MBID, then file
@@ -324,6 +345,8 @@ func (r *CatalogRepo) UpsertTrack(ctx context.Context, t models.Track) (string, 
 		_, err := r.bexec(ctx, r.mel.NewUpdate("tracks").
 			Set("title", t.Title).Set("album_id", t.AlbumID).Set("artist_id", t.ArtistID).Set("track_no", t.TrackNo).
 			Set("disc_no", t.DiscNo).Set("composer", t.Composer).Set("genre", t.Genre).Set("year", t.Year).Set("duration", t.Duration).
+			Set("title_sort", t.TitleSort).Set("work", t.Work).Set("movement_name", t.MovementName).
+			Set("movement_no", t.MovementNo).Set("lyrics", t.Lyrics).Set("participants", marshalParticipants(t.Participants)).
 			Set("bitrate", t.BitRate).Set("path", t.Path).Set("suffix", t.Suffix).Set("content_type", t.ContentType).
 			Set("size", t.Size).Set("mbid", t.MBID).Set("file_hash", t.FileHash).Set("cover_art", t.CoverArt).
 			Set("bpm", t.BPM).Set("replaygain_track", t.ReplayGainTrack).Set("replaygain_album", t.ReplayGainAlbum).
@@ -334,6 +357,8 @@ func (r *CatalogRepo) UpsertTrack(ctx context.Context, t models.Track) (string, 
 	_, err = r.bexec(ctx, r.mel.NewInsert("tracks").
 		Set("id", t.ID).Set("title", t.Title).Set("album_id", t.AlbumID).Set("artist_id", t.ArtistID).
 		Set("track_no", t.TrackNo).Set("disc_no", t.DiscNo).Set("composer", t.Composer).Set("genre", t.Genre).Set("year", t.Year).
+		Set("title_sort", t.TitleSort).Set("work", t.Work).Set("movement_name", t.MovementName).
+		Set("movement_no", t.MovementNo).Set("lyrics", t.Lyrics).Set("participants", marshalParticipants(t.Participants)).
 		Set("duration", t.Duration).Set("bitrate", t.BitRate).Set("path", t.Path).Set("suffix", t.Suffix).
 		Set("content_type", t.ContentType).Set("size", t.Size).Set("mbid", t.MBID).Set("file_hash", t.FileHash).
 		Set("cover_art", t.CoverArt).Set("bpm", t.BPM).Set("replaygain_track", t.ReplayGainTrack).

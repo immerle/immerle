@@ -23,34 +23,40 @@ func starredStr(a *models.Annotation) string {
 // toChild converts a track to a Subsonic Child, enriching with annotation state.
 func toChild(t models.Track, ann *models.Annotation) Child {
 	c := Child{
-		ID:            t.ID,
-		Parent:        t.AlbumID,
-		IsDir:         false,
-		Title:         t.Title,
-		Album:         t.AlbumName,
-		Artist:        t.ArtistName,
-		Track:         t.TrackNo,
-		Year:          t.Year,
-		Genre:         t.Genre,
-		CoverArt:      coverOrAlbum(t),
-		Size:          t.Size,
-		ContentType:   t.ContentType,
-		Suffix:        t.Suffix,
-		Duration:      t.Duration,
-		BitRate:       t.BitRate,
-		Path:          t.Path,
-		IsVideo:       false,
-		DiscNumber:    t.DiscNo,
-		Created:       formatTime(t.CreatedAt),
-		AlbumID:       t.AlbumID,
-		ArtistID:      t.ArtistID,
-		Type:          "music",
-		MusicBrainzID: t.MBID,
-		Composer:      t.Composer,
-		BPM:           t.BPM,
+		ID:             t.ID,
+		Parent:         t.AlbumID,
+		IsDir:          false,
+		Title:          t.Title,
+		Album:          t.AlbumName,
+		Artist:         t.ArtistName,
+		Track:          t.TrackNo,
+		Year:           t.Year,
+		Genre:          t.Genre,
+		CoverArt:       coverOrAlbum(t),
+		Size:           t.Size,
+		ContentType:    t.ContentType,
+		Suffix:         t.Suffix,
+		Duration:       t.Duration,
+		BitRate:        t.BitRate,
+		Path:           t.Path,
+		IsVideo:        false,
+		DiscNumber:     t.DiscNo,
+		Created:        formatTime(t.CreatedAt),
+		AlbumID:        t.AlbumID,
+		ArtistID:       t.ArtistID,
+		Type:           "music",
+		MusicBrainzID:  t.MBID,
+		Composer:       t.Composer,
+		BPM:            t.BPM,
+		Work:           t.Work,
+		MovementName:   t.MovementName,
+		MovementNumber: t.MovementNo,
 	}
 	if t.ReplayGainTrack != 0 || t.ReplayGainAlbum != 0 {
 		c.ReplayGain = &ReplayGain{TrackGain: t.ReplayGainTrack, AlbumGain: t.ReplayGainAlbum}
+	}
+	for _, p := range t.Participants {
+		c.Contributors = append(c.Contributors, Contributor{Role: p.Role, Artist: ContributorArtist{Name: p.Name}})
 	}
 	if ann != nil {
 		c.PlayCount = ann.PlayCount

@@ -176,15 +176,31 @@ type Child struct {
 	UserRating    int    `xml:"userRating,attr,omitempty" json:"userRating,omitempty"`
 	MusicBrainzID string `xml:"musicBrainzId,attr,omitempty" json:"musicBrainzId,omitempty"`
 	// OpenSubsonic extensions.
-	Composer   string      `xml:"composer,attr,omitempty" json:"composer,omitempty"`
-	BPM        int         `xml:"bpm,attr,omitempty" json:"bpm,omitempty"`
-	ReplayGain *ReplayGain `xml:"replayGain,omitempty" json:"replayGain,omitempty"`
+	Composer       string        `xml:"composer,attr,omitempty" json:"composer,omitempty"`
+	BPM            int           `xml:"bpm,attr,omitempty" json:"bpm,omitempty"`
+	Work           string        `xml:"work,attr,omitempty" json:"work,omitempty"`
+	MovementName   string        `xml:"movementName,attr,omitempty" json:"movementName,omitempty"`
+	MovementNumber int           `xml:"movementNumber,attr,omitempty" json:"movementNumber,omitempty"`
+	ReplayGain     *ReplayGain   `xml:"replayGain,omitempty" json:"replayGain,omitempty"`
+	Contributors   []Contributor `xml:"contributors,omitempty" json:"contributors,omitempty"`
 }
 
 // ReplayGain is the OpenSubsonic per-track/album loudness data, in dB.
 type ReplayGain struct {
 	TrackGain float64 `xml:"trackGain,attr,omitempty" json:"trackGain,omitempty"`
 	AlbumGain float64 `xml:"albumGain,attr,omitempty" json:"albumGain,omitempty"`
+}
+
+// Contributor is one OpenSubsonic role credit on a track. The artist carries
+// only a name here (participants are not catalog entities), so no id is sent.
+type Contributor struct {
+	Role   string            `xml:"role,attr" json:"role"`
+	Artist ContributorArtist `xml:"artist" json:"artist"`
+}
+
+// ContributorArtist is the minimal artist reference inside a Contributor.
+type ContributorArtist struct {
+	Name string `xml:"name,attr" json:"name"`
 }
 
 // Genres wraps the genre list.
