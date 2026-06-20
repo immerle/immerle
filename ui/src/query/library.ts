@@ -9,7 +9,7 @@ export function useArtists() {
   return useQuery({
     queryKey: qk.artists,
     enabled: !!client,
-    queryFn: ({ signal }) => client!.subsonic.getArtists(),
+    queryFn: ({ signal }) => client!.getArtists(),
   });
 }
 
@@ -18,7 +18,7 @@ export function useArtist(id: string) {
   return useQuery({
     queryKey: qk.artist(id),
     enabled: !!client && !!id,
-    queryFn: () => client!.subsonic.getArtist(id),
+    queryFn: () => client!.getArtist(id),
   });
 }
 
@@ -27,7 +27,7 @@ export function useAlbum(id: string) {
   return useQuery({
     queryKey: qk.album(id),
     enabled: !!client && !!id,
-    queryFn: () => client!.subsonic.getAlbum(id),
+    queryFn: () => client!.getAlbum(id),
   });
 }
 
@@ -36,7 +36,7 @@ export function useAlbumList(type: string, genre?: string) {
   return useQuery({
     queryKey: qk.albumList(type, genre),
     enabled: !!client,
-    queryFn: () => client!.subsonic.getAlbumList(type, { size: 100, genre }),
+    queryFn: () => client!.getAlbumList(type, { size: 100, genre }),
   });
 }
 
@@ -45,7 +45,7 @@ export function useGenres() {
   return useQuery({
     queryKey: qk.genres,
     enabled: !!client,
-    queryFn: () => client!.subsonic.getGenres(),
+    queryFn: () => client!.getGenres(),
   });
 }
 
@@ -54,7 +54,7 @@ export function useSongsByGenre(genre: string) {
   return useQuery({
     queryKey: qk.songsByGenre(genre),
     enabled: !!client && !!genre,
-    queryFn: () => client!.subsonic.getSongsByGenre(genre, 200),
+    queryFn: () => client!.getSongsByGenre(genre, 200),
   });
 }
 
@@ -63,6 +63,6 @@ export function useStarred() {
   return useQuery({
     queryKey: qk.starred,
     enabled: !!client,
-    queryFn: () => client!.subsonic.getStarred(),
+    queryFn: () => client!.getStarred(),
   });
 }

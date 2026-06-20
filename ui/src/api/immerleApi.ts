@@ -47,6 +47,14 @@ export type ErrorResponse = components['schemas']['immerle.errorResponse'];
 export type CapabilitiesResponse =
   paths['/capabilities']['get']['responses']['200']['content']['application/json'];
 
+// Catalog browse DTOs (the native shapes that replace the Subsonic ones).
+export type ArtistView = components['schemas']['immerle.artistView'];
+export type AlbumView = components['schemas']['immerle.albumView'];
+export type SongView = components['schemas']['immerle.songView'];
+export type GenreView = components['schemas']['immerle.genreView'];
+export type FavoritesView = components['schemas']['immerle.favoritesView'];
+export type SearchView = components['schemas']['immerle.searchView'];
+
 // Session creation (device login).
 export type LoginResponse = components['schemas']['immerle.LoginDTO'];
 

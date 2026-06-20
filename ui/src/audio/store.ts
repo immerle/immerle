@@ -171,7 +171,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
     const c = client();
     const engine = get().engine;
     if (!c || !engine) return;
-    const song = await c.subsonic.getSong(id).catch(() => ({ id, title: 'Piste' }) as Song);
+    const song = await c.getSong(id).catch(() => ({ id, title: 'Piste' }) as Song);
     orderBackup = null;
     scrobble = { nowPlayingSent: false, submitted: false };
     set({ songs: [song], index: 0, position: positionSec });
