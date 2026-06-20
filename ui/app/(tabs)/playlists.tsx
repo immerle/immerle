@@ -36,6 +36,27 @@ function LikedRow() {
   );
 }
 
+/** Pinned entry to the rule-based smart playlists hub. */
+function SmartRow() {
+  const t = useT();
+  const colors = useColors();
+  return (
+    <Pressable
+      onPress={() => router.push('/smart-playlists' as never)}
+      className="flex-row items-center gap-3 border-b border-border px-4 py-2 active:bg-surface-alt"
+    >
+      <View className="h-14 w-14 items-center justify-center rounded-lg bg-primary/15">
+        <Ionicon name="sparkles" size={26} color={colors.primary} />
+      </View>
+      <View className="flex-1">
+        <Text className="text-base font-semibold text-foreground">{t('smart.title')}</Text>
+        <Text className="text-sm text-muted">{t('smart.tabSubtitle')}</Text>
+      </View>
+      <IconButton name="chevron-forward" size={18} accessibilityLabel={t('home.playlists.open')} />
+    </Pressable>
+  );
+}
+
 /** Pinned entry to internet radio. */
 function RadioRow() {
   const t = useT();
@@ -64,6 +85,7 @@ export default function Playlists() {
   const q = usePlaylists();
   const create = useCreatePlaylist();
   const canDiscover = useAuth((s) => s.client?.has('publicPlaylists') ?? false);
+  const canSmart = useAuth((s) => s.client?.has('smartPlaylists') ?? false);
   const canRadio = useAuth((s) => s.client?.has('internetRadio') ?? false);
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState('');
@@ -120,6 +142,7 @@ export default function Playlists() {
 
       {/* "Titres likés" is pinned at the very top, regardless of list state. */}
       <LikedRow />
+      {canSmart ? <SmartRow /> : null}
       {canRadio ? <RadioRow /> : null}
 
       {q.isLoading ? (

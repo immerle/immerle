@@ -74,17 +74,24 @@ type ProviderLog struct {
 // as opposed to the bootstrap settings that live in the environment (.env) and
 // need a restart.
 type RuntimeSettings struct {
-	Server     ServerRuntime     `json:"server"`
-	Auth       AuthRuntime       `json:"auth"`
-	Transcode  TranscodeRuntime  `json:"transcode"`
-	Providers  ProviderRuntime   `json:"providers"`
-	Scan       ScanRuntime       `json:"scan"`
-	Cleanup    CleanupRuntime    `json:"cleanup"`
-	Federation FederationRuntime `json:"federation"`
-	Import     ImportRuntime     `json:"import"`
-	Logs       LogsRuntime       `json:"logs"`
-	Radio      RadioRuntime      `json:"radio"`
-	Wrapped    WrappedRuntime    `json:"wrapped"`
+	Server         ServerRuntime         `json:"server"`
+	Auth           AuthRuntime           `json:"auth"`
+	Transcode      TranscodeRuntime      `json:"transcode"`
+	Providers      ProviderRuntime       `json:"providers"`
+	Scan           ScanRuntime           `json:"scan"`
+	Cleanup        CleanupRuntime        `json:"cleanup"`
+	Federation     FederationRuntime     `json:"federation"`
+	Import         ImportRuntime         `json:"import"`
+	Logs           LogsRuntime           `json:"logs"`
+	SmartPlaylists SmartPlaylistsRuntime `json:"smartPlaylists"`
+	Radio          RadioRuntime          `json:"radio"`
+	Wrapped        WrappedRuntime        `json:"wrapped"`
+}
+
+// SmartPlaylistsRuntime toggles rule-based "smart" playlists (hot-reloadable).
+// When disabled, the smart-playlist endpoints 404 and clients hide them.
+type SmartPlaylistsRuntime struct {
+	Enabled bool `json:"enabled"`
 }
 
 // RadioRuntime toggles internet radio stations (hot-reloadable). When disabled,
@@ -204,11 +211,46 @@ func DefaultRuntimeSettings() RuntimeSettings {
 		// Import sources that go through the hub (e.g. spotify) need no per-source
 		// config here — they use the federation hub credentials. This map is for
 		// future sources that authenticate directly.
-		Import:  ImportRuntime{},
-		Logs:    LogsRuntime{RetentionDays: 30},
-		Radio:   RadioRuntime{Enabled: true},
-		Wrapped: WrappedRuntime{Enabled: true},
+		Import:         ImportRuntime{},
+		Logs:           LogsRuntime{RetentionDays: 30},
+		SmartPlaylists: SmartPlaylistsRuntime{Enabled: true},
+		Radio:          RadioRuntime{Enabled: true},
+		Wrapped:        WrappedRuntime{Enabled: true},
 	}
+}
+
+// SmartPlaylist is a saved set of rules that materializes to tracks on read
+// (a "smart"/dynamic playlist). Rules are stored as opaque JSON and evaluated
+// into a track query at fetch time.
+type SmartPlaylist struct {
+	ID        string     `json:"id"`
+	OwnerID   string     `json:"ownerId"`
+	Name      string     `json:"name"`
+	Rules     SmartRules `json:"rules"`
+	CreatedAt time.Time  `json:"createdAt"`
+	UpdatedAt time.Time  `json:"updatedAt"`
+}
+
+// SmartRules describes how to select and order tracks for a smart playlist.
+type SmartRules struct {
+	// Match is "all" (AND) or "any" (OR) across Conditions. Defaults to "all".
+	Match string `json:"match"`
+	// Conditions are the filters; an empty list matches the whole library.
+	Conditions []SmartCondition `json:"conditions"`
+	// Sort is a whitelisted sort key (e.g. "random", "playCount", "recentlyAdded").
+	Sort string `json:"sort"`
+	// Order is "asc" or "desc" (ignored for "random").
+	Order string `json:"order"`
+	// Limit caps the result (clamped 1..500).
+	Limit int `json:"limit"`
+}
+
+// SmartCondition is one filter: a whitelisted field, a whitelisted operator and
+// a value (kept as a string and parsed per field at evaluation time).
+type SmartCondition struct {
+	Field string `json:"field"`
+	Op    string `json:"op"`
+	Value string `json:"value"`
 }
 
 // RadioStation is an internet radio station: a name, an audio stream URL and an

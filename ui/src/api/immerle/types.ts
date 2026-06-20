@@ -38,6 +38,8 @@ export interface Capabilities {
     adminExtended: boolean;
     /** Per-track / per-album offline download endpoints. */
     offlineDownloads: boolean;
+    /** Rule-based "smart" playlists (`/smart-playlists`). */
+    smartPlaylists: boolean;
     /** Internet radio stations (built-in + admin-managed custom). */
     internetRadio: boolean;
     /** Year-in-review ("Wrapped") stats endpoint (`/wrapped`). */
@@ -175,6 +177,30 @@ export interface ServerSettings {
   scrobblingEnabled: boolean;
   /** Maximum bitrate streamed without explicit override. */
   maxStreamBitRate?: number;
+}
+
+// --- Smart playlists (rule-based) ------------------------------------------
+
+export interface SmartCondition {
+  field: string;
+  op: string;
+  value: string;
+}
+
+export interface SmartRules {
+  match: 'all' | 'any';
+  conditions: SmartCondition[];
+  sort: string;
+  order: 'asc' | 'desc';
+  limit: number;
+}
+
+export interface SmartPlaylist {
+  id: string;
+  name: string;
+  rules: SmartRules;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // --- Internet radio --------------------------------------------------------

@@ -69,6 +69,8 @@ type Deps struct {
 	// Settings manages the DB-backed runtime settings (admin API). It also supplies
 	// the device-session JWT lifetime (a runtime setting).
 	Settings *core.SettingsService
+	// SmartPlaylists persists and evaluates rule-based playlists.
+	SmartPlaylists *persistence.SmartPlaylistRepo
 	// Radio persists internet radio stations (built-in + custom).
 	Radio *persistence.RadioRepo
 	// Wrapped computes the per-user year-in-review from the scrobble history.
@@ -235,6 +237,14 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Get("/imports/{id}", h.handleImportStatus)
 			r.Post("/imports/{id}/items/{itemId}/resolve", h.handleImportItemResolve)
 
+			// Rule-based "smart" playlists.
+			r.Get("/smart-playlists", h.handleSmartPlaylists)
+			r.Post("/smart-playlists", h.handleSmartPlaylistCreate)
+			r.Post("/smart-playlists/preview", h.handleSmartPlaylistPreview)
+			r.Put("/smart-playlists/{id}", h.handleSmartPlaylistUpdate)
+			r.Delete("/smart-playlists/{id}", h.handleSmartPlaylistDelete)
+			r.Get("/smart-playlists/{id}/tracks", h.handleSmartPlaylistTracks)
+
 			// Playlist CRUD over the shared playlist service.
 			r.Get("/playlists", h.handleListPlaylists)
 			r.Post("/playlists", h.handleCreatePlaylist)
@@ -298,6 +308,10 @@ func (h *Handler) Register(mux chi.Router) {
 			// Admin: DB-backed runtime settings.
 			r.Get("/admin/settings", h.handleSettings)
 			r.Patch("/admin/settings", h.handleSettingsUpdate)
+
+			// Admin: smart-playlists feature toggle.
+			r.Get("/admin/smart-playlists", h.handleSmartPlaylistsAdmin)
+			r.Put("/admin/smart-playlists", h.handleSmartPlaylistsToggle)
 
 			// Admin: Wrapped feature toggle.
 			r.Get("/admin/wrapped", h.handleWrappedAdmin)

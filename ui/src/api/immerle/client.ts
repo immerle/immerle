@@ -35,6 +35,8 @@ import {
   ScanProgress,
   RadioStation,
   ServerSettings,
+  SmartPlaylist,
+  SmartRules,
   TrackEdit,
   TranscodeProfile,
   Wrapped,
@@ -386,6 +388,47 @@ export class ImmerleClient {
       restartRequired: data.restartRequired ?? false,
       pendingRestart: data.pendingRestart ?? [],
     };
+  }
+
+  // --- Smart playlists (rule-based) ---------------------------------------
+
+  async listSmartPlaylists(signal?: AbortSignal): Promise<SmartPlaylist[]> {
+    const r = await this.request<{ playlists?: SmartPlaylist[] }>('GET', 'smart-playlists', undefined, signal);
+    return r.playlists ?? [];
+  }
+
+  async createSmartPlaylist(name: string, rules: SmartRules): Promise<SmartPlaylist> {
+    return this.request<SmartPlaylist>('POST', 'smart-playlists', { name, rules });
+  }
+
+  async updateSmartPlaylist(id: string, name: string, rules: SmartRules): Promise<SmartPlaylist> {
+    return this.request<SmartPlaylist>('PUT', `smart-playlists/${id}`, { name, rules });
+  }
+
+  async deleteSmartPlaylist(id: string): Promise<void> {
+    await this.request<void>('DELETE', `smart-playlists/${id}`);
+  }
+
+  /** Resolve a saved smart playlist to its current tracks (ready to enqueue). */
+  async getSmartPlaylistTracks(id: string, signal?: AbortSignal): Promise<Song[]> {
+    const r = await this.request<{ songs?: Song[] }>('GET', `smart-playlists/${id}/tracks`, undefined, signal);
+    return r.songs ?? [];
+  }
+
+  /** Preview ad-hoc rules without saving (for the editor). */
+  async previewSmartPlaylist(rules: SmartRules, signal?: AbortSignal): Promise<Song[]> {
+    const r = await this.request<{ songs?: Song[] }>('POST', 'smart-playlists/preview', { rules }, signal);
+    return r.songs ?? [];
+  }
+
+  async getSmartPlaylistsEnabled(signal?: AbortSignal): Promise<boolean> {
+    const r = await this.request<{ enabled: boolean }>('GET', 'admin/smart-playlists', undefined, signal);
+    return !!r.enabled;
+  }
+
+  async setSmartPlaylistsEnabled(enabled: boolean): Promise<boolean> {
+    const r = await this.request<{ enabled: boolean }>('PUT', 'admin/smart-playlists', { enabled });
+    return !!r.enabled;
   }
 
   // --- Internet radio -----------------------------------------------------

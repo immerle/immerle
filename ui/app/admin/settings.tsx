@@ -7,6 +7,7 @@ import {
   useSettings,
   useUpdateSettings,
 } from '../../src/query/admin';
+import { useSmartPlaylistsAdmin, useSetSmartPlaylists } from '../../src/query/smartPlaylists';
 import { useRadioAdmin, useSetRadio } from '../../src/query/radio';
 import { useWrappedAdmin, useSetWrapped } from '../../src/query/wrapped';
 import { useAuth } from '../../src/auth/store';
@@ -89,6 +90,8 @@ export default function AdminSettings() {
   const update = useUpdateSettings();
   const cleanup = useCleanup();
   const cleanupM = useCleanupMutations();
+  const smart = useSmartPlaylistsAdmin();
+  const setSmart = useSetSmartPlaylists();
   const radio = useRadioAdmin();
   const setRadio = useSetRadio();
   const wrapped = useWrappedAdmin();
@@ -111,7 +114,7 @@ export default function AdminSettings() {
   const profiles = q.data?.settings.transcode?.profiles ?? [];
   const rows = SECTIONS.filter((s) => {
     if (s.key === 'cleanup') return !!cleanup.data;
-    if (s.key === 'features') return !!client?.has('internetRadio') || !!client?.has('wrapped');
+    if (s.key === 'features') return !!client?.has('smartPlaylists') || !!client?.has('internetRadio') || !!client?.has('wrapped');
     return true;
   });
   const active = SECTIONS.find((s) => s.key === sheet);
@@ -240,6 +243,13 @@ export default function AdminSettings() {
               {sheet === 'features' ? (
                 <>
                   <Text className="text-xs text-muted">{t('admin.settings.featuresDescription')}</Text>
+                  {client?.has('smartPlaylists') ? (
+                    <ToggleRow
+                      label={t('admin.settings.smartPlaylistsEnabled')}
+                      value={smart.data ?? false}
+                      onChange={(v) => setSmart.mutate(v)}
+                    />
+                  ) : null}
                   {client?.has('internetRadio') ? (
                     <ToggleRow
                       label={t('admin.settings.radioEnabled')}
