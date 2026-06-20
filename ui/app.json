@@ -54,7 +54,8 @@
       ],
       "expo-asset",
       "expo-font",
-      "expo-localization"
+      "expo-localization",
+      "./plugins/withFmtConsteval"
     ],
     "experiments": {
       "typedRoutes": true
