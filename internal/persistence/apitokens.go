@@ -6,6 +6,8 @@ import (
 	"errors"
 	"time"
 
+	melody "github.com/ermos/melody/v2"
+
 	"github.com/immerle/immerle/internal/db"
 	"github.com/immerle/immerle/internal/models"
 )
@@ -32,15 +34,18 @@ func scanAPIToken(s rowScanner) (models.APIToken, error) {
 
 // Create inserts a token.
 func (r *APITokenRepo) Create(ctx context.Context, t models.APIToken) error {
-	_, err := r.exec(ctx, `INSERT INTO api_tokens (`+apiTokenColumns+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		t.ID, t.UserID, t.Name, t.TokenHash, t.Prefix, db.Millis(t.CreatedAt),
-		db.NullMillis(t.LastUsedAt), db.NullMillis(t.ExpiresAt), db.Bool(t.Revoked))
+	_, err := r.bexec(ctx, r.mel.NewInsert("api_tokens").
+		Set("id", t.ID).Set("user_id", t.UserID).Set("name", t.Name).Set("token_hash", t.TokenHash).
+		Set("prefix", t.Prefix).Set("created_at", db.Millis(t.CreatedAt)).
+		Set("last_used_at", db.NullMillis(t.LastUsedAt)).Set("expires_at", db.NullMillis(t.ExpiresAt)).
+		Set("revoked", db.Bool(t.Revoked)))
 	return err
 }
 
 // GetByHash returns a non-revoked token by its hash.
 func (r *APITokenRepo) GetByHash(ctx context.Context, hash string) (models.APIToken, error) {
-	row := r.queryRow(ctx, `SELECT `+apiTokenColumns+` FROM api_tokens WHERE token_hash=? AND revoked=0`, hash)
+	row := r.bqueryRow(ctx, r.mel.New("api_tokens").Select(apiTokenColumns).
+		Where("token_hash", "=", hash).Where("revoked", "=", 0))
 	t, err := scanAPIToken(row)
 	if errors.Is(err, sql.ErrNoRows) {
 		return t, ErrNotFound
@@ -50,7 +55,8 @@ func (r *APITokenRepo) GetByHash(ctx context.Context, hash string) (models.APITo
 
 // ListByUser returns a user's tokens, most recent first.
 func (r *APITokenRepo) ListByUser(ctx context.Context, userID string) ([]models.APIToken, error) {
-	rows, err := r.query(ctx, `SELECT `+apiTokenColumns+` FROM api_tokens WHERE user_id=? AND revoked=0 ORDER BY created_at DESC`, userID)
+	rows, err := r.bquery(ctx, r.mel.New("api_tokens").Select(apiTokenColumns).
+		Where("user_id", "=", userID).Where("revoked", "=", 0).OrderBy("created_at", melody.Desc))
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +74,8 @@ func (r *APITokenRepo) ListByUser(ctx context.Context, userID string) ([]models.
 
 // Revoke marks a token revoked (owner-scoped). Returns whether a row matched.
 func (r *APITokenRepo) Revoke(ctx context.Context, id, userID string) (bool, error) {
-	res, err := r.exec(ctx, `UPDATE api_tokens SET revoked=1 WHERE id=? AND user_id=?`, id, userID)
+	res, err := r.bexec(ctx, r.mel.NewUpdate("api_tokens").Set("revoked", 1).
+		Where("id", "=", id).Where("user_id", "=", userID))
 	if err != nil {
 		return false, err
 	}
@@ -78,6 +85,6 @@ func (r *APITokenRepo) Revoke(ctx context.Context, id, userID string) (bool, err
 
 // TouchLastUsed records the last-used time (best effort).
 func (r *APITokenRepo) TouchLastUsed(ctx context.Context, id string, at time.Time) error {
-	_, err := r.exec(ctx, `UPDATE api_tokens SET last_used_at=? WHERE id=?`, db.Millis(at), id)
+	_, err := r.bexec(ctx, r.mel.NewUpdate("api_tokens").Set("last_used_at", db.Millis(at)).Where("id", "=", id))
 	return err
 }

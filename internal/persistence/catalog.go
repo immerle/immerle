@@ -32,7 +32,7 @@ func scanArtist(s rowScanner) (models.Artist, error) {
 func (r *CatalogRepo) UpsertArtist(ctx context.Context, a models.Artist) (string, error) {
 	if a.MBID != "" {
 		var id string
-		err := r.queryRow(ctx, `SELECT id FROM artists WHERE mbid=?`, a.MBID).Scan(&id)
+		err := r.bqueryRow(ctx, r.mel.New("artists").Select("id").Where("mbid", "=", a.MBID)).Scan(&id)
 		if err == nil {
 			return id, nil
 		}
@@ -41,11 +41,12 @@ func (r *CatalogRepo) UpsertArtist(ctx context.Context, a models.Artist) (string
 		}
 	}
 	var id string
-	err := r.queryRow(ctx, `SELECT id FROM artists WHERE name=?`, a.Name).Scan(&id)
+	err := r.bqueryRow(ctx, r.mel.New("artists").Select("id").Where("name", "=", a.Name)).Scan(&id)
 	if err == nil {
 		// Backfill MBID if we learned it.
 		if a.MBID != "" {
-			if _, err := r.exec(ctx, `UPDATE artists SET mbid=? WHERE id=? AND mbid=''`, a.MBID, id); err != nil {
+			if _, err := r.bexec(ctx, r.mel.NewUpdate("artists").Set("mbid", a.MBID).
+				Where("id", "=", id).Where("mbid", "=", "")); err != nil {
 				return "", err
 			}
 		}
@@ -54,8 +55,9 @@ func (r *CatalogRepo) UpsertArtist(ctx context.Context, a models.Artist) (string
 	if !errors.Is(err, sql.ErrNoRows) {
 		return "", err
 	}
-	_, err = r.exec(ctx, `INSERT INTO artists (id, name, sort_name, mbid, cover_art, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
-		a.ID, a.Name, a.SortName, a.MBID, a.CoverArt, db.Millis(a.CreatedAt))
+	_, err = r.bexec(ctx, r.mel.NewInsert("artists").
+		Set("id", a.ID).Set("name", a.Name).Set("sort_name", a.SortName).Set("mbid", a.MBID).
+		Set("cover_art", a.CoverArt).Set("created_at", db.Millis(a.CreatedAt)))
 	if err != nil {
 		return "", err
 	}
@@ -64,7 +66,8 @@ func (r *CatalogRepo) UpsertArtist(ctx context.Context, a models.Artist) (string
 
 // GetArtist returns one artist with its album count.
 func (r *CatalogRepo) GetArtist(ctx context.Context, id string) (models.Artist, error) {
-	row := r.queryRow(ctx, `SELECT id, name, sort_name, mbid, cover_art, created_at FROM artists WHERE id=?`, id)
+	row := r.bqueryRow(ctx, r.mel.New("artists").
+		Select("id", "name", "sort_name", "mbid", "cover_art", "created_at").Where("id", "=", id))
 	a, err := scanArtist(row)
 	if errors.Is(err, sql.ErrNoRows) {
 		return a, ErrNotFound
@@ -72,7 +75,7 @@ func (r *CatalogRepo) GetArtist(ctx context.Context, id string) (models.Artist, 
 	if err != nil {
 		return a, err
 	}
-	if err := r.queryRow(ctx, `SELECT COUNT(*) FROM albums WHERE artist_id=?`, id).Scan(&a.AlbumCount); err != nil {
+	if err := r.bqueryRow(ctx, r.mel.New("albums").Select("COUNT(*)").Where("artist_id", "=", id)).Scan(&a.AlbumCount); err != nil {
 		return a, err
 	}
 	return a, nil
@@ -80,10 +83,12 @@ func (r *CatalogRepo) GetArtist(ctx context.Context, id string) (models.Artist, 
 
 // ListArtists returns all artists with album counts ordered by name.
 func (r *CatalogRepo) ListArtists(ctx context.Context) ([]models.Artist, error) {
-	rows, err := r.query(ctx, `
-		SELECT a.id, a.name, a.sort_name, a.mbid, a.cover_art, a.created_at,
-		       (SELECT COUNT(*) FROM albums al WHERE al.artist_id = a.id) AS album_count
-		FROM artists a ORDER BY a.name`)
+	// album_count is a correlated subquery column; melody passes raw select
+	// columns through verbatim, so the generated SQL is identical.
+	rows, err := r.bquery(ctx, r.mel.New("artists a").Select(
+		"a.id", "a.name", "a.sort_name", "a.mbid", "a.cover_art", "a.created_at",
+		"(SELECT COUNT(*) FROM albums al WHERE al.artist_id = a.id) AS album_count",
+	).OrderBy("a.name", ""))
 	if err != nil {
 		return nil, err
 	}
@@ -102,6 +107,10 @@ func (r *CatalogRepo) ListArtists(ctx context.Context) ([]models.Artist, error) 
 
 // ---- Albums ----
 
+// albumSelect joins artists and computes song_count/duration via correlated
+// subqueries — neither a JOIN nor a subquery column is expressible by melody, so
+// every read built on it (GetAlbum, ListAlbumsByArtist, ListAlbums, Search)
+// stays hand-written.
 const albumSelect = `
 	SELECT al.id, al.name, al.artist_id, ar.name, al.mbid, al.year, al.genre, al.cover_art,
 	       al.is_compilation, al.created_at,
@@ -125,7 +134,7 @@ func scanAlbum(s rowScanner) (models.Album, error) {
 func (r *CatalogRepo) UpsertAlbum(ctx context.Context, a models.Album) (string, error) {
 	if a.MBID != "" {
 		var id string
-		err := r.queryRow(ctx, `SELECT id FROM albums WHERE mbid=?`, a.MBID).Scan(&id)
+		err := r.bqueryRow(ctx, r.mel.New("albums").Select("id").Where("mbid", "=", a.MBID)).Scan(&id)
 		if err == nil {
 			return id, nil
 		}
@@ -134,8 +143,11 @@ func (r *CatalogRepo) UpsertAlbum(ctx context.Context, a models.Album) (string, 
 		}
 	}
 	var id string
-	err := r.queryRow(ctx, `SELECT id FROM albums WHERE artist_id=? AND name=?`, a.ArtistID, a.Name).Scan(&id)
+	err := r.bqueryRow(ctx, r.mel.New("albums").Select("id").
+		Where("artist_id", "=", a.ArtistID).Where("name", "=", a.Name)).Scan(&id)
 	if err == nil {
+		// The conditional merge (COALESCE/NULLIF and CASE column-relative SETs)
+		// can't be expressed by melody, so this UPDATE stays hand-written.
 		if _, err := r.exec(ctx, `UPDATE albums SET year=COALESCE(NULLIF(?,0), year), genre=COALESCE(NULLIF(?,''), genre),
 			cover_art=CASE WHEN cover_art='' THEN ? ELSE cover_art END, is_compilation=?, mbid=CASE WHEN mbid='' THEN ? ELSE mbid END
 			WHERE id=?`, a.Year, a.Genre, a.CoverArt, db.Bool(a.IsCompilation), a.MBID, id); err != nil {
@@ -146,9 +158,10 @@ func (r *CatalogRepo) UpsertAlbum(ctx context.Context, a models.Album) (string, 
 	if !errors.Is(err, sql.ErrNoRows) {
 		return "", err
 	}
-	_, err = r.exec(ctx, `INSERT INTO albums (id, name, artist_id, mbid, year, genre, cover_art, is_compilation, created_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		a.ID, a.Name, a.ArtistID, a.MBID, a.Year, a.Genre, a.CoverArt, db.Bool(a.IsCompilation), db.Millis(a.CreatedAt))
+	_, err = r.bexec(ctx, r.mel.NewInsert("albums").
+		Set("id", a.ID).Set("name", a.Name).Set("artist_id", a.ArtistID).Set("mbid", a.MBID).Set("year", a.Year).
+		Set("genre", a.Genre).Set("cover_art", a.CoverArt).Set("is_compilation", db.Bool(a.IsCompilation)).
+		Set("created_at", db.Millis(a.CreatedAt)))
 	if err != nil {
 		return "", err
 	}
@@ -265,6 +278,9 @@ func (r *CatalogRepo) listAlbums(ctx context.Context, q string, args ...any) ([]
 
 // ---- Tracks ----
 
+// trackSelect joins albums and artists — a JOIN melody can't express, so every
+// read built on it (GetTrack, ListTracksBy*, ListUploadedBy, ListAllTracks,
+// RandomTracks, Search, and the smart-playlist evaluator) stays hand-written.
 const trackSelect = `
 	SELECT t.id, t.title, t.album_id, al.name, t.artist_id, ar.name, t.track_no, t.disc_no,
 	       t.genre, t.year, t.duration, t.bitrate, t.path, t.suffix, t.content_type, t.size,
@@ -296,22 +312,24 @@ func (r *CatalogRepo) UpsertTrack(ctx context.Context, t models.Track) (string, 
 		return "", err
 	}
 	if found {
-		_, err := r.exec(ctx, `UPDATE tracks SET title=?, album_id=?, artist_id=?, track_no=?, disc_no=?, genre=?,
-			year=?, duration=?, bitrate=?, path=?, suffix=?, content_type=?, size=?, mbid=?, file_hash=?,
-			cover_art=?, bpm=?, replaygain_track=?, replaygain_album=?, remote=?, provider=?, updated_at=?
-			WHERE id=?`,
-			t.Title, t.AlbumID, t.ArtistID, t.TrackNo, t.DiscNo, t.Genre, t.Year, t.Duration, t.BitRate, t.Path,
-			t.Suffix, t.ContentType, t.Size, t.MBID, t.FileHash, t.CoverArt, t.BPM, t.ReplayGainTrack, t.ReplayGainAlbum,
-			db.Bool(t.Remote), t.Provider, db.Millis(t.UpdatedAt), existing)
+		_, err := r.bexec(ctx, r.mel.NewUpdate("tracks").
+			Set("title", t.Title).Set("album_id", t.AlbumID).Set("artist_id", t.ArtistID).Set("track_no", t.TrackNo).
+			Set("disc_no", t.DiscNo).Set("genre", t.Genre).Set("year", t.Year).Set("duration", t.Duration).
+			Set("bitrate", t.BitRate).Set("path", t.Path).Set("suffix", t.Suffix).Set("content_type", t.ContentType).
+			Set("size", t.Size).Set("mbid", t.MBID).Set("file_hash", t.FileHash).Set("cover_art", t.CoverArt).
+			Set("bpm", t.BPM).Set("replaygain_track", t.ReplayGainTrack).Set("replaygain_album", t.ReplayGainAlbum).
+			Set("remote", db.Bool(t.Remote)).Set("provider", t.Provider).Set("updated_at", db.Millis(t.UpdatedAt)).
+			Where("id", "=", existing))
 		return existing, err
 	}
-	_, err = r.exec(ctx, `INSERT INTO tracks (id, title, album_id, artist_id, track_no, disc_no, genre, year, duration,
-		bitrate, path, suffix, content_type, size, mbid, file_hash, cover_art, bpm, replaygain_track, replaygain_album,
-		remote, provider, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		t.ID, t.Title, t.AlbumID, t.ArtistID, t.TrackNo, t.DiscNo, t.Genre, t.Year, t.Duration, t.BitRate, t.Path,
-		t.Suffix, t.ContentType, t.Size, t.MBID, t.FileHash, t.CoverArt, t.BPM, t.ReplayGainTrack, t.ReplayGainAlbum,
-		db.Bool(t.Remote), t.Provider, db.Millis(t.CreatedAt), db.Millis(t.UpdatedAt))
+	_, err = r.bexec(ctx, r.mel.NewInsert("tracks").
+		Set("id", t.ID).Set("title", t.Title).Set("album_id", t.AlbumID).Set("artist_id", t.ArtistID).
+		Set("track_no", t.TrackNo).Set("disc_no", t.DiscNo).Set("genre", t.Genre).Set("year", t.Year).
+		Set("duration", t.Duration).Set("bitrate", t.BitRate).Set("path", t.Path).Set("suffix", t.Suffix).
+		Set("content_type", t.ContentType).Set("size", t.Size).Set("mbid", t.MBID).Set("file_hash", t.FileHash).
+		Set("cover_art", t.CoverArt).Set("bpm", t.BPM).Set("replaygain_track", t.ReplayGainTrack).
+		Set("replaygain_album", t.ReplayGainAlbum).Set("remote", db.Bool(t.Remote)).Set("provider", t.Provider).
+		Set("created_at", db.Millis(t.CreatedAt)).Set("updated_at", db.Millis(t.UpdatedAt)))
 	if err != nil {
 		return "", err
 	}
@@ -323,7 +341,7 @@ func (r *CatalogRepo) UpsertTrack(ctx context.Context, t models.Track) (string, 
 func (r *CatalogRepo) findTrackIdentity(ctx context.Context, t models.Track) (string, bool, error) {
 	if t.Path != "" {
 		var id string
-		err := r.queryRow(ctx, `SELECT id FROM tracks WHERE path=?`, t.Path).Scan(&id)
+		err := r.bqueryRow(ctx, r.mel.New("tracks").Select("id").Where("path", "=", t.Path)).Scan(&id)
 		if err == nil {
 			return id, true, nil
 		}
@@ -333,7 +351,7 @@ func (r *CatalogRepo) findTrackIdentity(ctx context.Context, t models.Track) (st
 	}
 	if t.MBID != "" {
 		var id string
-		err := r.queryRow(ctx, `SELECT id FROM tracks WHERE mbid=?`, t.MBID).Scan(&id)
+		err := r.bqueryRow(ctx, r.mel.New("tracks").Select("id").Where("mbid", "=", t.MBID)).Scan(&id)
 		if err == nil {
 			return id, true, nil
 		}
@@ -343,7 +361,7 @@ func (r *CatalogRepo) findTrackIdentity(ctx context.Context, t models.Track) (st
 	}
 	if t.FileHash != "" {
 		var id string
-		err := r.queryRow(ctx, `SELECT id FROM tracks WHERE file_hash=?`, t.FileHash).Scan(&id)
+		err := r.bqueryRow(ctx, r.mel.New("tracks").Select("id").Where("file_hash", "=", t.FileHash)).Scan(&id)
 		if err == nil {
 			return id, true, nil
 		}
@@ -359,7 +377,8 @@ func (r *CatalogRepo) findTrackIdentity(ctx context.Context, t models.Track) (st
 func (r *CatalogRepo) TrackExistsByMBIDOrHash(ctx context.Context, mbid, hash string) (string, bool, error) {
 	if mbid != "" {
 		var id string
-		err := r.queryRow(ctx, `SELECT id FROM tracks WHERE mbid=? AND remote=0`, mbid).Scan(&id)
+		err := r.bqueryRow(ctx, r.mel.New("tracks").Select("id").
+			Where("mbid", "=", mbid).Where("remote", "=", 0)).Scan(&id)
 		if err == nil {
 			return id, true, nil
 		}
@@ -369,7 +388,8 @@ func (r *CatalogRepo) TrackExistsByMBIDOrHash(ctx context.Context, mbid, hash st
 	}
 	if hash != "" {
 		var id string
-		err := r.queryRow(ctx, `SELECT id FROM tracks WHERE file_hash=? AND remote=0`, hash).Scan(&id)
+		err := r.bqueryRow(ctx, r.mel.New("tracks").Select("id").
+			Where("file_hash", "=", hash).Where("remote", "=", 0)).Scan(&id)
 		if err == nil {
 			return id, true, nil
 		}
@@ -398,19 +418,21 @@ func (r *CatalogRepo) ListUploadedBy(ctx context.Context, userID string) ([]mode
 
 // SetTrackOwner marks a track as uploaded by a user.
 func (r *CatalogRepo) SetTrackOwner(ctx context.Context, trackID, userID string) error {
-	_, err := r.exec(ctx, `UPDATE tracks SET uploaded_by=? WHERE id=?`, userID, trackID)
+	_, err := r.bexec(ctx, r.mel.NewUpdate("tracks").Set("uploaded_by", userID).Where("id", "=", trackID))
 	return err
 }
 
 // SetTrackTitle renames a track.
 func (r *CatalogRepo) SetTrackTitle(ctx context.Context, trackID, title string) error {
-	_, err := r.exec(ctx, `UPDATE tracks SET title=?, updated_at=? WHERE id=?`, title, db.Millis(time.Now()), trackID)
+	_, err := r.bexec(ctx, r.mel.NewUpdate("tracks").
+		Set("title", title).Set("updated_at", db.Millis(time.Now())).Where("id", "=", trackID))
 	return err
 }
 
 // SetTrackCover points a track at a custom cover id (a file under coversDir).
 func (r *CatalogRepo) SetTrackCover(ctx context.Context, trackID, coverArt string) error {
-	_, err := r.exec(ctx, `UPDATE tracks SET cover_art=?, updated_at=? WHERE id=?`, coverArt, db.Millis(time.Now()), trackID)
+	_, err := r.bexec(ctx, r.mel.NewUpdate("tracks").
+		Set("cover_art", coverArt).Set("updated_at", db.Millis(time.Now())).Where("id", "=", trackID))
 	return err
 }
 
@@ -444,7 +466,8 @@ type TrackListOptions struct {
 
 // ListAllTracks returns downloaded (local) tracks, newest first, with optional
 // search and pagination — powers the admin library management screen. Remote
-// (not-yet-downloaded) provider placeholders are excluded.
+// (not-yet-downloaded) provider placeholders are excluded. Built on trackSelect
+// (a JOIN) with a LOWER(col) LIKE filter, so it stays hand-written.
 func (r *CatalogRepo) ListAllTracks(ctx context.Context, opt TrackListOptions) ([]models.Track, error) {
 	if opt.Size <= 0 {
 		opt.Size = 50
@@ -462,7 +485,8 @@ func (r *CatalogRepo) ListAllTracks(ctx context.Context, opt TrackListOptions) (
 }
 
 // CountTracks returns the number of downloaded tracks matching the same filter
-// as ListAllTracks (for pagination totals).
+// as ListAllTracks (for pagination totals). A JOIN + LOWER(col) LIKE filter melody
+// can't express, so it stays hand-written.
 func (r *CatalogRepo) CountTracks(ctx context.Context, query string) (int, error) {
 	q := `SELECT COUNT(*) FROM tracks t JOIN albums al ON al.id=t.album_id JOIN artists ar ON ar.id=t.artist_id WHERE t.remote=0`
 	var args []any
@@ -481,8 +505,9 @@ func (r *CatalogRepo) CountTracks(ctx context.Context, query string) (int, error
 // UpdateTrackMetadata edits the directly-editable track fields (admin). Album
 // and artist relationships are intentionally not touched here.
 func (r *CatalogRepo) UpdateTrackMetadata(ctx context.Context, id string, title, genre string, year, trackNo, discNo int) error {
-	res, err := r.exec(ctx, `UPDATE tracks SET title=?, genre=?, year=?, track_no=?, disc_no=?, updated_at=? WHERE id=?`,
-		title, genre, year, trackNo, discNo, db.Millis(time.Now()), id)
+	res, err := r.bexec(ctx, r.mel.NewUpdate("tracks").
+		Set("title", title).Set("genre", genre).Set("year", year).Set("track_no", trackNo).Set("disc_no", discNo).
+		Set("updated_at", db.Millis(time.Now())).Where("id", "=", id))
 	if err != nil {
 		return err
 	}
@@ -495,6 +520,8 @@ func (r *CatalogRepo) UpdateTrackMetadata(ctx context.Context, id string, title,
 // DeleteTrackCascade removes a track and the rows that reference it but are not
 // covered by an ON DELETE CASCADE foreign key (annotations, shares,
 // activity_events, download_jobs). playlist_tracks and scrobbles cascade via FK.
+// Stays hand-written: it runs inside a transaction (the builder helpers use the
+// pool, not the tx).
 func (r *CatalogRepo) DeleteTrackCascade(ctx context.Context, id string) error {
 	return r.withTx(ctx, func(tx *sql.Tx) error {
 		for _, q := range []string{
@@ -513,7 +540,8 @@ func (r *CatalogRepo) DeleteTrackCascade(ctx context.Context, id string) error {
 }
 
 // RandomTracks returns up to count random tracks, optionally filtered by genre
-// and/or year range (powers getRandomSongs).
+// and/or year range (powers getRandomSongs). Built on trackSelect (a JOIN) and
+// ordered by RANDOM(), neither expressible by melody, so it stays hand-written.
 func (r *CatalogRepo) RandomTracks(ctx context.Context, count int, genre string, fromYear, toYear int) ([]models.Track, error) {
 	if count <= 0 {
 		count = 10
@@ -547,7 +575,8 @@ func (r *CatalogRepo) ListArtistsNeedingImage(ctx context.Context, limit int) ([
 	if limit <= 0 {
 		limit = 50
 	}
-	rows, err := r.query(ctx, `SELECT id, name, mbid FROM artists WHERE cover_art='' AND image_checked=0 ORDER BY name LIMIT ?`, limit)
+	rows, err := r.bquery(ctx, r.mel.New("artists").Select("id", "name", "mbid").
+		Where("cover_art", "=", "").Where("image_checked", "=", 0).OrderBy("name", "").Limit(limit))
 	if err != nil {
 		return nil, err
 	}
@@ -565,20 +594,22 @@ func (r *CatalogRepo) ListArtistsNeedingImage(ctx context.Context, limit int) ([
 
 // SetArtistCover sets an artist's cover art id and marks it image-checked.
 func (r *CatalogRepo) SetArtistCover(ctx context.Context, id, coverArt string) error {
-	_, err := r.exec(ctx, `UPDATE artists SET cover_art=?, image_checked=1 WHERE id=?`, coverArt, id)
+	_, err := r.bexec(ctx, r.mel.NewUpdate("artists").
+		Set("cover_art", coverArt).Set("image_checked", 1).Where("id", "=", id))
 	return err
 }
 
 // MarkArtistImageChecked flags an artist as checked (even when no image was
 // found) so the enrichment loop does not retry it indefinitely.
 func (r *CatalogRepo) MarkArtistImageChecked(ctx context.Context, id string) error {
-	_, err := r.exec(ctx, `UPDATE artists SET image_checked=1 WHERE id=?`, id)
+	_, err := r.bexec(ctx, r.mel.NewUpdate("artists").Set("image_checked", 1).Where("id", "=", id))
 	return err
 }
 
 // FindArtistByName returns an artist by exact name (powers getTopSongs).
 func (r *CatalogRepo) FindArtistByName(ctx context.Context, name string) (models.Artist, error) {
-	row := r.queryRow(ctx, `SELECT id, name, sort_name, mbid, cover_art, created_at FROM artists WHERE name=?`, name)
+	row := r.bqueryRow(ctx, r.mel.New("artists").
+		Select("id", "name", "sort_name", "mbid", "cover_art", "created_at").Where("name", "=", name))
 	a, err := scanArtist(row)
 	if errors.Is(err, sql.ErrNoRows) {
 		return a, ErrNotFound
@@ -607,6 +638,8 @@ func (r *CatalogRepo) listTracks(ctx context.Context, q string, args ...any) ([]
 // a track that is the result of a completed download job AND has no reason to be
 // kept — not starred (by anyone), not played since `playedSince`, and not in any
 // playlist. Manually-scanned tracks (no download job) are never returned.
+// Stays hand-written: EXISTS/NOT EXISTS subqueries and IS NOT NULL melody can't
+// express.
 func (r *CatalogRepo) ProviderTracksToEvict(ctx context.Context, playedSince time.Time) ([]models.Track, error) {
 	rows, err := r.query(ctx, `
 		SELECT t.id, t.path FROM tracks t
@@ -633,13 +666,14 @@ func (r *CatalogRepo) ProviderTracksToEvict(ctx context.Context, playedSince tim
 
 // DeleteTrack removes a track by id.
 func (r *CatalogRepo) DeleteTrack(ctx context.Context, id string) error {
-	_, err := r.exec(ctx, `DELETE FROM tracks WHERE id=?`, id)
+	_, err := r.bexec(ctx, r.mel.NewDelete("tracks").Where("id", "=", id))
 	return err
 }
 
 // AllTrackPaths returns the set of known local track paths (for scan pruning).
 func (r *CatalogRepo) AllTrackPaths(ctx context.Context) (map[string]string, error) {
-	rows, err := r.query(ctx, `SELECT id, path FROM tracks WHERE path <> '' AND remote=0`)
+	rows, err := r.bquery(ctx, r.mel.New("tracks").Select("id", "path").
+		Where("path", "<>", "").Where("remote", "=", 0))
 	if err != nil {
 		return nil, err
 	}
@@ -655,7 +689,9 @@ func (r *CatalogRepo) AllTrackPaths(ctx context.Context) (map[string]string, err
 	return out, rows.Err()
 }
 
-// Search performs a simple LIKE search across artists, albums and tracks.
+// Search performs a simple LIKE search across artists, albums and tracks. The
+// LOWER(col) LIKE filters (plus JOIN/subquery columns) can't be expressed by
+// melody, so these queries stay hand-written.
 func (r *CatalogRepo) Search(ctx context.Context, q string, artistCount, albumCount, songCount int) ([]models.Artist, []models.Album, []models.Track, error) {
 	like := "%" + strings.ToLower(q) + "%"
 
@@ -692,19 +728,22 @@ func (r *CatalogRepo) Search(ctx context.Context, q string, artistCount, albumCo
 
 // Stats reports catalog cardinalities.
 func (r *CatalogRepo) Stats(ctx context.Context) (artists, albums, tracks int, err error) {
-	if err = r.queryRow(ctx, `SELECT COUNT(*) FROM artists`).Scan(&artists); err != nil {
+	if err = r.bqueryRow(ctx, r.mel.New("artists").Select("COUNT(*)")).Scan(&artists); err != nil {
 		return
 	}
-	if err = r.queryRow(ctx, `SELECT COUNT(*) FROM albums`).Scan(&albums); err != nil {
+	if err = r.bqueryRow(ctx, r.mel.New("albums").Select("COUNT(*)")).Scan(&albums); err != nil {
 		return
 	}
-	err = r.queryRow(ctx, `SELECT COUNT(*) FROM tracks`).Scan(&tracks)
+	err = r.bqueryRow(ctx, r.mel.New("tracks").Select("COUNT(*)")).Scan(&tracks)
 	return
 }
 
 // Totals reports the aggregate on-disk size (bytes) and duration (seconds) of the
 // local library, summed from the indexed tracks.
 func (r *CatalogRepo) Totals(ctx context.Context) (sizeBytes, durationSeconds int64, err error) {
-	err = r.queryRow(ctx, `SELECT COALESCE(SUM(size),0), COALESCE(SUM(duration),0) FROM tracks`).Scan(&sizeBytes, &durationSeconds)
+	// The two aggregates are raw select expressions; melody passes them through
+	// verbatim, so the generated SQL is identical.
+	err = r.bqueryRow(ctx, r.mel.New("tracks").
+		Select("COALESCE(SUM(size),0)", "COALESCE(SUM(duration),0)")).Scan(&sizeBytes, &durationSeconds)
 	return
 }

@@ -29,14 +29,19 @@ func scanUser(s rowScanner) (models.User, error) {
 
 // Create inserts a new user.
 func (r *UserRepo) Create(ctx context.Context, u models.User) error {
-	_, err := r.exec(ctx, `INSERT INTO users (`+userColumns+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		u.ID, u.Username, u.PasswordHash, u.Email, db.Bool(u.IsAdmin), db.Bool(u.ScrobbleEnabled), u.ActivityPrivacy, db.Millis(u.CreatedAt), u.DisplayName, u.Language)
+	_, err := r.bexec(ctx, r.mel.NewInsert("users").
+		Set("id", u.ID).Set("username", u.Username).Set("password_hash", u.PasswordHash).Set("email", u.Email).
+		Set("is_admin", db.Bool(u.IsAdmin)).Set("scrobble_enabled", db.Bool(u.ScrobbleEnabled)).
+		Set("activity_privacy", u.ActivityPrivacy).Set("created_at", db.Millis(u.CreatedAt)).
+		Set("display_name", u.DisplayName).Set("language", u.Language))
 	return err
 }
 
 // CreateIfEmpty atomically inserts a user only when the users table is empty.
 // It reports whether the row was created. Used to bootstrap the first admin
 // without a race: concurrent first-run requests resolve to a single winner.
+// Stays hand-written: it runs inside a transaction (the builder helpers use the
+// pool, not the tx).
 func (r *UserRepo) CreateIfEmpty(ctx context.Context, u models.User) (bool, error) {
 	var created bool
 	err := r.withTx(ctx, func(tx *sql.Tx) error {
@@ -59,20 +64,22 @@ func (r *UserRepo) CreateIfEmpty(ctx context.Context, u models.User) (bool, erro
 
 // Update changes mutable user fields.
 func (r *UserRepo) Update(ctx context.Context, u models.User) error {
-	_, err := r.exec(ctx, `UPDATE users SET password_hash=?, email=?, display_name=?, language=?, is_admin=?, scrobble_enabled=?, activity_privacy=? WHERE id=?`,
-		u.PasswordHash, u.Email, u.DisplayName, u.Language, db.Bool(u.IsAdmin), db.Bool(u.ScrobbleEnabled), u.ActivityPrivacy, u.ID)
+	_, err := r.bexec(ctx, r.mel.NewUpdate("users").
+		Set("password_hash", u.PasswordHash).Set("email", u.Email).Set("display_name", u.DisplayName).
+		Set("language", u.Language).Set("is_admin", db.Bool(u.IsAdmin)).Set("scrobble_enabled", db.Bool(u.ScrobbleEnabled)).
+		Set("activity_privacy", u.ActivityPrivacy).Where("id", "=", u.ID))
 	return err
 }
 
 // Delete removes a user.
 func (r *UserRepo) Delete(ctx context.Context, id string) error {
-	_, err := r.exec(ctx, `DELETE FROM users WHERE id=?`, id)
+	_, err := r.bexec(ctx, r.mel.NewDelete("users").Where("id", "=", id))
 	return err
 }
 
 // GetByUsername finds a user by username.
 func (r *UserRepo) GetByUsername(ctx context.Context, username string) (models.User, error) {
-	row := r.queryRow(ctx, `SELECT `+userColumns+` FROM users WHERE username=?`, username)
+	row := r.bqueryRow(ctx, r.mel.New("users").Select(userColumns).Where("username", "=", username))
 	u, err := scanUser(row)
 	if errors.Is(err, sql.ErrNoRows) {
 		return u, ErrNotFound
@@ -82,7 +89,7 @@ func (r *UserRepo) GetByUsername(ctx context.Context, username string) (models.U
 
 // GetByID finds a user by id.
 func (r *UserRepo) GetByID(ctx context.Context, id string) (models.User, error) {
-	row := r.queryRow(ctx, `SELECT `+userColumns+` FROM users WHERE id=?`, id)
+	row := r.bqueryRow(ctx, r.mel.New("users").Select(userColumns).Where("id", "=", id))
 	u, err := scanUser(row)
 	if errors.Is(err, sql.ErrNoRows) {
 		return u, ErrNotFound
@@ -92,7 +99,7 @@ func (r *UserRepo) GetByID(ctx context.Context, id string) (models.User, error) 
 
 // List returns all users ordered by username.
 func (r *UserRepo) List(ctx context.Context) ([]models.User, error) {
-	rows, err := r.query(ctx, `SELECT `+userColumns+` FROM users ORDER BY username`)
+	rows, err := r.bquery(ctx, r.mel.New("users").Select(userColumns).OrderBy("username", ""))
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +118,7 @@ func (r *UserRepo) List(ctx context.Context) ([]models.User, error) {
 // GetTheme returns the user's raw theme JSON ("{}" when unset).
 func (r *UserRepo) GetTheme(ctx context.Context, userID string) (string, error) {
 	var theme string
-	err := r.queryRow(ctx, `SELECT theme FROM users WHERE id=?`, userID).Scan(&theme)
+	err := r.bqueryRow(ctx, r.mel.New("users").Select("theme").Where("id", "=", userID)).Scan(&theme)
 	if errors.Is(err, sql.ErrNoRows) {
 		return "", ErrNotFound
 	}
@@ -126,7 +133,7 @@ func (r *UserRepo) GetTheme(ctx context.Context, userID string) (string, error) 
 
 // SetTheme stores the user's theme as a JSON document.
 func (r *UserRepo) SetTheme(ctx context.Context, userID, theme string) error {
-	res, err := r.exec(ctx, `UPDATE users SET theme=? WHERE id=?`, theme, userID)
+	res, err := r.bexec(ctx, r.mel.NewUpdate("users").Set("theme", theme).Where("id", "=", userID))
 	if err != nil {
 		return err
 	}
@@ -139,6 +146,6 @@ func (r *UserRepo) SetTheme(ctx context.Context, userID, theme string) error {
 // Count returns the number of users.
 func (r *UserRepo) Count(ctx context.Context) (int, error) {
 	var n int
-	err := r.queryRow(ctx, `SELECT COUNT(*) FROM users`).Scan(&n)
+	err := r.bqueryRow(ctx, r.mel.New("users").Select("COUNT(*)")).Scan(&n)
 	return n, err
 }

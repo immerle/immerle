@@ -17,6 +17,9 @@ const chartLimit = 10
 // a handful of GROUP BY queries over scrobbles joined to tracks; all portable
 // across sqlite and postgres (no DB date functions — month bucketing is done in
 // Go from the unix-millis played_at).
+//
+// Every query here is a JOIN + GROUP BY + aggregation, none of which melody can
+// express, so this whole file stays hand-written.
 func (r *WrappedRepo) Wrapped(ctx context.Context, userID string, year int) (models.Wrapped, error) {
 	start := time.Date(year, 1, 1, 0, 0, 0, 0, time.UTC).UnixMilli()
 	end := time.Date(year+1, 1, 1, 0, 0, 0, 0, time.UTC).UnixMilli()

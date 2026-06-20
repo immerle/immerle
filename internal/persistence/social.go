@@ -18,16 +18,20 @@ type FriendRepo struct{ *base }
 
 // Request creates or refreshes a pending friend request.
 func (r *FriendRepo) Request(ctx context.Context, f models.Friendship) error {
-	_, err := r.exec(ctx, `INSERT INTO friendships (id, user_id, friend_id, status, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?)
-		ON CONFLICT(user_id, friend_id) DO UPDATE SET status=excluded.status, updated_at=excluded.updated_at`,
-		f.ID, f.UserID, f.FriendID, string(f.Status), db.Millis(f.CreatedAt), db.Millis(f.UpdatedAt))
+	_, err := r.bexec(ctx, r.mel.NewInsert("friendships").
+		Set("id", f.ID).Set("user_id", f.UserID).Set("friend_id", f.FriendID).
+		Set("status", string(f.Status)).UpdateDuplicateKey().
+		Set("created_at", db.Millis(f.CreatedAt)).
+		Set("updated_at", db.Millis(f.UpdatedAt)).UpdateDuplicateKey().
+		OnConflict("user_id", "friend_id"))
 	return err
 }
 
 // Accept marks a pending request accepted and creates the reciprocal accepted
 // edge. Returns ErrNotFound if no pending inbound request from requesterID to
 // accepterID exists, so a friendship cannot be forged without a real request.
+// Stays hand-written: it runs inside a transaction (the builder helpers use the
+// pool, not the tx).
 func (r *FriendRepo) Accept(ctx context.Context, requesterID, accepterID, newID string) error {
 	return r.withTx(ctx, func(tx *sql.Tx) error {
 		now := db.Millis(time.Now())
@@ -52,13 +56,15 @@ func (r *FriendRepo) Accept(ctx context.Context, requesterID, accepterID, newID 
 // AreFriends reports whether two users have an accepted friendship.
 func (r *FriendRepo) AreFriends(ctx context.Context, a, b string) (bool, error) {
 	var n int
-	err := r.queryRow(ctx, `SELECT COUNT(*) FROM friendships WHERE user_id=? AND friend_id=? AND status='accepted'`, a, b).Scan(&n)
+	err := r.bqueryRow(ctx, r.mel.New("friendships").Select("COUNT(*)").
+		Where("user_id", "=", a).Where("friend_id", "=", b).Where("status", "=", "accepted")).Scan(&n)
 	return n > 0, err
 }
 
 // ListFriends returns accepted friend ids for a user.
 func (r *FriendRepo) ListFriends(ctx context.Context, userID string) ([]string, error) {
-	rows, err := r.query(ctx, `SELECT friend_id FROM friendships WHERE user_id=? AND status='accepted'`, userID)
+	rows, err := r.bquery(ctx, r.mel.New("friendships").Select("friend_id").
+		Where("user_id", "=", userID).Where("status", "=", "accepted"))
 	if err != nil {
 		return nil, err
 	}
@@ -76,8 +82,9 @@ func (r *FriendRepo) ListFriends(ctx context.Context, userID string) ([]string, 
 
 // ListPending returns incoming pending requests for a user.
 func (r *FriendRepo) ListPending(ctx context.Context, userID string) ([]models.Friendship, error) {
-	rows, err := r.query(ctx, `SELECT id, user_id, friend_id, status, created_at, updated_at
-		FROM friendships WHERE friend_id=? AND status='pending'`, userID)
+	rows, err := r.bquery(ctx, r.mel.New("friendships").
+		Select("id", "user_id", "friend_id", "status", "created_at", "updated_at").
+		Where("friend_id", "=", userID).Where("status", "=", "pending"))
 	if err != nil {
 		return nil, err
 	}
@@ -105,14 +112,16 @@ type ActivityRepo struct{ *base }
 
 // Insert records an activity event.
 func (r *ActivityRepo) Insert(ctx context.Context, e models.ActivityEvent) error {
-	_, err := r.exec(ctx, `INSERT INTO activity_events (id, user_id, type, item_type, item_id, privacy, created_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		e.ID, e.UserID, e.Type, string(e.ItemType), e.ItemID, e.Privacy, db.Millis(e.CreatedAt))
+	_, err := r.bexec(ctx, r.mel.NewInsert("activity_events").
+		Set("id", e.ID).Set("user_id", e.UserID).Set("type", e.Type).Set("item_type", string(e.ItemType)).
+		Set("item_id", e.ItemID).Set("privacy", e.Privacy).Set("created_at", db.Millis(e.CreatedAt)))
 	return err
 }
 
 // Feed returns activity events visible to viewerID from the given author ids,
 // honoring per-event privacy. friendIDs are the viewer's accepted friends.
+// Stays hand-written: a JOIN plus a grouped OR/IN predicate tree melody can't
+// express.
 func (r *ActivityRepo) Feed(ctx context.Context, viewerID string, friendIDs []string, limit int) ([]models.ActivityEvent, error) {
 	// Visible: own events; friends' events with privacy public/friends; anyone's public events.
 	ids := append([]string{viewerID}, friendIDs...)
@@ -141,6 +150,8 @@ func (r *ActivityRepo) Feed(ctx context.Context, viewerID string, friendIDs []st
 // ByAuthor returns a single author's activity events whose privacy is in the
 // allowed set, newest first. Used to render a user profile from a viewer's
 // vantage point (the caller computes which privacy levels are visible).
+// Stays hand-written: a JOIN plus an IN over a runtime-sized list melody can't
+// express.
 func (r *ActivityRepo) ByAuthor(ctx context.Context, authorID string, privacies []string, limit int) ([]models.ActivityEvent, error) {
 	if len(privacies) == 0 {
 		return nil, nil
@@ -194,17 +205,18 @@ type JamRepo struct{ *base }
 
 // Create inserts a jam session.
 func (r *JamRepo) Create(ctx context.Context, j models.JamSession) error {
-	_, err := r.exec(ctx, `INSERT INTO jam_sessions (id, host_id, name, current_track_id, position_ms, state, track_ids, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		j.ID, j.HostID, j.Name, j.CurrentTrackID, j.PositionMs, j.State, strings.Join(j.TrackIDs, ","),
-		db.Millis(j.CreatedAt), db.Millis(j.UpdatedAt))
+	_, err := r.bexec(ctx, r.mel.NewInsert("jam_sessions").
+		Set("id", j.ID).Set("host_id", j.HostID).Set("name", j.Name).Set("current_track_id", j.CurrentTrackID).
+		Set("position_ms", j.PositionMs).Set("state", j.State).Set("track_ids", strings.Join(j.TrackIDs, ",")).
+		Set("created_at", db.Millis(j.CreatedAt)).Set("updated_at", db.Millis(j.UpdatedAt)))
 	return err
 }
 
 // UpdatePlayback updates the shared playback state of a jam.
 func (r *JamRepo) UpdatePlayback(ctx context.Context, id, currentTrackID string, positionMs int64, state string, trackIDs []string) error {
-	_, err := r.exec(ctx, `UPDATE jam_sessions SET current_track_id=?, position_ms=?, state=?, track_ids=?, updated_at=? WHERE id=?`,
-		currentTrackID, positionMs, state, strings.Join(trackIDs, ","), db.Millis(time.Now()), id)
+	_, err := r.bexec(ctx, r.mel.NewUpdate("jam_sessions").
+		Set("current_track_id", currentTrackID).Set("position_ms", positionMs).Set("state", state).
+		Set("track_ids", strings.Join(trackIDs, ",")).Set("updated_at", db.Millis(time.Now())).Where("id", "=", id))
 	return err
 }
 
@@ -225,8 +237,9 @@ func scanJam(s rowScanner) (models.JamSession, error) {
 
 // Get returns a jam session.
 func (r *JamRepo) Get(ctx context.Context, id string) (models.JamSession, error) {
-	row := r.queryRow(ctx, `SELECT id, host_id, name, current_track_id, position_ms, state, track_ids, created_at, updated_at
-		FROM jam_sessions WHERE id=?`, id)
+	row := r.bqueryRow(ctx, r.mel.New("jam_sessions").
+		Select("id", "host_id", "name", "current_track_id", "position_ms", "state", "track_ids", "created_at", "updated_at").
+		Where("id", "=", id))
 	j, err := scanJam(row)
 	if errors.Is(err, sql.ErrNoRows) {
 		return j, ErrNotFound
@@ -236,11 +249,13 @@ func (r *JamRepo) Get(ctx context.Context, id string) (models.JamSession, error)
 
 // Delete removes a jam session.
 func (r *JamRepo) Delete(ctx context.Context, id string) error {
-	_, err := r.exec(ctx, `DELETE FROM jam_sessions WHERE id=?`, id)
+	_, err := r.bexec(ctx, r.mel.NewDelete("jam_sessions").Where("id", "=", id))
 	return err
 }
 
-// AddParticipant joins a user to a jam.
+// AddParticipant joins a user to a jam. The ON CONFLICT ... DO NOTHING (a
+// conflict clause with no SET) can't be expressed by melody, so it stays
+// hand-written.
 func (r *JamRepo) AddParticipant(ctx context.Context, sessionID, userID string) error {
 	_, err := r.exec(ctx, `INSERT INTO jam_participants (session_id, user_id, joined_at) VALUES (?, ?, ?)
 		ON CONFLICT(session_id, user_id) DO NOTHING`, sessionID, userID, db.Millis(time.Now()))
@@ -249,11 +264,13 @@ func (r *JamRepo) AddParticipant(ctx context.Context, sessionID, userID string) 
 
 // RemoveParticipant removes a user from a jam.
 func (r *JamRepo) RemoveParticipant(ctx context.Context, sessionID, userID string) error {
-	_, err := r.exec(ctx, `DELETE FROM jam_participants WHERE session_id=? AND user_id=?`, sessionID, userID)
+	_, err := r.bexec(ctx, r.mel.NewDelete("jam_participants").
+		Where("session_id", "=", sessionID).Where("user_id", "=", userID))
 	return err
 }
 
-// Participants lists members of a jam.
+// Participants lists members of a jam. Stays hand-written: a JOIN melody can't
+// express.
 func (r *JamRepo) Participants(ctx context.Context, sessionID string) ([]models.JamParticipant, error) {
 	rows, err := r.query(ctx, `SELECT jp.session_id, jp.user_id, u.username, jp.joined_at
 		FROM jam_participants jp JOIN users u ON u.id = jp.user_id WHERE jp.session_id=? ORDER BY jp.joined_at`, sessionID)

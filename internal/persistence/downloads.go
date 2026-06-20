@@ -6,6 +6,8 @@ import (
 	"errors"
 	"time"
 
+	melody "github.com/ermos/melody/v2"
+
 	"github.com/immerle/immerle/internal/db"
 	"github.com/immerle/immerle/internal/models"
 )
@@ -38,10 +40,10 @@ func (r *DownloadRepo) Enqueue(ctx context.Context, j models.DownloadJob) (model
 	if !errors.Is(err, ErrNotFound) {
 		return j, err
 	}
-	_, err = r.exec(ctx, `INSERT INTO download_jobs (`+downloadColumns+`)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		j.ID, j.UserID, j.Provider, j.ProviderTrackID, j.Query, string(j.Status), j.TrackID, j.Error, j.Attempts,
-		db.Millis(j.CreatedAt), db.Millis(j.UpdatedAt))
+	_, err = r.bexec(ctx, r.mel.NewInsert("download_jobs").
+		Set("id", j.ID).Set("user_id", j.UserID).Set("provider", j.Provider).Set("provider_track_id", j.ProviderTrackID).
+		Set("query", j.Query).Set("status", string(j.Status)).Set("track_id", j.TrackID).Set("error", j.Error).
+		Set("attempts", j.Attempts).Set("created_at", db.Millis(j.CreatedAt)).Set("updated_at", db.Millis(j.UpdatedAt)))
 	if err != nil {
 		return j, err
 	}
@@ -50,7 +52,7 @@ func (r *DownloadRepo) Enqueue(ctx context.Context, j models.DownloadJob) (model
 
 // Get returns a job by id.
 func (r *DownloadRepo) Get(ctx context.Context, id string) (models.DownloadJob, error) {
-	row := r.queryRow(ctx, `SELECT `+downloadColumns+` FROM download_jobs WHERE id=?`, id)
+	row := r.bqueryRow(ctx, r.mel.New("download_jobs").Select(downloadColumns).Where("id", "=", id))
 	j, err := scanDownload(row)
 	if errors.Is(err, sql.ErrNoRows) {
 		return j, ErrNotFound
@@ -60,7 +62,8 @@ func (r *DownloadRepo) Get(ctx context.Context, id string) (models.DownloadJob, 
 
 // GetByProviderTrack returns a job for a provider track, if any.
 func (r *DownloadRepo) GetByProviderTrack(ctx context.Context, provider, providerTrackID string) (models.DownloadJob, error) {
-	row := r.queryRow(ctx, `SELECT `+downloadColumns+` FROM download_jobs WHERE provider=? AND provider_track_id=?`, provider, providerTrackID)
+	row := r.bqueryRow(ctx, r.mel.New("download_jobs").Select(downloadColumns).
+		Where("provider", "=", provider).Where("provider_track_id", "=", providerTrackID))
 	j, err := scanDownload(row)
 	if errors.Is(err, sql.ErrNoRows) {
 		return j, ErrNotFound
@@ -68,8 +71,9 @@ func (r *DownloadRepo) GetByProviderTrack(ctx context.Context, provider, provide
 	return j, err
 }
 
-// ClaimNext atomically claims the oldest queued job and marks it running.
-// Returns ErrNotFound when the queue is empty.
+// ClaimNext stays hand-written: it runs inside a transaction (the builder helpers
+// use the pool, not the tx) and its UPDATE uses a column-relative increment
+// (attempts = attempts + 1) that melody can't express.
 func (r *DownloadRepo) ClaimNext(ctx context.Context) (models.DownloadJob, error) {
 	var claimed models.DownloadJob
 	err := r.withTx(ctx, func(tx *sql.Tx) error {
@@ -97,8 +101,9 @@ func (r *DownloadRepo) ClaimNext(ctx context.Context) (models.DownloadJob, error
 
 // Complete marks a job completed and links the resulting track.
 func (r *DownloadRepo) Complete(ctx context.Context, id, trackID string) error {
-	_, err := r.exec(ctx, `UPDATE download_jobs SET status='completed', track_id=?, error='', updated_at=? WHERE id=?`,
-		trackID, db.Millis(time.Now()), id)
+	_, err := r.bexec(ctx, r.mel.NewUpdate("download_jobs").
+		Set("status", "completed").Set("track_id", trackID).Set("error", "").Set("updated_at", db.Millis(time.Now())).
+		Where("id", "=", id))
 	return err
 }
 
@@ -108,27 +113,29 @@ func (r *DownloadRepo) Fail(ctx context.Context, id, errMsg string, requeue bool
 	if requeue {
 		status = "queued"
 	}
-	_, err := r.exec(ctx, `UPDATE download_jobs SET status=?, error=?, updated_at=? WHERE id=?`,
-		status, errMsg, db.Millis(time.Now()), id)
+	_, err := r.bexec(ctx, r.mel.NewUpdate("download_jobs").
+		Set("status", status).Set("error", errMsg).Set("updated_at", db.Millis(time.Now())).Where("id", "=", id))
 	return err
 }
 
 // RequeueStale resets jobs stuck in 'running' (e.g. after a crash) back to queued.
 func (r *DownloadRepo) RequeueStale(ctx context.Context) error {
-	_, err := r.exec(ctx, `UPDATE download_jobs SET status='queued', updated_at=? WHERE status='running'`, db.Millis(time.Now()))
+	_, err := r.bexec(ctx, r.mel.NewUpdate("download_jobs").
+		Set("status", "queued").Set("updated_at", db.Millis(time.Now())).Where("status", "=", "running"))
 	return err
 }
 
 // DeleteByTrack removes any download jobs that produced the given track (used
 // when a downloaded track is evicted, so a later play re-downloads cleanly).
 func (r *DownloadRepo) DeleteByTrack(ctx context.Context, trackID string) error {
-	_, err := r.exec(ctx, `DELETE FROM download_jobs WHERE track_id=?`, trackID)
+	_, err := r.bexec(ctx, r.mel.NewDelete("download_jobs").Where("track_id", "=", trackID))
 	return err
 }
 
 // ListByUser returns a user's jobs, most recent first.
 func (r *DownloadRepo) ListByUser(ctx context.Context, userID string, limit int) ([]models.DownloadJob, error) {
-	rows, err := r.query(ctx, `SELECT `+downloadColumns+` FROM download_jobs WHERE user_id=? ORDER BY created_at DESC LIMIT ?`, userID, limit)
+	rows, err := r.bquery(ctx, r.mel.New("download_jobs").Select(downloadColumns).
+		Where("user_id", "=", userID).OrderBy("created_at", melody.Desc).Limit(limit))
 	if err != nil {
 		return nil, err
 	}
