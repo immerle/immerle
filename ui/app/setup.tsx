@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import { getSetupStatus, initSetup, SetupFieldError } from '../src/api/setup';
 import { useSelfServer } from '../src/api/selfServer';
+import { useAuth } from '../src/auth/store';
 import { normalizeServerUrl } from '../src/utils/serverUrl';
 import { Button, ErrorState, Field, Loading } from '../src/components/ui';
 import { AuthShell } from '../src/components/AuthShell';
@@ -45,6 +46,10 @@ export default function Setup() {
   const [errors, setErrors] = useState<Partial<Record<FieldKey, string>>>({});
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [createdUser, setCreatedUser] = useState('');
+  const authed = useAuth((s) => s.status) === 'authenticated';
+
+  // Already signed in: setup is first-run only, send them into the app.
+  if (authed) return <Redirect href="/(tabs)" />;
 
   const set = (key: FieldKey, v: string) => setValues((s) => ({ ...s, [key]: v }));
 
