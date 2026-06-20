@@ -3,6 +3,7 @@ package subsonic
 import (
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -261,7 +262,9 @@ func (h *Handler) handleGetAlbumInfo(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleGetLyrics(w http.ResponseWriter, r *http.Request) {
-	// No lyrics source is wired; return an empty (valid) lyrics element.
+	// Legacy getLyrics keys off artist+title, which we do not index. ponytail:
+	// wire a title lookup here if a client actually needs the legacy endpoint;
+	// modern clients use getLyricsBySongId below.
 	resp := newResponse()
 	resp.Lyrics = &Lyrics{Artist: param(r, "artist"), Title: param(r, "title")}
 	write(w, r, resp)
@@ -269,8 +272,39 @@ func (h *Handler) handleGetLyrics(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) handleGetLyricsBySongID(w http.ResponseWriter, r *http.Request) {
 	resp := newResponse()
-	resp.LyricsList = &LyricsList{}
+	out := &LyricsList{}
+	if t, err := h.Catalog.GetTrack(r.Context(), param(r, "id")); err == nil && t.Lyrics != "" {
+		out.StructuredLyrics = []StructuredLyrics{parseStructuredLyrics(t.Lyrics)}
+	}
+	resp.LyricsList = out
 	write(w, r, resp)
+}
+
+// lrcLine matches a leading "[mm:ss.xx]" (or "[mm:ss]") synced-lyrics timestamp.
+var lrcLine = regexp.MustCompile(`^\[(\d+):(\d{2})(?:[.:](\d{1,3}))?\]`)
+
+// parseStructuredLyrics turns raw lyrics text into one OpenSubsonic document. If
+// any line carries an [mm:ss.xx] timestamp the whole document is marked synced
+// and each Start is the offset in milliseconds; otherwise lines are unsynced.
+func parseStructuredLyrics(raw string) StructuredLyrics {
+	doc := StructuredLyrics{Lang: "xxx"}
+	for _, line := range strings.Split(strings.ReplaceAll(raw, "\r\n", "\n"), "\n") {
+		if m := lrcLine.FindStringSubmatch(line); m != nil {
+			doc.Synced = true
+			min, _ := strconv.Atoi(m[1])
+			sec, _ := strconv.Atoi(m[2])
+			ms := 0
+			if m[3] != "" {
+				ms, _ = strconv.Atoi((m[3] + "000")[:3]) // pad fraction to milliseconds
+			}
+			start := int64(min*60_000 + sec*1_000 + ms)
+			text := strings.TrimSpace(lrcLine.ReplaceAllString(line, ""))
+			doc.Line = append(doc.Line, LyricLine{Start: start, Value: text})
+		} else {
+			doc.Line = append(doc.Line, LyricLine{Value: line})
+		}
+	}
+	return doc
 }
 
 // ---- empty-but-valid stubs for sections we do not implement ----

@@ -363,6 +363,7 @@ type Album struct {
 	Name          string    `json:"name"`
 	ArtistID      string    `json:"artistId"`
 	ArtistName    string    `json:"artist"`
+	SortName      string    `json:"sortName,omitempty"`
 	MBID          string    `json:"mbid,omitempty"`
 	Year          int       `json:"year,omitempty"`
 	Genre         string    `json:"genre,omitempty"`
@@ -373,30 +374,48 @@ type Album struct {
 	CreatedAt     time.Time `json:"createdAt"`
 }
 
+// Participant is one contributor to a track in a given role (e.g. role
+// "producer", name "Nigel Godrich"). Modelled as plain data, not a catalog
+// entity — ponytail: a JSON column, no per-role artist browsing. Promote to a
+// join table if "browse by composer/producer" is ever needed.
+type Participant struct {
+	Role string `json:"role"`
+	Name string `json:"name"`
+}
+
 // Track is a single audio file.
 type Track struct {
-	ID              string  `json:"id"`
-	Title           string  `json:"title"`
-	AlbumID         string  `json:"albumId"`
-	AlbumName       string  `json:"album"`
-	ArtistID        string  `json:"artistId"`
-	ArtistName      string  `json:"artist"`
-	TrackNo         int     `json:"track,omitempty"`
-	DiscNo          int     `json:"discNumber,omitempty"`
-	Genre           string  `json:"genre,omitempty"`
-	Year            int     `json:"year,omitempty"`
-	Duration        int     `json:"duration"`
-	BitRate         int     `json:"bitRate,omitempty"`
-	Path            string  `json:"-"`
-	Suffix          string  `json:"suffix,omitempty"`
-	ContentType     string  `json:"contentType,omitempty"`
-	Size            int64   `json:"size,omitempty"`
-	MBID            string  `json:"mbid,omitempty"`
-	FileHash        string  `json:"-"`
-	CoverArt        string  `json:"coverArt,omitempty"`
-	BPM             int     `json:"bpm,omitempty"`
-	ReplayGainTrack float64 `json:"-"`
-	ReplayGainAlbum float64 `json:"-"`
+	ID           string `json:"id"`
+	Title        string `json:"title"`
+	AlbumID      string `json:"albumId"`
+	AlbumName    string `json:"album"`
+	ArtistID     string `json:"artistId"`
+	ArtistName   string `json:"artist"`
+	TrackNo      int    `json:"track,omitempty"`
+	DiscNo       int    `json:"discNumber,omitempty"`
+	Composer     string `json:"composer,omitempty"`
+	Genre        string `json:"genre,omitempty"`
+	Year         int    `json:"year,omitempty"`
+	Duration     int    `json:"duration"`
+	BitRate      int    `json:"bitRate,omitempty"`
+	TitleSort    string `json:"titleSort,omitempty"`
+	Work         string `json:"work,omitempty"`         // TIT1 — classical work / content group
+	MovementName string `json:"movementName,omitempty"` // MVNM
+	MovementNo   int    `json:"movementNumber,omitempty"`
+	Lyrics       string `json:"lyrics,omitempty"` // raw, may be plain or .lrc-style synced
+	// Participants are extra contributors beyond the main artist (performer,
+	// producer, lyricist, …), stored as a JSON blob on the track row.
+	Participants    []Participant `json:"participants,omitempty"`
+	Path            string        `json:"-"`
+	Suffix          string        `json:"suffix,omitempty"`
+	ContentType     string        `json:"contentType,omitempty"`
+	Size            int64         `json:"size,omitempty"`
+	MBID            string        `json:"mbid,omitempty"`
+	FileHash        string        `json:"-"`
+	CoverArt        string        `json:"coverArt,omitempty"`
+	BPM             int           `json:"bpm,omitempty"`
+	ReplayGainTrack float64       `json:"-"`
+	ReplayGainAlbum float64       `json:"-"`
 	// Remote marks a track that is not yet downloaded but available via a provider.
 	Remote   bool   `json:"-"`
 	Provider string `json:"-"`

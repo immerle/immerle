@@ -38,6 +38,57 @@ func newScanner(t *testing.T) *Scanner {
 	return New(store.Catalog, store.Genres, NewExtractor("ffprobe"), coversDir, logger)
 }
 
+func TestExtractEnrichedMetadata(t *testing.T) {
+	if !testutil.FFmpegAvailable() {
+		t.Skip("ffmpeg not available")
+	}
+	dir := t.TempDir()
+	path := filepath.Join(dir, "track.mp3")
+	testutil.GenerateAudio(t, path, testutil.AudioTags{
+		Title: "Clair de Lune", Artist: "Various", Album: "Suite Bergamasque",
+		Composer: "Claude Debussy", BPM: 132, ReplayGain: "-6.50 dB",
+		Work: "Suite Bergamasque", Movement: 3,
+		Performer: "Pascal Rogé", Producer: "Anne Faulkner; Bob Lyric",
+	})
+	// A .lrc sidecar should win over embedded lyrics.
+	if err := os.WriteFile(filepath.Join(dir, "track.lrc"), []byte("[00:12.50]Hello\nworld"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	md, err := NewExtractor("ffprobe").Extract(context.Background(), path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if md.Composer != "Claude Debussy" {
+		t.Errorf("composer = %q, want Claude Debussy", md.Composer)
+	}
+	if md.BPM != 132 {
+		t.Errorf("bpm = %d, want 132", md.BPM)
+	}
+	if md.ReplayGainTrack != -6.5 {
+		t.Errorf("replaygain track = %v, want -6.5", md.ReplayGainTrack)
+	}
+	if md.Work != "Suite Bergamasque" {
+		t.Errorf("work = %q, want Suite Bergamasque", md.Work)
+	}
+	if md.MovementNo != 3 {
+		t.Errorf("movement = %d, want 3", md.MovementNo)
+	}
+	if md.Lyrics != "[00:12.50]Hello\nworld" {
+		t.Errorf("lyrics = %q, want the .lrc sidecar content", md.Lyrics)
+	}
+	// performer + 2 producers = 3 participants (order-independent).
+	roles := map[string][]string{}
+	for _, p := range md.Participants {
+		roles[p.Role] = append(roles[p.Role], p.Name)
+	}
+	if len(roles["performer"]) != 1 || roles["performer"][0] != "Pascal Rogé" {
+		t.Errorf("performer participants = %v", roles["performer"])
+	}
+	if len(roles["producer"]) != 2 {
+		t.Errorf("producer participants = %v, want 2", roles["producer"])
+	}
+}
+
 func TestFullScanCounts(t *testing.T) {
 	if !testutil.FFmpegAvailable() {
 		t.Skip("ffmpeg not available")
