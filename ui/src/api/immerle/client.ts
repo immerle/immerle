@@ -5,6 +5,7 @@ import {
   Artist,
   ArtistWithAlbums,
   Genre,
+  NowPlayingEntry,
   Playlist,
   PlaylistWithSongs,
   SearchResult3,
@@ -17,6 +18,7 @@ import {
   toArtist,
   toArtistWithAlbums,
   toGenre,
+  toNowPlaying,
   toPlaylist,
   toPlaylistWithSongs,
   toSearchResult,
@@ -324,6 +326,56 @@ export class ImmerleClient {
   async deletePlaylist(id: string): Promise<void> {
     const { error } = await this.api.DELETE('/playlists/{id}', { params: { path: { id } } });
     if (error) throw apiErr(error, 'playlist.delete');
+  }
+
+  /**
+   * Per-user state (favorites, plays, play queue, now-playing) over the native
+   * REST API — drop-in replacements for the Subsonic methods.
+   */
+  async star(opts: { id?: string; albumId?: string; artistId?: string }): Promise<void> {
+    await this.toggleStar(opts, true);
+  }
+
+  async unstar(opts: { id?: string; albumId?: string; artistId?: string }): Promise<void> {
+    await this.toggleStar(opts, false);
+  }
+
+  private async toggleStar(
+    opts: { id?: string; albumId?: string; artistId?: string },
+    on: boolean,
+  ): Promise<void> {
+    let res;
+    if (opts.id) {
+      const p = { params: { path: { id: opts.id } } } as const;
+      res = on ? await this.api.PUT('/songs/{id}/star', p) : await this.api.DELETE('/songs/{id}/star', p);
+    } else if (opts.albumId) {
+      const p = { params: { path: { id: opts.albumId } } } as const;
+      res = on ? await this.api.PUT('/albums/{id}/star', p) : await this.api.DELETE('/albums/{id}/star', p);
+    } else if (opts.artistId) {
+      const p = { params: { path: { id: opts.artistId } } } as const;
+      res = on ? await this.api.PUT('/artists/{id}/star', p) : await this.api.DELETE('/artists/{id}/star', p);
+    } else {
+      return;
+    }
+    if (res.error) throw apiErr(res.error, 'star');
+  }
+
+  async scrobble(id: string, submission: boolean, time?: number): Promise<void> {
+    const { error } = await this.api.POST('/scrobbles', { body: { ids: [id], submission, playedAt: time } });
+    if (error) throw apiErr(error, 'scrobble');
+  }
+
+  async savePlayQueue(songIds: string[], current?: string, positionMs?: number): Promise<void> {
+    const { error } = await this.api.PUT('/play-queue', {
+      body: { ids: songIds, current, position: positionMs, client: 'immerle' },
+    });
+    if (error) throw apiErr(error, 'playqueue.save');
+  }
+
+  async getNowPlaying(signal?: AbortSignal): Promise<NowPlayingEntry[]> {
+    const { data, error } = await this.api.GET('/now-playing', { signal });
+    if (error) throw apiErr(error, 'nowplaying');
+    return (data.nowPlaying ?? []).map(toNowPlaying);
   }
 
   /**

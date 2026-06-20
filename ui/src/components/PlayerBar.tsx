@@ -279,7 +279,7 @@ function LikeButton({ song }: { song: Song }) {
     if (!client) return;
     const next = !liked;
     setLiked(next); // optimistic
-    const op = next ? client.subsonic.star({ id: song.id }) : client.subsonic.unstar({ id: song.id });
+    const op = next ? client.star({ id: song.id }) : client.unstar({ id: song.id });
     op.then(
       // Refresh the "Mes titres likés" list so it reflects the change.
       () => void queryClient.invalidateQueries({ queryKey: qk.starred }),
