@@ -9,10 +9,14 @@ import (
 	"time"
 )
 
-// mediaURLTTL bounds how long a signed stream/download URL stays valid — long
-// enough for one track plus seeking, short enough that a leaked/logged URL is
-// quickly useless.
-const mediaURLTTL = 15 * time.Minute
+// mediaURLTTL bounds how long a signed stream/download URL stays valid. Players
+// mint URLs for a whole queue up front (the native track player loads the queue
+// eagerly), so the window must outlast a continuous listening session — a track
+// at the end of a long queue may only play hours after it was minted. The URL is
+// still a one-track, time-boxed capability (no account access, no reusable
+// credential), far safer than the perpetual account credential the legacy
+// Subsonic stream URL carried.
+const mediaURLTTL = 6 * time.Hour
 
 // deriveSignKey derives the media-URL signing key from the server secret, so the
 // raw auth secret is never used directly as the HMAC key.
