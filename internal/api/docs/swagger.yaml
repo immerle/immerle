@@ -1122,6 +1122,42 @@ components:
         enabled:
           type: boolean
       type: object
+    immerle.shareCreateRequest:
+      properties:
+        description:
+          type: string
+        expiresAt:
+          type: integer
+        itemId:
+          type: string
+      type: object
+    immerle.shareUpdateRequest:
+      properties:
+        description:
+          type: string
+        expiresAt:
+          type: integer
+      type: object
+    immerle.shareView:
+      properties:
+        createdAt:
+          type: string
+        description:
+          type: string
+        entries:
+          items:
+            $ref: '#/components/schemas/immerle.songView'
+          type: array
+          uniqueItems: false
+        expiresAt:
+          type: string
+        id:
+          type: string
+        url:
+          type: string
+        viewCount:
+          type: integer
+      type: object
     immerle.songView:
       properties:
         album:
@@ -4317,6 +4353,128 @@ paths:
       summary: Create the first administrator
       tags:
       - setup
+  /shares:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  items:
+                    $ref: '#/components/schemas/immerle.shareView'
+                  type: array
+                type: object
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: List shares
+      tags:
+      - shares
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/immerle.shareCreateRequest'
+                description: Share
+                summary: body
+        description: Share
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.shareView'
+          description: Created
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Create share
+      tags:
+      - shares
+  /shares/{id}:
+    delete:
+      parameters:
+      - description: Share id
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Delete share
+      tags:
+      - shares
+    patch:
+      parameters:
+      - description: Share id
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/immerle.shareUpdateRequest'
+                description: Changes
+                summary: body
+        description: Changes
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Not Found
+      security:
+      - BearerAuth: []
+      summary: Update share
+      tags:
+      - shares
   /songs/{id}:
     get:
       description: Returns a single track by id.

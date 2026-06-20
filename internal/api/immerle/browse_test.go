@@ -62,6 +62,8 @@ func newBrowseEnv(t *testing.T) (*httptest.Server, string, *persistence.Store) {
 		NowPlaying:  core.NewNowPlayingTracker(0),
 		Streamer:    stream.NewStreamer(config.TranscodeConfig{FFmpegPath: "ffmpeg", CacheDir: filepath.Join(t.TempDir(), "tc")}, testutil.NewLogger()),
 		Cover:       stream.NewCoverService(store.Catalog, coversDir),
+		Shares:      store.Shares,
+		BaseURL:     "https://music.example",
 		Logger:      testutil.NewLogger(),
 	})
 	mux := chi.NewRouter()

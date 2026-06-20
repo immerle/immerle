@@ -48,6 +48,9 @@ type Deps struct {
 	// Streamer and Cover back the media endpoints (audio stream/download, cover art).
 	Streamer *stream.Streamer
 	Cover    *stream.CoverService
+	// Shares persists share links; BaseURL builds their absolute URLs.
+	Shares  *persistence.ShareRepo
+	BaseURL string
 	// LibraryStats serves the cached library analytics (counts + total size).
 	LibraryStats *core.LibraryStatsService
 	// Imports runs playlist imports from external sources (e.g. Spotify).
@@ -104,6 +107,7 @@ type Handler struct {
 	playQueue   *core.PlayQueueService
 	playlistSvc *core.PlaylistService
 	userSvc     *core.UserService
+	shareSvc    *core.ShareService
 	media       *media.Server
 }
 
@@ -116,6 +120,7 @@ func NewHandler(d Deps) *Handler {
 		playQueue:   core.NewPlayQueueService(d.PlayQueues, d.Catalog, d.Annotations),
 		playlistSvc: core.NewPlaylistService(d.Playlists, d.Annotations, d.Activity),
 		userSvc:     core.NewUserService(d.Users, d.Auth),
+		shareSvc:    core.NewShareService(d.Shares, d.Catalog, d.Playlists),
 		media:       media.NewServer(d.Catalog, d.Streamer, d.Cover, d.OnDemand, d.NowPlaying, d.Logger),
 	}
 }
@@ -237,6 +242,12 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Patch("/playlists/{id}", h.handleUpdatePlaylist)
 			r.Delete("/playlists/{id}", h.handleDeletePlaylist)
 			r.Put("/playlists/{id}/tracks", h.handleReplacePlaylistTracks)
+
+			// Share links over the shared share service.
+			r.Get("/shares", h.handleListShares)
+			r.Post("/shares", h.handleCreateShare)
+			r.Patch("/shares/{id}", h.handleUpdateShare)
+			r.Delete("/shares/{id}", h.handleDeleteShare)
 
 			// Collaborative / public playlists (extensions over the Subsonic API).
 			r.Get("/playlists/public", h.handlePublicPlaylists)
