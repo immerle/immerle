@@ -112,7 +112,11 @@ func (r *CatalogRepo) ListArtists(ctx context.Context) ([]models.Artist, error) 
 // every read built on it (GetAlbum, ListAlbumsByArtist, ListAlbums, Search)
 // stays hand-written.
 const albumSelect = `
-	SELECT al.id, al.name, al.artist_id, ar.name, al.mbid, al.year, al.genre, al.cover_art,
+	SELECT al.id, al.name, al.artist_id, ar.name, al.mbid, al.year, al.genre,
+	       COALESCE(NULLIF(al.cover_art,''),
+	                (SELECT t.cover_art FROM tracks t
+	                 WHERE t.album_id = al.id AND t.cover_art <> ''
+	                 ORDER BY t.disc_no, t.track_no LIMIT 1), '') AS cover_art,
 	       al.is_compilation, al.created_at,
 	       (SELECT COUNT(*) FROM tracks t WHERE t.album_id = al.id) AS song_count,
 	       (SELECT COALESCE(SUM(t.duration),0) FROM tracks t WHERE t.album_id = al.id) AS duration
