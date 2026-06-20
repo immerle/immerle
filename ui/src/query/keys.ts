@@ -7,6 +7,7 @@ export const qk = {
   albumList: (type: string, genre?: string) => ['albumList', type, genre ?? null] as const,
   genres: ['genres'] as const,
   songsByGenre: (genre: string) => ['songsByGenre', genre] as const,
+  lyrics: (id: string) => ['lyrics', id] as const,
   search: (query: string) => ['search', query] as const,
   starred: ['starred'] as const,
   local: ['local'] as const,

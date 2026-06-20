@@ -7,9 +7,24 @@ import (
 	"time"
 
 	"github.com/immerle/immerle/internal/core"
+	"github.com/immerle/immerle/internal/lyrics"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 )
+
+// lyricsView is a track's lyrics, plain or synced. When synced, every line
+// carries a startMs (playback offset in milliseconds) so a client can highlight
+// the current line (karaoke).
+type lyricsView struct {
+	Synced bool        `json:"synced"`
+	Lines  []lyricLine `json:"lines"`
+}
+
+// lyricLine is one lyrics line; StartMs is omitted for unsynced lyrics.
+type lyricLine struct {
+	StartMs int64  `json:"startMs,omitempty"`
+	Text    string `json:"text"`
+}
 
 // intQuery reads a query parameter as an int, returning def when absent or
 // malformed.
@@ -215,6 +230,32 @@ func (h *Handler) handleGetSong(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeResource(w, http.StatusOK, toSongViewAnnotated(te.Track, te.Annotation))
+}
+
+// handleGetSongLyrics returns a track's lyrics, parsed into plain or synced lines.
+//
+// @Summary      Get song lyrics
+// @Description  Returns a track's lyrics. When the stored tags carry [mm:ss.xx] timestamps the document is "synced" and every line has a startMs (ms).
+// @Tags         catalog
+// @Security     BearerAuth
+// @Produce      json
+// @Param        id   path   string  true  "Track id"
+// @Success      200  {object}  lyricsView
+// @Failure      401  {object}  errorResponse
+// @Failure      404  {object}  errorResponse
+// @Router       /songs/{id}/lyrics [get]
+func (h *Handler) handleGetSongLyrics(w http.ResponseWriter, r *http.Request) {
+	t, err := h.Catalog.GetTrack(r.Context(), pathParam(r, "id"))
+	if err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	doc := lyrics.Parse(t.Lyrics)
+	out := lyricsView{Synced: doc.Synced, Lines: make([]lyricLine, 0, len(doc.Lines))}
+	for _, l := range doc.Lines {
+		out.Lines = append(out.Lines, lyricLine{StartMs: l.StartMs, Text: l.Text})
+	}
+	writeResource(w, http.StatusOK, out)
 }
 
 // handleListAlbums returns a list of albums by the requested criteria.

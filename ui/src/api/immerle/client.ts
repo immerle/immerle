@@ -67,6 +67,7 @@ import {
   TranscodeProfile,
   Wrapped,
 } from './types';
+import { Lyrics } from '../../lyrics/lyrics';
 
 /**
  * Build an {@link ImmerleApiError} from an openapi-fetch error body, preferring
@@ -259,6 +260,22 @@ export class ImmerleClient {
     const { data, error } = await this.api.GET('/songs/{id}', { params: { path: { id } }, signal });
     if (error) throw apiErr(error, 'browse.song');
     return toSong(data);
+  }
+
+  /**
+   * Lyrics for a song. The server parses stored LRC text into plain or synced
+   * lines (same implementation as the Subsonic surface). Returns null when the
+   * track has none.
+   */
+  async getLyrics(id: string, signal?: AbortSignal): Promise<Lyrics | null> {
+    const { data, error } = await this.api.GET('/songs/{id}/lyrics', { params: { path: { id } }, signal });
+    if (error) return null;
+    const lines = data.lines ?? [];
+    if (lines.length === 0) return null;
+    return {
+      synced: !!data.synced,
+      lines: lines.map((l) => ({ startMs: data.synced ? (l.startMs ?? 0) : null, text: l.text ?? '' })),
+    };
   }
 
   /** The caller's starred catalog (artists/albums/songs). */
