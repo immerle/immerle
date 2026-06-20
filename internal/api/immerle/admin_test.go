@@ -81,6 +81,43 @@ func TestCleanupToggleAndStatus(t *testing.T) {
 	}
 }
 
+func TestOfflineToggleReflectsInCapability(t *testing.T) {
+	srv, _ := newAdminEnv(t)
+	admin := login(t, srv, "admin")
+
+	// Non-admin is forbidden.
+	bob := login(t, srv, "bob")
+	if status, _ := doMap(t, srv, http.MethodGet, "/admin/offline", bob, nil); status != http.StatusForbidden {
+		t.Fatalf("non-admin should get 403, got %d", status)
+	}
+
+	// Defaults on, and the capability advertises enabled=true.
+	if status, body := doMap(t, srv, http.MethodGet, "/admin/offline", admin, nil); status != http.StatusOK || body["enabled"] != true {
+		t.Fatalf("default status: %d %+v", status, body)
+	}
+	if offlineCapEnabled(t, srv) != true {
+		t.Fatal("capability should advertise offlineDownloads enabled=true by default")
+	}
+
+	// Disabling persists and flips the advertised capability.
+	if status, body := doMap(t, srv, http.MethodPut, "/admin/offline", admin, map[string]any{"enabled": false}); status != http.StatusOK || body["enabled"] != false {
+		t.Fatalf("disable failed: %d %+v", status, body)
+	}
+	if offlineCapEnabled(t, srv) != false {
+		t.Fatal("capability should advertise offlineDownloads enabled=false after disabling")
+	}
+}
+
+// offlineCapEnabled reads the offlineDownloads.enabled flag from /capabilities.
+func offlineCapEnabled(t *testing.T, srv *httptest.Server) bool {
+	t.Helper()
+	_, body := doMap(t, srv, http.MethodGet, "/capabilities", "", nil)
+	caps, _ := body["capabilities"].(map[string]any)
+	off, _ := caps["offlineDownloads"].(map[string]any)
+	enabled, _ := off["enabled"].(bool)
+	return enabled
+}
+
 func TestCleanupRunNow(t *testing.T) {
 	srv, fc := newAdminEnv(t)
 	admin := login(t, srv, "admin")

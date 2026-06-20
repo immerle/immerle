@@ -86,6 +86,7 @@ type RuntimeSettings struct {
 	SmartPlaylists SmartPlaylistsRuntime `json:"smartPlaylists"`
 	Radio          RadioRuntime          `json:"radio"`
 	Wrapped        WrappedRuntime        `json:"wrapped"`
+	Offline        OfflineRuntime        `json:"offline"`
 }
 
 // SmartPlaylistsRuntime toggles rule-based "smart" playlists (hot-reloadable).
@@ -103,6 +104,13 @@ type RadioRuntime struct {
 // WrappedRuntime toggles the "Wrapped" year-in-review feature (hot-reloadable).
 // When disabled, the wrapped endpoint 404s and clients hide the entry point.
 type WrappedRuntime struct {
+	Enabled bool `json:"enabled"`
+}
+
+// OfflineRuntime toggles offline downloads (hot-reloadable). When disabled, the
+// offlineDownloads capability advertises enabled=false and clients hide the
+// download-for-offline UI. The per-track download endpoint itself is unaffected.
+type OfflineRuntime struct {
 	Enabled bool `json:"enabled"`
 }
 
@@ -216,6 +224,7 @@ func DefaultRuntimeSettings() RuntimeSettings {
 		SmartPlaylists: SmartPlaylistsRuntime{Enabled: true},
 		Radio:          RadioRuntime{Enabled: true},
 		Wrapped:        WrappedRuntime{Enabled: true},
+		Offline:        OfflineRuntime{Enabled: true},
 	}
 }
 

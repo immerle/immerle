@@ -18,6 +18,7 @@ export const qk = {
   radioAdmin: ['admin', 'radio'] as const,
   wrapped: (year: number) => ['wrapped', year] as const,
   wrappedAdmin: ['admin', 'wrapped'] as const,
+  offlineAdmin: ['admin', 'offline'] as const,
 
   playlists: ['playlists'] as const,
   playlist: (id: string) => ['playlist', id] as const,

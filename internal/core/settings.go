@@ -277,3 +277,6 @@ func (s *SettingsService) RadioEnabled() bool { return s.Get().Radio.Enabled }
 
 // WrappedEnabled reports whether the year-in-review feature is on (read live).
 func (s *SettingsService) WrappedEnabled() bool { return s.Get().Wrapped.Enabled }
+
+// OfflineEnabled reports whether offline downloads are on (read live).
+func (s *SettingsService) OfflineEnabled() bool { return s.Get().Offline.Enabled }

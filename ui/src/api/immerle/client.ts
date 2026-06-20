@@ -757,6 +757,18 @@ export class ImmerleClient {
     return !!r.enabled;
   }
 
+  /** Admin: whether offline downloads are enabled. */
+  async getOfflineEnabled(signal?: AbortSignal): Promise<boolean> {
+    const r = await this.request<{ enabled: boolean }>('GET', 'admin/offline', undefined, signal);
+    return !!r.enabled;
+  }
+
+  /** Admin: turn offline downloads on or off. */
+  async setOfflineEnabled(enabled: boolean): Promise<boolean> {
+    const r = await this.request<{ enabled: boolean }>('PUT', 'admin/offline', { enabled });
+    return !!r.enabled;
+  }
+
   // --- Admin: downloads cleanup (eviction sweep) --------------------------
 
   async getCleanup(signal?: AbortSignal): Promise<CleanupStatus> {

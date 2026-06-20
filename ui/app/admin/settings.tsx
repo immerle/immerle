@@ -10,6 +10,7 @@ import {
 import { useSmartPlaylistsAdmin, useSetSmartPlaylists } from '../../src/query/smartPlaylists';
 import { useRadioAdmin, useSetRadio } from '../../src/query/radio';
 import { useWrappedAdmin, useSetWrapped } from '../../src/query/wrapped';
+import { useOfflineAdmin, useSetOffline } from '../../src/query/offline';
 import { useAuth } from '../../src/auth/store';
 import { RuntimeSettingsDTO } from '../../src/api/immerleApi';
 import { Badge, Button, Card, ErrorState, Field, IconButton, Loading } from '../../src/components/ui';
@@ -96,6 +97,8 @@ export default function AdminSettings() {
   const setRadio = useSetRadio();
   const wrapped = useWrappedAdmin();
   const setWrapped = useSetWrapped();
+  const offline = useOfflineAdmin();
+  const setOffline = useSetOffline();
   const [form, setForm] = useState<Form | null>(null);
   const [sheet, setSheet] = useState<SectionKey | null>(null);
   const [removed, setRemoved] = useState<number | null>(null);
@@ -114,7 +117,7 @@ export default function AdminSettings() {
   const profiles = q.data?.settings.transcode?.profiles ?? [];
   const rows = SECTIONS.filter((s) => {
     if (s.key === 'cleanup') return !!cleanup.data;
-    if (s.key === 'features') return !!client?.has('smartPlaylists') || !!client?.has('internetRadio') || !!client?.has('wrapped');
+    if (s.key === 'features') return !!client?.has('smartPlaylists') || !!client?.has('internetRadio') || !!client?.has('wrapped') || !!client?.has('offlineDownloads');
     return true;
   });
   const active = SECTIONS.find((s) => s.key === sheet);
@@ -262,6 +265,13 @@ export default function AdminSettings() {
                       label={t('admin.settings.wrappedEnabled')}
                       value={wrapped.data ?? false}
                       onChange={(v) => setWrapped.mutate(v)}
+                    />
+                  ) : null}
+                  {client?.has('offlineDownloads') ? (
+                    <ToggleRow
+                      label={t('admin.settings.offlineEnabled')}
+                      value={offline.data ?? false}
+                      onChange={(v) => setOffline.mutate(v)}
                     />
                   ) : null}
                 </>
