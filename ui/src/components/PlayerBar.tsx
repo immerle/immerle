@@ -16,6 +16,8 @@ import {
   usePlaylists,
   useRemoveFromPlaylist,
 } from '../query/playlists';
+import { useRadioStations, useRadioLike } from '../query/radio';
+import { RadioStation } from '../api/immerle/types';
 import { queryClient } from '../query/queryClient';
 import { qk } from '../query/keys';
 import { Song } from '../api/subsonic/types';
@@ -270,6 +272,30 @@ function VolumeBar({ volume, onChange }: { volume: number; onChange: (v: number)
 }
 
 function LikeButton({ song }: { song: Song }) {
+  // A playing radio is a fake Song carrying the station id; like it as a station.
+  const { data: stations } = useRadioStations();
+  const station = stations?.find((s) => s.id === song.id);
+  if (station) return <RadioLikeButton station={station} />;
+  return <SongLikeButton song={song} />;
+}
+
+function RadioLikeButton({ station }: { station: RadioStation }) {
+  const t = useT();
+  const colors = useColors();
+  const like = useRadioLike();
+  const liked = !!station.liked;
+  return (
+    <IconButton
+      name={liked ? 'heart' : 'heart-outline'}
+      size={20}
+      color={liked ? colors.primary : colors.muted}
+      onPress={() => like.mutate({ id: station.id, liked: !liked })}
+      accessibilityLabel={liked ? t('components.player.unlike') : t('components.player.like')}
+    />
+  );
+}
+
+function SongLikeButton({ song }: { song: Song }) {
   const t = useT();
   const colors = useColors();
   const client = useAuth((s) => s.client);
