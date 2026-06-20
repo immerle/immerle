@@ -272,6 +272,7 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Get("/jam/{id}/events", h.handleJamEvents)
 			r.Post("/jam/{id}/participants", h.handleJamJoin)
 			r.Delete("/jam/{id}/participants/me", h.handleJamLeave)
+			r.Delete("/jam/{id}", h.handleJamDelete)
 
 			// Personal API tokens (scoped to the authenticated user).
 			r.Get("/tokens", h.handleTokens)

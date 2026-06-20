@@ -111,6 +111,37 @@ func (h *Handler) handleJamLeave(w http.ResponseWriter, r *http.Request) {
 	writeResource(w, http.StatusNoContent, nil)
 }
 
+// handleJamDelete ends a session. Only the host may end it; doing so removes the
+// session (and its participants).
+//
+// @Summary      End a Jam session
+// @Description  Ends and removes the session. Host only.
+// @Tags         jam
+// @Security     BearerAuth
+// @Param        id  path  string  true  "Jam session id"
+// @Success      204  "ended"
+// @Failure      401  {object}  errorResponse
+// @Failure      403  {object}  errorResponse
+// @Failure      404  {object}  errorResponse
+// @Router       /jam/{id} [delete]
+func (h *Handler) handleJamDelete(w http.ResponseWriter, r *http.Request) {
+	id := pathParam(r, "id")
+	session, err := h.Jam.Get(r.Context(), id)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "not_found", "session not found")
+		return
+	}
+	if session.HostID != userFrom(r.Context()).ID {
+		writeError(w, http.StatusForbidden, "forbidden", "only the host can end the session")
+		return
+	}
+	if err := h.Jam.Close(r.Context(), id); err != nil {
+		writeInternal(w, err)
+		return
+	}
+	writeResource(w, http.StatusNoContent, nil)
+}
+
 // handleJamState returns the current session state to a member.
 //
 // @Summary      Get Jam session state

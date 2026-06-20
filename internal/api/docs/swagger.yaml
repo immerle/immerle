@@ -3419,6 +3419,41 @@ paths:
       tags:
       - jam
   /jam/{id}:
+    delete:
+      description: Ends and removes the session. Host only.
+      parameters:
+      - description: Jam session id
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      responses:
+        "204":
+          description: ended
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Forbidden
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Not Found
+      security:
+      - BearerAuth: []
+      summary: End a Jam session
+      tags:
+      - jam
     get:
       parameters:
       - description: Jam session id
