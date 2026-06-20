@@ -10,6 +10,7 @@ import {
   PlaylistWithSongs,
   SearchResult3,
   Song,
+  SubsonicUser,
 } from '../subsonic/types';
 import {
   Starred,
@@ -24,6 +25,7 @@ import {
   toSearchResult,
   toSong,
   toStarred,
+  toSubsonicUser,
 } from './catalog';
 import {
   ActivityEventDTO,
@@ -376,6 +378,77 @@ export class ImmerleClient {
     const { data, error } = await this.api.GET('/now-playing', { signal });
     if (error) throw apiErr(error, 'nowplaying');
     return (data.nowPlaying ?? []).map(toNowPlaying);
+  }
+
+  /**
+   * Admin user management over the native REST API, normalized into the
+   * Subsonic user shape the screens consume — drop-in for the Subsonic methods.
+   * The Subsonic-only role flags (streamRole, …) are accepted but ignored: the
+   * native model only distinguishes admins.
+   */
+  async getUsers(signal?: AbortSignal): Promise<SubsonicUser[]> {
+    const { data, error } = await this.api.GET('/admin/users', { signal });
+    if (error) throw apiErr(error, 'admin.users');
+    return (data.users ?? []).map(toSubsonicUser);
+  }
+
+  async createUser(params: {
+    username: string;
+    password: string;
+    displayName?: string;
+    email?: string;
+    adminRole?: boolean;
+    settingsRole?: boolean;
+    streamRole?: boolean;
+    downloadRole?: boolean;
+    playlistRole?: boolean;
+  }): Promise<void> {
+    const { error } = await this.api.POST('/admin/users', {
+      body: {
+        username: params.username,
+        password: params.password,
+        email: params.email,
+        displayName: params.displayName,
+        admin: params.adminRole,
+      },
+    });
+    if (error) throw apiErr(error, 'admin.createUser');
+  }
+
+  async updateUser(params: {
+    username: string;
+    displayName?: string;
+    email?: string;
+    adminRole?: boolean;
+    scrobblingEnabled?: boolean;
+    settingsRole?: boolean;
+    streamRole?: boolean;
+    downloadRole?: boolean;
+    playlistRole?: boolean;
+  }): Promise<void> {
+    const { error } = await this.api.PATCH('/admin/users/{username}', {
+      params: { path: { username: params.username } },
+      body: {
+        displayName: params.displayName,
+        email: params.email,
+        admin: params.adminRole,
+        scrobblingEnabled: params.scrobblingEnabled,
+      },
+    });
+    if (error) throw apiErr(error, 'admin.updateUser');
+  }
+
+  async deleteUser(username: string): Promise<void> {
+    const { error } = await this.api.DELETE('/admin/users/{username}', { params: { path: { username } } });
+    if (error) throw apiErr(error, 'admin.deleteUser');
+  }
+
+  async changePassword(username: string, password: string): Promise<void> {
+    const { error } = await this.api.PATCH('/admin/users/{username}', {
+      params: { path: { username } },
+      body: { password },
+    });
+    if (error) throw apiErr(error, 'admin.changePassword');
   }
 
   /**

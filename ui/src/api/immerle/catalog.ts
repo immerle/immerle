@@ -1,4 +1,5 @@
 import type {
+  AdminUserView,
   AlbumView,
   ArtistView,
   FavoritesView,
@@ -19,6 +20,7 @@ import type {
   PlaylistWithSongs,
   SearchResult3,
   Song,
+  SubsonicUser,
 } from '../subsonic/types';
 
 /**
@@ -133,5 +135,15 @@ export function toNowPlaying(v: NowPlayingView): NowPlayingEntry {
     ...(v.song ? toSong(v.song) : { id: '', title: '' }),
     username: v.username,
     minutesAgo: v.minutesAgo,
+  };
+}
+
+export function toSubsonicUser(v: AdminUserView): SubsonicUser {
+  return {
+    username: v.username ?? '',
+    displayName: v.displayName,
+    email: v.email,
+    adminRole: v.admin,
+    scrobblingEnabled: v.scrobblingEnabled,
   };
 }

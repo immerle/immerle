@@ -56,6 +56,7 @@ export type FavoritesView = components['schemas']['immerle.favoritesView'];
 export type SearchView = components['schemas']['immerle.searchView'];
 export type PlaylistView = components['schemas']['immerle.playlistView'];
 export type NowPlayingView = components['schemas']['immerle.nowPlayingView'];
+export type AdminUserView = components['schemas']['immerle.adminUserView'];
 
 // Session creation (device login).
 export type LoginResponse = components['schemas']['immerle.LoginDTO'];
