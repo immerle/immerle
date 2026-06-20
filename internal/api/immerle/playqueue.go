@@ -32,7 +32,7 @@ func toPlayQueueView(res core.PlayQueueResult) playQueueView {
 		v.ChangedAt = &res.Queue.ChangedAt
 	}
 	for _, e := range res.Entries {
-		v.Entries = append(v.Entries, toSongView(e.Track))
+		v.Entries = append(v.Entries, toSongViewAnnotated(e.Track, e.Annotation))
 	}
 	return v
 }
