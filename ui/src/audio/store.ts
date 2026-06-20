@@ -4,7 +4,7 @@ import { useAuth } from '../auth/store';
 import { queryClient } from '../query/queryClient';
 import { ImmerleClient } from '../api/immerle/client';
 import { Song } from '../api/subsonic/types';
-import { offlineUri } from '../offline/store';
+import { offlinePlayableUrl } from '../offline/store';
 import { AudioEngine, PlayableTrack, RepeatMode } from './types';
 import { createEngine } from './engine';
 import { DEFAULT_QUALITY_ID, presetById } from './quality';
@@ -34,7 +34,7 @@ function shuffled<T>(arr: T[]): T[] {
  * harmless.
  */
 async function songToTrack(client: ImmerleClient, song: Song, qualityId: string): Promise<PlayableTrack> {
-  const local = offlineUri(song.id);
+  const local = await offlinePlayableUrl(song.id);
   let url = local;
   if (!url) {
     const preset = presetById(qualityId);

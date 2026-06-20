@@ -1,7 +1,9 @@
 // Immerle service worker — gives the web app installability + an offline app
 // shell. It deliberately does NOT touch the API or media: /api/ and /rest/ (which
-// includes streaming, downloads and cover art) always go straight to the network,
-// so there is no offline *media* here — that's native-only for now (W6 PR3+).
+// includes streaming, downloads and cover art) always go straight to the network.
+// Offline *media* on web is handled separately by the app (downloaded tracks are
+// stored in IndexedDB and played from a blob: URL — see src/offline/fs.web.ts),
+// not by this cache.
 //
 // ponytail: hand-rolled runtime caching, no Workbox/precache-manifest build step.
 // Upgrade path: if exact asset versioning ever matters, generate a precache list
