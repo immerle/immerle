@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Image, Modal, Pressable, Text, View } from 'react-native';
-import { router } from 'expo-router';
+import Animated, { SlideInLeft } from 'react-native-reanimated';
+import { router, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicon } from './Ionicon';
 import { IconButton } from './ui';
+import { LibrarySidebar } from './LibrarySidebar';
 import { useAuth } from '../auth/store';
 import { useSearchUI } from '../search/store';
 import { useColors } from '../theme/colors';
@@ -24,7 +26,12 @@ export function MobileHeader() {
   const displayNameState = useAuth((s) => s.displayName);
   const logout = useAuth((s) => s.logout);
   const openSearch = useSearchUI((s) => s.openSearch);
+  const pathname = usePathname();
   const [menu, setMenu] = useState(false);
+  const [drawer, setDrawer] = useState(false);
+
+  // Close the library drawer whenever navigation happens (e.g. tapping a playlist).
+  useEffect(() => setDrawer(false), [pathname]);
 
   const displayName = displayNameState ?? client?.username ?? '?';
   const initial = displayName.charAt(0).toUpperCase();
@@ -45,10 +52,13 @@ export function MobileHeader() {
       className="flex-row items-center justify-between border-b border-border bg-background px-4"
       style={{ paddingTop: insets.top, height: 52 + insets.top }}
     >
-      <Pressable onPress={() => go('/')} accessibilityRole="button" accessibilityLabel="Immerle" className="flex-row items-center gap-2 active:opacity-70">
-        <Image source={require('../../assets/logo.png')} style={{ height: 28, width: 28 * (480 / 391) }} resizeMode="contain" />
-        <Text className="text-lg font-bold tracking-tight text-foreground">immerle</Text>
-      </Pressable>
+      <View className="flex-row items-center gap-1.5">
+        <IconButton name="menu" size={26} color={colors.foreground} onPress={() => setDrawer(true)} accessibilityLabel={t('components.sidebar.library')} />
+        <Pressable onPress={() => go('/')} accessibilityRole="button" accessibilityLabel="Immerle" className="flex-row items-center gap-2 active:opacity-70">
+          <Image source={require('../../assets/logo.png')} style={{ height: 28, width: 28 * (480 / 391) }} resizeMode="contain" />
+          <Text className="text-lg font-bold tracking-tight text-foreground">immerle</Text>
+        </Pressable>
+      </View>
 
       <View className="flex-row items-center gap-1">
         <IconButton name="search" size={24} color={colors.foreground} onPress={openSearch} accessibilityLabel={t('components.topbar.searchPlaceholder')} />
@@ -79,6 +89,16 @@ export function MobileHeader() {
             <MenuItem icon="log-out-outline" label={t('components.topbar.logout')} tone="danger" onPress={onLogout} />
           </View>
         </Pressable>
+      </Modal>
+
+      {/* Library drawer — the desktop sidebar slid in from the left on mobile. */}
+      <Modal transparent visible={drawer} animationType="none" onRequestClose={() => setDrawer(false)}>
+        <View className="flex-1 flex-row">
+          <Animated.View entering={SlideInLeft.duration(220)} style={{ paddingTop: insets.top }} className="bg-surface">
+            <LibrarySidebar />
+          </Animated.View>
+          <Pressable className="flex-1 bg-black/50" onPress={() => setDrawer(false)} accessibilityLabel={t('components.player.close')} />
+        </View>
       </Modal>
     </View>
   );
