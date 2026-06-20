@@ -76,6 +76,7 @@ type ProviderLog struct {
 type RuntimeSettings struct {
 	Server         ServerRuntime         `json:"server"`
 	Auth           AuthRuntime           `json:"auth"`
+	LDAP           LDAPRuntime           `json:"ldap"`
 	Transcode      TranscodeRuntime      `json:"transcode"`
 	Providers      ProviderRuntime       `json:"providers"`
 	Scan           ScanRuntime           `json:"scan"`
@@ -149,6 +150,18 @@ type ServerRuntime struct {
 type AuthRuntime struct {
 	// DeviceTokenTTLSeconds is the device-session JWT lifetime (0 = never).
 	DeviceTokenTTLSeconds int `json:"deviceTokenTtlSeconds"`
+}
+
+// LDAPRuntime configures optional LDAP simple-bind auth (hot-reloadable; read
+// live on each password login). Enabled only when Enabled is true and both URL
+// and BindDNTemplate are set. Local accounts always authenticate first.
+type LDAPRuntime struct {
+	Enabled bool `json:"enabled"`
+	// URL is the directory endpoint, e.g. "ldaps://ldap.example.com:636".
+	URL string `json:"url"`
+	// BindDNTemplate builds the bind DN from the username via a single %s,
+	// e.g. "uid=%s,ou=people,dc=example,dc=com".
+	BindDNTemplate string `json:"bindDnTemplate"`
 }
 
 // TranscodeRuntime configures transcoding (restart-required: the streamer and

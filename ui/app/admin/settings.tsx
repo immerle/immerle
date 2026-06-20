@@ -30,7 +30,7 @@ const RESTART_LABEL_KEYS: Record<string, string> = {
   federation: 'admin.settings.restartFederation',
 };
 
-type SectionKey = 'auth' | 'server' | 'transcode' | 'federation' | 'cleanup' | 'logs' | 'features';
+type SectionKey = 'auth' | 'ldap' | 'server' | 'transcode' | 'federation' | 'cleanup' | 'logs' | 'features';
 
 interface Section {
   key: SectionKey;
@@ -43,6 +43,9 @@ interface Section {
 interface Form {
   cors: string;
   ttl: string;
+  ldapEnabled: boolean;
+  ldapUrl: string;
+  ldapBindDn: string;
   ffmpeg: string;
   ffprobe: string;
   fedEnabled: boolean;
@@ -59,6 +62,9 @@ function toForm(s: RuntimeSettingsDTO): Form {
   return {
     cors: (s.server?.corsAllowedOrigins ?? []).join(', '),
     ttl: String(s.auth?.deviceTokenTtlSeconds ?? 0),
+    ldapEnabled: s.ldap?.enabled ?? false,
+    ldapUrl: s.ldap?.url ?? '',
+    ldapBindDn: s.ldap?.bindDnTemplate ?? '',
     ffmpeg: s.transcode?.ffmpegPath ?? '',
     ffprobe: s.transcode?.ffprobePath ?? '',
     fedEnabled: s.federation?.enabled ?? false,
@@ -79,6 +85,7 @@ export default function AdminSettings() {
   const colors = useColors();
   const SECTIONS: Section[] = [
     { key: 'auth', icon: 'key', color: '#3b82f6', title: t('admin.settings.authTitle'), subtitle: t('admin.settings.authSubtitle') },
+    { key: 'ldap', icon: 'people-circle', color: '#22c55e', title: t('admin.settings.ldapTitle'), subtitle: t('admin.settings.ldapSubtitle') },
     { key: 'server', icon: 'server', color: '#0ea5e9', title: t('admin.settings.serverTitle'), subtitle: t('admin.settings.serverSubtitle') },
     { key: 'transcode', icon: 'film', color: '#a855f7', title: t('admin.settings.transcodeTitle'), subtitle: t('admin.settings.transcodeSubtitle') },
     { key: 'federation', icon: 'git-network', color: '#14b8a6', title: t('admin.settings.federationTitle'), subtitle: t('admin.settings.federationSubtitle') },
@@ -169,6 +176,19 @@ export default function AdminSettings() {
                 <>
                   <Field label={t('admin.settings.deviceTokenTtl')} keyboardType="number-pad" value={form.ttl} onChangeText={(v) => set('ttl', v)} />
                   <SaveButton loading={update.isPending} onPress={() => save({ auth: { deviceTokenTtlSeconds: num(form.ttl) } })} />
+                </>
+              ) : null}
+
+              {sheet === 'ldap' ? (
+                <>
+                  <Text className="text-xs text-muted">{t('admin.settings.ldapDescription')}</Text>
+                  <ToggleRow label={t('admin.settings.ldapEnabled')} value={form.ldapEnabled} onChange={(v) => set('ldapEnabled', v)} />
+                  <Field label={t('admin.settings.ldapUrl')} autoCapitalize="none" autoCorrect={false} keyboardType="url" placeholder="ldaps://ldap.example.com:636" value={form.ldapUrl} onChangeText={(v) => set('ldapUrl', v)} />
+                  <Field label={t('admin.settings.ldapBindDn')} autoCapitalize="none" autoCorrect={false} placeholder="uid=%s,ou=people,dc=example,dc=com" value={form.ldapBindDn} onChangeText={(v) => set('ldapBindDn', v)} help={t('admin.settings.ldapBindDnHelp')} />
+                  <SaveButton
+                    loading={update.isPending}
+                    onPress={() => save({ ldap: { enabled: form.ldapEnabled, url: form.ldapUrl, bindDnTemplate: form.ldapBindDn } })}
+                  />
                 </>
               ) : null}
 

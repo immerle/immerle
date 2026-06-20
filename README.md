@@ -40,8 +40,8 @@ self-hosted server, for music, that sings: **Immerle**. ✨
 - 📥 **Playlist import** — bring your playlists over (Spotify and Deezer).
 - 🔗 **Federation (opt-in)** — sync editorial & recommendation playlists via an
   `immerle-hub`.
-- 🔐 **Solid auth** — Subsonic tokens, revocable device JWTs, and personal API
-  tokens.
+- 🔐 **Solid auth** — Subsonic tokens, revocable device JWTs, personal API
+  tokens, and optional **LDAP** directory login.
 - 📖 **OpenAPI 3.1** + a built-in Swagger UI for the native API.
 
 ## 🚀 Quick start

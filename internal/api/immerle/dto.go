@@ -37,6 +37,11 @@ type RuntimeSettingsDTO struct {
 	Auth struct {
 		DeviceTokenTTLSeconds int `json:"deviceTokenTtlSeconds" example:"2592000"`
 	} `json:"auth"`
+	LDAP struct {
+		Enabled        bool   `json:"enabled" example:"false"`
+		URL            string `json:"url" example:"ldaps://ldap.example.com:636"`
+		BindDNTemplate string `json:"bindDnTemplate" example:"uid=%s,ou=people,dc=example,dc=com"`
+	} `json:"ldap"`
 	Transcode struct {
 		FFmpegPath  string `json:"ffmpegPath" example:"ffmpeg"`
 		FFprobePath string `json:"ffprobePath" example:"ffprobe"`

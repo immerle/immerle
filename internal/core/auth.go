@@ -36,6 +36,16 @@ type AuthService struct {
 	// failed login when the username does not exist (so the decrypt+compare path
 	// always runs), preventing account-enumeration via response timing.
 	dummyHash string
+	// ldap, when non-nil, authenticates password logins that fail locally.
+	ldap *ldapAuth
+}
+
+// WithLDAP enables LDAP password authentication using a direct simple bind.
+// cfg supplies the live LDAP settings (read on each login). Returns a for
+// chaining.
+func (a *AuthService) WithLDAP(cfg ldapConfig) *AuthService {
+	a.ldap = &ldapAuth{cfg: cfg}
+	return a
 }
 
 // NewAuthService builds an AuthService. tokens/devices may be nil to disable the
@@ -162,6 +172,11 @@ func (a *AuthService) Authenticate(ctx context.Context, c Credentials) (models.U
 		pw := decodePassword(c.Password)
 		if subtle.ConstantTimeCompare([]byte(pw), []byte(stored)) == 1 && !notFound {
 			return u, nil
+		}
+		// Local compare failed: fall back to LDAP (existing local users may also
+		// be LDAP-backed; new LDAP users are provisioned on first bind).
+		if a.ldap != nil {
+			return a.ldap.authenticate(ctx, a, c.Username, pw)
 		}
 	}
 	return models.User{}, ErrUnauthorized
