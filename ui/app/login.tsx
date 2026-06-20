@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import { useAuth } from '../src/auth/store';
 import { useSelfServer } from '../src/api/selfServer';
 import { Button, Field } from '../src/components/ui';
@@ -20,6 +20,7 @@ export default function Login() {
   const colors = useColors();
   const login = useAuth((s) => s.login);
   const error = useAuth((s) => s.error);
+  const status = useAuth((s) => s.status);
 
   // Pre-fill with the origin when this app is served by its own Immerle binary.
   const [serverUrl, setServerUrl] = useState(() => useSelfServer.getState().url ?? '');
@@ -27,6 +28,9 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [reveal, setReveal] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  // Already signed in: don't let an authenticated user land back on login.
+  if (status === 'authenticated') return <Redirect href="/(tabs)" />;
 
   const canSubmit = !!(serverUrl.trim() && username.trim() && password.length > 0);
 
