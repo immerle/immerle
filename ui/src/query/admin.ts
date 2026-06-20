@@ -43,7 +43,7 @@ export function useUsers() {
   return useQuery({
     queryKey: ['admin', 'users'] as const,
     enabled: !!client,
-    queryFn: () => client!.subsonic.getUsers(),
+    queryFn: () => client!.getUsers(),
   });
 }
 
@@ -59,24 +59,24 @@ export function useUserMutations() {
       displayName?: string;
       email?: string;
       adminRole?: boolean;
-    }) => client!.subsonic.createUser({ ...p, streamRole: true, playlistRole: true }),
+    }) => client!.createUser({ ...p, streamRole: true, playlistRole: true }),
     onSuccess: invalidate,
   });
 
   const update = useMutation({
     mutationFn: (p: { username: string; displayName?: string; email?: string; adminRole?: boolean }) =>
-      client!.subsonic.updateUser(p),
+      client!.updateUser(p),
     onSuccess: invalidate,
   });
 
   const remove = useMutation({
-    mutationFn: (username: string) => client!.subsonic.deleteUser(username),
+    mutationFn: (username: string) => client!.deleteUser(username),
     onSuccess: invalidate,
   });
 
   const resetPassword = useMutation({
     mutationFn: (p: { username: string; password: string }) =>
-      client!.subsonic.changePassword(p.username, p.password),
+      client!.changePassword(p.username, p.password),
   });
 
   return { create, update, remove, resetPassword };
