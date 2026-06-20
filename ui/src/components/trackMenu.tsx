@@ -8,6 +8,9 @@ import { Ionicon } from './Ionicon';
 import { Field } from './ui';
 import { usePlayer } from '../audio/store';
 import { useAddToPlaylist, useCreatePlaylist, usePlaylists } from '../query/playlists';
+import { useAuth } from '../auth/store';
+import { useDownloads } from '../offline/store';
+import { isSupported as offlineSupported } from '../offline/fs';
 import { useColors } from '../theme/colors';
 import { useT } from '../i18n/store';
 
@@ -61,6 +64,9 @@ export function TrackMenu() {
   const close = useTrackMenu((s) => s.close);
   const playNext = usePlayer((s) => s.playNext);
   const enqueue = usePlayer((s) => s.enqueue);
+  const canOffline = useAuth((s) => s.client?.has('offlineDownloads') ?? false) && offlineSupported;
+  const downloaded = useDownloads((s) => (song ? !!s.entries[song.id] : false));
+  const downloading = useDownloads((s) => (song ? s.progress[song.id] != null : false));
   const [picker, setPicker] = useState(false);
 
   if (!song) return null;
@@ -122,6 +128,30 @@ export function TrackMenu() {
                 }}
               />
               <Action icon="add-circle-outline" label={t('components.trackMenu.addToPlaylist')} onPress={() => setPicker(true)} />
+              {canOffline ? (
+                downloaded ? (
+                  <Action
+                    icon="cloud-done-outline"
+                    label={t('components.trackMenu.removeDownload')}
+                    tone="danger"
+                    onPress={() => {
+                      void useDownloads.getState().remove(song.id);
+                      dismiss();
+                    }}
+                  />
+                ) : downloading ? (
+                  <Action icon="cloud-download-outline" label={t('components.trackMenu.downloading')} onPress={() => {}} />
+                ) : (
+                  <Action
+                    icon="cloud-download-outline"
+                    label={t('components.trackMenu.download')}
+                    onPress={() => {
+                      void useDownloads.getState().download(song);
+                      dismiss();
+                    }}
+                  />
+                )
+              ) : null}
               {onEdit ? (
                 <Action
                   icon="create-outline"

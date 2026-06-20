@@ -12,6 +12,7 @@ import { AdminHeader, AdminScroll, CardTitle, colorFor } from '../../src/compone
 import { Ionicon } from '../../src/components/Ionicon';
 import { ACCENT_PRESETS, DEFAULT_ACCENT, normalizeHex } from '../../src/theme/accent';
 import { useColors } from '../../src/theme/colors';
+import { isSupported as offlineSupported } from '../../src/offline/fs';
 import { t } from '../../src/i18n';
 
 const THEME_OPTIONS: { key: ThemePreference; icon: string }[] = [
@@ -218,6 +219,9 @@ export default function Settings() {
         ) : null}
         {client?.has('playlistImport') ? (
           <NavRow icon="cloud-download-outline" title={t('settings.importTitle')} subtitle={t('settings.importSubtitle')} onPress={() => router.push('/import' as never)} />
+        ) : null}
+        {offlineSupported && client?.has('offlineDownloads') ? (
+          <NavRow icon="cloud-offline-outline" title={t('offline.title')} subtitle={t('offline.subtitle')} onPress={() => router.push('/offline' as never)} />
         ) : null}
         <NavRow icon="phone-portrait-outline" title={t('settings.devicesTitle')} subtitle={t('settings.devicesSubtitle')} onPress={() => router.push('/devices' as never)} />
         <NavRow icon="key-outline" title={t('settings.apiTitle')} subtitle={t('settings.apiSubtitle')} onPress={() => router.push('/api-tokens' as never)} />
