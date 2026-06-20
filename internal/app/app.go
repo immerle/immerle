@@ -344,6 +344,8 @@ func New(cfg config.Config) (*App, error) {
 		OnDemand:     onDemand,
 		Streamer:     streamer,
 		Cover:        coverSvc,
+		Shares:       store.Shares,
+		BaseURL:      baseURL(cfg),
 		LibraryStats: libraryStats,
 		Imports:      importSvc,
 		Scanner:      scan,
