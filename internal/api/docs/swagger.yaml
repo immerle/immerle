@@ -817,6 +817,47 @@ components:
         username:
           type: string
       type: object
+    immerle.adminUserCreateRequest:
+      properties:
+        admin:
+          type: boolean
+        displayName:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+        username:
+          type: string
+      type: object
+    immerle.adminUserUpdateRequest:
+      properties:
+        admin:
+          type: boolean
+        displayName:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+        scrobblingEnabled:
+          type: boolean
+      type: object
+    immerle.adminUserView:
+      properties:
+        admin:
+          type: boolean
+        displayName:
+          type: string
+        email:
+          type: string
+        id:
+          type: string
+        scrobblingEnabled:
+          type: boolean
+        username:
+          type: string
+      type: object
     immerle.albumView:
       properties:
         artist:
@@ -954,6 +995,11 @@ components:
         song:
           $ref: '#/components/schemas/immerle.songView'
         username:
+          type: string
+      type: object
+    immerle.passwordRequest:
+      properties:
+        password:
           type: string
       type: object
     immerle.playQueueRequest:
@@ -1125,6 +1171,42 @@ components:
       properties:
         enabled:
           type: boolean
+      type: object
+    immerle.shareCreateRequest:
+      properties:
+        description:
+          type: string
+        expiresAt:
+          type: integer
+        itemId:
+          type: string
+      type: object
+    immerle.shareUpdateRequest:
+      properties:
+        description:
+          type: string
+        expiresAt:
+          type: integer
+      type: object
+    immerle.shareView:
+      properties:
+        createdAt:
+          type: string
+        description:
+          type: string
+        entries:
+          items:
+            $ref: '#/components/schemas/immerle.songView'
+          type: array
+          uniqueItems: false
+        expiresAt:
+          type: string
+        id:
+          type: string
+        url:
+          type: string
+        viewCount:
+          type: integer
       type: object
     immerle.smartToggleRequest:
       properties:
@@ -2258,6 +2340,196 @@ paths:
       summary: Upload track cover
       tags:
       - admin
+  /admin/users:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  items:
+                    $ref: '#/components/schemas/immerle.adminUserView'
+                  type: array
+                type: object
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Forbidden
+      security:
+      - BearerAuth: []
+      summary: List users
+      tags:
+      - admin
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/immerle.adminUserCreateRequest'
+                description: User
+                summary: body
+        description: User
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.adminUserView'
+          description: Created
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Forbidden
+      security:
+      - BearerAuth: []
+      summary: Create user
+      tags:
+      - admin
+  /admin/users/{username}:
+    delete:
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        schema:
+          type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Forbidden
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Not Found
+      security:
+      - BearerAuth: []
+      summary: Delete user
+      tags:
+      - admin
+    get:
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.adminUserView'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Forbidden
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Not Found
+      security:
+      - BearerAuth: []
+      summary: Get user
+      tags:
+      - admin
+    patch:
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/immerle.adminUserUpdateRequest'
+                description: Changes
+                summary: body
+        description: Changes
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Forbidden
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Not Found
+      security:
+      - BearerAuth: []
+      summary: Update user
+      tags:
+      - admin
   /admin/wrapped:
     get:
       responses:
@@ -2607,6 +2879,46 @@ paths:
       summary: Capability discovery
       tags:
       - discovery
+  /cover/{id}:
+    get:
+      description: Returns the cover image for a track or album id, optionally resized.
+      parameters:
+      - description: Track or album id
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      - description: Square size in pixels
+        in: query
+        name: size
+        schema:
+          type: integer
+      responses:
+        "200":
+          content:
+            image/jpeg:
+              schema:
+                format: binary
+                type: string
+          description: Image bytes
+        "401":
+          content:
+            image/jpeg:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+        "404":
+          content:
+            image/jpeg:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Not Found
+      security:
+      - BearerAuth: []
+      summary: Cover art
+      tags:
+      - media
   /devices:
     get:
       description: Lists the caller's active device sessions (one per issued JWT),
@@ -3397,6 +3709,39 @@ paths:
       summary: Update your account
       tags:
       - users
+  /me/password:
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/immerle.passwordRequest'
+                description: New password
+                summary: body
+        description: New password
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Change own password
+      tags:
+      - account
   /now-playing:
     get:
       description: Returns the tracks every user is currently playing, newest first.
@@ -4111,6 +4456,128 @@ paths:
       summary: Create the first administrator
       tags:
       - setup
+  /shares:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  items:
+                    $ref: '#/components/schemas/immerle.shareView'
+                  type: array
+                type: object
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: List shares
+      tags:
+      - shares
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/immerle.shareCreateRequest'
+                description: Share
+                summary: body
+        description: Share
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.shareView'
+          description: Created
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Create share
+      tags:
+      - shares
+  /shares/{id}:
+    delete:
+      parameters:
+      - description: Share id
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Delete share
+      tags:
+      - shares
+    patch:
+      parameters:
+      - description: Share id
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/immerle.shareUpdateRequest'
+                description: Changes
+                summary: body
+        description: Changes
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Not Found
+      security:
+      - BearerAuth: []
+      summary: Update share
+      tags:
+      - shares
   /smart-playlists:
     get:
       responses:
@@ -4298,6 +4765,36 @@ paths:
       summary: Get song
       tags:
       - catalog
+  /songs/{id}/download:
+    get:
+      description: Serves a track's original audio bytes (no transcoding).
+      parameters:
+      - description: Track id
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Audio bytes
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Not Found
+      security:
+      - BearerAuth: []
+      summary: Download a track
+      tags:
+      - media
   /songs/{id}/rating:
     delete:
       parameters:
@@ -4407,6 +4904,49 @@ paths:
       summary: Favorite a song
       tags:
       - favorites
+  /songs/{id}/stream:
+    get:
+      description: Streams a track's audio. Supports HTTP range requests; maxBitRate/format
+        transcode when set. Remote tracks are streamed progressively on first listen.
+      parameters:
+      - description: Track id
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      - description: Transcode to at most this bit rate (kbps)
+        in: query
+        name: maxBitRate
+        schema:
+          type: integer
+      - description: Transcode format (or 'raw' for original)
+        in: query
+        name: format
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Audio stream
+        "206":
+          description: Partial content
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Not Found
+      security:
+      - BearerAuth: []
+      summary: Stream a track
+      tags:
+      - media
   /theme:
     get:
       responses:

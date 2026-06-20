@@ -2,11 +2,8 @@ package subsonic
 
 import (
 	"net/http"
-	"strings"
 	"time"
 
-	"github.com/immerle/immerle/internal/core"
-	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/stream"
 )
 
@@ -22,79 +19,11 @@ func (h *Handler) handleDownload(w http.ResponseWriter, r *http.Request) {
 	h.serveAudio(w, r, stream.Options{Format: "raw"})
 }
 
-// serveAudio serves a track for playback/download. For a remote (provider) track
-// that is not yet local, the first listen is streamed *progressively*: bytes are
-// teed from the provider to the client and to disk at once, so playback starts
-// immediately instead of waiting for the whole download. The saved copy is then
-// ingested in the background, and later plays go through the normal (transcoding,
-// seekable) local path.
+// serveAudio delegates to the shared media server, mapping a missing track to a
+// Subsonic error. Mid-stream failures are handled (logged) inside the server.
 func (h *Handler) serveAudio(w http.ResponseWriter, r *http.Request, opts stream.Options) {
-	id := param(r, "id")
-	user := userFrom(r.Context())
-
-	if core.IsRemoteID(id) && h.OnDemand != nil {
-		track, local, pending, err := h.OnDemand.PrepareStream(r.Context(), user.ID, id)
-		if err != nil {
-			writeError(w, r, ErrDataNotFound, "Song not found")
-			return
-		}
-		if !local {
-			h.streamProgressive(w, r, pending, opts)
-			return
-		}
-		h.serveLocal(w, r, track, opts)
-		return
-	}
-
-	track, err := h.Catalog.GetTrack(r.Context(), id)
-	if err != nil {
+	if err := h.media.ServeAudio(w, r, userFrom(r.Context()), param(r, "id"), opts); err != nil {
 		writeError(w, r, ErrDataNotFound, "Song not found")
-		return
-	}
-	h.serveLocal(w, r, track, opts)
-}
-
-func (h *Handler) serveLocal(w http.ResponseWriter, r *http.Request, track models.Track, opts stream.Options) {
-	user := userFrom(r.Context())
-	if h.NowPlaying != nil {
-		h.NowPlaying.Set(user.ID, user.Username, track.ID)
-	}
-	if err := h.Streamer.Serve(w, r, track, opts); err != nil {
-		h.Logger.Warn("stream failed", "track", track.ID, "error", err)
-	}
-}
-
-// streamProgressive serves the provider's original bytes directly on a first
-// listen. It does NOT transcode (that would force buffering the whole file
-// first), so it must advertise the content type of the *actual* bytes — the
-// provider's suffix — not the requested transcode format, or a client would get
-// e.g. raw FLAC labelled audio/mpeg. Seeking is disabled until the local copy is
-// ready; later plays go through the seekable, transcoding local path.
-func (h *Handler) streamProgressive(w http.ResponseWriter, r *http.Request, pending *core.PendingDownload, opts stream.Options) {
-	w.Header().Set("Content-Type", audioContentType(pending.Suffix()))
-	w.Header().Set("Accept-Ranges", "none")
-	if err := h.OnDemand.StreamPending(r.Context(), pending, w); err != nil {
-		// Headers/bytes have already started; nothing to do but log.
-		h.Logger.Warn("progressive stream failed", "error", err)
-	}
-}
-
-// audioContentType returns the MIME type to advertise for the provider's actual
-// bytes, derived from its file suffix.
-func audioContentType(suffix string) string {
-	switch strings.ToLower(suffix) {
-	case "mp3", "mpeg":
-		return "audio/mpeg"
-	case "flac":
-		return "audio/flac"
-	case "ogg", "opus", "vorbis":
-		return "audio/ogg"
-	case "aac", "m4a", "mp4":
-		return "audio/mp4"
-	case "wav":
-		return "audio/wav"
-	default:
-		return "application/octet-stream"
 	}
 }
 

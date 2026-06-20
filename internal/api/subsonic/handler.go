@@ -12,6 +12,7 @@ import (
 	chi "github.com/go-chi/chi/v5"
 
 	"github.com/immerle/immerle/internal/api/httputil"
+	"github.com/immerle/immerle/internal/api/media"
 	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
@@ -62,6 +63,7 @@ type Handler struct {
 	userSvc      *core.UserService
 	shareSvc     *core.ShareService
 	playQueueSvc *core.PlayQueueService
+	media        *media.Server
 }
 
 // NewHandler builds a Subsonic handler.
@@ -74,6 +76,7 @@ func NewHandler(d Deps) *Handler {
 		userSvc:      core.NewUserService(d.Users, d.Auth),
 		shareSvc:     core.NewShareService(d.Shares, d.Catalog, d.Playlists),
 		playQueueSvc: core.NewPlayQueueService(d.PlayQueues, d.Catalog, d.Annotations),
+		media:        media.NewServer(d.Catalog, d.Streamer, d.Cover, d.OnDemand, d.NowPlaying, d.Logger),
 	}
 }
 
