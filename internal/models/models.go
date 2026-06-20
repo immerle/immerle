@@ -361,7 +361,6 @@ type Album struct {
 	CreatedAt     time.Time `json:"createdAt"`
 }
 
-// Track is a single audio file.
 // Participant is one contributor to a track in a given role (e.g. role
 // "producer", name "Nigel Godrich"). Modelled as plain data, not a catalog
 // entity — ponytail: a JSON column, no per-role artist browsing. Promote to a
@@ -371,6 +370,7 @@ type Participant struct {
 	Name string `json:"name"`
 }
 
+// Track is a single audio file.
 type Track struct {
 	ID           string `json:"id"`
 	Title        string `json:"title"`
