@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { Redirect, router } from 'expo-router';
 import { getSetupStatus, initSetup, SetupFieldError } from '../src/api/setup';
@@ -31,7 +31,13 @@ export default function Setup() {
   const colors = useColors();
   const [phase, setPhase] = useState<Phase>('url');
   // Pre-fill with the origin when this app is served by its own Immerle binary.
+  const selfUrl = useSelfServer((s) => s.url);
   const [serverUrl, setServerUrl] = useState(() => useSelfServer.getState().url ?? '');
+  // Landing straight on /setup can beat the async self-probe; fill it in when it
+  // resolves, but never clobber what the user has already typed.
+  useEffect(() => {
+    if (selfUrl) setServerUrl((cur) => cur || selfUrl);
+  }, [selfUrl]);
   const [tokenRequired, setTokenRequired] = useState(false);
   const [reveal, setReveal] = useState(false);
 
