@@ -283,6 +283,25 @@ export class ImmerleClient {
   }
 
   /**
+   * A playable stream URL for a track: mints a short-lived signed URL (no
+   * credential in it, safe for an <audio>/<video> src) and appends the transcode
+   * options. The transcode params aren't part of the signature, so they can be
+   * tweaked freely. Players mint these per track when building the queue.
+   */
+  async streamUrl(
+    id: string,
+    opts?: { maxBitRate?: number; format?: string },
+    signal?: AbortSignal,
+  ): Promise<string> {
+    const { data, error } = await this.api.GET('/songs/{id}/stream-url', { params: { path: { id } }, signal });
+    if (error) throw apiErr(error, 'stream.url');
+    let url = `${this.serverUrl}${data.stream}`; // signed path: /api/v1/songs/{id}/stream?exp=&sig=
+    if (opts?.maxBitRate) url += `&maxBitRate=${opts.maxBitRate}`;
+    if (opts?.format) url += `&format=${encodeURIComponent(opts.format)}`;
+    return url;
+  }
+
+  /**
    * Library-wide stats (counts + on-disk size in bytes) from `/library/stats`.
    * Falls back to deriving counts from Subsonic on a plain server (no size).
    */
