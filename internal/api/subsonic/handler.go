@@ -76,7 +76,7 @@ func NewHandler(d Deps) *Handler {
 		userSvc:      core.NewUserService(d.Users, d.Auth),
 		shareSvc:     core.NewShareService(d.Shares, d.Catalog, d.Playlists),
 		playQueueSvc: core.NewPlayQueueService(d.PlayQueues, d.Catalog, d.Annotations),
-		media:        media.NewServer(d.Catalog, d.Streamer, d.Cover, d.OnDemand, d.NowPlaying, d.Logger),
+		media:        media.NewServer(d.Catalog, d.Streamer, d.Cover, d.OnDemand, d.NowPlaying, d.Logger, ""),
 	}
 }
 

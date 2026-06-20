@@ -51,6 +51,8 @@ type Deps struct {
 	// Shares persists share links; BaseURL builds their absolute URLs.
 	Shares  *persistence.ShareRepo
 	BaseURL string
+	// SigningKey signs short-lived media (stream/download) URLs. Empty disables it.
+	SigningKey string
 	// LibraryStats serves the cached library analytics (counts + total size).
 	LibraryStats *core.LibraryStatsService
 	// Imports runs playlist imports from external sources (e.g. Spotify).
@@ -123,7 +125,7 @@ func NewHandler(d Deps) *Handler {
 		playlistSvc: core.NewPlaylistService(d.Playlists, d.Annotations, d.Activity),
 		userSvc:     core.NewUserService(d.Users, d.Auth),
 		shareSvc:    core.NewShareService(d.Shares, d.Catalog, d.Playlists),
-		media:       media.NewServer(d.Catalog, d.Streamer, d.Cover, d.OnDemand, d.NowPlaying, d.Logger),
+		media:       media.NewServer(d.Catalog, d.Streamer, d.Cover, d.OnDemand, d.NowPlaying, d.Logger, d.SigningKey),
 	}
 }
 
@@ -145,8 +147,21 @@ func (h *Handler) Register(mux chi.Router) {
 		r.Get("/setup", h.handleSetupStatus)
 		r.Post("/setup", h.handleSetupInit)
 		r.Post("/auth/sessions", h.handleLogin)
-		// Station logos are cached public images (loadable as a plain <img>).
+		// Station logos and cover art are cached public images (loadable as a plain
+		// <img> with no Authorization header). Cover art is album/track artwork —
+		// low sensitivity, served like the radio logos.
 		r.Get("/radio/stations/{id}/cover", h.handleRadioCover)
+		r.Get("/cover/{id}", h.handleCover)
+
+		// Audio stream/download accept EITHER a short-lived signed URL (for an
+		// <audio>/<video> src that can't send headers) OR a Bearer token (direct
+		// API use). The signed URL carries a one-track, time-limited capability —
+		// no reusable credential ends up in logs/history.
+		r.Group(func(r chi.Router) {
+			r.Use(h.mediaAuthMiddleware)
+			r.Get("/songs/{id}/stream", h.handleStream)
+			r.Get("/songs/{id}/download", h.handleDownload)
+		})
 
 		// Everything below requires a Bearer token.
 		r.Group(func(r chi.Router) {
@@ -215,10 +230,8 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Put("/play-queue", h.handleSavePlayQueue)
 			r.Get("/now-playing", h.handleNowPlaying)
 
-			// Media: audio stream/download and cover art.
-			r.Get("/songs/{id}/stream", h.handleStream)
-			r.Get("/songs/{id}/download", h.handleDownload)
-			r.Get("/cover/{id}", h.handleCover)
+			// Mint short-lived signed stream/download URLs for the {id} track.
+			r.Get("/songs/{id}/stream-url", h.handleStreamURL)
 
 			// Year-in-review ("Wrapped").
 			r.Get("/wrapped", h.handleWrapped)

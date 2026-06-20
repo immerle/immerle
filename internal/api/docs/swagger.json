@@ -1858,6 +1858,17 @@
                 },
                 "type": "object"
             },
+            "immerle.streamURLs": {
+                "properties": {
+                    "download": {
+                        "type": "string"
+                    },
+                    "stream": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "immerle.toggleRequest": {
                 "properties": {
                     "enabled": {
@@ -8007,6 +8018,53 @@
                     }
                 ],
                 "summary": "Stream a track",
+                "tags": [
+                    "media"
+                ]
+            }
+        },
+        "/songs/{id}/stream-url": {
+            "get": {
+                "description": "Returns short-lived signed stream and download URLs for the track (usable as a plain media src). They expire after a few minutes.",
+                "parameters": [
+                    {
+                        "description": "Track id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.streamURLs"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Mint signed media URLs",
                 "tags": [
                     "media"
                 ]

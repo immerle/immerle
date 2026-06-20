@@ -347,6 +347,7 @@ func New(cfg config.Config) (*App, error) {
 		Cover:          coverSvc,
 		Shares:         store.Shares,
 		BaseURL:        baseURL(cfg),
+		SigningKey:     settingsSvc.Secret(),
 		LibraryStats:   libraryStats,
 		Imports:        importSvc,
 		Scanner:        scan,
