@@ -146,11 +146,16 @@ func (r *CatalogRepo) UpsertAlbum(ctx context.Context, a models.Album) (string, 
 	err := r.bqueryRow(ctx, r.mel.New("albums").Select("id").
 		Where("artist_id", "=", a.ArtistID).Where("name", "=", a.Name)).Scan(&id)
 	if err == nil {
-		// The conditional merge (COALESCE/NULLIF and CASE column-relative SETs)
-		// can't be expressed by melody, so this UPDATE stays hand-written.
-		if _, err := r.exec(ctx, `UPDATE albums SET year=COALESCE(NULLIF(?,0), year), genre=COALESCE(NULLIF(?,''), genre),
-			cover_art=CASE WHEN cover_art='' THEN ? ELSE cover_art END, is_compilation=?, mbid=CASE WHEN mbid='' THEN ? ELSE mbid END
-			WHERE id=?`, a.Year, a.Genre, a.CoverArt, db.Bool(a.IsCompilation), a.MBID, id); err != nil {
+		// Conditional merge: keep the stored value unless the incoming one is
+		// non-zero/non-empty (year, genre, mbid, cover) — only is_compilation is
+		// overwritten outright.
+		if _, err := r.bexec(ctx, r.mel.NewUpdate("albums").
+			SetRaw("year", "COALESCE(NULLIF(?,0), year)", a.Year).
+			SetRaw("genre", "COALESCE(NULLIF(?,''), genre)", a.Genre).
+			SetRaw("cover_art", "CASE WHEN cover_art='' THEN ? ELSE cover_art END", a.CoverArt).
+			Set("is_compilation", db.Bool(a.IsCompilation)).
+			SetRaw("mbid", "CASE WHEN mbid='' THEN ? ELSE mbid END", a.MBID).
+			Where("id", "=", id)); err != nil {
 			return "", err
 		}
 		return id, nil
@@ -638,8 +643,8 @@ func (r *CatalogRepo) listTracks(ctx context.Context, q string, args ...any) ([]
 // a track that is the result of a completed download job AND has no reason to be
 // kept — not starred (by anyone), not played since `playedSince`, and not in any
 // playlist. Manually-scanned tracks (no download job) are never returned.
-// Stays hand-written: EXISTS/NOT EXISTS subqueries and IS NOT NULL melody can't
-// express.
+// Kept as one raw block: melody's WhereRaw could wrap each EXISTS, but the
+// four-clause predicate reads better written out as SQL.
 func (r *CatalogRepo) ProviderTracksToEvict(ctx context.Context, playedSince time.Time) ([]models.Track, error) {
 	rows, err := r.query(ctx, `
 		SELECT t.id, t.path FROM tracks t

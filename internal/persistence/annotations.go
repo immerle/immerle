@@ -6,6 +6,8 @@ import (
 	"errors"
 	"time"
 
+	melody "github.com/ermos/melody/v2"
+
 	"github.com/immerle/immerle/internal/db"
 	"github.com/immerle/immerle/internal/models"
 )
@@ -32,12 +34,11 @@ func (r *AnnotationRepo) Get(ctx context.Context, userID string, it models.ItemT
 	return a, nil
 }
 
-// ensure makes sure a row exists for upserts. The ON CONFLICT ... DO NOTHING
-// (a conflict clause with no SET) can't be expressed by melody, so it stays
-// hand-written.
+// ensure makes sure a row exists for upserts.
 func (r *AnnotationRepo) ensure(ctx context.Context, userID string, it models.ItemType, itemID string) error {
-	_, err := r.exec(ctx, `INSERT INTO annotations (user_id, item_type, item_id) VALUES (?, ?, ?)
-		ON CONFLICT(user_id, item_type, item_id) DO NOTHING`, userID, string(it), itemID)
+	_, err := r.bexec(ctx, r.mel.NewInsert("annotations").
+		Set("user_id", userID).Set("item_type", string(it)).Set("item_id", itemID).
+		OnConflict("user_id", "item_type", "item_id").OnConflictDoNothing())
 	return err
 }
 
@@ -65,24 +66,22 @@ func (r *AnnotationRepo) SetRating(ctx context.Context, userID string, it models
 	return err
 }
 
-// IncrementPlay bumps the play count and last-played timestamp. The
-// column-relative SET (play_count = play_count + 1) can't be expressed by
-// melody, so it stays hand-written.
+// IncrementPlay bumps the play count and last-played timestamp.
 func (r *AnnotationRepo) IncrementPlay(ctx context.Context, userID string, it models.ItemType, itemID string, at time.Time) error {
 	if err := r.ensure(ctx, userID, it, itemID); err != nil {
 		return err
 	}
-	_, err := r.exec(ctx, `UPDATE annotations SET play_count = play_count + 1, last_played=?
-		WHERE user_id=? AND item_type=? AND item_id=?`, db.Millis(at), userID, string(it), itemID)
+	_, err := r.bexec(ctx, r.mel.NewUpdate("annotations").
+		SetRaw("play_count", "play_count + 1").Set("last_played", db.Millis(at)).
+		Where("user_id", "=", userID).Where("item_type", "=", string(it)).Where("item_id", "=", itemID))
 	return err
 }
 
-// ListStarred returns the item ids of a given type starred by a user. The
-// starred_at IS NOT NULL predicate can't be expressed by melody, so it stays
-// hand-written.
+// ListStarred returns the item ids of a given type starred by a user.
 func (r *AnnotationRepo) ListStarred(ctx context.Context, userID string, it models.ItemType) ([]string, error) {
-	rows, err := r.query(ctx, `SELECT item_id FROM annotations WHERE user_id=? AND item_type=? AND starred_at IS NOT NULL
-		ORDER BY starred_at DESC`, userID, string(it))
+	rows, err := r.bquery(ctx, r.mel.New("annotations").Select("item_id").
+		Where("user_id", "=", userID).Where("item_type", "=", string(it)).WhereNotNull("starred_at").
+		OrderBy("starred_at", melody.Desc))
 	if err != nil {
 		return nil, err
 	}
