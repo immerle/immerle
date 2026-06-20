@@ -3,11 +3,11 @@ package subsonic
 import (
 	"net/http"
 	"net/url"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/immerle/immerle/internal/lyrics"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 )
@@ -280,31 +280,19 @@ func (h *Handler) handleGetLyricsBySongID(w http.ResponseWriter, r *http.Request
 	write(w, r, resp)
 }
 
-// lrcLine matches a leading "[mm:ss.xx]" (or "[mm:ss]") synced-lyrics timestamp.
-var lrcLine = regexp.MustCompile(`^\[(\d+):(\d{2})(?:[.:](\d{1,3}))?\]`)
-
-// parseStructuredLyrics turns raw lyrics text into one OpenSubsonic document. If
-// any line carries an [mm:ss.xx] timestamp the whole document is marked synced
-// and each Start is the offset in milliseconds; otherwise lines are unsynced.
+// parseStructuredLyrics maps a parsed lyrics document (shared with the native
+// REST API) into the OpenSubsonic shape.
 func parseStructuredLyrics(raw string) StructuredLyrics {
-	doc := StructuredLyrics{Lang: "xxx"}
-	for _, line := range strings.Split(strings.ReplaceAll(raw, "\r\n", "\n"), "\n") {
-		if m := lrcLine.FindStringSubmatch(line); m != nil {
-			doc.Synced = true
-			min, _ := strconv.Atoi(m[1])
-			sec, _ := strconv.Atoi(m[2])
-			ms := 0
-			if m[3] != "" {
-				ms, _ = strconv.Atoi((m[3] + "000")[:3]) // pad fraction to milliseconds
-			}
-			start := int64(min*60_000 + sec*1_000 + ms)
-			text := strings.TrimSpace(lrcLine.ReplaceAllString(line, ""))
-			doc.Line = append(doc.Line, LyricLine{Start: start, Value: text})
-		} else {
-			doc.Line = append(doc.Line, LyricLine{Value: line})
+	doc := lyrics.Parse(raw)
+	out := StructuredLyrics{Lang: "xxx", Synced: doc.Synced}
+	for _, l := range doc.Lines {
+		line := LyricLine{Value: l.Text}
+		if doc.Synced {
+			line.Start = l.StartMs
 		}
+		out.Line = append(out.Line, line)
 	}
-	return doc
+	return out
 }
 
 // ---- empty-but-valid stubs for sections we do not implement ----

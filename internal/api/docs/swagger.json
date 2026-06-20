@@ -1526,6 +1526,32 @@
                 },
                 "type": "object"
             },
+            "immerle.lyricLine": {
+                "properties": {
+                    "startMs": {
+                        "type": "integer"
+                    },
+                    "text": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.lyricsView": {
+                "properties": {
+                    "lines": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.lyricLine"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "synced": {
+                        "type": "boolean"
+                    }
+                },
+                "type": "object"
+            },
             "immerle.nowPlayingView": {
                 "properties": {
                     "minutesAgo": {
@@ -8632,6 +8658,63 @@
                 "summary": "Download a track",
                 "tags": [
                     "media"
+                ]
+            }
+        },
+        "/songs/{id}/lyrics": {
+            "get": {
+                "description": "Returns a track's lyrics. When the stored tags carry [mm:ss.xx] timestamps the document is \"synced\" and every line has a startMs (ms).",
+                "parameters": [
+                    {
+                        "description": "Track id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.lyricsView"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Get song lyrics",
+                "tags": [
+                    "catalog"
                 ]
             }
         },

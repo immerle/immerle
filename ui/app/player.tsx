@@ -6,7 +6,9 @@ import Slider from '@react-native-community/slider';
 import { CoverArt } from '../src/components/CoverArt';
 import { IconButton } from '../src/components/ui';
 import { PlayButton } from '../src/components/PlayButton';
+import { Lyrics } from '../src/components/Lyrics';
 import { usePlayer } from '../src/audio/store';
+import { useLyrics } from '../src/query/lyrics';
 import { formatDuration } from '../src/utils/format';
 import { useColors } from '../src/theme/colors';
 import { useT } from '../src/i18n/store';
@@ -34,6 +36,11 @@ export default function Player() {
   const toggleShuffle = usePlayer((s) => s.toggleShuffle);
 
   const [scrubbing, setScrubbing] = useState<number | null>(null);
+  const [showLyrics, setShowLyrics] = useState(false);
+
+  const { data: lyrics } = useLyrics(song?.id);
+  const hasLyrics = !!lyrics && lyrics.lines.length > 0;
+  const lyricsVisible = showLyrics && hasLyrics;
 
   if (!song) {
     return (
@@ -56,13 +63,30 @@ export default function Player() {
       <View className="flex-row items-center justify-between px-4 pt-2">
         <IconButton name="chevron-down" size={28} onPress={() => router.back()} accessibilityLabel={t('media.player.close')} />
         <Text className="text-sm font-medium text-muted">{t('media.player.nowPlaying')}</Text>
-        <IconButton name="list" size={24} onPress={() => router.push('/queue')} accessibilityLabel={t('media.player.queue')} />
+        <View className="flex-row items-center gap-1">
+          {hasLyrics ? (
+            <IconButton
+              name="mic"
+              size={22}
+              color={lyricsVisible ? colors.primary : colors.muted}
+              onPress={() => setShowLyrics((v) => !v)}
+              accessibilityLabel={t('media.player.lyrics')}
+            />
+          ) : null}
+          <IconButton name="list" size={24} onPress={() => router.push('/queue')} accessibilityLabel={t('media.player.queue')} />
+        </View>
       </View>
 
       <View className="flex-1 justify-center px-6">
-        <View className="items-center">
-          <CoverArt coverArt={song.coverArt} url={song.coverUrl} size={300} rounded="rounded-3xl" />
-        </View>
+        {lyricsVisible && lyrics ? (
+          <View className="flex-1">
+            <Lyrics lines={lyrics.lines} synced={lyrics.synced} positionMs={shownPosition * 1000} />
+          </View>
+        ) : (
+          <View className="items-center">
+            <CoverArt coverArt={song.coverArt} url={song.coverUrl} size={300} rounded="rounded-3xl" />
+          </View>
+        )}
 
         <View className="pt-8">
           <Text numberOfLines={1} className="text-2xl font-bold text-foreground">
