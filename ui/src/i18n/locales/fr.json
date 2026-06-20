@@ -100,7 +100,10 @@
     "emptyTitle": "Aucun téléchargement",
     "emptySubtitle": "Utilisez le menu ··· d'un titre pour le télécharger et l'écouter hors-ligne.",
     "clearAll": "Tout supprimer",
-    "remove": "Retirer le téléchargement"
+    "remove": "Retirer le téléchargement",
+    "wifiOnly": "Télécharger en Wi-Fi uniquement",
+    "quotaError": "Stockage plein — le téléchargement n'a pas pu être enregistré. Supprimez des titres et réessayez.",
+    "dismiss": "OK"
   },
   "settings": {
     "title": "Réglages",

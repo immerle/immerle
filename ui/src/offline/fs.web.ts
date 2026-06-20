@@ -10,6 +10,21 @@ export const isSupported = typeof indexedDB !== 'undefined';
 // leaking a new one each time. Cleared entries are revoked.
 const urlCache = new Map<string, string>();
 
+// Ask the browser to make storage persistent (not evicted under pressure) once,
+// before the first download. Best-effort: ignored if unsupported or denied.
+let persistenceAsked = false;
+async function requestPersistence(): Promise<void> {
+  if (persistenceAsked) return;
+  persistenceAsked = true;
+  try {
+    if (navigator.storage?.persist && !(await navigator.storage.persisted())) {
+      await navigator.storage.persist();
+    }
+  } catch {
+    /* best effort */
+  }
+}
+
 // Native concept; unused on web (playback goes through playableUrl).
 export function fileUri(_name: string): string {
   return '';
@@ -24,6 +39,7 @@ export async function ensureDir(): Promise<void> {
  * progress when the server sends Content-Length. Returns the byte size.
  */
 export async function download(url: string, name: string, onProgress?: (p: number) => void): Promise<number> {
+  await requestPersistence();
   const res = await fetch(url);
   if (!res.ok) throw new Error(`download failed: ${res.status}`);
 
