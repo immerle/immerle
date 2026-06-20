@@ -324,3 +324,39 @@ func (h *Handler) handleSearch(w http.ResponseWriter, r *http.Request) {
 	}
 	writeResource(w, http.StatusOK, out)
 }
+
+// favoritesView is the caller's starred catalog.
+type favoritesView struct {
+	Artists []artistView `json:"artists"`
+	Albums  []albumView  `json:"albums"`
+	Songs   []songView   `json:"songs"`
+}
+
+// handleFavorites returns the items the caller has starred.
+//
+// @Summary  List favorites
+// @Description  Returns the artists, albums and songs the caller has starred.
+// @Tags     catalog
+// @Security BearerAuth
+// @Produce  json
+// @Success  200  {object}  favoritesView
+// @Failure  401  {object}  errorResponse
+// @Router   /me/favorites [get]
+func (h *Handler) handleFavorites(w http.ResponseWriter, r *http.Request) {
+	st := h.library.Starred(r.Context(), userFrom(r.Context()).ID)
+	out := favoritesView{
+		Artists: make([]artistView, 0, len(st.Artists)),
+		Albums:  make([]albumView, 0, len(st.Albums)),
+		Songs:   make([]songView, 0, len(st.Songs)),
+	}
+	for _, a := range st.Artists {
+		out.Artists = append(out.Artists, toArtistView(a, nil, nil))
+	}
+	for _, a := range st.Albums {
+		out.Albums = append(out.Albums, toAlbumView(a, nil, nil))
+	}
+	for _, t := range st.Songs {
+		out.Songs = append(out.Songs, toSongView(t))
+	}
+	writeResource(w, http.StatusOK, out)
+}

@@ -155,6 +155,7 @@ func (h *Handler) Register(mux chi.Router) {
 			// Own account / other users' profiles.
 			r.Get("/me", h.handleAccount)
 			r.Patch("/me", h.handleAccountUpdate)
+			r.Get("/me/favorites", h.handleFavorites)
 			r.Put("/me/password", h.handleChangePassword)
 			r.Get("/users/{username}", h.handleProfile)
 
