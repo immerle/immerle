@@ -19,8 +19,6 @@ type rowScanner interface{ Scan(...any) error }
 
 // Store groups all repositories.
 type Store struct {
-	db *db.DB
-
 	Users           *UserRepo
 	Catalog         *CatalogRepo
 	Genres          *GenreRepo
@@ -33,7 +31,6 @@ type Store struct {
 	Activity        *ActivityRepo
 	Jam             *JamRepo
 	Downloads       *DownloadRepo
-	ProviderCache   *ProviderCacheRepo
 	ProviderConfigs *ProviderConfigRepo
 	ProviderLogs    *ProviderLogRepo
 	APITokens       *APITokenRepo
@@ -48,7 +45,6 @@ type Store struct {
 func New(database *db.DB) *Store {
 	base := &base{db: database}
 	return &Store{
-		db:              database,
 		Users:           &UserRepo{base},
 		Catalog:         &CatalogRepo{base},
 		Genres:          &GenreRepo{base},
@@ -61,7 +57,6 @@ func New(database *db.DB) *Store {
 		Activity:        &ActivityRepo{base},
 		Jam:             &JamRepo{base},
 		Downloads:       &DownloadRepo{base},
-		ProviderCache:   &ProviderCacheRepo{base},
 		ProviderConfigs: &ProviderConfigRepo{base},
 		ProviderLogs:    &ProviderLogRepo{base},
 		APITokens:       &APITokenRepo{base},
@@ -72,9 +67,6 @@ func New(database *db.DB) *Store {
 		Wrapped:         &WrappedRepo{base},
 	}
 }
-
-// DB exposes the underlying database (for transactions/migrations).
-func (s *Store) DB() *db.DB { return s.db }
 
 // base is the shared, generic repository foundation. It centralizes query
 // rebinding and a small set of execution helpers reused by all repositories.

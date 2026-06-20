@@ -684,8 +684,8 @@ func sanitize(s string) string {
 
 func firstNonEmpty(vals ...string) string {
 	for _, v := range vals {
-		if strings.TrimSpace(v) != "" {
-			return v
+		if t := strings.TrimSpace(v); t != "" {
+			return t
 		}
 	}
 	return ""

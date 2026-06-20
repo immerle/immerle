@@ -175,27 +175,3 @@ func (r *ShareRepo) Update(ctx context.Context, id, userID, description string, 
 		description, db.NullMillis(expiresAt), id, userID)
 	return err
 }
-
-// ---- Provider cache ----
-
-// ProviderCacheRepo caches provider responses.
-type ProviderCacheRepo struct{ *base }
-
-// Get returns a cached response, or ErrNotFound.
-func (r *ProviderCacheRepo) Get(ctx context.Context, provider, queryHash string) ([]byte, error) {
-	var resp []byte
-	err := r.queryRow(ctx, `SELECT response FROM provider_cache WHERE provider=? AND query_hash=?`, provider, queryHash).Scan(&resp)
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, ErrNotFound
-	}
-	return resp, err
-}
-
-// Put stores a cached response.
-func (r *ProviderCacheRepo) Put(ctx context.Context, id, provider, queryHash string, response []byte) error {
-	_, err := r.exec(ctx, `INSERT INTO provider_cache (id, provider, query_hash, response, created_at)
-		VALUES (?, ?, ?, ?, ?)
-		ON CONFLICT(provider, query_hash) DO UPDATE SET response=excluded.response, created_at=excluded.created_at`,
-		id, provider, queryHash, response, db.Millis(time.Now()))
-	return err
-}
