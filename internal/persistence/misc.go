@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	melody "github.com/ermos/melody/v2"
+
 	"github.com/immerle/immerle/internal/db"
 	"github.com/immerle/immerle/internal/models"
 )
@@ -19,11 +21,14 @@ type PlayQueueRepo struct{ *base }
 // Save stores the user's queue.
 func (r *PlayQueueRepo) Save(ctx context.Context, q models.PlayQueue) error {
 	ids := strings.Join(q.TrackIDs, ",")
-	_, err := r.exec(ctx, `INSERT INTO play_queues (user_id, track_ids, current, position_ms, changed_by, changed_at)
-		VALUES (?, ?, ?, ?, ?, ?)
-		ON CONFLICT(user_id) DO UPDATE SET track_ids=excluded.track_ids, current=excluded.current,
-		position_ms=excluded.position_ms, changed_by=excluded.changed_by, changed_at=excluded.changed_at`,
-		q.UserID, ids, q.Current, q.PositionMs, q.ChangedBy, db.Millis(q.ChangedAt))
+	_, err := r.bexec(ctx, r.mel.NewInsert("play_queues").
+		Set("user_id", q.UserID).
+		Set("track_ids", ids).UpdateDuplicateKey().
+		Set("current", q.Current).UpdateDuplicateKey().
+		Set("position_ms", q.PositionMs).UpdateDuplicateKey().
+		Set("changed_by", q.ChangedBy).UpdateDuplicateKey().
+		Set("changed_at", db.Millis(q.ChangedAt)).UpdateDuplicateKey().
+		OnConflict("user_id"))
 	return err
 }
 
@@ -32,8 +37,9 @@ func (r *PlayQueueRepo) Get(ctx context.Context, userID string) (models.PlayQueu
 	var q models.PlayQueue
 	var ids string
 	var changedAt int64
-	err := r.queryRow(ctx, `SELECT user_id, track_ids, current, position_ms, changed_by, changed_at
-		FROM play_queues WHERE user_id=?`, userID).Scan(&q.UserID, &ids, &q.Current, &q.PositionMs, &q.ChangedBy, &changedAt)
+	err := r.bqueryRow(ctx, r.mel.New("play_queues").
+		Select("user_id", "track_ids", "current", "position_ms", "changed_by", "changed_at").
+		Where("user_id", "=", userID)).Scan(&q.UserID, &ids, &q.Current, &q.PositionMs, &q.ChangedBy, &changedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return q, ErrNotFound
 	}
@@ -54,15 +60,17 @@ type ScrobbleRepo struct{ *base }
 
 // Insert records a scrobble.
 func (r *ScrobbleRepo) Insert(ctx context.Context, s models.Scrobble) error {
-	_, err := r.exec(ctx, `INSERT INTO scrobbles (id, user_id, track_id, played_at, submitted, exported)
-		VALUES (?, ?, ?, ?, ?, ?)`, s.ID, s.UserID, s.TrackID, db.Millis(s.PlayedAt), db.Bool(s.Submitted), db.Bool(s.Exported))
+	_, err := r.bexec(ctx, r.mel.NewInsert("scrobbles").
+		Set("id", s.ID).Set("user_id", s.UserID).Set("track_id", s.TrackID).
+		Set("played_at", db.Millis(s.PlayedAt)).Set("submitted", db.Bool(s.Submitted)).Set("exported", db.Bool(s.Exported)))
 	return err
 }
 
 // Unexported returns scrobbles not yet pushed to the hub.
 func (r *ScrobbleRepo) Unexported(ctx context.Context, limit int) ([]models.Scrobble, error) {
-	rows, err := r.query(ctx, `SELECT id, user_id, track_id, played_at, submitted, exported
-		FROM scrobbles WHERE exported=0 AND submitted=1 ORDER BY played_at LIMIT ?`, limit)
+	rows, err := r.bquery(ctx, r.mel.New("scrobbles").
+		Select("id", "user_id", "track_id", "played_at", "submitted", "exported").
+		Where("exported", "=", 0).Where("submitted", "=", 1).OrderBy("played_at", melody.Asc).Limit(limit))
 	if err != nil {
 		return nil, err
 	}
@@ -90,13 +98,11 @@ func (r *ScrobbleRepo) MarkExported(ctx context.Context, ids []string) error {
 	}
 	// Single statement so the flag flips atomically — a mid-batch failure must
 	// not leave some scrobbles marked exported and others not.
-	placeholders := make([]string, len(ids))
 	args := make([]any, len(ids))
 	for i, id := range ids {
-		placeholders[i] = "?"
 		args[i] = id
 	}
-	_, err := r.exec(ctx, `UPDATE scrobbles SET exported=1 WHERE id IN (`+strings.Join(placeholders, ",")+`)`, args...)
+	_, err := r.bexec(ctx, r.mel.NewUpdate("scrobbles").Set("exported", 1).Where("id", "IN", args...))
 	return err
 }
 
@@ -107,15 +113,16 @@ type ShareRepo struct{ *base }
 
 // Create inserts a share.
 func (r *ShareRepo) Create(ctx context.Context, s models.Share) error {
-	_, err := r.exec(ctx, `INSERT INTO shares (id, user_id, item_type, item_id, secret, description, expires_at, created_at, view_count)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)`,
-		s.ID, s.UserID, string(s.ItemType), s.ItemID, s.Secret, s.Description, db.NullMillis(s.ExpiresAt), db.Millis(s.CreatedAt))
+	_, err := r.bexec(ctx, r.mel.NewInsert("shares").
+		Set("id", s.ID).Set("user_id", s.UserID).Set("item_type", string(s.ItemType)).Set("item_id", s.ItemID).
+		Set("secret", s.Secret).Set("description", s.Description).Set("expires_at", db.NullMillis(s.ExpiresAt)).
+		Set("created_at", db.Millis(s.CreatedAt)).Set("view_count", 0))
 	return err
 }
 
 // Delete removes a share owned by user.
 func (r *ShareRepo) Delete(ctx context.Context, id, userID string) error {
-	_, err := r.exec(ctx, `DELETE FROM shares WHERE id=? AND user_id=?`, id, userID)
+	_, err := r.bexec(ctx, r.mel.NewDelete("shares").Where("id", "=", id).Where("user_id", "=", userID))
 	return err
 }
 
@@ -137,7 +144,7 @@ const shareColumns = `id, user_id, item_type, item_id, secret, description, expi
 
 // GetBySecret returns a share by its public secret.
 func (r *ShareRepo) GetBySecret(ctx context.Context, secret string) (models.Share, error) {
-	row := r.queryRow(ctx, `SELECT `+shareColumns+` FROM shares WHERE secret=?`, secret)
+	row := r.bqueryRow(ctx, r.mel.New("shares").Select(shareColumns).Where("secret", "=", secret))
 	sh, err := scanShare(row)
 	if errors.Is(err, sql.ErrNoRows) {
 		return sh, ErrNotFound
@@ -147,7 +154,7 @@ func (r *ShareRepo) GetBySecret(ctx context.Context, secret string) (models.Shar
 
 // ListByUser returns a user's shares.
 func (r *ShareRepo) ListByUser(ctx context.Context, userID string) ([]models.Share, error) {
-	rows, err := r.query(ctx, `SELECT `+shareColumns+` FROM shares WHERE user_id=? ORDER BY created_at DESC`, userID)
+	rows, err := r.bquery(ctx, r.mel.New("shares").Select(shareColumns).Where("user_id", "=", userID).OrderBy("created_at", melody.Desc))
 	if err != nil {
 		return nil, err
 	}
@@ -164,6 +171,8 @@ func (r *ShareRepo) ListByUser(ctx context.Context, userID string) ([]models.Sha
 }
 
 // IncrementViews bumps a share's view counter.
+// melody can't express a column-relative SET (view_count = view_count + 1), so
+// this stays hand-written.
 func (r *ShareRepo) IncrementViews(ctx context.Context, id string) error {
 	_, err := r.exec(ctx, `UPDATE shares SET view_count = view_count + 1 WHERE id=?`, id)
 	return err
@@ -171,7 +180,8 @@ func (r *ShareRepo) IncrementViews(ctx context.Context, id string) error {
 
 // Update changes a share's description and expiry (owner-scoped).
 func (r *ShareRepo) Update(ctx context.Context, id, userID, description string, expiresAt *time.Time) error {
-	_, err := r.exec(ctx, `UPDATE shares SET description=?, expires_at=? WHERE id=? AND user_id=?`,
-		description, db.NullMillis(expiresAt), id, userID)
+	_, err := r.bexec(ctx, r.mel.NewUpdate("shares").
+		Set("description", description).Set("expires_at", db.NullMillis(expiresAt)).
+		Where("id", "=", id).Where("user_id", "=", userID))
 	return err
 }

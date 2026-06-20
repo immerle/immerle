@@ -30,7 +30,8 @@ func scanProviderConfig(s rowScanner) (models.ProviderConfig, error) {
 
 // List returns all provider configs ordered by sort order then name.
 func (r *ProviderConfigRepo) List(ctx context.Context) ([]models.ProviderConfig, error) {
-	rows, err := r.query(ctx, `SELECT `+providerConfigColumns+` FROM provider_configs ORDER BY sort_order, name`)
+	rows, err := r.bquery(ctx, r.mel.New("provider_configs").Select(providerConfigColumns).
+		OrderBy("sort_order", "").OrderBy("name", ""))
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +49,7 @@ func (r *ProviderConfigRepo) List(ctx context.Context) ([]models.ProviderConfig,
 
 // Get returns a provider config by name.
 func (r *ProviderConfigRepo) Get(ctx context.Context, name string) (models.ProviderConfig, error) {
-	row := r.queryRow(ctx, `SELECT `+providerConfigColumns+` FROM provider_configs WHERE name=?`, name)
+	row := r.bqueryRow(ctx, r.mel.New("provider_configs").Select(providerConfigColumns).Where("name", "=", name))
 	p, err := scanProviderConfig(row)
 	if errors.Is(err, sql.ErrNoRows) {
 		return p, ErrNotFound
@@ -56,26 +57,27 @@ func (r *ProviderConfigRepo) Get(ctx context.Context, name string) (models.Provi
 	return p, err
 }
 
-// Upsert inserts or updates a provider config, preserving created_at on update.
+// Upsert preserves created_at on conflict: every column except name and
+// created_at is flagged UpdateDuplicateKey, so they stay out of the SET clause.
 func (r *ProviderConfigRepo) Upsert(ctx context.Context, p models.ProviderConfig) error {
-	now := time.Now()
-	_, err := r.exec(ctx, `INSERT INTO provider_configs (`+providerConfigColumns+`)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-		ON CONFLICT(name) DO UPDATE SET
-			kind=excluded.kind,
-			endpoint=excluded.endpoint,
-			config=excluded.config,
-			enabled=excluded.enabled,
-			sort_order=excluded.sort_order,
-			updated_at=excluded.updated_at`,
-		p.Name, p.Kind, p.Endpoint, p.Config, db.Bool(p.Enabled), p.SortOrder, db.Millis(now), db.Millis(now))
+	now := db.Millis(time.Now())
+	_, err := r.bexec(ctx, r.mel.NewInsert("provider_configs").
+		Set("name", p.Name).
+		Set("kind", p.Kind).UpdateDuplicateKey().
+		Set("endpoint", p.Endpoint).UpdateDuplicateKey().
+		Set("config", p.Config).UpdateDuplicateKey().
+		Set("enabled", db.Bool(p.Enabled)).UpdateDuplicateKey().
+		Set("sort_order", p.SortOrder).UpdateDuplicateKey().
+		Set("created_at", now).
+		Set("updated_at", now).UpdateDuplicateKey().
+		OnConflict("name"))
 	return err
 }
 
 // SetEnabled toggles a provider's enabled flag.
 func (r *ProviderConfigRepo) SetEnabled(ctx context.Context, name string, enabled bool) error {
-	res, err := r.exec(ctx, `UPDATE provider_configs SET enabled=?, updated_at=? WHERE name=?`,
-		db.Bool(enabled), db.Millis(time.Now()), name)
+	res, err := r.bexec(ctx, r.mel.NewUpdate("provider_configs").
+		Set("enabled", db.Bool(enabled)).Set("updated_at", db.Millis(time.Now())).Where("name", "=", name))
 	if err != nil {
 		return err
 	}
@@ -87,8 +89,8 @@ func (r *ProviderConfigRepo) SetEnabled(ctx context.Context, name string, enable
 
 // SetOrder sets a provider's sort order.
 func (r *ProviderConfigRepo) SetOrder(ctx context.Context, name string, order int) error {
-	res, err := r.exec(ctx, `UPDATE provider_configs SET sort_order=?, updated_at=? WHERE name=?`,
-		order, db.Millis(time.Now()), name)
+	res, err := r.bexec(ctx, r.mel.NewUpdate("provider_configs").
+		Set("sort_order", order).Set("updated_at", db.Millis(time.Now())).Where("name", "=", name))
 	if err != nil {
 		return err
 	}
@@ -100,7 +102,7 @@ func (r *ProviderConfigRepo) SetOrder(ctx context.Context, name string, order in
 
 // Delete removes a provider config.
 func (r *ProviderConfigRepo) Delete(ctx context.Context, name string) error {
-	res, err := r.exec(ctx, `DELETE FROM provider_configs WHERE name=?`, name)
+	res, err := r.bexec(ctx, r.mel.NewDelete("provider_configs").Where("name", "=", name))
 	if err != nil {
 		return err
 	}

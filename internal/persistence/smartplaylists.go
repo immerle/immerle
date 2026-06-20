@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	melody "github.com/ermos/melody/v2"
+
 	"github.com/immerle/immerle/internal/db"
 	"github.com/immerle/immerle/internal/models"
 )
@@ -40,8 +42,9 @@ func (r *SmartPlaylistRepo) Create(ctx context.Context, sp models.SmartPlaylist)
 	if err != nil {
 		return err
 	}
-	_, err = r.exec(ctx, `INSERT INTO smart_playlists (`+smartCols+`) VALUES (?, ?, ?, ?, ?, ?)`,
-		sp.ID, sp.OwnerID, sp.Name, string(rules), db.Millis(sp.CreatedAt), db.Millis(sp.UpdatedAt))
+	_, err = r.bexec(ctx, r.mel.NewInsert("smart_playlists").
+		Set("id", sp.ID).Set("owner_id", sp.OwnerID).Set("name", sp.Name).Set("rules", string(rules)).
+		Set("created_at", db.Millis(sp.CreatedAt)).Set("updated_at", db.Millis(sp.UpdatedAt)))
 	return err
 }
 
@@ -51,14 +54,16 @@ func (r *SmartPlaylistRepo) Update(ctx context.Context, sp models.SmartPlaylist)
 	if err != nil {
 		return err
 	}
-	_, err = r.exec(ctx, `UPDATE smart_playlists SET name=?, rules=?, updated_at=? WHERE id=? AND owner_id=?`,
-		sp.Name, string(rules), db.Millis(sp.UpdatedAt), sp.ID, sp.OwnerID)
+	_, err = r.bexec(ctx, r.mel.NewUpdate("smart_playlists").
+		Set("name", sp.Name).Set("rules", string(rules)).Set("updated_at", db.Millis(sp.UpdatedAt)).
+		Where("id", "=", sp.ID).Where("owner_id", "=", sp.OwnerID))
 	return err
 }
 
 // Get returns a smart playlist owned by ownerID, or ErrNotFound.
 func (r *SmartPlaylistRepo) Get(ctx context.Context, id, ownerID string) (models.SmartPlaylist, error) {
-	sp, err := scanSmart(r.queryRow(ctx, `SELECT `+smartCols+` FROM smart_playlists WHERE id=? AND owner_id=?`, id, ownerID))
+	sp, err := scanSmart(r.bqueryRow(ctx, r.mel.New("smart_playlists").Select(smartCols).
+		Where("id", "=", id).Where("owner_id", "=", ownerID)))
 	if errors.Is(err, sql.ErrNoRows) {
 		return sp, ErrNotFound
 	}
@@ -67,7 +72,8 @@ func (r *SmartPlaylistRepo) Get(ctx context.Context, id, ownerID string) (models
 
 // ListByOwner returns a user's smart playlists, newest first.
 func (r *SmartPlaylistRepo) ListByOwner(ctx context.Context, ownerID string) ([]models.SmartPlaylist, error) {
-	rows, err := r.query(ctx, `SELECT `+smartCols+` FROM smart_playlists WHERE owner_id=? ORDER BY created_at DESC`, ownerID)
+	rows, err := r.bquery(ctx, r.mel.New("smart_playlists").Select(smartCols).
+		Where("owner_id", "=", ownerID).OrderBy("created_at", melody.Desc))
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +91,7 @@ func (r *SmartPlaylistRepo) ListByOwner(ctx context.Context, ownerID string) ([]
 
 // Delete removes an owner's smart playlist.
 func (r *SmartPlaylistRepo) Delete(ctx context.Context, id, ownerID string) error {
-	_, err := r.exec(ctx, `DELETE FROM smart_playlists WHERE id=? AND owner_id=?`, id, ownerID)
+	_, err := r.bexec(ctx, r.mel.NewDelete("smart_playlists").Where("id", "=", id).Where("owner_id", "=", ownerID))
 	return err
 }
 
@@ -110,6 +116,11 @@ func (r *SmartPlaylistRepo) Evaluate(ctx context.Context, rules models.SmartRule
 }
 
 // --- rule → SQL (whitelisted; values are always parameterized) ---
+//
+// buildSmartQuery stays hand-written: it composes a dynamic predicate tree
+// (AND/OR over a runtime set of conditions) with LOWER(col) LIKE LOWER(?),
+// IS NULL / IS NOT NULL, COALESCE, column-relative comparisons, a literal
+// JOIN ... ON, and ORDER BY RANDOM() — none of which melody can express.
 
 // stringField maps a string condition field to its SQL column.
 var stringField = map[string]string{

@@ -6,6 +6,8 @@ import (
 	"errors"
 	"time"
 
+	melody "github.com/ermos/melody/v2"
+
 	"github.com/immerle/immerle/internal/db"
 	"github.com/immerle/immerle/internal/models"
 )
@@ -32,15 +34,16 @@ func scanDevice(s rowScanner) (models.Device, error) {
 
 // Create registers a device.
 func (r *DeviceRepo) Create(ctx context.Context, d models.Device) error {
-	_, err := r.exec(ctx, `INSERT INTO devices (`+deviceColumns+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		d.ID, d.UserID, d.Name, d.UserAgent, db.Millis(d.CreatedAt), db.NullMillis(d.LastSeenAt),
-		d.LastIP, db.NullMillis(d.ExpiresAt), db.Bool(d.Revoked))
+	_, err := r.bexec(ctx, r.mel.NewInsert("devices").
+		Set("id", d.ID).Set("user_id", d.UserID).Set("name", d.Name).Set("user_agent", d.UserAgent).
+		Set("created_at", db.Millis(d.CreatedAt)).Set("last_seen_at", db.NullMillis(d.LastSeenAt)).
+		Set("last_ip", d.LastIP).Set("expires_at", db.NullMillis(d.ExpiresAt)).Set("revoked", db.Bool(d.Revoked)))
 	return err
 }
 
 // Get returns a device by id (jti), regardless of revoked state.
 func (r *DeviceRepo) Get(ctx context.Context, id string) (models.Device, error) {
-	row := r.queryRow(ctx, `SELECT `+deviceColumns+` FROM devices WHERE id=?`, id)
+	row := r.bqueryRow(ctx, r.mel.New("devices").Select(deviceColumns).Where("id", "=", id))
 	d, err := scanDevice(row)
 	if errors.Is(err, sql.ErrNoRows) {
 		return d, ErrNotFound
@@ -50,7 +53,9 @@ func (r *DeviceRepo) Get(ctx context.Context, id string) (models.Device, error) 
 
 // ListByUser returns a user's active (non-revoked) devices, most recent first.
 func (r *DeviceRepo) ListByUser(ctx context.Context, userID string) ([]models.Device, error) {
-	rows, err := r.query(ctx, `SELECT `+deviceColumns+` FROM devices WHERE user_id=? AND revoked=0 ORDER BY last_seen_at DESC, created_at DESC`, userID)
+	rows, err := r.bquery(ctx, r.mel.New("devices").Select(deviceColumns).
+		Where("user_id", "=", userID).Where("revoked", "=", 0).
+		OrderBy("last_seen_at", melody.Desc).OrderBy("created_at", melody.Desc))
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +73,8 @@ func (r *DeviceRepo) ListByUser(ctx context.Context, userID string) ([]models.De
 
 // Revoke marks a device revoked (owner-scoped). Returns whether a row matched.
 func (r *DeviceRepo) Revoke(ctx context.Context, id, userID string) (bool, error) {
-	res, err := r.exec(ctx, `UPDATE devices SET revoked=1 WHERE id=? AND user_id=?`, id, userID)
+	res, err := r.bexec(ctx, r.mel.NewUpdate("devices").Set("revoked", 1).
+		Where("id", "=", id).Where("user_id", "=", userID))
 	if err != nil {
 		return false, err
 	}
@@ -78,6 +84,7 @@ func (r *DeviceRepo) Revoke(ctx context.Context, id, userID string) (bool, error
 
 // TouchSeen records last-seen time and IP (best effort).
 func (r *DeviceRepo) TouchSeen(ctx context.Context, id, ip string, at time.Time) error {
-	_, err := r.exec(ctx, `UPDATE devices SET last_seen_at=?, last_ip=? WHERE id=?`, db.Millis(at), ip, id)
+	_, err := r.bexec(ctx, r.mel.NewUpdate("devices").
+		Set("last_seen_at", db.Millis(at)).Set("last_ip", ip).Where("id", "=", id))
 	return err
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	melody "github.com/ermos/melody/v2"
 	"github.com/google/uuid"
 
 	"github.com/immerle/immerle/internal/db"
@@ -16,9 +17,9 @@ type ProviderLogRepo struct{ *base }
 
 // Insert records a provider event. Best-effort: callers ignore the error.
 func (r *ProviderLogRepo) Insert(ctx context.Context, l models.ProviderLog) error {
-	_, err := r.exec(ctx, `INSERT INTO provider_logs (id, provider, level, action, message, created_at)
-		VALUES (?, ?, ?, ?, ?, ?)`,
-		uuid.NewString(), l.Provider, l.Level, l.Action, l.Message, db.Millis(time.Now()))
+	_, err := r.bexec(ctx, r.mel.NewInsert("provider_logs").
+		Set("id", uuid.NewString()).Set("provider", l.Provider).Set("level", l.Level).
+		Set("action", l.Action).Set("message", l.Message).Set("created_at", db.Millis(time.Now())))
 	return err
 	// ponytail: table grows unbounded; add a retention sweep if it ever matters.
 }
@@ -29,7 +30,7 @@ func (r *ProviderLogRepo) LogTableName() string { return "provider_logs" }
 // PruneOlderThan deletes log rows created before cutoff and returns the number
 // removed. Implements the pruner's PrunableLog interface.
 func (r *ProviderLogRepo) PruneOlderThan(ctx context.Context, cutoff time.Time) (int64, error) {
-	res, err := r.exec(ctx, `DELETE FROM provider_logs WHERE created_at < ?`, db.Millis(cutoff))
+	res, err := r.bexec(ctx, r.mel.NewDelete("provider_logs").Where("created_at", "<", db.Millis(cutoff)))
 	if err != nil {
 		return 0, err
 	}
@@ -42,8 +43,10 @@ func (r *ProviderLogRepo) ListByProvider(ctx context.Context, provider string, l
 	if limit <= 0 || limit > 500 {
 		limit = 100
 	}
-	rows, err := r.query(ctx, `SELECT id, provider, level, action, message, created_at
-		FROM provider_logs WHERE provider=? ORDER BY created_at DESC, id DESC LIMIT ?`, provider, limit)
+	rows, err := r.bquery(ctx, r.mel.New("provider_logs").
+		Select("id", "provider", "level", "action", "message", "created_at").
+		Where("provider", "=", provider).
+		OrderBy("created_at", melody.Desc).OrderBy("id", melody.Desc).Limit(limit))
 	if err != nil {
 		return nil, err
 	}

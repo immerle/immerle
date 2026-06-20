@@ -34,7 +34,8 @@ func scanStation(s rowScanner) (models.RadioStation, error) {
 
 // List returns all stations ordered by sort_order then name.
 func (r *RadioRepo) List(ctx context.Context) ([]models.RadioStation, error) {
-	rows, err := r.query(ctx, `SELECT `+radioCols+` FROM radio_stations ORDER BY sort_order, name`)
+	rows, err := r.bquery(ctx, r.mel.New("radio_stations").Select(radioCols).
+		OrderBy("sort_order", "").OrderBy("name", ""))
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +69,7 @@ func (r *RadioRepo) ListForUser(ctx context.Context, userID string) ([]models.Ra
 
 // Get returns a station by id, or ErrNotFound.
 func (r *RadioRepo) Get(ctx context.Context, id string) (models.RadioStation, error) {
-	st, err := scanStation(r.queryRow(ctx, `SELECT `+radioCols+` FROM radio_stations WHERE id=?`, id))
+	st, err := scanStation(r.bqueryRow(ctx, r.mel.New("radio_stations").Select(radioCols).Where("id", "=", id)))
 	if errors.Is(err, sql.ErrNoRows) {
 		return st, ErrNotFound
 	}
@@ -77,21 +78,24 @@ func (r *RadioRepo) Get(ctx context.Context, id string) (models.RadioStation, er
 
 // Create inserts a station.
 func (r *RadioRepo) Create(ctx context.Context, st models.RadioStation) error {
-	_, err := r.exec(ctx, `INSERT INTO radio_stations (`+radioCols+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		st.ID, st.Name, st.StreamURL, st.HomepageURL, st.Country, st.CoverArt, db.Bool(st.Builtin), st.SortOrder, db.Millis(st.CreatedAt), db.Millis(st.UpdatedAt))
+	_, err := r.bexec(ctx, r.mel.NewInsert("radio_stations").
+		Set("id", st.ID).Set("name", st.Name).Set("stream_url", st.StreamURL).Set("homepage_url", st.HomepageURL).
+		Set("country", st.Country).Set("cover_art", st.CoverArt).Set("builtin", db.Bool(st.Builtin)).
+		Set("sort_order", st.SortOrder).Set("created_at", db.Millis(st.CreatedAt)).Set("updated_at", db.Millis(st.UpdatedAt)))
 	return err
 }
 
 // Update changes a station's name, stream, homepage and cover.
 func (r *RadioRepo) Update(ctx context.Context, st models.RadioStation) error {
-	_, err := r.exec(ctx, `UPDATE radio_stations SET name=?, stream_url=?, homepage_url=?, cover_art=?, updated_at=? WHERE id=?`,
-		st.Name, st.StreamURL, st.HomepageURL, st.CoverArt, db.Millis(st.UpdatedAt), st.ID)
+	_, err := r.bexec(ctx, r.mel.NewUpdate("radio_stations").
+		Set("name", st.Name).Set("stream_url", st.StreamURL).Set("homepage_url", st.HomepageURL).
+		Set("cover_art", st.CoverArt).Set("updated_at", db.Millis(st.UpdatedAt)).Where("id", "=", st.ID))
 	return err
 }
 
 // Delete removes a station (callers must refuse built-ins).
 func (r *RadioRepo) Delete(ctx context.Context, id string) error {
-	_, err := r.exec(ctx, `DELETE FROM radio_stations WHERE id=? AND builtin=0`, id)
+	_, err := r.bexec(ctx, r.mel.NewDelete("radio_stations").Where("id", "=", id).Where("builtin", "=", 0))
 	return err
 }
 
@@ -100,17 +104,20 @@ func (r *RadioRepo) Delete(ctx context.Context, id string) error {
 // liked radios never surface in the (track-based) "liked songs" view.
 func (r *RadioRepo) SetLiked(ctx context.Context, userID, stationID string, liked bool) error {
 	if liked {
-		_, err := r.exec(ctx, `INSERT INTO annotations (user_id, item_type, item_id, starred_at)
-			VALUES (?, 'radio', ?, ?)
-			ON CONFLICT(user_id, item_type, item_id) DO UPDATE SET starred_at=excluded.starred_at`,
-			userID, stationID, db.Millis(time.Now()))
+		_, err := r.bexec(ctx, r.mel.NewInsert("annotations").
+			Set("user_id", userID).Set("item_type", "radio").Set("item_id", stationID).
+			Set("starred_at", db.Millis(time.Now())).UpdateDuplicateKey().
+			OnConflict("user_id", "item_type", "item_id"))
 		return err
 	}
-	_, err := r.exec(ctx, `UPDATE annotations SET starred_at=NULL WHERE user_id=? AND item_type='radio' AND item_id=?`, userID, stationID)
+	_, err := r.bexec(ctx, r.mel.NewUpdate("annotations").Set("starred_at", nil).
+		Where("user_id", "=", userID).Where("item_type", "=", "radio").Where("item_id", "=", stationID))
 	return err
 }
 
-// LikedIDs returns the set of station ids the user has liked.
+// LikedIDs returns the set of station ids the user has liked. The IS NOT NULL
+// predicate can't be expressed by melody (it binds NULL as a parameter), so this
+// query stays hand-written.
 func (r *RadioRepo) LikedIDs(ctx context.Context, userID string) (map[string]bool, error) {
 	rows, err := r.query(ctx, `SELECT item_id FROM annotations WHERE user_id=? AND item_type='radio' AND starred_at IS NOT NULL`, userID)
 	if err != nil {
@@ -138,7 +145,8 @@ func (r *RadioRepo) LikedIDs(ctx context.Context, userID string) (map[string]boo
 func (r *RadioRepo) EnsureBuiltins(ctx context.Context) error {
 	builtins := radio.Builtins()
 	// Prune built-ins that are no longer in the embedded list (e.g. a station
-	// removed from stations.json), so removals reach existing installs.
+	// removed from stations.json), so removals reach existing installs. The
+	// NOT IN over a runtime-sized id list stays hand-written.
 	ids := make([]string, 0, len(builtins))
 	for _, s := range builtins {
 		ids = append(ids, s.ID)
@@ -156,15 +164,18 @@ func (r *RadioRepo) EnsureBuiltins(ctx context.Context) error {
 	}
 	for i, s := range builtins {
 		var exists int
-		if err := r.queryRow(ctx, `SELECT COUNT(1) FROM radio_stations WHERE id=?`, s.ID).Scan(&exists); err != nil {
+		if err := r.bqueryRow(ctx, r.mel.New("radio_stations").Select("COUNT(1)").Where("id", "=", s.ID)).Scan(&exists); err != nil {
 			return err
 		}
 		if exists > 0 {
-			if _, err := r.exec(ctx, `UPDATE radio_stations SET name=?, stream_url=?, homepage_url=?, country=?, updated_at=? WHERE id=? AND builtin=1`,
-				s.Name, s.StreamURL, s.HomepageURL, s.Country, db.Millis(time.Now()), s.ID); err != nil {
+			if _, err := r.bexec(ctx, r.mel.NewUpdate("radio_stations").
+				Set("name", s.Name).Set("stream_url", s.StreamURL).Set("homepage_url", s.HomepageURL).
+				Set("country", s.Country).Set("updated_at", db.Millis(time.Now())).
+				Where("id", "=", s.ID).Where("builtin", "=", 1)); err != nil {
 				return err
 			}
-			if _, err := r.exec(ctx, `UPDATE radio_stations SET cover_art=? WHERE id=? AND builtin=1 AND cover_art=''`, s.CoverArt, s.ID); err != nil {
+			if _, err := r.bexec(ctx, r.mel.NewUpdate("radio_stations").Set("cover_art", s.CoverArt).
+				Where("id", "=", s.ID).Where("builtin", "=", 1).Where("cover_art", "=", "")); err != nil {
 				return err
 			}
 			continue

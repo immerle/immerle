@@ -15,8 +15,9 @@ type AnnotationRepo struct{ *base }
 
 // Get returns the annotation for a user+item, or a zero-value annotation.
 func (r *AnnotationRepo) Get(ctx context.Context, userID string, it models.ItemType, itemID string) (models.Annotation, error) {
-	row := r.queryRow(ctx, `SELECT user_id, item_type, item_id, starred_at, rating, play_count, last_played
-		FROM annotations WHERE user_id=? AND item_type=? AND item_id=?`, userID, string(it), itemID)
+	row := r.bqueryRow(ctx, r.mel.New("annotations").
+		Select("user_id", "item_type", "item_id", "starred_at", "rating", "play_count", "last_played").
+		Where("user_id", "=", userID).Where("item_type", "=", string(it)).Where("item_id", "=", itemID))
 	var a models.Annotation
 	var starred, lastPlayed sql.NullInt64
 	err := row.Scan(&a.UserID, &a.ItemType, &a.ItemID, &starred, &a.Rating, &a.PlayCount, &lastPlayed)
@@ -31,7 +32,9 @@ func (r *AnnotationRepo) Get(ctx context.Context, userID string, it models.ItemT
 	return a, nil
 }
 
-// ensure makes sure a row exists for upserts.
+// ensure makes sure a row exists for upserts. The ON CONFLICT ... DO NOTHING
+// (a conflict clause with no SET) can't be expressed by melody, so it stays
+// hand-written.
 func (r *AnnotationRepo) ensure(ctx context.Context, userID string, it models.ItemType, itemID string) error {
 	_, err := r.exec(ctx, `INSERT INTO annotations (user_id, item_type, item_id) VALUES (?, ?, ?)
 		ON CONFLICT(user_id, item_type, item_id) DO NOTHING`, userID, string(it), itemID)
@@ -47,8 +50,8 @@ func (r *AnnotationRepo) SetStarred(ctx context.Context, userID string, it model
 	if starred {
 		val = sql.NullInt64{Int64: db.Millis(time.Now()), Valid: true}
 	}
-	_, err := r.exec(ctx, `UPDATE annotations SET starred_at=? WHERE user_id=? AND item_type=? AND item_id=?`,
-		val, userID, string(it), itemID)
+	_, err := r.bexec(ctx, r.mel.NewUpdate("annotations").Set("starred_at", val).
+		Where("user_id", "=", userID).Where("item_type", "=", string(it)).Where("item_id", "=", itemID))
 	return err
 }
 
@@ -57,12 +60,14 @@ func (r *AnnotationRepo) SetRating(ctx context.Context, userID string, it models
 	if err := r.ensure(ctx, userID, it, itemID); err != nil {
 		return err
 	}
-	_, err := r.exec(ctx, `UPDATE annotations SET rating=? WHERE user_id=? AND item_type=? AND item_id=?`,
-		rating, userID, string(it), itemID)
+	_, err := r.bexec(ctx, r.mel.NewUpdate("annotations").Set("rating", rating).
+		Where("user_id", "=", userID).Where("item_type", "=", string(it)).Where("item_id", "=", itemID))
 	return err
 }
 
-// IncrementPlay bumps the play count and last-played timestamp.
+// IncrementPlay bumps the play count and last-played timestamp. The
+// column-relative SET (play_count = play_count + 1) can't be expressed by
+// melody, so it stays hand-written.
 func (r *AnnotationRepo) IncrementPlay(ctx context.Context, userID string, it models.ItemType, itemID string, at time.Time) error {
 	if err := r.ensure(ctx, userID, it, itemID); err != nil {
 		return err
@@ -72,7 +77,9 @@ func (r *AnnotationRepo) IncrementPlay(ctx context.Context, userID string, it mo
 	return err
 }
 
-// ListStarred returns the item ids of a given type starred by a user.
+// ListStarred returns the item ids of a given type starred by a user. The
+// starred_at IS NOT NULL predicate can't be expressed by melody, so it stays
+// hand-written.
 func (r *AnnotationRepo) ListStarred(ctx context.Context, userID string, it models.ItemType) ([]string, error) {
 	rows, err := r.query(ctx, `SELECT item_id FROM annotations WHERE user_id=? AND item_type=? AND starred_at IS NOT NULL
 		ORDER BY starred_at DESC`, userID, string(it))
@@ -93,8 +100,9 @@ func (r *AnnotationRepo) ListStarred(ctx context.Context, userID string, it mode
 
 // AnnotationMap returns starred/rating for a set of item ids for one user.
 func (r *AnnotationRepo) AnnotationMap(ctx context.Context, userID string, it models.ItemType) (map[string]models.Annotation, error) {
-	rows, err := r.query(ctx, `SELECT item_id, starred_at, rating, play_count, last_played
-		FROM annotations WHERE user_id=? AND item_type=?`, userID, string(it))
+	rows, err := r.bquery(ctx, r.mel.New("annotations").
+		Select("item_id", "starred_at", "rating", "play_count", "last_played").
+		Where("user_id", "=", userID).Where("item_type", "=", string(it)))
 	if err != nil {
 		return nil, err
 	}

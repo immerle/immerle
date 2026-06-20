@@ -18,6 +18,10 @@ const maxMosaicCovers = 4
 // PlaylistRepo persists playlists and their track ordering.
 type PlaylistRepo struct{ *base }
 
+// playlistSelect joins users and computes song_count/duration via correlated
+// subqueries — neither a JOIN nor a subquery column is expressible by melody, so
+// every read built on it (Get, ListVisible, ListPublic*, FindFederated, Tracks)
+// stays hand-written.
 const playlistSelect = `
 	SELECT p.id, p.name, p.owner_id, u.username, p.comment, p.public, p.collaborative, p.federated,
 	       p.created_at, p.updated_at,
@@ -43,23 +47,24 @@ func scanPlaylist(s rowScanner) (models.Playlist, error) {
 
 // Create inserts a playlist (without tracks).
 func (r *PlaylistRepo) Create(ctx context.Context, p models.Playlist) error {
-	_, err := r.exec(ctx, `INSERT INTO playlists (id, name, owner_id, comment, public, collaborative, federated, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		p.ID, p.Name, p.OwnerID, p.Comment, db.Bool(p.Public), db.Bool(p.Collaborative), db.Bool(p.Federated),
-		db.Millis(p.CreatedAt), db.Millis(p.UpdatedAt))
+	_, err := r.bexec(ctx, r.mel.NewInsert("playlists").
+		Set("id", p.ID).Set("name", p.Name).Set("owner_id", p.OwnerID).Set("comment", p.Comment).
+		Set("public", db.Bool(p.Public)).Set("collaborative", db.Bool(p.Collaborative)).Set("federated", db.Bool(p.Federated)).
+		Set("created_at", db.Millis(p.CreatedAt)).Set("updated_at", db.Millis(p.UpdatedAt)))
 	return err
 }
 
 // UpdateMeta updates name/comment/public/collaborative.
 func (r *PlaylistRepo) UpdateMeta(ctx context.Context, p models.Playlist) error {
-	_, err := r.exec(ctx, `UPDATE playlists SET name=?, comment=?, public=?, collaborative=?, updated_at=? WHERE id=?`,
-		p.Name, p.Comment, db.Bool(p.Public), db.Bool(p.Collaborative), db.Millis(time.Now()), p.ID)
+	_, err := r.bexec(ctx, r.mel.NewUpdate("playlists").
+		Set("name", p.Name).Set("comment", p.Comment).Set("public", db.Bool(p.Public)).
+		Set("collaborative", db.Bool(p.Collaborative)).Set("updated_at", db.Millis(time.Now())).Where("id", "=", p.ID))
 	return err
 }
 
 // Delete removes a playlist.
 func (r *PlaylistRepo) Delete(ctx context.Context, id string) error {
-	_, err := r.exec(ctx, `DELETE FROM playlists WHERE id=?`, id)
+	_, err := r.bexec(ctx, r.mel.NewDelete("playlists").Where("id", "=", id))
 	return err
 }
 
@@ -217,7 +222,9 @@ func (r *PlaylistRepo) ListPublicByOwner(ctx context.Context, ownerID string) ([
 	return out, r.attachCoverArts(ctx, out)
 }
 
-// Subscribe adds a user's subscription to a playlist (idempotent).
+// Subscribe adds a user's subscription to a playlist (idempotent). The ON
+// CONFLICT ... DO NOTHING (a conflict clause with no SET) can't be expressed by
+// melody, so it stays hand-written.
 func (r *PlaylistRepo) Subscribe(ctx context.Context, playlistID, userID string) error {
 	_, err := r.exec(ctx, `INSERT INTO playlist_subscriptions (playlist_id, user_id, created_at) VALUES (?, ?, ?)
 		ON CONFLICT(playlist_id, user_id) DO NOTHING`, playlistID, userID, db.Millis(time.Now()))
@@ -226,7 +233,8 @@ func (r *PlaylistRepo) Subscribe(ctx context.Context, playlistID, userID string)
 
 // Unsubscribe removes a user's subscription. Returns whether a row matched.
 func (r *PlaylistRepo) Unsubscribe(ctx context.Context, playlistID, userID string) (bool, error) {
-	res, err := r.exec(ctx, `DELETE FROM playlist_subscriptions WHERE playlist_id=? AND user_id=?`, playlistID, userID)
+	res, err := r.bexec(ctx, r.mel.NewDelete("playlist_subscriptions").
+		Where("playlist_id", "=", playlistID).Where("user_id", "=", userID))
 	if err != nil {
 		return false, err
 	}
@@ -237,7 +245,8 @@ func (r *PlaylistRepo) Unsubscribe(ctx context.Context, playlistID, userID strin
 // IsSubscribed reports whether a user is subscribed to a playlist.
 func (r *PlaylistRepo) IsSubscribed(ctx context.Context, playlistID, userID string) (bool, error) {
 	var n int
-	err := r.queryRow(ctx, `SELECT COUNT(*) FROM playlist_subscriptions WHERE playlist_id=? AND user_id=?`, playlistID, userID).Scan(&n)
+	err := r.bqueryRow(ctx, r.mel.New("playlist_subscriptions").Select("COUNT(*)").
+		Where("playlist_id", "=", playlistID).Where("user_id", "=", userID)).Scan(&n)
 	return n > 0, err
 }
 
@@ -335,11 +344,14 @@ func (r *PlaylistRepo) RemoveIndexes(ctx context.Context, playlistID string, ind
 // IsCollaborator reports whether a user may edit a collaborative playlist.
 func (r *PlaylistRepo) IsCollaborator(ctx context.Context, playlistID, userID string) (bool, error) {
 	var n int
-	err := r.queryRow(ctx, `SELECT COUNT(*) FROM playlist_collaborators WHERE playlist_id=? AND user_id=?`, playlistID, userID).Scan(&n)
+	err := r.bqueryRow(ctx, r.mel.New("playlist_collaborators").Select("COUNT(*)").
+		Where("playlist_id", "=", playlistID).Where("user_id", "=", userID)).Scan(&n)
 	return n > 0, err
 }
 
-// AddCollaborator grants edit rights on a collaborative playlist.
+// AddCollaborator grants edit rights on a collaborative playlist. The ON
+// CONFLICT ... DO NOTHING (a conflict clause with no SET) can't be expressed by
+// melody, so it stays hand-written.
 func (r *PlaylistRepo) AddCollaborator(ctx context.Context, playlistID, userID string) error {
 	_, err := r.exec(ctx, `INSERT INTO playlist_collaborators (playlist_id, user_id) VALUES (?, ?)
 		ON CONFLICT(playlist_id, user_id) DO NOTHING`, playlistID, userID)

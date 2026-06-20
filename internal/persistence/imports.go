@@ -6,6 +6,8 @@ import (
 	"errors"
 	"time"
 
+	melody "github.com/ermos/melody/v2"
+
 	"github.com/immerle/immerle/internal/db"
 	"github.com/immerle/immerle/internal/models"
 )
@@ -41,28 +43,29 @@ func nullStr(s string) any {
 
 // Create inserts a new import job.
 func (r *ImportRepo) Create(ctx context.Context, im models.Import) error {
-	_, err := r.exec(ctx, `INSERT INTO imports (`+importColumns+`)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		im.ID, im.UserID, im.Source, im.SourceRef, im.SourcePlaylistName, nullStr(im.PlaylistID), string(im.Status),
-		im.Total, im.Matched, im.Doubtful, im.Missing, im.Failed, im.Error,
-		db.Millis(im.CreatedAt), db.Millis(im.UpdatedAt))
+	_, err := r.bexec(ctx, r.mel.NewInsert("imports").
+		Set("id", im.ID).Set("user_id", im.UserID).Set("source", im.Source).Set("source_ref", im.SourceRef).
+		Set("source_playlist_name", im.SourcePlaylistName).Set("playlist_id", nullStr(im.PlaylistID)).Set("status", string(im.Status)).
+		Set("total", im.Total).Set("matched", im.Matched).Set("doubtful", im.Doubtful).Set("missing", im.Missing).
+		Set("failed", im.Failed).Set("error", im.Error).
+		Set("created_at", db.Millis(im.CreatedAt)).Set("updated_at", db.Millis(im.UpdatedAt)))
 	return err
 }
 
 // Update writes the mutable fields of an import job (status, counts, playlist
 // link, error, source playlist name, total).
 func (r *ImportRepo) Update(ctx context.Context, im models.Import) error {
-	_, err := r.exec(ctx, `UPDATE imports SET source_playlist_name=?, playlist_id=?, status=?,
-		total=?, matched=?, doubtful=?, missing=?, failed=?, error=?, updated_at=? WHERE id=?`,
-		im.SourcePlaylistName, nullStr(im.PlaylistID), string(im.Status),
-		im.Total, im.Matched, im.Doubtful, im.Missing, im.Failed, im.Error,
-		db.Millis(time.Now()), im.ID)
+	_, err := r.bexec(ctx, r.mel.NewUpdate("imports").
+		Set("source_playlist_name", im.SourcePlaylistName).Set("playlist_id", nullStr(im.PlaylistID)).Set("status", string(im.Status)).
+		Set("total", im.Total).Set("matched", im.Matched).Set("doubtful", im.Doubtful).Set("missing", im.Missing).
+		Set("failed", im.Failed).Set("error", im.Error).Set("updated_at", db.Millis(time.Now())).
+		Where("id", "=", im.ID))
 	return err
 }
 
 // Get returns an import job (without items).
 func (r *ImportRepo) Get(ctx context.Context, id string) (models.Import, error) {
-	row := r.queryRow(ctx, `SELECT `+importColumns+` FROM imports WHERE id=?`, id)
+	row := r.bqueryRow(ctx, r.mel.New("imports").Select(importColumns).Where("id", "=", id))
 	im, err := scanImport(row)
 	if errors.Is(err, sql.ErrNoRows) {
 		return im, ErrNotFound
@@ -75,7 +78,8 @@ func (r *ImportRepo) ListByUser(ctx context.Context, userID string, limit int) (
 	if limit <= 0 {
 		limit = 50
 	}
-	rows, err := r.query(ctx, `SELECT `+importColumns+` FROM imports WHERE user_id=? ORDER BY created_at DESC LIMIT ?`, userID, limit)
+	rows, err := r.bquery(ctx, r.mel.New("imports").Select(importColumns).
+		Where("user_id", "=", userID).OrderBy("created_at", melody.Desc).Limit(limit))
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +96,8 @@ func (r *ImportRepo) ListByUser(ctx context.Context, userID string, limit int) (
 }
 
 // ClaimNext atomically claims the oldest queued import and marks it running.
-// Returns ErrNotFound when none are queued.
+// Returns ErrNotFound when none are queued. Stays hand-written: it runs inside
+// a transaction (the builder helpers use the pool, not the tx).
 func (r *ImportRepo) ClaimNext(ctx context.Context) (models.Import, error) {
 	var claimed models.Import
 	err := r.withTx(ctx, func(tx *sql.Tx) error {
@@ -118,7 +123,8 @@ func (r *ImportRepo) ClaimNext(ctx context.Context) (models.Import, error) {
 
 // RequeueStale resets imports stuck in 'running' (e.g. after a crash) to queued.
 func (r *ImportRepo) RequeueStale(ctx context.Context) error {
-	_, err := r.exec(ctx, `UPDATE imports SET status='queued', updated_at=? WHERE status='running'`, db.Millis(time.Now()))
+	_, err := r.bexec(ctx, r.mel.NewUpdate("imports").
+		Set("status", "queued").Set("updated_at", db.Millis(time.Now())).Where("status", "=", "running"))
 	return err
 }
 
@@ -141,7 +147,7 @@ func scanImportItem(s rowScanner) (models.ImportItem, error) {
 
 // GetItem returns a single import item by id.
 func (r *ImportRepo) GetItem(ctx context.Context, id string) (models.ImportItem, error) {
-	row := r.queryRow(ctx, `SELECT `+importItemColumns+` FROM import_items WHERE id=?`, id)
+	row := r.bqueryRow(ctx, r.mel.New("import_items").Select(importItemColumns).Where("id", "=", id))
 	it, err := scanImportItem(row)
 	if errors.Is(err, sql.ErrNoRows) {
 		return it, ErrNotFound
@@ -149,7 +155,8 @@ func (r *ImportRepo) GetItem(ctx context.Context, id string) (models.ImportItem,
 	return it, err
 }
 
-// InsertItems bulk-inserts import items in one transaction.
+// InsertItems bulk-inserts import items in one transaction. Stays hand-written:
+// it runs inside a transaction (the builder helpers use the pool, not the tx).
 func (r *ImportRepo) InsertItems(ctx context.Context, items []models.ImportItem) error {
 	if len(items) == 0 {
 		return nil
@@ -170,16 +177,18 @@ func (r *ImportRepo) InsertItems(ctx context.Context, items []models.ImportItem)
 
 // UpdateItem writes the outcome of resolving one item.
 func (r *ImportRepo) UpdateItem(ctx context.Context, it models.ImportItem) error {
-	_, err := r.exec(ctx, `UPDATE import_items SET status=?, matched_track_id=?, resolved_title=?,
-		resolved_artist=?, confidence=?, note=?, candidate_id=?, candidate_cover_art=?, updated_at=? WHERE id=?`,
-		string(it.Status), it.MatchedTrackID, it.ResolvedTitle, it.ResolvedArtist, it.Confidence, it.Note, it.CandidateID, it.CandidateCoverArt,
-		db.Millis(time.Now()), it.ID)
+	_, err := r.bexec(ctx, r.mel.NewUpdate("import_items").
+		Set("status", string(it.Status)).Set("matched_track_id", it.MatchedTrackID).Set("resolved_title", it.ResolvedTitle).
+		Set("resolved_artist", it.ResolvedArtist).Set("confidence", it.Confidence).Set("note", it.Note).
+		Set("candidate_id", it.CandidateID).Set("candidate_cover_art", it.CandidateCoverArt).Set("updated_at", db.Millis(time.Now())).
+		Where("id", "=", it.ID))
 	return err
 }
 
 // ListItems returns an import's items in order.
 func (r *ImportRepo) ListItems(ctx context.Context, importID string) ([]models.ImportItem, error) {
-	rows, err := r.query(ctx, `SELECT `+importItemColumns+` FROM import_items WHERE import_id=? ORDER BY position`, importID)
+	rows, err := r.bquery(ctx, r.mel.New("import_items").Select(importItemColumns).
+		Where("import_id", "=", importID).OrderBy("position", ""))
 	if err != nil {
 		return nil, err
 	}
