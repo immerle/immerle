@@ -42,7 +42,7 @@ LIBRARY_PATHS=/music
 LIBRARY_DATA_DIR=data
 ```
 
-:::info First-run admin setup
+:::info[First-run admin setup]
 
 `AUTH_REQUIRE_SETUP_TOKEN` defaults to `false` on purpose. The first time the
 server starts with no users, `POST /api/v1/setup` lets you create the admin

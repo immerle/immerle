@@ -21,7 +21,7 @@ few fixed paths under your base URL and unmarshals the JSON you return. This is 
 deliberate design choice — the provider interface lets you put **any** backend
 behind it, so Immerle never has to take a position on what your source is.
 
-:::warning Your content, your responsibility
+:::warning[Your content, your responsibility]
 
 Because the provider system is content-neutral, it can be pointed at any source.
 That neutrality is purely technical and is **not** an endorsement of any
@@ -141,7 +141,7 @@ Put credentials in `headers` or `params` and declare them in your
 form prompts for them. The same `headers`/`params` are sent on the
 `/capabilities` request too, so authenticated discovery works.
 
-:::note Built-in providers use the same shape
+:::note[Built-in providers use the same shape]
 Built-ins (Jamendo, Internet Archive…) read their tunables from `params` too —
 e.g. Jamendo's config is `{"params":{"client_id":"<token>","audioformat":"mp32"}}`.
 Their base URL is compiled in and is **not** configurable.
