@@ -4821,6 +4821,55 @@ paths:
       summary: Preview smart-playlist rules
       tags:
       - smartPlaylists
+  /songs:
+    get:
+      description: Returns songs tagged with the given genre (paged).
+      parameters:
+      - description: Genre name
+        in: query
+        name: genre
+        required: true
+        schema:
+          type: string
+      - description: Page size
+        in: query
+        name: count
+        schema:
+          default: 200
+          type: integer
+      - description: Offset
+        in: query
+        name: offset
+        schema:
+          type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  items:
+                    $ref: '#/components/schemas/immerle.songView'
+                  type: array
+                type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: List songs by genre
+      tags:
+      - catalog
   /songs/{id}:
     get:
       description: Returns a single track by id.

@@ -360,3 +360,31 @@ func (h *Handler) handleFavorites(w http.ResponseWriter, r *http.Request) {
 	}
 	writeResource(w, http.StatusOK, out)
 }
+
+// handleSongsByGenre returns a page of songs tagged with a genre.
+//
+// @Summary  List songs by genre
+// @Description  Returns songs tagged with the given genre (paged).
+// @Tags     catalog
+// @Security BearerAuth
+// @Produce  json
+// @Param    genre   query  string  true   "Genre name"
+// @Param    count   query  int     false  "Page size"  default(200)
+// @Param    offset  query  int     false  "Offset"
+// @Success  200  {object}  map[string][]songView
+// @Failure  400  {object}  errorResponse
+// @Failure  401  {object}  errorResponse
+// @Router   /songs [get]
+func (h *Handler) handleSongsByGenre(w http.ResponseWriter, r *http.Request) {
+	genre := r.URL.Query().Get("genre")
+	if genre == "" {
+		writeValidation(w, []fieldError{{Field: "genre", Message: "genre is required"}})
+		return
+	}
+	tracks, err := h.library.SongsByGenre(r.Context(), userFrom(r.Context()).ID, genre, intQuery(r, "count", 200), intQuery(r, "offset", 0))
+	if err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	writeResource(w, http.StatusOK, map[string]any{"songs": trackEntriesToSongViews(tracks)})
+}

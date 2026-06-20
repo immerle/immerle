@@ -205,6 +205,7 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Get("/artists/{id}", h.handleGetArtist)
 			r.Get("/albums", h.handleListAlbums)
 			r.Get("/albums/{id}", h.handleGetAlbum)
+			r.Get("/songs", h.handleSongsByGenre)
 			r.Get("/songs/{id}", h.handleGetSong)
 			r.Get("/genres", h.handleGetGenres)
 			r.Get("/search", h.handleSearch)
