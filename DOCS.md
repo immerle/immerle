@@ -61,6 +61,7 @@ which also holds the secret) and is managed via the admin API — not in `.env`:
 | ----- | -------- | ------ |
 | CORS allowed origins (default `*`) | `GET/POST /admin/settings` | **hot** |
 | Device-token TTL | `GET/POST /admin/settings` | **hot** |
+| LDAP auth (enabled, server URL, bind DN template) | `GET/POST /admin/settings` | **hot** |
 | Provider behaviour (default, auto-download, search timeout) | `GET/POST /admin/settings` | **hot** |
 | Scan interval | `GET/POST /admin/settings` | **hot** |
 | Transcoding (ffmpeg/ffprobe paths, profiles) | `GET/POST /admin/settings` | restart |
@@ -90,6 +91,20 @@ curl -X POST "http://host:4533/admin/settings?u=admin&p=pw&c=app" \
   -H 'Content-Type: application/json' \
   -d '{"scan":{"watch":false}}'
 ```
+
+### LDAP
+
+Optional directory login, configured at runtime (admin **Settings → LDAP**, or
+`POST /admin/settings`). A direct **simple bind** (no service account/search):
+set the server URL and a bind DN template (`uid=%s,ou=people,dc=example,dc=com`).
+Local accounts authenticate first, then LDAP; an LDAP user is provisioned a
+local account on first successful bind, and binds are cached in memory for 5
+minutes.
+
+**Subsonic clients must use password auth (`p=`) with LDAP — token auth
+(`t`+`s`) cannot work**, since the server can't recompute `md5(password+salt)`
+without a stored plaintext the directory never exposes. Send the password over
+HTTPS only. See [Subsonic API](docs/docs/subsonic-api.md) for details.
 
 ### Database
 

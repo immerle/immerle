@@ -272,6 +272,80 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/offline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the offline-downloads feature state */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            [key: string]: boolean;
+                        };
+                    };
+                };
+            };
+        };
+        /** Toggle the offline-downloads feature */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Enable or disable */
+            requestBody: {
+                content: {
+                    "application/json": Record<string, never> | components["schemas"]["immerle.toggleRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            [key: string]: boolean;
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/providers": {
         parameters: {
             query?: never;
@@ -6588,6 +6662,14 @@ export interface components {
                 resolveMissing?: boolean;
                 /** @example 3600 */
                 syncIntervalSeconds?: number;
+            };
+            ldap?: {
+                /** @example uid=%s,ou=people,dc=example,dc=com */
+                bindDnTemplate?: string;
+                /** @example false */
+                enabled?: boolean;
+                /** @example ldaps://ldap.example.com:636 */
+                url?: string;
             };
             logs?: {
                 /** @example 30 */

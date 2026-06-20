@@ -184,6 +184,7 @@ func New(cfg config.Config) (*App, error) {
 	if err != nil {
 		return nil, err
 	}
+	authSvc.WithLDAP(settingsSvc)
 
 	// First-run setup. The initial admin can only be created via the setup API.
 	setupSvc, err := core.NewSetupService(store.Users, authSvc, cfg.Auth.RequireSetupToken)

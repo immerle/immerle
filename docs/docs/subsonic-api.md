@@ -40,6 +40,13 @@ request:
 An Immerle API token may also be supplied via the `Authorization` header
 instead of `u`/`p`.
 
+:::warning LDAP users must use password auth
+If the account is backed by [LDAP](./configuration.md#ldap-authentication), token
+auth (`t`+`s`) **cannot** work — the directory never exposes the plaintext the
+server would need to recompute `md5(password + salt)`. Configure the client to
+send the password (`p`) instead, and only over HTTPS.
+:::
+
 For full request/response schemas, see the upstream specs — Immerle aims to be
 compatible with them:
 

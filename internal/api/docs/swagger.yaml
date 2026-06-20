@@ -517,6 +517,18 @@ components:
               example: 3600
               type: integer
           type: object
+        ldap:
+          properties:
+            bindDnTemplate:
+              example: uid=%s,ou=people,dc=example,dc=com
+              type: string
+            enabled:
+              example: false
+              type: boolean
+            url:
+              example: ldaps://ldap.example.com:636
+              type: string
+          type: object
         logs:
           properties:
             retentionDays:
