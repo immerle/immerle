@@ -1,6 +1,6 @@
 import createClient, { type Client } from 'openapi-fetch';
 import type { paths, components } from './generated/schema';
-import { normalizeServerUrl } from './subsonic/client';
+import { normalizeServerUrl } from '../utils/serverUrl';
 
 /**
  * Typed client for the Immerle REST API, generated from the server's OpenAPI
