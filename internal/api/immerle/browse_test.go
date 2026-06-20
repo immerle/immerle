@@ -54,6 +54,7 @@ func newBrowseEnv(t *testing.T) (*httptest.Server, string, *persistence.Store) {
 		Catalog:     store.Catalog,
 		Annotations: store.Annotations,
 		Genres:      store.Genres,
+		Playlists:   store.Playlists,
 		Scrobbles:   store.Scrobbles,
 		PlayQueues:  store.PlayQueues,
 		NowPlaying:  core.NewNowPlayingTracker(0),
