@@ -40,6 +40,7 @@ type Deps struct {
 	Annotations *persistence.AnnotationRepo
 	Genres      *persistence.GenreRepo
 	Scrobbles   *persistence.ScrobbleRepo
+	PlayQueues  *persistence.PlayQueueRepo
 	NowPlaying  *core.NowPlayingTracker
 	OnDemand    *core.CatalogService
 	// LibraryStats serves the cached library analytics (counts + total size).
@@ -93,16 +94,18 @@ type Handler struct {
 	// library and playback back the catalog browse resources and the
 	// favorite/rating/scrobble mutations with the same application services the
 	// Subsonic handler uses.
-	library  *core.LibraryService
-	playback *core.PlaybackService
+	library   *core.LibraryService
+	playback  *core.PlaybackService
+	playQueue *core.PlayQueueService
 }
 
 // NewHandler builds a immerle Handler.
 func NewHandler(d Deps) *Handler {
 	return &Handler{
-		Deps:     d,
-		library:  core.NewLibraryService(d.Catalog, d.Annotations, d.OnDemand),
-		playback: core.NewPlaybackService(d.Catalog, d.Annotations, d.Scrobbles, d.OnDemand, d.Activity, d.NowPlaying),
+		Deps:      d,
+		library:   core.NewLibraryService(d.Catalog, d.Annotations, d.OnDemand),
+		playback:  core.NewPlaybackService(d.Catalog, d.Annotations, d.Scrobbles, d.OnDemand, d.Activity, d.NowPlaying),
+		playQueue: core.NewPlayQueueService(d.PlayQueues, d.Catalog, d.Annotations),
 	}
 }
 
@@ -180,6 +183,11 @@ func (h *Handler) Register(mux chi.Router) {
 
 			// Scrobble a play (sets now-playing and, on submission, records it).
 			r.Post("/scrobbles", h.handleScrobble)
+
+			// Saved play queue (cross-device) and the now-playing feed.
+			r.Get("/play-queue", h.handleGetPlayQueue)
+			r.Put("/play-queue", h.handleSavePlayQueue)
+			r.Get("/now-playing", h.handleNowPlaying)
 
 			// Year-in-review ("Wrapped").
 			r.Get("/wrapped", h.handleWrapped)
