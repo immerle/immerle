@@ -793,6 +793,14 @@ export class ImmerleClient {
     if (error) throw apiErr(error, 'jam_leave_failed');
   }
 
+  /** Host-only. Ends the session and removes all participants. */
+  async jamEnd(sessionId: string): Promise<void> {
+    const { error } = await this.api.DELETE('/jam/{id}', {
+      params: { path: { id: sessionId } },
+    });
+    if (error) throw apiErr(error, 'jam_end_failed');
+  }
+
   /** SSE endpoint URL for live Jam events. EventSource can't set headers, so the
    * Bearer token is passed via the `apiKey` query fallback. */
   jamEventsUrl(sessionId: string): string {

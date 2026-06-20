@@ -383,7 +383,9 @@
       "hostControls": "Seul l'hôte contrôle la lecture.",
       "participants": "Participants ({{count}})",
       "hostBadge": "Hôte",
-      "leaveJam": "Quitter le Jam"
+      "leaveJam": "Quitter le Jam",
+      "endJam": "Mettre fin au Jam",
+      "endJamConfirm": "Mettre fin à ce Jam pour tout le monde ? Les participants seront déconnectés."
     },
     "profile": {
       "title": "Profil",

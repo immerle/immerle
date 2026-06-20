@@ -26,6 +26,7 @@ interface JamStore {
   active: boolean;
   start: (sessionId: string, isHost: boolean) => void;
   stop: () => Promise<void>;
+  end: () => Promise<void>;
 }
 
 // Module-scoped sync resources (not reactive state).
@@ -171,5 +172,13 @@ export const useJam = create<JamStore>((set, get) => ({
     cleanup();
     set({ sessionId: null, isHost: false, session: null, participants: [], active: false });
     if (client && sid) await client.jamLeave(sid).catch(() => undefined);
+  },
+
+  end: async () => {
+    const client = api();
+    const sid = get().sessionId;
+    cleanup();
+    set({ sessionId: null, isHost: false, session: null, participants: [], active: false });
+    if (client && sid) await client.jamEnd(sid).catch(() => undefined);
   },
 }));
