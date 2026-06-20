@@ -33,7 +33,7 @@ function songToTrack(client: ImmerleClient, song: Song, qualityId: string): Play
     title: song.title,
     artist: song.artist,
     album: song.album,
-    artwork: client.subsonic.coverArtUrl(song.coverArt ?? song.id, 512),
+    artwork: client.coverArtUrl(song.coverArt ?? song.id, 512),
     duration: song.duration,
   };
 }

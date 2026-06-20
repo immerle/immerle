@@ -273,6 +273,16 @@ export class ImmerleClient {
   }
 
   /**
+   * Public cover-art URL for a track or album id (loadable as a plain <img>, no
+   * credential in the URL). Returns undefined when there is no id.
+   */
+  coverArtUrl(coverArtId: string | undefined, size?: number): string | undefined {
+    if (!coverArtId) return undefined;
+    const url = `${this.serverUrl}/api/v1/cover/${encodeURIComponent(coverArtId)}`;
+    return size ? `${url}?size=${size}` : url;
+  }
+
+  /**
    * Library-wide stats (counts + on-disk size in bytes) from `/library/stats`.
    * Falls back to deriving counts from Subsonic on a plain server (no size).
    */
