@@ -1,5 +1,22 @@
 import { SubsonicClient } from '../subsonic/client';
-import { Song } from '../subsonic/types';
+import {
+  Album,
+  AlbumWithSongs,
+  Artist,
+  ArtistWithAlbums,
+  Genre,
+  Song,
+} from '../subsonic/types';
+import {
+  Starred,
+  toAlbum,
+  toAlbumWithSongs,
+  toArtist,
+  toArtistWithAlbums,
+  toGenre,
+  toSong,
+  toStarred,
+} from './catalog';
 import {
   ActivityEventDTO,
   APITokenDTO,
@@ -181,6 +198,70 @@ export class ImmerleClient {
   }
 
   // --- Admin: library ------------------------------------------------------
+
+  /**
+   * Catalog browse over the native REST API. The native DTOs are normalized into
+   * the app's domain types (see catalog.ts), so these are drop-in replacements
+   * for the Subsonic browse methods.
+   */
+  async getArtists(signal?: AbortSignal): Promise<Artist[]> {
+    const { data, error } = await this.api.GET('/artists', { signal });
+    if (error) throw apiErr(error, 'browse.artists');
+    return (data.artists ?? []).map(toArtist);
+  }
+
+  async getArtist(id: string, signal?: AbortSignal): Promise<ArtistWithAlbums> {
+    const { data, error } = await this.api.GET('/artists/{id}', {
+      params: { path: { id } },
+      signal,
+    });
+    if (error) throw apiErr(error, 'browse.artist');
+    return toArtistWithAlbums(data);
+  }
+
+  async getAlbum(id: string, signal?: AbortSignal): Promise<AlbumWithSongs> {
+    const { data, error } = await this.api.GET('/albums/{id}', { params: { path: { id } }, signal });
+    if (error) throw apiErr(error, 'browse.album');
+    return toAlbumWithSongs(data);
+  }
+
+  async getAlbumList(
+    type: string,
+    opts?: { size?: number; offset?: number; genre?: string; fromYear?: number; toYear?: number },
+    signal?: AbortSignal,
+  ): Promise<Album[]> {
+    const { data, error } = await this.api.GET('/albums', {
+      params: { query: { type, size: opts?.size, offset: opts?.offset, genre: opts?.genre, fromYear: opts?.fromYear, toYear: opts?.toYear } },
+      signal,
+    });
+    if (error) throw apiErr(error, 'browse.albumList');
+    return (data.albums ?? []).map(toAlbum);
+  }
+
+  async getGenres(signal?: AbortSignal): Promise<Genre[]> {
+    const { data, error } = await this.api.GET('/genres', { signal });
+    if (error) throw apiErr(error, 'browse.genres');
+    return (data.genres ?? []).map(toGenre);
+  }
+
+  async getSongsByGenre(genre: string, count = 200, signal?: AbortSignal): Promise<Song[]> {
+    const { data, error } = await this.api.GET('/songs', { params: { query: { genre, count } }, signal });
+    if (error) throw apiErr(error, 'browse.songsByGenre');
+    return (data.songs ?? []).map(toSong);
+  }
+
+  async getSong(id: string, signal?: AbortSignal): Promise<Song> {
+    const { data, error } = await this.api.GET('/songs/{id}', { params: { path: { id } }, signal });
+    if (error) throw apiErr(error, 'browse.song');
+    return toSong(data);
+  }
+
+  /** The caller's starred catalog (artists/albums/songs). */
+  async getStarred(signal?: AbortSignal): Promise<Starred> {
+    const { data, error } = await this.api.GET('/me/favorites', { signal });
+    if (error) throw apiErr(error, 'browse.favorites');
+    return toStarred(data);
+  }
 
   /**
    * Library-wide stats (counts + on-disk size in bytes) from `/library/stats`.

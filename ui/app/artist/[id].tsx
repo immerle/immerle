@@ -47,7 +47,7 @@ export default function ArtistDetail() {
   const gather = async (): Promise<Song[]> => {
     if (!client) return [];
     const results = await Promise.all(
-      albums.map((a) => client.subsonic.getAlbum(a.id).catch(() => null)),
+      albums.map((a) => client.getAlbum(a.id).catch(() => null)),
     );
     return results.flatMap((r) => r?.song ?? []);
   };
