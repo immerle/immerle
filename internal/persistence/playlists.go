@@ -222,12 +222,11 @@ func (r *PlaylistRepo) ListPublicByOwner(ctx context.Context, ownerID string) ([
 	return out, r.attachCoverArts(ctx, out)
 }
 
-// Subscribe adds a user's subscription to a playlist (idempotent). The ON
-// CONFLICT ... DO NOTHING (a conflict clause with no SET) can't be expressed by
-// melody, so it stays hand-written.
+// Subscribe adds a user's subscription to a playlist (idempotent).
 func (r *PlaylistRepo) Subscribe(ctx context.Context, playlistID, userID string) error {
-	_, err := r.exec(ctx, `INSERT INTO playlist_subscriptions (playlist_id, user_id, created_at) VALUES (?, ?, ?)
-		ON CONFLICT(playlist_id, user_id) DO NOTHING`, playlistID, userID, db.Millis(time.Now()))
+	_, err := r.bexec(ctx, r.mel.NewInsert("playlist_subscriptions").
+		Set("playlist_id", playlistID).Set("user_id", userID).Set("created_at", db.Millis(time.Now())).
+		OnConflict("playlist_id", "user_id").OnConflictDoNothing())
 	return err
 }
 
@@ -349,12 +348,11 @@ func (r *PlaylistRepo) IsCollaborator(ctx context.Context, playlistID, userID st
 	return n > 0, err
 }
 
-// AddCollaborator grants edit rights on a collaborative playlist. The ON
-// CONFLICT ... DO NOTHING (a conflict clause with no SET) can't be expressed by
-// melody, so it stays hand-written.
+// AddCollaborator grants edit rights on a collaborative playlist.
 func (r *PlaylistRepo) AddCollaborator(ctx context.Context, playlistID, userID string) error {
-	_, err := r.exec(ctx, `INSERT INTO playlist_collaborators (playlist_id, user_id) VALUES (?, ?)
-		ON CONFLICT(playlist_id, user_id) DO NOTHING`, playlistID, userID)
+	_, err := r.bexec(ctx, r.mel.NewInsert("playlist_collaborators").
+		Set("playlist_id", playlistID).Set("user_id", userID).
+		OnConflict("playlist_id", "user_id").OnConflictDoNothing())
 	return err
 }
 

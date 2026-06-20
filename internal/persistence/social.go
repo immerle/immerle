@@ -253,12 +253,11 @@ func (r *JamRepo) Delete(ctx context.Context, id string) error {
 	return err
 }
 
-// AddParticipant joins a user to a jam. The ON CONFLICT ... DO NOTHING (a
-// conflict clause with no SET) can't be expressed by melody, so it stays
-// hand-written.
+// AddParticipant joins a user to a jam.
 func (r *JamRepo) AddParticipant(ctx context.Context, sessionID, userID string) error {
-	_, err := r.exec(ctx, `INSERT INTO jam_participants (session_id, user_id, joined_at) VALUES (?, ?, ?)
-		ON CONFLICT(session_id, user_id) DO NOTHING`, sessionID, userID, db.Millis(time.Now()))
+	_, err := r.bexec(ctx, r.mel.NewInsert("jam_participants").
+		Set("session_id", sessionID).Set("user_id", userID).Set("joined_at", db.Millis(time.Now())).
+		OnConflict("session_id", "user_id").OnConflictDoNothing())
 	return err
 }
 

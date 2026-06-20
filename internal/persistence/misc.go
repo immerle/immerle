@@ -171,10 +171,9 @@ func (r *ShareRepo) ListByUser(ctx context.Context, userID string) ([]models.Sha
 }
 
 // IncrementViews bumps a share's view counter.
-// melody can't express a column-relative SET (view_count = view_count + 1), so
-// this stays hand-written.
 func (r *ShareRepo) IncrementViews(ctx context.Context, id string) error {
-	_, err := r.exec(ctx, `UPDATE shares SET view_count = view_count + 1 WHERE id=?`, id)
+	_, err := r.bexec(ctx, r.mel.NewUpdate("shares").
+		SetRaw("view_count", "view_count + 1").Where("id", "=", id))
 	return err
 }
 

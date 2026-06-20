@@ -115,11 +115,10 @@ func (r *RadioRepo) SetLiked(ctx context.Context, userID, stationID string, like
 	return err
 }
 
-// LikedIDs returns the set of station ids the user has liked. The IS NOT NULL
-// predicate can't be expressed by melody (it binds NULL as a parameter), so this
-// query stays hand-written.
+// LikedIDs returns the set of station ids the user has liked.
 func (r *RadioRepo) LikedIDs(ctx context.Context, userID string) (map[string]bool, error) {
-	rows, err := r.query(ctx, `SELECT item_id FROM annotations WHERE user_id=? AND item_type='radio' AND starred_at IS NOT NULL`, userID)
+	rows, err := r.bquery(ctx, r.mel.New("annotations").Select("item_id").
+		Where("user_id", "=", userID).Where("item_type", "=", "radio").WhereNotNull("starred_at"))
 	if err != nil {
 		return nil, err
 	}
