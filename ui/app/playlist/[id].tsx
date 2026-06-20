@@ -14,6 +14,7 @@ import { PlaylistMosaic } from '../../src/components/PlaylistMosaic';
 import { TrackList } from '../../src/components/TrackList';
 import { Badge, Button, ErrorState, Field, IconButton, Loading } from '../../src/components/ui';
 import { PlayButton } from '../../src/components/PlayButton';
+import { DownloadButton } from '../../src/components/DownloadButton';
 import { usePlayer } from '../../src/audio/store';
 import { useAuth } from '../../src/auth/store';
 import { useAddCollaborator } from '../../src/query/social';
@@ -147,7 +148,10 @@ export default function PlaylistDetail() {
           ) : (
             <IconButton name="heart-dislike-outline" size={24} color={colors.danger} onPress={confirmUnsubscribe} accessibilityLabel={t('media.playlist.unsubscribe')} />
           )}
-          <PlayButton onPress={() => songs.length && playSongs(songs, 0)} size={56} accessibilityLabel={t('media.playlist.play')} />
+          <View className="flex-row items-center gap-4">
+            <DownloadButton songs={songs} size={24} />
+            <PlayButton onPress={() => songs.length && playSongs(songs, 0)} size={56} accessibilityLabel={t('media.playlist.play')} />
+          </View>
         </View>
       ) : (
         <View className="w-full gap-2 pt-1">

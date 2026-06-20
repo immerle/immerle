@@ -2,7 +2,9 @@ import { memo } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { Song } from '../api/subsonic/types';
 import { CoverArt } from './CoverArt';
+import { Ionicon } from './Ionicon';
 import { IconButton } from './ui';
+import { useDownloads } from '../offline/store';
 import { formatDuration } from '../utils/format';
 import { useColors } from '../theme/colors';
 
@@ -30,6 +32,7 @@ export const TrackRow = memo(function TrackRow({
   onMore,
 }: TrackRowProps) {
   const colors = useColors();
+  const downloaded = useDownloads((s) => !!s.entries[song.id]);
   return (
     <Pressable
       onPress={onPress}
@@ -56,6 +59,7 @@ export const TrackRow = memo(function TrackRow({
           {song.artist ?? 'Artiste inconnu'}
         </Text>
       </View>
+      {downloaded ? <Ionicon name="cloud-done" size={15} color={colors.muted} /> : null}
       <Text className="text-xs text-muted">{formatDuration(song.duration)}</Text>
       {onMore ? (
         <IconButton
