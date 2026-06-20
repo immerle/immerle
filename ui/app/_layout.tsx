@@ -21,6 +21,7 @@ import { SearchOverlay } from '../src/components/SearchOverlay';
 import { AccentScope } from '../src/components/AccentScope';
 import { LibrarySidebar } from '../src/components/LibrarySidebar';
 import { AdminSidebar } from '../src/components/AdminSidebar';
+import { MobileDrawer } from '../src/components/MobileDrawer';
 import { useUI } from '../src/stores/ui';
 import { useLocale } from '../src/i18n/store';
 import { useSelfServer } from '../src/api/selfServer';
@@ -155,6 +156,7 @@ export default function RootLayout() {
           </View>
           <TrackMenu />
           <SearchOverlay />
+          {!wide ? <MobileDrawer /> : null}
           </AccentScope>
         </QueryClientProvider>
       </SafeAreaProvider>
