@@ -2276,6 +2276,90 @@
                 ]
             }
         },
+        "/admin/offline": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": {
+                                        "type": "boolean"
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Get the offline-downloads feature state",
+                "tags": [
+                    "admin"
+                ]
+            },
+            "put": {
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/immerle.toggleRequest",
+                                        "summary": "body",
+                                        "description": "Enable or disable"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Enable or disable",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": {
+                                        "type": "boolean"
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Toggle the offline-downloads feature",
+                "tags": [
+                    "admin"
+                ]
+            }
+        },
         "/admin/providers": {
             "get": {
                 "description": "Admin only. Lists configured providers (built-in and dynamic) with their live status.",
