@@ -12,11 +12,13 @@ import (
 	chi "github.com/go-chi/chi/v5"
 
 	"github.com/immerle/immerle/internal/api/httputil"
+	"github.com/immerle/immerle/internal/api/media"
 	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/importer"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 	"github.com/immerle/immerle/internal/scanner"
+	"github.com/immerle/immerle/internal/stream"
 )
 
 // ProtocolVersion is the immerle extension protocol version.
@@ -43,6 +45,9 @@ type Deps struct {
 	PlayQueues  *persistence.PlayQueueRepo
 	NowPlaying  *core.NowPlayingTracker
 	OnDemand    *core.CatalogService
+	// Streamer and Cover back the media endpoints (audio stream/download, cover art).
+	Streamer *stream.Streamer
+	Cover    *stream.CoverService
 	// LibraryStats serves the cached library analytics (counts + total size).
 	LibraryStats *core.LibraryStatsService
 	// Imports runs playlist imports from external sources (e.g. Spotify).
@@ -98,6 +103,7 @@ type Handler struct {
 	playback    *core.PlaybackService
 	playQueue   *core.PlayQueueService
 	playlistSvc *core.PlaylistService
+	media       *media.Server
 }
 
 // NewHandler builds a immerle Handler.
@@ -108,6 +114,7 @@ func NewHandler(d Deps) *Handler {
 		playback:    core.NewPlaybackService(d.Catalog, d.Annotations, d.Scrobbles, d.OnDemand, d.Activity, d.NowPlaying),
 		playQueue:   core.NewPlayQueueService(d.PlayQueues, d.Catalog, d.Annotations),
 		playlistSvc: core.NewPlaylistService(d.Playlists, d.Annotations, d.Activity),
+		media:       media.NewServer(d.Catalog, d.Streamer, d.Cover, d.OnDemand, d.NowPlaying, d.Logger),
 	}
 }
 
@@ -190,6 +197,11 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Get("/play-queue", h.handleGetPlayQueue)
 			r.Put("/play-queue", h.handleSavePlayQueue)
 			r.Get("/now-playing", h.handleNowPlaying)
+
+			// Media: audio stream/download and cover art.
+			r.Get("/songs/{id}/stream", h.handleStream)
+			r.Get("/songs/{id}/download", h.handleDownload)
+			r.Get("/cover/{id}", h.handleCover)
 
 			// Year-in-review ("Wrapped").
 			r.Get("/wrapped", h.handleWrapped)

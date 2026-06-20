@@ -3871,6 +3871,72 @@
                 ]
             }
         },
+        "/cover/{id}": {
+            "get": {
+                "description": "Returns the cover image for a track or album id, optionally resized.",
+                "parameters": [
+                    {
+                        "description": "Track or album id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Square size in pixels",
+                        "in": "query",
+                        "name": "size",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "image/jpeg": {
+                                "schema": {
+                                    "format": "binary",
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "description": "Image bytes"
+                    },
+                    "401": {
+                        "content": {
+                            "image/jpeg": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "content": {
+                            "image/jpeg": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Cover art",
+                "tags": [
+                    "media"
+                ]
+            }
+        },
         "/devices": {
             "get": {
                 "description": "Lists the caller's active device sessions (one per issued JWT), with last-seen time, IP and user agent.",
@@ -6429,6 +6495,56 @@
                 ]
             }
         },
+        "/songs/{id}/download": {
+            "get": {
+                "description": "Serves a track's original audio bytes (no transcoding).",
+                "parameters": [
+                    {
+                        "description": "Track id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Audio bytes"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Download a track",
+                "tags": [
+                    "media"
+                ]
+            }
+        },
         "/songs/{id}/rating": {
             "delete": {
                 "parameters": [
@@ -6609,6 +6725,75 @@
                 "summary": "Favorite a song",
                 "tags": [
                     "favorites"
+                ]
+            }
+        },
+        "/songs/{id}/stream": {
+            "get": {
+                "description": "Streams a track's audio. Supports HTTP range requests; maxBitRate/format transcode when set. Remote tracks are streamed progressively on first listen.",
+                "parameters": [
+                    {
+                        "description": "Track id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Transcode to at most this bit rate (kbps)",
+                        "in": "query",
+                        "name": "maxBitRate",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "description": "Transcode format (or 'raw' for original)",
+                        "in": "query",
+                        "name": "format",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Audio stream"
+                    },
+                    "206": {
+                        "description": "Partial content"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Stream a track",
+                "tags": [
+                    "media"
                 ]
             }
         },

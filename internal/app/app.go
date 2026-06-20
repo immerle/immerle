@@ -342,6 +342,8 @@ func New(cfg config.Config) (*App, error) {
 		PlayQueues:   store.PlayQueues,
 		NowPlaying:   nowPlaying,
 		OnDemand:     onDemand,
+		Streamer:     streamer,
+		Cover:        coverSvc,
 		LibraryStats: libraryStats,
 		Imports:      importSvc,
 		Scanner:      scan,
