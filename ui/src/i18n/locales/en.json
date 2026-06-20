@@ -383,7 +383,9 @@
       "hostControls": "Only the host controls playback.",
       "participants": "Participants ({{count}})",
       "hostBadge": "Host",
-      "leaveJam": "Leave the Jam"
+      "leaveJam": "Leave the Jam",
+      "endJam": "End the Jam",
+      "endJamConfirm": "End this Jam for everyone? Participants will be disconnected."
     },
     "profile": {
       "title": "Profile",

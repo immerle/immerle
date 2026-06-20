@@ -11,6 +11,7 @@ import { Ionicon } from '../../src/components/Ionicon';
 import { useColors } from '../../src/theme/colors';
 import { useT } from '../../src/i18n/store';
 import { useWebTitle } from '../../src/utils/documentTitle';
+import { confirm } from '../../src/utils/confirm';
 
 /**
  * Active Jam session. The host's playback drives everyone: the host controls
@@ -28,6 +29,7 @@ export default function Jam() {
   const participants = useJam((s) => s.participants);
   const isHost = useJam((s) => s.isHost);
   const stop = useJam((s) => s.stop);
+  const end = useJam((s) => s.end);
 
   const song = usePlayer((s) => (s.index >= 0 ? s.songs[s.index] : undefined));
   const status = usePlayer((s) => s.status);
@@ -54,6 +56,16 @@ export default function Jam() {
     await stop();
     router.back();
   };
+
+  const onEnd = () =>
+    confirm(
+      t('social.jamScreen.endJamConfirm'),
+      async () => {
+        await end();
+        router.back();
+      },
+      { cancel: t('social.common.cancel'), ok: t('social.jamScreen.endJam') },
+    );
 
   return (
     <>
@@ -124,8 +136,11 @@ export default function Jam() {
           ))}
         </View>
 
-        <View className="pt-6">
+        <View className="gap-2 pt-6">
           <Button title={t('social.jamScreen.leaveJam')} variant="secondary" icon="exit-outline" onPress={onLeave} />
+          {isHost ? (
+            <Button title={t('social.jamScreen.endJam')} variant="danger" icon="stop-circle-outline" onPress={onEnd} />
+          ) : null}
         </View>
       </ScrollView>
     </>
