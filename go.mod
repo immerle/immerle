@@ -4,7 +4,7 @@ go 1.25.7
 
 require (
 	github.com/dhowden/tag v0.0.0-20240417053706-3d75831295e8
-	github.com/ermos/melody/v2 v2.1.0
+	github.com/ermos/melody/v2 v2.1.1
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/go-chi/chi/v5 v5.3.0
 	github.com/google/uuid v1.6.0
