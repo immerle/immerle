@@ -1,4 +1,4 @@
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, Switch, Text, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { Button, Card, EmptyState } from '../src/components/ui';
 import { AdminHeader, AdminScroll } from '../src/components/AdminUI';
@@ -26,6 +26,10 @@ export default function Offline() {
   const entries = useDownloads((s) => s.entries);
   const remove = useDownloads((s) => s.remove);
   const clearAll = useDownloads((s) => s.clearAll);
+  const wifiOnly = useDownloads((s) => s.wifiOnly);
+  const setWifiOnly = useDownloads((s) => s.setWifiOnly);
+  const lastError = useDownloads((s) => s.lastError);
+  const clearError = useDownloads((s) => s.clearError);
 
   const list = Object.values(entries).sort((a, b) => b.downloadedAt - a.downloadedAt);
   const totalSize = list.reduce((n, e) => n + (e.size ?? 0), 0);
@@ -47,6 +51,21 @@ export default function Offline() {
           />
         }
       >
+        {lastError === 'quota' ? (
+          <Pressable onPress={clearError}>
+            <Card className="flex-row items-center gap-3 border border-danger/40 bg-danger/10">
+              <Ionicon name="warning-outline" size={20} color={colors.danger} />
+              <Text className="flex-1 text-sm text-foreground">{t('offline.quotaError')}</Text>
+              <Text className="text-xs font-semibold text-danger">{t('offline.dismiss')}</Text>
+            </Card>
+          </Pressable>
+        ) : null}
+
+        <Card className="flex-row items-center justify-between">
+          <Text className="flex-1 pr-2 text-base text-foreground">{t('offline.wifiOnly')}</Text>
+          <Switch value={wifiOnly} onValueChange={setWifiOnly} trackColor={{ true: colors.primary, false: colors.border }} />
+        </Card>
+
         {!list.length ? (
           <EmptyState icon="cloud-offline-outline" title={t('offline.emptyTitle')} subtitle={t('offline.emptySubtitle')} />
         ) : (

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Network from 'expo-network';
 
 import { Song } from '../api/subsonic/types';
 import { useAuth } from '../auth/store';
@@ -7,6 +8,21 @@ import * as fs from './fs';
 import { offlineFileName } from './paths';
 
 const KEY = 'immerle.offline.v1';
+const WIFI_KEY = 'immerle.offlineWifiOnly.v1';
+
+/** True when downloads should be blocked on a cellular connection. */
+async function onCellular(): Promise<boolean> {
+  try {
+    const state = await Network.getNetworkStateAsync();
+    return state.type === Network.NetworkStateType.CELLULAR;
+  } catch {
+    return false; // can't tell (e.g. web) → don't block
+  }
+}
+
+function isQuotaError(e: unknown): boolean {
+  return e instanceof Error && e.name === 'QuotaExceededError';
+}
 
 /** A completed offline download (the registry entry, persisted to AsyncStorage). */
 export interface OfflineEntry {
@@ -28,8 +44,14 @@ interface DownloadsState {
   entries: Record<string, OfflineEntry>;
   /** In-flight downloads, id -> 0..1. Ephemeral (not persisted). */
   progress: Record<string, number>;
+  /** Only download over Wi-Fi (skip on cellular). Persisted. */
+  wifiOnly: boolean;
+  /** Last surfaced error, or null. 'quota' = device/browser storage is full. */
+  lastError: 'quota' | null;
   hydrated: boolean;
   hydrate: () => Promise<void>;
+  setWifiOnly: (v: boolean) => void;
+  clearError: () => void;
   /** Download a track for offline playback (no-op on web / when disabled). */
   download: (song: Song) => Promise<void>;
   /** Download several tracks in sequence (already-downloaded ones are skipped). */
@@ -47,17 +69,28 @@ function persist(entries: Record<string, OfflineEntry>): void {
 export const useDownloads = create<DownloadsState>((set, get) => ({
   entries: {},
   progress: {},
+  wifiOnly: false,
+  lastError: null,
   hydrated: false,
 
   hydrate: async () => {
     try {
       const raw = await AsyncStorage.getItem(KEY);
       if (raw) set({ entries: JSON.parse(raw) as Record<string, OfflineEntry> });
+      const wifi = await AsyncStorage.getItem(WIFI_KEY);
+      if (wifi != null) set({ wifiOnly: wifi === '1' });
     } catch {
       /* keep default */
     }
     set({ hydrated: true });
   },
+
+  setWifiOnly: (v) => {
+    set({ wifiOnly: v });
+    void AsyncStorage.setItem(WIFI_KEY, v ? '1' : '0');
+  },
+
+  clearError: () => set({ lastError: null }),
 
   download: async (song) => {
     if (!fs.isSupported) return;
@@ -66,6 +99,8 @@ export const useDownloads = create<DownloadsState>((set, get) => ({
     const id = song.id;
     // Already downloaded or in flight — nothing to do.
     if (get().entries[id] || get().progress[id] != null) return;
+    // Respect the Wi-Fi-only preference (no-op on web, where type is unknown).
+    if (get().wifiOnly && (await onCellular())) return;
 
     set((s) => ({ progress: { ...s.progress, [id]: 0 } }));
     try {
@@ -90,12 +125,13 @@ export const useDownloads = create<DownloadsState>((set, get) => ({
         persist(entries);
         return { entries, progress };
       });
-    } catch {
-      // Drop the progress marker; leave no partial entry behind.
+    } catch (e) {
+      // Drop the progress marker; leave no partial entry behind. Surface a full
+      // storage so the user understands why the download didn't stick.
       set((s) => {
         const progress = { ...s.progress };
         delete progress[id];
-        return { progress };
+        return isQuotaError(e) ? { progress, lastError: 'quota' as const } : { progress };
       });
     }
   },

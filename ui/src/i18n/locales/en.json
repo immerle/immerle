@@ -100,7 +100,10 @@
     "emptyTitle": "No downloads yet",
     "emptySubtitle": "Use the ··· menu on a track to download it for offline playback.",
     "clearAll": "Remove all downloads",
-    "remove": "Remove download"
+    "remove": "Remove download",
+    "wifiOnly": "Download on Wi-Fi only",
+    "quotaError": "Storage is full — the download couldn't be saved. Remove some tracks and try again.",
+    "dismiss": "Dismiss"
   },
   "settings": {
     "title": "Settings",
