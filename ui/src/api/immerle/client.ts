@@ -5,6 +5,7 @@ import {
   Artist,
   ArtistWithAlbums,
   Genre,
+  SearchResult3,
   Song,
 } from '../subsonic/types';
 import {
@@ -14,6 +15,7 @@ import {
   toArtist,
   toArtistWithAlbums,
   toGenre,
+  toSearchResult,
   toSong,
   toStarred,
 } from './catalog';
@@ -261,6 +263,13 @@ export class ImmerleClient {
     const { data, error } = await this.api.GET('/me/favorites', { signal });
     if (error) throw apiErr(error, 'browse.favorites');
     return toStarred(data);
+  }
+
+  /** Search artists, albums and songs (merging remote-provider results). */
+  async search(query: string, signal?: AbortSignal): Promise<SearchResult3> {
+    const { data, error } = await this.api.GET('/search', { params: { query: { q: query } }, signal });
+    if (error) throw apiErr(error, 'search');
+    return toSearchResult(data);
   }
 
   /**

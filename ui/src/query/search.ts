@@ -26,6 +26,6 @@ export function useSearch(query: string) {
     enabled: !!client && trimmed.length > 0,
     placeholderData: keepPreviousData,
     staleTime: 60 * 1000,
-    queryFn: ({ signal }) => client!.subsonic.search(trimmed),
+    queryFn: ({ signal }) => client!.search(trimmed),
   });
 }

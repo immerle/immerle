@@ -1,10 +1,11 @@
-import type { AlbumView, ArtistView, FavoritesView, GenreView, SongView } from '../immerleApi';
+import type { AlbumView, ArtistView, FavoritesView, GenreView, SearchView, SongView } from '../immerleApi';
 import type {
   Album,
   AlbumWithSongs,
   Artist,
   ArtistWithAlbums,
   Genre,
+  SearchResult3,
   Song,
 } from '../subsonic/types';
 
@@ -81,6 +82,14 @@ export interface Starred {
 }
 
 export function toStarred(v: FavoritesView): Starred {
+  return {
+    artist: v.artists?.map(toArtist),
+    album: v.albums?.map(toAlbum),
+    song: v.songs?.map(toSong),
+  };
+}
+
+export function toSearchResult(v: SearchView): SearchResult3 {
   return {
     artist: v.artists?.map(toArtist),
     album: v.albums?.map(toAlbum),
