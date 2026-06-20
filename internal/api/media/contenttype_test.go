@@ -1,4 +1,4 @@
-package subsonic
+package media
 
 import "testing"
 

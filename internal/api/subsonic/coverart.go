@@ -9,10 +9,7 @@ import (
 
 func (h *Handler) handleGetCoverArt(w http.ResponseWriter, r *http.Request) {
 	id := param(r, "id")
-	size := intParam(r, "size", 0)
-
-	data, contentType, err := h.Cover.Get(r.Context(), id, size)
-	if err != nil {
+	if err := h.media.ServeCover(w, r, id, intParam(r, "size", 0)); err != nil {
 		if errors.Is(err, stream.ErrNoCover) {
 			http.Error(w, "Cover art not found", http.StatusNotFound)
 			return
@@ -21,10 +18,5 @@ func (h *Handler) handleGetCoverArt(w http.ResponseWriter, r *http.Request) {
 			h.Logger.Error("getCoverArt failed", "id", id, "error", err)
 		}
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
 	}
-	w.Header().Set("Content-Type", contentType)
-	w.Header().Set("Cache-Control", "public, max-age=86400")
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write(data)
 }
