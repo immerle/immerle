@@ -75,6 +75,8 @@ type Deps struct {
 	SmartPlaylists *persistence.SmartPlaylistRepo
 	// Radio persists internet radio stations (built-in + custom).
 	Radio *persistence.RadioRepo
+	// Podcasts manages podcast channels/episodes (feed refresh + downloads).
+	Podcasts *core.PodcastService
 	// Wrapped computes the per-user year-in-review from the scrobble history.
 	Wrapped *persistence.WrappedRepo
 	Logger  *slog.Logger
@@ -199,6 +201,21 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Post("/admin/radio/stations", h.handleRadioCreate)
 			r.Put("/admin/radio/stations/{id}", h.handleRadioUpdate)
 			r.Delete("/admin/radio/stations/{id}", h.handleRadioDelete)
+
+			// Podcasts: browse + download for everyone; channel CRUD/refresh is admin.
+			r.Get("/podcasts", h.handlePodcastList)
+			r.Get("/podcasts/episodes/newest", h.handlePodcastNewest)
+			r.Get("/podcasts/episodes/{id}", h.handlePodcastEpisode)
+			r.Get("/podcasts/episodes/{id}/stream", h.handlePodcastStream)
+			r.Post("/podcasts/episodes/{id}/download", h.handlePodcastDownload)
+			r.Get("/podcasts/{id}", h.handlePodcastGet)
+			r.Post("/admin/podcasts", h.handlePodcastCreate)
+			r.Post("/admin/podcasts/refresh", h.handlePodcastRefresh)
+			r.Get("/admin/podcasts/search", h.handlePodcastSearch)
+			r.Get("/admin/podcasts/providers", h.handlePodcastProviders)
+			r.Put("/admin/podcasts/providers/{name}", h.handlePodcastProviderUpdate)
+			r.Delete("/admin/podcasts/episodes/{id}", h.handlePodcastDeleteEpisode)
+			r.Delete("/admin/podcasts/{id}", h.handlePodcastDeleteChannel)
 
 			// Catalog browse over the shared library service.
 			r.Get("/artists", h.handleListArtists)

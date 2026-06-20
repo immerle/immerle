@@ -169,6 +169,7 @@ func New(cfg config.Config) (*App, error) {
 	dataDir := cfg.Library.DataDir
 	coversDir := filepath.Join(dataDir, "covers")
 	downloadDir := filepath.Join(dataDir, "library")
+	podcastsDir := filepath.Join(dataDir, "podcasts")
 
 	// Runtime settings + auth secret live in data/configuration.yaml (admin-
 	// managed; the secret is auto-generated there, migrating the legacy
@@ -215,6 +216,7 @@ func New(cfg config.Config) (*App, error) {
 	nowPlaying := core.NewNowPlayingTracker(10 * time.Minute)
 	activitySvc := core.NewActivityService(store.Activity, store.Friends, store.Users)
 	jamSvc := core.NewJamService(store.Jam)
+	podcastSvc := core.NewPodcastService(store.Podcasts, podcastsDir, logger)
 
 	scanPaths := append([]string{}, cfg.Library.Paths...)
 
@@ -310,6 +312,7 @@ func New(cfg config.Config) (*App, error) {
 		Shares:           store.Shares,
 		Users:            store.Users,
 		Radio:            store.Radio,
+		Podcasts:         podcastSvc,
 		Settings:         settingsSvc,
 		Cover:            coverSvc,
 		Streamer:         streamer,
@@ -336,6 +339,7 @@ func New(cfg config.Config) (*App, error) {
 		Settings:       settingsSvc,
 		SmartPlaylists: store.SmartPlaylists,
 		Radio:          store.Radio,
+		Podcasts:       podcastSvc,
 		Wrapped:        store.Wrapped,
 		Catalog:        store.Catalog,
 		Annotations:    store.Annotations,
@@ -366,6 +370,11 @@ func New(cfg config.Config) (*App, error) {
 	// Seed the built-in internet radio stations (idempotent).
 	if err := store.Radio.EnsureBuiltins(ctx); err != nil {
 		logger.Warn("seeding built-in radio stations failed", "error", err)
+	}
+
+	// Enable the default-on podcast directory providers on first boot (idempotent).
+	if err := podcastSvc.EnsureDefaults(ctx); err != nil {
+		logger.Warn("seeding default podcast providers failed", "error", err)
 	}
 
 	mux := chi.NewRouter()

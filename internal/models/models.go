@@ -715,3 +715,56 @@ type Device struct {
 	ExpiresAt  *time.Time `json:"expiresAt,omitempty"`
 	Revoked    bool       `json:"revoked"`
 }
+
+// PodcastChannel is a subscribed podcast RSS feed. Its metadata (title, image,
+// description) is filled in from the feed on refresh; Status follows the
+// Subsonic podcast lifecycle (new → completed, or error on a fetch failure).
+type PodcastChannel struct {
+	ID          string `json:"id"`
+	URL         string `json:"url"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	// CoverArt is the channel image URL taken from the feed (served by the client
+	// directly; immerle does not proxy it).
+	CoverArt  string    `json:"coverArt"`
+	Status    string    `json:"status"`
+	Error     string    `json:"error,omitempty"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+	// Episodes is populated on demand (newest first); empty when not requested.
+	Episodes []PodcastEpisode `json:"episodes,omitempty"`
+}
+
+// PodcastProviderConfig is the admin-managed state of a built-in podcast
+// directory adapter: whether it is enabled and its per-source credentials
+// (stored as an opaque key→value map, e.g. an API key/secret).
+type PodcastProviderConfig struct {
+	Name      string            `json:"name"`
+	Enabled   bool              `json:"enabled"`
+	Config    map[string]string `json:"config"`
+	UpdatedAt time.Time         `json:"updatedAt"`
+}
+
+// PodcastEpisode is one item of a podcast feed. It is "skipped" until a user
+// downloads it, at which point its audio is fetched to disk (MediaPath) and it
+// becomes streamable.
+type PodcastEpisode struct {
+	ID          string    `json:"id"`
+	ChannelID   string    `json:"channelId"`
+	GUID        string    `json:"guid"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	PublishDate time.Time `json:"publishDate"`
+	Duration    int       `json:"duration"` // seconds
+	Size        int64     `json:"size"`
+	Suffix      string    `json:"suffix"`
+	ContentType string    `json:"contentType"`
+	BitRate     int       `json:"bitRate"`
+	// StreamURL is the original enclosure URL; MediaPath is the local file once
+	// the episode has been downloaded.
+	StreamURL string    `json:"streamUrl"`
+	MediaPath string    `json:"-"`
+	Status    string    `json:"status"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}

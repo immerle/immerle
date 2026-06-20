@@ -1330,6 +1330,39 @@
                 },
                 "type": "object"
             },
+            "immerle.channelView": {
+                "properties": {
+                    "description": {
+                        "type": "string"
+                    },
+                    "episodes": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.episodeView"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "error": {
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "imageUrl": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "url": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "immerle.cleanupUpdateRequest": {
                 "properties": {
                     "enabled": {
@@ -1360,6 +1393,45 @@
                         "type": "string"
                     },
                     "name": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.episodeView": {
+                "properties": {
+                    "channelId": {
+                        "type": "string"
+                    },
+                    "contentType": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "duration": {
+                        "type": "integer"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "publishDate": {
+                        "type": "string"
+                    },
+                    "size": {
+                        "type": "integer"
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "streamable": {
+                        "description": "Streamable is true once the episode audio has been downloaded.",
+                        "type": "boolean"
+                    },
+                    "suffix": {
+                        "type": "string"
+                    },
+                    "title": {
                         "type": "string"
                     }
                 },
@@ -1632,6 +1704,28 @@
                         },
                         "type": "array",
                         "uniqueItems": false
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.podcastCreateRequest": {
+                "properties": {
+                    "url": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.podcastProviderRequest": {
+                "properties": {
+                    "config": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "type": "object"
+                    },
+                    "enabled": {
+                        "type": "boolean"
                     }
                 },
                 "type": "object"
@@ -2417,6 +2511,259 @@
                     }
                 ],
                 "summary": "Toggle the offline-downloads feature",
+                "tags": [
+                    "admin"
+                ]
+            }
+        },
+        "/admin/podcasts": {
+            "post": {
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/immerle.podcastCreateRequest",
+                                        "summary": "body",
+                                        "description": "Feed URL"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Feed URL",
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.channelView"
+                                }
+                            }
+                        },
+                        "description": "Created"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Subscribe to a podcast feed",
+                "tags": [
+                    "admin"
+                ]
+            }
+        },
+        "/admin/podcasts/episodes/{id}": {
+            "delete": {
+                "parameters": [
+                    {
+                        "description": "Episode id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Delete a podcast episode",
+                "tags": [
+                    "admin"
+                ]
+            }
+        },
+        "/admin/podcasts/providers": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": {},
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "List podcast directory providers",
+                "tags": [
+                    "admin"
+                ]
+            }
+        },
+        "/admin/podcasts/providers/{name}": {
+            "put": {
+                "parameters": [
+                    {
+                        "description": "Provider name",
+                        "in": "path",
+                        "name": "name",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/immerle.podcastProviderRequest",
+                                        "summary": "body",
+                                        "description": "Enabled + config"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Enabled + config",
+                    "required": true
+                },
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Configure a podcast directory provider",
+                "tags": [
+                    "admin"
+                ]
+            }
+        },
+        "/admin/podcasts/refresh": {
+            "post": {
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Refresh all podcast feeds",
+                "tags": [
+                    "admin"
+                ]
+            }
+        },
+        "/admin/podcasts/search": {
+            "get": {
+                "parameters": [
+                    {
+                        "description": "Search terms",
+                        "in": "query",
+                        "name": "q",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": {},
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Search podcast directories",
+                "tags": [
+                    "admin"
+                ]
+            }
+        },
+        "/admin/podcasts/{id}": {
+            "delete": {
+                "parameters": [
+                    {
+                        "description": "Channel id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Delete a podcast channel",
                 "tags": [
                     "admin"
                 ]
@@ -7007,6 +7354,235 @@
                 "summary": "Replace playlist tracks",
                 "tags": [
                     "playlists"
+                ]
+            }
+        },
+        "/podcasts": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": {},
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "List podcast channels",
+                "tags": [
+                    "podcasts"
+                ]
+            }
+        },
+        "/podcasts/episodes/newest": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": {},
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Newest podcast episodes",
+                "tags": [
+                    "podcasts"
+                ]
+            }
+        },
+        "/podcasts/episodes/{id}": {
+            "get": {
+                "parameters": [
+                    {
+                        "description": "Episode id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.episodeView"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Get a podcast episode",
+                "tags": [
+                    "podcasts"
+                ]
+            }
+        },
+        "/podcasts/episodes/{id}/download": {
+            "post": {
+                "parameters": [
+                    {
+                        "description": "Episode id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.episodeView"
+                                }
+                            }
+                        },
+                        "description": "Accepted"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Download a podcast episode",
+                "tags": [
+                    "podcasts"
+                ]
+            }
+        },
+        "/podcasts/episodes/{id}/stream": {
+            "get": {
+                "parameters": [
+                    {
+                        "description": "Episode id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Stream a podcast episode",
+                "tags": [
+                    "podcasts"
+                ]
+            }
+        },
+        "/podcasts/{id}": {
+            "get": {
+                "parameters": [
+                    {
+                        "description": "Channel id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.channelView"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Get a podcast channel",
+                "tags": [
+                    "podcasts"
                 ]
             }
         },

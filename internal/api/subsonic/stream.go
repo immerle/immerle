@@ -22,7 +22,16 @@ func (h *Handler) handleDownload(w http.ResponseWriter, r *http.Request) {
 // serveAudio delegates to the shared media server, mapping a missing track to a
 // Subsonic error. Mid-stream failures are handled (logged) inside the server.
 func (h *Handler) serveAudio(w http.ResponseWriter, r *http.Request, opts stream.Options) {
-	if err := h.media.ServeAudio(w, r, userFrom(r.Context()), param(r, "id"), opts); err != nil {
+	id := param(r, "id")
+	// A downloaded podcast episode is served straight from its local file (no
+	// transcoding) — its id is not a catalog track, so try it before the catalog.
+	if h.Podcasts != nil {
+		if ep, err := h.Podcasts.Episode(r.Context(), id); err == nil && ep.Status == "completed" && ep.MediaPath != "" {
+			http.ServeFile(w, r, ep.MediaPath)
+			return
+		}
+	}
+	if err := h.media.ServeAudio(w, r, userFrom(r.Context()), id, opts); err != nil {
 		writeError(w, r, ErrDataNotFound, "Song not found")
 	}
 }

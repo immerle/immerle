@@ -61,6 +61,44 @@ type Response struct {
 	Bookmarks             *Bookmarks             `xml:"bookmarks,omitempty" json:"bookmarks,omitempty"`
 	InternetRadioStations *InternetRadioStations `xml:"internetRadioStations,omitempty" json:"internetRadioStations,omitempty"`
 	ChatMessages          *ChatMessages          `xml:"chatMessages,omitempty" json:"chatMessages,omitempty"`
+	Podcasts              *Podcasts              `xml:"podcasts,omitempty" json:"podcasts,omitempty"`
+	NewestPodcasts        *NewestPodcasts        `xml:"newestPodcasts,omitempty" json:"newestPodcasts,omitempty"`
+	PodcastEpisode        *PodcastEpisode        `xml:"podcastEpisode,omitempty" json:"podcastEpisode,omitempty"`
+}
+
+// Podcasts wraps the channel list (getPodcasts).
+type Podcasts struct {
+	Channel []PodcastChannel `xml:"channel" json:"channel,omitempty"`
+}
+
+// NewestPodcasts wraps the cross-channel newest episodes (getNewestPodcasts).
+type NewestPodcasts struct {
+	Episode []PodcastEpisode `xml:"episode" json:"episode,omitempty"`
+}
+
+// PodcastChannel is a subscribed feed and (optionally) its episodes.
+type PodcastChannel struct {
+	ID               string           `xml:"id,attr" json:"id"`
+	URL              string           `xml:"url,attr" json:"url"`
+	Title            string           `xml:"title,attr,omitempty" json:"title,omitempty"`
+	Description      string           `xml:"description,attr,omitempty" json:"description,omitempty"`
+	CoverArt         string           `xml:"coverArt,attr,omitempty" json:"coverArt,omitempty"`
+	OriginalImageURL string           `xml:"originalImageUrl,attr,omitempty" json:"originalImageUrl,omitempty"`
+	Status           string           `xml:"status,attr" json:"status"`
+	ErrorMessage     string           `xml:"errorMessage,attr,omitempty" json:"errorMessage,omitempty"`
+	Episode          []PodcastEpisode `xml:"episode" json:"episode,omitempty"`
+}
+
+// PodcastEpisode is one feed item. It embeds Child (so it carries the standard
+// media attributes) plus the podcast-specific fields. streamId is set only once
+// the episode has been downloaded and can be streamed.
+type PodcastEpisode struct {
+	Child
+	StreamID    string `xml:"streamId,attr,omitempty" json:"streamId,omitempty"`
+	ChannelID   string `xml:"channelId,attr" json:"channelId"`
+	Description string `xml:"description,attr,omitempty" json:"description,omitempty"`
+	Status      string `xml:"status,attr" json:"status"`
+	PublishDate string `xml:"publishDate,attr,omitempty" json:"publishDate,omitempty"`
 }
 
 // Error is a Subsonic error payload.
