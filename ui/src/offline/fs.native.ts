@@ -38,6 +38,11 @@ export async function download(url: string, name: string, onProgress?: (p: numbe
   return info.size ?? 0;
 }
 
+/** The local file:// URI the player uses as an audio source (native is direct). */
+export async function playableUrl(name: string): Promise<string | null> {
+  return fileUri(name);
+}
+
 export async function remove(name: string): Promise<void> {
   await FileSystem.deleteAsync(fileUri(name), { idempotent: true });
 }

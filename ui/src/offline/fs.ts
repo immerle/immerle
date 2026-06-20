@@ -1,6 +1,7 @@
-// Web fallback for the offline filesystem. Offline downloads are native-only for
-// now (W6); on web every call is a no-op and isSupported is false, so the store
-// short-circuits. The real implementation lives in fs.native.ts.
+// Default/fallback offline storage contract. At runtime Metro resolves the
+// platform variant instead — fs.native.ts (expo-file-system) or fs.web.ts
+// (IndexedDB). This no-op file only loads where neither applies; it also serves
+// as the shared type contract (tsc resolves `./fs` here).
 
 export const isSupported = false;
 
@@ -17,9 +18,13 @@ export async function download(_url: string, _name: string, _onProgress?: (p: nu
 }
 
 export async function remove(_name: string): Promise<void> {
-  /* no-op on web */
+  /* no-op */
 }
 
 export async function exists(_name: string): Promise<boolean> {
   return false;
+}
+
+export async function playableUrl(_name: string): Promise<string | null> {
+  return null;
 }

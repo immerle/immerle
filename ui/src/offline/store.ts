@@ -133,10 +133,12 @@ export const useDownloads = create<DownloadsState>((set, get) => ({
 }));
 
 /**
- * Non-reactive: the local file URI for a downloaded track, or null if it isn't
- * downloaded. The player uses this to play offline copies instead of streaming.
+ * Non-reactive: a playable URL for a downloaded track, or null if it isn't
+ * downloaded. Async because the web backend resolves a blob: URL from IndexedDB
+ * (native returns the local file:// path). The player awaits this to play offline
+ * copies instead of streaming.
  */
-export function offlineUri(id: string): string | null {
+export async function offlinePlayableUrl(id: string): Promise<string | null> {
   const e = useDownloads.getState().entries[id];
-  return e ? fs.fileUri(e.file) : null;
+  return e ? fs.playableUrl(e.file) : null;
 }
