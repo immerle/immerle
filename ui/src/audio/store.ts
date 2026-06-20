@@ -4,6 +4,7 @@ import { useAuth } from '../auth/store';
 import { queryClient } from '../query/queryClient';
 import { ImmerleClient } from '../api/immerle/client';
 import { Song } from '../api/subsonic/types';
+import { offlineUri } from '../offline/store';
 import { AudioEngine, PlayableTrack, RepeatMode } from './types';
 import { createEngine } from './engine';
 import { DEFAULT_QUALITY_ID, presetById } from './quality';
@@ -25,15 +26,26 @@ function shuffled<T>(arr: T[]): T[] {
  * Build a player track from a song at the chosen quality. Async because the
  * stream URL is a short-lived signed URL minted from the server (no credential
  * in the URL). The player mints one per track when (re)building the queue.
+ *
+ * A downloaded track plays from its local file instead — so it works offline and
+ * is unaffected by the quality setting (the file is whatever was downloaded;
+ * that's also why setQuality's re-mint leaves offline tracks as-is). Artwork
+ * still points at the server: covers aren't downloaded, and a broken image is
+ * harmless.
  */
 async function songToTrack(client: ImmerleClient, song: Song, qualityId: string): Promise<PlayableTrack> {
-  const preset = presetById(qualityId);
-  return {
-    id: song.id,
-    url: await client.streamUrl(song.id, {
+  const local = offlineUri(song.id);
+  let url = local;
+  if (!url) {
+    const preset = presetById(qualityId);
+    url = await client.streamUrl(song.id, {
       maxBitRate: preset.maxBitRate || undefined,
       format: preset.format,
-    }),
+    });
+  }
+  return {
+    id: song.id,
+    url,
     title: song.title,
     artist: song.artist,
     album: song.album,
