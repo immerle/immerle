@@ -53,8 +53,8 @@ type coverSpec struct {
 	Text      string  `json:"text"`      // may contain \n for multiple lines
 	TextColor string  `json:"textColor"` // hex
 	FontSize  float64 `json:"fontSize"`  // fraction of the square (default 0.12)
-	X         float64 `json:"x"`         // text centre, 0..1
-	Y         float64 `json:"y"`         // text centre, 0..1
+	Align     string  `json:"align"`     // left|center|right (default center)
+	Valign    string  `json:"valign"`    // top|middle|bottom (default middle)
 }
 
 // handlePlaylistCoverGenerate renders a cover from a JSON spec (multipart field
@@ -180,7 +180,9 @@ func fillGradient(img *image.RGBA, c1, c2 color.Color, angle float64) {
 	}
 }
 
-// drawText renders the spec's text centred on (X,Y), one line per "\n".
+// drawText renders the spec's text as a block of lines (one per "\n"), aligned
+// to the chosen corner/edge/centre. The whole block is positioned as a unit, so
+// multi-line text stays correctly centred.
 func drawText(img *image.RGBA, spec coverSpec) error {
 	frac := spec.FontSize
 	if frac <= 0 {
@@ -199,14 +201,34 @@ func drawText(img *image.RGBA, spec coverSpec) error {
 
 	d := &font.Drawer{Dst: img, Src: image.NewUniform(parseHex(spec.TextColor, color.White)), Face: face}
 	lines := strings.Split(spec.Text, "\n")
+	const margin = 0.06 * renderSize
+	const inner = renderSize - 2*margin
 	lineH := size * 1.25
-	cx, cy := spec.X*renderSize, spec.Y*renderSize
-	startY := cy - lineH*float64(len(lines)-1)/2
-	ascent := float64(face.Metrics().Ascent.Round())
+	blockH := lineH * float64(len(lines))
+	m := face.Metrics()
+	ascent, descent := float64(m.Ascent.Round()), float64(m.Descent.Round())
+
+	// Top of the text block.
+	top := (renderSize - blockH) / 2 // middle
+	switch spec.Valign {
+	case "top":
+		top = margin
+	case "bottom":
+		top = renderSize - margin - blockH
+	}
+
 	for i, line := range lines {
-		width := float64(d.MeasureString(line).Round())
-		baseline := startY + lineH*float64(i) - lineH/2 + ascent
-		d.Dot = fixed.Point26_6{X: fixed.I(int(cx - width/2)), Y: fixed.I(int(baseline))}
+		w := float64(d.MeasureString(line).Round())
+		x := margin + (inner-w)/2 // center
+		switch spec.Align {
+		case "left":
+			x = margin
+		case "right":
+			x = margin + inner - w
+		}
+		// Centre each line vertically within its line slot.
+		baseline := top + lineH*float64(i) + (lineH-ascent-descent)/2 + ascent
+		d.Dot = fixed.Point26_6{X: fixed.I(int(x)), Y: fixed.I(int(baseline))}
 		d.DrawString(line)
 	}
 	return nil

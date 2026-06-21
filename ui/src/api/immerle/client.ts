@@ -108,8 +108,8 @@ export interface PlaylistCoverSpec {
   text?: string; // may contain \n
   textColor?: string;
   fontSize?: number; // fraction of the square (~0.12)
-  x?: number; // text centre, 0..1
-  y?: number;
+  align?: 'left' | 'center' | 'right';
+  valign?: 'top' | 'middle' | 'bottom';
 }
 
 export class ImmerleClient {

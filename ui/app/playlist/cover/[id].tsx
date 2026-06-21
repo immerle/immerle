@@ -1,8 +1,7 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Dimensions,
   Image,
-  PanResponder,
   Platform,
   Pressable,
   ScrollView,
@@ -20,6 +19,12 @@ import { useColors } from '../../../src/theme/colors';
 import { useT } from '../../../src/i18n/store';
 
 type Mode = 'solid' | 'gradient' | 'image';
+type HAlign = 'left' | 'center' | 'right';
+type VAlign = 'top' | 'middle' | 'bottom';
+
+const H_ALIGNS: HAlign[] = ['left', 'center', 'right'];
+const V_ALIGNS: VAlign[] = ['top', 'middle', 'bottom'];
+const MARGIN = 0.06; // matches the server's text inset
 
 // A small fixed palette keeps the editor dependency-free (no colour-picker lib).
 const PALETTE = [
@@ -52,24 +57,11 @@ export default function PlaylistCoverEditor() {
   const [text, setText] = useState('');
   const [textColor, setTextColor] = useState('#ffffff');
   const [fontSize, setFontSize] = useState(0.14);
-  const [pos, setPos] = useState({ x: 0.5, y: 0.5 });
+  const [align, setAlign] = useState<HAlign>('center');
+  const [valign, setValign] = useState<VAlign>('middle');
+  const [textH, setTextH] = useState(0); // measured preview block height
   // Which colour slot the palette edits.
   const [slot, setSlot] = useState<'color' | 'color2' | 'text'>('color');
-
-  // Drag the text block anywhere on the preview.
-  const pan = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderMove: (e) => {
-        const { locationX, locationY } = e.nativeEvent;
-        setPos({
-          x: Math.min(1, Math.max(0, locationX / P)),
-          y: Math.min(1, Math.max(0, locationY / P)),
-        });
-      },
-    }),
-  ).current;
 
   const points = useMemo(() => angleToPoints(angle), [angle]);
 
@@ -98,8 +90,8 @@ export default function PlaylistCoverEditor() {
       text: text.trim() || undefined,
       textColor,
       fontSize,
-      x: pos.x,
-      y: pos.y,
+      align,
+      valign,
     };
     generate.mutate(
       { id, spec, bgUri: mode === 'image' ? bgUri : undefined },
@@ -108,6 +100,11 @@ export default function PlaylistCoverEditor() {
   };
 
   const fontPx = fontSize * P;
+  const marginPx = MARGIN * P;
+  const innerW = P - 2 * marginPx;
+  // Position the (measured) text block by the chosen vertical anchor.
+  const top =
+    valign === 'top' ? marginPx : valign === 'bottom' ? P - marginPx - textH : (P - textH) / 2;
 
   return (
     <>
@@ -121,7 +118,7 @@ export default function PlaylistCoverEditor() {
       />
       <ScrollView className="flex-1 bg-background" contentContainerStyle={{ padding: 16, gap: 16, alignItems: 'center' }}>
         {/* Preview */}
-        <View {...pan.panHandlers} style={{ width: P, height: P }} className="overflow-hidden rounded-2xl">
+        <View style={{ width: P, height: P }} className="overflow-hidden rounded-2xl">
           {mode === 'image' && bgUri ? (
             <Image source={{ uri: bgUri }} style={{ width: P, height: P }} resizeMode="cover" />
           ) : mode === 'gradient' ? (
@@ -131,13 +128,13 @@ export default function PlaylistCoverEditor() {
           )}
           {text.trim() ? (
             <Text
+              onLayout={(e) => setTextH(e.nativeEvent.layout.height)}
               style={{
                 position: 'absolute',
-                left: pos.x * P,
-                top: pos.y * P,
-                transform: [{ translateX: -P / 2 }, { translateY: -fontPx / 2 }],
-                width: P,
-                textAlign: 'center',
+                left: marginPx,
+                top,
+                width: innerW,
+                textAlign: align,
                 color: textColor,
                 fontSize: fontPx,
                 fontWeight: '800',
@@ -148,7 +145,6 @@ export default function PlaylistCoverEditor() {
             </Text>
           ) : null}
         </View>
-        <Text className="text-xs text-muted">{t('media.playlist.cover.dragHint')}</Text>
 
         <View className="w-full max-w-md gap-4">
           {/* Background mode */}
@@ -199,6 +195,33 @@ export default function PlaylistCoverEditor() {
 
           {/* Text */}
           <Field label={t('media.playlist.cover.text')} placeholder={t('media.playlist.cover.textPlaceholder')} value={text} onChangeText={setText} multiline />
+
+          {/* Text position (9-cell grid) */}
+          <View>
+            <Text className="mb-1 text-sm text-muted">{t('media.playlist.cover.position')}</Text>
+            <View style={{ width: 108 }} className="gap-1">
+              {V_ALIGNS.map((v) => (
+                <View key={v} className="flex-row gap-1">
+                  {H_ALIGNS.map((h) => {
+                    const active = align === h && valign === v;
+                    return (
+                      <Pressable
+                        key={h}
+                        onPress={() => {
+                          setAlign(h);
+                          setValign(v);
+                        }}
+                        style={{ width: 34, height: 34 }}
+                        className={`items-center justify-center rounded-md border ${active ? 'border-primary bg-primary' : 'border-border'}`}
+                      >
+                        <View style={{ width: 6, height: 6 }} className={`rounded-full ${active ? 'bg-primary-foreground' : 'bg-muted'}`} />
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              ))}
+            </View>
+          </View>
 
           {/* Font size */}
           <View>

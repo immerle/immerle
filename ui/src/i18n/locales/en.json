@@ -670,7 +670,7 @@
         "create": "Create a cover",
         "pick": "Select a photo",
         "save": "Save cover",
-        "dragHint": "Drag the text to position it",
+        "position": "Text position",
         "solid": "Color",
         "gradient": "Gradient",
         "image": "Upload",

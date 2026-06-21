@@ -670,7 +670,7 @@
         "create": "Créer une pochette",
         "pick": "Sélectionner une photo",
         "save": "Enregistrer la pochette",
-        "dragHint": "Glissez le texte pour le positionner",
+        "position": "Position du texte",
         "solid": "Couleur",
         "gradient": "Dégradé",
         "image": "Importer",

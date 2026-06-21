@@ -11,7 +11,7 @@ func TestRenderCover(t *testing.T) {
 	// Gradient background + positioned text renders a decodable square PNG.
 	data, err := renderCover(coverSpec{
 		Color: "#1db954", Color2: "#000000", Angle: 45,
-		Text: "Road\nTrip", TextColor: "#ffffff", FontSize: 0.18, X: 0.5, Y: 0.5,
+		Text: "Road\nTrip", TextColor: "#ffffff", FontSize: 0.18, Align: "center", Valign: "middle",
 	}, nil)
 	if err != nil {
 		t.Fatal(err)
