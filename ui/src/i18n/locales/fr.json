@@ -518,6 +518,8 @@
       "hubUserIdHelp": "L'UUID de votre compte hub. L'instance se lie dessous.",
       "link": "Lier",
       "unlink": "Supprimer",
+      "linkSuccess": "Instance liée au hub.",
+      "linkError": "Impossible de lier au hub.",
       "instanceName": "Nom de l'instance",
       "instanceSlug": "Slug de l'instance",
       "instanceSlugHelp": "Unique côté hub. Par défaut un identifiant court attribué à la liaison.",

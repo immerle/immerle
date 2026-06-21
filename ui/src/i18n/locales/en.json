@@ -518,6 +518,8 @@
       "hubUserIdHelp": "The UUID from your hub account. The instance links itself under it.",
       "link": "Link",
       "unlink": "Unlink",
+      "linkSuccess": "Instance linked to the hub.",
+      "linkError": "Could not link to the hub.",
       "instanceName": "Instance name",
       "instanceSlug": "Instance slug",
       "instanceSlugHelp": "Unique on the hub. Defaults to a short handle assigned when linking.",
