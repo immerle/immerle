@@ -7639,6 +7639,7 @@ export interface components {
             changedAt?: string;
             collaborative?: boolean;
             comment?: string;
+            coverArt?: string;
             coverArts?: string[];
             createdAt?: string;
             duration?: number;

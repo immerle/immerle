@@ -1696,6 +1696,9 @@
                     "comment": {
                         "type": "string"
                     },
+                    "coverArt": {
+                        "type": "string"
+                    },
                     "coverArts": {
                         "items": {
                             "type": "string"

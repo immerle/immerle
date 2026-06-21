@@ -100,6 +100,18 @@ function toProvider(dto: ProviderDTO): Provider {
  * login. Optional features are guarded by {@link has} so the UI can hide what the
  * instance does not advertise.
  */
+/** Design spec for a generated playlist cover (mirrors the Go coverSpec). */
+export interface PlaylistCoverSpec {
+  color: string; // background hex
+  color2?: string; // gradient end hex (omit for solid)
+  angle?: number; // gradient angle, degrees
+  text?: string; // may contain \n
+  textColor?: string;
+  fontSize?: number; // fraction of the square (~0.12)
+  x?: number; // text centre, 0..1
+  y?: number;
+}
+
 export class ImmerleClient {
   /** Admin status derived from the Subsonic user's adminRole (set post-construction). */
   private adminFlag = false;
@@ -1174,6 +1186,37 @@ export class ImmerleClient {
   /** Delete one of the caller's uploaded tracks (catalog row + file). */
   async deleteTrack(id: string): Promise<void> {
     await this.request<void>('DELETE', `library/tracks/${encodeURIComponent(id)}`);
+  }
+
+  /**
+   * Append a local image (image-picker uri or web blob/data url) to a form under
+   * `field`, handling the RN {uri,name,type} vs web Blob difference.
+   */
+  private async appendImage(form: FormData, field: string, uri: string, mime: string): Promise<void> {
+    const name = `image.${mime.split('/')[1] ?? 'jpg'}`;
+    if (uri.startsWith('data:') || uri.startsWith('blob:') || uri.startsWith('http')) {
+      form.append(field, await (await fetch(uri)).blob(), name);
+    } else {
+      form.append(field, { uri, name, type: mime } as unknown as Blob);
+    }
+  }
+
+  /** Replace a playlist's cover with a local image. Owner only. */
+  async setPlaylistCover(id: string, uri: string, mime = 'image/jpeg'): Promise<void> {
+    const form = new FormData();
+    await this.appendImage(form, 'file', uri, mime);
+    await this.uploadForm<unknown>('PUT', `playlists/${encodeURIComponent(id)}/cover`, form);
+  }
+
+  /**
+   * Generate a playlist cover from a design spec (gradient/solid background + a
+   * positioned text block), optionally over an uploaded background image. Owner only.
+   */
+  async generatePlaylistCover(id: string, spec: PlaylistCoverSpec, bgUri?: string): Promise<void> {
+    const form = new FormData();
+    form.append('spec', JSON.stringify(spec));
+    if (bgUri) await this.appendImage(form, 'file', bgUri, 'image/jpeg');
+    await this.uploadForm<unknown>('POST', `playlists/${encodeURIComponent(id)}/cover/generate`, form);
   }
 
   // Multipart sibling of `request`: lets the browser set the multipart boundary

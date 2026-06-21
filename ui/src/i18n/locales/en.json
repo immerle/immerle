@@ -663,7 +663,25 @@
       "usernamePlaceholder": "Username",
       "add": "Add",
       "save": "Save",
-      "delete": "Delete playlist"
+      "delete": "Delete playlist",
+      "cover": {
+        "title": "Create a cover",
+        "close": "Close",
+        "create": "Create a cover",
+        "pick": "Select a photo",
+        "save": "Save cover",
+        "dragHint": "Drag the text to position it",
+        "solid": "Color",
+        "gradient": "Gradient",
+        "image": "Upload",
+        "bgColor": "Background",
+        "bgColor2": "Gradient end",
+        "textColor": "Text",
+        "angle": "Angle",
+        "text": "Text",
+        "textPlaceholder": "Your text…",
+        "size": "Text size"
+      }
     },
     "liked": {
       "title": "Liked tracks",

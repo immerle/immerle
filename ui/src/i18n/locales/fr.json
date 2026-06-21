@@ -663,7 +663,25 @@
       "usernamePlaceholder": "Nom d'utilisateur",
       "add": "Ajouter",
       "save": "Enregistrer",
-      "delete": "Supprimer la playlist"
+      "delete": "Supprimer la playlist",
+      "cover": {
+        "title": "Créer une pochette",
+        "close": "Fermer",
+        "create": "Créer une pochette",
+        "pick": "Sélectionner une photo",
+        "save": "Enregistrer la pochette",
+        "dragHint": "Glissez le texte pour le positionner",
+        "solid": "Couleur",
+        "gradient": "Dégradé",
+        "image": "Importer",
+        "bgColor": "Fond",
+        "bgColor2": "Fin du dégradé",
+        "textColor": "Texte",
+        "angle": "Angle",
+        "text": "Texte",
+        "textPlaceholder": "Votre texte…",
+        "size": "Taille du texte"
+      }
     },
     "liked": {
       "title": "Titres likés",

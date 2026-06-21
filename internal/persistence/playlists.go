@@ -24,7 +24,7 @@ type PlaylistRepo struct{ *base }
 // stays hand-written.
 const playlistSelect = `
 	SELECT p.id, p.name, p.owner_id, u.username, p.comment, p.public, p.collaborative, p.federated,
-	       p.created_at, p.updated_at,
+	       p.cover_art, p.created_at, p.updated_at,
 	       (SELECT COUNT(*) FROM playlist_tracks pt WHERE pt.playlist_id = p.id) AS song_count,
 	       (SELECT COALESCE(SUM(t.duration),0) FROM playlist_tracks pt JOIN tracks t ON t.id = pt.track_id WHERE pt.playlist_id = p.id) AS duration
 	FROM playlists p JOIN users u ON u.id = p.owner_id`
@@ -34,7 +34,7 @@ func scanPlaylist(s rowScanner) (models.Playlist, error) {
 	var public, collab, fed int
 	var created, updated int64
 	if err := s.Scan(&p.ID, &p.Name, &p.OwnerID, &p.OwnerName, &p.Comment, &public, &collab, &fed,
-		&created, &updated, &p.SongCount, &p.Duration); err != nil {
+		&p.CoverArt, &created, &updated, &p.SongCount, &p.Duration); err != nil {
 		return p, err
 	}
 	p.Public = public != 0
@@ -59,6 +59,13 @@ func (r *PlaylistRepo) UpdateMeta(ctx context.Context, p models.Playlist) error 
 	_, err := r.bexec(ctx, r.mel.NewUpdate("playlists").
 		Set("name", p.Name).Set("comment", p.Comment).Set("public", db.Bool(p.Public)).
 		Set("collaborative", db.Bool(p.Collaborative)).Set("updated_at", db.Millis(time.Now())).Where("id", "=", p.ID))
+	return err
+}
+
+// SetCover sets (or clears) a playlist's custom cover id.
+func (r *PlaylistRepo) SetCover(ctx context.Context, id, coverID string) error {
+	_, err := r.bexec(ctx, r.mel.NewUpdate("playlists").
+		Set("cover_art", coverID).Set("updated_at", db.Millis(time.Now())).Where("id", "=", id))
 	return err
 }
 

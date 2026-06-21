@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth/store';
 import { Song } from '../api/subsonic/types';
+import { PlaylistCoverSpec } from '../api/immerle/client';
 import { qk } from './keys';
 
 export function usePlaylists() {
@@ -118,6 +119,34 @@ export function useSetPlaylistPublic() {
     onSuccess: (_d, v) => {
       qc.invalidateQueries({ queryKey: qk.playlist(v.id) });
       qc.invalidateQueries({ queryKey: qk.publicPlaylists });
+    },
+  });
+}
+
+/** Set a playlist's cover from a picked image (owner only). */
+export function useSetPlaylistCover() {
+  const client = useAuth((s) => s.client);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, uri, mime }: { id: string; uri: string; mime?: string }) =>
+      client!.setPlaylistCover(id, uri, mime),
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: qk.playlist(v.id) });
+      qc.invalidateQueries({ queryKey: qk.playlists });
+    },
+  });
+}
+
+/** Generate and set a playlist's cover from a design spec (owner only). */
+export function useGeneratePlaylistCover() {
+  const client = useAuth((s) => s.client);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, spec, bgUri }: { id: string; spec: PlaylistCoverSpec; bgUri?: string }) =>
+      client!.generatePlaylistCover(id, spec, bgUri),
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: qk.playlist(v.id) });
+      qc.invalidateQueries({ queryKey: qk.playlists });
     },
   });
 }
