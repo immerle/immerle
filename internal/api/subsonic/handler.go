@@ -45,7 +45,7 @@ type Deps struct {
 	Scanner      *scanner.Scanner
 	OnDemand     *core.CatalogService
 	Activity     *core.ActivityService
-	PlaylistSync core.HubSyncEnqueuer // optional: enqueue public-playlist hub sync
+	PlaylistSync core.PlaylistSyncEnqueuer // optional: enqueue public-playlist hub sync
 	// MusicFolderPaths are the configured library roots, exposed as music folders.
 	MusicFolderPaths []string
 	// BaseURL is used to build absolute share links.

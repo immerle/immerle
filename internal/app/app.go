@@ -23,6 +23,7 @@ import (
 	"github.com/immerle/immerle/internal/importer"
 	"github.com/immerle/immerle/internal/logging"
 	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/outbox"
 	"github.com/immerle/immerle/internal/persistence"
 	"github.com/immerle/immerle/internal/providers"
 	"github.com/immerle/immerle/internal/providers/httpprovider"
@@ -42,7 +43,7 @@ type App struct {
 	watcher    *scanner.Watcher
 	onDemand   *core.CatalogService
 	federation *federation.Service
-	outbox     *federation.OutboxWorker
+	outbox     *outbox.Worker
 	enricher   *core.ArtistImageEnricher
 	evictor    *core.Evictor
 	logPruner  *core.LogPruner
@@ -320,10 +321,13 @@ func New(cfg config.Config) (*App, error) {
 		return err
 	})
 
-	// Outbound playlist sync: a DB-backed outbox + worker pushes public playlists
-	// to the hub (upsert) or removes them (delete) async, with retry/backoff and
-	// content-addressed cover de-dup. PlaylistService enqueues on every mutation.
-	outbox := federation.NewOutboxWorker(fed, store.HubOutbox, store.PlaylistSync, store.CoverUploads, store.Playlists, coverSvc, logger)
+	// Generic durable async queue. Subsystems register handlers per job "kind";
+	// a single worker drains it with retry/backoff. Reusable beyond federation.
+	outboxWorker := outbox.NewWorker(store.Outbox, logger)
+	// Outbound playlist sync registers itself on the outbox: it pushes public
+	// playlists to the hub (upsert) or removes them (delete), with content-
+	// addressed cover de-dup. PlaylistService enqueues on every mutation.
+	playlistSyncer := federation.NewPlaylistSyncer(fed, outboxWorker, store.PlaylistSync, store.CoverUploads, store.Playlists, coverSvc, logger)
 
 	// Playlist import (e.g. Spotify): the source playlist is fetched through the
 	// hub (which holds the third-party credentials), then each track is resolved
@@ -346,7 +350,7 @@ func New(cfg config.Config) (*App, error) {
 		Genres:           store.Genres,
 		Annotations:      store.Annotations,
 		Playlists:        store.Playlists,
-		PlaylistSync:     outbox,
+		PlaylistSync:     playlistSyncer,
 		PlayQueues:       store.PlayQueues,
 		Scrobbles:        store.Scrobbles,
 		Shares:           store.Shares,
@@ -371,7 +375,7 @@ func New(cfg config.Config) (*App, error) {
 		Friends:        store.Friends,
 		Activity:       activitySvc,
 		Playlists:      store.Playlists,
-		PlaylistSync:   outbox,
+		PlaylistSync:   playlistSyncer,
 		Jam:            jamSvc,
 		Setup:          setupSvc,
 		Federation:     fed,
@@ -437,7 +441,7 @@ func New(cfg config.Config) (*App, error) {
 		watcher:    scanner.NewWatcher(scan, scanPaths, settingsSvc.ScanInterval, logger),
 		onDemand:   onDemand,
 		federation: fed,
-		outbox:     outbox,
+		outbox:     outboxWorker,
 		enricher:   enricher,
 		evictor:    evictor,
 		logPruner:  logPruner,

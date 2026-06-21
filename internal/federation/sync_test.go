@@ -18,6 +18,8 @@ import (
 	"github.com/immerle/immerle/internal/config"
 	"github.com/immerle/immerle/internal/federation/hub"
 	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/outbox"
+	"github.com/immerle/immerle/internal/persistence"
 	"github.com/immerle/immerle/internal/testutil"
 )
 
@@ -99,11 +101,14 @@ func TestOutboxWorkerSyncsAndDeletesPublicPlaylist(t *testing.T) {
 	srv, st := newSyncStub(t)
 	cfg := config.FederationConfig{HubURL: srv.URL, InstanceID: "inst-1", PrivateKey: "iml_key"}
 	fed := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, nil, testLogger())
-	w := NewOutboxWorker(fed, store.HubOutbox, store.PlaylistSync, store.CoverUploads, store.Playlists, fakeCovers{data: []byte("JPEGDATA")}, testLogger())
+	worker := outbox.NewWorker(store.Outbox, testLogger())
+	s := NewPlaylistSyncer(fed, worker, store.PlaylistSync, store.CoverUploads, store.Playlists, fakeCovers{data: []byte("JPEGDATA")}, testLogger())
+	job := persistence.OutboxJob{Kind: PlaylistSyncKind, DedupeKey: plID}
 
 	// Upsert flow.
-	w.EnqueuePlaylistSync(ctx, plID)
-	w.drain(ctx)
+	if err := s.handle(ctx, job); err != nil {
+		t.Fatal(err)
+	}
 
 	wantHash := func() string { s := sha256.Sum256([]byte("JPEGDATA")); return hex.EncodeToString(s[:]) }()
 	st.mu.Lock()
@@ -124,18 +129,16 @@ func TestOutboxWorkerSyncsAndDeletesPublicPlaylist(t *testing.T) {
 	}
 	st.mu.Unlock()
 
-	// Outbox drained, sync state recorded.
-	if _, err := store.HubOutbox.ClaimNext(ctx, time.Now()); err == nil {
-		t.Fatal("outbox should be empty after a successful sync")
-	}
+	// Sync state recorded.
 	if h, _ := store.PlaylistSync.Hash(ctx, plID); h == "" {
 		t.Fatal("playlist_sync hash not recorded")
 	}
 
-	// Unchanged → re-enqueue → no new PUT.
+	// Unchanged → handle again → no new PUT.
 	prevPut := st.putBody
-	w.EnqueuePlaylistSync(ctx, plID)
-	w.drain(ctx)
+	if err := s.handle(ctx, job); err != nil {
+		t.Fatal(err)
+	}
 	st.mu.Lock()
 	if st.putBody != prevPut {
 		t.Fatal("unchanged playlist should not re-PUT")
@@ -146,8 +149,9 @@ func TestOutboxWorkerSyncsAndDeletesPublicPlaylist(t *testing.T) {
 	p, _ := store.Playlists.Get(ctx, plID)
 	p.Public = false
 	_ = store.Playlists.UpdateMeta(ctx, p)
-	w.EnqueuePlaylistSync(ctx, plID)
-	w.drain(ctx)
+	if err := s.handle(ctx, job); err != nil {
+		t.Fatal(err)
+	}
 	st.mu.Lock()
 	if !strings.HasSuffix(st.deleted, "/"+plID) {
 		t.Fatalf("expected DELETE for /%s, got %q", plID, st.deleted)

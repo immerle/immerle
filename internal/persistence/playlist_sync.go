@@ -9,59 +9,6 @@ import (
 	"github.com/immerle/immerle/internal/db"
 )
 
-// HubOutboxRepo is the queue of public-playlist sync jobs for the federation hub.
-// One row per playlist (external_id = local playlist id = idempotency key); a
-// single worker drains it with retry/backoff.
-type HubOutboxRepo struct{ *base }
-
-// Enqueue adds (or resets) a pending sync for a playlist. Idempotent: an existing
-// row's attempts/retry are reset so a fresh change runs promptly.
-func (r *HubOutboxRepo) Enqueue(ctx context.Context, externalID string) error {
-	_, err := r.exec(ctx,
-		`INSERT INTO hub_outbox (external_id, attempts, next_retry_at, created_at)
-		 VALUES (?, 0, 0, ?)
-		 ON CONFLICT (external_id) DO UPDATE SET attempts = 0, next_retry_at = 0`,
-		externalID, db.Millis(time.Now()))
-	return err
-}
-
-// HubOutboxJob is a claimed outbox entry.
-type HubOutboxJob struct {
-	ExternalID string
-	Attempts   int
-}
-
-// ClaimNext returns the oldest job whose retry time has arrived, or ErrNotFound
-// when the queue is empty / nothing is due yet.
-func (r *HubOutboxRepo) ClaimNext(ctx context.Context, now time.Time) (HubOutboxJob, error) {
-	var j HubOutboxJob
-	err := r.queryRow(ctx,
-		`SELECT external_id, attempts FROM hub_outbox
-		 WHERE next_retry_at <= ? ORDER BY next_retry_at, created_at LIMIT 1`,
-		db.Millis(now)).Scan(&j.ExternalID, &j.Attempts)
-	if err == sql.ErrNoRows {
-		return HubOutboxJob{}, ErrNotFound
-	}
-	if err != nil {
-		return HubOutboxJob{}, err
-	}
-	return j, nil
-}
-
-// Backoff reschedules a failed job for a later attempt.
-func (r *HubOutboxRepo) Backoff(ctx context.Context, externalID string, nextRetry time.Time) error {
-	_, err := r.exec(ctx,
-		`UPDATE hub_outbox SET attempts = attempts + 1, next_retry_at = ? WHERE external_id = ?`,
-		db.Millis(nextRetry), externalID)
-	return err
-}
-
-// Done removes a completed job.
-func (r *HubOutboxRepo) Done(ctx context.Context, externalID string) error {
-	_, err := r.exec(ctx, `DELETE FROM hub_outbox WHERE external_id = ?`, externalID)
-	return err
-}
-
 // PlaylistSyncRepo tracks the last content hash synced per playlist, so an
 // unchanged playlist can be skipped without any hub call.
 type PlaylistSyncRepo struct{ *base }

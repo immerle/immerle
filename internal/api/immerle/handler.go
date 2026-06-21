@@ -32,7 +32,7 @@ type Deps struct {
 	Friends      *persistence.FriendRepo
 	Activity     *core.ActivityService
 	Playlists    *persistence.PlaylistRepo
-	PlaylistSync core.HubSyncEnqueuer // optional: enqueue public-playlist hub sync
+	PlaylistSync core.PlaylistSyncEnqueuer // optional: enqueue public-playlist hub sync
 	Jam          *core.JamService
 	Setup        *core.SetupService
 	Federation   FederationStatusProvider

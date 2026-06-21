@@ -11,9 +11,10 @@ import (
 	"github.com/immerle/immerle/internal/persistence"
 )
 
-// HubSyncEnqueuer queues a public playlist for federation-hub sync. Implemented
-// by the federation outbox worker; optional (nil when federation is absent).
-type HubSyncEnqueuer interface {
+// PlaylistSyncEnqueuer queues a public playlist for federation-hub sync.
+// Implemented by the federation playlist syncer; optional (nil when federation
+// is absent). Backed by the generic outbox, so it is fire-and-forget.
+type PlaylistSyncEnqueuer interface {
 	EnqueuePlaylistSync(ctx context.Context, playlistID string)
 }
 
@@ -23,13 +24,13 @@ type HubSyncEnqueuer interface {
 type PlaylistService struct {
 	playlists   *persistence.PlaylistRepo
 	annotations *persistence.AnnotationRepo
-	activity    *ActivityService // optional
-	hubSync     HubSyncEnqueuer  // optional
+	activity    *ActivityService     // optional
+	hubSync     PlaylistSyncEnqueuer // optional
 }
 
 // NewPlaylistService wires the playlist application service. activity and hubSync
 // are optional (pass nil when unused).
-func NewPlaylistService(playlists *persistence.PlaylistRepo, annotations *persistence.AnnotationRepo, activity *ActivityService, hubSync HubSyncEnqueuer) *PlaylistService {
+func NewPlaylistService(playlists *persistence.PlaylistRepo, annotations *persistence.AnnotationRepo, activity *ActivityService, hubSync PlaylistSyncEnqueuer) *PlaylistService {
 	return &PlaylistService{playlists: playlists, annotations: annotations, activity: activity, hubSync: hubSync}
 }
 

@@ -42,7 +42,7 @@ type Store struct {
 	Radio           *RadioRepo
 	Wrapped         *WrappedRepo
 	Podcasts        *PodcastRepo
-	HubOutbox       *HubOutboxRepo
+	Outbox          *OutboxRepo
 	PlaylistSync    *PlaylistSyncRepo
 	CoverUploads    *CoverUploadRepo
 }
@@ -72,7 +72,7 @@ func New(database *db.DB) *Store {
 		Radio:           &RadioRepo{base},
 		Wrapped:         &WrappedRepo{base},
 		Podcasts:        &PodcastRepo{base},
-		HubOutbox:       &HubOutboxRepo{base},
+		Outbox:          &OutboxRepo{base},
 		PlaylistSync:    &PlaylistSyncRepo{base},
 		CoverUploads:    &CoverUploadRepo{base},
 	}
