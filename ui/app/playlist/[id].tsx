@@ -12,8 +12,7 @@ import {
   useSetPlaylistPublic,
   useSubscriptionMutations,
 } from '../../src/query/playlists';
-import { CoverArt } from '../../src/components/CoverArt';
-import { PlaylistMosaic } from '../../src/components/PlaylistMosaic';
+import { PlaylistCover } from '../../src/components/PlaylistCover';
 import { TrackList } from '../../src/components/TrackList';
 import { Badge, Button, ErrorState, Field, IconButton, Loading } from '../../src/components/ui';
 import { PlayButton } from '../../src/components/PlayButton';
@@ -146,11 +145,12 @@ export default function PlaylistDetail() {
   const Header = (
     <View className="w-full max-w-2xl items-center gap-3 self-center px-4 pb-4 pt-2">
       <Pressable onPress={isOwner ? () => setCoverOpen(true) : undefined} disabled={!isOwner}>
-        {playlist.coverArt ? (
-          <CoverArt coverArt={playlist.coverArt} size={180} rounded="rounded-xl" />
-        ) : (
-          <PlaylistMosaic covers={songs.slice(0, 4).map((s) => s.coverArt)} size={180} fallbackIcon="list" />
-        )}
+        <PlaylistCover
+          coverArt={playlist.coverArt}
+          covers={songs.slice(0, 4).map((s) => s.coverArt)}
+          size={180}
+          rounded="rounded-xl"
+        />
       </Pressable>
       {editing ? (
         <View className="w-full">
@@ -265,11 +265,12 @@ export default function PlaylistDetail() {
           <View className="absolute right-4 top-12">
             <IconButton name="close" size={32} color="#fff" onPress={() => setCoverOpen(false)} accessibilityLabel={t('media.playlist.cover.close')} />
           </View>
-          {playlist.coverArt ? (
-            <CoverArt coverArt={playlist.coverArt} size={280} rounded="rounded-2xl" />
-          ) : (
-            <PlaylistMosaic covers={songs.slice(0, 4).map((s) => s.coverArt)} size={280} fallbackIcon="list" />
-          )}
+          <PlaylistCover
+            coverArt={playlist.coverArt}
+            covers={songs.slice(0, 4).map((s) => s.coverArt)}
+            size={280}
+            rounded="rounded-2xl"
+          />
           <View className="mt-8 w-full max-w-sm gap-3">
             <Button
               title={t('media.playlist.cover.create')}
