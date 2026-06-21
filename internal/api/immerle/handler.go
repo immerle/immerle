@@ -91,12 +91,15 @@ func (h *Handler) deviceTokenTTL() time.Duration {
 	return 720 * time.Hour
 }
 
-// FederationStatusProvider reports whether hub federation is enabled (S7),
-// registers this instance with the hub on demand, and pushes name/sqid edits.
+// FederationStatusProvider drives the hub link lifecycle (S7): reporting whether
+// the instance is linked, linking it (register/bootstrap), refreshing and
+// pushing the name/sqid, and unlinking.
 type FederationStatusProvider interface {
 	Enabled() bool
 	Register(ctx context.Context) error
+	RefreshProfile(ctx context.Context) error
 	UpdateInstance(ctx context.Context, name, sqid string) error
+	Unlink(ctx context.Context) error
 }
 
 // CleanupController runs an immediate eviction sweep. The enabled/retention
@@ -346,11 +349,13 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Get("/admin/settings", h.handleSettings)
 			r.Patch("/admin/settings", h.handleSettingsUpdate)
 
-			// Admin: register this instance with the hub (bootstraps under the
-			// configured hub user id; persists the assigned id + private key).
+			// Admin: hub link lifecycle. GET refreshes the live name/sqid from the
+			// hub; register bootstraps (links) under the configured user id; PATCH
+			// pushes a name/sqid edit; DELETE unlinks (and deletes hub-side data).
+			r.Get("/admin/federation", h.handleFederationProfile)
 			r.Post("/admin/federation/register", h.handleFederationRegister)
-			// Admin: push a name / sqid (instance handle) change to the hub.
 			r.Patch("/admin/federation", h.handleFederationUpdate)
+			r.Delete("/admin/federation", h.handleFederationUnlink)
 
 			// Admin: smart-playlists feature toggle.
 			r.Get("/admin/smart-playlists", h.handleSmartPlaylistsAdmin)

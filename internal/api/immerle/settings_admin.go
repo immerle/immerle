@@ -115,6 +115,63 @@ func (h *Handler) handleFederationRegister(w http.ResponseWriter, r *http.Reques
 	writeResource(w, http.StatusOK, settingsBody(redactSettings(h.Settings.Get()), h.Settings.PendingRestart()))
 }
 
+// handleFederationProfile refreshes this instance's live name/sqid from the hub.
+//
+// @Summary      Get the live hub instance profile
+// @Description  Admin only. Fetches this instance's current name and sqid handle from the hub (the source of truth) and persists them, then returns the refreshed runtime settings. The HTTP exchange runs server-side.
+// @Tags         admin
+// @Security     BearerAuth
+// @Produce      json
+// @Success      200  {object}  SettingsDTO
+// @Failure      401  {object}  errorResponse
+// @Failure      403  {object}  errorResponse
+// @Failure      409  {object}  errorResponse
+// @Failure      502  {object}  errorResponse
+// @Failure      503  {object}  errorResponse
+// @Router       /admin/federation [get]
+func (h *Handler) handleFederationProfile(w http.ResponseWriter, r *http.Request) {
+	if !h.requireAdmin(w, r) {
+		return
+	}
+	if h.Federation == nil || h.Settings == nil {
+		writeError(w, http.StatusServiceUnavailable, "unavailable", "federation unavailable")
+		return
+	}
+	if err := h.Federation.RefreshProfile(r.Context()); err != nil {
+		writeError(w, http.StatusBadGateway, "refresh_failed", err.Error())
+		return
+	}
+	writeResource(w, http.StatusOK, settingsBody(redactSettings(h.Settings.Get()), h.Settings.PendingRestart()))
+}
+
+// handleFederationUnlink unlinks this instance from the hub.
+//
+// @Summary      Unlink this instance from the hub
+// @Description  Admin only. Deletes this instance's data on the hub (best-effort) and clears the locally stored hub identity, returning the instance to the unlinked state. Returns the refreshed runtime settings.
+// @Tags         admin
+// @Security     BearerAuth
+// @Produce      json
+// @Success      200  {object}  SettingsDTO
+// @Failure      401  {object}  errorResponse
+// @Failure      403  {object}  errorResponse
+// @Failure      500  {object}  errorResponse
+// @Failure      503  {object}  errorResponse
+// @Router       /admin/federation [delete]
+func (h *Handler) handleFederationUnlink(w http.ResponseWriter, r *http.Request) {
+	if !h.requireAdmin(w, r) {
+		return
+	}
+	if h.Federation == nil || h.Settings == nil {
+		writeError(w, http.StatusServiceUnavailable, "unavailable", "federation unavailable")
+		return
+	}
+	if err := h.Federation.Unlink(r.Context()); err != nil {
+		writeInternal(w, err)
+		return
+	}
+	writeResource(w, http.StatusOK, settingsBody(redactSettings(h.Settings.Get()), h.Settings.PendingRestart()))
+}
+
 // handleFederationUpdate pushes a name / sqid change to the hub.
 //
 // @Summary      Update this instance on the hub

@@ -48,9 +48,8 @@ func TestSettingsServiceHotAndRestart(t *testing.T) {
 		t.Fatal("live getter did not reflect the update")
 	}
 
-	// Federation is now hot-reloadable too: enabling it needs no restart.
+	// Federation is hot-reloadable: linking it needs no restart.
 	next = s.Get()
-	next.Federation.Enabled = true
 	next.Federation.UserID = "6f1c2b8e-1f0a-4f9b-9c3a-1e2d3c4b5a6f"
 	if _, pending, _ = s.Update(next); len(pending) != 0 {
 		t.Fatalf("federation changes should be hot, got pending=%v", pending)

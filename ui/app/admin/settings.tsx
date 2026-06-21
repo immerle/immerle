@@ -6,6 +6,8 @@ import {
   useCleanupMutations,
   useRegisterInstance,
   useUpdateFederationInstance,
+  useFederationProfile,
+  useUnlinkInstance,
   useSettings,
   useUpdateSettings,
 } from '../../src/query/admin';
@@ -49,12 +51,10 @@ interface Form {
   ldapBindDn: string;
   ffmpeg: string;
   ffprobe: string;
-  fedEnabled: boolean;
   fedUserId: string;
   fedInstanceId: string;
   fedSqid: string;
   fedInstanceName: string;
-  syncInterval: string;
   resolveMissing: boolean;
   exportScrobbles: boolean;
   logRetention: string;
@@ -69,12 +69,10 @@ function toForm(s: RuntimeSettingsDTO): Form {
     ldapBindDn: s.ldap?.bindDnTemplate ?? '',
     ffmpeg: s.transcode?.ffmpegPath ?? '',
     ffprobe: s.transcode?.ffprobePath ?? '',
-    fedEnabled: s.federation?.enabled ?? false,
     fedUserId: s.federation?.userId ?? '',
     fedInstanceId: s.federation?.instanceId ?? '',
     fedSqid: s.federation?.sqid ?? '',
     fedInstanceName: s.federation?.instanceName ?? '',
-    syncInterval: String(s.federation?.syncIntervalSeconds ?? 0),
     resolveMissing: s.federation?.resolveMissing ?? false,
     exportScrobbles: s.federation?.exportScrobbles ?? false,
     logRetention: String(s.logs?.retentionDays ?? 30),
@@ -101,6 +99,7 @@ export default function AdminSettings() {
   const update = useUpdateSettings();
   const register = useRegisterInstance();
   const updateInstance = useUpdateFederationInstance();
+  const unlink = useUnlinkInstance();
   const cleanup = useCleanup();
   const cleanupM = useCleanupMutations();
   const smart = useSmartPlaylistsAdmin();
@@ -114,6 +113,10 @@ export default function AdminSettings() {
   const [form, setForm] = useState<Form | null>(null);
   const [sheet, setSheet] = useState<SectionKey | null>(null);
   const [removed, setRemoved] = useState<number | null>(null);
+
+  // When the federation sheet opens for a linked instance, refresh the live
+  // name/sqid from the hub (server-side).
+  useFederationProfile(sheet === 'federation' && !!q.data?.settings.federation?.instanceId);
 
   useEffect(() => {
     if (q.data?.settings) setForm(toForm(q.data.settings));
@@ -226,83 +229,82 @@ export default function AdminSettings() {
               ) : null}
 
               {sheet === 'federation' ? (
-                <>
-                  <Text className="text-xs text-muted">{t('admin.settings.federationDescription')}</Text>
-                  {/* Step 1: paste the hub user id and register this instance. */}
-                  <Field
-                    label={t('admin.settings.hubUserId')}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    value={form.fedUserId}
-                    onChangeText={(v) => set('fedUserId', v)}
-                    help={t('admin.settings.hubUserIdHelp')}
-                  />
-                  <View className="flex-row justify-end">
-                    <Button
-                      title={t('admin.settings.register')}
-                      icon="link-outline"
-                      variant="secondary"
-                      loading={register.isPending}
-                      disabled={!form.fedUserId.trim()}
-                      onPress={() =>
-                        // Persist the pasted user id first, then ask the server to register.
-                        save({ federation: { userId: form.fedUserId.trim() } }, () => register.mutate())
-                      }
+                !form.fedInstanceId ? (
+                  // NOT LINKED — paste the hub user id and link this instance.
+                  <>
+                    <Text className="text-xs text-muted">{t('admin.settings.federationDescription')}</Text>
+                    <Field
+                      label={t('admin.settings.hubUserId')}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      value={form.fedUserId}
+                      onChangeText={(v) => set('fedUserId', v)}
+                      help={t('admin.settings.hubUserIdHelp')}
                     />
-                  </View>
-
-                  {/* Step 2: once registered, the instance name and handle (sqid)
-                      are editable and pushed to the hub (which checks uniqueness). */}
-                  {form.fedInstanceId ? (
-                    <>
-                      <Field
-                        label={t('admin.settings.instanceName')}
-                        value={form.fedInstanceName}
-                        onChangeText={(v) => set('fedInstanceName', v)}
+                    <View className="flex-row justify-end">
+                      <Button
+                        title={t('admin.settings.link')}
+                        icon="link-outline"
+                        loading={register.isPending}
+                        disabled={!form.fedUserId.trim()}
+                        onPress={() =>
+                          // Persist the pasted user id first, then link (bootstrap) server-side.
+                          save({ federation: { userId: form.fedUserId.trim() } }, () => register.mutate())
+                        }
                       />
-                      <Field
-                        label={t('admin.settings.instanceId')}
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                        value={form.fedSqid}
-                        onChangeText={(v) => set('fedSqid', v)}
-                        help={t('admin.settings.instanceIdHelp')}
-                      />
-                      <Text className="text-[11px] text-muted">{t('admin.settings.instanceUuid', { id: form.fedInstanceId })}</Text>
-                      <View className="flex-row justify-end">
-                        <Button
-                          title={t('admin.settings.saveToHub')}
-                          icon="cloud-upload-outline"
-                          variant="secondary"
-                          loading={updateInstance.isPending}
-                          disabled={!form.fedSqid.trim() || !form.fedInstanceName.trim()}
-                          onPress={() => updateInstance.mutate({ name: form.fedInstanceName.trim(), sqid: form.fedSqid.trim() })}
-                        />
-                      </View>
-                    </>
-                  ) : null}
+                    </View>
+                  </>
+                ) : (
+                  // LINKED — edit name + slug (pushed to the hub), toggle features, unlink.
+                  <>
+                    <Field
+                      label={t('admin.settings.instanceName')}
+                      value={form.fedInstanceName}
+                      onChangeText={(v) => set('fedInstanceName', v)}
+                    />
+                    <Field
+                      label={t('admin.settings.instanceSlug')}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      value={form.fedSqid}
+                      onChangeText={(v) => set('fedSqid', v)}
+                      help={t('admin.settings.instanceSlugHelp')}
+                    />
+                    <Text className="text-[11px] text-muted">{t('admin.settings.instanceUuid', { id: form.fedInstanceId })}</Text>
+                    <SaveButton
+                      loading={updateInstance.isPending}
+                      onPress={() => updateInstance.mutate({ name: form.fedInstanceName.trim(), sqid: form.fedSqid.trim() })}
+                    />
 
-                  <ToggleRow label={t('admin.settings.federationEnabled')} value={form.fedEnabled} onChange={(v) => set('fedEnabled', v)} />
-                  <Field label={t('admin.settings.syncInterval')} keyboardType="number-pad" value={form.syncInterval} onChangeText={(v) => set('syncInterval', v)} />
-                  <ToggleRow label={t('admin.settings.resolveMissing')} value={form.resolveMissing} onChange={(v) => set('resolveMissing', v)} />
-                  <ToggleRow label={t('admin.settings.exportScrobbles')} value={form.exportScrobbles} onChange={(v) => set('exportScrobbles', v)} />
-                  <SaveButton
-                    loading={update.isPending}
-                    onPress={() =>
-                      // Local-only fields. The hub-managed name/sqid/id are pushed
-                      // via "Save to hub"; the server ignores them here.
-                      save({
-                        federation: {
-                          enabled: form.fedEnabled,
-                          userId: form.fedUserId.trim(),
-                          syncIntervalSeconds: num(form.syncInterval),
-                          resolveMissing: form.resolveMissing,
-                          exportScrobbles: form.exportScrobbles,
-                        },
-                      })
-                    }
-                  />
-                </>
+                    <Text className="pt-2 text-xs font-medium uppercase tracking-wider text-muted">{t('admin.settings.federationFeatures')}</Text>
+                    <ToggleRow
+                      label={t('admin.settings.resolveMissing')}
+                      value={form.resolveMissing}
+                      onChange={(v) => {
+                        set('resolveMissing', v);
+                        save({ federation: { resolveMissing: v } });
+                      }}
+                    />
+                    <ToggleRow
+                      label={t('admin.settings.exportScrobbles')}
+                      value={form.exportScrobbles}
+                      onChange={(v) => {
+                        set('exportScrobbles', v);
+                        save({ federation: { exportScrobbles: v } });
+                      }}
+                    />
+
+                    <View className="flex-row justify-end pt-3">
+                      <Button
+                        title={t('admin.settings.unlink')}
+                        icon="trash-outline"
+                        variant="danger"
+                        loading={unlink.isPending}
+                        onPress={() => unlink.mutate()}
+                      />
+                    </View>
+                  </>
+                )
               ) : null}
 
               {sheet === 'logs' ? (

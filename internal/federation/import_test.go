@@ -42,7 +42,7 @@ func TestFetchExternalPlaylist(t *testing.T) {
 
 	store := testutil.NewStore(t)
 	// Import works even with sync disabled, as long as the instance is registered.
-	cfg := config.FederationConfig{Enabled: false, HubURL: srv.URL, InstanceID: "inst-1", PrivateKey: "iml_key-1"}
+	cfg := config.FederationConfig{HubURL: srv.URL, InstanceID: "inst-1", PrivateKey: "iml_key-1"}
 	svc := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, nil, testLogger())
 
 	pl, err := svc.FetchExternalPlaylist(context.Background(), "spotify", "https://open.spotify.com/playlist/PL?si=x")
@@ -101,7 +101,7 @@ func TestRegisterBootstrapsAndPersistsCredentials(t *testing.T) {
 	defer srv.Close()
 
 	store := testutil.NewStore(t)
-	cfg := config.FederationConfig{Enabled: true, HubURL: srv.URL, UserID: "user-1", InstanceName: "My immerle"}
+	cfg := config.FederationConfig{HubURL: srv.URL, UserID: "user-1", InstanceName: "My immerle"}
 	svc := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, nil, testLogger())
 	var saved Credentials
 	svc.SetCredentialsSaver(func(_ context.Context, c Credentials) error { saved = c; return nil })

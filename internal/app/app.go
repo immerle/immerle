@@ -137,14 +137,12 @@ func transcodeConfig(t models.TranscodeRuntime, dataDir string) config.Transcode
 // service's config type.
 func federationConfig(f models.FederationRuntime) config.FederationConfig {
 	return config.FederationConfig{
-		Enabled:         f.Enabled,
 		HubURL:          config.HubURL(), // hardcoded, DEV_IMMERLE_HUB_URL-overridable
 		UserID:          f.UserID,
 		InstanceID:      f.InstanceID,
 		Sqid:            f.Sqid,
 		InstanceName:    f.InstanceName,
 		PrivateKey:      f.PrivateKey,
-		SyncInterval:    time.Duration(f.SyncIntervalSeconds) * time.Second,
 		ResolveMissing:  f.ResolveMissing,
 		ExportScrobbles: f.ExportScrobbles,
 	}
@@ -305,6 +303,17 @@ func New(cfg config.Config) (*App, error) {
 		if creds.Name != "" {
 			next.Federation.InstanceName = creds.Name
 		}
+		_, _, err := settingsSvc.Update(next)
+		return err
+	})
+	// Clear hub identity on unlink (resets the instance to the unlinked state).
+	fed.SetCredentialsClearer(func(_ context.Context) error {
+		next := settingsSvc.Get()
+		next.Federation.UserID = ""
+		next.Federation.InstanceID = ""
+		next.Federation.Sqid = ""
+		next.Federation.InstanceName = ""
+		next.Federation.PrivateKey = ""
 		_, _, err := settingsSvc.Update(next)
 		return err
 	})

@@ -200,8 +200,9 @@ type ScanRuntime struct {
 
 // FederationRuntime configures the hub connection (hot-reloadable). The hub URL
 // itself is hardcoded (config.HubURL, env-overridable) and not stored here.
+// Federation is active whenever the instance is linked (InstanceID + PrivateKey
+// set); there is no separate enable flag and no configurable sync cadence.
 type FederationRuntime struct {
-	Enabled bool `json:"enabled"`
 	// UserID is the hub owner's UUID. The operator pastes it from the hub to claim
 	// this instance; the instance then bootstraps itself under that user.
 	UserID string `json:"userId"`
@@ -214,10 +215,9 @@ type FederationRuntime struct {
 	InstanceName string `json:"instanceName"`
 	// PrivateKey is the hub-issued secret (Bearer token), returned once at
 	// bootstrap. Not user-editable and redacted from API responses.
-	PrivateKey          string `json:"privateKey"`
-	SyncIntervalSeconds int    `json:"syncIntervalSeconds"`
-	ResolveMissing      bool   `json:"resolveMissing"`
-	ExportScrobbles     bool   `json:"exportScrobbles"`
+	PrivateKey      string `json:"privateKey"`
+	ResolveMissing  bool   `json:"resolveMissing"`
+	ExportScrobbles bool   `json:"exportScrobbles"`
 }
 
 // DefaultRuntimeSettings returns the seed settings used on first boot.
@@ -233,10 +233,9 @@ func DefaultRuntimeSettings() RuntimeSettings {
 				{Name: "mp3", Format: "mp3", BitRate: 192},
 			},
 		},
-		Providers:  ProviderRuntime{AutoDownloadOnPlay: true, SearchTimeoutSeconds: 3},
-		Scan:       ScanRuntime{IntervalSeconds: 600, Watch: true},
-		Cleanup:    CleanupRuntime{Enabled: true, MaxAgeSeconds: 720 * 3600, IntervalSeconds: 6 * 3600},
-		Federation: FederationRuntime{SyncIntervalSeconds: 3600},
+		Providers: ProviderRuntime{AutoDownloadOnPlay: true, SearchTimeoutSeconds: 3},
+		Scan:      ScanRuntime{IntervalSeconds: 600, Watch: true},
+		Cleanup:   CleanupRuntime{Enabled: true, MaxAgeSeconds: 720 * 3600, IntervalSeconds: 6 * 3600},
 		// Import sources that go through the hub (e.g. spotify) need no per-source
 		// config here — they use the federation hub credentials. This map is for
 		// future sources that authenticate directly.

@@ -83,7 +83,6 @@ func TestFederationSyncMaterializesReadOnlyPlaylist(t *testing.T) {
 	srv, state := stubHub(t, playlists)
 
 	cfg := config.FederationConfig{
-		Enabled:    true,
 		HubURL:     srv.URL,
 		InstanceID: "inst-1",
 		PrivateKey: "iml_key",
@@ -147,7 +146,7 @@ func TestFederationExportsAnonymizedScrobbles(t *testing.T) {
 	}
 
 	srv, state := stubHub(t, nil)
-	cfg := config.FederationConfig{Enabled: true, HubURL: srv.URL, InstanceID: "inst-1", PrivateKey: "iml_key", ExportScrobbles: true}
+	cfg := config.FederationConfig{HubURL: srv.URL, InstanceID: "inst-1", PrivateKey: "iml_key", ExportScrobbles: true}
 	svc := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, nil, testLogger())
 
 	if err := svc.ExportScrobbles(ctx); err != nil {

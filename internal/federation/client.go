@@ -51,6 +51,8 @@ type Service struct {
 	// name) back into the runtime settings after bootstrap/update (optional;
 	// empty fields are left unchanged by the saver).
 	saveCreds func(context.Context, Credentials) error
+	// clearCreds wipes the stored hub identity on unlink (optional).
+	clearCreds func(context.Context) error
 }
 
 // Credentials carries hub-issued identity persisted into the runtime settings.
@@ -65,6 +67,10 @@ type Credentials struct {
 // SetCredentialsSaver registers a callback used to persist hub-issued identity
 // (returned at bootstrap, or the canonical name/sqid returned at update).
 func (s *Service) SetCredentialsSaver(fn func(context.Context, Credentials) error) { s.saveCreds = fn }
+
+// SetCredentialsClearer registers a callback used to wipe the stored hub
+// identity when the operator unlinks the instance.
+func (s *Service) SetCredentialsClearer(fn func(context.Context) error) { s.clearCreds = fn }
 
 // auth returns the per-instance hub credentials (private key + instance UUID).
 func (s *Service) auth() hub.Auth {
@@ -96,9 +102,10 @@ func New(cfgFn func() config.FederationConfig, catalog *persistence.CatalogRepo,
 	}
 }
 
-// Enabled reports whether federation is turned on (implements the immerle
-// FederationStatusProvider interface). Read live.
-func (s *Service) Enabled() bool { return s != nil && s.cfg().Enabled }
+// Enabled reports whether federation is active — i.e. the instance is linked to
+// the hub (implements the immerle FederationStatusProvider interface). There is
+// no separate enable flag: linked means active. Read live.
+func (s *Service) Enabled() bool { return s.HubConfigured() }
 
 // HubConfigured reports whether the instance has bootstrapped with the hub
 // (instance UUID + private key both set) so authenticated hub calls (playlist
@@ -184,6 +191,38 @@ func (s *Service) UpdateInstance(ctx context.Context, name, sqid string) error {
 	return nil
 }
 
+// RefreshProfile fetches this instance's current name/sqid from the hub (the
+// hub is the source of truth) and persists them locally.
+func (s *Service) RefreshProfile(ctx context.Context) error {
+	if !s.HubConfigured() {
+		return fmt.Errorf("federation: instance not linked to the hub")
+	}
+	resp, err := s.hub.Me(ctx, s.auth())
+	if err != nil {
+		return fmt.Errorf("fetch instance profile from hub: %w", err)
+	}
+	if resp.Instance != nil && s.saveCreds != nil {
+		return s.saveCreds(ctx, Credentials{Sqid: deref(resp.Instance.Sqid), Name: deref(resp.Instance.Name)})
+	}
+	return nil
+}
+
+// Unlink deletes this instance's data on the hub (best-effort) and wipes the
+// locally stored identity, returning the instance to the unlinked state.
+func (s *Service) Unlink(ctx context.Context) error {
+	if s.HubConfigured() {
+		if err := s.hub.DeleteData(ctx, s.auth()); err != nil {
+			// Don't block local unlink on a hub error (the operator owns this
+			// instance); the hub data is also GC'd on its side over time.
+			s.logger.Warn("hub data deletion failed (unlinking locally anyway)", "error", err)
+		}
+	}
+	if s.clearCreds != nil {
+		return s.clearCreds(ctx)
+	}
+	return nil
+}
+
 // deref returns the value of a string pointer, or "" when nil.
 func deref(p *string) string {
 	if p == nil {
@@ -193,29 +232,25 @@ func deref(p *string) string {
 }
 
 // federationTick is how often Run re-reads its (hot-reloadable) config to decide
-// whether/when to sync. It bounds the latency of an enable/disable taking effect.
-const federationTick = time.Minute
+// whether to sync; federationSyncInterval is the fixed heartbeat+sync cadence
+// (the cadence is not user-configurable — linking is the only knob).
+const (
+	federationTick         = time.Minute
+	federationSyncInterval = time.Hour
+)
 
-// Run drives federation on a fixed tick, reading config live so enabling/
-// disabling, the interval and the identity all apply without a restart. While
-// enabled (and a hub user id is set) it heartbeats + syncs every configured
-// interval; otherwise it idles. It never returns until ctx is done.
+// Run drives federation on a fixed tick, reading config live so linking/
+// unlinking applies without a restart. While linked it heartbeats + syncs every
+// federationSyncInterval; otherwise it idles. It never returns until ctx is done.
 func (s *Service) Run(ctx context.Context) {
 	ticker := time.NewTicker(federationTick)
 	defer ticker.Stop()
 	var lastSync time.Time
 	for {
-		c := s.cfg()
-		// Only sync once enabled AND a hub user id is configured; otherwise idle
-		// (avoids logging a register error every tick before onboarding).
-		if c.Enabled && c.UserID != "" {
-			interval := c.SyncInterval
-			if interval <= 0 {
-				interval = time.Hour
-			}
-			if lastSync.IsZero() || time.Since(lastSync) >= interval {
+		if s.HubConfigured() {
+			if lastSync.IsZero() || time.Since(lastSync) >= federationSyncInterval {
 				if err := s.Register(ctx); err != nil {
-					s.logger.Warn("hub registration failed", "error", err)
+					s.logger.Warn("hub heartbeat failed", "error", err)
 				}
 				s.syncOnce(ctx)
 				lastSync = time.Now()
@@ -243,7 +278,7 @@ func (s *Service) syncOnce(ctx context.Context) {
 // SyncPlaylists fetches editorial/recommended playlists and materializes them as
 // read-only federated playlists, resolving each track to a local one.
 func (s *Service) SyncPlaylists(ctx context.Context) error {
-	if !s.cfg().Enabled {
+	if !s.HubConfigured() {
 		return nil
 	}
 	playlists, err := s.hub.ListPlaylists(ctx, s.auth(), "")

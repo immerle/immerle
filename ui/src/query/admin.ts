@@ -242,6 +242,35 @@ export function useUpdateFederationInstance() {
   });
 }
 
+/** Refresh the live name/sqid from the hub (server-side). Runs when `enabled`
+ * (the federation sheet is open and the instance is linked); primes the
+ * settings cache so the form shows the hub-canonical values. */
+export function useFederationProfile(enabled: boolean) {
+  const client = useAuth((s) => s.client);
+  const qc = useQueryClient();
+  return useQuery({
+    queryKey: qk.federation,
+    enabled: enabled && !!client,
+    retry: false,
+    queryFn: async () => {
+      const res = await client!.getFederationProfile();
+      qc.setQueryData(qk.settings, res);
+      return res;
+    },
+  });
+}
+
+/** Unlink this instance from the hub (server-side). Primes the settings cache
+ * with the cleared identity on success. */
+export function useUnlinkInstance() {
+  const client = useAuth((s) => s.client);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => client!.unlinkInstance(),
+    onSuccess: (res) => qc.setQueryData(qk.settings, res),
+  });
+}
+
 // --- Server / transcoding --------------------------------------------------
 
 export function useTranscodeProfiles() {

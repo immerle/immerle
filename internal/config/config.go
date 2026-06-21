@@ -18,7 +18,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 )
 
 // Config is the root bootstrap configuration object.
@@ -108,8 +107,7 @@ func HubURL() string {
 // kept because the federation service consumes it — app builds it from the
 // runtime settings. HubURL is resolved (hardcoded/env), not stored.
 type FederationConfig struct {
-	Enabled bool
-	HubURL  string
+	HubURL string
 	// UserID is the hub owner UUID the operator pastes to claim this instance
 	// (used only at bootstrap). InstanceID is the hub-assigned fixed UUID sent as
 	// the X-Instance-ID header. PrivateKey is the hub-issued secret Bearer token
@@ -119,7 +117,6 @@ type FederationConfig struct {
 	Sqid            string
 	InstanceName    string
 	PrivateKey      string
-	SyncInterval    time.Duration
 	ResolveMissing  bool
 	ExportScrobbles bool
 }

@@ -51,6 +51,19 @@ func (c *Client) Register(ctx context.Context, a Auth, version string) (PublicPr
 	return out, err
 }
 
+// Me returns this instance's current profile (the hub is the source of truth
+// for the name and sqid handle).
+func (c *Client) Me(ctx context.Context, a Auth) (PublicProfileResponse, error) {
+	var out PublicProfileResponse
+	err := c.do(ctx, http.MethodGet, "/api/v1/instances/me", a, nil, &out)
+	return out, err
+}
+
+// DeleteData deletes this instance's data on the hub (GDPR / unlink).
+func (c *Client) DeleteData(ctx context.Context, a Auth) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/instances/me/data", a, nil, nil)
+}
+
 // UpdateInstance changes this instance's editable fields (name, sqid handle,
 // opt-in). The hub validates sqid uniqueness (409 surfaces as an error).
 func (c *Client) UpdateInstance(ctx context.Context, a Auth, req PublicUpdateInstanceRequest) (PublicProfileResponse, error) {

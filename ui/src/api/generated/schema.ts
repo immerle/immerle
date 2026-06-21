@@ -7267,8 +7267,6 @@ export interface components {
                 maxAgeSeconds?: number;
             };
             federation?: {
-                /** @example false */
-                enabled?: boolean;
                 exportScrobbles?: boolean;
                 /** @example 6f1c2b8e-1f0a-4f9b-9c3a-1e2d3c4b5a6f */
                 userId?: string;
@@ -7281,8 +7279,6 @@ export interface components {
                 /** @example My living-room immerle */
                 instanceName?: string;
                 resolveMissing?: boolean;
-                /** @example 3600 */
-                syncIntervalSeconds?: number;
             };
             ldap?: {
                 /** @example uid=%s,ou=people,dc=example,dc=com */
