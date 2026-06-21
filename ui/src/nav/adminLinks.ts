@@ -5,7 +5,7 @@ export interface AdminLink {
   subtitleKey: string;
   color: string;
   /** When set, hidden unless the instance advertises this. */
-  requires?: 'dynamicProviders' | 'runtimeSettings' | 'libraryAdmin' | 'internetRadio';
+  requires?: 'dynamicProviders' | 'runtimeSettings' | 'libraryAdmin' | 'internetRadio' | 'federation';
 }
 
 /** Admin management destinations, shared by the admin home grid and the desktop admin sidebar. */
@@ -35,6 +35,14 @@ export const ADMIN_LINKS: AdminLink[] = [
     subtitleKey: 'home.admin.link.radio.subtitle',
     color: '#ec4899',
     requires: 'internetRadio',
+  },
+  {
+    href: '/admin/federation',
+    icon: 'git-network',
+    titleKey: 'home.admin.link.federation.title',
+    subtitleKey: 'home.admin.link.federation.subtitle',
+    color: '#14b8a6',
+    requires: 'federation',
   },
   {
     href: '/admin/settings',

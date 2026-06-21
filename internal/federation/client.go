@@ -191,6 +191,86 @@ func (s *Service) UpdateInstance(ctx context.Context, name, sqid string) error {
 	return nil
 }
 
+// InstanceSummary is a federated instance as surfaced by discovery/subscriptions
+// (no sensitive fields). It mirrors the hub's public InstanceSummary.
+type InstanceSummary struct {
+	ID         string `json:"id"`
+	Sqid       string `json:"sqid"`
+	Name       string `json:"name"`
+	Region     string `json:"region"`
+	LastSeenAt string `json:"lastSeenAt,omitempty"`
+}
+
+func summarize(in []hub.PublicInstanceSummary) []InstanceSummary {
+	out := make([]InstanceSummary, 0, len(in))
+	for _, s := range in {
+		out = append(out, InstanceSummary{
+			ID: deref(s.Id), Sqid: deref(s.Sqid), Name: deref(s.Name),
+			Region: deref(s.Region), LastSeenAt: deref(s.LastSeenAt),
+		})
+	}
+	return out
+}
+
+// SearchInstances discovers other instances on the hub by sqid or name.
+func (s *Service) SearchInstances(ctx context.Context, query string) ([]InstanceSummary, error) {
+	if !s.HubConfigured() {
+		return nil, fmt.Errorf("federation: instance not linked to the hub")
+	}
+	resp, err := s.hub.SearchInstances(ctx, s.auth(), query)
+	if err != nil {
+		return nil, err
+	}
+	if resp.Instances == nil {
+		return nil, nil
+	}
+	return summarize(*resp.Instances), nil
+}
+
+// Subscriptions lists the instances this one follows on the hub.
+func (s *Service) Subscriptions(ctx context.Context) ([]InstanceSummary, error) {
+	if !s.HubConfigured() {
+		return nil, fmt.Errorf("federation: instance not linked to the hub")
+	}
+	resp, err := s.hub.Subscriptions(ctx, s.auth())
+	if err != nil {
+		return nil, err
+	}
+	if resp.Subscriptions == nil {
+		return nil, nil
+	}
+	return summarize(*resp.Subscriptions), nil
+}
+
+// Subscribe follows the target instance (by hub id UUID or sqid handle).
+func (s *Service) Subscribe(ctx context.Context, instanceID, sqid string) error {
+	if !s.HubConfigured() {
+		return fmt.Errorf("federation: instance not linked to the hub")
+	}
+	req := hub.PublicSubscribeRequest{}
+	if instanceID != "" {
+		req.InstanceId = &instanceID
+	}
+	if sqid != "" {
+		req.Sqid = &sqid
+	}
+	if _, err := s.hub.Subscribe(ctx, s.auth(), req); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Unsubscribe stops following the instance with the given hub id (UUID).
+func (s *Service) Unsubscribe(ctx context.Context, instanceID string) error {
+	if !s.HubConfigured() {
+		return fmt.Errorf("federation: instance not linked to the hub")
+	}
+	if _, err := s.hub.Unsubscribe(ctx, s.auth(), instanceID); err != nil {
+		return err
+	}
+	return nil
+}
+
 // RefreshProfile fetches this instance's current name/sqid from the hub (the
 // hub is the source of truth) and persists them locally.
 func (s *Service) RefreshProfile(ctx context.Context) error {

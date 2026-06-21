@@ -239,6 +239,15 @@ export interface Wrapped {
   byMonth: number[];
 }
 
+/** A federated instance surfaced by discovery / subscriptions (no secrets). */
+export interface InstanceSummary {
+  id: string;
+  sqid: string;
+  name: string;
+  region: string;
+  lastSeenAt?: string;
+}
+
 /** Thrown when a Immerle REST endpoint returns a non-2xx. */
 export class ImmerleApiError extends Error {
   status: number;

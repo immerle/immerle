@@ -271,6 +271,42 @@ export function useUnlinkInstance() {
   });
 }
 
+/** Discover instances on the hub (server-side). Runs only with a non-empty query. */
+export function useFederationSearch(q: string) {
+  const client = useAuth((s) => s.client);
+  return useQuery({
+    queryKey: qk.federationSearch(q.trim()),
+    enabled: !!client && q.trim().length > 0,
+    queryFn: ({ signal }) => client!.searchInstances(q.trim(), signal),
+  });
+}
+
+/** Instances this one follows on the hub. */
+export function useSubscriptions(enabled: boolean) {
+  const client = useAuth((s) => s.client);
+  return useQuery({
+    queryKey: qk.federationSubscriptions,
+    enabled: enabled && !!client,
+    queryFn: ({ signal }) => client!.listSubscriptions(signal),
+  });
+}
+
+/** Subscribe / unsubscribe; both refresh the subscriptions list. */
+export function useSubscriptionMutations() {
+  const client = useAuth((s) => s.client);
+  const qc = useQueryClient();
+  const invalidate = () => qc.invalidateQueries({ queryKey: qk.federationSubscriptions });
+  const subscribe = useMutation({
+    mutationFn: (target: { instanceId?: string; sqid?: string }) => client!.subscribeInstance(target),
+    onSuccess: invalidate,
+  });
+  const unsubscribe = useMutation({
+    mutationFn: (id: string) => client!.unsubscribeInstance(id),
+    onSuccess: invalidate,
+  });
+  return { subscribe, unsubscribe };
+}
+
 // --- Server / transcoding --------------------------------------------------
 
 export function useTranscodeProfiles() {

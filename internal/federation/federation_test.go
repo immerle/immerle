@@ -3,10 +3,12 @@ package federation
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -50,6 +52,65 @@ func stubHub(t *testing.T, playlists []hub.PublicDistributionPlaylist) (*httptes
 }
 
 func boolptr(b bool) *bool { return &b }
+
+func TestFederationDiscoveryAndSubscriptions(t *testing.T) {
+	ctx := context.Background()
+	var searchQ, subBody, deletedPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/instances/search":
+			searchQ = r.URL.Query().Get("q")
+			_ = json.NewEncoder(w).Encode(hub.PublicSearchResponse{Instances: &[]hub.PublicInstanceSummary{
+				{Id: strptr("uuid-2"), Sqid: strptr("other-node"), Name: strptr("Other")},
+			}})
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/instances/me/subscriptions":
+			_ = json.NewEncoder(w).Encode(hub.PublicSubscriptionsResponse{Subscriptions: &[]hub.PublicInstanceSummary{
+				{Id: strptr("uuid-3"), Sqid: strptr("followed"), Name: strptr("Followed")},
+			}})
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/instances/me/subscriptions":
+			b, _ := io.ReadAll(r.Body)
+			subBody = string(b)
+			_ = json.NewEncoder(w).Encode(hub.PublicSubscriptionStateResponse{Ok: boolptr(true), Subscribed: boolptr(true)})
+		case r.Method == http.MethodDelete:
+			deletedPath = r.URL.Path
+			_ = json.NewEncoder(w).Encode(hub.PublicSubscriptionStateResponse{Ok: boolptr(true), Subscribed: boolptr(false)})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	store := testutil.NewStore(t)
+	cfg := config.FederationConfig{HubURL: srv.URL, InstanceID: "uuid-1", PrivateKey: "iml_key"}
+	svc := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, nil, testLogger())
+
+	found, err := svc.SearchInstances(ctx, "other")
+	if err != nil || len(found) != 1 || found[0].Sqid != "other-node" {
+		t.Fatalf("search: %v %+v", err, found)
+	}
+	if searchQ != "other" {
+		t.Fatalf("query not forwarded: %q", searchQ)
+	}
+
+	if err := svc.Subscribe(ctx, "uuid-2", ""); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(subBody, `"instanceId":"uuid-2"`) {
+		t.Fatalf("subscribe body wrong: %s", subBody)
+	}
+
+	subs, err := svc.Subscriptions(ctx)
+	if err != nil || len(subs) != 1 || subs[0].Sqid != "followed" {
+		t.Fatalf("subscriptions: %v %+v", err, subs)
+	}
+
+	if err := svc.Unsubscribe(ctx, "uuid-3"); err != nil {
+		t.Fatal(err)
+	}
+	if deletedPath != "/api/v1/instances/me/subscriptions/uuid-3" {
+		t.Fatalf("unsubscribe path wrong: %q", deletedPath)
+	}
+}
 
 type stubState struct {
 	registered      bool

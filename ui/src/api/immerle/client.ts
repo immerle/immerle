@@ -54,6 +54,7 @@ import {
   DownloadJob,
   ImmerleApiError,
   ImmerleSession,
+  InstanceSummary,
   LibraryStats,
   Provider,
   ProviderLog,
@@ -907,6 +908,28 @@ export class ImmerleClient {
       restartRequired: data.restartRequired ?? false,
       pendingRestart: data.pendingRestart ?? [],
     };
+  }
+
+  /** Discover other instances on the hub (by sqid or name). Server-side. */
+  async searchInstances(q: string, signal?: AbortSignal): Promise<InstanceSummary[]> {
+    const r = await this.request<{ instances?: InstanceSummary[] }>('GET', `admin/federation/instances?q=${encodeURIComponent(q)}`, undefined, signal);
+    return r.instances ?? [];
+  }
+
+  /** List the instances this one follows on the hub. Server-side. */
+  async listSubscriptions(signal?: AbortSignal): Promise<InstanceSummary[]> {
+    const r = await this.request<{ subscriptions?: InstanceSummary[] }>('GET', 'admin/federation/subscriptions', undefined, signal);
+    return r.subscriptions ?? [];
+  }
+
+  /** Follow a target instance by hub id (UUID) or sqid handle. Server-side. */
+  async subscribeInstance(target: { instanceId?: string; sqid?: string }): Promise<void> {
+    await this.request<{ ok: boolean }>('POST', 'admin/federation/subscriptions', target);
+  }
+
+  /** Stop following the instance with the given hub id (UUID). Server-side. */
+  async unsubscribeInstance(id: string): Promise<void> {
+    await this.request<{ ok: boolean }>('DELETE', `admin/federation/subscriptions/${encodeURIComponent(id)}`);
   }
 
   // --- Admin: server / transcoding ----------------------------------------

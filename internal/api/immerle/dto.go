@@ -88,6 +88,38 @@ type FederationUpdateDTO struct {
 	Sqid string `json:"sqid" example:"my-node"`
 }
 
+// InstanceSummaryDTO is a federated instance surfaced by discovery/subscriptions
+// (no sensitive fields).
+type InstanceSummaryDTO struct {
+	ID         string `json:"id" example:"3f1c2d4e-5a6b-7c8d-9e0f-1a2b3c4d5e6f"`
+	Sqid       string `json:"sqid" example:"other-node"`
+	Name       string `json:"name" example:"A friend's immerle"`
+	Region     string `json:"region" example:"eu"`
+	LastSeenAt string `json:"lastSeenAt,omitempty"`
+}
+
+// FederationInstancesDTO is the discovery result list.
+type FederationInstancesDTO struct {
+	Instances []InstanceSummaryDTO `json:"instances"`
+}
+
+// FederationSubscriptionsDTO is the list of followed instances.
+type FederationSubscriptionsDTO struct {
+	Subscriptions []InstanceSummaryDTO `json:"subscriptions"`
+}
+
+// SubscribeRequestDTO is the body of POST /admin/federation/subscriptions: the
+// target instance id (UUID) or sqid handle.
+type SubscribeRequestDTO struct {
+	InstanceID string `json:"instanceId" example:"3f1c2d4e-5a6b-7c8d-9e0f-1a2b3c4d5e6f"`
+	Sqid       string `json:"sqid" example:"other-node"`
+}
+
+// OkResponse is a minimal success acknowledgement.
+type OkResponse struct {
+	Ok bool `json:"ok" example:"true"`
+}
+
 // SettingsDTO returns the runtime settings and restart state.
 type SettingsDTO struct {
 	Settings        RuntimeSettingsDTO `json:"settings"`
