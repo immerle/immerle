@@ -42,6 +42,24 @@ func (r *PlaylistSyncRepo) Delete(ctx context.Context, playlistID string) error 
 	return err
 }
 
+// IDs returns the playlist ids currently synced to the hub.
+func (r *PlaylistSyncRepo) IDs(ctx context.Context) ([]string, error) {
+	rows, err := r.query(ctx, `SELECT playlist_id FROM playlist_sync`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		out = append(out, id)
+	}
+	return out, rows.Err()
+}
+
 // CoverUploadRepo caches the sha256 of covers confirmed present on the hub.
 type CoverUploadRepo struct{ *base }
 

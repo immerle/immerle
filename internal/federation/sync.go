@@ -74,13 +74,26 @@ func (s *PlaylistSyncer) EnqueuePlaylistSync(ctx context.Context, playlistID str
 	}
 }
 
-// handle is the outbox.Handler: it defers while unlinked, drops the job if sync
-// was turned off after it was queued, and maps a hub rate-limit to an explicit
-// retry delay; other errors get default backoff.
-func (s *PlaylistSyncer) handle(ctx context.Context, job persistence.OutboxJob) error {
-	if !s.fed.cfg().SyncPlaylists {
-		return nil // sync disabled — drop the job
+// PurgePlaylists enqueues a delete for every playlist currently synced to the
+// hub. Called when the operator turns playlist sync off, so the instance's
+// playlists are removed from the hub rather than just left stale. Enqueues
+// directly (bypassing the sync-enabled gate on EnqueuePlaylistSync).
+func (s *PlaylistSyncer) PurgePlaylists(ctx context.Context) error {
+	ids, err := s.syncState.IDs(ctx)
+	if err != nil {
+		return err
 	}
+	for _, id := range ids {
+		if err := s.worker.Enqueue(ctx, PlaylistSyncKind, id, ""); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// handle is the outbox.Handler: it defers while unlinked and maps a hub
+// rate-limit to an explicit retry delay; other errors get default backoff.
+func (s *PlaylistSyncer) handle(ctx context.Context, job persistence.OutboxJob) error {
 	if !s.fed.HubConfigured() {
 		return outbox.ErrNotReady
 	}
@@ -93,7 +106,9 @@ func (s *PlaylistSyncer) handle(ctx context.Context, job persistence.OutboxJob) 
 	return nil
 }
 
-// process resolves the playlist's current state and upserts or deletes it.
+// process resolves the playlist's current state and upserts or deletes it. A
+// playlist is removed from the hub when it no longer qualifies — gone, private,
+// federated, or playlist sync turned off entirely.
 func (s *PlaylistSyncer) process(ctx context.Context, playlistID string) error {
 	p, err := s.playlists.Get(ctx, playlistID)
 	if err != nil {
@@ -102,8 +117,7 @@ func (s *PlaylistSyncer) process(ctx context.Context, playlistID string) error {
 		}
 		return err
 	}
-	// Only public, non-federated playlists belong on the hub.
-	if !p.Public || p.Federated {
+	if !p.Public || p.Federated || !s.fed.cfg().SyncPlaylists {
 		return s.deletePlaylist(ctx, playlistID)
 	}
 	return s.syncPlaylist(ctx, p)

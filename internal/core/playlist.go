@@ -11,11 +11,13 @@ import (
 	"github.com/immerle/immerle/internal/persistence"
 )
 
-// PlaylistSyncEnqueuer queues a public playlist for federation-hub sync.
-// Implemented by the federation playlist syncer; optional (nil when federation
-// is absent). Backed by the generic outbox, so it is fire-and-forget.
+// PlaylistSyncEnqueuer queues a public playlist for federation-hub sync, and can
+// purge all synced playlists from the hub (when sync is turned off). Implemented
+// by the federation playlist syncer; optional (nil when federation is absent).
+// Backed by the generic outbox, so it is fire-and-forget.
 type PlaylistSyncEnqueuer interface {
 	EnqueuePlaylistSync(ctx context.Context, playlistID string)
+	PurgePlaylists(ctx context.Context) error
 }
 
 // PlaylistService holds the playlist CRUD business logic — visibility/edit

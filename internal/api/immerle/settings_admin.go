@@ -82,6 +82,12 @@ func (h *Handler) handleSettingsUpdate(w http.ResponseWriter, r *http.Request) {
 		writeInternal(w, err)
 		return
 	}
+	// Turning playlist sync off removes this instance's playlists from the hub.
+	if h.PlaylistSync != nil && current.Federation.SyncPlaylists && !saved.Federation.SyncPlaylists {
+		if err := h.PlaylistSync.PurgePlaylists(r.Context()); err != nil {
+			h.Logger.Warn("purge synced playlists failed", "error", err)
+		}
+	}
 	h.Logger.Info("runtime settings updated", "restartRequired", len(pending) > 0, "pending", pending, "by", userFrom(r.Context()).Username)
 	writeResource(w, http.StatusOK, settingsBody(redactSettings(saved), pending))
 }

@@ -145,10 +145,17 @@ func TestOutboxWorkerSyncsAndDeletesPublicPlaylist(t *testing.T) {
 	}
 	st.mu.Unlock()
 
-	// Make it private → delete on the hub.
-	p, _ := store.Playlists.Get(ctx, plID)
-	p.Public = false
-	_ = store.Playlists.UpdateMeta(ctx, p)
+	// Disabling sync purges: it enqueues a delete job for every synced playlist.
+	if err := s.PurgePlaylists(ctx); err != nil {
+		t.Fatal(err)
+	}
+	pj, err := store.Outbox.ClaimNext(ctx, time.Now())
+	if err != nil || pj.DedupeKey != plID {
+		t.Fatalf("purge should enqueue a job for %s, got %+v err=%v", plID, pj, err)
+	}
+
+	// With sync turned off, the handler deletes the (still public) playlist.
+	cfg.SyncPlaylists = false
 	if err := s.handle(ctx, job); err != nil {
 		t.Fatal(err)
 	}
