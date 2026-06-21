@@ -7280,6 +7280,7 @@ export interface components {
                 sqid?: string;
                 /** @example My living-room immerle */
                 instanceName?: string;
+                syncPlaylists?: boolean;
                 resolveMissing?: boolean;
             };
             ldap?: {

@@ -112,6 +112,7 @@ type FederationConfig struct {
 	Sqid            string
 	InstanceName    string
 	PrivateKey      string
+	SyncPlaylists   bool
 	ResolveMissing  bool
 	ExportScrobbles bool
 }

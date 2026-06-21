@@ -803,6 +803,9 @@
                                 "example": "my-node",
                                 "type": "string"
                             },
+                            "syncPlaylists": {
+                                "type": "boolean"
+                            },
                             "userId": {
                                 "description": "Federation is active whenever linked (instanceId set); no enable flag.",
                                 "example": "6f1c2b8e-1f0a-4f9b-9c3a-1e2d3c4b5a6f",

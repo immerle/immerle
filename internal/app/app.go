@@ -146,6 +146,7 @@ func federationConfig(f models.FederationRuntime, hubURL string) config.Federati
 		Sqid:            f.Sqid,
 		InstanceName:    f.InstanceName,
 		PrivateKey:      f.PrivateKey,
+		SyncPlaylists:   f.SyncPlaylists,
 		ResolveMissing:  f.ResolveMissing,
 		ExportScrobbles: f.ExportScrobbles,
 	}

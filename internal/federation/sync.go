@@ -63,9 +63,10 @@ func NewPlaylistSyncer(fed *Service, worker *outbox.Worker, syncState *persisten
 }
 
 // EnqueuePlaylistSync queues a playlist for sync (implements
-// core.PlaylistSyncEnqueuer); called on every public-playlist mutation.
+// core.PlaylistSyncEnqueuer); called on every public-playlist mutation. No-op
+// when playlist sync is disabled in the runtime settings.
 func (s *PlaylistSyncer) EnqueuePlaylistSync(ctx context.Context, playlistID string) {
-	if s == nil {
+	if s == nil || !s.fed.cfg().SyncPlaylists {
 		return
 	}
 	if err := s.worker.Enqueue(ctx, PlaylistSyncKind, playlistID, ""); err != nil {
@@ -73,9 +74,13 @@ func (s *PlaylistSyncer) EnqueuePlaylistSync(ctx context.Context, playlistID str
 	}
 }
 
-// handle is the outbox.Handler: it defers while unlinked, and maps a hub
-// rate-limit to an explicit retry delay; other errors get default backoff.
+// handle is the outbox.Handler: it defers while unlinked, drops the job if sync
+// was turned off after it was queued, and maps a hub rate-limit to an explicit
+// retry delay; other errors get default backoff.
 func (s *PlaylistSyncer) handle(ctx context.Context, job persistence.OutboxJob) error {
+	if !s.fed.cfg().SyncPlaylists {
+		return nil // sync disabled — drop the job
+	}
 	if !s.fed.HubConfigured() {
 		return outbox.ErrNotReady
 	}

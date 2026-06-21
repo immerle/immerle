@@ -215,9 +215,12 @@ type FederationRuntime struct {
 	InstanceName string `json:"instanceName"`
 	// PrivateKey is the hub-issued secret (Bearer token), returned once at
 	// bootstrap. Not user-editable and redacted from API responses.
-	PrivateKey      string `json:"privateKey"`
-	ResolveMissing  bool   `json:"resolveMissing"`
-	ExportScrobbles bool   `json:"exportScrobbles"`
+	PrivateKey string `json:"privateKey"`
+	// SyncPlaylists opts this instance's public playlists into being pushed to the
+	// hub (off by default). Hot-reloadable.
+	SyncPlaylists   bool `json:"syncPlaylists"`
+	ResolveMissing  bool `json:"resolveMissing"`
+	ExportScrobbles bool `json:"exportScrobbles"`
 }
 
 // DefaultRuntimeSettings returns the seed settings used on first boot.

@@ -99,7 +99,7 @@ func TestOutboxWorkerSyncsAndDeletesPublicPlaylist(t *testing.T) {
 	_ = store.Playlists.ReplaceTracks(ctx, plID, []string{trackID}, owner.ID)
 
 	srv, st := newSyncStub(t)
-	cfg := config.FederationConfig{HubURL: srv.URL, InstanceID: "inst-1", PrivateKey: "iml_key"}
+	cfg := config.FederationConfig{HubURL: srv.URL, InstanceID: "inst-1", PrivateKey: "iml_key", SyncPlaylists: true}
 	fed := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, nil, testLogger())
 	worker := outbox.NewWorker(store.Outbox, testLogger())
 	s := NewPlaylistSyncer(fed, worker, store.PlaylistSync, store.CoverUploads, store.Playlists, fakeCovers{data: []byte("JPEGDATA")}, testLogger())

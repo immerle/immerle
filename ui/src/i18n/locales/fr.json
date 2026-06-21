@@ -502,6 +502,7 @@
       "save": "Enregistrer",
       "saved": "Instance mise à jour sur le hub.",
       "features": "Fonctionnalités",
+      "syncPlaylists": "Synchroniser les playlists publiques vers le hub",
       "resolveMissing": "Résoudre les titres manquants",
       "exportScrobbles": "Partager les écoutes (scrobbles)",
       "discoverTitle": "Découvrir des instances",

@@ -25,6 +25,7 @@ interface Form {
   userId: string;
   name: string;
   sqid: string;
+  syncPlaylists: boolean;
   resolveMissing: boolean;
   exportScrobbles: boolean;
 }
@@ -34,6 +35,7 @@ function toForm(s: RuntimeSettingsDTO): Form {
     userId: s.federation?.userId ?? '',
     name: s.federation?.instanceName ?? '',
     sqid: s.federation?.sqid ?? '',
+    syncPlaylists: s.federation?.syncPlaylists ?? false,
     resolveMissing: s.federation?.resolveMissing ?? false,
     exportScrobbles: s.federation?.exportScrobbles ?? false,
   };
@@ -137,6 +139,14 @@ export default function AdminFederation() {
             {/* Feature toggles (local), auto-saved. */}
             <Card className="gap-2">
               <Text className="text-sm font-semibold text-foreground">{t('admin.federation.features')}</Text>
+              <ToggleRow
+                label={t('admin.federation.syncPlaylists')}
+                value={form.syncPlaylists}
+                onChange={(v) => {
+                  set('syncPlaylists', v);
+                  save({ federation: { syncPlaylists: v } });
+                }}
+              />
               <ToggleRow
                 label={t('admin.federation.resolveMissing')}
                 value={form.resolveMissing}
