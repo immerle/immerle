@@ -1,9 +1,9 @@
 import { useWindowDimensions, View } from 'react-native';
 import { Tabs } from 'expo-router';
-import { BottomTabBar } from '@react-navigation/bottom-tabs';
-import { SafeAreaInsetsContext, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Ionicon } from '../../src/components/Ionicon';
 import { MobileHeader } from '../../src/components/MobileHeader';
+import { MobileTabBar } from '../../src/components/MobileTabBar';
 import { PlayerBar } from '../../src/components/PlayerBar';
 import { useAuth } from '../../src/auth/store';
 import { useSearchUI } from '../../src/search/store';
@@ -23,8 +23,6 @@ export default function TabsLayout() {
   const colors = useColors();
   const { width } = useWindowDimensions();
   const wide = width >= WIDE_BREAKPOINT;
-  const insets = useSafeAreaInsets();
-  const isAdmin = useAuth((s) => s.client?.isAdmin ?? false);
   const hasSocial = useAuth((s) => s.client?.has('social') ?? false);
   const openSearch = useSearchUI((s) => s.openSearch);
 
@@ -36,7 +34,7 @@ export default function TabsLayout() {
         wide ? null : (
           <View>
             <PlayerBar embedded />
-            <BottomTabBar {...props} />
+            <MobileTabBar {...props} />
           </View>
         )
       }
@@ -105,8 +103,9 @@ export default function TabsLayout() {
         name="admin"
         options={{
           title: t('home.tabs.admin'),
-          // Admins reach this from the avatar menu on desktop; bottom tab on mobile.
-          href: wide || !isAdmin ? null : undefined,
+          // Reached from the avatar menu (header on mobile, top bar on desktop),
+          // so it's kept out of the bottom bar to avoid crowding it.
+          href: null,
           tabBarIcon: ({ color, size }) => (
             <Ionicon name="shield-checkmark" size={size} color={color} />
           ),
@@ -116,8 +115,8 @@ export default function TabsLayout() {
         name="settings"
         options={{
           title: t('home.tabs.settings'),
-          // On desktop, settings is in the avatar menu.
-          href: wide ? null : undefined,
+          // Lives in the avatar menu, not the bottom bar.
+          href: null,
           tabBarIcon: ({ color, size }) => (
             <Ionicon name="settings" size={size} color={color} />
           ),
@@ -128,14 +127,16 @@ export default function TabsLayout() {
 
   if (wide) return tabs;
 
-  // Mobile: a global header above the tabs. It owns the top safe-area, so the
-  // tab subtree's top inset is zeroed to avoid a double gap under the notch.
+  // Mobile: a global header above the tabs. The header owns the top safe-area;
+  // a fresh SafeAreaProvider below it re-measures the frame starting under the
+  // notch, so the screens' own <SafeAreaView edges={['top']}> adds no extra top
+  // inset — no fixed gap, content clips right at the header. The native
+  // SafeAreaView ignores a JS context override, so the nested provider (which it
+  // does respect) is what makes this work. Bottom inset stays correct.
   return (
     <View className="flex-1 bg-background">
       <MobileHeader />
-      <SafeAreaInsetsContext.Provider value={{ top: 0, left: insets.left, right: insets.right, bottom: insets.bottom }}>
-        {tabs}
-      </SafeAreaInsetsContext.Provider>
+      <SafeAreaProvider style={{ flex: 1 }}>{tabs}</SafeAreaProvider>
     </View>
   );
 }

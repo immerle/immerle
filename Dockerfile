@@ -13,7 +13,7 @@ RUN npm run export:web
 # ---- build stage ----
 # Also pinned to the build platform; Go cross-compiles to $TARGETARCH natively,
 # which is far faster than running the toolchain under QEMU emulation.
-FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS build
+FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS build
 WORKDIR /src
 ARG TARGETOS TARGETARCH
 

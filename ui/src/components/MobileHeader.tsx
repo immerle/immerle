@@ -6,6 +6,7 @@ import { Ionicon } from './Ionicon';
 import { IconButton } from './ui';
 import { useAuth } from '../auth/store';
 import { useSearchUI } from '../search/store';
+import { useUI } from '../stores/ui';
 import { useColors } from '../theme/colors';
 import { useT } from '../i18n/store';
 
@@ -24,6 +25,7 @@ export function MobileHeader() {
   const displayNameState = useAuth((s) => s.displayName);
   const logout = useAuth((s) => s.logout);
   const openSearch = useSearchUI((s) => s.openSearch);
+  const openDrawer = useUI((s) => s.openDrawer);
   const [menu, setMenu] = useState(false);
 
   const displayName = displayNameState ?? client?.username ?? '?';
@@ -45,10 +47,12 @@ export function MobileHeader() {
       className="flex-row items-center justify-between border-b border-border bg-background px-4"
       style={{ paddingTop: insets.top, height: 52 + insets.top }}
     >
-      <Pressable onPress={() => go('/')} accessibilityRole="button" accessibilityLabel="Immerle" className="flex-row items-center gap-2 active:opacity-70">
-        <Image source={require('../../assets/logo.png')} style={{ height: 28, width: 28 * (480 / 391) }} resizeMode="contain" />
-        <Text className="text-lg font-bold tracking-tight text-foreground">immerle</Text>
-      </Pressable>
+      <View className="flex-row items-center gap-1.5">
+        <IconButton name="menu" size={26} color={colors.foreground} onPress={openDrawer} accessibilityLabel={t('components.sidebar.library')} />
+        <Pressable onPress={() => go('/')} accessibilityRole="button" accessibilityLabel="Immerle" className="active:opacity-70">
+          <Image source={require('../../assets/logo.png')} style={{ height: 28, width: 28 * (480 / 391) }} resizeMode="contain" />
+        </Pressable>
+      </View>
 
       <View className="flex-row items-center gap-1">
         <IconButton name="search" size={24} color={colors.foreground} onPress={openSearch} accessibilityLabel={t('components.topbar.searchPlaceholder')} />
