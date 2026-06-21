@@ -202,14 +202,19 @@ type ScanRuntime struct {
 // itself is hardcoded (config.HubURL, env-overridable) and not stored here.
 type FederationRuntime struct {
 	Enabled bool `json:"enabled"`
-	// UserID is the hub user's UUID. The operator pastes it from the hub to claim
-	// this instance; the instance then registers itself under that user.
+	// UserID is the hub owner's UUID. The operator pastes it from the hub to claim
+	// this instance; the instance then bootstraps itself under that user.
 	UserID string `json:"userId"`
-	// InstanceID is the hub-assigned instance identifier (a sqids by default,
-	// editable, unique hub-side). Empty until the instance has registered.
+	// InstanceID is the hub-assigned fixed UUID (the public key sent as the
+	// X-Instance-ID header), returned at bootstrap. Immutable; not user-editable.
 	InstanceID string `json:"instanceId"`
+	// Sqid is the editable, unique hub handle (defaults to a sqid at bootstrap).
+	Sqid string `json:"sqid"`
 	// InstanceName is the human-readable instance label shown on the hub (editable).
-	InstanceName        string `json:"instanceName"`
+	InstanceName string `json:"instanceName"`
+	// PrivateKey is the hub-issued secret (Bearer token), returned once at
+	// bootstrap. Not user-editable and redacted from API responses.
+	PrivateKey          string `json:"privateKey"`
 	SyncIntervalSeconds int    `json:"syncIntervalSeconds"`
 	ResolveMissing      bool   `json:"resolveMissing"`
 	ExportScrobbles     bool   `json:"exportScrobbles"`

@@ -1,0 +1,2614 @@
+{
+    "components": {
+        "schemas": {
+            "account.AuthResponse": {
+                "properties": {
+                    "ok": {
+                        "example": true,
+                        "type": "boolean"
+                    },
+                    "token": {
+                        "example": "eyJ…",
+                        "type": "string"
+                    },
+                    "user": {
+                        "$ref": "#/components/schemas/account.UserDTO"
+                    }
+                },
+                "type": "object"
+            },
+            "account.CredentialsRequest": {
+                "properties": {
+                    "email": {
+                        "example": "me@example.com",
+                        "type": "string"
+                    },
+                    "password": {
+                        "example": "correct horse battery",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "account.InstanceDTO": {
+                "properties": {
+                    "createdAt": {
+                        "type": "string"
+                    },
+                    "id": {
+                        "description": "fixed public key (X-Instance-ID)",
+                        "example": "3f1c2d4e-…-uuid",
+                        "type": "string"
+                    },
+                    "lastSeenAt": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "example": "My instance",
+                        "type": "string"
+                    },
+                    "optInIngest": {
+                        "example": true,
+                        "type": "boolean"
+                    },
+                    "privateKeyPrefix": {
+                        "example": "iml_1a2b3c4d",
+                        "type": "string"
+                    },
+                    "region": {
+                        "example": "eu",
+                        "type": "string"
+                    },
+                    "revoked": {
+                        "example": false,
+                        "type": "boolean"
+                    },
+                    "revokedAt": {
+                        "type": "string"
+                    },
+                    "rotatedAt": {
+                        "type": "string"
+                    },
+                    "sqid": {
+                        "description": "editable unique handle",
+                        "example": "my-node",
+                        "type": "string"
+                    },
+                    "version": {
+                        "example": "0.2.0",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "account.InstanceKeyResponse": {
+                "properties": {
+                    "instance": {
+                        "$ref": "#/components/schemas/account.InstanceDTO"
+                    },
+                    "ok": {
+                        "example": true,
+                        "type": "boolean"
+                    },
+                    "privateKey": {
+                        "example": "iml_…",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "account.InstanceResponse": {
+                "properties": {
+                    "instance": {
+                        "$ref": "#/components/schemas/account.InstanceDTO"
+                    },
+                    "ok": {
+                        "example": true,
+                        "type": "boolean"
+                    }
+                },
+                "type": "object"
+            },
+            "account.InstancesResponse": {
+                "properties": {
+                    "instances": {
+                        "items": {
+                            "$ref": "#/components/schemas/account.InstanceDTO"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "ok": {
+                        "example": true,
+                        "type": "boolean"
+                    }
+                },
+                "type": "object"
+            },
+            "account.MeResponse": {
+                "properties": {
+                    "ok": {
+                        "example": true,
+                        "type": "boolean"
+                    },
+                    "user": {
+                        "$ref": "#/components/schemas/account.UserDTO"
+                    }
+                },
+                "type": "object"
+            },
+            "account.UpdateInstanceRequest": {
+                "properties": {
+                    "name": {
+                        "example": "My instance",
+                        "type": "string"
+                    },
+                    "optInIngest": {
+                        "example": true,
+                        "type": "boolean"
+                    },
+                    "region": {
+                        "example": "eu",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "account.UserDTO": {
+                "properties": {
+                    "createdAt": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "example": "me@example.com",
+                        "type": "string"
+                    },
+                    "id": {
+                        "example": "3f1c2d4e-…-uuid",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "admin.EditorialPlaylistDTO": {
+                "properties": {
+                    "createdAt": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "etag": {
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "image": {
+                        "type": "string"
+                    },
+                    "language": {
+                        "example": "fr",
+                        "type": "string"
+                    },
+                    "published": {
+                        "example": true,
+                        "type": "boolean"
+                    },
+                    "publishedAt": {
+                        "type": "string"
+                    },
+                    "region": {
+                        "example": "eu",
+                        "type": "string"
+                    },
+                    "slug": {
+                        "example": "summer-hits",
+                        "type": "string"
+                    },
+                    "title": {
+                        "example": "Summer Hits",
+                        "type": "string"
+                    },
+                    "tracks": {
+                        "items": {
+                            "$ref": "#/components/schemas/admin.EditorialTrackDTO"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "updatedAt": {
+                        "type": "string"
+                    },
+                    "version": {
+                        "example": 3,
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
+            "admin.EditorialTrackDTO": {
+                "properties": {
+                    "album": {
+                        "type": "string"
+                    },
+                    "artist": {
+                        "example": "The Beatles",
+                        "type": "string"
+                    },
+                    "duration": {
+                        "example": 431,
+                        "type": "integer"
+                    },
+                    "image": {
+                        "type": "string"
+                    },
+                    "key": {
+                        "example": "nk:the beatles|hey jude",
+                        "type": "string"
+                    },
+                    "mbid": {
+                        "type": "string"
+                    },
+                    "position": {
+                        "type": "integer"
+                    },
+                    "title": {
+                        "example": "Hey Jude",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "admin.PlaylistRequest": {
+                "properties": {
+                    "description": {
+                        "type": "string"
+                    },
+                    "image": {
+                        "type": "string"
+                    },
+                    "language": {
+                        "example": "fr",
+                        "type": "string"
+                    },
+                    "region": {
+                        "example": "eu",
+                        "type": "string"
+                    },
+                    "slug": {
+                        "example": "summer-hits",
+                        "type": "string"
+                    },
+                    "title": {
+                        "example": "Summer Hits",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "admin.PlaylistResponse": {
+                "properties": {
+                    "ok": {
+                        "example": true,
+                        "type": "boolean"
+                    },
+                    "playlist": {
+                        "$ref": "#/components/schemas/admin.EditorialPlaylistDTO"
+                    }
+                },
+                "type": "object"
+            },
+            "admin.PlaylistsResponse": {
+                "properties": {
+                    "ok": {
+                        "example": true,
+                        "type": "boolean"
+                    },
+                    "playlists": {
+                        "items": {
+                            "$ref": "#/components/schemas/admin.EditorialPlaylistDTO"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "type": "object"
+            },
+            "admin.PublishStateResponse": {
+                "properties": {
+                    "ok": {
+                        "example": true,
+                        "type": "boolean"
+                    },
+                    "published": {
+                        "example": false,
+                        "type": "boolean"
+                    }
+                },
+                "type": "object"
+            },
+            "admin.RecomputeResponse": {
+                "properties": {
+                    "ok": {
+                        "example": true,
+                        "type": "boolean"
+                    },
+                    "recomputed": {
+                        "example": true,
+                        "type": "boolean"
+                    }
+                },
+                "type": "object"
+            },
+            "admin.RunDTO": {
+                "properties": {
+                    "algorithm": {
+                        "example": "item-item-cf",
+                        "type": "string"
+                    },
+                    "error": {
+                        "type": "string"
+                    },
+                    "finishedAt": {
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "params": {
+                        "type": "object"
+                    },
+                    "startedAt": {
+                        "type": "string"
+                    },
+                    "stats": {
+                        "type": "object"
+                    },
+                    "status": {
+                        "example": "completed",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "admin.RunResponse": {
+                "properties": {
+                    "ok": {
+                        "example": true,
+                        "type": "boolean"
+                    },
+                    "run": {
+                        "$ref": "#/components/schemas/admin.RunDTO"
+                    }
+                },
+                "type": "object"
+            },
+            "admin.RunsResponse": {
+                "properties": {
+                    "ok": {
+                        "example": true,
+                        "type": "boolean"
+                    },
+                    "runs": {
+                        "items": {
+                            "$ref": "#/components/schemas/admin.RunDTO"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "type": "object"
+            },
+            "admin.SetTracksRequest": {
+                "properties": {
+                    "tracks": {
+                        "items": {
+                            "$ref": "#/components/schemas/admin.TrackInputDoc"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "type": "object"
+            },
+            "admin.TrackInputDoc": {
+                "properties": {
+                    "album": {
+                        "type": "string"
+                    },
+                    "artist": {
+                        "example": "The Beatles",
+                        "type": "string"
+                    },
+                    "duration": {
+                        "example": 431,
+                        "type": "integer"
+                    },
+                    "image": {
+                        "type": "string"
+                    },
+                    "mbid": {
+                        "type": "string"
+                    },
+                    "title": {
+                        "example": "Hey Jude",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "httpx.DeletedResponse": {
+                "properties": {
+                    "deleted": {
+                        "example": true,
+                        "type": "boolean"
+                    },
+                    "ok": {
+                        "example": true,
+                        "type": "boolean"
+                    }
+                },
+                "type": "object"
+            },
+            "httpx.ErrorResponse": {
+                "properties": {
+                    "error": {
+                        "example": "unauthorized",
+                        "type": "string"
+                    },
+                    "ok": {
+                        "example": false,
+                        "type": "boolean"
+                    }
+                },
+                "type": "object"
+            },
+            "httpx.RevokedResponse": {
+                "properties": {
+                    "ok": {
+                        "example": true,
+                        "type": "boolean"
+                    },
+                    "revoked": {
+                        "example": true,
+                        "type": "boolean"
+                    }
+                },
+                "type": "object"
+            },
+            "public.BootstrapRequest": {
+                "properties": {
+                    "name": {
+                        "example": "My instance",
+                        "type": "string"
+                    },
+                    "optInIngest": {
+                        "example": true,
+                        "type": "boolean"
+                    },
+                    "region": {
+                        "example": "eu",
+                        "type": "string"
+                    },
+                    "userId": {
+                        "example": "3f1c2d4e-…-uuid",
+                        "type": "string"
+                    },
+                    "version": {
+                        "example": "0.2.0",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "public.BootstrapResponse": {
+                "properties": {
+                    "createdAt": {
+                        "type": "string"
+                    },
+                    "id": {
+                        "description": "fixed public key → X-Instance-ID",
+                        "example": "3f1c2d4e-…-uuid",
+                        "type": "string"
+                    },
+                    "name": {
+                        "example": "My instance",
+                        "type": "string"
+                    },
+                    "ok": {
+                        "example": true,
+                        "type": "boolean"
+                    },
+                    "optInIngest": {
+                        "example": true,
+                        "type": "boolean"
+                    },
+                    "privateKey": {
+                        "description": "shown once",
+                        "example": "iml_…",
+                        "type": "string"
+                    },
+                    "region": {
+                        "example": "eu",
+                        "type": "string"
+                    },
+                    "sqid": {
+                        "description": "editable unique handle",
+                        "example": "my-node",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "public.CoplayItemDoc": {
+                "properties": {
+                    "a": {
+                        "$ref": "#/components/schemas/public.TrackRefDoc"
+                    },
+                    "b": {
+                        "$ref": "#/components/schemas/public.TrackRefDoc"
+                    },
+                    "count": {
+                        "example": 4,
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
+            "public.CoplaysRequest": {
+                "properties": {
+                    "coplays": {
+                        "items": {
+                            "$ref": "#/components/schemas/public.CoplayItemDoc"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "type": "object"
+            },
+            "public.DistributionPlaylist": {
+                "properties": {
+                    "comment": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "etag": {
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "image": {
+                        "type": "string"
+                    },
+                    "kind": {
+                        "example": "editorial",
+                        "type": "string"
+                    },
+                    "language": {
+                        "example": "fr",
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "region": {
+                        "example": "eu",
+                        "type": "string"
+                    },
+                    "slug": {
+                        "example": "summer-hits",
+                        "type": "string"
+                    },
+                    "tracks": {
+                        "items": {
+                            "$ref": "#/components/schemas/public.DistributionTrack"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "updatedAt": {
+                        "type": "string"
+                    },
+                    "version": {
+                        "example": 3,
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
+            "public.DistributionTrack": {
+                "properties": {
+                    "album": {
+                        "type": "string"
+                    },
+                    "artist": {
+                        "type": "string"
+                    },
+                    "image": {
+                        "type": "string"
+                    },
+                    "key": {
+                        "example": "nk:the beatles|hey jude",
+                        "type": "string"
+                    },
+                    "mbid": {
+                        "type": "string"
+                    },
+                    "title": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "public.IngestResultResponse": {
+                "properties": {
+                    "accepted": {
+                        "example": 10,
+                        "type": "integer"
+                    },
+                    "ok": {
+                        "example": true,
+                        "type": "boolean"
+                    },
+                    "received": {
+                        "example": 12,
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
+            "public.InstanceProfile": {
+                "properties": {
+                    "createdAt": {
+                        "type": "string"
+                    },
+                    "id": {
+                        "description": "fixed public key → X-Instance-ID",
+                        "example": "3f1c2d4e-…-uuid",
+                        "type": "string"
+                    },
+                    "lastSeenAt": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "example": "My instance",
+                        "type": "string"
+                    },
+                    "optInIngest": {
+                        "example": true,
+                        "type": "boolean"
+                    },
+                    "region": {
+                        "example": "eu",
+                        "type": "string"
+                    },
+                    "sqid": {
+                        "description": "editable unique handle",
+                        "example": "my-node",
+                        "type": "string"
+                    },
+                    "version": {
+                        "example": "0.2.0",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "public.PlayItemDoc": {
+                "properties": {
+                    "album": {
+                        "type": "string"
+                    },
+                    "artist": {
+                        "example": "The Beatles",
+                        "type": "string"
+                    },
+                    "count": {
+                        "example": 12,
+                        "type": "integer"
+                    },
+                    "image": {
+                        "type": "string"
+                    },
+                    "mbid": {
+                        "type": "string"
+                    },
+                    "title": {
+                        "example": "Hey Jude",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "public.PlaysRequest": {
+                "properties": {
+                    "plays": {
+                        "items": {
+                            "$ref": "#/components/schemas/public.PlayItemDoc"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "type": "object"
+            },
+            "public.ProfileResponse": {
+                "properties": {
+                    "instance": {
+                        "$ref": "#/components/schemas/public.InstanceProfile"
+                    },
+                    "ok": {
+                        "example": true,
+                        "type": "boolean"
+                    }
+                },
+                "type": "object"
+            },
+            "public.RegisterRequest": {
+                "properties": {
+                    "version": {
+                        "example": "0.2.0",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "public.ScrobbleAggregateDoc": {
+                "properties": {
+                    "count": {
+                        "type": "integer"
+                    },
+                    "trackHash": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "public.ScrobblesRequest": {
+                "properties": {
+                    "aggregates": {
+                        "items": {
+                            "$ref": "#/components/schemas/public.ScrobbleAggregateDoc"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "type": "object"
+            },
+            "public.SpotifyImportRequest": {
+                "properties": {
+                    "playlist": {
+                        "example": "https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "public.SpotifyJobResponse": {
+                "properties": {
+                    "createdAt": {
+                        "type": "string"
+                    },
+                    "error": {
+                        "type": "string"
+                    },
+                    "finishedAt": {
+                        "type": "string"
+                    },
+                    "jobId": {
+                        "type": "string"
+                    },
+                    "ok": {
+                        "example": true,
+                        "type": "boolean"
+                    },
+                    "playlist": {
+                        "$ref": "#/components/schemas/public.SpotifyPlaylistMeta"
+                    },
+                    "playlistId": {
+                        "type": "string"
+                    },
+                    "playlistRef": {
+                        "type": "string"
+                    },
+                    "startedAt": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "description": "pending | in_progress | completed | failed",
+                        "example": "completed",
+                        "type": "string"
+                    },
+                    "trackCount": {
+                        "type": "integer"
+                    },
+                    "tracks": {
+                        "items": {
+                            "$ref": "#/components/schemas/public.SpotifyTrack"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "type": "object"
+            },
+            "public.SpotifyPlaylistMeta": {
+                "properties": {
+                    "description": {
+                        "type": "string"
+                    },
+                    "image": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "example": "Road Trip",
+                        "type": "string"
+                    },
+                    "owner": {
+                        "example": "curator",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "public.SpotifyTrack": {
+                "properties": {
+                    "album": {
+                        "example": "1",
+                        "type": "string"
+                    },
+                    "artist": {
+                        "example": "The Beatles",
+                        "type": "string"
+                    },
+                    "duration": {
+                        "example": 431,
+                        "type": "integer"
+                    },
+                    "image": {
+                        "type": "string"
+                    },
+                    "key": {
+                        "example": "nk:the beatles|hey jude",
+                        "type": "string"
+                    },
+                    "spotifyId": {
+                        "example": "3n3Ppam7vgaVa1iaRUc9Lp",
+                        "type": "string"
+                    },
+                    "title": {
+                        "example": "Hey Jude",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "public.TrackRefDoc": {
+                "properties": {
+                    "album": {
+                        "example": "1",
+                        "type": "string"
+                    },
+                    "artist": {
+                        "example": "The Beatles",
+                        "type": "string"
+                    },
+                    "image": {
+                        "type": "string"
+                    },
+                    "mbid": {
+                        "example": "b1a9c0e8-…",
+                        "type": "string"
+                    },
+                    "title": {
+                        "example": "Hey Jude",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "public.UpdateInstanceRequest": {
+                "properties": {
+                    "name": {
+                        "example": "My instance",
+                        "type": "string"
+                    },
+                    "optInIngest": {
+                        "example": true,
+                        "type": "boolean"
+                    },
+                    "sqid": {
+                        "example": "my-node",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            }
+        },
+        "securitySchemes": {
+            "BearerAuth": {
+                "in": "header",
+                "name": "Authorization",
+                "type": "apiKey"
+            }
+        }
+    },
+    "info": {
+        "description": "Global federation server for immerle. Two faces: a PUBLIC API consumed by instances (distribution of editorial \u0026 recommendation playlists, anonymised opt-in ingestion) and a back-office ADMIN API (editorial curation, recommendations, Spotify import). Instances self-register against their owner's user id; each instance has a fixed id (a uuid, sent in X-Instance-ID) plus an editable sqid handle. All track identifiers are portable (MusicBrainz id or a normalised artist|title key) — never instance-local, never a user id. Both APIs authenticate with `Authorization: Bearer \u003ctoken\u003e`: the PUBLIC API uses a per-instance API key (the `admin-*`, `editorial`, `reco`, `spotify`, `ingest-admin` tags require the ADMIN_TOKEN instead).",
+        "title": "immerle-hub API",
+        "version": "1.0"
+    },
+    "externalDocs": {
+        "description": "",
+        "url": ""
+    },
+    "paths": {
+        "/account/instances": {
+            "get": {
+                "description": "The caller's dashboard: every instance they have registered.",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/account.InstancesResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "List my instances",
+                "tags": [
+                    "account-instances"
+                ]
+            }
+        },
+        "/account/instances/{id}": {
+            "delete": {
+                "description": "Permanently removes the instance and, by cascade, all of its raw submissions, then recomputes the k-anonymous aggregates.",
+                "parameters": [
+                    {
+                        "description": "Instance id (uuid)",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.DeletedResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Delete an instance",
+                "tags": [
+                    "account-instances"
+                ]
+            },
+            "get": {
+                "parameters": [
+                    {
+                        "description": "Instance id (uuid)",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/account.InstanceResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Get one of my instances",
+                "tags": [
+                    "account-instances"
+                ]
+            },
+            "patch": {
+                "parameters": [
+                    {
+                        "description": "Instance id (uuid)",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/account.UpdateInstanceRequest",
+                                        "summary": "request",
+                                        "description": "Fields to update"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Fields to update",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/account.InstanceResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Update one of my instances",
+                "tags": [
+                    "account-instances"
+                ]
+            }
+        },
+        "/account/instances/{id}/revoke": {
+            "post": {
+                "parameters": [
+                    {
+                        "description": "Instance id (uuid)",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.RevokedResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Revoke an instance",
+                "tags": [
+                    "account-instances"
+                ]
+            }
+        },
+        "/account/instances/{id}/rotate": {
+            "post": {
+                "description": "Mints a fresh private key (returned ONCE as \"privateKey\"); the previous key stops working immediately. The id (uuid) is unchanged.",
+                "parameters": [
+                    {
+                        "description": "Instance id (uuid)",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/account.InstanceKeyResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Rotate an instance private key",
+                "tags": [
+                    "account-instances"
+                ]
+            }
+        },
+        "/account/login": {
+            "post": {
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/account.CredentialsRequest",
+                                        "summary": "request",
+                                        "description": "Email and password"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Email and password",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/account.AuthResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "summary": "Log in",
+                "tags": [
+                    "account"
+                ]
+            }
+        },
+        "/account/me": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/account.MeResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Current account",
+                "tags": [
+                    "account"
+                ]
+            }
+        },
+        "/account/register": {
+            "post": {
+                "description": "Creates a hub account and returns a session token (Bearer) for the dashboard.",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/account.CredentialsRequest",
+                                        "summary": "request",
+                                        "description": "Email and password (min 8 chars)"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Email and password (min 8 chars)",
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/account.AuthResponse"
+                                }
+                            }
+                        },
+                        "description": "Created"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "409": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "email already registered"
+                    }
+                },
+                "summary": "Sign up",
+                "tags": [
+                    "account"
+                ]
+            }
+        },
+        "/admin/ingest/recompute": {
+            "post": {
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/admin.RecomputeResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Recompute aggregates",
+                "tags": [
+                    "ingest-admin"
+                ]
+            }
+        },
+        "/admin/playlists": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/admin.PlaylistsResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "List editorial playlists",
+                "tags": [
+                    "editorial"
+                ]
+            },
+            "post": {
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/admin.PlaylistRequest",
+                                        "summary": "request",
+                                        "description": "Playlist metadata"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Playlist metadata",
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/admin.PlaylistResponse"
+                                }
+                            }
+                        },
+                        "description": "Created"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Create an editorial playlist",
+                "tags": [
+                    "editorial"
+                ]
+            }
+        },
+        "/admin/playlists/{id}": {
+            "delete": {
+                "parameters": [
+                    {
+                        "description": "Playlist id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.DeletedResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Delete an editorial playlist",
+                "tags": [
+                    "editorial"
+                ]
+            },
+            "get": {
+                "parameters": [
+                    {
+                        "description": "Playlist id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/admin.PlaylistResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Get an editorial playlist",
+                "tags": [
+                    "editorial"
+                ]
+            },
+            "patch": {
+                "parameters": [
+                    {
+                        "description": "Playlist id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/admin.PlaylistRequest",
+                                        "summary": "request",
+                                        "description": "Playlist metadata"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Playlist metadata",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/admin.PlaylistResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Update an editorial playlist",
+                "tags": [
+                    "editorial"
+                ]
+            }
+        },
+        "/admin/playlists/{id}/publish": {
+            "post": {
+                "parameters": [
+                    {
+                        "description": "Playlist id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/admin.PlaylistResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Publish an editorial playlist",
+                "tags": [
+                    "editorial"
+                ]
+            }
+        },
+        "/admin/playlists/{id}/tracks": {
+            "put": {
+                "parameters": [
+                    {
+                        "description": "Playlist id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/admin.SetTracksRequest",
+                                        "summary": "request",
+                                        "description": "Track list (portable ids + display metadata)"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Track list (portable ids + display metadata)",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/admin.PlaylistResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Set editorial playlist tracks",
+                "tags": [
+                    "editorial"
+                ]
+            }
+        },
+        "/admin/playlists/{id}/unpublish": {
+            "post": {
+                "parameters": [
+                    {
+                        "description": "Playlist id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/admin.PublishStateResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Unpublish an editorial playlist",
+                "tags": [
+                    "editorial"
+                ]
+            }
+        },
+        "/admin/reco/runs": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/admin.RunsResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "List recommendation runs",
+                "tags": [
+                    "reco"
+                ]
+            },
+            "post": {
+                "description": "Runs the item-item CF engine, publishes the generated playlists and returns the run with coverage/diversity metrics.",
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/admin.RunResponse"
+                                }
+                            }
+                        },
+                        "description": "Created"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Trigger a recommendation run",
+                "tags": [
+                    "reco"
+                ]
+            }
+        },
+        "/admin/reco/runs/{id}": {
+            "get": {
+                "parameters": [
+                    {
+                        "description": "Run id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/admin.RunResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Get a recommendation run",
+                "tags": [
+                    "reco"
+                ]
+            }
+        },
+        "/api/v1/coplays": {
+            "post": {
+                "description": "Ingests aggregated, anonymised co-play counters (track pairs heard together), in portable identifiers (opt-in instances only).",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/public.CoplaysRequest",
+                                        "summary": "request",
+                                        "description": "Aggregated co-play counters"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Aggregated co-play counters",
+                    "required": true
+                },
+                "responses": {
+                    "202": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/public.IngestResultResponse"
+                                }
+                            }
+                        },
+                        "description": "Accepted"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "instance has not opted in"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Ingest aggregated co-plays",
+                "tags": [
+                    "ingestion"
+                ]
+            }
+        },
+        "/api/v1/instances": {
+            "post": {
+                "description": "Called by an immerle instance with its owner's user id (a uuid). The hub creates the instance owned by that user, assigns its fixed id (a uuid, used in X-Instance-ID), a sqid handle (editable later) and a private key (returned ONCE). The instance then authenticates with \"X-Instance-ID: \u003cid\u003e\" and \"Authorization: Bearer \u003cprivateKey\u003e\".",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/public.BootstrapRequest",
+                                        "summary": "request",
+                                        "description": "Owner user id and optional metadata"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Owner user id and optional metadata",
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/public.BootstrapResponse"
+                                }
+                            }
+                        },
+                        "description": "Created"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "unknown user id"
+                    }
+                },
+                "summary": "Bootstrap an instance (self-register)",
+                "tags": [
+                    "instances"
+                ]
+            }
+        },
+        "/api/v1/instances/me": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/public.ProfileResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Instance profile",
+                "tags": [
+                    "instances"
+                ]
+            },
+            "patch": {
+                "description": "Edits the calling instance's name, its sqid handle (must be unique hub-side) and/or its ingestion opt-in. The id (uuid) is immutable and the private key is unchanged.",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/public.UpdateInstanceRequest",
+                                        "summary": "request",
+                                        "description": "Fields to update"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Fields to update",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/public.ProfileResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "409": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "sqid already taken"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Update this instance",
+                "tags": [
+                    "instances"
+                ]
+            }
+        },
+        "/api/v1/instances/me/data": {
+            "delete": {
+                "description": "Deletes the calling instance and, by cascade, all of its raw submissions, then recomputes the k-anonymous aggregates so it no longer contributes to anything.",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.DeletedResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Delete instance data (GDPR)",
+                "tags": [
+                    "instances"
+                ]
+            }
+        },
+        "/api/v1/instances/register": {
+            "post": {
+                "description": "Announces the calling instance to the hub: records a heartbeat and the reported version, and returns the instance profile.",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/public.RegisterRequest",
+                                        "summary": "request",
+                                        "description": "Reported version"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Reported version"
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/public.ProfileResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Register / heartbeat",
+                "tags": [
+                    "instances"
+                ]
+            }
+        },
+        "/api/v1/playlists": {
+            "get": {
+                "description": "Returns every published playlist (editorial + recommendation), with tracks, in portable identifiers. Supports collection-level ETag (If-None-Match) and If-Modified-Since → 304.",
+                "parameters": [
+                    {
+                        "description": "Narrow to a region (defaults to the instance's region)",
+                        "in": "query",
+                        "name": "region",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Collection ETag for conditional GET",
+                        "in": "header",
+                        "name": "If-None-Match",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "RFC1123 date for conditional GET",
+                        "in": "header",
+                        "name": "If-Modified-Since",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/public.DistributionPlaylist"
+                                    },
+                                    "type": "array"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "304": {
+                        "description": "Not Modified"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "List distributed playlists",
+                "tags": [
+                    "distribution"
+                ]
+            }
+        },
+        "/api/v1/playlists/{slug}": {
+            "get": {
+                "parameters": [
+                    {
+                        "description": "Playlist slug",
+                        "in": "path",
+                        "name": "slug",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Playlist ETag for conditional GET",
+                        "in": "header",
+                        "name": "If-None-Match",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "RFC1123 date for conditional GET",
+                        "in": "header",
+                        "name": "If-Modified-Since",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/public.DistributionPlaylist"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "304": {
+                        "description": "Not Modified"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Get a distributed playlist",
+                "tags": [
+                    "distribution"
+                ]
+            }
+        },
+        "/api/v1/plays": {
+            "post": {
+                "description": "Ingests aggregated, anonymised play counters in portable identifiers (opt-in instances only). Never send a user id or an instance-local track id.",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/public.PlaysRequest",
+                                        "summary": "request",
+                                        "description": "Aggregated play counters"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Aggregated play counters",
+                    "required": true
+                },
+                "responses": {
+                    "202": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/public.IngestResultResponse"
+                                }
+                            }
+                        },
+                        "description": "Accepted"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "instance has not opted in"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Ingest aggregated plays",
+                "tags": [
+                    "ingestion"
+                ]
+            }
+        },
+        "/api/v1/scrobbles": {
+            "post": {
+                "description": "Backward-compatible alias accepting the original federation client's opaque per-instance hash counters. These keys are not portable across instances, so by design they never reach cross-instance k-anonymity.",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/public.ScrobblesRequest",
+                                        "summary": "request",
+                                        "description": "Legacy aggregated scrobbles"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Legacy aggregated scrobbles",
+                    "required": true
+                },
+                "responses": {
+                    "202": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/public.IngestResultResponse"
+                                }
+                            }
+                        },
+                        "description": "Accepted"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "instance has not opted in"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Ingest legacy scrobbles",
+                "tags": [
+                    "ingestion"
+                ]
+            }
+        },
+        "/api/v1/spotify/imports": {
+            "post": {
+                "description": "Enqueues an import of a PUBLIC Spotify playlist for the calling instance and returns a job id immediately — no Spotify call happens in this request. A background worker fetches the playlist (one at a time, honouring Spotify's rate limit). Poll GET /api/v1/spotify/imports/{id}.",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/public.SpotifyImportRequest",
+                                        "summary": "request",
+                                        "description": "Playlist id / URI / URL"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Playlist id / URI / URL",
+                    "required": true
+                },
+                "responses": {
+                    "202": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/public.SpotifyJobResponse"
+                                }
+                            }
+                        },
+                        "description": "Job enqueued (status=pending)"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "503": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "import disabled (no credentials)"
+                    }
+                },
+                "security": [
+                    {
+                        "InstanceKey": []
+                    }
+                ],
+                "summary": "Enqueue a Spotify playlist import (lazy)",
+                "tags": [
+                    "spotify"
+                ]
+            }
+        },
+        "/api/v1/spotify/imports/{id}": {
+            "get": {
+                "description": "Returns the job state: pending | in_progress | completed | failed. Tracks (in portable ids) are included once completed. Scoped to the calling instance.",
+                "parameters": [
+                    {
+                        "description": "Job id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/public.SpotifyJobResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "503": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "import disabled (no credentials)"
+                    }
+                },
+                "security": [
+                    {
+                        "InstanceKey": []
+                    }
+                ],
+                "summary": "Poll a Spotify import job",
+                "tags": [
+                    "spotify"
+                ]
+            }
+        }
+    },
+    "openapi": "3.1.0",
+    "servers": [
+        {
+            "url": "/"
+        }
+    ]
+}

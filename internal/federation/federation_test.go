@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/immerle/immerle/internal/config"
+	"github.com/immerle/immerle/internal/federation/hub"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/testutil"
 )
@@ -21,13 +22,16 @@ func testLogger() *slog.Logger {
 	return slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelWarn}))
 }
 
+// strptr is a tiny helper for building the generated hub DTOs (all-pointer).
+func strptr(s string) *string { return &s }
+
 // stubHub is a minimal in-memory immerle-hub for testing the client.
-func stubHub(t *testing.T, playlists []hubPlaylist) (*httptest.Server, *stubState) {
+func stubHub(t *testing.T, playlists []hub.PublicDistributionPlaylist) (*httptest.Server, *stubState) {
 	state := &stubState{}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/v1/instances/register", func(w http.ResponseWriter, r *http.Request) {
 		state.registered = true
-		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(hub.PublicProfileResponse{Ok: boolptr(true)})
 	})
 	mux.HandleFunc("/api/v1/playlists", func(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(playlists)
@@ -44,6 +48,8 @@ func stubHub(t *testing.T, playlists []hubPlaylist) (*httptest.Server, *stubStat
 	t.Cleanup(srv.Close)
 	return srv, state
 }
+
+func boolptr(b bool) *bool { return &b }
 
 type stubState struct {
 	registered      bool
@@ -65,13 +71,13 @@ func TestFederationSyncMaterializesReadOnlyPlaylist(t *testing.T) {
 		Path: "/music/present.mp3", MBID: "mbid-present", CreatedAt: now, UpdatedAt: now,
 	})
 
-	playlists := []hubPlaylist{{
-		ID:      "editorial-1",
-		Name:    "Hub Picks",
-		Comment: "Editorial",
-		Tracks: []hubTrack{
-			{MBID: "mbid-present", Artist: "Present Artist", Title: "Present"},
-			{MBID: "mbid-absent", Artist: "Absent Artist", Title: "Absent"}, // not resolvable (no resolver)
+	playlists := []hub.PublicDistributionPlaylist{{
+		Id:      strptr("editorial-1"),
+		Name:    strptr("Hub Picks"),
+		Comment: strptr("Editorial"),
+		Tracks: &[]hub.PublicDistributionTrack{
+			{Mbid: strptr("mbid-present"), Artist: strptr("Present Artist"), Title: strptr("Present")},
+			{Mbid: strptr("mbid-absent"), Artist: strptr("Absent Artist"), Title: strptr("Absent")}, // not resolvable (no resolver)
 		},
 	}}
 	srv, state := stubHub(t, playlists)
@@ -79,8 +85,8 @@ func TestFederationSyncMaterializesReadOnlyPlaylist(t *testing.T) {
 	cfg := config.FederationConfig{
 		Enabled:    true,
 		HubURL:     srv.URL,
-		UserID:     "user-1",
 		InstanceID: "inst-1",
+		PrivateKey: "iml_key",
 	}
 	svc := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, nil, testLogger())
 	svc.SetOwner(owner.ID)
@@ -141,7 +147,7 @@ func TestFederationExportsAnonymizedScrobbles(t *testing.T) {
 	}
 
 	srv, state := stubHub(t, nil)
-	cfg := config.FederationConfig{Enabled: true, HubURL: srv.URL, UserID: "user-1", InstanceID: "inst-1", ExportScrobbles: true}
+	cfg := config.FederationConfig{Enabled: true, HubURL: srv.URL, InstanceID: "inst-1", PrivateKey: "iml_key", ExportScrobbles: true}
 	svc := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, nil, testLogger())
 
 	if err := svc.ExportScrobbles(ctx); err != nil {

@@ -521,6 +521,8 @@
       "instanceName": "Nom de l'instance",
       "instanceId": "Id de l'instance",
       "instanceIdHelp": "Unique côté hub. Par défaut un id court attribué à l'enregistrement.",
+      "instanceUuid": "UUID hub : {{id}}",
+      "saveToHub": "Envoyer au hub",
       "syncInterval": "Intervalle de synchro (s)",
       "resolveMissing": "Résoudre les titres manquants",
       "exportScrobbles": "Exporter les écoutes (scrobbles)",

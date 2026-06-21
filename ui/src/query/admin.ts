@@ -221,12 +221,23 @@ export function useCleanupMutations() {
 // --- Federation ------------------------------------------------------------
 
 /** Register this instance with the hub. The response carries the refreshed
- * settings (with the hub-assigned instance id), so we prime the settings cache. */
+ * settings (with the hub-assigned id), so we prime the settings cache. */
 export function useRegisterInstance() {
   const client = useAuth((s) => s.client);
   const qc = useQueryClient();
   return useMutation({
     mutationFn: () => client!.registerInstance(),
+    onSuccess: (res) => qc.setQueryData(qk.settings, res),
+  });
+}
+
+/** Push a name / sqid change to the hub (server-side). Primes the settings
+ * cache with the hub-canonical values on success. */
+export function useUpdateFederationInstance() {
+  const client = useAuth((s) => s.client);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (p: { name: string; sqid: string }) => client!.updateFederationInstance(p.name, p.sqid),
     onSuccess: (res) => qc.setQueryData(qk.settings, res),
   });
 }

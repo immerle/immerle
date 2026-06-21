@@ -25,7 +25,7 @@ func TestFetchExternalPlaylist(t *testing.T) {
 		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/spotify/imports":
 			b, _ := io.ReadAll(r.Body)
 			postBody = string(b)
-			postAuth = r.Header.Get("X-User-ID")
+			postAuth = r.Header.Get("Authorization")
 			postInstance = r.Header.Get("X-Instance-ID")
 			w.WriteHeader(http.StatusAccepted)
 			_, _ = w.Write([]byte(`{"jobId":"job-1","status":"pending"}`))
@@ -42,7 +42,7 @@ func TestFetchExternalPlaylist(t *testing.T) {
 
 	store := testutil.NewStore(t)
 	// Import works even with sync disabled, as long as the instance is registered.
-	cfg := config.FederationConfig{Enabled: false, HubURL: srv.URL, UserID: "user-1", InstanceID: "inst-1"}
+	cfg := config.FederationConfig{Enabled: false, HubURL: srv.URL, InstanceID: "inst-1", PrivateKey: "iml_key-1"}
 	svc := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, nil, testLogger())
 
 	pl, err := svc.FetchExternalPlaylist(context.Background(), "spotify", "https://open.spotify.com/playlist/PL?si=x")
@@ -52,8 +52,8 @@ func TestFetchExternalPlaylist(t *testing.T) {
 	if !strings.Contains(postBody, `"playlist":"https://open.spotify.com/playlist/PL?si=x"`) {
 		t.Fatalf("ref not forwarded in body: %s", postBody)
 	}
-	if postAuth != "user-1" || postInstance != "inst-1" {
-		t.Fatalf("hub identity headers wrong: user=%q instance=%q", postAuth, postInstance)
+	if postAuth != "Bearer iml_key-1" || postInstance != "inst-1" {
+		t.Fatalf("hub auth headers wrong: auth=%q instance=%q", postAuth, postInstance)
 	}
 	if pl.Name != "My Mix" || len(pl.Tracks) != 2 {
 		t.Fatalf("playlist decode wrong: %+v", pl)
@@ -78,7 +78,7 @@ func TestFetchExternalPlaylistFailedJob(t *testing.T) {
 	defer srv.Close()
 
 	store := testutil.NewStore(t)
-	cfg := config.FederationConfig{HubURL: srv.URL, UserID: "u", InstanceID: "i"}
+	cfg := config.FederationConfig{HubURL: srv.URL, InstanceID: "i", PrivateKey: "iml_k"}
 	svc := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, nil, testLogger())
 	if _, err := svc.FetchExternalPlaylist(context.Background(), "spotify", "PL"); err == nil ||
 		!strings.Contains(err.Error(), "playlist is private") {
@@ -86,41 +86,39 @@ func TestFetchExternalPlaylistFailedJob(t *testing.T) {
 	}
 }
 
-func TestRegisterClaimsUserAndPersistsInstanceID(t *testing.T) {
-	var user, instance, body string
+// On first Register (no private key yet) the instance bootstraps under the
+// configured owner user id and persists the hub-issued id/sqid/private key.
+func TestRegisterBootstrapsAndPersistsCredentials(t *testing.T) {
+	var path, body string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user = r.Header.Get("X-User-ID")
-		instance = r.Header.Get("X-Instance-ID")
+		path = r.URL.Path
 		b, _ := io.ReadAll(r.Body)
 		body = strings.TrimSpace(string(b))
-		w.WriteHeader(http.StatusOK)
-		// Hub assigns a sqids instance id on first register.
-		_, _ = w.Write([]byte(`{"instanceId":"Xb7p2Qa","name":"My immerle"}`))
+		w.WriteHeader(http.StatusCreated)
+		// Bootstrap returns the fixed UUID id, an editable sqid and the key (once).
+		_, _ = w.Write([]byte(`{"ok":true,"id":"3f1c-uuid","sqid":"my-node","privateKey":"iml_secret","name":"My immerle"}`))
 	}))
 	defer srv.Close()
 
 	store := testutil.NewStore(t)
 	cfg := config.FederationConfig{Enabled: true, HubURL: srv.URL, UserID: "user-1", InstanceName: "My immerle"}
 	svc := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, nil, testLogger())
-	var saved string
-	svc.SetInstanceIDSaver(func(_ context.Context, id string) error { saved = id; return nil })
+	var saved Credentials
+	svc.SetCredentialsSaver(func(_ context.Context, c Credentials) error { saved = c; return nil })
 
 	if err := svc.Register(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	if user != "user-1" {
-		t.Fatalf("user id not sent as X-User-ID: %q", user)
+	if path != "/api/v1/instances" {
+		t.Fatalf("bootstrap should hit /api/v1/instances, hit %q", path)
 	}
-	if instance != "" {
-		t.Fatalf("expected empty instance id on first register, got %q", instance)
-	}
-	// Body carries the user id, desired name and version.
+	// Body carries the owner user id, desired name and version.
 	if !strings.Contains(body, `"userId":"user-1"`) || !strings.Contains(body, `"version":"0.2.0"`) {
-		t.Fatalf("unexpected register body: %s", body)
+		t.Fatalf("unexpected bootstrap body: %s", body)
 	}
-	// The hub-assigned instance id is persisted back.
-	if saved != "Xb7p2Qa" {
-		t.Fatalf("assigned instance id not persisted: %q", saved)
+	// The hub-issued credentials are persisted back.
+	if saved.InstanceID != "3f1c-uuid" || saved.Sqid != "my-node" || saved.PrivateKey != "iml_secret" {
+		t.Fatalf("credentials not persisted: %+v", saved)
 	}
 }
 

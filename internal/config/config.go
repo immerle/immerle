@@ -110,11 +110,15 @@ func HubURL() string {
 type FederationConfig struct {
 	Enabled bool
 	HubURL  string
-	// UserID is the hub user's UUID (sent as the X-User-ID header); InstanceID is
-	// the hub-assigned instance identifier (sent as the X-Instance-ID header).
+	// UserID is the hub owner UUID the operator pastes to claim this instance
+	// (used only at bootstrap). InstanceID is the hub-assigned fixed UUID sent as
+	// the X-Instance-ID header. PrivateKey is the hub-issued secret Bearer token
+	// (returned once at bootstrap). Sqid is the editable, unique hub handle.
 	UserID          string
 	InstanceID      string
+	Sqid            string
 	InstanceName    string
+	PrivateKey      string
 	SyncInterval    time.Duration
 	ResolveMissing  bool
 	ExportScrobbles bool

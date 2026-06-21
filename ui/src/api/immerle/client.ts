@@ -851,11 +851,23 @@ export class ImmerleClient {
 
   // --- Admin: federation ---------------------------------------------------
 
-  /** Register this instance with the hub: claims the configured hub user id and
-   * persists the hub-assigned instance id. The HTTP exchange runs server-side.
-   * Returns the refreshed runtime settings (so the UI sees the assigned id). */
+  /** Register this instance with the hub: bootstraps under the configured hub
+   * user id and persists the hub-assigned id + private key. The HTTP exchange
+   * runs server-side. Returns the refreshed runtime settings. */
   async registerInstance(): Promise<SettingsResult> {
     const data = await this.request<SettingsResponseRaw>('POST', 'admin/federation/register');
+    return {
+      settings: data.settings ?? {},
+      restartRequired: data.restartRequired ?? false,
+      pendingRestart: data.pendingRestart ?? [],
+    };
+  }
+
+  /** Push a name / sqid (editable hub handle) change to the hub. The hub
+   * validates sqid uniqueness; a clash surfaces as an error. Returns the
+   * refreshed runtime settings with the hub-canonical values. */
+  async updateFederationInstance(name: string, sqid: string): Promise<SettingsResult> {
+    const data = await this.request<SettingsResponseRaw>('PATCH', 'admin/federation', { name, sqid });
     return {
       settings: data.settings ?? {},
       restartRequired: data.restartRequired ?? false,

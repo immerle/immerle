@@ -5,13 +5,10 @@
 package federation
 
 import (
-	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
-	"io"
 	"log/slog"
 	"net/http"
 	"time"
@@ -19,6 +16,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/immerle/immerle/internal/config"
+	"github.com/immerle/immerle/internal/federation/hub"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 )
@@ -38,7 +36,7 @@ type Resolver interface {
 // feature flags all take effect without a restart.
 type Service struct {
 	cfgFn     func() config.FederationConfig
-	http      *http.Client
+	hub       *hub.Client
 	catalog   *persistence.CatalogRepo
 	playlists *persistence.PlaylistRepo
 	scrobbles *persistence.ScrobbleRepo
@@ -49,14 +47,30 @@ type Service struct {
 	// after first-run setup still finds an admin).
 	ownerID string
 	ownerFn func(context.Context) (string, error)
-	// saveInstanceID persists the hub-assigned instance id back into the runtime
-	// settings after a successful register (optional).
-	saveInstanceID func(context.Context, string) error
+	// saveCreds persists hub-issued identity (instance UUID, sqid, private key,
+	// name) back into the runtime settings after bootstrap/update (optional;
+	// empty fields are left unchanged by the saver).
+	saveCreds func(context.Context, Credentials) error
 }
 
-// SetInstanceIDSaver registers a callback used to persist the hub-assigned
-// instance id (the sqids returned at register) back into the runtime settings.
-func (s *Service) SetInstanceIDSaver(fn func(context.Context, string) error) { s.saveInstanceID = fn }
+// Credentials carries hub-issued identity persisted into the runtime settings.
+// Empty fields are ignored by the saver (so an update can touch only name/sqid).
+type Credentials struct {
+	InstanceID string
+	Sqid       string
+	PrivateKey string
+	Name       string
+}
+
+// SetCredentialsSaver registers a callback used to persist hub-issued identity
+// (returned at bootstrap, or the canonical name/sqid returned at update).
+func (s *Service) SetCredentialsSaver(fn func(context.Context, Credentials) error) { s.saveCreds = fn }
+
+// auth returns the per-instance hub credentials (private key + instance UUID).
+func (s *Service) auth() hub.Auth {
+	c := s.cfg()
+	return hub.Auth{InstanceID: c.InstanceID, PrivateKey: c.PrivateKey}
+}
 
 // cfg returns the current federation configuration (read live).
 func (s *Service) cfg() config.FederationConfig { return s.cfgFn() }
@@ -73,7 +87,7 @@ func (s *Service) SetOwnerResolver(fn func(context.Context) (string, error)) { s
 func New(cfgFn func() config.FederationConfig, catalog *persistence.CatalogRepo, playlists *persistence.PlaylistRepo, scrobbles *persistence.ScrobbleRepo, resolver Resolver, logger *slog.Logger) *Service {
 	return &Service{
 		cfgFn:     cfgFn,
-		http:      &http.Client{Timeout: 30 * time.Second},
+		hub:       hub.New(cfgFn().HubURL, &http.Client{Timeout: 30 * time.Second}),
 		catalog:   catalog,
 		playlists: playlists,
 		scrobbles: scrobbles,
@@ -86,68 +100,96 @@ func New(cfgFn func() config.FederationConfig, catalog *persistence.CatalogRepo,
 // FederationStatusProvider interface). Read live.
 func (s *Service) Enabled() bool { return s != nil && s.cfg().Enabled }
 
-// HubConfigured reports whether the instance is registered with the hub (user
-// id + assigned instance id both set) so hub-backed features such as playlist
-// import are usable. Read live. The hub URL is hardcoded so it is always set.
+// HubConfigured reports whether the instance has bootstrapped with the hub
+// (instance UUID + private key both set) so authenticated hub calls (playlist
+// sync, import, ingest) are usable. Read live.
 func (s *Service) HubConfigured() bool {
 	if s == nil {
 		return false
 	}
 	c := s.cfg()
-	return c.UserID != "" && c.InstanceID != ""
+	return c.InstanceID != "" && c.PrivateKey != ""
 }
 
-// hubPlaylist is the portable playlist shape exchanged with the hub.
-type hubPlaylist struct {
-	ID      string     `json:"id"`
-	Name    string     `json:"name"`
-	Comment string     `json:"comment"`
-	Tracks  []hubTrack `json:"tracks"`
-}
-
-// hubTrack carries portable identifiers for cross-instance resolution.
-type hubTrack struct {
-	MBID   string `json:"mbid"`
-	Artist string `json:"artist"`
-	Title  string `json:"title"`
-	Album  string `json:"album"`
-}
-
-// registerResponse is the hub's reply to a register: it echoes the authoritative
-// instance id (a sqids assigned on first register, or the requested one).
-type registerResponse struct {
-	InstanceID string `json:"instanceId"`
-	Name       string `json:"name"`
-}
-
-// Register claims this instance under the configured hub user (UserID) and
-// reports its desired name/id. The hub assigns a sqids instance id on the first
-// register; the authoritative id from the response is persisted back into the
-// runtime settings. Callable independently of the Enabled flag (the admin
-// triggers it explicitly), so it does not gate on Enabled.
+// Register ensures the instance is known to the hub: it bootstraps (claims the
+// configured owner UserID) on first run, then heartbeats on subsequent calls.
+// Bootstrap credentials (instance UUID, sqid, private key) are persisted via the
+// credentials saver. Callable independently of the Enabled flag (the admin
+// triggers it explicitly via the register endpoint).
 func (s *Service) Register(ctx context.Context) error {
 	c := s.cfg()
+	if c.PrivateKey == "" {
+		return s.bootstrap(ctx, c)
+	}
+	if _, err := s.hub.Register(ctx, s.auth(), instanceVersion); err != nil {
+		return fmt.Errorf("hub heartbeat: %w", err)
+	}
+	s.logger.Info("heartbeat sent to immerle-hub", "instanceId", c.InstanceID)
+	return nil
+}
+
+// bootstrap self-registers the instance under the configured owner UserID and
+// persists the hub-issued credentials (instance UUID, sqid, private key).
+func (s *Service) bootstrap(ctx context.Context, c config.FederationConfig) error {
 	if c.UserID == "" {
 		return fmt.Errorf("federation: no hub user id configured")
 	}
-	body := map[string]any{
-		"userId":     c.UserID,
-		"instanceId": c.InstanceID, // empty on first register → hub assigns a sqids
-		"name":       c.InstanceName,
-		"version":    instanceVersion,
-	}
-	raw, err := s.do(ctx, http.MethodPost, "/api/v1/instances/register", body)
+	name, optIn, ver := c.InstanceName, c.ExportScrobbles, instanceVersion
+	resp, err := s.hub.Bootstrap(ctx, hub.PublicBootstrapRequest{
+		UserId:      &c.UserID,
+		Name:        &name,
+		OptInIngest: &optIn,
+		Version:     &ver,
+	})
 	if err != nil {
-		return fmt.Errorf("register with hub: %w", err)
+		return fmt.Errorf("bootstrap with hub: %w", err)
 	}
-	var resp registerResponse
-	if jerr := json.Unmarshal(raw, &resp); jerr == nil && resp.InstanceID != "" && resp.InstanceID != c.InstanceID && s.saveInstanceID != nil {
-		if serr := s.saveInstanceID(ctx, resp.InstanceID); serr != nil {
-			s.logger.Warn("persist hub instance id failed", "error", serr)
+	creds := Credentials{
+		InstanceID: deref(resp.Id),
+		Sqid:       deref(resp.Sqid),
+		PrivateKey: deref(resp.PrivateKey),
+		Name:       deref(resp.Name),
+	}
+	if creds.InstanceID == "" || creds.PrivateKey == "" {
+		return fmt.Errorf("hub bootstrap returned incomplete credentials")
+	}
+	if s.saveCreds != nil {
+		if err := s.saveCreds(ctx, creds); err != nil {
+			return fmt.Errorf("persist hub credentials: %w", err)
 		}
 	}
-	s.logger.Info("registered with immerle-hub", "userId", c.UserID, "instanceId", resp.InstanceID, "hub", c.HubURL)
+	s.logger.Info("bootstrapped with immerle-hub", "instanceId", creds.InstanceID, "sqid", creds.Sqid)
 	return nil
+}
+
+// UpdateInstance pushes a name/sqid change to the hub (opt-in mirrors the local
+// ExportScrobbles flag) and persists the hub-canonical name/sqid. The hub
+// validates sqid uniqueness, so a clashing handle surfaces as an error.
+func (s *Service) UpdateInstance(ctx context.Context, name, sqid string) error {
+	if !s.HubConfigured() {
+		return fmt.Errorf("federation: instance not registered with the hub")
+	}
+	optIn := s.cfg().ExportScrobbles
+	resp, err := s.hub.UpdateInstance(ctx, s.auth(), hub.PublicUpdateInstanceRequest{
+		Name: &name, Sqid: &sqid, OptInIngest: &optIn,
+	})
+	if err != nil {
+		return fmt.Errorf("update instance on hub: %w", err)
+	}
+	if resp.Instance != nil && s.saveCreds != nil {
+		if err := s.saveCreds(ctx, Credentials{Sqid: deref(resp.Instance.Sqid), Name: deref(resp.Instance.Name)}); err != nil {
+			return fmt.Errorf("persist hub instance update: %w", err)
+		}
+	}
+	return nil
+}
+
+// deref returns the value of a string pointer, or "" when nil.
+func deref(p *string) string {
+	if p == nil {
+		return ""
+	}
+	return *p
 }
 
 // federationTick is how often Run re-reads its (hot-reloadable) config to decide
@@ -204,13 +246,9 @@ func (s *Service) SyncPlaylists(ctx context.Context) error {
 	if !s.cfg().Enabled {
 		return nil
 	}
-	raw, err := s.do(ctx, http.MethodGet, "/api/v1/playlists", nil)
+	playlists, err := s.hub.ListPlaylists(ctx, s.auth(), "")
 	if err != nil {
 		return err
-	}
-	var playlists []hubPlaylist
-	if err := json.Unmarshal(raw, &playlists); err != nil {
-		return fmt.Errorf("decode hub playlists: %w", err)
 	}
 
 	owner, err := s.federationOwner(ctx)
@@ -220,35 +258,37 @@ func (s *Service) SyncPlaylists(ctx context.Context) error {
 
 	for _, hp := range playlists {
 		if err := s.materialize(ctx, owner, hp); err != nil {
-			s.logger.Warn("materialize federated playlist failed", "name", hp.Name, "error", err)
+			s.logger.Warn("materialize federated playlist failed", "name", deref(hp.Name), "error", err)
 		}
 	}
 	return nil
 }
 
 // materialize creates/updates one federated playlist and resolves its tracks.
-func (s *Service) materialize(ctx context.Context, ownerID string, hp hubPlaylist) error {
+func (s *Service) materialize(ctx context.Context, ownerID string, hp hub.PublicDistributionPlaylist) error {
 	var trackIDs []string
-	for _, ht := range hp.Tracks {
-		id, ok := s.resolveTrack(ctx, ownerID, ht)
-		if ok {
-			trackIDs = append(trackIDs, id)
+	if hp.Tracks != nil {
+		for _, ht := range *hp.Tracks {
+			if id, ok := s.resolveTrack(ctx, ownerID, ht); ok {
+				trackIDs = append(trackIDs, id)
+			}
 		}
 	}
 
-	existing, err := s.playlists.FindFederated(ctx, hp.Name)
+	name, comment := deref(hp.Name), deref(hp.Comment)
+	existing, err := s.playlists.FindFederated(ctx, name)
 	now := time.Now()
 	if err == nil {
-		existing.Comment = hp.Comment
+		existing.Comment = comment
 		_ = s.playlists.UpdateMeta(ctx, existing)
 		return s.playlists.ReplaceTracks(ctx, existing.ID, trackIDs, "")
 	}
 
 	p := models.Playlist{
 		ID:        uuid.NewString(),
-		Name:      hp.Name,
+		Name:      name,
 		OwnerID:   ownerID,
-		Comment:   hp.Comment,
+		Comment:   comment,
 		Public:    true,
 		Federated: true,
 		CreatedAt: now,
@@ -262,9 +302,9 @@ func (s *Service) materialize(ctx context.Context, ownerID string, hp hubPlaylis
 
 // resolveTrack maps a portable hub track to a local track id. Present tracks
 // resolve immediately; missing tracks are downloaded on demand when enabled.
-func (s *Service) resolveTrack(ctx context.Context, ownerID string, ht hubTrack) (string, bool) {
-	if ht.MBID != "" {
-		if id, exists, _ := s.catalog.TrackExistsByMBIDOrHash(ctx, ht.MBID, ""); exists {
+func (s *Service) resolveTrack(ctx context.Context, ownerID string, ht hub.PublicDistributionTrack) (string, bool) {
+	if mbid := deref(ht.Mbid); mbid != "" {
+		if id, exists, _ := s.catalog.TrackExistsByMBIDOrHash(ctx, mbid, ""); exists {
 			return id, true
 		}
 	}
@@ -272,7 +312,7 @@ func (s *Service) resolveTrack(ctx context.Context, ownerID string, ht hubTrack)
 		return "", false
 	}
 	// On-demand resolution: search a provider for the track and download it.
-	query := ht.Artist + " " + ht.Title
+	query := deref(ht.Artist) + " " + deref(ht.Title)
 	remote, err := s.resolver.RemoteSearch(ctx, query, 1)
 	if err != nil || len(remote) == 0 {
 		return "", false
@@ -302,18 +342,16 @@ func (s *Service) ExportScrobbles(ctx context.Context) error {
 		counts[sc.TrackID]++
 		ids = append(ids, sc.ID)
 	}
-	type aggregate struct {
-		TrackHash string `json:"trackHash"`
-		Count     int    `json:"count"`
-	}
-	payload := make([]aggregate, 0, len(counts))
+	instanceID := s.cfg().InstanceID
+	payload := make([]hub.PublicScrobbleAggregateDoc, 0, len(counts))
 	for trackID, count := range counts {
 		// Hash the track id so the hub cannot correlate back to a local catalog.
-		sum := sha256.Sum256([]byte(s.cfg().InstanceID + ":" + trackID))
-		payload = append(payload, aggregate{TrackHash: hex.EncodeToString(sum[:]), Count: count})
+		sum := sha256.Sum256([]byte(instanceID + ":" + trackID))
+		hash, n := hex.EncodeToString(sum[:]), count
+		payload = append(payload, hub.PublicScrobbleAggregateDoc{TrackHash: &hash, Count: &n})
 	}
 
-	if _, err := s.do(ctx, http.MethodPost, "/api/v1/scrobbles", map[string]any{"aggregates": payload}); err != nil {
+	if _, err := s.hub.IngestScrobbles(ctx, s.auth(), hub.PublicScrobblesRequest{Aggregates: &payload}); err != nil {
 		return err
 	}
 	return s.scrobbles.MarkExported(ctx, ids)
@@ -336,36 +374,4 @@ func (s *Service) federationOwner(ctx context.Context) (string, error) {
 		return id, nil
 	}
 	return "", fmt.Errorf("federation owner not configured")
-}
-
-// do performs an authenticated JSON request against the hub.
-func (s *Service) do(ctx context.Context, method, path string, body any) ([]byte, error) {
-	c := s.cfg()
-	var reader io.Reader
-	if body != nil {
-		buf, err := json.Marshal(body)
-		if err != nil {
-			return nil, err
-		}
-		reader = bytes.NewReader(buf)
-	}
-	req, err := http.NewRequestWithContext(ctx, method, c.HubURL+path, reader)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("X-User-ID", c.UserID)
-	req.Header.Set("X-Instance-ID", c.InstanceID)
-	if body != nil {
-		req.Header.Set("Content-Type", "application/json")
-	}
-	resp, err := s.http.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	data, _ := io.ReadAll(resp.Body)
-	if resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("hub %s %s: status %d", method, path, resp.StatusCode)
-	}
-	return data, nil
 }

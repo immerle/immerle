@@ -5,6 +5,7 @@ import {
   useCleanup,
   useCleanupMutations,
   useRegisterInstance,
+  useUpdateFederationInstance,
   useSettings,
   useUpdateSettings,
 } from '../../src/query/admin';
@@ -51,6 +52,7 @@ interface Form {
   fedEnabled: boolean;
   fedUserId: string;
   fedInstanceId: string;
+  fedSqid: string;
   fedInstanceName: string;
   syncInterval: string;
   resolveMissing: boolean;
@@ -70,6 +72,7 @@ function toForm(s: RuntimeSettingsDTO): Form {
     fedEnabled: s.federation?.enabled ?? false,
     fedUserId: s.federation?.userId ?? '',
     fedInstanceId: s.federation?.instanceId ?? '',
+    fedSqid: s.federation?.sqid ?? '',
     fedInstanceName: s.federation?.instanceName ?? '',
     syncInterval: String(s.federation?.syncIntervalSeconds ?? 0),
     resolveMissing: s.federation?.resolveMissing ?? false,
@@ -97,6 +100,7 @@ export default function AdminSettings() {
   const q = useSettings();
   const update = useUpdateSettings();
   const register = useRegisterInstance();
+  const updateInstance = useUpdateFederationInstance();
   const cleanup = useCleanup();
   const cleanupM = useCleanupMutations();
   const smart = useSmartPlaylistsAdmin();
@@ -229,7 +233,6 @@ export default function AdminSettings() {
                     label={t('admin.settings.hubUserId')}
                     autoCapitalize="none"
                     autoCorrect={false}
-                    placeholder="6f1c2b8e-1f0a-4f9b-9c3a-1e2d3c4b5a6f"
                     value={form.fedUserId}
                     onChangeText={(v) => set('fedUserId', v)}
                     help={t('admin.settings.hubUserIdHelp')}
@@ -248,7 +251,8 @@ export default function AdminSettings() {
                     />
                   </View>
 
-                  {/* Step 2: once registered, the instance name and id are editable. */}
+                  {/* Step 2: once registered, the instance name and handle (sqid)
+                      are editable and pushed to the hub (which checks uniqueness). */}
                   {form.fedInstanceId ? (
                     <>
                       <Field
@@ -260,10 +264,21 @@ export default function AdminSettings() {
                         label={t('admin.settings.instanceId')}
                         autoCapitalize="none"
                         autoCorrect={false}
-                        value={form.fedInstanceId}
-                        onChangeText={(v) => set('fedInstanceId', v)}
+                        value={form.fedSqid}
+                        onChangeText={(v) => set('fedSqid', v)}
                         help={t('admin.settings.instanceIdHelp')}
                       />
+                      <Text className="text-[11px] text-muted">{t('admin.settings.instanceUuid', { id: form.fedInstanceId })}</Text>
+                      <View className="flex-row justify-end">
+                        <Button
+                          title={t('admin.settings.saveToHub')}
+                          icon="cloud-upload-outline"
+                          variant="secondary"
+                          loading={updateInstance.isPending}
+                          disabled={!form.fedSqid.trim() || !form.fedInstanceName.trim()}
+                          onPress={() => updateInstance.mutate({ name: form.fedInstanceName.trim(), sqid: form.fedSqid.trim() })}
+                        />
+                      </View>
                     </>
                   ) : null}
 
@@ -274,12 +289,12 @@ export default function AdminSettings() {
                   <SaveButton
                     loading={update.isPending}
                     onPress={() =>
+                      // Local-only fields. The hub-managed name/sqid/id are pushed
+                      // via "Save to hub"; the server ignores them here.
                       save({
                         federation: {
                           enabled: form.fedEnabled,
                           userId: form.fedUserId.trim(),
-                          instanceId: form.fedInstanceId.trim(),
-                          instanceName: form.fedInstanceName,
                           syncIntervalSeconds: num(form.syncInterval),
                           resolveMissing: form.resolveMissing,
                           exportScrobbles: form.exportScrobbles,

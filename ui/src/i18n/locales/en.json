@@ -521,6 +521,8 @@
       "instanceName": "Instance name",
       "instanceId": "Instance id",
       "instanceIdHelp": "Unique on the hub. Defaults to a short id assigned at registration.",
+      "instanceUuid": "Hub UUID: {{id}}",
+      "saveToHub": "Save to hub",
       "syncInterval": "Sync interval (s)",
       "resolveMissing": "Resolve missing tracks",
       "exportScrobbles": "Export listens (scrobbles)",

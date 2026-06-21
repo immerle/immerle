@@ -141,7 +141,9 @@ func federationConfig(f models.FederationRuntime) config.FederationConfig {
 		HubURL:          config.HubURL(), // hardcoded, DEV_IMMERLE_HUB_URL-overridable
 		UserID:          f.UserID,
 		InstanceID:      f.InstanceID,
+		Sqid:            f.Sqid,
 		InstanceName:    f.InstanceName,
+		PrivateKey:      f.PrivateKey,
 		SyncInterval:    time.Duration(f.SyncIntervalSeconds) * time.Second,
 		ResolveMissing:  f.ResolveMissing,
 		ExportScrobbles: f.ExportScrobbles,
@@ -286,10 +288,23 @@ func New(cfg config.Config) (*App, error) {
 		func() config.FederationConfig { return federationConfig(settingsSvc.Get().Federation) },
 		store.Catalog, store.Playlists, store.Scrobbles, fedResolver, logger)
 	fed.SetOwnerResolver(func(ctx context.Context) (string, error) { return firstAdmin(ctx, store.Users) })
-	// Persist the hub-assigned instance id (sqids) back into the runtime settings.
-	fed.SetInstanceIDSaver(func(_ context.Context, id string) error {
+	// Persist hub-issued identity (instance UUID, sqid, private key, name) back
+	// into the runtime settings after bootstrap/update. Empty fields are left
+	// unchanged so an update can touch only name/sqid.
+	fed.SetCredentialsSaver(func(_ context.Context, creds federation.Credentials) error {
 		next := settingsSvc.Get()
-		next.Federation.InstanceID = id
+		if creds.InstanceID != "" {
+			next.Federation.InstanceID = creds.InstanceID
+		}
+		if creds.Sqid != "" {
+			next.Federation.Sqid = creds.Sqid
+		}
+		if creds.PrivateKey != "" {
+			next.Federation.PrivateKey = creds.PrivateKey
+		}
+		if creds.Name != "" {
+			next.Federation.InstanceName = creds.Name
+		}
 		_, _, err := settingsSvc.Update(next)
 		return err
 	})
