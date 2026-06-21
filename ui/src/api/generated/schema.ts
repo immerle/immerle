@@ -7270,9 +7270,12 @@ export interface components {
                 /** @example false */
                 enabled?: boolean;
                 exportScrobbles?: boolean;
-                hubUrl?: string;
-                privateKey?: string;
-                publicKey?: string;
+                /** @example 6f1c2b8e-1f0a-4f9b-9c3a-1e2d3c4b5a6f */
+                userId?: string;
+                /** @example Xb7p2Qa */
+                instanceId?: string;
+                /** @example My living-room immerle */
+                instanceName?: string;
                 resolveMissing?: boolean;
                 /** @example 3600 */
                 syncIntervalSeconds?: number;

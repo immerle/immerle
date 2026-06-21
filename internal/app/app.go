@@ -138,9 +138,10 @@ func transcodeConfig(t models.TranscodeRuntime, dataDir string) config.Transcode
 func federationConfig(f models.FederationRuntime) config.FederationConfig {
 	return config.FederationConfig{
 		Enabled:         f.Enabled,
-		HubURL:          f.HubURL,
-		PublicKey:       f.PublicKey,
-		PrivateKey:      f.PrivateKey,
+		HubURL:          config.HubURL(), // hardcoded, DEV_IMMERLE_HUB_URL-overridable
+		UserID:          f.UserID,
+		InstanceID:      f.InstanceID,
+		InstanceName:    f.InstanceName,
 		SyncInterval:    time.Duration(f.SyncIntervalSeconds) * time.Second,
 		ResolveMissing:  f.ResolveMissing,
 		ExportScrobbles: f.ExportScrobbles,
@@ -285,6 +286,13 @@ func New(cfg config.Config) (*App, error) {
 		func() config.FederationConfig { return federationConfig(settingsSvc.Get().Federation) },
 		store.Catalog, store.Playlists, store.Scrobbles, fedResolver, logger)
 	fed.SetOwnerResolver(func(ctx context.Context) (string, error) { return firstAdmin(ctx, store.Users) })
+	// Persist the hub-assigned instance id (sqids) back into the runtime settings.
+	fed.SetInstanceIDSaver(func(_ context.Context, id string) error {
+		next := settingsSvc.Get()
+		next.Federation.InstanceID = id
+		_, _, err := settingsSvc.Update(next)
+		return err
+	})
 
 	// Playlist import (e.g. Spotify): the source playlist is fetched through the
 	// hub (which holds the third-party credentials), then each track is resolved

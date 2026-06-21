@@ -25,7 +25,7 @@ func TestFetchExternalPlaylist(t *testing.T) {
 		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/spotify/imports":
 			b, _ := io.ReadAll(r.Body)
 			postBody = string(b)
-			postAuth = r.Header.Get("Authorization")
+			postAuth = r.Header.Get("X-User-ID")
 			postInstance = r.Header.Get("X-Instance-ID")
 			w.WriteHeader(http.StatusAccepted)
 			_, _ = w.Write([]byte(`{"jobId":"job-1","status":"pending"}`))
@@ -41,8 +41,8 @@ func TestFetchExternalPlaylist(t *testing.T) {
 	defer srv.Close()
 
 	store := testutil.NewStore(t)
-	// Import works even with sync disabled, as long as the hub URL + keys are set.
-	cfg := config.FederationConfig{Enabled: false, HubURL: srv.URL, PublicKey: "inst-1", PrivateKey: "key-1"}
+	// Import works even with sync disabled, as long as the instance is registered.
+	cfg := config.FederationConfig{Enabled: false, HubURL: srv.URL, UserID: "user-1", InstanceID: "inst-1"}
 	svc := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, nil, testLogger())
 
 	pl, err := svc.FetchExternalPlaylist(context.Background(), "spotify", "https://open.spotify.com/playlist/PL?si=x")
@@ -52,8 +52,8 @@ func TestFetchExternalPlaylist(t *testing.T) {
 	if !strings.Contains(postBody, `"playlist":"https://open.spotify.com/playlist/PL?si=x"`) {
 		t.Fatalf("ref not forwarded in body: %s", postBody)
 	}
-	if postAuth != "Bearer key-1" || postInstance != "inst-1" {
-		t.Fatalf("hub auth headers wrong: auth=%q instance=%q", postAuth, postInstance)
+	if postAuth != "user-1" || postInstance != "inst-1" {
+		t.Fatalf("hub identity headers wrong: user=%q instance=%q", postAuth, postInstance)
 	}
 	if pl.Name != "My Mix" || len(pl.Tracks) != 2 {
 		t.Fatalf("playlist decode wrong: %+v", pl)
@@ -78,7 +78,7 @@ func TestFetchExternalPlaylistFailedJob(t *testing.T) {
 	defer srv.Close()
 
 	store := testutil.NewStore(t)
-	cfg := config.FederationConfig{HubURL: srv.URL, PublicKey: "i", PrivateKey: "k"}
+	cfg := config.FederationConfig{HubURL: srv.URL, UserID: "u", InstanceID: "i"}
 	svc := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, nil, testLogger())
 	if _, err := svc.FetchExternalPlaylist(context.Background(), "spotify", "PL"); err == nil ||
 		!strings.Contains(err.Error(), "playlist is private") {
@@ -86,33 +86,41 @@ func TestFetchExternalPlaylistFailedJob(t *testing.T) {
 	}
 }
 
-func TestRegisterSendsKeysAndVersion(t *testing.T) {
-	var auth, instance, body string
+func TestRegisterClaimsUserAndPersistsInstanceID(t *testing.T) {
+	var user, instance, body string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		auth = r.Header.Get("Authorization")
+		user = r.Header.Get("X-User-ID")
 		instance = r.Header.Get("X-Instance-ID")
 		b, _ := io.ReadAll(r.Body)
 		body = strings.TrimSpace(string(b))
 		w.WriteHeader(http.StatusOK)
+		// Hub assigns a sqids instance id on first register.
+		_, _ = w.Write([]byte(`{"instanceId":"Xb7p2Qa","name":"My immerle"}`))
 	}))
 	defer srv.Close()
 
 	store := testutil.NewStore(t)
-	cfg := config.FederationConfig{Enabled: true, HubURL: srv.URL, PublicKey: "pub-1", PrivateKey: "priv-1"}
+	cfg := config.FederationConfig{Enabled: true, HubURL: srv.URL, UserID: "user-1", InstanceName: "My immerle"}
 	svc := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, nil, testLogger())
+	var saved string
+	svc.SetInstanceIDSaver(func(_ context.Context, id string) error { saved = id; return nil })
 
 	if err := svc.Register(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	if auth != "Bearer priv-1" {
-		t.Fatalf("private key not sent as Bearer: %q", auth)
+	if user != "user-1" {
+		t.Fatalf("user id not sent as X-User-ID: %q", user)
 	}
-	if instance != "pub-1" {
-		t.Fatalf("public key not sent as X-Instance-ID: %q", instance)
+	if instance != "" {
+		t.Fatalf("expected empty instance id on first register, got %q", instance)
 	}
-	// Body carries only the version (identity is in the headers).
-	if !strings.Contains(body, `"version":"0.2.0"`) || strings.Contains(body, "instanceId") {
+	// Body carries the user id, desired name and version.
+	if !strings.Contains(body, `"userId":"user-1"`) || !strings.Contains(body, `"version":"0.2.0"`) {
 		t.Fatalf("unexpected register body: %s", body)
+	}
+	// The hub-assigned instance id is persisted back.
+	if saved != "Xb7p2Qa" {
+		t.Fatalf("assigned instance id not persisted: %q", saved)
 	}
 }
 

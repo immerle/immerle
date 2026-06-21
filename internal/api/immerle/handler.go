@@ -91,9 +91,11 @@ func (h *Handler) deviceTokenTTL() time.Duration {
 	return 720 * time.Hour
 }
 
-// FederationStatusProvider reports whether hub federation is enabled (S7).
+// FederationStatusProvider reports whether hub federation is enabled (S7) and
+// can register this instance with the hub on demand.
 type FederationStatusProvider interface {
 	Enabled() bool
+	Register(ctx context.Context) error
 }
 
 // CleanupController runs an immediate eviction sweep. The enabled/retention
@@ -342,6 +344,10 @@ func (h *Handler) Register(mux chi.Router) {
 			// Admin: DB-backed runtime settings.
 			r.Get("/admin/settings", h.handleSettings)
 			r.Patch("/admin/settings", h.handleSettingsUpdate)
+
+			// Admin: register this instance with the hub (claims the configured
+			// hub user id; persists the assigned instance id).
+			r.Post("/admin/federation/register", h.handleFederationRegister)
 
 			// Admin: smart-playlists feature toggle.
 			r.Get("/admin/smart-playlists", h.handleSmartPlaylistsAdmin)

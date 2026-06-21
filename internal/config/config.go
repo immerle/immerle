@@ -90,16 +90,31 @@ type TranscodeProfile struct {
 	FFmpegArgs string
 }
 
+// DefaultHubURL is the hardcoded immerle-hub endpoint. It is intentionally NOT
+// admin-editable; only the DEV_IMMERLE_HUB_URL env var can override it.
+const DefaultHubURL = "https://hub.immerle.com"
+
+// HubURL returns the hub endpoint: the hardcoded DefaultHubURL, overridden by
+// the DEV_IMMERLE_HUB_URL environment variable when set (local hub debugging).
+func HubURL() string {
+	if v := strings.TrimSpace(os.Getenv("DEV_IMMERLE_HUB_URL")); v != "" {
+		return v
+	}
+	return DefaultHubURL
+}
+
 // FederationConfig configures the optional immerle-hub connection. It is no
 // longer part of the bootstrap Config (it is a runtime setting); the type is
 // kept because the federation service consumes it — app builds it from the
-// runtime settings.
+// runtime settings. HubURL is resolved (hardcoded/env), not stored.
 type FederationConfig struct {
 	Enabled bool
 	HubURL  string
-	// PublicKey → X-Instance-ID header; PrivateKey → Authorization Bearer token.
-	PublicKey       string
-	PrivateKey      string
+	// UserID is the hub user's UUID (sent as the X-User-ID header); InstanceID is
+	// the hub-assigned instance identifier (sent as the X-Instance-ID header).
+	UserID          string
+	InstanceID      string
+	InstanceName    string
 	SyncInterval    time.Duration
 	ResolveMissing  bool
 	ExportScrobbles bool

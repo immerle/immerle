@@ -67,9 +67,9 @@ type RuntimeSettingsDTO struct {
 	} `json:"cleanup"`
 	Federation struct {
 		Enabled             bool   `json:"enabled" example:"false"`
-		HubURL              string `json:"hubUrl"`
-		PublicKey           string `json:"publicKey"`
-		PrivateKey          string `json:"privateKey"`
+		UserID              string `json:"userId" example:"6f1c2b8e-1f0a-4f9b-9c3a-1e2d3c4b5a6f"`
+		InstanceID          string `json:"instanceId" example:"Xb7p2Qa"`
+		InstanceName        string `json:"instanceName" example:"My living-room immerle"`
 		SyncIntervalSeconds int    `json:"syncIntervalSeconds" example:"3600"`
 		ResolveMissing      bool   `json:"resolveMissing"`
 		ExportScrobbles     bool   `json:"exportScrobbles"`

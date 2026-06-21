@@ -220,30 +220,15 @@ export function useCleanupMutations() {
 
 // --- Federation ------------------------------------------------------------
 
-export function useFederation() {
-  const client = useAuth((s) => s.client);
-  return useQuery({
-    queryKey: qk.federation,
-    enabled: !!client && !!client.has('federation'),
-    queryFn: ({ signal }) => client!.getFederationState(signal),
-    refetchInterval: (q) => (q.state.data?.connection === 'connecting' ? 2000 : false),
-  });
-}
-
-export function useFederationMutations() {
+/** Register this instance with the hub. The response carries the refreshed
+ * settings (with the hub-assigned instance id), so we prime the settings cache. */
+export function useRegisterInstance() {
   const client = useAuth((s) => s.client);
   const qc = useQueryClient();
-  const invalidate = () => qc.invalidateQueries({ queryKey: qk.federation });
-  const setEnabled = useMutation({
-    mutationFn: (p: { enabled: boolean; hubUrl?: string }) =>
-      client!.setFederationEnabled(p.enabled, p.hubUrl),
-    onSuccess: invalidate,
+  return useMutation({
+    mutationFn: () => client!.registerInstance(),
+    onSuccess: (res) => qc.setQueryData(qk.settings, res),
   });
-  const setExport = useMutation({
-    mutationFn: (enabled: boolean) => client!.setAnonymizedExport(enabled),
-    onSuccess: invalidate,
-  });
-  return { setEnabled, setExport };
 }
 
 // --- Server / transcoding --------------------------------------------------

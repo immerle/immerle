@@ -149,17 +149,8 @@ export interface DownloadJob {
   resultSongId?: string;
 }
 
-// --- Admin: federation -----------------------------------------------------
-
-export interface FederationState {
-  enabled: boolean;
-  hubUrl?: string;
-  connection: 'connected' | 'connecting' | 'disconnected' | 'error';
-  message?: string;
-  /** Opt-in anonymized export of listening stats to the hub. */
-  anonymizedExport: boolean;
-  lastSync?: string;
-}
+// Federation is configured through the runtime settings (RuntimeSettingsDTO.federation)
+// and registered via client.registerInstance(); no dedicated state type is needed.
 
 // --- Admin: server / transcoding ------------------------------------------
 

@@ -198,15 +198,18 @@ type ScanRuntime struct {
 	Watch           bool `json:"watch"`
 }
 
-// FederationRuntime configures the hub connection (restart-required).
+// FederationRuntime configures the hub connection (hot-reloadable). The hub URL
+// itself is hardcoded (config.HubURL, env-overridable) and not stored here.
 type FederationRuntime struct {
-	Enabled bool   `json:"enabled"`
-	HubURL  string `json:"hubUrl"`
-	// PublicKey identifies the instance to the hub (sent as the X-Instance-ID
-	// header); PrivateKey authenticates it (sent as the Authorization Bearer
-	// token). The hub issues both when the instance is onboarded.
-	PublicKey           string `json:"publicKey"`
-	PrivateKey          string `json:"privateKey"`
+	Enabled bool `json:"enabled"`
+	// UserID is the hub user's UUID. The operator pastes it from the hub to claim
+	// this instance; the instance then registers itself under that user.
+	UserID string `json:"userId"`
+	// InstanceID is the hub-assigned instance identifier (a sqids by default,
+	// editable, unique hub-side). Empty until the instance has registered.
+	InstanceID string `json:"instanceId"`
+	// InstanceName is the human-readable instance label shown on the hub (editable).
+	InstanceName        string `json:"instanceName"`
 	SyncIntervalSeconds int    `json:"syncIntervalSeconds"`
 	ResolveMissing      bool   `json:"resolveMissing"`
 	ExportScrobbles     bool   `json:"exportScrobbles"`

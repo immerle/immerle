@@ -95,7 +95,7 @@ func TestFederationIsHotReloadable(t *testing.T) {
 	admin := login(t, srv, "admin")
 
 	_, out := doMap(t, srv, http.MethodPatch, "/admin/settings", admin, map[string]any{
-		"federation": map[string]any{"enabled": true, "hubUrl": "https://hub.test"},
+		"federation": map[string]any{"enabled": true, "userId": "6f1c2b8e-1f0a-4f9b-9c3a-1e2d3c4b5a6f"},
 	})
 	if out["restartRequired"] != false {
 		t.Fatalf("federation changes should be hot (no restart): %+v", out)

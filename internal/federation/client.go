@@ -49,7 +49,14 @@ type Service struct {
 	// after first-run setup still finds an admin).
 	ownerID string
 	ownerFn func(context.Context) (string, error)
+	// saveInstanceID persists the hub-assigned instance id back into the runtime
+	// settings after a successful register (optional).
+	saveInstanceID func(context.Context, string) error
 }
+
+// SetInstanceIDSaver registers a callback used to persist the hub-assigned
+// instance id (the sqids returned at register) back into the runtime settings.
+func (s *Service) SetInstanceIDSaver(fn func(context.Context, string) error) { s.saveInstanceID = fn }
 
 // cfg returns the current federation configuration (read live).
 func (s *Service) cfg() config.FederationConfig { return s.cfgFn() }
@@ -79,15 +86,15 @@ func New(cfgFn func() config.FederationConfig, catalog *persistence.CatalogRepo,
 // FederationStatusProvider interface). Read live.
 func (s *Service) Enabled() bool { return s != nil && s.cfg().Enabled }
 
-// HubConfigured reports whether the hub URL and both keys are set (so hub-backed
-// features such as playlist import are usable). Read live. Requiring the keys
-// here means a partial config fails fast locally instead of as a hub 401.
+// HubConfigured reports whether the instance is registered with the hub (user
+// id + assigned instance id both set) so hub-backed features such as playlist
+// import are usable. Read live. The hub URL is hardcoded so it is always set.
 func (s *Service) HubConfigured() bool {
 	if s == nil {
 		return false
 	}
 	c := s.cfg()
-	return c.HubURL != "" && c.PublicKey != "" && c.PrivateKey != ""
+	return c.UserID != "" && c.InstanceID != ""
 }
 
 // hubPlaylist is the portable playlist shape exchanged with the hub.
@@ -106,20 +113,40 @@ type hubTrack struct {
 	Album  string `json:"album"`
 }
 
-// Register announces this instance to the hub (a heartbeat).
+// registerResponse is the hub's reply to a register: it echoes the authoritative
+// instance id (a sqids assigned on first register, or the requested one).
+type registerResponse struct {
+	InstanceID string `json:"instanceId"`
+	Name       string `json:"name"`
+}
+
+// Register claims this instance under the configured hub user (UserID) and
+// reports its desired name/id. The hub assigns a sqids instance id on the first
+// register; the authoritative id from the response is persisted back into the
+// runtime settings. Callable independently of the Enabled flag (the admin
+// triggers it explicitly), so it does not gate on Enabled.
 func (s *Service) Register(ctx context.Context) error {
 	c := s.cfg()
-	if !c.Enabled {
-		return nil
+	if c.UserID == "" {
+		return fmt.Errorf("federation: no hub user id configured")
 	}
-	// Identity/auth travel in the headers (public key → X-Instance-ID, private key
-	// → Authorization Bearer), so the body only carries the instance version.
-	body := map[string]any{"version": instanceVersion}
-	_, err := s.do(ctx, http.MethodPost, "/api/v1/instances/register", body)
+	body := map[string]any{
+		"userId":     c.UserID,
+		"instanceId": c.InstanceID, // empty on first register → hub assigns a sqids
+		"name":       c.InstanceName,
+		"version":    instanceVersion,
+	}
+	raw, err := s.do(ctx, http.MethodPost, "/api/v1/instances/register", body)
 	if err != nil {
 		return fmt.Errorf("register with hub: %w", err)
 	}
-	s.logger.Info("registered with immerle-hub", "publicKey", c.PublicKey, "hub", c.HubURL)
+	var resp registerResponse
+	if jerr := json.Unmarshal(raw, &resp); jerr == nil && resp.InstanceID != "" && resp.InstanceID != c.InstanceID && s.saveInstanceID != nil {
+		if serr := s.saveInstanceID(ctx, resp.InstanceID); serr != nil {
+			s.logger.Warn("persist hub instance id failed", "error", serr)
+		}
+	}
+	s.logger.Info("registered with immerle-hub", "userId", c.UserID, "instanceId", resp.InstanceID, "hub", c.HubURL)
 	return nil
 }
 
@@ -128,16 +155,18 @@ func (s *Service) Register(ctx context.Context) error {
 const federationTick = time.Minute
 
 // Run drives federation on a fixed tick, reading config live so enabling/
-// disabling, the interval and the keys all apply without a restart. While
-// enabled it heartbeats + syncs every configured interval; while disabled it
-// idles. It never returns until ctx is done (unlike a one-shot loop).
+// disabling, the interval and the identity all apply without a restart. While
+// enabled (and a hub user id is set) it heartbeats + syncs every configured
+// interval; otherwise it idles. It never returns until ctx is done.
 func (s *Service) Run(ctx context.Context) {
 	ticker := time.NewTicker(federationTick)
 	defer ticker.Stop()
 	var lastSync time.Time
 	for {
 		c := s.cfg()
-		if c.Enabled {
+		// Only sync once enabled AND a hub user id is configured; otherwise idle
+		// (avoids logging a register error every tick before onboarding).
+		if c.Enabled && c.UserID != "" {
 			interval := c.SyncInterval
 			if interval <= 0 {
 				interval = time.Hour
@@ -280,7 +309,7 @@ func (s *Service) ExportScrobbles(ctx context.Context) error {
 	payload := make([]aggregate, 0, len(counts))
 	for trackID, count := range counts {
 		// Hash the track id so the hub cannot correlate back to a local catalog.
-		sum := sha256.Sum256([]byte(s.cfg().PublicKey + ":" + trackID))
+		sum := sha256.Sum256([]byte(s.cfg().InstanceID + ":" + trackID))
 		payload = append(payload, aggregate{TrackHash: hex.EncodeToString(sum[:]), Count: count})
 	}
 
@@ -324,8 +353,8 @@ func (s *Service) do(ctx context.Context, method, path string, body any) ([]byte
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Authorization", "Bearer "+c.PrivateKey)
-	req.Header.Set("X-Instance-ID", c.PublicKey)
+	req.Header.Set("X-User-ID", c.UserID)
+	req.Header.Set("X-Instance-ID", c.InstanceID)
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}

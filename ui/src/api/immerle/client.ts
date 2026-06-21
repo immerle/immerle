@@ -52,7 +52,6 @@ import {
   CapabilityFeature,
   Capabilities,
   DownloadJob,
-  FederationState,
   ImmerleApiError,
   ImmerleSession,
   LibraryStats,
@@ -852,16 +851,16 @@ export class ImmerleClient {
 
   // --- Admin: federation ---------------------------------------------------
 
-  async getFederationState(signal?: AbortSignal): Promise<FederationState> {
-    return this.request<FederationState>('GET', 'admin/federation', undefined, signal);
-  }
-
-  async setFederationEnabled(enabled: boolean, hubUrl?: string): Promise<FederationState> {
-    return this.request<FederationState>('PUT', 'admin/federation', { enabled, hubUrl });
-  }
-
-  async setAnonymizedExport(enabled: boolean): Promise<FederationState> {
-    return this.request<FederationState>('PUT', 'admin/federation/export', { enabled });
+  /** Register this instance with the hub: claims the configured hub user id and
+   * persists the hub-assigned instance id. The HTTP exchange runs server-side.
+   * Returns the refreshed runtime settings (so the UI sees the assigned id). */
+  async registerInstance(): Promise<SettingsResult> {
+    const data = await this.request<SettingsResponseRaw>('POST', 'admin/federation/register');
+    return {
+      settings: data.settings ?? {},
+      restartRequired: data.restartRequired ?? false,
+      pendingRestart: data.pendingRestart ?? [],
+    };
   }
 
   // --- Admin: server / transcoding ----------------------------------------
