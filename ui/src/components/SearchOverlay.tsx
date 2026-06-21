@@ -25,7 +25,7 @@ import { useT } from '../i18n/store';
  */
 export function SearchOverlay() {
   const t = useT();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
   const open = useSearchUI((s) => s.open);
@@ -116,7 +116,10 @@ export function SearchOverlay() {
           pointerEvents="auto"
           className="mt-2 w-full max-w-[600px] overflow-hidden rounded-2xl border border-border bg-surface"
           style={{
-            maxHeight: '80%',
+            // Concrete px cap (not '80%'): the parent has auto height, so a
+            // percentage maxHeight doesn't resolve on web and the inner
+            // ScrollView never bounds — albums fall off the bottom, unscrollable.
+            maxHeight: height - top - 24,
             shadowColor: '#000',
             shadowOpacity: 0.4,
             shadowRadius: 24,
