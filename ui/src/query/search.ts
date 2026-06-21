@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../auth/store';
 import { qk } from './keys';
@@ -15,8 +15,8 @@ export function useDebounced<T>(value: T, delayMs = 250): T {
 
 /**
  * Live Subsonic search. The query string is expected to be already debounced
- * by the caller via {@link useDebounced}; results are kept on screen while the
- * next query loads to avoid flicker.
+ * by the caller via {@link useDebounced}. Results are not cached and the prior
+ * result is not kept on screen, so retyping shows the loading state every time.
  */
 export function useSearch(query: string) {
   const client = useAuth((s) => s.client);
@@ -24,8 +24,8 @@ export function useSearch(query: string) {
   return useQuery({
     queryKey: qk.search(trimmed),
     enabled: !!client && trimmed.length > 0,
-    placeholderData: keepPreviousData,
-    staleTime: 60 * 1000,
+    staleTime: 0,
+    gcTime: 0,
     queryFn: ({ signal }) => client!.search(trimmed),
   });
 }
