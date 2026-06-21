@@ -21,6 +21,7 @@ import { Badge, Button, Card, ErrorState, Field, IconButton, Loading } from '../
 import { AdminHeader, AdminScroll } from '../../src/components/AdminUI';
 import { Ionicon } from '../../src/components/Ionicon';
 import { useColors } from '../../src/theme/colors';
+import { useToast } from '../../src/stores/toast';
 import { useT } from '../../src/i18n/store';
 
 const num = (s: string) => {
@@ -113,14 +114,6 @@ export default function AdminSettings() {
   const [form, setForm] = useState<Form | null>(null);
   const [sheet, setSheet] = useState<SectionKey | null>(null);
   const [removed, setRemoved] = useState<number | null>(null);
-  const [toast, setToast] = useState<{ msg: string; tone: 'success' | 'error' } | null>(null);
-
-  // Auto-dismiss the toast.
-  useEffect(() => {
-    if (!toast) return;
-    const id = setTimeout(() => setToast(null), 4000);
-    return () => clearTimeout(id);
-  }, [toast]);
 
   // When the federation sheet opens for a linked instance, refresh the live
   // name/sqid from the hub (server-side).
@@ -259,8 +252,8 @@ export default function AdminSettings() {
                           // Persist the pasted user id first, then link (bootstrap) server-side.
                           save({ federation: { userId: form.fedUserId.trim() } }, () =>
                             register.mutate(undefined, {
-                              onSuccess: () => setToast({ msg: t('admin.settings.linkSuccess'), tone: 'success' }),
-                              onError: (e) => setToast({ msg: (e as Error)?.message || t('admin.settings.linkError'), tone: 'error' }),
+                              onSuccess: () => useToast.getState().success(t('admin.settings.linkSuccess')),
+                              onError: (e) => useToast.getState().error((e as Error)?.message || t('admin.settings.linkError')),
                             }),
                           )
                         }
@@ -388,18 +381,6 @@ export default function AdminSettings() {
               ) : null}
             </ScrollView>
           </Pressable>
-
-          {toast ? (
-            <View pointerEvents="none" className="absolute inset-x-0 top-16 items-center px-6">
-              <View
-                className="max-w-[460px] flex-row items-center gap-2 rounded-xl px-4 py-3 shadow-lg"
-                style={{ backgroundColor: toast.tone === 'error' ? '#ef4444' : '#16a34a' }}
-              >
-                <Ionicon name={toast.tone === 'error' ? 'alert-circle' : 'checkmark-circle'} size={18} color="#fff" />
-                <Text className="flex-1 text-sm font-medium text-white">{toast.msg}</Text>
-              </View>
-            </View>
-          ) : null}
         </Pressable>
       </Modal>
     </>
