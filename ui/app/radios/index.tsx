@@ -80,7 +80,7 @@ function CountryCard({ emoji, label, count, accent, onPress }: { emoji: string; 
   const colors = useColors();
   return (
     <Pressable onPress={onPress} className="min-w-[46%] flex-1 active:opacity-80">
-      <View className={`h-full gap-2 rounded-2xl p-4 ${accent ? 'bg-primary/15' : 'bg-surface'}`}>
+      <View className={`gap-2 rounded-2xl p-4 ${accent ? 'bg-primary/15' : 'bg-surface'}`}>
         <View className="flex-row items-center justify-between">
           <Text style={{ fontSize: 30 }}>{emoji}</Text>
           <Ionicon name="chevron-forward" size={18} color={colors.muted} />
