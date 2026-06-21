@@ -66,17 +66,26 @@ type RuntimeSettingsDTO struct {
 		IntervalSeconds int  `json:"intervalSeconds" example:"21600"`
 	} `json:"cleanup"`
 	Federation struct {
-		Enabled             bool   `json:"enabled" example:"false"`
-		HubURL              string `json:"hubUrl"`
-		PublicKey           string `json:"publicKey"`
-		PrivateKey          string `json:"privateKey"`
-		SyncIntervalSeconds int    `json:"syncIntervalSeconds" example:"3600"`
-		ResolveMissing      bool   `json:"resolveMissing"`
-		ExportScrobbles     bool   `json:"exportScrobbles"`
+		// Federation is active whenever linked (instanceId set); no enable flag.
+		UserID string `json:"userId" example:"6f1c2b8e-1f0a-4f9b-9c3a-1e2d3c4b5a6f"`
+		// InstanceID is the hub-assigned fixed UUID (read-only). Sqid is the
+		// editable handle. PrivateKey is never returned (redacted server-side).
+		InstanceID      string `json:"instanceId" example:"3f1c2d4e-5a6b-7c8d-9e0f-1a2b3c4d5e6f"`
+		Sqid            string `json:"sqid" example:"my-node"`
+		InstanceName    string `json:"instanceName" example:"My living-room immerle"`
+		ResolveMissing  bool   `json:"resolveMissing"`
+		ExportScrobbles bool   `json:"exportScrobbles"`
 	} `json:"federation"`
 	Logs struct {
 		RetentionDays int `json:"retentionDays" example:"30"`
 	} `json:"logs"`
+}
+
+// FederationUpdateDTO is the body of PATCH /admin/federation: the instance
+// name and its editable sqid handle, pushed to the hub.
+type FederationUpdateDTO struct {
+	Name string `json:"name" example:"My living-room immerle"`
+	Sqid string `json:"sqid" example:"my-node"`
 }
 
 // SettingsDTO returns the runtime settings and restart state.

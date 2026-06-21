@@ -53,6 +53,38 @@ LOG_LEVEL=debug
 	}
 }
 
+func TestHubURLOverride(t *testing.T) {
+	// Default: the hardcoded hub URL.
+	if got := Default().HubURL; got != DefaultHubURL {
+		t.Fatalf("default hub URL = %q, want %q", got, DefaultHubURL)
+	}
+
+	// DEV_IMMERLE_HUB_URL from the .env file overrides the hardcoded default.
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".env")
+	if err := os.WriteFile(path, []byte("DEV_IMMERLE_HUB_URL=http://localhost:8080\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { os.Unsetenv("DEV_IMMERLE_HUB_URL") })
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	if cfg.HubURL != "http://localhost:8080" {
+		t.Fatalf(".env hub override lost: %q", cfg.HubURL)
+	}
+
+	// A real environment variable takes precedence over the .env file.
+	t.Setenv("DEV_IMMERLE_HUB_URL", "http://127.0.0.1:9090")
+	cfg, err = Load(path)
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	if cfg.HubURL != "http://127.0.0.1:9090" {
+		t.Fatalf("real env hub override should win, got %q", cfg.HubURL)
+	}
+}
+
 func TestValidateRejectsUnknownDriver(t *testing.T) {
 	cfg := Default()
 	cfg.Database.Driver = "mysql"

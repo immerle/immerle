@@ -18,7 +18,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 )
 
 // Config is the root bootstrap configuration object.
@@ -28,6 +27,9 @@ type Config struct {
 	Database DatabaseConfig
 	Log      LogConfig
 	Library  LibraryConfig
+	// HubURL is the resolved immerle-hub endpoint: the hardcoded DefaultHubURL,
+	// overridden by DEV_IMMERLE_HUB_URL (real env var or .env) for local debugging.
+	HubURL string
 }
 
 // ServerConfig holds HTTP server settings. CORS is a runtime setting, not here.
@@ -90,17 +92,26 @@ type TranscodeProfile struct {
 	FFmpegArgs string
 }
 
+// DefaultHubURL is the hardcoded immerle-hub endpoint. It is intentionally NOT
+// admin-editable; only the DEV_IMMERLE_HUB_URL variable can override it (real
+// env var or .env, real env wins) — resolved into Config.HubURL at load.
+const DefaultHubURL = "https://hub.immerle.com"
+
 // FederationConfig configures the optional immerle-hub connection. It is no
 // longer part of the bootstrap Config (it is a runtime setting); the type is
 // kept because the federation service consumes it — app builds it from the
-// runtime settings.
+// runtime settings. HubURL is resolved (hardcoded/env), not stored.
 type FederationConfig struct {
-	Enabled bool
-	HubURL  string
-	// PublicKey → X-Instance-ID header; PrivateKey → Authorization Bearer token.
-	PublicKey       string
+	HubURL string
+	// UserID is the hub owner UUID the operator pastes to claim this instance
+	// (used only at bootstrap). InstanceID is the hub-assigned fixed UUID sent as
+	// the X-Instance-ID header. PrivateKey is the hub-issued secret Bearer token
+	// (returned once at bootstrap). Sqid is the editable, unique hub handle.
+	UserID          string
+	InstanceID      string
+	Sqid            string
+	InstanceName    string
 	PrivateKey      string
-	SyncInterval    time.Duration
 	ResolveMissing  bool
 	ExportScrobbles bool
 }
@@ -116,6 +127,7 @@ func Default() Config {
 		},
 		Log:     LogConfig{Level: "info", Format: "text"},
 		Library: LibraryConfig{DataDir: "data"},
+		HubURL:  DefaultHubURL,
 	}
 }
 
@@ -230,6 +242,13 @@ func applyEnv(c *Config, lookup func(string) (string, bool)) {
 	setString(&c.Library.DataDir, lookup, "LIBRARY_DATA_DIR")
 	if v, ok := lookup("LIBRARY_PATHS"); ok && v != "" {
 		c.Library.Paths = splitAndTrim(v)
+	}
+	// Dev-only: point federation at a local hub. Works from a real env var or
+	// .env (real env wins, via lookup); ignored when blank.
+	if v, ok := lookup("DEV_IMMERLE_HUB_URL"); ok {
+		if t := strings.TrimSpace(v); t != "" {
+			c.HubURL = t
+		}
 	}
 }
 

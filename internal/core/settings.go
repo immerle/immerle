@@ -195,9 +195,6 @@ func sanitizeSettings(rs models.RuntimeSettings) models.RuntimeSettings {
 	if rs.Scan.IntervalSeconds < 0 {
 		rs.Scan.IntervalSeconds = 0
 	}
-	if rs.Federation.SyncIntervalSeconds <= 0 {
-		rs.Federation.SyncIntervalSeconds = 3600
-	}
 	if rs.Auth.DeviceTokenTTLSeconds < 0 {
 		rs.Auth.DeviceTokenTTLSeconds = 0
 	}

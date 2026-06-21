@@ -220,30 +220,55 @@ export function useCleanupMutations() {
 
 // --- Federation ------------------------------------------------------------
 
-export function useFederation() {
+/** Register this instance with the hub. The response carries the refreshed
+ * settings (with the hub-assigned id), so we prime the settings cache. */
+export function useRegisterInstance() {
   const client = useAuth((s) => s.client);
-  return useQuery({
-    queryKey: qk.federation,
-    enabled: !!client && !!client.has('federation'),
-    queryFn: ({ signal }) => client!.getFederationState(signal),
-    refetchInterval: (q) => (q.state.data?.connection === 'connecting' ? 2000 : false),
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => client!.registerInstance(),
+    onSuccess: (res) => qc.setQueryData(qk.settings, res),
   });
 }
 
-export function useFederationMutations() {
+/** Push a name / sqid change to the hub (server-side). Primes the settings
+ * cache with the hub-canonical values on success. */
+export function useUpdateFederationInstance() {
   const client = useAuth((s) => s.client);
   const qc = useQueryClient();
-  const invalidate = () => qc.invalidateQueries({ queryKey: qk.federation });
-  const setEnabled = useMutation({
-    mutationFn: (p: { enabled: boolean; hubUrl?: string }) =>
-      client!.setFederationEnabled(p.enabled, p.hubUrl),
-    onSuccess: invalidate,
+  return useMutation({
+    mutationFn: (p: { name: string; sqid: string }) => client!.updateFederationInstance(p.name, p.sqid),
+    onSuccess: (res) => qc.setQueryData(qk.settings, res),
   });
-  const setExport = useMutation({
-    mutationFn: (enabled: boolean) => client!.setAnonymizedExport(enabled),
-    onSuccess: invalidate,
+}
+
+/** Refresh the live name/sqid from the hub (server-side). Runs when `enabled`
+ * (the federation sheet is open and the instance is linked); primes the
+ * settings cache so the form shows the hub-canonical values. */
+export function useFederationProfile(enabled: boolean) {
+  const client = useAuth((s) => s.client);
+  const qc = useQueryClient();
+  return useQuery({
+    queryKey: qk.federation,
+    enabled: enabled && !!client,
+    retry: false,
+    queryFn: async () => {
+      const res = await client!.getFederationProfile();
+      qc.setQueryData(qk.settings, res);
+      return res;
+    },
   });
-  return { setEnabled, setExport };
+}
+
+/** Unlink this instance from the hub (server-side). Primes the settings cache
+ * with the cleared identity on success. */
+export function useUnlinkInstance() {
+  const client = useAuth((s) => s.client);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => client!.unlinkInstance(),
+    onSuccess: (res) => qc.setQueryData(qk.settings, res),
+  });
 }
 
 // --- Server / transcoding --------------------------------------------------

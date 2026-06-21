@@ -9,6 +9,7 @@ import { Badge, Button, Card, EmptyState, ErrorState, Field, IconButton, Loading
 import { AdminHeader, AdminScroll } from '../../src/components/AdminUI';
 import { Ionicon } from '../../src/components/Ionicon';
 import { useColors } from '../../src/theme/colors';
+import { useToast } from '../../src/stores/toast';
 import { tError } from '../../src/i18n';
 import { useT } from '../../src/i18n/store';
 
@@ -33,15 +34,7 @@ export default function AdminProviders() {
   const [editing, setEditing] = useState<Provider | null>(null);
   const [creating, setCreating] = useState(false);
   const [behaviourOpen, setBehaviourOpen] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
   const hasSettings = !!client?.has('runtimeSettings');
-
-  // Auto-dismiss the error toast.
-  useEffect(() => {
-    if (!toast) return;
-    const id = setTimeout(() => setToast(null), 4000);
-    return () => clearTimeout(id);
-  }, [toast]);
 
   // Admin surfaces are web-only — skip the heavy editor on native.
   if (Platform.OS !== 'web') {
@@ -112,7 +105,6 @@ export default function AdminProviders() {
                 onMoveUp={i > 0 ? () => move(i, -1) : undefined}
                 onMoveDown={i < ordered.length - 1 ? () => move(i, 1) : undefined}
                 reordering={reorder.isPending}
-                onToast={setToast}
               />
             ))
           )}
@@ -122,14 +114,6 @@ export default function AdminProviders() {
           <BehaviourModal visible={behaviourOpen} onClose={() => setBehaviourOpen(false)} />
         </AdminScroll>
       )}
-      {toast ? (
-        <View pointerEvents="none" className="absolute inset-x-0 bottom-6 items-center px-6">
-          <View className="max-w-[460px] flex-row items-center gap-2 rounded-xl bg-danger px-4 py-3 shadow-lg">
-            <Ionicon name="alert-circle" size={18} color="#fff" />
-            <Text className="flex-1 text-sm font-medium text-white">{toast}</Text>
-          </View>
-        </View>
-      ) : null}
     </>
   );
 }
@@ -288,7 +272,6 @@ function ProviderCard({
   onMoveUp,
   onMoveDown,
   reordering,
-  onToast,
 }: {
   provider: Provider;
   onEdit: () => void;
@@ -296,7 +279,6 @@ function ProviderCard({
   onMoveUp?: () => void;
   onMoveDown?: () => void;
   reordering: boolean;
-  onToast: (msg: string) => void;
 }) {
   const t = useT();
   const colors = useColors();
@@ -336,7 +318,7 @@ function ProviderCard({
           onValueChange={(v) =>
             setEnabled.mutate(
               { name: provider.name, enabled: v },
-              { onError: (e) => onToast(tError(e)) },
+              { onError: (e) => useToast.getState().error(tError(e)) },
             )
           }
           trackColor={{ true: colors.primary, false: colors.border }}

@@ -7269,15 +7269,18 @@ export interface components {
                 maxAgeSeconds?: number;
             };
             federation?: {
-                /** @example false */
-                enabled?: boolean;
                 exportScrobbles?: boolean;
-                hubUrl?: string;
-                privateKey?: string;
-                publicKey?: string;
+                /** @example 6f1c2b8e-1f0a-4f9b-9c3a-1e2d3c4b5a6f */
+                userId?: string;
+                /** @description hub-assigned fixed UUID (read-only)
+                 * @example 3f1c2d4e-5a6b-7c8d-9e0f-1a2b3c4d5e6f */
+                instanceId?: string;
+                /** @description editable unique hub handle
+                 * @example my-node */
+                sqid?: string;
+                /** @example My living-room immerle */
+                instanceName?: string;
                 resolveMissing?: boolean;
-                /** @example 3600 */
-                syncIntervalSeconds?: number;
             };
             ldap?: {
                 /** @example uid=%s,ou=people,dc=example,dc=com */

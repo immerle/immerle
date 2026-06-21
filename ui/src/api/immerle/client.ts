@@ -52,7 +52,6 @@ import {
   CapabilityFeature,
   Capabilities,
   DownloadJob,
-  FederationState,
   ImmerleApiError,
   ImmerleSession,
   LibraryStats,
@@ -864,16 +863,50 @@ export class ImmerleClient {
 
   // --- Admin: federation ---------------------------------------------------
 
-  async getFederationState(signal?: AbortSignal): Promise<FederationState> {
-    return this.request<FederationState>('GET', 'admin/federation', undefined, signal);
+  /** Register this instance with the hub: bootstraps under the configured hub
+   * user id and persists the hub-assigned id + private key. The HTTP exchange
+   * runs server-side. Returns the refreshed runtime settings. */
+  async registerInstance(): Promise<SettingsResult> {
+    const data = await this.request<SettingsResponseRaw>('POST', 'admin/federation/register');
+    return {
+      settings: data.settings ?? {},
+      restartRequired: data.restartRequired ?? false,
+      pendingRestart: data.pendingRestart ?? [],
+    };
   }
 
-  async setFederationEnabled(enabled: boolean, hubUrl?: string): Promise<FederationState> {
-    return this.request<FederationState>('PUT', 'admin/federation', { enabled, hubUrl });
+  /** Fetch this instance's live name/sqid from the hub (the source of truth)
+   * and persist them; returns the refreshed runtime settings. */
+  async getFederationProfile(): Promise<SettingsResult> {
+    const data = await this.request<SettingsResponseRaw>('GET', 'admin/federation');
+    return {
+      settings: data.settings ?? {},
+      restartRequired: data.restartRequired ?? false,
+      pendingRestart: data.pendingRestart ?? [],
+    };
   }
 
-  async setAnonymizedExport(enabled: boolean): Promise<FederationState> {
-    return this.request<FederationState>('PUT', 'admin/federation/export', { enabled });
+  /** Push a name / sqid (editable hub handle) change to the hub. The hub
+   * validates sqid uniqueness; a clash surfaces as an error. Returns the
+   * refreshed runtime settings with the hub-canonical values. */
+  async updateFederationInstance(name: string, sqid: string): Promise<SettingsResult> {
+    const data = await this.request<SettingsResponseRaw>('PATCH', 'admin/federation', { name, sqid });
+    return {
+      settings: data.settings ?? {},
+      restartRequired: data.restartRequired ?? false,
+      pendingRestart: data.pendingRestart ?? [],
+    };
+  }
+
+  /** Unlink this instance from the hub: deletes hub-side data (best-effort) and
+   * clears the stored identity. Returns the refreshed runtime settings. */
+  async unlinkInstance(): Promise<SettingsResult> {
+    const data = await this.request<SettingsResponseRaw>('DELETE', 'admin/federation');
+    return {
+      settings: data.settings ?? {},
+      restartRequired: data.restartRequired ?? false,
+      pendingRestart: data.pendingRestart ?? [],
+    };
   }
 
   // --- Admin: server / transcoding ----------------------------------------

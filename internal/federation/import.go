@@ -2,11 +2,10 @@ package federation
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"net/http"
-	"net/url"
 	"time"
+
+	"github.com/immerle/immerle/internal/federation/hub"
 )
 
 // ExternalPlaylist is a third-party playlist (e.g. Spotify) fetched through the
@@ -33,28 +32,24 @@ const importPollTimeout = 5 * time.Minute
 // FetchExternalPlaylist imports a public playlist from an external source (only
 // "spotify" today) through the hub. The hub processes imports as a lazy job
 // (enqueue + poll) to stay within the third party's rate limits, so this:
-//  1. POSTs /api/v1/spotify/imports {"playlist": ref} → a job id;
-//  2. polls GET /api/v1/spotify/imports/{id} until completed or failed.
+//  1. enqueues the import → a job id;
+//  2. polls the job until completed or failed.
 //
-// It works whenever a hub URL + keys are configured, independent of the
+// It works whenever the instance is registered with the hub, independent of the
 // background-sync Enabled flag (an import is a distinct, user-initiated action).
 func (s *Service) FetchExternalPlaylist(ctx context.Context, source, ref string) (ExternalPlaylist, error) {
 	if !s.HubConfigured() {
-		return ExternalPlaylist{}, fmt.Errorf("hub not configured (set the hub URL, public key and private key)")
+		return ExternalPlaylist{}, fmt.Errorf("hub not configured (register the instance with the hub first)")
 	}
 	if source != "spotify" {
 		return ExternalPlaylist{}, fmt.Errorf("hub import source %q not supported", source)
 	}
 
-	raw, err := s.do(ctx, http.MethodPost, "/api/v1/spotify/imports", map[string]any{"playlist": ref})
+	job, err := s.hub.SpotifyImport(ctx, s.auth(), ref)
 	if err != nil {
 		return ExternalPlaylist{}, err
 	}
-	var job spotifyImportJob
-	if err := json.Unmarshal(raw, &job); err != nil {
-		return ExternalPlaylist{}, fmt.Errorf("decode import job: %w", err)
-	}
-	if job.JobID == "" {
+	if deref(job.JobId) == "" {
 		return ExternalPlaylist{}, fmt.Errorf("hub returned no job id")
 	}
 
@@ -63,14 +58,15 @@ func (s *Service) FetchExternalPlaylist(ctx context.Context, source, ref string)
 	timeout := time.NewTimer(importPollTimeout)
 	defer timeout.Stop()
 	for {
-		switch job.Status {
+		switch deref(job.Status) {
 		case "completed":
-			return job.toExternal(), nil
+			return toExternal(job), nil
 		case "failed":
-			if job.Error == "" {
-				job.Error = "unknown error"
+			msg := deref(job.Error)
+			if msg == "" {
+				msg = "unknown error"
 			}
-			return ExternalPlaylist{}, fmt.Errorf("hub import failed: %s", job.Error)
+			return ExternalPlaylist{}, fmt.Errorf("hub import failed: %s", msg)
 		}
 		select {
 		case <-ctx.Done():
@@ -79,36 +75,22 @@ func (s *Service) FetchExternalPlaylist(ctx context.Context, source, ref string)
 			return ExternalPlaylist{}, fmt.Errorf("hub import did not complete within %s", importPollTimeout)
 		case <-ticker.C:
 		}
-		raw, err := s.do(ctx, http.MethodGet, "/api/v1/spotify/imports/"+url.PathEscape(job.JobID), nil)
-		if err != nil {
+		if job, err = s.hub.SpotifyJob(ctx, s.auth(), deref(job.JobId)); err != nil {
 			return ExternalPlaylist{}, err
-		}
-		job = spotifyImportJob{}
-		if err := json.Unmarshal(raw, &job); err != nil {
-			return ExternalPlaylist{}, fmt.Errorf("decode import job: %w", err)
 		}
 	}
 }
 
-// spotifyImportJob mirrors the hub's job payload (POST/GET spotify/imports).
-type spotifyImportJob struct {
-	JobID    string `json:"jobId"`
-	Status   string `json:"status"` // pending | in_progress | completed | failed
-	Error    string `json:"error"`
-	Playlist struct {
-		Name string `json:"name"`
-	} `json:"playlist"`
-	Tracks []struct {
-		Artist string `json:"artist"`
-		Title  string `json:"title"`
-		Album  string `json:"album"`
-	} `json:"tracks"`
-}
-
-func (j spotifyImportJob) toExternal() ExternalPlaylist {
-	pl := ExternalPlaylist{Name: j.Playlist.Name}
-	for _, t := range j.Tracks {
-		pl.Tracks = append(pl.Tracks, ExternalTrack{Title: t.Title, Artist: t.Artist, Album: t.Album})
+// toExternal flattens a completed hub Spotify job into an ExternalPlaylist.
+func toExternal(j hub.PublicSpotifyJobResponse) ExternalPlaylist {
+	pl := ExternalPlaylist{}
+	if j.Playlist != nil {
+		pl.Name = deref(j.Playlist.Name)
+	}
+	if j.Tracks != nil {
+		for _, t := range *j.Tracks {
+			pl.Tracks = append(pl.Tracks, ExternalTrack{Title: deref(t.Title), Artist: deref(t.Artist), Album: deref(t.Album)})
+		}
 	}
 	return pl
 }

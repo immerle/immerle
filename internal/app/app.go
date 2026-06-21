@@ -134,14 +134,16 @@ func transcodeConfig(t models.TranscodeRuntime, dataDir string) config.Transcode
 }
 
 // federationConfig maps the runtime federation settings to the federation
-// service's config type.
-func federationConfig(f models.FederationRuntime) config.FederationConfig {
+// service's config type. hubURL is the resolved hub endpoint (hardcoded, or
+// the DEV_IMMERLE_HUB_URL override from the bootstrap config).
+func federationConfig(f models.FederationRuntime, hubURL string) config.FederationConfig {
 	return config.FederationConfig{
-		Enabled:         f.Enabled,
-		HubURL:          f.HubURL,
-		PublicKey:       f.PublicKey,
+		HubURL:          hubURL,
+		UserID:          f.UserID,
+		InstanceID:      f.InstanceID,
+		Sqid:            f.Sqid,
+		InstanceName:    f.InstanceName,
 		PrivateKey:      f.PrivateKey,
-		SyncInterval:    time.Duration(f.SyncIntervalSeconds) * time.Second,
 		ResolveMissing:  f.ResolveMissing,
 		ExportScrobbles: f.ExportScrobbles,
 	}
@@ -282,9 +284,40 @@ func New(cfg config.Config) (*App, error) {
 		fedResolver = onDemand
 	}
 	fed := federation.New(
-		func() config.FederationConfig { return federationConfig(settingsSvc.Get().Federation) },
+		func() config.FederationConfig { return federationConfig(settingsSvc.Get().Federation, cfg.HubURL) },
 		store.Catalog, store.Playlists, store.Scrobbles, fedResolver, logger)
 	fed.SetOwnerResolver(func(ctx context.Context) (string, error) { return firstAdmin(ctx, store.Users) })
+	// Persist hub-issued identity (instance UUID, sqid, private key, name) back
+	// into the runtime settings after bootstrap/update. Empty fields are left
+	// unchanged so an update can touch only name/sqid.
+	fed.SetCredentialsSaver(func(_ context.Context, creds federation.Credentials) error {
+		next := settingsSvc.Get()
+		if creds.InstanceID != "" {
+			next.Federation.InstanceID = creds.InstanceID
+		}
+		if creds.Sqid != "" {
+			next.Federation.Sqid = creds.Sqid
+		}
+		if creds.PrivateKey != "" {
+			next.Federation.PrivateKey = creds.PrivateKey
+		}
+		if creds.Name != "" {
+			next.Federation.InstanceName = creds.Name
+		}
+		_, _, err := settingsSvc.Update(next)
+		return err
+	})
+	// Clear hub identity on unlink (resets the instance to the unlinked state).
+	fed.SetCredentialsClearer(func(_ context.Context) error {
+		next := settingsSvc.Get()
+		next.Federation.UserID = ""
+		next.Federation.InstanceID = ""
+		next.Federation.Sqid = ""
+		next.Federation.InstanceName = ""
+		next.Federation.PrivateKey = ""
+		_, _, err := settingsSvc.Update(next)
+		return err
+	})
 
 	// Playlist import (e.g. Spotify): the source playlist is fetched through the
 	// hub (which holds the third-party credentials), then each track is resolved

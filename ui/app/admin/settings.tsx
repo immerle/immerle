@@ -4,6 +4,10 @@ import { Stack } from 'expo-router';
 import {
   useCleanup,
   useCleanupMutations,
+  useRegisterInstance,
+  useUpdateFederationInstance,
+  useFederationProfile,
+  useUnlinkInstance,
   useSettings,
   useUpdateSettings,
 } from '../../src/query/admin';
@@ -17,6 +21,7 @@ import { Badge, Button, Card, ErrorState, Field, IconButton, Loading } from '../
 import { AdminHeader, AdminScroll } from '../../src/components/AdminUI';
 import { Ionicon } from '../../src/components/Ionicon';
 import { useColors } from '../../src/theme/colors';
+import { useToast } from '../../src/stores/toast';
 import { useT } from '../../src/i18n/store';
 
 const num = (s: string) => {
@@ -27,7 +32,6 @@ const num = (s: string) => {
 const RESTART_LABEL_KEYS: Record<string, string> = {
   transcode: 'admin.settings.restartTranscode',
   'scan.watch': 'admin.settings.restartScanWatch',
-  federation: 'admin.settings.restartFederation',
 };
 
 type SectionKey = 'auth' | 'ldap' | 'server' | 'transcode' | 'federation' | 'cleanup' | 'logs' | 'features';
@@ -48,11 +52,10 @@ interface Form {
   ldapBindDn: string;
   ffmpeg: string;
   ffprobe: string;
-  fedEnabled: boolean;
-  hubUrl: string;
-  publicKey: string;
-  privateKey: string;
-  syncInterval: string;
+  fedUserId: string;
+  fedInstanceId: string;
+  fedSqid: string;
+  fedInstanceName: string;
   resolveMissing: boolean;
   exportScrobbles: boolean;
   logRetention: string;
@@ -67,11 +70,10 @@ function toForm(s: RuntimeSettingsDTO): Form {
     ldapBindDn: s.ldap?.bindDnTemplate ?? '',
     ffmpeg: s.transcode?.ffmpegPath ?? '',
     ffprobe: s.transcode?.ffprobePath ?? '',
-    fedEnabled: s.federation?.enabled ?? false,
-    hubUrl: s.federation?.hubUrl ?? '',
-    publicKey: s.federation?.publicKey ?? '',
-    privateKey: s.federation?.privateKey ?? '',
-    syncInterval: String(s.federation?.syncIntervalSeconds ?? 0),
+    fedUserId: s.federation?.userId ?? '',
+    fedInstanceId: s.federation?.instanceId ?? '',
+    fedSqid: s.federation?.sqid ?? '',
+    fedInstanceName: s.federation?.instanceName ?? '',
     resolveMissing: s.federation?.resolveMissing ?? false,
     exportScrobbles: s.federation?.exportScrobbles ?? false,
     logRetention: String(s.logs?.retentionDays ?? 30),
@@ -96,6 +98,9 @@ export default function AdminSettings() {
   const client = useAuth((s) => s.client);
   const q = useSettings();
   const update = useUpdateSettings();
+  const register = useRegisterInstance();
+  const updateInstance = useUpdateFederationInstance();
+  const unlink = useUnlinkInstance();
   const cleanup = useCleanup();
   const cleanupM = useCleanupMutations();
   const smart = useSmartPlaylistsAdmin();
@@ -110,6 +115,10 @@ export default function AdminSettings() {
   const [sheet, setSheet] = useState<SectionKey | null>(null);
   const [removed, setRemoved] = useState<number | null>(null);
 
+  // When the federation sheet opens for a linked instance, refresh the live
+  // name/sqid from the hub (server-side).
+  useFederationProfile(sheet === 'federation' && !!q.data?.settings.federation?.instanceId);
+
   useEffect(() => {
     if (q.data?.settings) setForm(toForm(q.data.settings));
   }, [q.data?.settings]);
@@ -118,7 +127,7 @@ export default function AdminSettings() {
   if (q.isError) return <ErrorState message={t('admin.settings.loadError')} onRetry={q.refetch} />;
 
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setForm((f) => (f ? { ...f, [k]: v } : f));
-  const save = (patch: RuntimeSettingsDTO) => update.mutate(patch);
+  const save = (patch: RuntimeSettingsDTO, onSuccess?: () => void) => update.mutate(patch, { onSuccess });
 
   const pending = q.data?.pendingRestart ?? [];
   const profiles = q.data?.settings.transcode?.profiles ?? [];
@@ -221,32 +230,87 @@ export default function AdminSettings() {
               ) : null}
 
               {sheet === 'federation' ? (
-                <>
-                  <ToggleRow label={t('admin.settings.federationEnabled')} value={form.fedEnabled} onChange={(v) => set('fedEnabled', v)} />
-                  <Field label={t('admin.settings.hubUrl')} autoCapitalize="none" keyboardType="url" placeholder="https://hub.immerle.fr" value={form.hubUrl} onChangeText={(v) => set('hubUrl', v)} />
-                  <Field label={t('admin.settings.publicKey')} autoCapitalize="none" autoCorrect={false} value={form.publicKey} onChangeText={(v) => set('publicKey', v)} help={t('admin.settings.publicKeyHelp')} />
-                  <Field label={t('admin.settings.privateKey')} autoCapitalize="none" autoCorrect={false} secureTextEntry value={form.privateKey} onChangeText={(v) => set('privateKey', v)} help={t('admin.settings.privateKeyHelp')} />
-                  <Field label={t('admin.settings.syncInterval')} keyboardType="number-pad" value={form.syncInterval} onChangeText={(v) => set('syncInterval', v)} />
-                  <ToggleRow label={t('admin.settings.resolveMissing')} value={form.resolveMissing} onChange={(v) => set('resolveMissing', v)} />
-                  <ToggleRow label={t('admin.settings.exportScrobbles')} value={form.exportScrobbles} onChange={(v) => set('exportScrobbles', v)} />
-                  <SaveButton
-                    loading={update.isPending}
-                    hint={t('admin.settings.restartHint')}
-                    onPress={() =>
-                      save({
-                        federation: {
-                          enabled: form.fedEnabled,
-                          hubUrl: form.hubUrl,
-                          publicKey: form.publicKey,
-                          privateKey: form.privateKey,
-                          syncIntervalSeconds: num(form.syncInterval),
-                          resolveMissing: form.resolveMissing,
-                          exportScrobbles: form.exportScrobbles,
-                        },
-                      })
-                    }
-                  />
-                </>
+                !form.fedInstanceId ? (
+                  // NOT LINKED — paste the hub user id and link this instance.
+                  <>
+                    <Text className="text-xs text-muted">{t('admin.settings.federationDescription')}</Text>
+                    <Field
+                      label={t('admin.settings.hubUserId')}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      value={form.fedUserId}
+                      onChangeText={(v) => set('fedUserId', v)}
+                      help={t('admin.settings.hubUserIdHelp')}
+                    />
+                    <View className="flex-row justify-end">
+                      <Button
+                        title={t('admin.settings.link')}
+                        icon="link-outline"
+                        loading={register.isPending}
+                        disabled={!form.fedUserId.trim()}
+                        onPress={() =>
+                          // Persist the pasted user id first, then link (bootstrap) server-side.
+                          save({ federation: { userId: form.fedUserId.trim() } }, () =>
+                            register.mutate(undefined, {
+                              onSuccess: () => useToast.getState().success(t('admin.settings.linkSuccess')),
+                              onError: (e) => useToast.getState().error((e as Error)?.message || t('admin.settings.linkError')),
+                            }),
+                          )
+                        }
+                      />
+                    </View>
+                  </>
+                ) : (
+                  // LINKED — edit name + slug (pushed to the hub), toggle features, unlink.
+                  <>
+                    <Field
+                      label={t('admin.settings.instanceName')}
+                      value={form.fedInstanceName}
+                      onChangeText={(v) => set('fedInstanceName', v)}
+                    />
+                    <Field
+                      label={t('admin.settings.instanceSlug')}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      value={form.fedSqid}
+                      onChangeText={(v) => set('fedSqid', v)}
+                      help={t('admin.settings.instanceSlugHelp')}
+                    />
+                    <Text className="text-[11px] text-muted">{t('admin.settings.instanceUuid', { id: form.fedInstanceId })}</Text>
+                    <SaveButton
+                      loading={updateInstance.isPending}
+                      onPress={() => updateInstance.mutate({ name: form.fedInstanceName.trim(), sqid: form.fedSqid.trim() })}
+                    />
+
+                    <Text className="pt-2 text-xs font-medium uppercase tracking-wider text-muted">{t('admin.settings.federationFeatures')}</Text>
+                    <ToggleRow
+                      label={t('admin.settings.resolveMissing')}
+                      value={form.resolveMissing}
+                      onChange={(v) => {
+                        set('resolveMissing', v);
+                        save({ federation: { resolveMissing: v } });
+                      }}
+                    />
+                    <ToggleRow
+                      label={t('admin.settings.exportScrobbles')}
+                      value={form.exportScrobbles}
+                      onChange={(v) => {
+                        set('exportScrobbles', v);
+                        save({ federation: { exportScrobbles: v } });
+                      }}
+                    />
+
+                    <View className="flex-row justify-end pt-3">
+                      <Button
+                        title={t('admin.settings.unlink')}
+                        icon="trash-outline"
+                        variant="danger"
+                        loading={unlink.isPending}
+                        onPress={() => unlink.mutate()}
+                      />
+                    </View>
+                  </>
+                )
               ) : null}
 
               {sheet === 'logs' ? (

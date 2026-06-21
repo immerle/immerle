@@ -41,8 +41,8 @@ func TestFetchExternalPlaylist(t *testing.T) {
 	defer srv.Close()
 
 	store := testutil.NewStore(t)
-	// Import works even with sync disabled, as long as the hub URL + keys are set.
-	cfg := config.FederationConfig{Enabled: false, HubURL: srv.URL, PublicKey: "inst-1", PrivateKey: "key-1"}
+	// Import works even with sync disabled, as long as the instance is registered.
+	cfg := config.FederationConfig{HubURL: srv.URL, InstanceID: "inst-1", PrivateKey: "iml_key-1"}
 	svc := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, nil, testLogger())
 
 	pl, err := svc.FetchExternalPlaylist(context.Background(), "spotify", "https://open.spotify.com/playlist/PL?si=x")
@@ -52,7 +52,7 @@ func TestFetchExternalPlaylist(t *testing.T) {
 	if !strings.Contains(postBody, `"playlist":"https://open.spotify.com/playlist/PL?si=x"`) {
 		t.Fatalf("ref not forwarded in body: %s", postBody)
 	}
-	if postAuth != "Bearer key-1" || postInstance != "inst-1" {
+	if postAuth != "Bearer iml_key-1" || postInstance != "inst-1" {
 		t.Fatalf("hub auth headers wrong: auth=%q instance=%q", postAuth, postInstance)
 	}
 	if pl.Name != "My Mix" || len(pl.Tracks) != 2 {
@@ -78,7 +78,7 @@ func TestFetchExternalPlaylistFailedJob(t *testing.T) {
 	defer srv.Close()
 
 	store := testutil.NewStore(t)
-	cfg := config.FederationConfig{HubURL: srv.URL, PublicKey: "i", PrivateKey: "k"}
+	cfg := config.FederationConfig{HubURL: srv.URL, InstanceID: "i", PrivateKey: "iml_k"}
 	svc := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, nil, testLogger())
 	if _, err := svc.FetchExternalPlaylist(context.Background(), "spotify", "PL"); err == nil ||
 		!strings.Contains(err.Error(), "playlist is private") {
@@ -86,33 +86,39 @@ func TestFetchExternalPlaylistFailedJob(t *testing.T) {
 	}
 }
 
-func TestRegisterSendsKeysAndVersion(t *testing.T) {
-	var auth, instance, body string
+// On first Register (no private key yet) the instance bootstraps under the
+// configured owner user id and persists the hub-issued id/sqid/private key.
+func TestRegisterBootstrapsAndPersistsCredentials(t *testing.T) {
+	var path, body string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		auth = r.Header.Get("Authorization")
-		instance = r.Header.Get("X-Instance-ID")
+		path = r.URL.Path
 		b, _ := io.ReadAll(r.Body)
 		body = strings.TrimSpace(string(b))
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusCreated)
+		// Bootstrap returns the fixed UUID id, an editable sqid and the key (once).
+		_, _ = w.Write([]byte(`{"ok":true,"id":"3f1c-uuid","sqid":"my-node","privateKey":"iml_secret","name":"My immerle"}`))
 	}))
 	defer srv.Close()
 
 	store := testutil.NewStore(t)
-	cfg := config.FederationConfig{Enabled: true, HubURL: srv.URL, PublicKey: "pub-1", PrivateKey: "priv-1"}
+	cfg := config.FederationConfig{HubURL: srv.URL, UserID: "user-1", InstanceName: "My immerle"}
 	svc := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, nil, testLogger())
+	var saved Credentials
+	svc.SetCredentialsSaver(func(_ context.Context, c Credentials) error { saved = c; return nil })
 
 	if err := svc.Register(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	if auth != "Bearer priv-1" {
-		t.Fatalf("private key not sent as Bearer: %q", auth)
+	if path != "/api/v1/instances" {
+		t.Fatalf("bootstrap should hit /api/v1/instances, hit %q", path)
 	}
-	if instance != "pub-1" {
-		t.Fatalf("public key not sent as X-Instance-ID: %q", instance)
+	// Body carries the owner user id, desired name and version.
+	if !strings.Contains(body, `"userId":"user-1"`) || !strings.Contains(body, `"version":"0.2.0"`) {
+		t.Fatalf("unexpected bootstrap body: %s", body)
 	}
-	// Body carries only the version (identity is in the headers).
-	if !strings.Contains(body, `"version":"0.2.0"`) || strings.Contains(body, "instanceId") {
-		t.Fatalf("unexpected register body: %s", body)
+	// The hub-issued credentials are persisted back.
+	if saved.InstanceID != "3f1c-uuid" || saved.Sqid != "my-node" || saved.PrivateKey != "iml_secret" {
+		t.Fatalf("credentials not persisted: %+v", saved)
 	}
 }
 
