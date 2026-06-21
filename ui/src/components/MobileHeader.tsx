@@ -30,7 +30,6 @@ export function MobileHeader() {
 
   const displayName = displayNameState ?? client?.username ?? '?';
   const initial = displayName.charAt(0).toUpperCase();
-  const isAdmin = client?.isAdmin ?? false;
 
   const go = (href: string) => {
     setMenu(false);
@@ -79,7 +78,7 @@ export function MobileHeader() {
               </Text>
             </View>
             <MenuItem icon="settings-outline" label={t('components.topbar.settings')} onPress={() => go('/settings')} />
-            {isAdmin ? <MenuItem icon="shield-checkmark-outline" label={t('components.topbar.administration')} onPress={() => go('/admin')} /> : null}
+            {/* Administration is web/desktop-only — kept out of the mobile menu. */}
             <MenuItem icon="log-out-outline" label={t('components.topbar.logout')} tone="danger" onPress={onLogout} />
           </View>
         </Pressable>
