@@ -134,10 +134,11 @@ func transcodeConfig(t models.TranscodeRuntime, dataDir string) config.Transcode
 }
 
 // federationConfig maps the runtime federation settings to the federation
-// service's config type.
-func federationConfig(f models.FederationRuntime) config.FederationConfig {
+// service's config type. hubURL is the resolved hub endpoint (hardcoded, or
+// the DEV_IMMERLE_HUB_URL override from the bootstrap config).
+func federationConfig(f models.FederationRuntime, hubURL string) config.FederationConfig {
 	return config.FederationConfig{
-		HubURL:          config.HubURL(), // hardcoded, DEV_IMMERLE_HUB_URL-overridable
+		HubURL:          hubURL,
 		UserID:          f.UserID,
 		InstanceID:      f.InstanceID,
 		Sqid:            f.Sqid,
@@ -283,7 +284,7 @@ func New(cfg config.Config) (*App, error) {
 		fedResolver = onDemand
 	}
 	fed := federation.New(
-		func() config.FederationConfig { return federationConfig(settingsSvc.Get().Federation) },
+		func() config.FederationConfig { return federationConfig(settingsSvc.Get().Federation, cfg.HubURL) },
 		store.Catalog, store.Playlists, store.Scrobbles, fedResolver, logger)
 	fed.SetOwnerResolver(func(ctx context.Context) (string, error) { return firstAdmin(ctx, store.Users) })
 	// Persist hub-issued identity (instance UUID, sqid, private key, name) back

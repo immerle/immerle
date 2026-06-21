@@ -27,6 +27,9 @@ type Config struct {
 	Database DatabaseConfig
 	Log      LogConfig
 	Library  LibraryConfig
+	// HubURL is the resolved immerle-hub endpoint: the hardcoded DefaultHubURL,
+	// overridden by DEV_IMMERLE_HUB_URL (real env var or .env) for local debugging.
+	HubURL string
 }
 
 // ServerConfig holds HTTP server settings. CORS is a runtime setting, not here.
@@ -90,17 +93,9 @@ type TranscodeProfile struct {
 }
 
 // DefaultHubURL is the hardcoded immerle-hub endpoint. It is intentionally NOT
-// admin-editable; only the DEV_IMMERLE_HUB_URL env var can override it.
+// admin-editable; only the DEV_IMMERLE_HUB_URL variable can override it (real
+// env var or .env, real env wins) — resolved into Config.HubURL at load.
 const DefaultHubURL = "https://hub.immerle.com"
-
-// HubURL returns the hub endpoint: the hardcoded DefaultHubURL, overridden by
-// the DEV_IMMERLE_HUB_URL environment variable when set (local hub debugging).
-func HubURL() string {
-	if v := strings.TrimSpace(os.Getenv("DEV_IMMERLE_HUB_URL")); v != "" {
-		return v
-	}
-	return DefaultHubURL
-}
 
 // FederationConfig configures the optional immerle-hub connection. It is no
 // longer part of the bootstrap Config (it is a runtime setting); the type is
@@ -132,6 +127,7 @@ func Default() Config {
 		},
 		Log:     LogConfig{Level: "info", Format: "text"},
 		Library: LibraryConfig{DataDir: "data"},
+		HubURL:  DefaultHubURL,
 	}
 }
 
@@ -246,6 +242,13 @@ func applyEnv(c *Config, lookup func(string) (string, bool)) {
 	setString(&c.Library.DataDir, lookup, "LIBRARY_DATA_DIR")
 	if v, ok := lookup("LIBRARY_PATHS"); ok && v != "" {
 		c.Library.Paths = splitAndTrim(v)
+	}
+	// Dev-only: point federation at a local hub. Works from a real env var or
+	// .env (real env wins, via lookup); ignored when blank.
+	if v, ok := lookup("DEV_IMMERLE_HUB_URL"); ok {
+		if t := strings.TrimSpace(v); t != "" {
+			c.HubURL = t
+		}
 	}
 }
 
