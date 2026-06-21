@@ -88,8 +88,8 @@ func (h *Handler) handleSettingsUpdate(w http.ResponseWriter, r *http.Request) {
 
 // handleFederationRegister registers this instance with the hub.
 //
-// @Summary      Register with the hub
-// @Description  Admin only. Claims the configured hub user id (federation.userId) for this instance and persists the hub-assigned instance id (a sqids by default). The full HTTP exchange runs server-side. Returns the refreshed runtime settings.
+// @Summary      Link with the hub
+// @Description  Admin only. Bootstraps the instance under the configured hub user id (federation.userId) and persists the hub-issued identity (instance UUID, sqid handle and private key). The full HTTP exchange runs server-side. Returns the refreshed runtime settings.
 // @Tags         admin
 // @Security     BearerAuth
 // @Produce      json
