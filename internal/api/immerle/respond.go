@@ -3,6 +3,7 @@ package immerle
 import (
 	"encoding/json"
 	"net/http"
+	"net/url"
 
 	chi "github.com/go-chi/chi/v5"
 )
@@ -84,7 +85,14 @@ func decodeJSON(w http.ResponseWriter, r *http.Request, dst any) bool {
 	return true
 }
 
-// pathParam returns a URL path parameter (e.g. {id}).
+// pathParam returns a URL path parameter (e.g. {id}). chi hands back the raw
+// (still percent-encoded) path segment, so we unescape it: remote ids like
+// "rart:..."/"rcov:..." reach us as "rart%3A..." and would otherwise miss their
+// prefix checks. Falls back to the raw value if it isn't valid escaping.
 func pathParam(r *http.Request, name string) string {
-	return chi.URLParam(r, name)
+	v := chi.URLParam(r, name)
+	if dec, err := url.PathUnescape(v); err == nil {
+		return dec
+	}
+	return v
 }
