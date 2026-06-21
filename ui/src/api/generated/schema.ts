@@ -7193,6 +7193,7 @@ export interface components {
         };
         "immerle.ProfilePlaylistDTO": {
             comment?: string;
+            coverArt?: string;
             coverArts?: string[];
             /** @example 5400 */
             duration?: number;
@@ -7243,6 +7244,7 @@ export interface components {
         };
         "immerle.PublicPlaylistDTO": {
             comment?: string;
+            coverArt?: string;
             coverArts?: string[];
             duration?: number;
             id?: string;

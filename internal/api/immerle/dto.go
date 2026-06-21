@@ -342,6 +342,7 @@ type ProfilePlaylistDTO struct {
 	Comment   string   `json:"comment,omitempty"`
 	SongCount int      `json:"songCount" example:"24"`
 	Duration  int      `json:"duration" example:"5400"`
+	CoverArt  string   `json:"coverArt,omitempty"`
 	CoverArts []string `json:"coverArts,omitempty"`
 }
 
@@ -393,6 +394,7 @@ type PublicPlaylistDTO struct {
 	Comment    string   `json:"comment,omitempty"`
 	SongCount  int      `json:"songCount"`
 	Duration   int      `json:"duration"`
+	CoverArt   string   `json:"coverArt,omitempty"`
 	CoverArts  []string `json:"coverArts,omitempty"`
 	Subscribed bool     `json:"subscribed"`
 }

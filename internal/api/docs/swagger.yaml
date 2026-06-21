@@ -381,6 +381,8 @@ components:
       properties:
         comment:
           type: string
+        coverArt:
+          type: string
         coverArts:
           items:
             type: string
@@ -457,6 +459,8 @@ components:
     immerle.PublicPlaylistDTO:
       properties:
         comment:
+          type: string
+        coverArt:
           type: string
         coverArts:
           items:

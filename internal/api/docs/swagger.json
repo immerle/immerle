@@ -544,6 +544,9 @@
                     "comment": {
                         "type": "string"
                     },
+                    "coverArt": {
+                        "type": "string"
+                    },
                     "coverArts": {
                         "items": {
                             "type": "string"
@@ -646,6 +649,9 @@
             "immerle.PublicPlaylistDTO": {
                 "properties": {
                     "comment": {
+                        "type": "string"
+                    },
+                    "coverArt": {
                         "type": "string"
                     },
                     "coverArts": {
