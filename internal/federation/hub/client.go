@@ -134,24 +134,81 @@ func (c *Client) SpotifyJob(ctx context.Context, a Auth, id string) (PublicSpoti
 	return out, err
 }
 
+// SyncPlaylist upserts a public playlist on the hub under externalId (the local
+// playlist id, the idempotency key). body is the marshaled sync payload (name,
+// description, image, metadata object, tracks array).
+func (c *Client) SyncPlaylist(ctx context.Context, a Auth, externalID string, body any) error {
+	return c.do(ctx, http.MethodPut, "/api/v1/instances/me/playlists/"+url.PathEscape(externalID), a, body, nil)
+}
+
+// DeletePlaylist removes a synced playlist from the hub. A 404 (never synced) is
+// surfaced as an *HTTPError so the caller can treat it as already-gone.
+func (c *Client) DeletePlaylist(ctx context.Context, a Auth, externalID string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/instances/me/playlists/"+url.PathEscape(externalID), a, nil, nil)
+}
+
+// MissingCovers returns which of the candidate cover hashes the hub does NOT yet
+// have (so only those need uploading). Max 1000 hashes per call.
+func (c *Client) MissingCovers(ctx context.Context, a Auth, hashes []string) ([]string, error) {
+	var out PublicMissingCoversResponse
+	if err := c.do(ctx, http.MethodPost, "/api/v1/covers/missing", a, PublicMissingCoversRequest{Hashes: &hashes}, &out); err != nil {
+		return nil, err
+	}
+	if out.Missing == nil {
+		return nil, nil
+	}
+	return *out.Missing, nil
+}
+
+// UploadCover uploads raw cover bytes addressed by their sha256 hash (idempotent;
+// the hub verifies sha256(bytes)==hash). contentType is image/jpeg|png|webp|gif.
+func (c *Client) UploadCover(ctx context.Context, a Auth, hash, contentType string, data []byte) error {
+	return c.doRaw(ctx, http.MethodPut, "/api/v1/covers/"+url.PathEscape(hash), a, contentType, data, nil)
+}
+
+// HTTPError is a non-2xx response from the hub. Callers can inspect Status to
+// react (e.g. 429 → back off harder, 404 → treat a delete as already-gone).
+type HTTPError struct {
+	Status  int
+	Method  string
+	Path    string
+	Message string // the hub's error string when present
+}
+
+func (e *HTTPError) Error() string {
+	if e.Message != "" {
+		return fmt.Sprintf("hub %s %s: %s (status %d)", e.Method, e.Path, e.Message, e.Status)
+	}
+	return fmt.Sprintf("hub %s %s: status %d", e.Method, e.Path, e.Status)
+}
+
 // do performs a JSON request, attaching auth headers when set, and decodes the
-// 2xx body into out (nil to ignore). Non-2xx responses become an error carrying
-// the hub's error message when present.
+// 2xx body into out (nil to ignore). Non-2xx responses become an *HTTPError.
 func (c *Client) do(ctx context.Context, method, path string, a Auth, body, out any) error {
-	var reader io.Reader
+	var raw []byte
 	if body != nil {
 		buf, err := json.Marshal(body)
 		if err != nil {
 			return err
 		}
-		reader = bytes.NewReader(buf)
+		raw = buf
+	}
+	return c.doRaw(ctx, method, path, a, "application/json", raw, out)
+}
+
+// doRaw performs a request with a pre-marshaled body and an explicit content type
+// (used for JSON via do, and for octet-stream cover uploads). out may be nil.
+func (c *Client) doRaw(ctx context.Context, method, path string, a Auth, contentType string, body []byte, out any) error {
+	var reader io.Reader
+	if body != nil {
+		reader = bytes.NewReader(body)
 	}
 	req, err := http.NewRequestWithContext(ctx, method, c.baseURL+path, reader)
 	if err != nil {
 		return err
 	}
 	if body != nil {
-		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Content-Type", contentType)
 	}
 	if a.PrivateKey != "" {
 		req.Header.Set("Authorization", "Bearer "+a.PrivateKey)
@@ -164,10 +221,7 @@ func (c *Client) do(ctx context.Context, method, path string, a Auth, body, out 
 	defer resp.Body.Close()
 	data, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode >= 300 {
-		if msg := errorMessage(data); msg != "" {
-			return fmt.Errorf("hub %s %s: %s (status %d)", method, path, msg, resp.StatusCode)
-		}
-		return fmt.Errorf("hub %s %s: status %d", method, path, resp.StatusCode)
+		return &HTTPError{Status: resp.StatusCode, Method: method, Path: path, Message: errorMessage(data)}
 	}
 	if out != nil && len(data) > 0 {
 		if err := json.Unmarshal(data, out); err != nil {

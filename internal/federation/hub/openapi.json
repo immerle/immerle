@@ -568,6 +568,27 @@
                 },
                 "type": "object"
             },
+            "public.CoverResponse": {
+                "properties": {
+                    "hash": {
+                        "example": "e3b0c44298fc1c149afbf4c8996fb924…",
+                        "type": "string"
+                    },
+                    "ok": {
+                        "example": true,
+                        "type": "boolean"
+                    },
+                    "size": {
+                        "example": 24576,
+                        "type": "integer"
+                    },
+                    "url": {
+                        "example": "/api/v1/covers/e3b0c44298fc1c149afbf4c8996fb924…",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "public.DistributionPlaylist": {
                 "properties": {
                     "comment": {
@@ -662,6 +683,73 @@
                 },
                 "type": "object"
             },
+            "public.InstancePlaylistDTO": {
+                "properties": {
+                    "createdAt": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "externalId": {
+                        "example": "spotify:playlist:37i9dQ",
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "image": {
+                        "example": "https://cdn.example/playlist.jpg",
+                        "type": "string"
+                    },
+                    "metadata": {
+                        "type": "object"
+                    },
+                    "name": {
+                        "example": "Summer Hits",
+                        "type": "string"
+                    },
+                    "trackCount": {
+                        "example": 42,
+                        "type": "integer"
+                    },
+                    "tracks": {
+                        "type": "object"
+                    },
+                    "updatedAt": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "public.InstancePlaylistResponse": {
+                "properties": {
+                    "ok": {
+                        "example": true,
+                        "type": "boolean"
+                    },
+                    "playlist": {
+                        "$ref": "#/components/schemas/public.InstancePlaylistDTO"
+                    }
+                },
+                "type": "object"
+            },
+            "public.InstancePlaylistsResponse": {
+                "properties": {
+                    "ok": {
+                        "example": true,
+                        "type": "boolean"
+                    },
+                    "playlists": {
+                        "items": {
+                            "$ref": "#/components/schemas/public.InstancePlaylistDTO"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "type": "object"
+            },
             "public.InstanceProfile": {
                 "properties": {
                     "createdAt": {
@@ -719,6 +807,34 @@
                     "sqid": {
                         "example": "my-node",
                         "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "public.MissingCoversRequest": {
+                "properties": {
+                    "hashes": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "type": "object"
+            },
+            "public.MissingCoversResponse": {
+                "properties": {
+                    "missing": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "ok": {
+                        "example": true,
+                        "type": "boolean"
                     }
                 },
                 "type": "object"
@@ -967,6 +1083,28 @@
                         },
                         "type": "array",
                         "uniqueItems": false
+                    }
+                },
+                "type": "object"
+            },
+            "public.SyncPlaylistRequest": {
+                "properties": {
+                    "description": {
+                        "type": "string"
+                    },
+                    "image": {
+                        "example": "https://cdn.example/playlist.jpg",
+                        "type": "string"
+                    },
+                    "metadata": {
+                        "type": "object"
+                    },
+                    "name": {
+                        "example": "Summer Hits",
+                        "type": "string"
+                    },
+                    "tracks": {
+                        "type": "object"
                     }
                 },
                 "type": "object"
@@ -2067,6 +2205,201 @@
                 ]
             }
         },
+        "/api/v1/covers/missing": {
+            "post": {
+                "description": "Given a list of cover SHA-256 hashes, returns the subset the hub does NOT have yet. Upload only those, then sync the playlist.",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/public.MissingCoversRequest",
+                                        "summary": "request",
+                                        "description": "Candidate cover hashes"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Candidate cover hashes",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/public.MissingCoversResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Which covers are missing",
+                "tags": [
+                    "covers"
+                ]
+            }
+        },
+        "/api/v1/covers/{hash}": {
+            "get": {
+                "parameters": [
+                    {
+                        "description": "Cover SHA-256 hex",
+                        "in": "path",
+                        "name": "hash",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "image/jpeg": {
+                                "schema": {
+                                    "type": "file"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "404": {
+                        "content": {
+                            "image/jpeg": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "summary": "Get a cover image",
+                "tags": [
+                    "covers"
+                ]
+            },
+            "head": {
+                "parameters": [
+                    {
+                        "description": "Cover SHA-256 hex",
+                        "in": "path",
+                        "name": "hash",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "present"
+                    },
+                    "404": {
+                        "description": "absent"
+                    }
+                },
+                "summary": "Check a cover exists",
+                "tags": [
+                    "covers"
+                ]
+            },
+            "put": {
+                "description": "Stores a cover image under its SHA-256 ({hash}); the bytes must be a supported image (jpeg/png/webp/gif, ≤5 MiB) whose hash matches. Deduplicated. Reference the returned URL in your synced playlist/track JSON.",
+                "parameters": [
+                    {
+                        "description": "Lowercase SHA-256 hex of the image bytes",
+                        "in": "path",
+                        "name": "hash",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/octet-stream": {
+                            "schema": {
+                                "format": "binary",
+                                "type": "string"
+                            }
+                        },
+                        "text/plain": {
+                            "schema": {
+                                "title": "request",
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "description": "Raw image bytes",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/public.CoverResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "bad hash / not an image / hash mismatch"
+                    },
+                    "413": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "image too large"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Upload a cover image",
+                "tags": [
+                    "covers"
+                ]
+            }
+        },
         "/api/v1/instances": {
             "post": {
                 "description": "Called by an immerle instance with its owner's user id (a uuid). The hub creates the instance owned by that user, assigns its fixed id (a uuid, used in X-Instance-ID), a sqid handle (editable later) and a private key (returned ONCE). The instance then authenticates with \"X-Instance-ID: \u003cid\u003e\" and \"Authorization: Bearer \u003cprivateKey\u003e\".",
@@ -2260,6 +2593,196 @@
                 "summary": "Delete instance data (GDPR)",
                 "tags": [
                     "instances"
+                ]
+            }
+        },
+        "/api/v1/instances/me/playlists": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/public.InstancePlaylistsResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "List my synced playlists",
+                "tags": [
+                    "playlists-sync"
+                ]
+            }
+        },
+        "/api/v1/instances/me/playlists/{externalId}": {
+            "delete": {
+                "parameters": [
+                    {
+                        "description": "Instance-local playlist id",
+                        "in": "path",
+                        "name": "externalId",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.DeletedResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Delete one of my synced playlists",
+                "tags": [
+                    "playlists-sync"
+                ]
+            },
+            "get": {
+                "parameters": [
+                    {
+                        "description": "Instance-local playlist id",
+                        "in": "path",
+                        "name": "externalId",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/public.InstancePlaylistResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Get one of my synced playlists",
+                "tags": [
+                    "playlists-sync"
+                ]
+            },
+            "put": {
+                "description": "Upserts one public playlist of the calling instance, identified by its instance-local id ({externalId}). Replaces the stored tracks (a JSON array) and metadata (a JSON object); covers are URLs (playlist cover in \"image\", each track's cover inside its JSON). Idempotent.",
+                "parameters": [
+                    {
+                        "description": "Instance-local playlist id",
+                        "in": "path",
+                        "name": "externalId",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/public.SyncPlaylistRequest",
+                                        "summary": "request",
+                                        "description": "Playlist cover/metadata and tracks JSON"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Playlist cover/metadata and tracks JSON",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/public.InstancePlaylistResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Sync a public playlist",
+                "tags": [
+                    "playlists-sync"
                 ]
             }
         },

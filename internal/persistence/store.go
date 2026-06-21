@@ -42,6 +42,9 @@ type Store struct {
 	Radio           *RadioRepo
 	Wrapped         *WrappedRepo
 	Podcasts        *PodcastRepo
+	HubOutbox       *HubOutboxRepo
+	PlaylistSync    *PlaylistSyncRepo
+	CoverUploads    *CoverUploadRepo
 }
 
 // New builds a Store over the given database.
@@ -69,6 +72,9 @@ func New(database *db.DB) *Store {
 		Radio:           &RadioRepo{base},
 		Wrapped:         &WrappedRepo{base},
 		Podcasts:        &PodcastRepo{base},
+		HubOutbox:       &HubOutboxRepo{base},
+		PlaylistSync:    &PlaylistSyncRepo{base},
+		CoverUploads:    &CoverUploadRepo{base},
 	}
 }
 

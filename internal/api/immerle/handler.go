@@ -27,14 +27,15 @@ const ProtocolVersion = "1.0.0"
 
 // Deps holds the immerle handler dependencies.
 type Deps struct {
-	Auth       *core.AuthService
-	Users      *persistence.UserRepo
-	Friends    *persistence.FriendRepo
-	Activity   *core.ActivityService
-	Playlists  *persistence.PlaylistRepo
-	Jam        *core.JamService
-	Setup      *core.SetupService
-	Federation FederationStatusProvider
+	Auth         *core.AuthService
+	Users        *persistence.UserRepo
+	Friends      *persistence.FriendRepo
+	Activity     *core.ActivityService
+	Playlists    *persistence.PlaylistRepo
+	PlaylistSync core.HubSyncEnqueuer // optional: enqueue public-playlist hub sync
+	Jam          *core.JamService
+	Setup        *core.SetupService
+	Federation   FederationStatusProvider
 	// Catalog and OnDemand enrich activity feed items with titles/cover/etc.
 	// (OnDemand maps a remote favorite to its downloaded local track). Catalog,
 	// Annotations and OnDemand also back the catalog browse resources via the
@@ -136,7 +137,7 @@ func NewHandler(d Deps) *Handler {
 		library:     core.NewLibraryService(d.Catalog, d.Annotations, d.OnDemand),
 		playback:    core.NewPlaybackService(d.Catalog, d.Annotations, d.Scrobbles, d.OnDemand, d.Activity, d.NowPlaying),
 		playQueue:   core.NewPlayQueueService(d.PlayQueues, d.Catalog, d.Annotations),
-		playlistSvc: core.NewPlaylistService(d.Playlists, d.Annotations, d.Activity),
+		playlistSvc: core.NewPlaylistService(d.Playlists, d.Annotations, d.Activity, d.PlaylistSync),
 		userSvc:     core.NewUserService(d.Users, d.Auth),
 		shareSvc:    core.NewShareService(d.Shares, d.Catalog, d.Playlists),
 		media:       media.NewServer(d.Catalog, d.Streamer, d.Cover, d.OnDemand, d.NowPlaying, d.Logger, d.SigningKey),

@@ -42,6 +42,7 @@ type App struct {
 	watcher    *scanner.Watcher
 	onDemand   *core.CatalogService
 	federation *federation.Service
+	outbox     *federation.OutboxWorker
 	enricher   *core.ArtistImageEnricher
 	evictor    *core.Evictor
 	logPruner  *core.LogPruner
@@ -319,6 +320,11 @@ func New(cfg config.Config) (*App, error) {
 		return err
 	})
 
+	// Outbound playlist sync: a DB-backed outbox + worker pushes public playlists
+	// to the hub (upsert) or removes them (delete) async, with retry/backoff and
+	// content-addressed cover de-dup. PlaylistService enqueues on every mutation.
+	outbox := federation.NewOutboxWorker(fed, store.HubOutbox, store.PlaylistSync, store.CoverUploads, store.Playlists, coverSvc, logger)
+
 	// Playlist import (e.g. Spotify): the source playlist is fetched through the
 	// hub (which holds the third-party credentials), then each track is resolved
 	// against the on-demand content providers and downloaded into a new playlist.
@@ -340,6 +346,7 @@ func New(cfg config.Config) (*App, error) {
 		Genres:           store.Genres,
 		Annotations:      store.Annotations,
 		Playlists:        store.Playlists,
+		PlaylistSync:     outbox,
 		PlayQueues:       store.PlayQueues,
 		Scrobbles:        store.Scrobbles,
 		Shares:           store.Shares,
@@ -364,6 +371,7 @@ func New(cfg config.Config) (*App, error) {
 		Friends:        store.Friends,
 		Activity:       activitySvc,
 		Playlists:      store.Playlists,
+		PlaylistSync:   outbox,
 		Jam:            jamSvc,
 		Setup:          setupSvc,
 		Federation:     fed,
@@ -429,6 +437,7 @@ func New(cfg config.Config) (*App, error) {
 		watcher:    scanner.NewWatcher(scan, scanPaths, settingsSvc.ScanInterval, logger),
 		onDemand:   onDemand,
 		federation: fed,
+		outbox:     outbox,
 		enricher:   enricher,
 		evictor:    evictor,
 		logPruner:  logPruner,
@@ -476,6 +485,9 @@ func (a *App) Run(ctx context.Context) error {
 	}
 	if a.federation != nil {
 		a.spawn(func() { a.federation.Run(ctx) })
+	}
+	if a.outbox != nil {
+		a.spawn(func() { a.outbox.Run(ctx) })
 	}
 	if a.enricher != nil {
 		// Short idle so incrementally-added artists are picked up promptly; the

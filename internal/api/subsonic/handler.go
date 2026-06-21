@@ -27,24 +27,25 @@ type RadioToggle interface{ RadioEnabled() bool }
 // Deps holds the dependencies of the Subsonic handler. Optional fields (OnDemand)
 // may be nil when the feature is disabled.
 type Deps struct {
-	Auth        *core.AuthService
-	Catalog     *persistence.CatalogRepo
-	Genres      *persistence.GenreRepo
-	Annotations *persistence.AnnotationRepo
-	Playlists   *persistence.PlaylistRepo
-	PlayQueues  *persistence.PlayQueueRepo
-	Scrobbles   *persistence.ScrobbleRepo
-	Shares      *persistence.ShareRepo
-	Users       *persistence.UserRepo
-	Radio       *persistence.RadioRepo
-	Podcasts    *core.PodcastService
-	Settings    RadioToggle
-	Cover       *stream.CoverService
-	Streamer    *stream.Streamer
-	NowPlaying  *core.NowPlayingTracker
-	Scanner     *scanner.Scanner
-	OnDemand    *core.CatalogService
-	Activity    *core.ActivityService
+	Auth         *core.AuthService
+	Catalog      *persistence.CatalogRepo
+	Genres       *persistence.GenreRepo
+	Annotations  *persistence.AnnotationRepo
+	Playlists    *persistence.PlaylistRepo
+	PlayQueues   *persistence.PlayQueueRepo
+	Scrobbles    *persistence.ScrobbleRepo
+	Shares       *persistence.ShareRepo
+	Users        *persistence.UserRepo
+	Radio        *persistence.RadioRepo
+	Podcasts     *core.PodcastService
+	Settings     RadioToggle
+	Cover        *stream.CoverService
+	Streamer     *stream.Streamer
+	NowPlaying   *core.NowPlayingTracker
+	Scanner      *scanner.Scanner
+	OnDemand     *core.CatalogService
+	Activity     *core.ActivityService
+	PlaylistSync core.HubSyncEnqueuer // optional: enqueue public-playlist hub sync
 	// MusicFolderPaths are the configured library roots, exposed as music folders.
 	MusicFolderPaths []string
 	// BaseURL is used to build absolute share links.
@@ -73,7 +74,7 @@ func NewHandler(d Deps) *Handler {
 		Deps:         d,
 		library:      core.NewLibraryService(d.Catalog, d.Annotations, d.OnDemand),
 		playback:     core.NewPlaybackService(d.Catalog, d.Annotations, d.Scrobbles, d.OnDemand, d.Activity, d.NowPlaying),
-		playlistSvc:  core.NewPlaylistService(d.Playlists, d.Annotations, d.Activity),
+		playlistSvc:  core.NewPlaylistService(d.Playlists, d.Annotations, d.Activity, d.PlaylistSync),
 		userSvc:      core.NewUserService(d.Users, d.Auth),
 		shareSvc:     core.NewShareService(d.Shares, d.Catalog, d.Playlists),
 		playQueueSvc: core.NewPlayQueueService(d.PlayQueues, d.Catalog, d.Annotations),

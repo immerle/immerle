@@ -11,6 +11,12 @@ import (
 	"github.com/immerle/immerle/internal/persistence"
 )
 
+// HubSyncEnqueuer queues a public playlist for federation-hub sync. Implemented
+// by the federation outbox worker; optional (nil when federation is absent).
+type HubSyncEnqueuer interface {
+	EnqueuePlaylistSync(ctx context.Context, playlistID string)
+}
+
 // PlaylistService holds the playlist CRUD business logic — visibility/edit
 // permissions, create-vs-replace, metadata updates and ownership-aware delete —
 // shared by every presentation layer.
@@ -18,11 +24,25 @@ type PlaylistService struct {
 	playlists   *persistence.PlaylistRepo
 	annotations *persistence.AnnotationRepo
 	activity    *ActivityService // optional
+	hubSync     HubSyncEnqueuer  // optional
 }
 
-// NewPlaylistService wires the playlist application service. activity is optional.
-func NewPlaylistService(playlists *persistence.PlaylistRepo, annotations *persistence.AnnotationRepo, activity *ActivityService) *PlaylistService {
-	return &PlaylistService{playlists: playlists, annotations: annotations, activity: activity}
+// NewPlaylistService wires the playlist application service. activity and hubSync
+// are optional (pass nil when unused).
+func NewPlaylistService(playlists *persistence.PlaylistRepo, annotations *persistence.AnnotationRepo, activity *ActivityService, hubSync HubSyncEnqueuer) *PlaylistService {
+	return &PlaylistService{playlists: playlists, annotations: annotations, activity: activity, hubSync: hubSync}
+}
+
+// enqueueHubSync queues a hub sync when federation is wired and the playlist is
+// (or just stopped being) a local public playlist. The worker resolves whether
+// that means an upsert or a delete from the playlist's current state.
+func (s *PlaylistService) enqueueHubSync(ctx context.Context, p models.Playlist, wasPublic bool) {
+	if s.hubSync == nil || p.Federated {
+		return
+	}
+	if p.Public || wasPublic {
+		s.hubSync.EnqueuePlaylistSync(ctx, p.ID)
+	}
 }
 
 // PlaylistDetail is a playlist with its tracks. Track annotations are populated
@@ -95,6 +115,7 @@ func (s *PlaylistService) Replace(ctx context.Context, user models.User, playlis
 	if err := s.playlists.ReplaceTracks(ctx, playlistID, songIDs, user.ID); err != nil {
 		return PlaylistDetail{}, err
 	}
+	s.enqueueHubSync(ctx, p, p.Public)
 	return s.detail(ctx, playlistID)
 }
 
@@ -108,6 +129,7 @@ func (s *PlaylistService) Update(ctx context.Context, user models.User, id strin
 	if !s.canEdit(ctx, p, user) {
 		return ErrForbidden
 	}
+	wasPublic := p.Public
 	if meta.Name != "" {
 		p.Name = meta.Name
 	}
@@ -132,6 +154,7 @@ func (s *PlaylistService) Update(ctx context.Context, user models.User, id strin
 			return err
 		}
 	}
+	s.enqueueHubSync(ctx, p, wasPublic)
 	return nil
 }
 
@@ -148,7 +171,11 @@ func (s *PlaylistService) Delete(ctx context.Context, user models.User, id strin
 		}
 		return ErrForbidden
 	}
-	return s.playlists.Delete(ctx, id)
+	if err := s.playlists.Delete(ctx, id); err != nil {
+		return err
+	}
+	s.enqueueHubSync(ctx, p, p.Public)
+	return nil
 }
 
 // CoverTarget returns the playlist if the user may change its cover (owner or
@@ -167,7 +194,13 @@ func (s *PlaylistService) CoverTarget(ctx context.Context, user models.User, id 
 // SaveCover persists a playlist's custom cover id (call after CoverTarget has
 // authorized and the cover file has been written).
 func (s *PlaylistService) SaveCover(ctx context.Context, id, coverID string) error {
-	return s.playlists.SetCover(ctx, id, coverID)
+	if err := s.playlists.SetCover(ctx, id, coverID); err != nil {
+		return err
+	}
+	if p, err := s.playlists.Get(ctx, id); err == nil {
+		s.enqueueHubSync(ctx, p, p.Public)
+	}
+	return nil
 }
 
 // detail loads a playlist with its tracks, without per-user annotations (used
