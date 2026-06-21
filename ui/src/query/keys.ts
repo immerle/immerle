@@ -33,6 +33,8 @@ export const qk = {
   providerLogs: (name: string) => ['admin', 'providers', name, 'logs'] as const,
   jobs: ['admin', 'jobs'] as const,
   federation: ['admin', 'federation'] as const,
+  federationSubscriptions: ['admin', 'federation', 'subscriptions'] as const,
+  federationSearch: (q: string) => ['admin', 'federation', 'search', q] as const,
   transcodeProfiles: ['admin', 'transcodeProfiles'] as const,
   serverSettings: ['admin', 'serverSettings'] as const,
   settings: ['admin', 'settings'] as const,

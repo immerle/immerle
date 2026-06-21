@@ -699,6 +699,30 @@
                 },
                 "type": "object"
             },
+            "public.InstanceSummary": {
+                "properties": {
+                    "id": {
+                        "example": "3f1c2d4e-…-uuid",
+                        "type": "string"
+                    },
+                    "lastSeenAt": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "example": "My instance",
+                        "type": "string"
+                    },
+                    "region": {
+                        "example": "eu",
+                        "type": "string"
+                    },
+                    "sqid": {
+                        "example": "my-node",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "public.PlayItemDoc": {
                 "properties": {
                     "album": {
@@ -777,6 +801,22 @@
                         },
                         "type": "array",
                         "uniqueItems": false
+                    }
+                },
+                "type": "object"
+            },
+            "public.SearchResponse": {
+                "properties": {
+                    "instances": {
+                        "items": {
+                            "$ref": "#/components/schemas/public.InstanceSummary"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "ok": {
+                        "example": true,
+                        "type": "boolean"
                     }
                 },
                 "type": "object"
@@ -885,6 +925,48 @@
                     "title": {
                         "example": "Hey Jude",
                         "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "public.SubscribeRequest": {
+                "properties": {
+                    "instanceId": {
+                        "example": "3f1c2d4e-…-uuid",
+                        "type": "string"
+                    },
+                    "sqid": {
+                        "example": "other-node",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "public.SubscriptionStateResponse": {
+                "properties": {
+                    "ok": {
+                        "example": true,
+                        "type": "boolean"
+                    },
+                    "subscribed": {
+                        "example": true,
+                        "type": "boolean"
+                    }
+                },
+                "type": "object"
+            },
+            "public.SubscriptionsResponse": {
+                "properties": {
+                    "ok": {
+                        "example": true,
+                        "type": "boolean"
+                    },
+                    "subscriptions": {
+                        "items": {
+                            "$ref": "#/components/schemas/public.InstanceSummary"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
                     }
                 },
                 "type": "object"
@@ -2181,6 +2263,151 @@
                 ]
             }
         },
+        "/api/v1/instances/me/subscriptions": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/public.SubscriptionsResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "List my subscriptions",
+                "tags": [
+                    "subscriptions"
+                ]
+            },
+            "post": {
+                "description": "Subscribes the calling instance to a target identified by its id (uuid) or its sqid handle. Idempotent.",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/public.SubscribeRequest",
+                                        "summary": "request",
+                                        "description": "Target instance id or sqid"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Target instance id or sqid",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/public.SubscriptionStateResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "missing target / self-subscription"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "target not found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Subscribe to an instance",
+                "tags": [
+                    "subscriptions"
+                ]
+            }
+        },
+        "/api/v1/instances/me/subscriptions/{id}": {
+            "delete": {
+                "parameters": [
+                    {
+                        "description": "Target instance id (uuid)",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/public.SubscriptionStateResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "not subscribed"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Unsubscribe from an instance",
+                "tags": [
+                    "subscriptions"
+                ]
+            }
+        },
         "/api/v1/instances/register": {
             "post": {
                 "description": "Announces the calling instance to the hub: records a heartbeat and the reported version, and returns the instance profile.",
@@ -2233,6 +2460,53 @@
                 "summary": "Register / heartbeat",
                 "tags": [
                     "instances"
+                ]
+            }
+        },
+        "/api/v1/instances/search": {
+            "get": {
+                "description": "Finds active instances by exact sqid or a case-insensitive substring of the name (ILIKE). The calling instance is excluded. Returns non-sensitive summaries.",
+                "parameters": [
+                    {
+                        "description": "Exact sqid or a name fragment",
+                        "in": "query",
+                        "name": "q",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/public.SearchResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Search instances",
+                "tags": [
+                    "subscriptions"
                 ]
             }
         },

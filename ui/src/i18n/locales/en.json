@@ -321,9 +321,13 @@
           "title": "Radio",
           "subtitle": "Internet stations (built-in & custom)"
         },
+        "federation": {
+          "title": "Federation",
+          "subtitle": "Hub link & discovery"
+        },
         "settings": {
           "title": "Settings",
-          "subtitle": "Runtime, transcoding, federation, cleanup"
+          "subtitle": "Runtime, transcoding, cleanup"
         }
       }
     }
@@ -480,6 +484,37 @@
       "logsEmpty": "No errors or warnings logged.",
       "logsError": "Could not load logs."
     },
+    "federation": {
+      "title": "Federation",
+      "subtitle": "Hub link & instance discovery",
+      "loadError": "Could not load federation.",
+      "description": "Get your user id from the hub and paste it below, then link: this instance claims it and connects to the hub.",
+      "hubUserId": "Hub user id",
+      "hubUserIdHelp": "The UUID from your hub account. The instance links itself under it.",
+      "link": "Link",
+      "linkSuccess": "Instance linked to the hub.",
+      "unlink": "Unlink",
+      "instanceSection": "This instance",
+      "instanceName": "Instance name",
+      "instanceSlug": "Instance slug",
+      "instanceSlugHelp": "Unique on the hub. Defaults to a short handle assigned when linking.",
+      "instanceUuid": "Hub UUID: {{id}}",
+      "save": "Save",
+      "saved": "Instance updated on the hub.",
+      "features": "Features",
+      "resolveMissing": "Resolve missing tracks",
+      "exportScrobbles": "Share listens (scrobbles)",
+      "discoverTitle": "Discover instances",
+      "discoverSearch": "Search",
+      "discoverPlaceholder": "Slug or name",
+      "discoverEmpty": "No instance found.",
+      "follow": "Follow",
+      "following": "Following",
+      "followed": "Now following {{name}}.",
+      "subscriptionsTitle": "Following",
+      "subscriptionsEmpty": "Not following any instance yet.",
+      "unfollow": "Unfollow"
+    },
     "settings": {
       "title": "Settings",
       "headerSubtitle": "Runtime configuration of the instance",
@@ -503,8 +538,6 @@
       "serverSubtitle": "Allowed CORS origins",
       "transcodeTitle": "Transcoding",
       "transcodeSubtitle": "ffmpeg / ffprobe & profiles",
-      "federationTitle": "Federation",
-      "federationSubtitle": "Hub & synchronization",
       "cleanupTitle": "Cleanup",
       "cleanupSubtitle": "Purge of downloads",
       "deviceTokenTtl": "Device token lifetime (s, 0 = never)",
@@ -513,20 +546,6 @@
       "ffmpegPath": "ffmpeg path",
       "ffprobePath": "ffprobe path",
       "profiles": "Profiles",
-      "federationDescription": "Get your user id from the hub and paste it below, then link: this instance claims it and connects to the hub.",
-      "hubUserId": "Hub user id",
-      "hubUserIdHelp": "The UUID from your hub account. The instance links itself under it.",
-      "link": "Link",
-      "unlink": "Unlink",
-      "linkSuccess": "Instance linked to the hub.",
-      "linkError": "Could not link to the hub.",
-      "instanceName": "Instance name",
-      "instanceSlug": "Instance slug",
-      "instanceSlugHelp": "Unique on the hub. Defaults to a short handle assigned when linking.",
-      "instanceUuid": "Hub UUID: {{id}}",
-      "federationFeatures": "Features",
-      "resolveMissing": "Resolve missing tracks",
-      "exportScrobbles": "Share listens (scrobbles)",
       "cleanupDescription": "Purges downloaded files older than {{days}} days, every {{hours}} h.",
       "autoSweep": "Automatic sweep",
       "removedCount": "{{count}} removed",

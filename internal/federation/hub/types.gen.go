@@ -296,6 +296,15 @@ type PublicInstanceProfile struct {
 	Version *string `json:"version,omitempty"`
 }
 
+// PublicInstanceSummary defines model for public.InstanceSummary.
+type PublicInstanceSummary struct {
+	Id         *string `json:"id,omitempty"`
+	LastSeenAt *string `json:"lastSeenAt,omitempty"`
+	Name       *string `json:"name,omitempty"`
+	Region     *string `json:"region,omitempty"`
+	Sqid       *string `json:"sqid,omitempty"`
+}
+
 // PublicPlayItemDoc defines model for public.PlayItemDoc.
 type PublicPlayItemDoc struct {
 	Album  *string `json:"album,omitempty"`
@@ -331,6 +340,12 @@ type PublicScrobbleAggregateDoc struct {
 // PublicScrobblesRequest defines model for public.ScrobblesRequest.
 type PublicScrobblesRequest struct {
 	Aggregates *[]PublicScrobbleAggregateDoc `json:"aggregates,omitempty"`
+}
+
+// PublicSearchResponse defines model for public.SearchResponse.
+type PublicSearchResponse struct {
+	Instances *[]PublicInstanceSummary `json:"instances,omitempty"`
+	Ok        *bool                    `json:"ok,omitempty"`
 }
 
 // PublicSpotifyImportRequest defines model for public.SpotifyImportRequest.
@@ -373,6 +388,24 @@ type PublicSpotifyTrack struct {
 	Key       *string `json:"key,omitempty"`
 	SpotifyId *string `json:"spotifyId,omitempty"`
 	Title     *string `json:"title,omitempty"`
+}
+
+// PublicSubscribeRequest defines model for public.SubscribeRequest.
+type PublicSubscribeRequest struct {
+	InstanceId *string `json:"instanceId,omitempty"`
+	Sqid       *string `json:"sqid,omitempty"`
+}
+
+// PublicSubscriptionStateResponse defines model for public.SubscriptionStateResponse.
+type PublicSubscriptionStateResponse struct {
+	Ok         *bool `json:"ok,omitempty"`
+	Subscribed *bool `json:"subscribed,omitempty"`
+}
+
+// PublicSubscriptionsResponse defines model for public.SubscriptionsResponse.
+type PublicSubscriptionsResponse struct {
+	Ok            *bool                    `json:"ok,omitempty"`
+	Subscriptions *[]PublicInstanceSummary `json:"subscriptions,omitempty"`
 }
 
 // PublicTrackRefDoc defines model for public.TrackRefDoc.
@@ -466,6 +499,14 @@ type PatchApiV1InstancesMeJSONBody struct {
 // PatchApiV1InstancesMeJSONBody0 defines parameters for PatchApiV1InstancesMe.
 type PatchApiV1InstancesMeJSONBody0 = map[string]interface{}
 
+// PostApiV1InstancesMeSubscriptionsJSONBody defines parameters for PostApiV1InstancesMeSubscriptions.
+type PostApiV1InstancesMeSubscriptionsJSONBody struct {
+	union json.RawMessage
+}
+
+// PostApiV1InstancesMeSubscriptionsJSONBody0 defines parameters for PostApiV1InstancesMeSubscriptions.
+type PostApiV1InstancesMeSubscriptionsJSONBody0 = map[string]interface{}
+
 // PostApiV1InstancesRegisterJSONBody defines parameters for PostApiV1InstancesRegister.
 type PostApiV1InstancesRegisterJSONBody struct {
 	union json.RawMessage
@@ -473,6 +514,12 @@ type PostApiV1InstancesRegisterJSONBody struct {
 
 // PostApiV1InstancesRegisterJSONBody0 defines parameters for PostApiV1InstancesRegister.
 type PostApiV1InstancesRegisterJSONBody0 = map[string]interface{}
+
+// GetApiV1InstancesSearchParams defines parameters for GetApiV1InstancesSearch.
+type GetApiV1InstancesSearchParams struct {
+	// Q Exact sqid or a name fragment
+	Q string `form:"q" json:"q"`
+}
 
 // GetApiV1PlaylistsParams defines parameters for GetApiV1Playlists.
 type GetApiV1PlaylistsParams struct {
@@ -545,6 +592,9 @@ type PostApiV1InstancesJSONRequestBody PostApiV1InstancesJSONBody
 
 // PatchApiV1InstancesMeJSONRequestBody defines body for PatchApiV1InstancesMe for application/json ContentType.
 type PatchApiV1InstancesMeJSONRequestBody PatchApiV1InstancesMeJSONBody
+
+// PostApiV1InstancesMeSubscriptionsJSONRequestBody defines body for PostApiV1InstancesMeSubscriptions for application/json ContentType.
+type PostApiV1InstancesMeSubscriptionsJSONRequestBody PostApiV1InstancesMeSubscriptionsJSONBody
 
 // PostApiV1InstancesRegisterJSONRequestBody defines body for PostApiV1InstancesRegister for application/json ContentType.
 type PostApiV1InstancesRegisterJSONRequestBody PostApiV1InstancesRegisterJSONBody
@@ -1112,6 +1162,68 @@ func (t PatchApiV1InstancesMeJSONBody) MarshalJSON() ([]byte, error) {
 }
 
 func (t *PatchApiV1InstancesMeJSONBody) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsPostApiV1InstancesMeSubscriptionsJSONBody0 returns the union data inside the PostApiV1InstancesMeSubscriptionsJSONBody as a PostApiV1InstancesMeSubscriptionsJSONBody0
+func (t PostApiV1InstancesMeSubscriptionsJSONBody) AsPostApiV1InstancesMeSubscriptionsJSONBody0() (PostApiV1InstancesMeSubscriptionsJSONBody0, error) {
+	var body PostApiV1InstancesMeSubscriptionsJSONBody0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromPostApiV1InstancesMeSubscriptionsJSONBody0 overwrites any union data inside the PostApiV1InstancesMeSubscriptionsJSONBody as the provided PostApiV1InstancesMeSubscriptionsJSONBody0
+func (t *PostApiV1InstancesMeSubscriptionsJSONBody) FromPostApiV1InstancesMeSubscriptionsJSONBody0(v PostApiV1InstancesMeSubscriptionsJSONBody0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergePostApiV1InstancesMeSubscriptionsJSONBody0 performs a merge with any union data inside the PostApiV1InstancesMeSubscriptionsJSONBody, using the provided PostApiV1InstancesMeSubscriptionsJSONBody0
+func (t *PostApiV1InstancesMeSubscriptionsJSONBody) MergePostApiV1InstancesMeSubscriptionsJSONBody0(v PostApiV1InstancesMeSubscriptionsJSONBody0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsPublicSubscribeRequest returns the union data inside the PostApiV1InstancesMeSubscriptionsJSONBody as a PublicSubscribeRequest
+func (t PostApiV1InstancesMeSubscriptionsJSONBody) AsPublicSubscribeRequest() (PublicSubscribeRequest, error) {
+	var body PublicSubscribeRequest
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromPublicSubscribeRequest overwrites any union data inside the PostApiV1InstancesMeSubscriptionsJSONBody as the provided PublicSubscribeRequest
+func (t *PostApiV1InstancesMeSubscriptionsJSONBody) FromPublicSubscribeRequest(v PublicSubscribeRequest) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergePublicSubscribeRequest performs a merge with any union data inside the PostApiV1InstancesMeSubscriptionsJSONBody, using the provided PublicSubscribeRequest
+func (t *PostApiV1InstancesMeSubscriptionsJSONBody) MergePublicSubscribeRequest(v PublicSubscribeRequest) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t PostApiV1InstancesMeSubscriptionsJSONBody) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *PostApiV1InstancesMeSubscriptionsJSONBody) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }

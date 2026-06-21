@@ -9,4 +9,4 @@
 //	go generate ./internal/federation/hub
 package hub
 
-//go:generate go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen -generate types -package hub -o types.gen.go openapi.json
+//go:generate go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.7.1 -generate types -package hub -o types.gen.go openapi.json

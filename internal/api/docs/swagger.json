@@ -231,6 +231,30 @@
                 },
                 "type": "object"
             },
+            "immerle.FederationInstancesDTO": {
+                "properties": {
+                    "instances": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.InstanceSummaryDTO"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.FederationSubscriptionsDTO": {
+                "properties": {
+                    "subscriptions": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.InstanceSummaryDTO"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "type": "object"
+            },
             "immerle.FederationUpdateDTO": {
                 "properties": {
                     "name": {
@@ -377,6 +401,30 @@
                 },
                 "type": "object"
             },
+            "immerle.InstanceSummaryDTO": {
+                "properties": {
+                    "id": {
+                        "example": "3f1c2d4e-5a6b-7c8d-9e0f-1a2b3c4d5e6f",
+                        "type": "string"
+                    },
+                    "lastSeenAt": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "example": "A friend's immerle",
+                        "type": "string"
+                    },
+                    "region": {
+                        "example": "eu",
+                        "type": "string"
+                    },
+                    "sqid": {
+                        "example": "other-node",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "immerle.JamDTO": {
                 "properties": {
                     "participants": {
@@ -481,6 +529,15 @@
                     "token": {
                         "example": "eyJhbGciOiJIUzI1Ni...",
                         "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.OkResponse": {
+                "properties": {
+                    "ok": {
+                        "example": true,
+                        "type": "boolean"
                     }
                 },
                 "type": "object"
@@ -994,6 +1051,19 @@
                     },
                     "sort": {
                         "example": "playCount",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.SubscribeRequestDTO": {
+                "properties": {
+                    "instanceId": {
+                        "example": "3f1c2d4e-5a6b-7c8d-9e0f-1a2b3c4d5e6f",
+                        "type": "string"
+                    },
+                    "sqid": {
+                        "example": "other-node",
                         "type": "string"
                     }
                 },
@@ -2725,6 +2795,83 @@
                 ]
             }
         },
+        "/admin/federation/instances": {
+            "get": {
+                "description": "Admin only. Searches the hub for other instances by exact sqid or name (the hub excludes this instance and revoked ones). The HTTP exchange runs server-side.",
+                "parameters": [
+                    {
+                        "description": "Search query (sqid or name)",
+                        "in": "query",
+                        "name": "q",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.FederationInstancesDTO"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "502": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Gateway"
+                    },
+                    "503": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Service Unavailable"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Discover instances on the hub",
+                "tags": [
+                    "admin"
+                ]
+            }
+        },
         "/admin/federation/register": {
             "post": {
                 "description": "Admin only. Bootstraps the instance under the configured hub user id (federation.userId) and persists the hub-issued identity (instance UUID, sqid handle and private key). The full HTTP exchange runs server-side. Returns the refreshed runtime settings.",
@@ -2786,6 +2933,263 @@
                     }
                 ],
                 "summary": "Link with the hub",
+                "tags": [
+                    "admin"
+                ]
+            }
+        },
+        "/admin/federation/subscriptions": {
+            "get": {
+                "description": "Admin only. Returns the instances this one follows on the hub. The HTTP exchange runs server-side.",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.FederationSubscriptionsDTO"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "502": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Gateway"
+                    },
+                    "503": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Service Unavailable"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "List hub subscriptions",
+                "tags": [
+                    "admin"
+                ]
+            },
+            "post": {
+                "description": "Admin only. Follows a target instance on the hub by instanceId (UUID) or sqid. The HTTP exchange runs server-side.",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/immerle.SubscribeRequestDTO",
+                                        "summary": "body",
+                                        "description": "Target instance id or sqid"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Target instance id or sqid",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.OkResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "502": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Gateway"
+                    },
+                    "503": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Service Unavailable"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Subscribe to an instance",
+                "tags": [
+                    "admin"
+                ]
+            }
+        },
+        "/admin/federation/subscriptions/{id}": {
+            "delete": {
+                "description": "Admin only. Stops following the instance with the given hub id (UUID). The HTTP exchange runs server-side.",
+                "parameters": [
+                    {
+                        "description": "Target instance id (UUID)",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.OkResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "502": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Gateway"
+                    },
+                    "503": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Service Unavailable"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Unsubscribe from an instance",
                 "tags": [
                     "admin"
                 ]

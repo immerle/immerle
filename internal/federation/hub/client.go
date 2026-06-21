@@ -83,6 +83,36 @@ func (c *Client) ListPlaylists(ctx context.Context, a Auth, region string) ([]Pu
 	return out, err
 }
 
+// SearchInstances finds other instances by exact sqid or name (ILIKE); the hub
+// excludes the caller and revoked instances. Returns summaries (no secrets).
+func (c *Client) SearchInstances(ctx context.Context, a Auth, q string) (PublicSearchResponse, error) {
+	var out PublicSearchResponse
+	err := c.do(ctx, http.MethodGet, "/api/v1/instances/search?q="+url.QueryEscape(q), a, nil, &out)
+	return out, err
+}
+
+// Subscriptions lists the instances this one follows.
+func (c *Client) Subscriptions(ctx context.Context, a Auth) (PublicSubscriptionsResponse, error) {
+	var out PublicSubscriptionsResponse
+	err := c.do(ctx, http.MethodGet, "/api/v1/instances/me/subscriptions", a, nil, &out)
+	return out, err
+}
+
+// Subscribe follows a target instance (by instanceId UUID or sqid). Idempotent;
+// the hub rejects self-subscription (400) and unknown/revoked targets (404).
+func (c *Client) Subscribe(ctx context.Context, a Auth, req PublicSubscribeRequest) (PublicSubscriptionStateResponse, error) {
+	var out PublicSubscriptionStateResponse
+	err := c.do(ctx, http.MethodPost, "/api/v1/instances/me/subscriptions", a, req, &out)
+	return out, err
+}
+
+// Unsubscribe stops following the instance with the given id (UUID).
+func (c *Client) Unsubscribe(ctx context.Context, a Auth, id string) (PublicSubscriptionStateResponse, error) {
+	var out PublicSubscriptionStateResponse
+	err := c.do(ctx, http.MethodDelete, "/api/v1/instances/me/subscriptions/"+url.PathEscape(id), a, nil, &out)
+	return out, err
+}
+
 // IngestScrobbles pushes anonymized aggregated scrobble counts (opt-in only).
 func (c *Client) IngestScrobbles(ctx context.Context, a Auth, req PublicScrobblesRequest) (PublicIngestResultResponse, error) {
 	var out PublicIngestResultResponse

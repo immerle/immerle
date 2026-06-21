@@ -321,9 +321,13 @@
           "title": "Radio",
           "subtitle": "Stations internet (intégrées & custom)"
         },
+        "federation": {
+          "title": "Fédération",
+          "subtitle": "Liaison au hub & découverte"
+        },
         "settings": {
           "title": "Réglages",
-          "subtitle": "Runtime, transcodage, fédération, nettoyage"
+          "subtitle": "Runtime, transcodage, nettoyage"
         }
       }
     }
@@ -480,6 +484,37 @@
       "logsEmpty": "Aucune erreur ni avertissement enregistré.",
       "logsError": "Impossible de charger les journaux."
     },
+    "federation": {
+      "title": "Fédération",
+      "subtitle": "Liaison au hub & découverte d'instances",
+      "loadError": "Impossible de charger la fédération.",
+      "description": "Récupérez votre id utilisateur sur le hub, collez-le ci-dessous puis liez : l'instance le revendique et se connecte au hub.",
+      "hubUserId": "Id utilisateur du hub",
+      "hubUserIdHelp": "L'UUID de votre compte hub. L'instance se lie dessous.",
+      "link": "Lier",
+      "linkSuccess": "Instance liée au hub.",
+      "unlink": "Supprimer",
+      "instanceSection": "Cette instance",
+      "instanceName": "Nom de l'instance",
+      "instanceSlug": "Slug de l'instance",
+      "instanceSlugHelp": "Unique côté hub. Par défaut un identifiant court attribué à la liaison.",
+      "instanceUuid": "UUID hub : {{id}}",
+      "save": "Enregistrer",
+      "saved": "Instance mise à jour sur le hub.",
+      "features": "Fonctionnalités",
+      "resolveMissing": "Résoudre les titres manquants",
+      "exportScrobbles": "Partager les écoutes (scrobbles)",
+      "discoverTitle": "Découvrir des instances",
+      "discoverSearch": "Rechercher",
+      "discoverPlaceholder": "Slug ou nom",
+      "discoverEmpty": "Aucune instance trouvée.",
+      "follow": "Suivre",
+      "following": "Suivie",
+      "followed": "Vous suivez désormais {{name}}.",
+      "subscriptionsTitle": "Abonnements",
+      "subscriptionsEmpty": "Vous ne suivez encore aucune instance.",
+      "unfollow": "Ne plus suivre"
+    },
     "settings": {
       "title": "Réglages",
       "headerSubtitle": "Configuration runtime de l'instance",
@@ -503,8 +538,6 @@
       "serverSubtitle": "Origines CORS autorisées",
       "transcodeTitle": "Transcodage",
       "transcodeSubtitle": "ffmpeg / ffprobe & profils",
-      "federationTitle": "Fédération",
-      "federationSubtitle": "Hub & synchronisation",
       "cleanupTitle": "Nettoyage",
       "cleanupSubtitle": "Purge des téléchargements",
       "deviceTokenTtl": "Durée des tokens d'appareil (s, 0 = jamais)",
@@ -513,20 +546,6 @@
       "ffmpegPath": "Chemin ffmpeg",
       "ffprobePath": "Chemin ffprobe",
       "profiles": "Profils",
-      "federationDescription": "Récupérez votre id utilisateur sur le hub, collez-le ci-dessous puis liez : l'instance le revendique et se connecte au hub.",
-      "hubUserId": "Id utilisateur du hub",
-      "hubUserIdHelp": "L'UUID de votre compte hub. L'instance se lie dessous.",
-      "link": "Lier",
-      "unlink": "Supprimer",
-      "linkSuccess": "Instance liée au hub.",
-      "linkError": "Impossible de lier au hub.",
-      "instanceName": "Nom de l'instance",
-      "instanceSlug": "Slug de l'instance",
-      "instanceSlugHelp": "Unique côté hub. Par défaut un identifiant court attribué à la liaison.",
-      "instanceUuid": "UUID hub : {{id}}",
-      "federationFeatures": "Fonctionnalités",
-      "resolveMissing": "Résoudre les titres manquants",
-      "exportScrobbles": "Partager les écoutes (scrobbles)",
       "cleanupDescription": "Purge les fichiers téléchargés de plus de {{days}} j, toutes les {{hours}} h.",
       "autoSweep": "Balayage automatique",
       "removedCount": "{{count}} supprimé(s)",

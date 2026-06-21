@@ -14,6 +14,7 @@ import (
 	"github.com/immerle/immerle/internal/api/httputil"
 	"github.com/immerle/immerle/internal/api/media"
 	"github.com/immerle/immerle/internal/core"
+	"github.com/immerle/immerle/internal/federation"
 	"github.com/immerle/immerle/internal/importer"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
@@ -100,6 +101,11 @@ type FederationStatusProvider interface {
 	RefreshProfile(ctx context.Context) error
 	UpdateInstance(ctx context.Context, name, sqid string) error
 	Unlink(ctx context.Context) error
+	// Discovery / subscriptions (instance → instance).
+	SearchInstances(ctx context.Context, query string) ([]federation.InstanceSummary, error)
+	Subscriptions(ctx context.Context) ([]federation.InstanceSummary, error)
+	Subscribe(ctx context.Context, instanceID, sqid string) error
+	Unsubscribe(ctx context.Context, instanceID string) error
 }
 
 // CleanupController runs an immediate eviction sweep. The enabled/retention
@@ -358,6 +364,11 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Post("/admin/federation/register", h.handleFederationRegister)
 			r.Patch("/admin/federation", h.handleFederationUpdate)
 			r.Delete("/admin/federation", h.handleFederationUnlink)
+			// Discovery + instance→instance subscriptions (proxied to the hub).
+			r.Get("/admin/federation/instances", h.handleFederationSearch)
+			r.Get("/admin/federation/subscriptions", h.handleFederationSubscriptions)
+			r.Post("/admin/federation/subscriptions", h.handleFederationSubscribe)
+			r.Delete("/admin/federation/subscriptions/{id}", h.handleFederationUnsubscribe)
 
 			// Admin: smart-playlists feature toggle.
 			r.Get("/admin/smart-playlists", h.handleSmartPlaylistsAdmin)
