@@ -8,7 +8,7 @@ import {
   View,
 } from 'react-native';
 import { usePathname } from 'expo-router';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { searchNav, useSearchUI } from '../search/store';
 import { SearchResults } from './SearchResults';
 import { Field } from './ui';
@@ -74,7 +74,10 @@ export function SearchOverlay() {
   if (!wide) {
     return (
       <Modal visible={open} animationType="slide" onRequestClose={close} transparent={false}>
-        <SafeAreaView className="flex-1 bg-background">
+        {/* SafeAreaView reports 0 insets inside a Modal (separate view tree), so
+            the field would slide under the Dynamic Island. Apply the insets
+            captured from the provider-scoped hook instead. */}
+        <View className="flex-1 bg-background" style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}>
           <View className="flex-row items-center gap-2 px-4 py-2">
             <View className="flex-1">
               <Field
@@ -94,7 +97,7 @@ export function SearchOverlay() {
             </Pressable>
           </View>
           <SearchResults onClose={close} />
-        </SafeAreaView>
+        </View>
       </Modal>
     );
   }
