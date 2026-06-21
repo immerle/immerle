@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Ionicon } from './Ionicon';
+import { useUI } from '../stores/ui';
 import { useColors } from '../theme/colors';
 import { WIDE_BREAKPOINT } from '../theme/layout';
 import { useT } from '../i18n/store';
@@ -51,6 +52,7 @@ export function AdminHeader({
 }) {
   const t = useT();
   const colors = useColors();
+  const openDrawer = useUI((s) => s.openDrawer);
   const { width } = useWindowDimensions();
   const wide = width >= WIDE_BREAKPOINT;
   return (
@@ -74,13 +76,24 @@ export function AdminHeader({
         className="flex-row items-center gap-3 px-4 pb-6 pt-5"
       >
         {showBack && !wide ? (
-          <Pressable
-            onPress={() => router.back()}
-            accessibilityLabel={t('components.admin.back')}
-            className="h-9 w-9 items-center justify-center rounded-full bg-surface-alt active:opacity-70"
-          >
-            <Ionicon name="chevron-back" size={20} color={colors.foreground} />
-          </Pressable>
+          <>
+            {/* Mobile: a hamburger opens the admin sidebar drawer (the desktop
+                page-nav), mirroring the persistent sidebar on wide screens. */}
+            <Pressable
+              onPress={openDrawer}
+              accessibilityLabel={t('home.admin.title')}
+              className="h-9 w-9 items-center justify-center rounded-full bg-surface-alt active:opacity-70"
+            >
+              <Ionicon name="menu" size={20} color={colors.foreground} />
+            </Pressable>
+            <Pressable
+              onPress={() => router.back()}
+              accessibilityLabel={t('components.admin.back')}
+              className="h-9 w-9 items-center justify-center rounded-full bg-surface-alt active:opacity-70"
+            >
+              <Ionicon name="chevron-back" size={20} color={colors.foreground} />
+            </Pressable>
+          </>
         ) : null}
         <View className="flex-1">
           <Text className="text-2xl font-bold tracking-tight text-foreground">{title}</Text>

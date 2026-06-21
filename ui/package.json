@@ -8,9 +8,10 @@
   },
   "main": "expo-router/entry",
   "scripts": {
+    "postinstall": "patch-package",
     "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "eslint . --ext .ts,.tsx",
     "typecheck": "tsc --noEmit",
@@ -77,6 +78,7 @@
     "jest": "^29.7.0",
     "jest-expo": "~52.0.0",
     "openapi-typescript": "^7.13.0",
+    "patch-package": "^8.0.1",
     "typescript": "~5.3.3",
     "wait-on": "^8.0.1"
   },

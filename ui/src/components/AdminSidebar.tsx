@@ -11,8 +11,9 @@ const WIDTH = 248;
 /**
  * Desktop admin sidebar. Replaces the library/playlist sidebar while inside the
  * admin section, turning the left rail into a page-nav menu (immich-style):
- * an "Overview" entry plus one row per management destination, the active one
- * highlighted. Capability-gated links hide on plain Subsonic instances.
+ * one row per management destination, the active one highlighted. There is no
+ * overview entry (/admin redirects to the first section). Capability-gated
+ * links hide on plain Subsonic instances.
  */
 export function AdminSidebar() {
   const t = useT();
@@ -30,13 +31,6 @@ export function AdminSidebar() {
       </View>
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 8, paddingBottom: 12 }}>
-        <Row
-          icon="grid"
-          color={colors.primary}
-          title={t('home.admin.overview')}
-          active={pathname === '/admin'}
-          onPress={() => router.push('/admin' as never)}
-        />
         {visible.map((l: AdminLink) => (
           <Row
             key={l.href}

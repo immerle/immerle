@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Modal, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { router, usePathname } from 'expo-router';
 import { usePlaylists, useCreatePlaylist } from '../query/playlists';
 import { useAuth } from '../auth/store';
@@ -11,6 +11,7 @@ import { IconButton, Field, Button } from './ui';
 import { useUI } from '../stores/ui';
 import { Playlist } from '../api/subsonic/types';
 import { useColors } from '../theme/colors';
+import { WIDE_BREAKPOINT } from '../theme/layout';
 import { useT } from '../i18n/store';
 
 const EXPANDED = 248;
@@ -40,8 +41,14 @@ export function LibrarySidebar() {
   const t = useT();
   const colors = useColors();
   const pathname = usePathname();
-  const collapsed = useUI((s) => s.sidebarCollapsed);
-  const toggle = useUI((s) => s.toggleSidebar);
+  const { width: winWidth } = useWindowDimensions();
+  // Icon-only collapse is a desktop affordance; in the mobile drawer the sidebar
+  // is always expanded and the collapse toggle is inert.
+  const wide = winWidth >= WIDE_BREAKPOINT;
+  const sidebarCollapsed = useUI((s) => s.sidebarCollapsed);
+  const toggleSidebar = useUI((s) => s.toggleSidebar);
+  const collapsed = wide && sidebarCollapsed;
+  const toggle = wide ? toggleSidebar : () => {};
   const canDiscover = useAuth((s) => s.client?.has('publicPlaylists') ?? false);
   const canRadio = useAuth((s) => s.client?.has('internetRadio') ?? false);
   const { data: playlists } = usePlaylists();
