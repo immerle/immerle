@@ -151,6 +151,25 @@ func (s *PlaylistService) Delete(ctx context.Context, user models.User, id strin
 	return s.playlists.Delete(ctx, id)
 }
 
+// CoverTarget returns the playlist if the user may change its cover (owner or
+// admin only — collaborators cannot), for use before writing the cover file.
+func (s *PlaylistService) CoverTarget(ctx context.Context, user models.User, id string) (models.Playlist, error) {
+	p, err := s.playlists.Get(ctx, id)
+	if err != nil {
+		return models.Playlist{}, err
+	}
+	if p.OwnerID != user.ID && !user.IsAdmin {
+		return models.Playlist{}, ErrForbidden
+	}
+	return p, nil
+}
+
+// SaveCover persists a playlist's custom cover id (call after CoverTarget has
+// authorized and the cover file has been written).
+func (s *PlaylistService) SaveCover(ctx context.Context, id, coverID string) error {
+	return s.playlists.SetCover(ctx, id, coverID)
+}
+
 // detail loads a playlist with its tracks, without per-user annotations (used
 // for write responses).
 func (s *PlaylistService) detail(ctx context.Context, id string) (PlaylistDetail, error) {

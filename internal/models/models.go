@@ -470,6 +470,9 @@ type Playlist struct {
 	Federated bool `json:"federated"`
 	SongCount int  `json:"songCount"`
 	Duration  int  `json:"duration"`
+	// CoverArt is the owner-chosen custom cover (uploaded or generated), served
+	// like any other cover id. Empty falls back to the track mosaic below.
+	CoverArt string `json:"coverArt,omitempty"`
 	// CoverArts holds the cover-art ids of the playlist's first few tracks (up to
 	// 4, in order) for a mosaic thumbnail. Empty for an empty playlist.
 	CoverArts []string  `json:"coverArts,omitempty"`

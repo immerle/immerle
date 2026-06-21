@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Alert, Platform, Switch, Text, View } from 'react-native';
+import { Alert, Modal, Platform, Pressable, Switch, Text, View } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { FlashList } from '@shopify/flash-list';
 import {
@@ -7,10 +8,11 @@ import {
   usePlaylist,
   useRenamePlaylist,
   useReorderPlaylist,
+  useSetPlaylistCover,
   useSetPlaylistPublic,
   useSubscriptionMutations,
 } from '../../src/query/playlists';
-import { PlaylistMosaic } from '../../src/components/PlaylistMosaic';
+import { PlaylistCover } from '../../src/components/PlaylistCover';
 import { TrackList } from '../../src/components/TrackList';
 import { Badge, Button, ErrorState, Field, IconButton, Loading } from '../../src/components/ui';
 import { PlayButton } from '../../src/components/PlayButton';
@@ -45,8 +47,10 @@ export default function PlaylistDetail() {
   const canPublic = useAuth((s) => s.client?.has('publicPlaylists') ?? false);
   const addCollaborator = useAddCollaborator();
   const setPublic = useSetPlaylistPublic();
+  const setCover = useSetPlaylistCover();
   const { unsubscribe } = useSubscriptionMutations();
 
+  const [coverOpen, setCoverOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState('');
   const [ordered, setOrdered] = useState<Song[]>([]);
@@ -75,6 +79,20 @@ export default function PlaylistDetail() {
   const togglePublic = (next: boolean) => {
     setIsPublic(next);
     setPublic.mutate({ id, isPublic: next }, { onError: () => setIsPublic(!next) });
+  };
+
+  const pickPhoto = async () => {
+    if (Platform.OS !== 'web') {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) return;
+    }
+    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.9 });
+    if (res.canceled || !res.assets?.length) return;
+    const asset = res.assets[0];
+    setCover.mutate(
+      { id, uri: asset.uri, mime: asset.mimeType ?? 'image/jpeg' },
+      { onSuccess: () => setCoverOpen(false) },
+    );
   };
 
   const confirmUnsubscribe = () => {
@@ -126,7 +144,14 @@ export default function PlaylistDetail() {
 
   const Header = (
     <View className="w-full max-w-2xl items-center gap-3 self-center px-4 pb-4 pt-2">
-      <PlaylistMosaic covers={songs.slice(0, 4).map((s) => s.coverArt)} size={180} fallbackIcon="list" />
+      <Pressable onPress={isOwner ? () => setCoverOpen(true) : undefined} disabled={!isOwner}>
+        <PlaylistCover
+          coverArt={playlist.coverArt}
+          covers={songs.slice(0, 4).map((s) => s.coverArt)}
+          size={180}
+          rounded="rounded-xl"
+        />
+      </Pressable>
       {editing ? (
         <View className="w-full">
           <Field value={name} onChangeText={setName} placeholder={t('media.playlist.namePlaceholder')} />
@@ -234,6 +259,37 @@ export default function PlaylistDetail() {
           <TrackList songs={songs} header={Header} refreshing={q.isRefetching} onRefresh={q.refetch} />
         )}
       </View>
+
+      <Modal visible={coverOpen} transparent animationType="fade" onRequestClose={() => setCoverOpen(false)}>
+        <View className="flex-1 items-center justify-center bg-black/90 px-6">
+          <View className="absolute right-4 top-12">
+            <IconButton name="close" size={32} color="#fff" onPress={() => setCoverOpen(false)} accessibilityLabel={t('media.playlist.cover.close')} />
+          </View>
+          <PlaylistCover
+            coverArt={playlist.coverArt}
+            covers={songs.slice(0, 4).map((s) => s.coverArt)}
+            size={280}
+            rounded="rounded-2xl"
+          />
+          <View className="mt-8 w-full max-w-sm gap-3">
+            <Button
+              title={t('media.playlist.cover.create')}
+              icon="color-palette-outline"
+              onPress={() => {
+                setCoverOpen(false);
+                router.push(`/playlist/cover/${id}`);
+              }}
+            />
+            <Button
+              title={t('media.playlist.cover.pick')}
+              icon="image-outline"
+              variant="secondary"
+              loading={setCover.isPending}
+              onPress={pickPhoto}
+            />
+          </View>
+        </View>
+      </Modal>
     </>
   );
 }

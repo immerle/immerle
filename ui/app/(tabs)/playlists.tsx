@@ -6,7 +6,7 @@ import { FlashList } from '@shopify/flash-list';
 import { usePlaylists, useCreatePlaylist } from '../../src/query/playlists';
 import { useStarred } from '../../src/query/library';
 import { useAuth } from '../../src/auth/store';
-import { PlaylistMosaic } from '../../src/components/PlaylistMosaic';
+import { PlaylistCover } from '../../src/components/PlaylistCover';
 import { LikedCover } from '../../src/components/LikedCover';
 import { Button, EmptyState, ErrorState, Field, Loading } from '../../src/components/ui';
 import { IconButton } from '../../src/components/ui';
@@ -167,7 +167,7 @@ export default function Playlists() {
               onPress={() => router.push(`/playlist/${item.id}`)}
               className="flex-row items-center gap-3 px-4 py-2 active:bg-surface-alt"
             >
-              <PlaylistMosaic covers={item.coverArts ?? []} size={56} rounded="rounded-lg" fallbackIcon="list" />
+              <PlaylistCover coverArt={item.coverArt} covers={item.coverArts ?? []} size={56} rounded="rounded-lg" fallbackIcon="list" />
               <View className="flex-1">
                 <Text numberOfLines={1} className="text-base font-semibold text-foreground">
                   {item.name}

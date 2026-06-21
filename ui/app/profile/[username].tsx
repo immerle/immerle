@@ -4,7 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useProfile, useFriendMutations } from '../../src/query/social';
 import { Badge, Button, Card, EmptyState, ErrorState, Loading, SectionHeader } from '../../src/components/ui';
 import { CoverArt } from '../../src/components/CoverArt';
-import { PlaylistMosaic } from '../../src/components/PlaylistMosaic';
+import { PlaylistCover } from '../../src/components/PlaylistCover';
 import { colorFor } from '../../src/components/AdminUI';
 import { Ionicon } from '../../src/components/Ionicon';
 import { ActivityEventDTO, ProfilePlaylistDTO } from '../../src/api/immerleApi';
@@ -191,7 +191,7 @@ function PlaylistRow({ playlist, onPress }: { playlist: ProfilePlaylistDTO; onPr
   return (
     <Pressable onPress={onPress} className="active:opacity-70">
       <Card className="flex-row items-center gap-3">
-        <PlaylistMosaic covers={playlist.coverArts ?? []} size={44} rounded="rounded-lg" fallbackIcon="musical-notes" />
+        <PlaylistCover coverArt={playlist.coverArt} covers={playlist.coverArts ?? []} size={44} rounded="rounded-lg" fallbackIcon="musical-notes" />
         <View className="flex-1">
           <Text className="text-base font-semibold text-foreground" numberOfLines={1}>
             {playlist.name || t('social.profile.playlistFallback')}

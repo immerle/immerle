@@ -122,6 +122,7 @@ export function toPlaylist(v: PlaylistView): Playlist {
     duration: v.duration,
     created: v.createdAt,
     changed: v.changedAt,
+    coverArt: v.coverArt,
     coverArts: v.coverArts,
   };
 }

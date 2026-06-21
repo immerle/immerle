@@ -24,6 +24,7 @@ type playlistView struct {
 	Collaborative bool       `json:"collaborative"`
 	SongCount     int        `json:"songCount"`
 	Duration      int        `json:"duration"`
+	CoverArt      string     `json:"coverArt,omitempty"`
 	CoverArts     []string   `json:"coverArts,omitempty"`
 	CreatedAt     time.Time  `json:"createdAt"`
 	ChangedAt     time.Time  `json:"changedAt"`
@@ -40,6 +41,7 @@ func toPlaylistView(p models.Playlist, tracks []songView) playlistView {
 		Collaborative: p.Collaborative,
 		SongCount:     p.SongCount,
 		Duration:      p.Duration,
+		CoverArt:      p.CoverArt,
 		CoverArts:     p.CoverArts,
 		CreatedAt:     p.CreatedAt,
 		ChangedAt:     p.UpdatedAt,

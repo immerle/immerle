@@ -361,6 +361,7 @@ func (h *Handler) handleProfile(w http.ResponseWriter, r *http.Request) {
 			"comment":   p.Comment,
 			"songCount": p.SongCount,
 			"duration":  p.Duration,
+			"coverArt":  p.CoverArt,
 			"coverArts": p.CoverArts,
 		})
 	}

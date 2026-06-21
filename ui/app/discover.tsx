@@ -4,7 +4,7 @@ import { FlashList } from '@shopify/flash-list';
 import { usePublicPlaylists, useSubscriptionMutations } from '../src/query/playlists';
 import { useAuth } from '../src/auth/store';
 import { Button, EmptyState, ErrorState, Loading } from '../src/components/ui';
-import { PlaylistMosaic } from '../src/components/PlaylistMosaic';
+import { PlaylistCover } from '../src/components/PlaylistCover';
 import { PublicPlaylistDTO } from '../src/api/immerleApi';
 import { formatCount } from '../src/utils/format';
 import { useT } from '../src/i18n/store';
@@ -58,7 +58,7 @@ export default function Discover() {
               const subscribed = !!item.subscribed;
               return (
                 <View className="flex-row items-center gap-3 px-4 py-2">
-                  <PlaylistMosaic covers={item.coverArts ?? []} size={52} rounded="rounded-lg" fallbackIcon="list" />
+                  <PlaylistCover coverArt={item.coverArt} covers={item.coverArts ?? []} size={52} rounded="rounded-lg" fallbackIcon="list" />
                   <View className="flex-1">
                     <Text numberOfLines={1} className="text-base font-semibold text-foreground">
                       {item.name}

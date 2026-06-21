@@ -3,7 +3,7 @@ import { Modal, Pressable, ScrollView, Text, TextInput, useWindowDimensions, Vie
 import { router, usePathname } from 'expo-router';
 import { usePlaylists, useCreatePlaylist } from '../query/playlists';
 import { useAuth } from '../auth/store';
-import { PlaylistMosaic } from './PlaylistMosaic';
+import { PlaylistCover } from './PlaylistCover';
 import { LikedCover } from './LikedCover';
 import { LocalCover } from './LocalCover';
 import { Ionicon } from './Ionicon';
@@ -199,7 +199,7 @@ export function LibrarySidebar() {
             key={p.id}
             active={pathname === `/playlist/${p.id}`}
             collapsed={collapsed}
-            cover={<PlaylistMosaic covers={p.coverArts ?? []} size={48} rounded="rounded-md" fallbackIcon="musical-notes" />}
+            cover={<PlaylistCover coverArt={p.coverArt} covers={p.coverArts ?? []} size={48} rounded="rounded-md" fallbackIcon="musical-notes" />}
             title={p.name}
             subtitle={t('components.sidebar.playlist')}
             onPress={() => router.push(`/playlist/${p.id}` as never)}

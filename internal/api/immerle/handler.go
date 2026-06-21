@@ -285,6 +285,8 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Patch("/playlists/{id}", h.handleUpdatePlaylist)
 			r.Delete("/playlists/{id}", h.handleDeletePlaylist)
 			r.Put("/playlists/{id}/tracks", h.handleReplacePlaylistTracks)
+			r.Put("/playlists/{id}/cover", h.handlePlaylistCover)
+			r.Post("/playlists/{id}/cover/generate", h.handlePlaylistCoverGenerate)
 
 			// Share links over the shared share service.
 			r.Get("/shares", h.handleListShares)
