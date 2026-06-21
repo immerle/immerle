@@ -1,7 +1,8 @@
 {
   "expo": {
     "name": "Immerle",
-    "slug": "immerle-app",
+    "slug": "immerle",
+    "owner": "smiti-agency",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
