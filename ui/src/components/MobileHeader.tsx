@@ -49,9 +49,8 @@ export function MobileHeader() {
     >
       <View className="flex-row items-center gap-1.5">
         <IconButton name="menu" size={26} color={colors.foreground} onPress={openDrawer} accessibilityLabel={t('components.sidebar.library')} />
-        <Pressable onPress={() => go('/')} accessibilityRole="button" accessibilityLabel="Immerle" className="flex-row items-center gap-2 active:opacity-70">
+        <Pressable onPress={() => go('/')} accessibilityRole="button" accessibilityLabel="Immerle" className="active:opacity-70">
           <Image source={require('../../assets/logo.png')} style={{ height: 28, width: 28 * (480 / 391) }} resizeMode="contain" />
-          <Text className="text-lg font-bold tracking-tight text-foreground">immerle</Text>
         </Pressable>
       </View>
 
