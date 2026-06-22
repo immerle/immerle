@@ -246,6 +246,14 @@ type PublicCoplaysRequest struct {
 	Coplays *[]PublicCoplayItemDoc `json:"coplays,omitempty"`
 }
 
+// PublicCoverResponse defines model for public.CoverResponse.
+type PublicCoverResponse struct {
+	Hash *string `json:"hash,omitempty"`
+	Ok   *bool   `json:"ok,omitempty"`
+	Size *int    `json:"size,omitempty"`
+	Url  *string `json:"url,omitempty"`
+}
+
 // PublicDistributionPlaylist defines model for public.DistributionPlaylist.
 type PublicDistributionPlaylist struct {
 	Comment     *string                    `json:"comment,omitempty"`
@@ -280,6 +288,32 @@ type PublicIngestResultResponse struct {
 	Received *int  `json:"received,omitempty"`
 }
 
+// PublicInstancePlaylistDTO defines model for public.InstancePlaylistDTO.
+type PublicInstancePlaylistDTO struct {
+	CreatedAt   *string                 `json:"createdAt,omitempty"`
+	Description *string                 `json:"description,omitempty"`
+	ExternalId  *string                 `json:"externalId,omitempty"`
+	Id          *string                 `json:"id,omitempty"`
+	Image       *string                 `json:"image,omitempty"`
+	Metadata    *map[string]interface{} `json:"metadata,omitempty"`
+	Name        *string                 `json:"name,omitempty"`
+	TrackCount  *int                    `json:"trackCount,omitempty"`
+	Tracks      *map[string]interface{} `json:"tracks,omitempty"`
+	UpdatedAt   *string                 `json:"updatedAt,omitempty"`
+}
+
+// PublicInstancePlaylistResponse defines model for public.InstancePlaylistResponse.
+type PublicInstancePlaylistResponse struct {
+	Ok       *bool                      `json:"ok,omitempty"`
+	Playlist *PublicInstancePlaylistDTO `json:"playlist,omitempty"`
+}
+
+// PublicInstancePlaylistsResponse defines model for public.InstancePlaylistsResponse.
+type PublicInstancePlaylistsResponse struct {
+	Ok        *bool                        `json:"ok,omitempty"`
+	Playlists *[]PublicInstancePlaylistDTO `json:"playlists,omitempty"`
+}
+
 // PublicInstanceProfile defines model for public.InstanceProfile.
 type PublicInstanceProfile struct {
 	CreatedAt *string `json:"createdAt,omitempty"`
@@ -303,6 +337,17 @@ type PublicInstanceSummary struct {
 	Name       *string `json:"name,omitempty"`
 	Region     *string `json:"region,omitempty"`
 	Sqid       *string `json:"sqid,omitempty"`
+}
+
+// PublicMissingCoversRequest defines model for public.MissingCoversRequest.
+type PublicMissingCoversRequest struct {
+	Hashes *[]string `json:"hashes,omitempty"`
+}
+
+// PublicMissingCoversResponse defines model for public.MissingCoversResponse.
+type PublicMissingCoversResponse struct {
+	Missing *[]string `json:"missing,omitempty"`
+	Ok      *bool     `json:"ok,omitempty"`
 }
 
 // PublicPlayItemDoc defines model for public.PlayItemDoc.
@@ -408,6 +453,15 @@ type PublicSubscriptionsResponse struct {
 	Subscriptions *[]PublicInstanceSummary `json:"subscriptions,omitempty"`
 }
 
+// PublicSyncPlaylistRequest defines model for public.SyncPlaylistRequest.
+type PublicSyncPlaylistRequest struct {
+	Description *string                 `json:"description,omitempty"`
+	Image       *string                 `json:"image,omitempty"`
+	Metadata    *map[string]interface{} `json:"metadata,omitempty"`
+	Name        *string                 `json:"name,omitempty"`
+	Tracks      *map[string]interface{} `json:"tracks,omitempty"`
+}
+
 // PublicTrackRefDoc defines model for public.TrackRefDoc.
 type PublicTrackRefDoc struct {
 	Album  *string `json:"album,omitempty"`
@@ -483,6 +537,17 @@ type PostApiV1CoplaysJSONBody struct {
 // PostApiV1CoplaysJSONBody0 defines parameters for PostApiV1Coplays.
 type PostApiV1CoplaysJSONBody0 = map[string]interface{}
 
+// PostApiV1CoversMissingJSONBody defines parameters for PostApiV1CoversMissing.
+type PostApiV1CoversMissingJSONBody struct {
+	union json.RawMessage
+}
+
+// PostApiV1CoversMissingJSONBody0 defines parameters for PostApiV1CoversMissing.
+type PostApiV1CoversMissingJSONBody0 = map[string]interface{}
+
+// PutApiV1CoversHashTextBody defines parameters for PutApiV1CoversHash.
+type PutApiV1CoversHashTextBody = string
+
 // PostApiV1InstancesJSONBody defines parameters for PostApiV1Instances.
 type PostApiV1InstancesJSONBody struct {
 	union json.RawMessage
@@ -498,6 +563,14 @@ type PatchApiV1InstancesMeJSONBody struct {
 
 // PatchApiV1InstancesMeJSONBody0 defines parameters for PatchApiV1InstancesMe.
 type PatchApiV1InstancesMeJSONBody0 = map[string]interface{}
+
+// PutApiV1InstancesMePlaylistsExternalIdJSONBody defines parameters for PutApiV1InstancesMePlaylistsExternalId.
+type PutApiV1InstancesMePlaylistsExternalIdJSONBody struct {
+	union json.RawMessage
+}
+
+// PutApiV1InstancesMePlaylistsExternalIdJSONBody0 defines parameters for PutApiV1InstancesMePlaylistsExternalId.
+type PutApiV1InstancesMePlaylistsExternalIdJSONBody0 = map[string]interface{}
 
 // PostApiV1InstancesMeSubscriptionsJSONBody defines parameters for PostApiV1InstancesMeSubscriptions.
 type PostApiV1InstancesMeSubscriptionsJSONBody struct {
@@ -587,11 +660,20 @@ type PutAdminPlaylistsIdTracksJSONRequestBody PutAdminPlaylistsIdTracksJSONBody
 // PostApiV1CoplaysJSONRequestBody defines body for PostApiV1Coplays for application/json ContentType.
 type PostApiV1CoplaysJSONRequestBody PostApiV1CoplaysJSONBody
 
+// PostApiV1CoversMissingJSONRequestBody defines body for PostApiV1CoversMissing for application/json ContentType.
+type PostApiV1CoversMissingJSONRequestBody PostApiV1CoversMissingJSONBody
+
+// PutApiV1CoversHashTextRequestBody defines body for PutApiV1CoversHash for text/plain ContentType.
+type PutApiV1CoversHashTextRequestBody = PutApiV1CoversHashTextBody
+
 // PostApiV1InstancesJSONRequestBody defines body for PostApiV1Instances for application/json ContentType.
 type PostApiV1InstancesJSONRequestBody PostApiV1InstancesJSONBody
 
 // PatchApiV1InstancesMeJSONRequestBody defines body for PatchApiV1InstancesMe for application/json ContentType.
 type PatchApiV1InstancesMeJSONRequestBody PatchApiV1InstancesMeJSONBody
+
+// PutApiV1InstancesMePlaylistsExternalIdJSONRequestBody defines body for PutApiV1InstancesMePlaylistsExternalId for application/json ContentType.
+type PutApiV1InstancesMePlaylistsExternalIdJSONRequestBody PutApiV1InstancesMePlaylistsExternalIdJSONBody
 
 // PostApiV1InstancesMeSubscriptionsJSONRequestBody defines body for PostApiV1InstancesMeSubscriptions for application/json ContentType.
 type PostApiV1InstancesMeSubscriptionsJSONRequestBody PostApiV1InstancesMeSubscriptionsJSONBody
@@ -1042,6 +1124,68 @@ func (t *PostApiV1CoplaysJSONBody) UnmarshalJSON(b []byte) error {
 	return err
 }
 
+// AsPostApiV1CoversMissingJSONBody0 returns the union data inside the PostApiV1CoversMissingJSONBody as a PostApiV1CoversMissingJSONBody0
+func (t PostApiV1CoversMissingJSONBody) AsPostApiV1CoversMissingJSONBody0() (PostApiV1CoversMissingJSONBody0, error) {
+	var body PostApiV1CoversMissingJSONBody0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromPostApiV1CoversMissingJSONBody0 overwrites any union data inside the PostApiV1CoversMissingJSONBody as the provided PostApiV1CoversMissingJSONBody0
+func (t *PostApiV1CoversMissingJSONBody) FromPostApiV1CoversMissingJSONBody0(v PostApiV1CoversMissingJSONBody0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergePostApiV1CoversMissingJSONBody0 performs a merge with any union data inside the PostApiV1CoversMissingJSONBody, using the provided PostApiV1CoversMissingJSONBody0
+func (t *PostApiV1CoversMissingJSONBody) MergePostApiV1CoversMissingJSONBody0(v PostApiV1CoversMissingJSONBody0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsPublicMissingCoversRequest returns the union data inside the PostApiV1CoversMissingJSONBody as a PublicMissingCoversRequest
+func (t PostApiV1CoversMissingJSONBody) AsPublicMissingCoversRequest() (PublicMissingCoversRequest, error) {
+	var body PublicMissingCoversRequest
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromPublicMissingCoversRequest overwrites any union data inside the PostApiV1CoversMissingJSONBody as the provided PublicMissingCoversRequest
+func (t *PostApiV1CoversMissingJSONBody) FromPublicMissingCoversRequest(v PublicMissingCoversRequest) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergePublicMissingCoversRequest performs a merge with any union data inside the PostApiV1CoversMissingJSONBody, using the provided PublicMissingCoversRequest
+func (t *PostApiV1CoversMissingJSONBody) MergePublicMissingCoversRequest(v PublicMissingCoversRequest) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t PostApiV1CoversMissingJSONBody) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *PostApiV1CoversMissingJSONBody) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // AsPostApiV1InstancesJSONBody0 returns the union data inside the PostApiV1InstancesJSONBody as a PostApiV1InstancesJSONBody0
 func (t PostApiV1InstancesJSONBody) AsPostApiV1InstancesJSONBody0() (PostApiV1InstancesJSONBody0, error) {
 	var body PostApiV1InstancesJSONBody0
@@ -1162,6 +1306,68 @@ func (t PatchApiV1InstancesMeJSONBody) MarshalJSON() ([]byte, error) {
 }
 
 func (t *PatchApiV1InstancesMeJSONBody) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsPutApiV1InstancesMePlaylistsExternalIdJSONBody0 returns the union data inside the PutApiV1InstancesMePlaylistsExternalIdJSONBody as a PutApiV1InstancesMePlaylistsExternalIdJSONBody0
+func (t PutApiV1InstancesMePlaylistsExternalIdJSONBody) AsPutApiV1InstancesMePlaylistsExternalIdJSONBody0() (PutApiV1InstancesMePlaylistsExternalIdJSONBody0, error) {
+	var body PutApiV1InstancesMePlaylistsExternalIdJSONBody0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromPutApiV1InstancesMePlaylistsExternalIdJSONBody0 overwrites any union data inside the PutApiV1InstancesMePlaylistsExternalIdJSONBody as the provided PutApiV1InstancesMePlaylistsExternalIdJSONBody0
+func (t *PutApiV1InstancesMePlaylistsExternalIdJSONBody) FromPutApiV1InstancesMePlaylistsExternalIdJSONBody0(v PutApiV1InstancesMePlaylistsExternalIdJSONBody0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergePutApiV1InstancesMePlaylistsExternalIdJSONBody0 performs a merge with any union data inside the PutApiV1InstancesMePlaylistsExternalIdJSONBody, using the provided PutApiV1InstancesMePlaylistsExternalIdJSONBody0
+func (t *PutApiV1InstancesMePlaylistsExternalIdJSONBody) MergePutApiV1InstancesMePlaylistsExternalIdJSONBody0(v PutApiV1InstancesMePlaylistsExternalIdJSONBody0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsPublicSyncPlaylistRequest returns the union data inside the PutApiV1InstancesMePlaylistsExternalIdJSONBody as a PublicSyncPlaylistRequest
+func (t PutApiV1InstancesMePlaylistsExternalIdJSONBody) AsPublicSyncPlaylistRequest() (PublicSyncPlaylistRequest, error) {
+	var body PublicSyncPlaylistRequest
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromPublicSyncPlaylistRequest overwrites any union data inside the PutApiV1InstancesMePlaylistsExternalIdJSONBody as the provided PublicSyncPlaylistRequest
+func (t *PutApiV1InstancesMePlaylistsExternalIdJSONBody) FromPublicSyncPlaylistRequest(v PublicSyncPlaylistRequest) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergePublicSyncPlaylistRequest performs a merge with any union data inside the PutApiV1InstancesMePlaylistsExternalIdJSONBody, using the provided PublicSyncPlaylistRequest
+func (t *PutApiV1InstancesMePlaylistsExternalIdJSONBody) MergePublicSyncPlaylistRequest(v PublicSyncPlaylistRequest) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t PutApiV1InstancesMePlaylistsExternalIdJSONBody) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *PutApiV1InstancesMePlaylistsExternalIdJSONBody) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }

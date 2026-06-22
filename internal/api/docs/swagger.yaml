@@ -568,6 +568,8 @@ components:
             sqid:
               example: my-node
               type: string
+            syncPlaylists:
+              type: boolean
             userId:
               description: Federation is active whenever linked (instanceId set);
                 no enable flag.
