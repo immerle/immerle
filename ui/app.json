@@ -1,7 +1,8 @@
 {
   "expo": {
     "name": "Immerle",
-    "slug": "immerle-app",
+    "slug": "immerle",
+    "owner": "smiti-agency",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -65,6 +66,9 @@
     "extra": {
       "router": {
         "origin": false
+      },
+      "eas": {
+        "projectId": "18cd36d5-4859-49f5-b8d7-dc194d64aad5"
       }
     }
   }
