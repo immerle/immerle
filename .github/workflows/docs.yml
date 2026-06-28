@@ -40,6 +40,6 @@ jobs:
         if: github.ref == 'refs/heads/main'
         with:
           deploy_key: ${{ secrets.DOCS_DEPLOY_KEY }}
-          external_repository: immerle/immerle.github.io
-          publish_branch: gh-pages
+          external_repository: immerle/immerle.com
+          publish_branch: main
           publish_dir: ./docs/build
