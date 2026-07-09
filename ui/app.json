@@ -21,8 +21,11 @@
       "bundleIdentifier": "com.immerle.app",
       "infoPlist": {
         "UIBackgroundModes": [
+          "audio",
+          "audio",
           "audio"
-        ]
+        ],
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -32,6 +35,10 @@
         "backgroundColor": "#121212"
       },
       "permissions": [
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "POST_NOTIFICATIONS",
+        "WAKE_LOCK",
         "FOREGROUND_SERVICE",
         "FOREGROUND_SERVICE_MEDIA_PLAYBACK",
         "POST_NOTIFICATIONS",
@@ -65,7 +72,16 @@
     "extra": {
       "router": {
         "origin": false
+      },
+      "eas": {
+        "projectId": "0411ac2d-5751-4037-9f72-91951d7c085e"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/0411ac2d-5751-4037-9f72-91951d7c085e"
     }
   }
 }
