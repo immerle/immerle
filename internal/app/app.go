@@ -4,6 +4,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -290,6 +291,9 @@ func New(cfg config.Config) (*App, error) {
 		func() config.FederationConfig { return federationConfig(settingsSvc.Get().Federation, cfg.HubURL) },
 		store.Catalog, store.Playlists, store.Scrobbles, fedResolver, logger)
 	fed.SetOwnerResolver(func(ctx context.Context) (string, error) { return firstAdmin(ctx, store.Users) })
+	// Playlists pulled from subscribed instances are owned by a virtual "system"
+	// account (public, read-only), created on demand.
+	fed.SetFeedOwnerResolver(func(ctx context.Context) (string, error) { return ensureSystemUser(ctx, store.Users) })
 	// Persist hub-issued identity (instance UUID, sqid, private key, name) back
 	// into the runtime settings after bootstrap/update. Empty fields are left
 	// unchanged so an update can touch only name/sqid.
@@ -548,6 +552,31 @@ func firstAdmin(ctx context.Context, users *persistence.UserRepo) (string, error
 		return list[0].ID, nil
 	}
 	return "", fmt.Errorf("no users")
+}
+
+// systemUserID is the fixed id of the virtual "system" account that owns
+// playlists pulled from subscribed instances (federation feed).
+const systemUserID = "system"
+
+// ensureSystemUser lazily creates the virtual "system" account (idempotent). It
+// has no password hash, so it cannot be logged into.
+func ensureSystemUser(ctx context.Context, users *persistence.UserRepo) (string, error) {
+	if _, err := users.GetByID(ctx, systemUserID); err == nil {
+		return systemUserID, nil
+	} else if !errors.Is(err, persistence.ErrNotFound) {
+		return "", err
+	}
+	err := users.Create(ctx, models.User{
+		ID:              systemUserID,
+		Username:        "system",
+		DisplayName:     "System",
+		ActivityPrivacy: "private",
+		CreatedAt:       time.Now(),
+	})
+	if err != nil {
+		return "", err
+	}
+	return systemUserID, nil
 }
 
 func baseURL(cfg config.Config) string {

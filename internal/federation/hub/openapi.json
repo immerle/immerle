@@ -477,6 +477,19 @@
                 },
                 "type": "object"
             },
+            "public.AuthorDTO": {
+                "properties": {
+                    "id": {
+                        "example": "3f1c2d4e-…-uuid",
+                        "type": "string"
+                    },
+                    "name": {
+                        "example": "My instance",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "public.BootstrapRequest": {
                 "properties": {
                     "name": {
@@ -666,6 +679,61 @@
                 },
                 "type": "object"
             },
+            "public.FeedPlaylistDTO": {
+                "properties": {
+                    "author": {
+                        "$ref": "#/components/schemas/public.AuthorDTO"
+                    },
+                    "createdAt": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "externalId": {
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "image": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "trackCount": {
+                        "type": "integer"
+                    },
+                    "updatedAt": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "public.FeedResponse": {
+                "properties": {
+                    "hasMore": {
+                        "example": false,
+                        "type": "boolean"
+                    },
+                    "nextUpdatedAfter": {
+                        "type": "string"
+                    },
+                    "ok": {
+                        "example": true,
+                        "type": "boolean"
+                    },
+                    "playlists": {
+                        "items": {
+                            "$ref": "#/components/schemas/public.FeedPlaylistDTO"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "type": "object"
+            },
             "public.IngestResultResponse": {
                 "properties": {
                     "accepted": {
@@ -685,6 +753,9 @@
             },
             "public.InstancePlaylistDTO": {
                 "properties": {
+                    "author": {
+                        "$ref": "#/components/schemas/public.AuthorDTO"
+                    },
                     "createdAt": {
                         "type": "string"
                     },
@@ -736,6 +807,13 @@
             },
             "public.InstancePlaylistsResponse": {
                 "properties": {
+                    "hasMore": {
+                        "example": false,
+                        "type": "boolean"
+                    },
+                    "nextUpdatedAfter": {
+                        "type": "string"
+                    },
                     "ok": {
                         "example": true,
                         "type": "boolean"
@@ -2596,8 +2674,81 @@
                 ]
             }
         },
+        "/api/v1/instances/me/feed/playlists": {
+            "get": {
+                "description": "Returns playlist headers (with author) from the instances the caller follows, ordered by update time ascending. Use `updatedAfter` (RFC3339, exclusive) for incremental sync and `limit` (1-50, default 50); page with `nextUpdatedAfter` while `hasMore` is true.",
+                "parameters": [
+                    {
+                        "description": "Only playlists updated after this RFC3339 timestamp (exclusive)",
+                        "in": "query",
+                        "name": "updatedAfter",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Page size (1-50, default 50)",
+                        "in": "query",
+                        "name": "limit",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/public.FeedResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Subscribed-instances playlist feed",
+                "tags": [
+                    "playlists-sync"
+                ]
+            }
+        },
         "/api/v1/instances/me/playlists": {
             "get": {
+                "description": "Returns synced playlists ordered by update time ascending. Use `updatedAfter` (RFC3339, exclusive) for incremental sync and `limit` (1-50, default 50) for page size. When `hasMore` is true, call again with `updatedAfter=nextUpdatedAfter`.",
+                "parameters": [
+                    {
+                        "description": "Only playlists updated after this RFC3339 timestamp (exclusive)",
+                        "in": "query",
+                        "name": "updatedAfter",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Page size (1-50, default 50)",
+                        "in": "query",
+                        "name": "limit",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "content": {
@@ -2609,7 +2760,7 @@
                         },
                         "description": "OK"
                     },
-                    "401": {
+                    "400": {
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -2617,7 +2768,7 @@
                                 }
                             }
                         },
-                        "description": "Unauthorized"
+                        "description": "Bad Request"
                     }
                 },
                 "security": [
@@ -3030,6 +3181,62 @@
                 "summary": "Search instances",
                 "tags": [
                     "subscriptions"
+                ]
+            }
+        },
+        "/api/v1/instances/{id}/playlists/{externalId}": {
+            "get": {
+                "description": "Returns one playlist (with tracks + metadata + author) owned by instance {id}. The caller must be subscribed to {id}, otherwise 404.",
+                "parameters": [
+                    {
+                        "description": "Owning instance id (uuid)",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Instance-local playlist id",
+                        "in": "path",
+                        "name": "externalId",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/public.InstancePlaylistResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/httpx.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Get a subscribed instance's playlist",
+                "tags": [
+                    "playlists-sync"
                 ]
             }
         },

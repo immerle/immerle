@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 )
 
@@ -81,6 +82,37 @@ func (c *Client) ListPlaylists(ctx context.Context, a Auth, region string) ([]Pu
 	var out []PublicDistributionPlaylist
 	err := c.do(ctx, http.MethodGet, path, a, nil, &out)
 	return out, err
+}
+
+// FeedPlaylists fetches a page of playlist headers (no tracks) from the
+// instances this one is subscribed to, ordered by update time ascending. after
+// (RFC3339, exclusive) and limit (1-50) drive incremental pagination; the
+// response carries HasMore + NextUpdatedAfter to page forward.
+func (c *Client) FeedPlaylists(ctx context.Context, a Auth, after string, limit int) (PublicFeedResponse, error) {
+	q := url.Values{}
+	if after != "" {
+		q.Set("updatedAfter", after)
+	}
+	if limit > 0 {
+		q.Set("limit", strconv.Itoa(limit))
+	}
+	path := "/api/v1/instances/me/feed/playlists"
+	if len(q) > 0 {
+		path += "?" + q.Encode()
+	}
+	var out PublicFeedResponse
+	err := c.do(ctx, http.MethodGet, path, a, nil, &out)
+	return out, err
+}
+
+// InstancePlaylist fetches one full playlist (tracks + metadata + author) owned
+// by a subscribed instance, decoding into out. A 404 means the caller is not
+// subscribed to instanceID (or the playlist is unknown) — uniform so foreign ids
+// can't be probed. out takes a caller-defined shape because the stored tracks are
+// a JSON array, which the generated client mistypes as an object.
+func (c *Client) InstancePlaylist(ctx context.Context, a Auth, instanceID, externalID string, out any) error {
+	path := "/api/v1/instances/" + url.PathEscape(instanceID) + "/playlists/" + url.PathEscape(externalID)
+	return c.do(ctx, http.MethodGet, path, a, nil, out)
 }
 
 // SearchInstances finds other instances by exact sqid or name (ILIKE); the hub

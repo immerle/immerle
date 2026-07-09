@@ -47,6 +47,16 @@ type Service struct {
 	// after first-run setup still finds an admin).
 	ownerID string
 	ownerFn func(context.Context) (string, error)
+	// feedOwnerID/feedOwnerFn resolve (and cache) the virtual "system" account
+	// that owns playlists pulled from subscribed instances (see feed.go).
+	feedOwnerID string
+	feedOwnerFn func(context.Context) (string, error)
+	// feedSeen maps a federated feed playlist's local id to the remote updatedAt
+	// last materialized, so the per-minute header walk only fetches tracks for
+	// changed playlists. Accessed only from Run's single goroutine (no lock).
+	feedSeen map[string]string
+	// lastFeedCall rate-gates feed hub calls (~5 req/s), same as the syncer.
+	lastFeedCall time.Time
 	// saveCreds persists hub-issued identity (instance UUID, sqid, private key,
 	// name) back into the runtime settings after bootstrap/update (optional;
 	// empty fields are left unchanged by the saver).
@@ -334,6 +344,10 @@ func (s *Service) Run(ctx context.Context) {
 				}
 				s.syncOnce(ctx)
 				lastSync = time.Now()
+			}
+			// Pull subscribed instances' playlists every tick (every minute).
+			if err := s.SyncFeed(ctx); err != nil {
+				s.logger.Warn("feed sync failed", "error", err)
 			}
 		}
 		select {
