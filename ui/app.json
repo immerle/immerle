@@ -7,7 +7,6 @@
     "icon": "./assets/icon.png",
     "scheme": "immerle",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
@@ -64,7 +63,8 @@
       "expo-asset",
       "expo-font",
       "expo-localization",
-      "./plugins/withFmtConsteval"
+      "./plugins/withFmtConsteval",
+      "expo-image"
     ],
     "experiments": {
       "typedRoutes": true
