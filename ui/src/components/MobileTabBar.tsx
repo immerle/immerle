@@ -1,8 +1,14 @@
+import type { ComponentProps } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicon } from './Ionicon';
 import { useColors } from '../theme/colors';
+
+// expo-router forks react-navigation's bottom-tabs types (SDK 56+), so import the
+// tab bar props from wherever expo-router's <Tabs tabBar> actually expects them
+// instead of pinning to @react-navigation/bottom-tabs, which drifts out of sync.
+type BottomTabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>['tabBar']>>[0];
 
 // Filled icon when active, outline when idle — per tab route name.
 const ICONS: Record<string, { on: string; off: string }> = {

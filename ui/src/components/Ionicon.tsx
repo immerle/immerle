@@ -6,7 +6,7 @@ type IoniconName = ComponentProps<typeof Ionicons>['name'];
 interface IoniconProps {
   name: string;
   size?: number;
-  color?: string;
+  color?: ComponentProps<typeof Ionicons>['color'];
 }
 
 /**
