@@ -7,11 +7,6 @@
     "icon": "./assets/icon.png",
     "scheme": "immerle",
     "userInterfaceStyle": "automatic",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#121212"
-    },
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -64,7 +59,8 @@
       "expo-font",
       "expo-localization",
       "./plugins/withFmtConsteval",
-      "expo-image"
+      "expo-image",
+      "expo-status-bar"
     ],
     "experiments": {
       "typedRoutes": true
