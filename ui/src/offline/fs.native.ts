@@ -3,7 +3,7 @@
 // paths.ts) and we rebuild the absolute URI here, so a changed container path
 // after a reinstall doesn't strand the registry.
 
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 
 export const isSupported = true;
 
