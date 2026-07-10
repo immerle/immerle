@@ -84,10 +84,11 @@ curl "http://host:4533/admin/settings?u=admin&p=pw&c=app"
 curl -X POST "http://host:4533/admin/settings?u=admin&p=pw&c=app" \
   -H 'Content-Type: application/json' \
   -d '{"providers":{"autoDownloadOnPlay":true,"searchTimeoutSeconds":8}}'
-# hot: enable federation / point at a hub (applies on the next sync tick)
+# hot: set your hub user id, then POST /admin/federation/register to link
+# (see "Federation" below — there's no enabled/hubUrl field, the hub URL is fixed)
 curl -X POST "http://host:4533/admin/settings?u=admin&p=pw&c=app" \
   -H 'Content-Type: application/json' \
-  -d '{"federation":{"enabled":true,"hubUrl":"https://hub.example","publicKey":"…","privateKey":"…"}}'
+  -d '{"federation":{"userId":"<your-hub-user-uuid>"}}'
 # restart-required: toggling the scan watcher → response has restartRequired:true
 curl -X POST "http://host:4533/admin/settings?u=admin&p=pw&c=app" \
   -H 'Content-Type: application/json' \
@@ -165,8 +166,10 @@ curl http://localhost:4533/capabilities
 ```
 
 Other endpoints (`/friends`, `/activity`, `/profile`, `/jam/*`, …) authenticate
-with the same credentials as Subsonic (`u` + `p`, or `u` + `t` + `s`). Jam
-sessions stream state over SSE at `/jam/events`.
+with the same credentials as Subsonic (`u` + `p`, or `u` + `t` + `s`). Each Jam
+session streams its own state over SSE at `/jam/{id}/events`. See
+[Social features](docs/docs/social.md) and [Federation](docs/docs/federation.md)
+for a full tour of friends, activity, sharing, jam sessions and hub sync.
 
 `GET /profile?username=<name>` returns a user's profile — identity
 (`username`, `displayName`, `isAdmin`), their recent **activity** visible to the
@@ -198,9 +201,9 @@ don't see every public playlist in their library; they **subscribe** to opt in:
 # discover public playlists
 curl "http://host:4533/playlists/public?u=me&p=pw&c=app"
 # subscribe → it then appears in getPlaylists like a normal (read-only) playlist
-curl -X POST "http://host:4533/playlists/subscribe?u=me&p=pw&c=app&playlistId=<id>"
+curl -X PUT "http://host:4533/playlists/<id>/subscription?u=me&p=pw&c=app"
 # unsubscribe
-curl -X POST "http://host:4533/playlists/unsubscribe?u=me&p=pw&c=app&playlistId=<id>"
+curl -X DELETE "http://host:4533/playlists/<id>/subscription?u=me&p=pw&c=app"
 ```
 
 A subscriber **cannot modify** the playlist (edits are refused). In a Subsonic
@@ -216,6 +219,8 @@ appears on Subsonic `getPlaylists`/`getPlaylist` as well as the immerle
 `/playlists/public` and `/profile` playlist entries.
 
 ### Playlist import (Spotify, pluggable)
+
+See also: [Playlist import](docs/docs/playlist-import.md) for an operator/user-facing walkthrough.
 
 Import a playlist from an external service into a new immerle playlist. The
 feature is **source-pluggable** (an `importer.Source` interface + factory
@@ -244,13 +249,13 @@ string similarity (Levenshtein). Per-track outcome:
 | Method | Endpoint | Description |
 | ------ | -------- | ----------- |
 | `GET`  | `/imports/sources` | List import sources and whether each is configured. |
-| `POST` | `/imports/start` | Queue an import (`source`, `ref` = playlist id/URL). Returns the job. |
+| `POST` | `/imports` | Queue an import (`source`, `ref` = playlist id/URL). Returns the job. |
 | `GET`  | `/imports` | List the caller's imports (no items). |
-| `GET`  | `/imports/status?id=` | One import with its per-track items (the progress view). |
-| `POST` | `/imports/items/resolve` | Validate/modify a doubtful (or missing/failed) item: download a track and add it to the playlist. |
+| `GET`  | `/imports/{id}` | One import with its per-track items (the progress view). |
+| `POST` | `/imports/{id}/items/{itemId}/resolve` | Validate/modify a doubtful (or missing/failed) item: download a track and add it to the playlist. |
 
 A **doubtful** item (or a missing/failed one) can be resolved from the imports
-page via `POST /imports/items/resolve?itemId=…`: with no `query` it **validates**
+page via `POST /imports/{id}/items/{itemId}/resolve`: with no `query` it **validates**
 the flagged candidate as-is (downloads it and adds it to the playlist); with a
 `query` ("artist title") it **modifies** the match — re-searching the content
 providers and using the best result. Either way the item flips to `matched`, the
@@ -284,14 +289,15 @@ last-seen tracker — so every login is a uniquely identifiable, revocable devic
 
 ```bash
 # log in → a device JWT (store it; send as Authorization: Bearer)
-curl -X POST "http://host:4533/auth/login?u=me&p=pw&c=app&device=MacBook"
-# → { "ok": true, "token": "eyJ…", "device": { "id": "<jti>", ... } }
+curl -X POST "http://host:4533/auth/sessions" -H 'Content-Type: application/json' \
+  -d '{"username":"me","password":"pw","device":"MacBook"}'
+# → { "token": "eyJ…", "device": { "id": "<jti>", ... } }
 
 curl -H "Authorization: Bearer eyJ…" "http://host:4533/rest/getArtists?c=app&f=json"
 
 # see / revoke your devices
-curl -H "Authorization: Bearer eyJ…" "http://host:4533/devices?c=app"
-curl -X POST "http://host:4533/devices/revoke?u=me&p=pw&c=app&id=<jti>"   # JWT dies
+curl -H "Authorization: Bearer eyJ…" "http://host:4533/devices"
+curl -X DELETE -H "Authorization: Bearer eyJ…" "http://host:4533/devices/<jti>"   # JWT dies
 ```
 
 JWTs are HS256-signed with a key derived from the auth secret (auto-generated and
@@ -306,17 +312,18 @@ Users can mint personal access tokens (scoped to themselves) to authenticate API
 requests without their password:
 
 ```bash
-# create (returns the secret ONCE)
-curl -X POST "http://host:4533/tokens/create?u=me&p=pw&c=app&name=my-cli"
-# → { "ok": true, "token": "gsk_…", "id": "…", "prefix": "gsk_…" }
+# create (returns the secret ONCE) — needs a device JWT (see above), not u/p query auth
+curl -X POST "http://host:4533/tokens" -H "Authorization: Bearer eyJ…" \
+  -H 'Content-Type: application/json' -d '{"name":"my-cli"}'
+# → { "token": "gsk_…", "id": "…", "name": "my-cli", "prefix": "gsk_…" }
 
 # use it — as a Bearer header or ?apiKey, on BOTH the Subsonic and immerle APIs
 curl -H "Authorization: Bearer gsk_…" "http://host:4533/rest/getArtists?c=app&f=json"
 curl "http://host:4533/rest/getArtists?c=app&f=json&apiKey=gsk_…"
 
 # list / revoke
-curl "http://host:4533/tokens?u=me&p=pw&c=app"
-curl -X POST "http://host:4533/tokens/revoke?u=me&p=pw&c=app&id=<tokenId>"
+curl -H "Authorization: Bearer gsk_…" "http://host:4533/tokens"
+curl -X DELETE -H "Authorization: Bearer gsk_…" "http://host:4533/tokens/<tokenId>"
 ```
 
 Only a SHA-256 hash of the token is stored; the secret is shown once. A token
@@ -363,6 +370,8 @@ The Subsonic/OpenSubsonic surface under `/rest/` follows the published
 [OpenSubsonic spec](https://opensubsonic.netlify.app/) and is not duplicated here.
 
 ## On-demand providers & artist avatars
+
+See also: [On-demand catalog](docs/docs/on-demand-providers.md) for an operator-facing walkthrough.
 
 The on-demand catalog (S5) is always running — with no enabled provider it simply
 has nothing to search/download (equivalent to "off"). **All** providers —
