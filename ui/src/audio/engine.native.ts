@@ -4,12 +4,15 @@ import TrackPlayer, {
   PlayerCommand,
   RepeatMode as RNTPRepeatMode,
 } from '@rntp/player';
+import { Platform } from 'react-native';
 import { EngineEmitter } from './emitter';
 import { registerBackgroundHandler, wireRemoteEvents } from './service.native';
 import { AudioEngine, EngineState, PlayableTrack, RepeatMode } from './types';
 
-// Register the Android background handler once, at module load, before setup() runs.
-registerBackgroundHandler();
+// Register the Android background handler once, at module load, before setup()
+// runs. It's a documented no-op on iOS (that just logs a dev warning), so skip
+// the call there entirely rather than showing a LogBox warning every launch.
+if (Platform.OS === 'android') registerBackgroundHandler();
 
 const PROGRESS_INTERVAL_MS = 1000;
 
@@ -67,7 +70,15 @@ class NativeAudioEngine implements AudioEngine {
 
   async setup(): Promise<void> {
     if (this.ready) return;
-    TrackPlayer.setupPlayer({ android: { taskRemovedBehavior: 'stop' } });
+    try {
+      TrackPlayer.setupPlayer({ android: { taskRemovedBehavior: 'stop' } });
+    } catch (e) {
+      // Dev Fast Refresh (or a double-invoked effect) can re-run setup() on a
+      // fresh engine instance while the native player singleton from the
+      // previous JS load is still set up. @rntp/player throws rather than
+      // being idempotent here, so treat that specific case as already-ready.
+      if (!(e instanceof Error) || !e.message.includes('already set up')) throw e;
+    }
     TrackPlayer.setCommands({
       capabilities: [
         PlayerCommand.PlayPause,
