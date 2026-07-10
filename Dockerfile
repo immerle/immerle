@@ -3,10 +3,10 @@
 # ---- web app stage ----
 # Pin to the build platform: the export is static web assets (arch-independent),
 # so we build it once natively instead of emulating it per target arch.
-FROM --platform=$BUILDPLATFORM node:20-alpine AS ui
+FROM --platform=$BUILDPLATFORM node:24-alpine AS ui
 WORKDIR /ui
 COPY ui/package.json ui/package-lock.json ./
-RUN --mount=type=cache,id=npm-expo57,target=/root/.npm,sharing=locked npm ci
+RUN --mount=type=cache,id=npm-expo57,target=/root/.npm,sharing=locked npm ci --legacy-peer-deps
 COPY ui/ ./
 RUN npm run export:web
 
