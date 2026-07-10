@@ -15,8 +15,6 @@
       "bundleIdentifier": "com.immerle.app",
       "infoPlist": {
         "UIBackgroundModes": [
-          "audio",
-          "audio",
           "audio"
         ],
         "ITSAppUsesNonExemptEncryption": false
@@ -29,10 +27,6 @@
         "backgroundColor": "#121212"
       },
       "permissions": [
-        "FOREGROUND_SERVICE",
-        "FOREGROUND_SERVICE_MEDIA_PLAYBACK",
-        "POST_NOTIFICATIONS",
-        "WAKE_LOCK",
         "FOREGROUND_SERVICE",
         "FOREGROUND_SERVICE_MEDIA_PLAYBACK",
         "POST_NOTIFICATIONS",
@@ -60,7 +54,15 @@
       "expo-localization",
       "./plugins/withFmtConsteval",
       "expo-image",
-      "expo-status-bar"
+      "expo-status-bar",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "16.4"
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

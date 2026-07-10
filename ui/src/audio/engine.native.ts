@@ -1,29 +1,29 @@
 import TrackPlayer, {
-  AppKilledPlaybackBehavior,
-  Capability,
   Event,
+  PlaybackState,
+  PlayerCommand,
   RepeatMode as RNTPRepeatMode,
-  State,
-} from 'react-native-track-player';
+} from '@rntp/player';
+import { Platform } from 'react-native';
 import { EngineEmitter } from './emitter';
-import { PlaybackService } from './service.native';
+import { registerBackgroundHandler, wireRemoteEvents } from './service.native';
 import { AudioEngine, EngineState, PlayableTrack, RepeatMode } from './types';
 
-// Register the playback service once, at module load, before setup() runs.
-TrackPlayer.registerPlaybackService(() => PlaybackService);
+// Register the Android background handler once, at module load, before setup()
+// runs. It's a documented no-op on iOS (that just logs a dev warning), so skip
+// the call there entirely rather than showing a LogBox warning every launch.
+if (Platform.OS === 'android') registerBackgroundHandler();
 
-function mapState(state: State | undefined): EngineState['status'] {
+const PROGRESS_INTERVAL_MS = 1000;
+
+function mapStatus(state: PlaybackState, playing: boolean): EngineState['status'] {
   switch (state) {
-    case State.Playing:
-      return 'playing';
-    case State.Paused:
-    case State.Ready:
-      return 'paused';
-    case State.Buffering:
-    case State.Loading:
+    case PlaybackState.Buffering:
       return 'loading';
-    case State.Ended:
+    case PlaybackState.Ended:
       return 'ended';
+    case PlaybackState.Ready:
+      return playing ? 'playing' : 'paused';
     default:
       return 'idle';
   }
@@ -32,158 +32,168 @@ function mapState(state: State | undefined): EngineState['status'] {
 function mapRepeat(mode: RepeatMode): RNTPRepeatMode {
   switch (mode) {
     case 'track':
-      return RNTPRepeatMode.Track;
+      return RNTPRepeatMode.One;
     case 'queue':
-      return RNTPRepeatMode.Queue;
+      return RNTPRepeatMode.All;
     default:
       return RNTPRepeatMode.Off;
   }
 }
 
-function toRNTPTrack(t: PlayableTrack) {
+function toMediaItem(t: PlayableTrack) {
   return {
-    id: t.id,
+    mediaId: t.id,
     url: t.url,
     title: t.title,
     artist: t.artist,
-    album: t.album,
-    artwork: t.artwork,
+    albumTitle: t.album,
+    artworkUrl: t.artwork,
     duration: t.duration,
   };
 }
 
 /**
- * Native audio engine backed by react-native-track-player: background audio,
- * lockscreen / notification controls, and now-playing metadata come for free
- * from the OS integration. Track-player owns the queue, so this class is mostly
- * a thin, typed adapter that re-broadcasts player events through our emitter.
+ * Native audio engine backed by @rntp/player: background audio, lockscreen /
+ * notification controls, and now-playing metadata come for free from the OS
+ * integration. Track-player owns the queue, so this class is mostly a thin,
+ * typed adapter that re-broadcasts player events through our emitter.
  */
 class NativeAudioEngine implements AudioEngine {
   private emitter = new EngineEmitter();
   private ready = false;
-  private status: EngineState['status'] = 'idle';
+  private playbackState: PlaybackState = PlaybackState.Idle;
+  private playing = false;
   private index = -1;
   private position = 0;
   private duration = 0;
+  private progressTimer: ReturnType<typeof setInterval> | null = null;
 
   async setup(): Promise<void> {
     if (this.ready) return;
-    await TrackPlayer.setupPlayer({ autoHandleInterruptions: true });
-    await TrackPlayer.updateOptions({
-      android: {
-        appKilledPlaybackBehavior: AppKilledPlaybackBehavior.StopPlaybackAndRemoveNotification,
-      },
+    try {
+      TrackPlayer.setupPlayer({ android: { taskRemovedBehavior: 'stop' } });
+    } catch (e) {
+      // Dev Fast Refresh (or a double-invoked effect) can re-run setup() on a
+      // fresh engine instance while the native player singleton from the
+      // previous JS load is still set up. @rntp/player throws rather than
+      // being idempotent here, so treat that specific case as already-ready.
+      if (!(e instanceof Error) || !e.message.includes('already set up')) throw e;
+    }
+    TrackPlayer.setCommands({
       capabilities: [
-        Capability.Play,
-        Capability.Pause,
-        Capability.SkipToNext,
-        Capability.SkipToPrevious,
-        Capability.SeekTo,
-        Capability.Stop,
+        PlayerCommand.PlayPause,
+        PlayerCommand.Next,
+        PlayerCommand.Previous,
+        PlayerCommand.Seek,
+        PlayerCommand.Stop,
       ],
-      compactCapabilities: [Capability.Play, Capability.Pause, Capability.SkipToNext],
-      progressUpdateEventInterval: 1,
     });
     this.wireEvents();
+    // Progress cadence isn't native-configurable in v5; poll getProgress()
+    // ourselves (same pattern the library's own useProgress hook uses).
+    this.progressTimer = setInterval(() => this.pollProgress(), PROGRESS_INTERVAL_MS);
     this.ready = true;
   }
 
   private wireEvents(): void {
-    TrackPlayer.addEventListener(Event.PlaybackState, ({ state }) => {
-      this.status = mapState(state);
+    TrackPlayer.addEventListener(Event.PlaybackStateChanged, ({ state }) => {
+      this.playbackState = state;
       this.emitState();
       // End of queue: rewind to the first track and pause (track 1 for a
       // playlist), cursor at the start with the play button ready to replay.
-      if (state === State.Ended) void this.resetToStart();
+      if (state === PlaybackState.Ended) void this.resetToStart();
     });
-    TrackPlayer.addEventListener(Event.PlaybackActiveTrackChanged, (e) => {
-      if (typeof e.index === 'number') {
-        this.index = e.index;
-        this.emitter.emit('trackChange', e.index);
-        this.emitState();
-      }
+    TrackPlayer.addEventListener(Event.IsPlayingChanged, ({ playing }) => {
+      this.playing = playing;
+      this.emitState();
     });
-    TrackPlayer.addEventListener(Event.PlaybackProgressUpdated, (e) => {
-      this.position = e.position;
-      this.duration = e.duration;
-      this.emitter.emit('progress', e.position, e.duration);
+    TrackPlayer.addEventListener(Event.MediaItemTransition, (e) => {
+      this.index = e.index;
+      this.emitter.emit('trackChange', e.index);
+      this.emitState();
     });
+    wireRemoteEvents();
+  }
+
+  private pollProgress(): void {
+    const { position, duration } = TrackPlayer.getProgress();
+    this.position = position;
+    this.duration = duration;
+    this.emitter.emit('progress', position, duration);
   }
 
   async setQueue(tracks: PlayableTrack[], startIndex: number): Promise<void> {
-    await TrackPlayer.reset();
-    await TrackPlayer.add(tracks.map(toRNTPTrack));
-    if (tracks.length) {
-      const i = Math.max(0, Math.min(startIndex, tracks.length - 1));
-      await TrackPlayer.skip(i);
-      this.index = i;
-      await TrackPlayer.play();
+    if (!tracks.length) {
+      TrackPlayer.clear();
+      this.index = -1;
+      return;
     }
+    const i = Math.max(0, Math.min(startIndex, tracks.length - 1));
+    TrackPlayer.setMediaItems(tracks.map(toMediaItem), i);
+    this.index = i;
+    TrackPlayer.play();
   }
 
   async add(tracks: PlayableTrack[]): Promise<void> {
-    await TrackPlayer.add(tracks.map(toRNTPTrack));
+    TrackPlayer.addMediaItems(tracks.map(toMediaItem));
   }
 
   async removeAt(index: number): Promise<void> {
-    await TrackPlayer.remove([index]);
+    TrackPlayer.removeMediaItem(index);
   }
 
   async move(from: number, to: number): Promise<void> {
-    await TrackPlayer.move(from, to);
+    TrackPlayer.moveMediaItem(from, to);
   }
 
   async play(): Promise<void> {
-    await TrackPlayer.play();
+    TrackPlayer.play();
   }
 
   async pause(): Promise<void> {
-    await TrackPlayer.pause();
+    TrackPlayer.pause();
   }
 
   async skipTo(index: number): Promise<void> {
-    await TrackPlayer.skip(index);
+    TrackPlayer.skipToIndex(index);
     this.index = index;
-    await TrackPlayer.play();
+    TrackPlayer.play();
   }
 
   async next(): Promise<void> {
-    await TrackPlayer.skipToNext().catch(() => undefined);
+    TrackPlayer.skipToNext();
   }
 
   private async resetToStart(): Promise<void> {
-    const queue = await TrackPlayer.getQueue();
+    const queue = TrackPlayer.getQueue();
     if (!queue.length) return;
-    await TrackPlayer.skip(0);
-    await TrackPlayer.seekTo(0);
-    await TrackPlayer.pause();
+    TrackPlayer.skipToIndex(0);
+    TrackPlayer.seekTo(0);
+    TrackPlayer.pause();
     this.index = 0;
   }
 
   async previous(): Promise<void> {
-    const { position } = await TrackPlayer.getProgress();
-    if (position > 3) {
-      await TrackPlayer.seekTo(0);
-      return;
-    }
-    await TrackPlayer.skipToPrevious().catch(() => undefined);
+    // v5 restarts the current item natively when playback is past ~3s, so no
+    // manual position check is needed here (unlike the v4/web engines).
+    TrackPlayer.skipToPrevious();
   }
 
   async seekTo(seconds: number): Promise<void> {
-    await TrackPlayer.seekTo(seconds);
+    TrackPlayer.seekTo(seconds);
   }
 
   async setRepeatMode(mode: RepeatMode): Promise<void> {
-    await TrackPlayer.setRepeatMode(mapRepeat(mode));
+    TrackPlayer.setRepeatMode(mapRepeat(mode));
   }
 
   async setVolume(volume: number): Promise<void> {
-    await TrackPlayer.setVolume(Math.max(0, Math.min(1, volume)));
+    TrackPlayer.setVolume(Math.max(0, Math.min(1, volume)));
   }
 
   getState(): EngineState {
     return {
-      status: this.status,
+      status: mapStatus(this.playbackState, this.playing),
       index: this.index,
       position: this.position,
       duration: this.duration,
@@ -193,9 +203,12 @@ class NativeAudioEngine implements AudioEngine {
   on: AudioEngine['on'] = (event, handler) => this.emitter.on(event, handler);
 
   async destroy(): Promise<void> {
-    await TrackPlayer.reset();
+    if (this.progressTimer) clearInterval(this.progressTimer);
+    this.progressTimer = null;
+    TrackPlayer.clear();
     this.ready = false;
-    this.status = 'idle';
+    this.playbackState = PlaybackState.Idle;
+    this.playing = false;
     this.index = -1;
   }
 
