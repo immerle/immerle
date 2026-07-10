@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"unicode/utf8"
 
 	"github.com/immerle/immerle/internal/models"
@@ -34,7 +35,13 @@ type ValidationError struct {
 	Fields []FieldError
 }
 
-func (e *ValidationError) Error() string { return "validation failed" }
+func (e *ValidationError) Error() string {
+	msgs := make([]string, len(e.Fields))
+	for i, f := range e.Fields {
+		msgs[i] = f.Field + ": " + f.Message
+	}
+	return "validation failed: " + strings.Join(msgs, "; ")
+}
 
 // SetupService handles first-run provisioning of the initial admin account,
 // either through the setup API (see InitFirstAdmin) or, at startup, from
