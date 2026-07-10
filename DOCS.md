@@ -15,9 +15,11 @@ contributor needs.
 
 ## First-run setup
 
-There is **no** admin account provisioned from config or environment. On a fresh
-database the server starts in *setup mode*; create the first administrator
-through the setup API (the only bootstrap path):
+On a fresh database the server starts in *setup mode*. Create the first
+administrator either through the setup API, or by setting
+`ADMIN_USERNAME`/`ADMIN_PASSWORD` before starting the server (it then creates
+that admin at boot, before serving traffic — handy for unattended deployments;
+a no-op on later restarts once an admin exists). The setup API way:
 
 ```bash
 # Is setup needed?

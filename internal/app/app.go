@@ -4,10 +4,12 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -192,10 +194,22 @@ func New(cfg config.Config) (*App, error) {
 	}
 	authSvc.WithLDAP(settingsSvc)
 
-	// First-run setup. The initial admin can only be created via the setup API.
+	// First-run setup: the initial admin is created either via the setup API, or
+	// here from ADMIN_USERNAME/ADMIN_PASSWORD when set.
 	setupSvc, err := core.NewSetupService(store.Users, authSvc, cfg.Auth.RequireSetupToken)
 	if err != nil {
 		return nil, err
+	}
+
+	if cfg.Auth.AdminUsername != "" {
+		switch _, err := setupSvc.BootstrapFromEnv(ctx, strings.TrimSpace(cfg.Auth.AdminUsername), cfg.Auth.AdminPassword); {
+		case err == nil:
+			logger.Info("admin account bootstrapped from ADMIN_USERNAME/ADMIN_PASSWORD")
+		case errors.Is(err, core.ErrAlreadyInitialized):
+			// Already set up (earlier run, or via the setup UI) — leave it alone.
+		default:
+			return nil, fmt.Errorf("admin bootstrap from ADMIN_USERNAME/ADMIN_PASSWORD: %w", err)
+		}
 	}
 
 	// Announce setup mode when the server has no admin yet.

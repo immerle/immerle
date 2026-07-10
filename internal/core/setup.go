@@ -36,8 +36,9 @@ type ValidationError struct {
 
 func (e *ValidationError) Error() string { return "validation failed" }
 
-// SetupService handles first-run provisioning of the initial admin account. The
-// admin can only be created here — there is no config/env provisioning path.
+// SetupService handles first-run provisioning of the initial admin account,
+// either through the setup API (see InitFirstAdmin) or, at startup, from
+// ADMIN_USERNAME/ADMIN_PASSWORD (see BootstrapFromEnv).
 type SetupService struct {
 	users *persistence.UserRepo
 	auth  *AuthService
@@ -111,6 +112,27 @@ func (s *SetupService) InitFirstAdmin(ctx context.Context, username, password, e
 
 	// CreateFirstAdmin re-checks emptiness inside a transaction (anti-race).
 	return s.auth.CreateFirstAdmin(ctx, username, password, email, displayName)
+}
+
+// BootstrapFromEnv creates the first admin from ADMIN_USERNAME/ADMIN_PASSWORD at
+// startup. Unlike InitFirstAdmin it never checks a setup token: the operator
+// already controls the process environment, so there is nothing left to prove.
+// A no-op (ErrAlreadyInitialized) on every restart once a user exists — this is
+// meant to be left set permanently in a deployment's env without recreating or
+// resetting the admin account each time.
+func (s *SetupService) BootstrapFromEnv(ctx context.Context, username, password string) (models.User, error) {
+	initialized, err := s.IsInitialized(ctx)
+	if err != nil {
+		return models.User{}, err
+	}
+	if initialized {
+		return models.User{}, ErrAlreadyInitialized
+	}
+	if verr := validateAdminInput(username, password); verr != nil {
+		return models.User{}, verr
+	}
+	// CreateFirstAdmin re-checks emptiness inside a transaction (anti-race).
+	return s.auth.CreateFirstAdmin(ctx, username, password, "", "")
 }
 
 func validateAdminInput(username, password string) error {

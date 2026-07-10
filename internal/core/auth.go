@@ -193,9 +193,9 @@ func decodePassword(p string) string {
 }
 
 // CreateFirstAdmin atomically creates the first administrator account, but only
-// while the server has no users. It returns ErrAlreadyInitialized otherwise. The
-// admin account can only ever be bootstrapped through this path (the setup API);
-// there is no config/env provisioning.
+// while the server has no users. It returns ErrAlreadyInitialized otherwise.
+// Called from SetupService, either via the setup API (InitFirstAdmin) or the
+// ADMIN_USERNAME/ADMIN_PASSWORD startup bootstrap (BootstrapFromEnv).
 func (a *AuthService) CreateFirstAdmin(ctx context.Context, username, password, email, displayName string) (models.User, error) {
 	enc, err := a.box.Encrypt(password)
 	if err != nil {

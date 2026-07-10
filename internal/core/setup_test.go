@@ -85,6 +85,57 @@ func TestSetupTokenRequired(t *testing.T) {
 	}
 }
 
+func TestBootstrapFromEnvHappyPath(t *testing.T) {
+	svc, _ := newSetup(t, false)
+	ctx := context.Background()
+
+	u, err := svc.BootstrapFromEnv(ctx, "kilian", "password123")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !u.IsAdmin {
+		t.Fatal("bootstrapped user must be admin")
+	}
+	if init, _ := svc.IsInitialized(ctx); !init {
+		t.Fatal("should be initialized after bootstrap")
+	}
+}
+
+func TestBootstrapFromEnvNoopWhenAlreadyInitialized(t *testing.T) {
+	svc, _ := newSetup(t, false)
+	ctx := context.Background()
+
+	if _, err := svc.InitFirstAdmin(ctx, "kilian", "password123", "", "", ""); err != nil {
+		t.Fatal(err)
+	}
+	// A later restart with the same env vars set must not error or overwrite.
+	if _, err := svc.BootstrapFromEnv(ctx, "someone-else", "password123"); !errors.Is(err, ErrAlreadyInitialized) {
+		t.Fatalf("expected ErrAlreadyInitialized, got %v", err)
+	}
+}
+
+func TestBootstrapFromEnvIgnoresSetupToken(t *testing.T) {
+	// Unlike InitFirstAdmin, BootstrapFromEnv never checks a setup token: the
+	// operator already controls the process environment.
+	svc, _ := newSetup(t, true)
+	ctx := context.Background()
+
+	if _, err := svc.BootstrapFromEnv(ctx, "kilian", "password123"); err != nil {
+		t.Fatalf("expected success without a token, got %v", err)
+	}
+}
+
+func TestBootstrapFromEnvValidation(t *testing.T) {
+	svc, _ := newSetup(t, false)
+	ctx := context.Background()
+
+	_, err := svc.BootstrapFromEnv(ctx, "bad name!", "short")
+	var verr *ValidationError
+	if !errors.As(err, &verr) {
+		t.Fatalf("expected ValidationError, got %v", err)
+	}
+}
+
 func TestSetupConcurrentInitSingleWinner(t *testing.T) {
 	svc, _ := newSetup(t, false)
 	ctx := context.Background()

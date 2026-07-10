@@ -92,3 +92,32 @@ func TestValidateRejectsUnknownDriver(t *testing.T) {
 		t.Fatal("expected error for unknown driver")
 	}
 }
+
+func TestAdminEnvVars(t *testing.T) {
+	t.Setenv("ADMIN_USERNAME", "kilian")
+	t.Setenv("ADMIN_PASSWORD", "password123")
+
+	cfg, err := Load(filepath.Join(t.TempDir(), ".env"))
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	if cfg.Auth.AdminUsername != "kilian" || cfg.Auth.AdminPassword != "password123" {
+		t.Fatalf("admin env vars not applied, got %+v", cfg.Auth)
+	}
+}
+
+func TestValidateRejectsPartialAdminEnv(t *testing.T) {
+	cfg := Default()
+	cfg.Auth.AdminUsername = "kilian"
+	// AdminPassword left empty.
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("expected error when only ADMIN_USERNAME is set")
+	}
+
+	cfg = Default()
+	cfg.Auth.AdminPassword = "password123"
+	// AdminUsername left empty.
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("expected error when only ADMIN_PASSWORD is set")
+	}
+}

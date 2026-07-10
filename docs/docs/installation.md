@@ -28,6 +28,10 @@ curl -X POST http://localhost:4533/setup/init \
   -d '{"username":"me","password":"a-strong-password"}'
 ```
 
+For unattended deployments, pass `ADMIN_USERNAME`/`ADMIN_PASSWORD` as env vars
+instead and skip this step entirely — the server creates that admin at startup.
+See [Configuration](./configuration.md) for details.
+
 ### Docker Compose
 
 For a persistent setup, a Compose file is more convenient:

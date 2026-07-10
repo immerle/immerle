@@ -21,9 +21,15 @@ services:
       # transcoding, the on-demand switch & provider behaviour, avatars, scan
       # cadence/watch and federation are runtime settings managed by an admin via
       # the API (POST /admin/settings) and persisted in the database.
-      # The first admin is created via the setup API (POST /setup/init), not via
-      # env. Set to "true" to require the one-time startup token.
+      # By default the first admin is created via the setup API (POST
+      # /setup/init) from the web UI. Set to "true" to require the one-time
+      # startup token instead.
       AUTH_REQUIRE_SETUP_TOKEN: "false"
+      # Uncomment to create the first admin from these instead (no interactive
+      # setup step needed) — handy for unattended deployments. Both must be set
+      # together; a no-op on restart once an admin already exists.
+      # ADMIN_USERNAME: "admin"
+      # ADMIN_PASSWORD: "change-me"
       LOG_FORMAT: "json"
     volumes:
       - ./music:/music:ro
