@@ -123,6 +123,10 @@ export default function RootLayout() {
                     headerTitleStyle: { color: colors.foreground },
                     headerTintColor: colors.primary,
                     contentStyle: { backgroundColor: colors.background },
+                    // Otherwise the back button falls back to the previous
+                    // screen's route name — e.g. the literal "(tabs)" group
+                    // segment when coming from a tab screen.
+                    headerBackButtonDisplayMode: 'minimal',
                   }}
                 >
                   <Stack.Screen name="index" options={{ headerShown: false }} />
