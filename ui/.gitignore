@@ -6,7 +6,6 @@ node_modules/
 dist/*
 !dist/.gitkeep
 web-build/
-expo-env.d.ts
 
 # Native
 *.orig.*
