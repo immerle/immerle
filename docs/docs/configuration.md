@@ -25,6 +25,10 @@ PORT=4533
 # If unset, a random secret is generated at startup and persisted.
 # AUTH_SECRET=
 AUTH_REQUIRE_SETUP_TOKEN=false   # gate first-run admin behind a startup token (see note below)
+# Optional: create the first admin from these instead of the setup UI (see note
+# below). Both must be set together, or neither.
+# ADMIN_USERNAME=
+# ADMIN_PASSWORD=
 
 # --- Database ---
 DATABASE_DRIVER=sqlite
@@ -58,6 +62,12 @@ If your instance is exposed to the public internet before you've initialized it,
 either set `AUTH_REQUIRE_SETUP_TOKEN=true` (the server then prints a one-time
 token you must supply to create the admin) or keep the instance off the public
 network until setup is complete.
+
+For fully automated deployments (Docker, IaC) with no interactive setup step,
+set `ADMIN_USERNAME`/`ADMIN_PASSWORD` instead: the server creates that admin
+account at startup, before serving traffic, and skips the setup UI/token
+entirely. Like the setup endpoint, this only ever applies while the server has
+no users — safe to leave set permanently, it's a no-op on every later restart.
 
 :::
 

@@ -8660,7 +8660,7 @@
                 ]
             },
             "post": {
-                "description": "Unauthenticated, one-shot. Creates the initial admin — the only way to bootstrap an account (no config/env provisioning). Self-locks once any user exists.",
+                "description": "Unauthenticated, one-shot. Creates the initial admin. Self-locks once any user exists (also true when the admin was instead bootstrapped from ADMIN_USERNAME/ADMIN_PASSWORD at startup).",
                 "requestBody": {
                     "content": {
                         "application/json": {

@@ -45,7 +45,7 @@ type setupInitRequest struct {
 // once a user exists (409).
 //
 // @Summary      Create the first administrator
-// @Description  Unauthenticated, one-shot. Creates the initial admin — the only way to bootstrap an account (no config/env provisioning). Self-locks once any user exists.
+// @Description  Unauthenticated, one-shot. Creates the initial admin. Self-locks once any user exists (also true when the admin was instead bootstrapped from ADMIN_USERNAME/ADMIN_PASSWORD at startup).
 // @Tags         setup
 // @Accept       json
 // @Produce      json

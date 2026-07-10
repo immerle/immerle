@@ -1,7 +1,8 @@
 // Package config loads immerle-server BOOTSTRAP configuration from the
 // environment (and an optional .env file): the few settings that must be known
 // before anything starts and need a restart to change — server port, database,
-// the optional auth secret, the setup-token gate, logging and library paths.
+// the optional auth secret, the setup-token gate, an optional env-based admin
+// bootstrap, logging and library paths.
 // Everything else (the on-demand switch & providers and their credentials,
 // provider behaviour, transcoding, avatars, scan cadence, CORS, device-token
 // TTL, federation) lives in the DB-backed runtime settings and is managed via
@@ -55,6 +56,13 @@ type AuthConfig struct {
 	// keep the instance off the public network until initialized) if that
 	// window matters for your deployment.
 	RequireSetupToken bool
+	// AdminUsername and AdminPassword, when both set, bootstrap the first admin
+	// account at startup instead of waiting for the setup API/UI. Like
+	// RequireSetupToken this only ever applies while the server has no users —
+	// it's a no-op on every later restart. Either both must be set or neither
+	// (see Validate).
+	AdminUsername string
+	AdminPassword string
 }
 
 // DatabaseConfig selects and configures the storage backend.
@@ -171,6 +179,9 @@ func (c Config) Validate() error {
 	if s := c.Auth.Secret; s != "" && len(s) < 16 {
 		return fmt.Errorf("auth.secret (AUTH_SECRET) must be at least 16 characters")
 	}
+	if (c.Auth.AdminUsername == "") != (c.Auth.AdminPassword == "") {
+		return fmt.Errorf("ADMIN_USERNAME and ADMIN_PASSWORD must both be set, or neither")
+	}
 	return nil
 }
 
@@ -236,6 +247,8 @@ func applyEnv(c *Config, lookup func(string) (string, bool)) {
 	setPort(&c.Server.Address, lookup, "PORT")
 	setString(&c.Auth.Secret, lookup, "AUTH_SECRET")
 	setBool(&c.Auth.RequireSetupToken, lookup, "AUTH_REQUIRE_SETUP_TOKEN")
+	setString(&c.Auth.AdminUsername, lookup, "ADMIN_USERNAME")
+	setString(&c.Auth.AdminPassword, lookup, "ADMIN_PASSWORD")
 	setString(&c.Database.Driver, lookup, "DATABASE_DRIVER")
 	setString(&c.Database.DSN, lookup, "DATABASE_DSN")
 	setString(&c.Log.Level, lookup, "LOG_LEVEL")
