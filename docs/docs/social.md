@@ -1,5 +1,5 @@
 ---
-sidebar_position: 8
+sidebar_position: 6
 title: Social features
 ---
 
@@ -10,110 +10,56 @@ an activity feed, playlists you can share or collaborate on, and synchronized
 listening sessions. All of it is opt-in per action — nothing is public by
 default.
 
-These are native Immerle extensions (`/api/v1/*`), not part of the Subsonic
-API — see the [API reference](pathname:///api/) for exact request/response
-shapes. Discover what a server supports with the unauthenticated
-`GET /api/v1/capabilities`.
-
 ## Friends & activity
 
-A friend relationship is a simple request/accept pair:
+A friend relationship is a simple request/accept pair — you send a request
+by username, the other person accepts it, and you're friends. Nothing else
+changes about your account; it's purely a visibility gate for activity.
 
-```bash
-curl -X POST "http://host:4533/api/v1/friends/requests" -H 'Authorization: Bearer <token>' \
-  -H 'Content-Type: application/json' -d '{"username":"alex"}'
-
-# alex accepts
-curl -X POST "http://host:4533/api/v1/friends/requests/kilian/accept" -H 'Authorization: Bearer <alex-token>'
-
-curl "http://host:4533/api/v1/friends" -H 'Authorization: Bearer <token>'          # accepted friends
-curl "http://host:4533/api/v1/friends/requests" -H 'Authorization: Bearer <token>' # pending, incoming
-```
-
-Plays, likes, playlist creations, etc. feed an **activity feed**, each event
-tagged with a privacy level:
+Plays, likes, playlist creations and similar actions feed an **activity
+feed**, each event tagged with a privacy level:
 
 | Privacy | Visible to |
 | ------- | ---------- |
-| `public` | anyone |
-| `friends` | accepted friends only |
-| `private` | the author only |
+| Public | anyone |
+| Friends | accepted friends only |
+| Private | the author only |
 
-`GET /api/v1/profile?username=<name>` returns someone's identity, the
-activity they've chosen to expose to *you* specifically, their public
-playlists, and `isFriend`/`isSelf` flags. Omit `username` to fetch your own —
-`/account` is the equivalent for your own **editable** account (email,
-display name), which a public profile never exposes.
+A user's profile shows their identity, the activity they've chosen to expose
+to *you* specifically, and their public playlists. Your own account page is
+separate and always fully visible to you — it holds things a public profile
+never exposes, like your email address.
 
 ## Collaborative & public playlists
 
 An owner opts a playlist into two independent things:
 
-- **Public** (`updatePlaylist?public=true`, Subsonic) — visible to anyone via
-  `GET /playlists/public`, not auto-added to other users' libraries.
-- **Collaborative** — specific users can edit it.
+- **Public** — visible to anyone browsing public playlists, but not
+  automatically added to anyone else's library.
+- **Collaborative** — specific people you choose can edit it.
 
-```bash
-# discover public playlists
-curl "http://host:4533/api/v1/playlists/public" -H 'Authorization: Bearer <token>'
-
-# subscribe: it now behaves like a normal (read-only) playlist in your library
-curl -X PUT "http://host:4533/api/v1/playlists/<id>/subscription" -H 'Authorization: Bearer <token>'
-curl -X DELETE "http://host:4533/api/v1/playlists/<id>/subscription" -H 'Authorization: Bearer <token>'
-
-# owner grants edit rights to another user
-curl -X POST "http://host:4533/api/v1/playlists/<id>/collaborators" -H 'Authorization: Bearer <token>' \
-  -H 'Content-Type: application/json' -d '{"username":"alex"}'
-```
-
-A subscriber can't modify the playlist — in a Subsonic client, "deleting" a
-subscribed playlist just unsubscribes; the owner's copy is untouched.
-`getPlaylists` returns your own, collaborative, subscribed and federated
-playlists together.
+Discovering a public playlist doesn't add it to your library automatically —
+you **subscribe** to opt in, at which point it behaves like a normal,
+read-only playlist alongside your own. A subscriber can't modify it; in a
+Subsonic client, "removing" a subscribed playlist just unsubscribes you — the
+owner's copy is untouched.
 
 ## Share links
 
 A share is a **public, unauthenticated** link to a single track, album or
-playlist — for sending to someone who doesn't have an account:
-
-```bash
-curl -X POST "http://host:4533/api/v1/shares" -H 'Authorization: Bearer <token>' \
-  -H 'Content-Type: application/json' \
-  -d '{"itemId":"<id>","description":"check this out","expiresAt":1780000000000}'
-# → resolves to {baseURL}/share/{secret}
-```
-
-`expiresAt` (epoch milliseconds) is optional — omit it for a link that never
-expires. `PATCH`/`DELETE /shares/{id}` update or revoke it; only the owner can.
+playlist, meant for sending to someone who doesn't have an account of their
+own. It can be given an expiry date, or left open indefinitely, and the owner
+can update or revoke it at any time.
 
 ## Jam sessions
 
-A Jam is a host-controlled, synchronized listening session streamed to
-participants over Server-Sent Events — everyone hears the same track at the
-same position in real time.
+A Jam is a host-controlled, synchronized listening session — everyone
+listening hears the same track at the same position in real time, streamed
+live. The host starts a session with a queue, anyone can join or leave
+freely, but only the host can change what's playing, seek, pause, or end the
+session for everyone.
 
-```bash
-# host creates a session with a starting queue
-curl -X POST "http://host:4533/api/v1/jam" -H 'Authorization: Bearer <host-token>' \
-  -H 'Content-Type: application/json' -d '{"name":"Friday night","trackIds":["t1","t2","t3"]}'
-# → { "id": "<jamId>", ... }
+---
 
-# anyone joins/leaves freely
-curl -X POST "http://host:4533/api/v1/jam/<id>/participants" -H 'Authorization: Bearer <token>'
-curl -X DELETE "http://host:4533/api/v1/jam/<id>/participants/me" -H 'Authorization: Bearer <token>'
-
-# subscribe to live state (SSE) — emits a `state` event immediately and on every change
-curl -N "http://host:4533/api/v1/jam/<id>/events" -H 'Authorization: Bearer <token>'
-
-# host-only: control playback
-curl -X PATCH "http://host:4533/api/v1/jam/<id>" -H 'Authorization: Bearer <host-token>' \
-  -H 'Content-Type: application/json' -d '{"currentTrackId":"t2","position":45.2,"state":"playing"}'
-
-# host-only: end the session
-curl -X DELETE "http://host:4533/api/v1/jam/<id>" -H 'Authorization: Bearer <host-token>'
-```
-
-Only the host can change playback state or end the session (a non-host
-attempt gets `403`); joining and leaving are open to any authenticated user.
-The event stream sends a heartbeat every 20s to keep long-lived connections
-alive through proxies.
+For the exact API calls behind all of this, see the
+[native API walkthrough](./developers/api-guide.md).

@@ -1,5 +1,5 @@
 ---
-sidebar_position: 9
+sidebar_position: 7
 title: Playlist import
 ---
 
@@ -7,68 +7,41 @@ title: Playlist import
 
 Bring a playlist over from another service into a new Immerle playlist.
 Import is **source-pluggable** — Spotify and Deezer ship first, more sources
-can be added without changing the import engine.
+can be added later without changing how import itself works.
 
 The import runs in the background: a job is created immediately, and each
-source track is matched to your on-demand catalog one at a time so a client
-can show live progress.
+source track is matched to your on-demand catalog one at a time, so a client
+can show live progress instead of waiting for the whole playlist.
 
 ## Sources
 
 | Source | How it works | Requirements |
 | ------ | ------------- | ------------ |
-| **Spotify** | Delegated to the [federation](./federation.md) hub — the hub holds Spotify credentials, not your instance | A configured hub connection |
-| **Deezer** | Fetched directly from Deezer's public API (no auth needed for public playlists) | None — always available |
+| Spotify | Delegated to the [federation](./federation.md) hub — the hub holds Spotify credentials, not your instance | A configured hub connection |
+| Deezer | Fetched directly from Deezer's public API (no auth needed for public playlists) | None — always available |
 
-```bash
-# check what's configured/available
-curl "http://host:4533/api/v1/imports/sources" -H 'Authorization: Bearer <token>'
-```
+You can point an import at either a bare playlist id or a full playlist URL
+from the source service.
 
-`ref` accepts either a bare playlist id or a full URL: for Spotify a
-`spotify:playlist:…` URI or an `open.spotify.com/playlist/…` link; for Deezer
-a bare id or `deezer.com/playlist/…` link (short links aren't resolved — paste
-the full URL).
+## How a track resolves
 
-## Running an import
+Each track in the source playlist is searched for across your enabled
+on-demand providers and scored by how closely the result matches. Depending
+on the outcome, a track ends up in one of four states:
 
-```bash
-curl -X POST "http://host:4533/api/v1/imports" -H 'Authorization: Bearer <token>' \
-  -H 'Content-Type: application/json' \
-  -d '{"source":"deezer","ref":"https://www.deezer.com/playlist/1234567890"}'
-# → { "id": "<importId>", "status": "queued", ... }
+- **Matched** — a high-confidence result was found, downloaded and added to
+  the playlist automatically.
+- **Doubtful** — a candidate was found, but the match wasn't confident enough
+  to add automatically. It's held for you to review.
+- **Missing** — no candidate was found on any provider.
+- **Failed** — a search or download error occurred.
 
-# poll for progress, including per-track items
-curl "http://host:4533/api/v1/imports/<importId>" -H 'Authorization: Bearer <token>'
+Anything that isn't matched can be fixed by hand afterwards: either accept
+the flagged candidate as-is, or search again yourself with a different query
+and use that result instead. Either way, once resolved the track is
+downloaded and appended to the playlist just like a normal match.
 
-# list your imports (summary only, no items)
-curl "http://host:4533/api/v1/imports" -H 'Authorization: Bearer <token>'
-```
+---
 
-An import's `status` is one of `queued`, `running`, `completed`, `failed`.
-Each track inside it (`items[]`) resolves independently to one of:
-
-| Item status | Meaning |
-| ----------- | ------- |
-| `matched` | found with high confidence (≥ 90% title/artist similarity), downloaded and added to the playlist |
-| `doubtful` | a candidate was found below the confidence threshold — held for review |
-| `missing` | no candidate found on any provider |
-| `failed` | a search or download error occurred |
-
-## Resolving doubtful or missing tracks
-
-Anything not `matched` can be fixed up by hand:
-
-```bash
-# accept the flagged candidate as-is
-curl -X POST "http://host:4533/api/v1/imports/<importId>/items/<itemId>/resolve" \
-  -H 'Authorization: Bearer <token>'
-
-# or search again with a different query
-curl -X POST "http://host:4533/api/v1/imports/<importId>/items/<itemId>/resolve" \
-  -H 'Authorization: Bearer <token>' -H 'Content-Type: application/json' \
-  -d '{"query":"Radiohead Karma Police"}'
-```
-
-Either way, a successful resolve downloads the track, appends it to the
-import's playlist and flips the item to `matched`.
+For the exact API calls behind all of this, see the
+[native API walkthrough](./developers/api-guide.md).

@@ -35,10 +35,9 @@ you outgrow it). Drop in your music, hit play.
   minutes.
 - [Configuration](./configuration.md) — bootstrap settings vs. runtime settings.
 - [Connecting clients](./clients.md) — point any Subsonic app at your server.
-- [Subsonic API](./subsonic-api.md) — the `/rest/*` methods clients use.
 - [On-demand catalog](./on-demand-providers.md) — enable built-in providers, add your own, cleanup.
-- [Custom content provider](./custom-provider.md) — plug in your own on-demand catalog.
 - [Social features](./social.md) — friends, activity, sharing, Jam sessions.
 - [Playlist import](./playlist-import.md) — bring playlists over from Spotify or Deezer.
 - [Federation](./federation.md) — sync playlists via an `immerle-hub`.
-- [API reference](pathname:///api/) — the OpenAPI docs for Immerle's own REST API.
+- [Developers](./developers/architecture.md) — architecture, the native &
+  Subsonic APIs, and building a custom content provider.
