@@ -31,7 +31,7 @@ not installed.
    [Conventional Commits](https://www.conventionalcommits.org/) style you'll
    see in `git log` (e.g. `feat(api): ...`, `fix(desktop): ...`).
 
-See [DOCS.md#development](DOCS.md#development) for the full reference and
+See [Architecture & development](https://immerle.com/developers/architecture) for the full reference and
 [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for community expectations.
 
 By contributing, you agree your contributions are licensed under the project's

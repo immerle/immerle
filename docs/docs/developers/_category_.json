@@ -1,0 +1,8 @@
+{
+  "label": "Developers",
+  "position": 8,
+  "link": {
+    "type": "generated-index",
+    "description": "Architecture, the Subsonic and native REST APIs, and how to build a custom content provider — for people extending or integrating with Immerle, not just running it."
+  }
+}

@@ -16,21 +16,15 @@ docker run -d --name immerle \
   -p 4533:4533 \
   -v ./music:/music:ro \
   -v immerle-data:/data \
+  -e ADMIN_USERNAME=admin \
+  -e ADMIN_PASSWORD=change-me \
   ghcr.io/immerle/immerle:latest
 ```
 
-The server comes up on **http://localhost:4533**. Create the first admin account
-via the one-time setup endpoint:
-
-```bash
-curl -X POST http://localhost:4533/setup/init \
-  -H 'Content-Type: application/json' \
-  -d '{"username":"me","password":"a-strong-password"}'
-```
-
-For unattended deployments, pass `ADMIN_USERNAME`/`ADMIN_PASSWORD` as env vars
-instead and skip this step entirely — the server creates that admin at startup.
-See [Configuration](./configuration.md) for details.
+The server comes up on **http://localhost:4533**, with that admin account
+already created — sign in with it right away. Omit the two `ADMIN_*`
+variables to get an interactive setup screen in the web UI instead. See
+[Configuration](./configuration.md) for the full list of bootstrap variables.
 
 ### Docker Compose
 
@@ -49,6 +43,8 @@ services:
       LIBRARY_DATA_DIR: "/data"
       LIBRARY_PATHS: "/music"
       AUTH_REQUIRE_SETUP_TOKEN: "false"
+      # ADMIN_USERNAME: "admin"
+      # ADMIN_PASSWORD: "change-me"
       LOG_FORMAT: "json"
     volumes:
       - ./music:/music:ro
@@ -70,7 +66,8 @@ Then:
 docker compose up -d
 ```
 
-and create the admin with the same `/setup/init` call as above.
+Uncomment `ADMIN_USERNAME`/`ADMIN_PASSWORD` above to have the admin account
+created automatically, same as the plain `docker run` example.
 
 ## From source
 

@@ -53,10 +53,8 @@ Uses the prebuilt multi-arch image from GHCR — no local build needed.
 ```bash
 # put your music under ./music, then:
 docker compose up -d
-# server on http://localhost:4533 — create the admin via the first-run setup:
-curl -X POST http://localhost:4533/setup/init \
-  -H 'Content-Type: application/json' \
-  -d '{"username":"me","password":"a-strong-password"}'
+# server on http://localhost:4533 — sign in with the ADMIN_USERNAME/ADMIN_PASSWORD
+# you set in docker-compose.yml (or use the web UI's setup screen if you left them unset)
 ```
 
 Or without compose:
@@ -65,6 +63,7 @@ Or without compose:
 docker run -d -p 4533:4533 \
   -v "$PWD/music:/music:ro" -v immerle-data:/data \
   -e DATABASE_DSN=/data/immerle.db -e LIBRARY_DATA_DIR=/data \
+  -e ADMIN_USERNAME=admin -e ADMIN_PASSWORD=change-me \
   ghcr.io/immerle/immerle:latest
 ```
 
@@ -103,21 +102,22 @@ Grab the installer for your OS from the
 
 ## 📚 Going further
 
-The friendly bit ends here; the full reference lives in **[DOCS.md](DOCS.md)**:
+The friendly bit ends here; the full reference lives on the
+**[docs site](https://immerle.com)**:
 
-- 🔑 [First-run setup](DOCS.md#first-run-setup) — create your admin
-- ⚙️ [Configuration](DOCS.md#configuration) — bootstrap `.env` + runtime admin API
-- 🏗️ [Architecture](DOCS.md#architecture) — how it’s wired
-- 🪺 [The native Immerle API](DOCS.md#the-native-immerle-api) — social, jams, imports, tokens
-- 🌐 [On-demand providers & avatars](DOCS.md#on-demand-providers--artist-avatars) — the catalog
-- 💻 [Development](DOCS.md#development) — build, test, contribute
+- ⚙️ [Configuration](https://immerle.com/configuration) — bootstrap `.env` + runtime admin API
+- 🌍 [On-demand catalog](https://immerle.com/on-demand-providers) — enable providers, add your own
+- 👯 [Social features](https://immerle.com/social) — friends, activity, sharing, Jam sessions
+- 📥 [Playlist import](https://immerle.com/playlist-import) — bring playlists over from Spotify or Deezer
+- 🔗 [Federation](https://immerle.com/federation) — sync playlists via an `immerle-hub`
+- 💻 [Developers](https://immerle.com/developers/architecture) — architecture, the native & Subsonic APIs, build/test/contribute
 
 ## 🤝 Contributing
 
 Issues and pull requests are very welcome! 🙌 Before opening a PR, run `make ci`
 (it must pass) and regenerate the OpenAPI spec with `make openapi` if you touched
 handler annotations — CI fails on a stale spec. See
-[Development](DOCS.md#development) for the full loop.
+[Architecture & development](https://immerle.com/developers/architecture) for the full loop.
 
 ## ⚖️ Disclaimer
 

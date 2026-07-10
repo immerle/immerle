@@ -85,8 +85,10 @@ Runtime settings are managed via the admin API and persisted in
 Providers (including built-ins like Jamendo and their credentials) are **not**
 set in `.env`. Jamendo, for instance, is seeded disabled with a
 `{"params":{"client_id":"<token>"}}` config to fill in and enable from the admin
-UI. See [Custom content provider](./custom-provider.md) for the config schema and
-the `/capabilities` contract used to add an HTTP provider.
+UI. See [On-demand catalog](./on-demand-providers.md) for how providers work,
+or [Building a custom content provider](./developers/custom-provider.md) for
+the config schema and the `/capabilities` contract used to add an HTTP
+provider.
 
 ## LDAP authentication
 

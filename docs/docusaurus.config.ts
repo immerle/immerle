@@ -13,7 +13,7 @@ const config: Config = {
     v4: true, // Improve compatibility with the upcoming Docusaurus v4
   },
 
-  url: 'https://immerle.github.io',
+  url: 'https://immerle.com',
   baseUrl: '/',
 
   organizationName: 'immerle',

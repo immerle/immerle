@@ -1,5 +1,5 @@
 ---
-sidebar_position: 7
+sidebar_position: 3
 title: Custom content provider
 ---
 
@@ -229,7 +229,7 @@ app.listen(8080);
 
 ## Registering it
 
-Providers are admin-managed at runtime (see [Configuration](./configuration.md)).
+Providers are admin-managed at runtime (see [On-demand catalog](../on-demand-providers.md)).
 Adding one is a three-step flow — you never type a name or config by hand.
 
 **1. Create from the URL.** Send just the endpoint; no name, no config. The
