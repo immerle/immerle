@@ -6,7 +6,7 @@
 FROM --platform=$BUILDPLATFORM node:20-alpine AS ui
 WORKDIR /ui
 COPY ui/package.json ui/package-lock.json ./
-RUN --mount=type=cache,target=/root/.npm npm ci
+RUN --mount=type=cache,id=npm-expo57,target=/root/.npm,sharing=locked npm ci
 COPY ui/ ./
 RUN npm run export:web
 
