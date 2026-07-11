@@ -13,6 +13,7 @@ import (
 
 	"github.com/immerle/immerle/internal/config"
 	"github.com/immerle/immerle/internal/core"
+	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 	"github.com/immerle/immerle/internal/scanner"
 	"github.com/immerle/immerle/internal/stream"
@@ -181,5 +182,29 @@ func TestBrowseListsSearchAndSong(t *testing.T) {
 	}
 	if song.Title != "So What" {
 		t.Fatalf("song title = %q", song.Title)
+	}
+}
+
+// TestToAlbumViewFallsBackToAlbumIDForCoverArt covers a real bug: an album
+// whose tracks only carry embedded (never cached) art has an empty
+// models.Album.CoverArt, and without a fallback the API returned an empty
+// coverArt — CoverArt.tsx's client-side guard then never even requests an
+// image, so the album showed no cover anywhere (home screen, artist page,
+// search…), while the same track played fine because toSongView already
+// falls back a track's cover to its AlbumID. The cover service resolves an
+// album id by extracting embedded/sidecar art live from one of its tracks
+// (stream.CoverService.resolveOriginal), so falling back to the album's own
+// id here recovers the same art — matching the Subsonic API's
+// coverIDForAlbum in internal/api/subsonic/convert.go, which already does
+// this.
+func TestToAlbumViewFallsBackToAlbumIDForCoverArt(t *testing.T) {
+	withCover := models.Album{ID: "album-1", Name: "Al", CoverArt: "cached-cover"}
+	if got := toAlbumView(withCover, nil, nil).CoverArt; got != "cached-cover" {
+		t.Fatalf("expected the cached cover to win, got %q", got)
+	}
+
+	noCover := models.Album{ID: "album-2", Name: "Al"}
+	if got := toAlbumView(noCover, nil, nil).CoverArt; got != "album-2" {
+		t.Fatalf("expected fallback to the album id, got %q", got)
 	}
 }

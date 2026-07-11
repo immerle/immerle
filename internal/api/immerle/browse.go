@@ -82,13 +82,30 @@ func toArtistView(a models.Artist, ann *models.Annotation, albums []albumView) a
 func toAlbumView(a models.Album, ann *models.Annotation, tracks []songView) albumView {
 	v := albumView{
 		ID: a.ID, Name: a.Name, Artist: a.ArtistName, ArtistID: a.ArtistID,
-		CoverArt: a.CoverArt, SongCount: a.SongCount, Duration: a.Duration,
+		CoverArt: coverIDForAlbum(a), SongCount: a.SongCount, Duration: a.Duration,
 		Year: a.Year, Genre: a.Genre, Tracks: tracks,
 	}
 	if ann != nil {
 		v.Starred = ann.Starred
 	}
 	return v
+}
+
+// coverIDForAlbum falls back to the album's own id when it has no cached
+// cover (its own, or any track's): the cover service resolves an album id by
+// extracting embedded/sidecar art live from one of its tracks (see
+// stream.CoverService.resolveOriginal), the same fallback toSongView already
+// applies for a track with no cached cover — and the Subsonic API's
+// coverIDForAlbum in internal/api/subsonic/convert.go already relies on.
+// Without it, an album whose tracks only have embedded (never cached) art
+// shows no cover at all in any album grid, while the same track plays fine
+// with a visible cover once resolved via its own (equivalently-falling-back)
+// song cover id.
+func coverIDForAlbum(a models.Album) string {
+	if a.CoverArt != "" {
+		return a.CoverArt
+	}
+	return a.ID
 }
 
 func albumEntriesToView(entries []core.AlbumEntry) []albumView {
