@@ -13,6 +13,8 @@ import { useDownloads } from '../offline/store';
 import { isSupported as offlineSupported } from '../offline/fs';
 import { useColors } from '../theme/colors';
 import { useT } from '../i18n/store';
+import { useToast } from '../stores/toast';
+import { tError } from '../i18n';
 
 /** Global target for the contextual track menu. */
 interface TrackMenuState {
@@ -199,14 +201,17 @@ function PlaylistPicker({ song, onDone }: { song: Song; onDone: () => void }) {
   const [newName, setNewName] = useState('');
 
   const add = (id: string) => {
-    addTo.mutate({ id, songIds: [song.id] }, { onSuccess: onDone });
+    addTo.mutate(
+      { id, songIds: [song.id] },
+      { onSuccess: onDone, onError: (e) => useToast.getState().error(tError(e)) },
+    );
   };
 
   const createAndAdd = () => {
     if (!newName.trim()) return;
     createPlaylist.mutate(
       { name: newName.trim(), songIds: [song.id] },
-      { onSuccess: onDone },
+      { onSuccess: onDone, onError: (e) => useToast.getState().error(tError(e)) },
     );
   };
 
