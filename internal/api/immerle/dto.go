@@ -74,7 +74,6 @@ type RuntimeSettingsDTO struct {
 		Sqid            string `json:"sqid" example:"my-node"`
 		InstanceName    string `json:"instanceName" example:"My living-room immerle"`
 		SyncPlaylists   bool   `json:"syncPlaylists"`
-		ResolveMissing  bool   `json:"resolveMissing"`
 		ExportScrobbles bool   `json:"exportScrobbles"`
 	} `json:"federation"`
 	Logs struct {

@@ -503,7 +503,6 @@
       "saved": "Instance updated on the hub.",
       "features": "Features",
       "syncPlaylists": "Sync public playlists to the hub",
-      "resolveMissing": "Resolve missing tracks",
       "exportScrobbles": "Share listens (scrobbles)",
       "discoverTitle": "Discover instances",
       "discoverSearch": "Search",
@@ -667,6 +666,8 @@
     },
     "playlist": {
       "notFound": "Playlist not found.",
+      "resolveErrorTitle": "Track unavailable",
+      "resolveErrorMessage": "This track couldn't be found locally or via a provider.",
       "unsubscribeTitle": "Unsubscribe?",
       "unsubscribeMessage": "“{{name}}” will be removed from your library.",
       "unsubscribeConfirm": "Unsubscribe",
@@ -679,6 +680,7 @@
       "subscriptionBadge": "Subscription",
       "publicBadge": "Public",
       "edit": "Edit",
+      "subscribe": "Subscribe",
       "unsubscribe": "Unsubscribe",
       "play": "Play playlist",
       "publicToggle": "Public playlist",
@@ -729,7 +731,8 @@
       "previous": "Previous",
       "next": "Next",
       "shuffle": "Shuffle",
-      "lyrics": "Lyrics"
+      "lyrics": "Lyrics",
+      "unresolvedSkipped": "Skipping “{{title}}” — not resolved yet, tap it from the playlist to load it"
     },
     "local": {
       "title": "Local music",

@@ -83,6 +83,76 @@ func (c *Client) ListPlaylists(ctx context.Context, a Auth, region string) ([]Pu
 	return out, err
 }
 
+// FeedPlaylists returns one page of playlist headers from the instances this
+// one is subscribed to, ordered by update time ascending. Pass after ==
+// resp.NextUpdatedAfter to page forward while resp.HasMore is true; "" fetches
+// from the start.
+func (c *Client) FeedPlaylists(ctx context.Context, a Auth, after string) (PublicFeedResponse, error) {
+	path := "/api/v1/instances/me/feed/playlists"
+	if after != "" {
+		path += "?updatedAfter=" + url.QueryEscape(after)
+	}
+	var out PublicFeedResponse
+	err := c.do(ctx, http.MethodGet, path, a, nil, &out)
+	return out, err
+}
+
+// FeedTrack is one track inside a subscribed instance's playlist, decoded from
+// the free-form JSON the owning instance synced (per the hub's
+// SyncTrackExample convention: any JSON is accepted, only these fields are
+// used for resolution).
+type FeedTrack struct {
+	Mbid   string `json:"mbid"`
+	Artist string `json:"artist"`
+	Title  string `json:"title"`
+}
+
+// FeedPlaylistDetail is one subscribed instance's full playlist, as returned by
+// GetFeedPlaylist.
+type FeedPlaylistDetail struct {
+	InstanceID   string
+	InstanceName string
+	ExternalID   string
+	Name         string
+	Description  string
+	Image        string
+	Tracks       []FeedTrack
+}
+
+// GetFeedPlaylist returns one full playlist (with tracks) owned by instanceID,
+// an instance this one is subscribed to (404 if not subscribed). Hand-decoded
+// rather than via the generated PublicInstancePlaylistDTO: the hub's
+// swaggertype:"object" annotation on the tracks field (actually a JSON array)
+// makes oapi-codegen type it as map[string]interface{}, which fails to decode.
+func (c *Client) GetFeedPlaylist(ctx context.Context, a Auth, instanceID, externalID string) (FeedPlaylistDetail, error) {
+	var wire struct {
+		Playlist struct {
+			Author struct {
+				ID   string `json:"id"`
+				Name string `json:"name"`
+			} `json:"author"`
+			ExternalID  string          `json:"externalId"`
+			Name        string          `json:"name"`
+			Description string          `json:"description"`
+			Image       string          `json:"image"`
+			Tracks      json.RawMessage `json:"tracks"`
+		} `json:"playlist"`
+	}
+	path := "/api/v1/instances/" + url.PathEscape(instanceID) + "/playlists/" + url.PathEscape(externalID)
+	if err := c.do(ctx, http.MethodGet, path, a, nil, &wire); err != nil {
+		return FeedPlaylistDetail{}, err
+	}
+	var tracks []FeedTrack
+	if len(wire.Playlist.Tracks) > 0 {
+		_ = json.Unmarshal(wire.Playlist.Tracks, &tracks) // best-effort; malformed tracks are simply dropped
+	}
+	return FeedPlaylistDetail{
+		InstanceID: wire.Playlist.Author.ID, InstanceName: wire.Playlist.Author.Name,
+		ExternalID: wire.Playlist.ExternalID, Name: wire.Playlist.Name, Description: wire.Playlist.Description,
+		Image: wire.Playlist.Image, Tracks: tracks,
+	}, nil
+}
+
 // SearchInstances finds other instances by exact sqid or name (ILIKE); the hub
 // excludes the caller and revoked instances. Returns summaries (no secrets).
 func (c *Client) SearchInstances(ctx context.Context, a Auth, q string) (PublicSearchResponse, error) {

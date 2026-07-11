@@ -272,6 +272,628 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/federation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the live hub instance profile
+         * @description Admin only. Fetches this instance's current name and sqid handle from the hub (the source of truth) and persists them, then returns the refreshed runtime settings. The HTTP exchange runs server-side.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.SettingsDTO"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Bad Gateway */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        /**
+         * Unlink this instance from the hub
+         * @description Admin only. Deletes this instance's data on the hub (best-effort) and clears the locally stored hub identity, returning the instance to the unlinked state. Returns the refreshed runtime settings.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.SettingsDTO"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        /**
+         * Update this instance on the hub
+         * @description Admin only. Pushes the instance name and sqid (the editable, unique hub handle) to the hub, which validates sqid uniqueness, then persists the hub-canonical values. The HTTP exchange runs server-side. Returns the refreshed runtime settings.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Instance name and sqid */
+            requestBody: {
+                content: {
+                    "application/json": Record<string, never> | components["schemas"]["immerle.FederationUpdateDTO"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.SettingsDTO"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Bad Gateway */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/admin/federation/instances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Discover instances on the hub
+         * @description Admin only. Searches the hub for other instances by exact sqid or name (the hub excludes this instance and revoked ones). The HTTP exchange runs server-side.
+         */
+        get: {
+            parameters: {
+                query: {
+                    /** @description Search query (sqid or name) */
+                    q: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.FederationInstancesDTO"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Bad Gateway */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/federation/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Link with the hub
+         * @description Admin only. Bootstraps the instance under the configured hub user id (federation.userId) and persists the hub-issued identity (instance UUID, sqid handle and private key). The full HTTP exchange runs server-side. Returns the refreshed runtime settings.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.SettingsDTO"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Bad Gateway */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/federation/subscriptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List hub subscriptions
+         * @description Admin only. Returns the instances this one follows on the hub. The HTTP exchange runs server-side.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.FederationSubscriptionsDTO"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Bad Gateway */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Subscribe to an instance
+         * @description Admin only. Follows a target instance on the hub by instanceId (UUID) or sqid. The HTTP exchange runs server-side.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Target instance id or sqid */
+            requestBody: {
+                content: {
+                    "application/json": Record<string, never> | components["schemas"]["immerle.SubscribeRequestDTO"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.OkResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Bad Gateway */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/federation/subscriptions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Unsubscribe from an instance
+         * @description Admin only. Stops following the instance with the given hub id (UUID). The HTTP exchange runs server-side.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Target instance id (UUID) */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.OkResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Bad Gateway */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/offline": {
         parameters: {
             query?: never;
@@ -4935,6 +5557,77 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/playlists/{id}/tracks/{position}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve a federated playlist track for playback
+         * @description Resolves an unresolved federated-playlist entry (checks the local catalog first, then the on-demand providers if enabled). 404 if it can't be resolved.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Playlist id */
+                    id: string;
+                    /** @description Track position (0-based) */
+                    position: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.songView"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/podcasts": {
         parameters: {
             query?: never;
@@ -5523,7 +6216,7 @@ export interface paths {
         put?: never;
         /**
          * Create the first administrator
-         * @description Unauthenticated, one-shot. Creates the initial admin — the only way to bootstrap an account (no config/env provisioning). Self-locks once any user exists.
+         * @description Unauthenticated, one-shot. Creates the initial admin. Self-locks once any user exists (also true when the admin was instead bootstrapped from ADMIN_USERNAME/ADMIN_PASSWORD at startup).
          */
         post: {
             parameters: {
@@ -7064,6 +7757,18 @@ export interface components {
             name?: string;
             userAgent?: string;
         };
+        "immerle.FederationInstancesDTO": {
+            instances?: components["schemas"]["immerle.InstanceSummaryDTO"][];
+        };
+        "immerle.FederationSubscriptionsDTO": {
+            subscriptions?: components["schemas"]["immerle.InstanceSummaryDTO"][];
+        };
+        "immerle.FederationUpdateDTO": {
+            /** @example My living-room immerle */
+            name?: string;
+            /** @example my-node */
+            sqid?: string;
+        };
         "immerle.FriendDTO": {
             /** @example Bob Marley */
             displayName?: string;
@@ -7122,6 +7827,17 @@ export interface components {
             /** @example spotify */
             name?: string;
         };
+        "immerle.InstanceSummaryDTO": {
+            /** @example 3f1c2d4e-5a6b-7c8d-9e0f-1a2b3c4d5e6f */
+            id?: string;
+            lastSeenAt?: string;
+            /** @example A friend's immerle */
+            name?: string;
+            /** @example eu */
+            region?: string;
+            /** @example other-node */
+            sqid?: string;
+        };
         "immerle.JamDTO": {
             participants?: components["schemas"]["immerle.JamParticipantDTO"][];
             session?: components["schemas"]["immerle.JamSessionDTO"];
@@ -7164,6 +7880,10 @@ export interface components {
             device?: components["schemas"]["immerle.DeviceDTO"];
             /** @example eyJhbGciOiJIUzI1Ni... */
             token?: string;
+        };
+        "immerle.OkResponse": {
+            /** @example true */
+            ok?: boolean;
         };
         "immerle.PendingFriendDTO": {
             /** @example Alice Coltrane */
@@ -7270,18 +7990,22 @@ export interface components {
             };
             federation?: {
                 exportScrobbles?: boolean;
-                /** @example 6f1c2b8e-1f0a-4f9b-9c3a-1e2d3c4b5a6f */
-                userId?: string;
-                /** @description hub-assigned fixed UUID (read-only)
-                 * @example 3f1c2d4e-5a6b-7c8d-9e0f-1a2b3c4d5e6f */
+                /**
+                 * @description InstanceID is the hub-assigned fixed UUID (read-only). Sqid is the
+                 *     editable handle. PrivateKey is never returned (redacted server-side).
+                 * @example 3f1c2d4e-5a6b-7c8d-9e0f-1a2b3c4d5e6f
+                 */
                 instanceId?: string;
-                /** @description editable unique hub handle
-                 * @example my-node */
-                sqid?: string;
                 /** @example My living-room immerle */
                 instanceName?: string;
+                /** @example my-node */
+                sqid?: string;
                 syncPlaylists?: boolean;
-                resolveMissing?: boolean;
+                /**
+                 * @description Federation is active whenever linked (instanceId set); no enable flag.
+                 * @example 6f1c2b8e-1f0a-4f9b-9c3a-1e2d3c4b5a6f
+                 */
+                userId?: string;
             };
             ldap?: {
                 /** @example uid=%s,ou=people,dc=example,dc=com */
@@ -7395,6 +8119,12 @@ export interface components {
             order?: string;
             /** @example playCount */
             sort?: string;
+        };
+        "immerle.SubscribeRequestDTO": {
+            /** @example 3f1c2d4e-5a6b-7c8d-9e0f-1a2b3c4d5e6f */
+            instanceId?: string;
+            /** @example other-node */
+            sqid?: string;
         };
         "immerle.ThemeDTO": {
             /** @example #3b82f6 */
@@ -7649,11 +8379,23 @@ export interface components {
             coverArts?: string[];
             createdAt?: string;
             duration?: number;
+            /**
+             * @description Federated marks a read-only playlist synced from the hub: its `owner` is
+             *     only an internal attribution, never real ownership — clients must not
+             *     offer edit/delete/cover controls for it, only subscribe/unsubscribe.
+             */
+            federated?: boolean;
             id?: string;
             name?: string;
             owner?: string;
             public?: boolean;
             songCount?: number;
+            /**
+             * @description Subscribed reports whether the caller has favorited this playlist (see
+             *     PUT/DELETE .../subscription). Only computed on the single-playlist
+             *     resource (handleGetPlaylist) — false elsewhere.
+             */
+            subscribed?: boolean;
             tracks?: components["schemas"]["immerle.songView"][];
         };
         "immerle.podcastCreateRequest": {
@@ -7748,6 +8490,12 @@ export interface components {
             title?: string;
             titleSort?: string;
             track?: number;
+            /**
+             * @description Unresolved marks a federated-playlist entry not yet matched to a local
+             *     track: id is empty and only title/artist/album are populated. Resolve it
+             *     via POST /playlists/{id}/tracks/{position}/resolve before playing.
+             */
+            unresolved?: boolean;
             work?: string;
             year?: number;
         };

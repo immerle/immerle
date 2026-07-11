@@ -355,6 +355,20 @@ export class ImmerleClient {
   }
 
   /**
+   * Resolves an unresolved federated-playlist track (see `Song.unresolved`) to
+   * a playable one: local catalog first, then the on-demand providers. Call
+   * this before playing such a track, then play the returned song like any
+   * other. Throws (404) if it can't be resolved.
+   */
+  async resolvePlaylistTrack(playlistId: string, position: number): Promise<Song> {
+    const { data, error } = await this.api.POST('/playlists/{id}/tracks/{position}/resolve', {
+      params: { path: { id: playlistId, position } },
+    });
+    if (error) throw apiErr(error, 'playlist.resolveTrack');
+    return toSong(data);
+  }
+
+  /**
    * Per-user state (favorites, plays, play queue, now-playing) over the native
    * REST API — drop-in replacements for the Subsonic methods.
    */

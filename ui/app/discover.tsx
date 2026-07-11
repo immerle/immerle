@@ -1,5 +1,5 @@
-import { Text, View } from 'react-native';
-import { Stack } from 'expo-router';
+import { Pressable, Text, View } from 'react-native';
+import { Stack, router } from 'expo-router';
 import { FlashList } from '@shopify/flash-list';
 import { usePublicPlaylists, useSubscriptionMutations } from '../src/query/playlists';
 import { useAuth } from '../src/auth/store';
@@ -57,7 +57,10 @@ export default function Discover() {
             renderItem={({ item }) => {
               const subscribed = !!item.subscribed;
               return (
-                <View className="flex-row items-center gap-3 px-4 py-2">
+                <Pressable
+                  onPress={() => item.id && router.push(`/playlist/${item.id}`)}
+                  className="flex-row items-center gap-3 px-4 py-2 active:bg-surface-alt"
+                >
                   <PlaylistCover coverArt={item.coverArt} covers={item.coverArts ?? []} size={52} rounded="rounded-lg" fallbackIcon="list" />
                   <View className="flex-1">
                     <Text numberOfLines={1} className="text-base font-semibold text-foreground">
@@ -84,7 +87,7 @@ export default function Discover() {
                       onPress={() => item.id && subscribe.mutate(item.id)}
                     />
                   )}
-                </View>
+                </Pressable>
               );
             }}
             contentContainerStyle={{ paddingBottom: 16 }}

@@ -219,7 +219,6 @@ type FederationRuntime struct {
 	// SyncPlaylists opts this instance's public playlists into being pushed to the
 	// hub (off by default). Hot-reloadable.
 	SyncPlaylists   bool `json:"syncPlaylists"`
-	ResolveMissing  bool `json:"resolveMissing"`
 	ExportScrobbles bool `json:"exportScrobbles"`
 }
 
@@ -429,6 +428,10 @@ type Track struct {
 	// Remote marks a track that is not yet downloaded but available via a provider.
 	Remote   bool   `json:"-"`
 	Provider string `json:"-"`
+	// Unresolved marks a federated-playlist entry not yet matched to a local
+	// track (or whose match was later removed from the library): ID is empty,
+	// only the portable Title/ArtistName/AlbumName/MBID are populated.
+	Unresolved bool `json:"-"`
 	// UploadedBy is the id of the user who uploaded this track ("local" library);
 	// empty for scanned or provider-sourced tracks.
 	UploadedBy string    `json:"-"`
@@ -478,8 +481,14 @@ type Playlist struct {
 	Collaborative bool `json:"collaborative"`
 	// Federated marks a read-only playlist synced from the hub.
 	Federated bool `json:"federated"`
-	SongCount int  `json:"songCount"`
-	Duration  int  `json:"duration"`
+	// SourceInstanceID/SourceExternalID identify a federated playlist's origin on
+	// the hub (empty instance id = the hub's own editorial/recommendation
+	// catalog). Together they're the dedupe key, so same-named playlists from
+	// different instances materialize as distinct local playlists.
+	SourceInstanceID string `json:"-"`
+	SourceExternalID string `json:"-"`
+	SongCount        int    `json:"songCount"`
+	Duration         int    `json:"duration"`
 	// CoverArt is the owner-chosen custom cover (uploaded or generated), served
 	// like any other cover id. Empty falls back to the track mosaic below.
 	CoverArt string `json:"coverArt,omitempty"`

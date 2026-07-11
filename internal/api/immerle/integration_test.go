@@ -32,13 +32,14 @@ func newEnv(t *testing.T) (*httptest.Server, *persistence.Store) {
 		}
 	}
 	h := NewHandler(Deps{
-		Auth:      auth,
-		Users:     store.Users,
-		Friends:   store.Friends,
-		Activity:  core.NewActivityService(store.Activity, store.Friends, store.Users),
-		Playlists: store.Playlists,
-		Jam:       core.NewJamService(store.Jam),
-		Logger:    testutil.NewLogger(),
+		Auth:        auth,
+		Users:       store.Users,
+		Friends:     store.Friends,
+		Activity:    core.NewActivityService(store.Activity, store.Friends, store.Users),
+		Playlists:   store.Playlists,
+		Annotations: store.Annotations,
+		Jam:         core.NewJamService(store.Jam),
+		Logger:      testutil.NewLogger(),
 	})
 	mux := chi.NewRouter()
 	h.Register(mux)

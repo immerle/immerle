@@ -84,6 +84,9 @@ export interface Song {
   isVideo?: boolean;
   starred?: string;
   discNumber?: number;
+  /** A federated-playlist entry not yet matched to a playable track (name-only;
+   * resolve via playlists.resolveTrack before playing). */
+  unresolved?: boolean;
 }
 
 export interface Genre {
@@ -113,6 +116,13 @@ export interface Playlist {
   coverArt?: string;
   /** Cover-art ids of the first up to 4 tracks, for a mosaic thumbnail. */
   coverArts?: string[];
+  /** Read-only playlist synced from the hub: `owner` is only an internal
+   * attribution, never real ownership — never show edit/delete/cover
+   * controls for it, only subscribe/unsubscribe. */
+  federated?: boolean;
+  /** Whether the caller has favorited this playlist. Only populated by
+   * getPlaylist (the single-playlist resource) — absent from playlist lists. */
+  subscribed?: boolean;
 }
 
 export interface PlaylistWithSongs extends Playlist {

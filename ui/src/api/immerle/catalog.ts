@@ -48,6 +48,7 @@ export function toSong(v: SongView): Song {
     contentType: v.contentType,
     size: v.size,
     starred: v.starred,
+    unresolved: v.unresolved,
   };
 }
 
@@ -124,6 +125,8 @@ export function toPlaylist(v: PlaylistView): Playlist {
     changed: v.changedAt,
     coverArt: v.coverArt,
     coverArts: v.coverArts,
+    federated: v.federated,
+    subscribed: v.subscribed,
   };
 }
 

@@ -796,9 +796,6 @@
                                 "example": "My living-room immerle",
                                 "type": "string"
                             },
-                            "resolveMissing": {
-                                "type": "boolean"
-                            },
                             "sqid": {
                                 "example": "my-node",
                                 "type": "string"
@@ -1805,6 +1802,10 @@
                     "duration": {
                         "type": "integer"
                     },
+                    "federated": {
+                        "description": "Federated marks a read-only playlist synced from the hub: its `owner` is\nonly an internal attribution, never real ownership — clients must not\noffer edit/delete/cover controls for it, only subscribe/unsubscribe.",
+                        "type": "boolean"
+                    },
                     "id": {
                         "type": "string"
                     },
@@ -1819,6 +1820,10 @@
                     },
                     "songCount": {
                         "type": "integer"
+                    },
+                    "subscribed": {
+                        "description": "Subscribed reports whether the caller has favorited this playlist (see\nPUT/DELETE .../subscription). Only computed on the single-playlist\nresource (handleGetPlaylist) — false elsewhere.",
+                        "type": "boolean"
                     },
                     "tracks": {
                         "items": {
@@ -2102,6 +2107,10 @@
                     },
                     "track": {
                         "type": "integer"
+                    },
+                    "unresolved": {
+                        "description": "Unresolved marks a federated-playlist entry not yet matched to a local\ntrack: id is empty and only title/artist/album are populated. Resolve it\nvia POST /playlists/{id}/tracks/{position}/resolve before playing.",
+                        "type": "boolean"
                     },
                     "work": {
                         "type": "string"
@@ -8118,6 +8127,82 @@
                     }
                 ],
                 "summary": "Replace playlist tracks",
+                "tags": [
+                    "playlists"
+                ]
+            }
+        },
+        "/playlists/{id}/tracks/{position}/resolve": {
+            "post": {
+                "description": "Resolves an unresolved federated-playlist entry (checks the local catalog first, then the on-demand providers if enabled). 404 if it can't be resolved.",
+                "parameters": [
+                    {
+                        "description": "Playlist id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Track position (0-based)",
+                        "in": "path",
+                        "name": "position",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.songView"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Resolve a federated playlist track for playback",
                 "tags": [
                     "playlists"
                 ]

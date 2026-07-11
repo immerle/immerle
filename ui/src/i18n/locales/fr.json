@@ -503,7 +503,6 @@
       "saved": "Instance mise à jour sur le hub.",
       "features": "Fonctionnalités",
       "syncPlaylists": "Synchroniser les playlists publiques vers le hub",
-      "resolveMissing": "Résoudre les titres manquants",
       "exportScrobbles": "Partager les écoutes (scrobbles)",
       "discoverTitle": "Découvrir des instances",
       "discoverSearch": "Rechercher",
@@ -667,6 +666,8 @@
     },
     "playlist": {
       "notFound": "Playlist introuvable.",
+      "resolveErrorTitle": "Morceau indisponible",
+      "resolveErrorMessage": "Ce morceau est introuvable localement ou via un fournisseur.",
       "unsubscribeTitle": "Se désabonner ?",
       "unsubscribeMessage": "« {{name}} » sera retirée de votre bibliothèque.",
       "unsubscribeConfirm": "Se désabonner",
@@ -679,6 +680,7 @@
       "subscriptionBadge": "Abonnement",
       "publicBadge": "Publique",
       "edit": "Modifier",
+      "subscribe": "S'abonner",
       "unsubscribe": "Se désabonner",
       "play": "Lecture de la playlist",
       "publicToggle": "Playlist publique",
@@ -729,7 +731,8 @@
       "previous": "Précédent",
       "next": "Suivant",
       "shuffle": "Lecture aléatoire",
-      "lyrics": "Paroles"
+      "lyrics": "Paroles",
+      "unresolvedSkipped": "« {{title}} » ignoré — pas encore résolu, appuyez dessus depuis la playlist pour le charger"
     },
     "local": {
       "title": "Musiques locales",

@@ -42,13 +42,14 @@ export default function PlaylistDetail() {
   const del = useDeletePlaylist();
   const playSongs = usePlayer((s) => s.playSongs);
 
+  const client = useAuth((s) => s.client);
   const username = useAuth((s) => s.client?.username);
   const canCollaborate = useAuth((s) => s.client?.has('collaborativePlaylists') ?? false);
   const canPublic = useAuth((s) => s.client?.has('publicPlaylists') ?? false);
   const addCollaborator = useAddCollaborator();
   const setPublic = useSetPlaylistPublic();
   const setCover = useSetPlaylistCover();
-  const { unsubscribe } = useSubscriptionMutations();
+  const { subscribe, unsubscribe } = useSubscriptionMutations();
 
   const [coverOpen, setCoverOpen] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -73,12 +74,31 @@ export default function PlaylistDetail() {
   const songs = playlist.entry ?? [];
   const totalDuration = songs.reduce((n, s) => n + (s.duration ?? 0), 0);
   // Subsonic omits `owner` for one's own playlists on some servers; treat a
-  // missing owner as owned. A non-owner here is a subscriber → read-only.
-  const isOwner = playlist.owner ? playlist.owner === username : true;
+  // missing owner as owned. A non-owner here is a subscriber → read-only. A
+  // federated playlist is never "owned" — its owner field is just an internal
+  // attribution the server had to pick — so it's always read-only/subscribable,
+  // even for the account that field happens to name.
+  const isOwner = !playlist.federated && (playlist.owner ? playlist.owner === username : true);
 
   const togglePublic = (next: boolean) => {
     setIsPublic(next);
     setPublic.mutate({ id, isPublic: next }, { onError: () => setIsPublic(!next) });
+  };
+
+  // A federated-playlist track with no local match yet: resolve it now (local
+  // catalog, then providers) and play the result in place, keeping the rest of
+  // the queue intact.
+  // ponytail: only covers tapping a row or "play all" from track 0 — skipping
+  // to a later unresolved track mid-queue during playback still won't
+  // resolve; add if that turns out to matter in practice.
+  const playUnresolved = async (_song: Song, index: number) => {
+    if (!client) return;
+    try {
+      const resolved = await client.resolvePlaylistTrack(id, index);
+      playSongs([...songs.slice(0, index), resolved, ...songs.slice(index + 1)], index);
+    } catch {
+      Alert.alert(t('media.playlist.resolveErrorTitle'), t('media.playlist.resolveErrorMessage'));
+    }
   };
 
   const pickPhoto = async () => {
@@ -163,19 +183,36 @@ export default function PlaylistDetail() {
         {t('media.playlist.trackCount', { count: songs.length })} · {formatDuration(totalDuration)}
       </Text>
       <View className="flex-row gap-2">
-        {!isOwner ? <Badge label={t('media.playlist.subscriptionBadge')} /> : null}
+        {!isOwner && playlist.subscribed ? <Badge label={t('media.playlist.subscriptionBadge')} /> : null}
         {playlist.public ? <Badge label={t('media.playlist.publicBadge')} tone="primary" /> : null}
       </View>
       {!editing ? (
         <View className="w-full flex-row items-center justify-between pt-1">
           {isOwner ? (
             <IconButton name="create-outline" size={24} color={colors.muted} onPress={() => setEditing(true)} accessibilityLabel={t('media.playlist.edit')} />
-          ) : (
+          ) : playlist.subscribed ? (
             <IconButton name="heart-dislike-outline" size={24} color={colors.danger} onPress={confirmUnsubscribe} accessibilityLabel={t('media.playlist.unsubscribe')} />
+          ) : (
+            <IconButton
+              name="heart-outline"
+              size={24}
+              color={colors.primary}
+              disabled={subscribe.isPending}
+              onPress={() => subscribe.mutate(id)}
+              accessibilityLabel={t('media.playlist.subscribe')}
+            />
           )}
           <View className="flex-row items-center gap-4">
             <DownloadButton songs={songs} size={24} />
-            <PlayButton onPress={() => songs.length && playSongs(songs, 0)} size={56} accessibilityLabel={t('media.playlist.play')} />
+            <PlayButton
+              onPress={() => {
+                if (!songs.length) return;
+                if (songs[0].unresolved) void playUnresolved(songs[0], 0);
+                else playSongs(songs, 0);
+              }}
+              size={56}
+              accessibilityLabel={t('media.playlist.play')}
+            />
           </View>
         </View>
       ) : (
@@ -256,7 +293,13 @@ export default function PlaylistDetail() {
             contentContainerStyle={{ paddingBottom: 24 }}
           />
         ) : (
-          <TrackList songs={songs} header={Header} refreshing={q.isRefetching} onRefresh={q.refetch} />
+          <TrackList
+            songs={songs}
+            header={Header}
+            refreshing={q.isRefetching}
+            onRefresh={q.refetch}
+            onPlayUnresolved={playUnresolved}
+          />
         )}
       </View>
 

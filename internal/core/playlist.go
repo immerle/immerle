@@ -161,14 +161,16 @@ func (s *PlaylistService) Update(ctx context.Context, user models.User, id strin
 	return nil
 }
 
-// Delete removes a playlist owned by the user (or by an admin). A non-owner is
-// unsubscribed from it instead; if they were not subscribed, ErrForbidden.
+// Delete removes a playlist owned by the user (or by an admin). A non-owner —
+// or anyone, for a federated playlist, whose nominal owner is just an internal
+// attribution and never grants real ownership — is unsubscribed from it
+// instead; if they were not subscribed, ErrForbidden.
 func (s *PlaylistService) Delete(ctx context.Context, user models.User, id string) error {
 	p, err := s.playlists.Get(ctx, id)
 	if err != nil {
 		return err
 	}
-	if p.OwnerID != user.ID && !user.IsAdmin {
+	if p.Federated || (p.OwnerID != user.ID && !user.IsAdmin) {
 		if ok, _ := s.playlists.Unsubscribe(ctx, id, user.ID); ok {
 			return nil
 		}
@@ -182,13 +184,14 @@ func (s *PlaylistService) Delete(ctx context.Context, user models.User, id strin
 }
 
 // CoverTarget returns the playlist if the user may change its cover (owner or
-// admin only — collaborators cannot), for use before writing the cover file.
+// admin only — collaborators cannot; never for a federated playlist, read-only
+// regardless of who its nominal owner is), for use before writing the cover file.
 func (s *PlaylistService) CoverTarget(ctx context.Context, user models.User, id string) (models.Playlist, error) {
 	p, err := s.playlists.Get(ctx, id)
 	if err != nil {
 		return models.Playlist{}, err
 	}
-	if p.OwnerID != user.ID && !user.IsAdmin {
+	if p.Federated || (p.OwnerID != user.ID && !user.IsAdmin) {
 		return models.Playlist{}, ErrForbidden
 	}
 	return p, nil
