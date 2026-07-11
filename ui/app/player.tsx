@@ -99,7 +99,7 @@ export default function Player() {
 
         <View className="pt-6">
           <Slider
-            style={{ opacity: song.remote ? 0.4 : 1 }}
+            style={{ opacity: song.remote ? 0.7 : 1 }}
             minimumValue={0}
             maximumValue={duration > 0 ? duration : 1}
             value={shownPosition}
