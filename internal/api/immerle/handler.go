@@ -107,6 +107,9 @@ type FederationStatusProvider interface {
 	Subscriptions(ctx context.Context) ([]federation.InstanceSummary, error)
 	Subscribe(ctx context.Context, instanceID, sqid string) error
 	Unsubscribe(ctx context.Context, instanceID string) error
+	// ResolvePlaylistTrack resolves one federated-playlist entry to a playable
+	// track, lazily, at the moment the caller wants to play it.
+	ResolvePlaylistTrack(ctx context.Context, playlistID string, position int) (models.Track, error)
 }
 
 // CleanupController runs an immediate eviction sweep. The enabled/retention
@@ -298,6 +301,7 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Patch("/playlists/{id}", h.handleUpdatePlaylist)
 			r.Delete("/playlists/{id}", h.handleDeletePlaylist)
 			r.Put("/playlists/{id}/tracks", h.handleReplacePlaylistTracks)
+			r.Post("/playlists/{id}/tracks/{position}/resolve", h.handleResolvePlaylistTrack)
 			r.Put("/playlists/{id}/cover", h.handlePlaylistCover)
 			r.Post("/playlists/{id}/cover/generate", h.handlePlaylistCoverGenerate)
 

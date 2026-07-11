@@ -94,17 +94,22 @@ export function usePublicPlaylists() {
 export function useSubscriptionMutations() {
   const client = useAuth((s) => s.client);
   const qc = useQueryClient();
-  const invalidate = () => {
+  // Also invalidate the single-playlist query (qk.playlist(id) — a distinct
+  // root from qk.playlists, so it doesn't get swept by the list invalidation
+  // below): the detail screen's `subscribed` flag must refresh right after
+  // subscribing/unsubscribing from there, not just the list/discover views.
+  const invalidate = (id: string) => {
     qc.invalidateQueries({ queryKey: qk.publicPlaylists });
     qc.invalidateQueries({ queryKey: qk.playlists });
+    qc.invalidateQueries({ queryKey: qk.playlist(id) });
   };
   const subscribe = useMutation({
     mutationFn: (id: string) => client!.subscribePlaylist(id),
-    onSuccess: invalidate,
+    onSuccess: (_data, id) => invalidate(id),
   });
   const unsubscribe = useMutation({
     mutationFn: (id: string) => client!.unsubscribePlaylist(id),
-    onSuccess: invalidate,
+    onSuccess: (_data, id) => invalidate(id),
   });
   return { subscribe, unsubscribe };
 }

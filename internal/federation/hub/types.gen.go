@@ -207,6 +207,12 @@ type HttpxRevokedResponse struct {
 	Revoked *bool `json:"revoked,omitempty"`
 }
 
+// PublicAuthorDTO defines model for public.AuthorDTO.
+type PublicAuthorDTO struct {
+	Id   *string `json:"id,omitempty"`
+	Name *string `json:"name,omitempty"`
+}
+
 // PublicBootstrapRequest defines model for public.BootstrapRequest.
 type PublicBootstrapRequest struct {
 	Name        *string `json:"name,omitempty"`
@@ -281,6 +287,27 @@ type PublicDistributionTrack struct {
 	Title  *string `json:"title,omitempty"`
 }
 
+// PublicFeedPlaylistDTO defines model for public.FeedPlaylistDTO.
+type PublicFeedPlaylistDTO struct {
+	Author      *PublicAuthorDTO `json:"author,omitempty"`
+	CreatedAt   *string          `json:"createdAt,omitempty"`
+	Description *string          `json:"description,omitempty"`
+	ExternalId  *string          `json:"externalId,omitempty"`
+	Id          *string          `json:"id,omitempty"`
+	Image       *string          `json:"image,omitempty"`
+	Name        *string          `json:"name,omitempty"`
+	TrackCount  *int             `json:"trackCount,omitempty"`
+	UpdatedAt   *string          `json:"updatedAt,omitempty"`
+}
+
+// PublicFeedResponse defines model for public.FeedResponse.
+type PublicFeedResponse struct {
+	HasMore          *bool                    `json:"hasMore,omitempty"`
+	NextUpdatedAfter *string                  `json:"nextUpdatedAfter,omitempty"`
+	Ok               *bool                    `json:"ok,omitempty"`
+	Playlists        *[]PublicFeedPlaylistDTO `json:"playlists,omitempty"`
+}
+
 // PublicIngestResultResponse defines model for public.IngestResultResponse.
 type PublicIngestResultResponse struct {
 	Accepted *int  `json:"accepted,omitempty"`
@@ -290,6 +317,7 @@ type PublicIngestResultResponse struct {
 
 // PublicInstancePlaylistDTO defines model for public.InstancePlaylistDTO.
 type PublicInstancePlaylistDTO struct {
+	Author      *PublicAuthorDTO        `json:"author,omitempty"`
 	CreatedAt   *string                 `json:"createdAt,omitempty"`
 	Description *string                 `json:"description,omitempty"`
 	ExternalId  *string                 `json:"externalId,omitempty"`
@@ -310,8 +338,10 @@ type PublicInstancePlaylistResponse struct {
 
 // PublicInstancePlaylistsResponse defines model for public.InstancePlaylistsResponse.
 type PublicInstancePlaylistsResponse struct {
-	Ok        *bool                        `json:"ok,omitempty"`
-	Playlists *[]PublicInstancePlaylistDTO `json:"playlists,omitempty"`
+	HasMore          *bool                        `json:"hasMore,omitempty"`
+	NextUpdatedAfter *string                      `json:"nextUpdatedAfter,omitempty"`
+	Ok               *bool                        `json:"ok,omitempty"`
+	Playlists        *[]PublicInstancePlaylistDTO `json:"playlists,omitempty"`
 }
 
 // PublicInstanceProfile defines model for public.InstanceProfile.
@@ -563,6 +593,24 @@ type PatchApiV1InstancesMeJSONBody struct {
 
 // PatchApiV1InstancesMeJSONBody0 defines parameters for PatchApiV1InstancesMe.
 type PatchApiV1InstancesMeJSONBody0 = map[string]interface{}
+
+// GetApiV1InstancesMeFeedPlaylistsParams defines parameters for GetApiV1InstancesMeFeedPlaylists.
+type GetApiV1InstancesMeFeedPlaylistsParams struct {
+	// UpdatedAfter Only playlists updated after this RFC3339 timestamp (exclusive)
+	UpdatedAfter *string `form:"updatedAfter,omitempty" json:"updatedAfter,omitempty"`
+
+	// Limit Page size (1-50, default 50)
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// GetApiV1InstancesMePlaylistsParams defines parameters for GetApiV1InstancesMePlaylists.
+type GetApiV1InstancesMePlaylistsParams struct {
+	// UpdatedAfter Only playlists updated after this RFC3339 timestamp (exclusive)
+	UpdatedAfter *string `form:"updatedAfter,omitempty" json:"updatedAfter,omitempty"`
+
+	// Limit Page size (1-50, default 50)
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+}
 
 // PutApiV1InstancesMePlaylistsExternalIdJSONBody defines parameters for PutApiV1InstancesMePlaylistsExternalId.
 type PutApiV1InstancesMePlaylistsExternalIdJSONBody struct {

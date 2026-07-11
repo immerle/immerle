@@ -24,6 +24,7 @@ type PlaylistRepo struct{ *base }
 // stays hand-written.
 const playlistSelect = `
 	SELECT p.id, p.name, p.owner_id, u.username, p.comment, p.public, p.collaborative, p.federated,
+	       p.source_instance_id, p.source_external_id,
 	       p.cover_art, p.created_at, p.updated_at,
 	       (SELECT COUNT(*) FROM playlist_tracks pt WHERE pt.playlist_id = p.id) AS song_count,
 	       (SELECT COALESCE(SUM(t.duration),0) FROM playlist_tracks pt JOIN tracks t ON t.id = pt.track_id WHERE pt.playlist_id = p.id) AS duration
@@ -34,6 +35,7 @@ func scanPlaylist(s rowScanner) (models.Playlist, error) {
 	var public, collab, fed int
 	var created, updated int64
 	if err := s.Scan(&p.ID, &p.Name, &p.OwnerID, &p.OwnerName, &p.Comment, &public, &collab, &fed,
+		&p.SourceInstanceID, &p.SourceExternalID,
 		&p.CoverArt, &created, &updated, &p.SongCount, &p.Duration); err != nil {
 		return p, err
 	}
@@ -50,6 +52,7 @@ func (r *PlaylistRepo) Create(ctx context.Context, p models.Playlist) error {
 	_, err := r.bexec(ctx, r.mel.NewInsert("playlists").
 		Set("id", p.ID).Set("name", p.Name).Set("owner_id", p.OwnerID).Set("comment", p.Comment).
 		Set("public", db.Bool(p.Public)).Set("collaborative", db.Bool(p.Collaborative)).Set("federated", db.Bool(p.Federated)).
+		Set("source_instance_id", p.SourceInstanceID).Set("source_external_id", p.SourceExternalID).
 		Set("created_at", db.Millis(p.CreatedAt)).Set("updated_at", db.Millis(p.UpdatedAt)))
 	return err
 }
@@ -154,15 +157,20 @@ func (r *PlaylistRepo) attachCoverArts(ctx context.Context, lists []models.Playl
 	return nil
 }
 
-// ListVisible returns the playlists that appear in a user's library: their own,
-// ones they collaborate on, ones they have subscribed to, and federated
-// (read-only, shown to everyone). Public playlists are NOT shown wholesale — a
-// user opts in by subscribing.
+// ListVisible returns the playlists that appear in a user's library: their
+// own, ones they collaborate on, and ones they have subscribed to (which
+// includes federated ones — they're just public playlists sourced from the
+// hub). A federated playlist's "owner" is only an internal attribution (the
+// nominal local admin the sync process had to pick for the row's owner_id FK)
+// — it never grants that admin real ownership, so federated rows are excluded
+// from the owner/collaborator clauses and only ever surface via subscription,
+// the same as for any other user. Public/federated playlists are otherwise NOT
+// shown wholesale — a user opts in by subscribing, from /playlists/public (see
+// ListPublic).
 func (r *PlaylistRepo) ListVisible(ctx context.Context, userID string) ([]models.Playlist, error) {
 	rows, err := r.query(ctx, playlistSelect+`
-		WHERE p.owner_id=?
-		   OR p.federated=1
-		   OR p.id IN (SELECT playlist_id FROM playlist_collaborators WHERE user_id=?)
+		WHERE (p.federated=0 AND p.owner_id=?)
+		   OR (p.federated=0 AND p.id IN (SELECT playlist_id FROM playlist_collaborators WHERE user_id=?))
 		   OR p.id IN (SELECT playlist_id FROM playlist_subscriptions WHERE user_id=?)
 		ORDER BY p.name`, userID, userID, userID)
 	if err != nil {
@@ -183,11 +191,15 @@ func (r *PlaylistRepo) ListVisible(ctx context.Context, userID string) ([]models
 	return out, r.attachCoverArts(ctx, out)
 }
 
-// ListPublic returns public, non-federated playlists not owned by the given user
-// (for discovery / subscribing).
+// ListPublic returns public playlists not owned by the given user, including
+// federated ones (the hub's editorial catalog and subscribed instances' public
+// playlists) — for discovery / subscribing. Federated rows are never excluded
+// by the owner_id<>? clause: their "owner" is only an internal attribution
+// (see ListVisible), so the nominal owner must still be able to discover and
+// subscribe to them like anyone else.
 func (r *PlaylistRepo) ListPublic(ctx context.Context, excludeUserID string) ([]models.Playlist, error) {
 	rows, err := r.query(ctx, playlistSelect+`
-		WHERE p.public=1 AND p.federated=0 AND p.owner_id<>? ORDER BY p.name`, excludeUserID)
+		WHERE p.public=1 AND (p.federated=1 OR p.owner_id<>?) ORDER BY p.name`, excludeUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -256,23 +268,142 @@ func (r *PlaylistRepo) IsSubscribed(ctx context.Context, playlistID, userID stri
 	return n > 0, err
 }
 
-// Tracks returns a playlist's tracks in order.
+// Tracks returns a playlist's tracks in order. A federated entry not yet
+// resolved to a local track (or whose local track was since removed, nulling
+// track_id via ON DELETE SET NULL) comes back as an unresolved stub carrying
+// its portable title/artist/album/mbid — see ResolveFederatedTrack.
 func (r *PlaylistRepo) Tracks(ctx context.Context, playlistID string) ([]models.Track, error) {
-	q := trackSelect + ` JOIN playlist_tracks pt ON pt.track_id = t.id WHERE pt.playlist_id=? ORDER BY pt.position`
-	rows, err := r.query(ctx, q, playlistID)
+	rows, err := r.query(ctx, `SELECT track_id, mbid, artist, title, album FROM playlist_tracks WHERE playlist_id=? ORDER BY position`, playlistID)
+	if err != nil {
+		return nil, err
+	}
+	type ref struct {
+		trackID                    sql.NullString
+		mbid, artist, title, album string
+	}
+	var refs []ref
+	for rows.Next() {
+		var e ref
+		if err := rows.Scan(&e.trackID, &e.mbid, &e.artist, &e.title, &e.album); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		refs = append(refs, e)
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return nil, err
+	}
+	rows.Close()
+
+	var ids []string
+	for _, e := range refs {
+		if e.trackID.Valid {
+			ids = append(ids, e.trackID.String)
+		}
+	}
+	byID, err := r.tracksByIDs(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]models.Track, 0, len(refs))
+	for _, e := range refs {
+		if e.trackID.Valid {
+			if t, ok := byID[e.trackID.String]; ok {
+				out = append(out, t)
+				continue
+			}
+		}
+		out = append(out, models.Track{
+			Title: e.title, ArtistName: e.artist, AlbumName: e.album, MBID: e.mbid,
+			Unresolved: true,
+		})
+	}
+	return out, nil
+}
+
+// tracksByIDs batch-fetches tracks by id, keyed by id (order not preserved —
+// callers re-order by looking each id up).
+func (r *PlaylistRepo) tracksByIDs(ctx context.Context, ids []string) (map[string]models.Track, error) {
+	out := map[string]models.Track{}
+	if len(ids) == 0 {
+		return out, nil
+	}
+	args := make([]any, len(ids))
+	for i, id := range ids {
+		args[i] = id
+	}
+	q := trackSelect + ` WHERE t.id IN (` + strings.TrimRight(strings.Repeat("?,", len(ids)), ",") + `)`
+	rows, err := r.query(ctx, q, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var out []models.Track
 	for rows.Next() {
 		t, err := scanTrack(rows)
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, t)
+		out[t.ID] = t
 	}
 	return out, rows.Err()
+}
+
+// FederatedTrackRef is one track inside a federated playlist as synced from
+// the hub: TrackID is set once resolved to a local track; until then, the
+// portable MBID/Artist/Title/Album identify it for lazy resolution at play
+// time (see PlaylistRepo.TrackRef / ResolveFederatedTrack).
+type FederatedTrackRef struct {
+	TrackID                    string
+	MBID, Artist, Title, Album string
+}
+
+// ReplaceFederatedTracks atomically sets a federated playlist's full ordered
+// track list, resolved and unresolved entries alike.
+func (r *PlaylistRepo) ReplaceFederatedTracks(ctx context.Context, playlistID string, entries []FederatedTrackRef) error {
+	return r.withTx(ctx, func(tx *sql.Tx) error {
+		if _, err := tx.ExecContext(ctx, r.rebind(`DELETE FROM playlist_tracks WHERE playlist_id=?`), playlistID); err != nil {
+			return err
+		}
+		now := db.Millis(time.Now())
+		for i, e := range entries {
+			var trackID any
+			if e.TrackID != "" {
+				trackID = e.TrackID
+			}
+			if _, err := tx.ExecContext(ctx, r.rebind(`INSERT INTO playlist_tracks (playlist_id, track_id, position, added_by, added_at, mbid, artist, title, album)
+				VALUES (?, ?, ?, '', ?, ?, ?, ?, ?)`), playlistID, trackID, i, now, e.MBID, e.Artist, e.Title, e.Album); err != nil {
+				return err
+			}
+		}
+		_, err := tx.ExecContext(ctx, r.rebind(`UPDATE playlists SET updated_at=? WHERE id=?`), now, playlistID)
+		return err
+	})
+}
+
+// TrackRef returns the raw (possibly unresolved) entry at a playlist position.
+func (r *PlaylistRepo) TrackRef(ctx context.Context, playlistID string, position int) (FederatedTrackRef, error) {
+	var e FederatedTrackRef
+	var trackID sql.NullString
+	err := r.queryRow(ctx, `SELECT track_id, mbid, artist, title, album FROM playlist_tracks WHERE playlist_id=? AND position=?`,
+		playlistID, position).Scan(&trackID, &e.MBID, &e.Artist, &e.Title, &e.Album)
+	if errors.Is(err, sql.ErrNoRows) {
+		return e, ErrNotFound
+	}
+	if err != nil {
+		return e, err
+	}
+	e.TrackID = trackID.String
+	return e, nil
+}
+
+// ResolveFederatedTrack records the local track a playlist position resolved
+// to, so future reads/plays skip resolution.
+func (r *PlaylistRepo) ResolveFederatedTrack(ctx context.Context, playlistID string, position int, trackID string) error {
+	_, err := r.bexec(ctx, r.mel.NewUpdate("playlist_tracks").Set("track_id", trackID).
+		Where("playlist_id", "=", playlistID).Where("position", "=", position))
+	return err
 }
 
 // ReplaceTracks atomically sets the full ordered track list of a playlist.
@@ -363,9 +494,12 @@ func (r *PlaylistRepo) AddCollaborator(ctx context.Context, playlistID, userID s
 	return err
 }
 
-// FindFederated returns the federated playlist with the given name, if any.
-func (r *PlaylistRepo) FindFederated(ctx context.Context, name string) (models.Playlist, error) {
-	row := r.queryRow(ctx, playlistSelect+` WHERE p.federated=1 AND p.name=?`, name)
+// FindFederated returns the federated playlist sourced from (instanceID,
+// externalID), if any — instanceID is "" for the hub's own editorial catalog.
+// This (not name) is the dedupe key, so same-named playlists from different
+// sources don't collapse into one.
+func (r *PlaylistRepo) FindFederated(ctx context.Context, instanceID, externalID string) (models.Playlist, error) {
+	row := r.queryRow(ctx, playlistSelect+` WHERE p.federated=1 AND p.source_instance_id=? AND p.source_external_id=?`, instanceID, externalID)
 	p, err := scanPlaylist(row)
 	if errors.Is(err, sql.ErrNoRows) {
 		return p, ErrNotFound

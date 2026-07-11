@@ -194,8 +194,8 @@ curl -X POST "http://host:4533/api/v1/admin/federation/subscriptions" -H 'Author
 curl -X DELETE "http://host:4533/api/v1/admin/federation/subscriptions/<id>" -H 'Authorization: Bearer <admin>'
 ```
 
-Toggle `syncPlaylists`/`resolveMissing`/`exportScrobbles` the same way as any
-other runtime setting, under `{"federation": {...}}` — all hot, no restart.
+Toggle `syncPlaylists`/`exportScrobbles` the same way as any other runtime
+setting, under `{"federation": {...}}` — all hot, no restart.
 
 ## UI theme
 

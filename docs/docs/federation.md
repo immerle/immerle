@@ -27,19 +27,20 @@ The hub's own address is fixed by Immerle and isn't something you configure
 
 ## What syncs
 
-Three independent things, each with its own switch in the admin settings:
+Two independent things, each with its own switch in the admin settings:
 
 - **Playlist sync** — your public, non-federated playlists are pushed to the
   hub, so they can appear on other linked instances. Identical cover art
   across instances isn't re-uploaded.
-- **Portable-id resolution** — a federated playlist can reference a track by
-  a portable identifier your instance doesn't have a local file for. With
-  this on, Immerle checks your library for that id and, if it's missing,
-  searches the on-demand providers and downloads it. With it off, such
-  tracks just aren't playable locally.
 - **Scrobble export** — your listening counts are aggregated per track, with
   identity and timestamps dropped, so the hub can build aggregate stats
   without ever seeing which instance or user played what.
+
+A federated playlist can reference a track by a portable identifier your
+instance doesn't have a local file for. Tapping it checks your library for
+that id and, if it's missing, searches your configured on-demand providers —
+no separate toggle. With no provider configured, such tracks just aren't
+playable locally.
 
 ## Discovering other instances
 

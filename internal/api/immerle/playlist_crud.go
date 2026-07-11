@@ -1,11 +1,13 @@
 package immerle
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/immerle/immerle/internal/core"
+	"github.com/immerle/immerle/internal/federation"
 	"github.com/immerle/immerle/internal/models"
 )
 
@@ -16,19 +18,27 @@ import (
 // playlistView is the REST representation of a playlist. Tracks is populated on
 // the single-playlist resource and on create/replace responses.
 type playlistView struct {
-	ID            string     `json:"id"`
-	Name          string     `json:"name"`
-	Comment       string     `json:"comment,omitempty"`
-	Owner         string     `json:"owner"`
-	Public        bool       `json:"public"`
-	Collaborative bool       `json:"collaborative"`
-	SongCount     int        `json:"songCount"`
-	Duration      int        `json:"duration"`
-	CoverArt      string     `json:"coverArt,omitempty"`
-	CoverArts     []string   `json:"coverArts,omitempty"`
-	CreatedAt     time.Time  `json:"createdAt"`
-	ChangedAt     time.Time  `json:"changedAt"`
-	Tracks        []songView `json:"tracks,omitempty"`
+	ID            string `json:"id"`
+	Name          string `json:"name"`
+	Comment       string `json:"comment,omitempty"`
+	Owner         string `json:"owner"`
+	Public        bool   `json:"public"`
+	Collaborative bool   `json:"collaborative"`
+	// Federated marks a read-only playlist synced from the hub: its `owner` is
+	// only an internal attribution, never real ownership — clients must not
+	// offer edit/delete/cover controls for it, only subscribe/unsubscribe.
+	Federated bool `json:"federated"`
+	// Subscribed reports whether the caller has favorited this playlist (see
+	// PUT/DELETE .../subscription). Only computed on the single-playlist
+	// resource (handleGetPlaylist) — false elsewhere.
+	Subscribed bool       `json:"subscribed"`
+	SongCount  int        `json:"songCount"`
+	Duration   int        `json:"duration"`
+	CoverArt   string     `json:"coverArt,omitempty"`
+	CoverArts  []string   `json:"coverArts,omitempty"`
+	CreatedAt  time.Time  `json:"createdAt"`
+	ChangedAt  time.Time  `json:"changedAt"`
+	Tracks     []songView `json:"tracks,omitempty"`
 }
 
 func toPlaylistView(p models.Playlist, tracks []songView) playlistView {
@@ -39,6 +49,7 @@ func toPlaylistView(p models.Playlist, tracks []songView) playlistView {
 		Owner:         p.OwnerName,
 		Public:        p.Public,
 		Collaborative: p.Collaborative,
+		Federated:     p.Federated,
 		SongCount:     p.SongCount,
 		Duration:      p.Duration,
 		CoverArt:      p.CoverArt,
@@ -89,12 +100,15 @@ func (h *Handler) handleListPlaylists(w http.ResponseWriter, r *http.Request) {
 // @Failure  404  {object}  errorResponse
 // @Router   /playlists/{id} [get]
 func (h *Handler) handleGetPlaylist(w http.ResponseWriter, r *http.Request) {
-	d, err := h.playlistSvc.Get(r.Context(), userFrom(r.Context()), pathParam(r, "id"))
+	user := userFrom(r.Context())
+	d, err := h.playlistSvc.Get(r.Context(), user, pathParam(r, "id"))
 	if err != nil {
 		writeServiceError(w, err)
 		return
 	}
-	writeResource(w, http.StatusOK, detailToView(d))
+	view := detailToView(d)
+	view.Subscribed, _ = h.Playlists.IsSubscribed(r.Context(), d.Playlist.ID, user.ID)
+	writeResource(w, http.StatusOK, view)
 }
 
 // playlistCreateRequest is the body for POST /playlists.
@@ -206,6 +220,51 @@ func (h *Handler) handleReplacePlaylistTracks(w http.ResponseWriter, r *http.Req
 		return
 	}
 	writeResource(w, http.StatusOK, detailToView(d))
+}
+
+// handleResolvePlaylistTrack resolves one federated-playlist entry (identified
+// by its position) to a playable track, lazily, at the moment the caller wants
+// to play it: a local catalog lookup first, then — if portable-id resolution
+// is enabled — a provider search. The result may be a remote (not-yet-
+// downloaded) track, streamed progressively like any other on-demand result.
+//
+// @Summary      Resolve a federated playlist track for playback
+// @Description  Resolves an unresolved federated-playlist entry (checks the local catalog first, then the on-demand providers if enabled). 404 if it can't be resolved.
+// @Tags         playlists
+// @Security     BearerAuth
+// @Produce      json
+// @Param        id        path  string  true  "Playlist id"
+// @Param        position  path  int     true  "Track position (0-based)"
+// @Success      200  {object}  songView
+// @Failure      401  {object}  errorResponse
+// @Failure      403  {object}  errorResponse
+// @Failure      404  {object}  errorResponse
+// @Router       /playlists/{id}/tracks/{position}/resolve [post]
+func (h *Handler) handleResolvePlaylistTrack(w http.ResponseWriter, r *http.Request) {
+	playlistID := pathParam(r, "id")
+	if _, err := h.playlistSvc.Get(r.Context(), userFrom(r.Context()), playlistID); err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	position, err := strconv.Atoi(pathParam(r, "position"))
+	if err != nil || position < 0 {
+		writeError(w, http.StatusBadRequest, "invalid_position", "invalid track position")
+		return
+	}
+	if h.Federation == nil {
+		writeError(w, http.StatusServiceUnavailable, "unavailable", "federation unavailable")
+		return
+	}
+	track, err := h.Federation.ResolvePlaylistTrack(r.Context(), playlistID, position)
+	if err != nil {
+		if errors.Is(err, federation.ErrUnresolvable) {
+			writeError(w, http.StatusNotFound, "unresolvable", "track could not be resolved")
+			return
+		}
+		writeServiceError(w, err)
+		return
+	}
+	writeResource(w, http.StatusOK, toSongView(track))
 }
 
 // handleDeletePlaylist deletes a playlist (owner/admin); a non-owner is

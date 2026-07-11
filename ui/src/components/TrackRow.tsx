@@ -32,12 +32,12 @@ export const TrackRow = memo(function TrackRow({
   onMore,
 }: TrackRowProps) {
   const colors = useColors();
-  const downloaded = useDownloads((s) => !!s.entries[song.id]);
+  const downloaded = useDownloads((s) => !song.unresolved && !!s.entries[song.id]);
   return (
     <Pressable
       onPress={onPress}
       onLongPress={onMore}
-      className="flex-row items-center gap-3 px-4 py-2 active:bg-surface-alt"
+      className={`flex-row items-center gap-3 px-4 py-2 active:bg-surface-alt ${song.unresolved ? 'opacity-50' : ''}`}
     >
       {showArtwork ? (
         <CoverArt coverArt={song.coverArt} size={48} rounded="rounded-md" />
@@ -59,8 +59,12 @@ export const TrackRow = memo(function TrackRow({
           {song.artist ?? 'Artiste inconnu'}
         </Text>
       </View>
-      {downloaded ? <Ionicon name="cloud-done" size={15} color={colors.muted} /> : null}
-      <Text className="text-xs text-muted">{formatDuration(song.duration)}</Text>
+      {song.unresolved ? (
+        <Ionicon name="help-circle-outline" size={15} color={colors.muted} />
+      ) : downloaded ? (
+        <Ionicon name="cloud-done" size={15} color={colors.muted} />
+      ) : null}
+      <Text className="text-xs text-muted">{song.unresolved ? '' : formatDuration(song.duration)}</Text>
       {onMore ? (
         <IconButton
           name="ellipsis-horizontal"

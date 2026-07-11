@@ -421,7 +421,7 @@ func (h *Handler) handleAddCollaborator(w http.ResponseWriter, r *http.Request) 
 		writeError(w, http.StatusNotFound, "not_found", "playlist not found")
 		return
 	}
-	if p.OwnerID != user.ID && !user.IsAdmin {
+	if p.Federated || (p.OwnerID != user.ID && !user.IsAdmin) {
 		writeError(w, http.StatusForbidden, "forbidden", "only the owner can add collaborators")
 		return
 	}

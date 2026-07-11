@@ -38,14 +38,16 @@ type CoverService struct {
 }
 
 // NewCoverService builds a CoverService. coversDir holds embedded art extracted
-// at scan time; resized variants are cached under coversDir/cache.
-func NewCoverService(catalog *persistence.CatalogRepo, coversDir string) *CoverService {
+// at scan time; resized variants are cached under coversDir/cache. extraHosts
+// (e.g. the federation hub's host, for covers on federated playlists) are
+// allowed in addition to the built-in provider hosts.
+func NewCoverService(catalog *persistence.CatalogRepo, coversDir string, extraHosts ...string) *CoverService {
 	return &CoverService{
 		catalog:    catalog,
 		coversDir:  coversDir,
 		cacheDir:   filepath.Join(coversDir, "cache"),
 		http:       &http.Client{Timeout: 20 * time.Second},
-		allowHosts: []string{"dzcdn.net"},
+		allowHosts: append([]string{"dzcdn.net"}, extraHosts...),
 	}
 }
 

@@ -121,7 +121,6 @@ type FederationConfig struct {
 	InstanceName    string
 	PrivateKey      string
 	SyncPlaylists   bool
-	ResolveMissing  bool
 	ExportScrobbles bool
 }
 

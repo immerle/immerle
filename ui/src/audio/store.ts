@@ -8,6 +8,8 @@ import { offlinePlayableUrl } from '../offline/store';
 import { AudioEngine, PlayableTrack, RepeatMode } from './types';
 import { createEngine } from './engine';
 import { DEFAULT_QUALITY_ID, presetById } from './quality';
+import { useToast } from '../stores/toast';
+import { t } from '../i18n';
 
 const QUALITY_KEY = 'immerle.quality.v1';
 const VOLUME_KEY = 'immerle.volume.v1';
@@ -34,6 +36,14 @@ function shuffled<T>(arr: T[]): T[] {
  * harmless.
  */
 async function songToTrack(client: ImmerleClient, song: Song, qualityId: string): Promise<PlayableTrack> {
+  // Unresolved (federated-playlist) entries have no playable id yet — resolve
+  // them via TrackList's tap flow first. Building the queue must not throw
+  // just because one entry, anywhere in the list, isn't resolved: return an
+  // empty-url placeholder instead (skipped over on landing — see the
+  // `trackChange` handler below).
+  if (song.unresolved || !song.id) {
+    return { id: '', url: '', title: song.title, artist: song.artist, album: song.album, duration: song.duration };
+  }
   const local = await offlinePlayableUrl(song.id);
   let url = local;
   if (!url) {
@@ -151,6 +161,16 @@ export const usePlayer = create<AudioState>((set, get) => ({
       set({ index, position: 0 });
       sendNowPlaying(get);
       scheduleSaveQueue(get);
+      // Landed on a federated-playlist track that hasn't been resolved yet
+      // (empty-url placeholder — see songToTrack): warn instead of silently
+      // sitting on dead air, and move on. ponytail: if the whole queue is
+      // unresolved this cascades toast-after-toast to the end (or forever,
+      // with repeat on) — fine for the size of federated playlists today.
+      const song = get().songs[index];
+      if (song?.unresolved) {
+        useToast.getState().warning(t('media.player.unresolvedSkipped', { title: song.title }));
+        void get().engine?.next();
+      }
     });
 
     await engine.setVolume(get().volume);

@@ -46,15 +46,28 @@ func TestPublicPlaylistSubscriptionFlow(t *testing.T) {
 		t.Fatalf("unexpected public entry: %+v", first)
 	}
 
+	// bob opens it directly (discover → playlist detail) before subscribing:
+	// viewable (it's public) and its `subscribed` flag must be false.
+	status, view := doMap(t, srv, http.MethodGet, "/playlists/"+pub.ID, bobToken, nil)
+	if status != http.StatusOK {
+		t.Fatalf("get playlist status %d", status)
+	}
+	if view["subscribed"] != false {
+		t.Fatalf("expected subscribed=false before subscribing, got %+v", view["subscribed"])
+	}
+
 	// bob subscribes.
 	if code := doStatus(t, srv, http.MethodPut, "/playlists/"+pub.ID+"/subscription", bobToken, nil); code != http.StatusNoContent {
 		t.Fatalf("subscribe failed: %d", code)
 	}
 
-	// Now it appears in bob's library (read-only).
+	// Now it appears in bob's library (read-only) and the detail view reflects it.
 	visible, _ = store.Playlists.ListVisible(ctx, bob.ID)
 	if !containsPlaylist(visible, pub.ID) {
 		t.Fatal("subscribed playlist should appear in bob's library")
+	}
+	if _, view = doMap(t, srv, http.MethodGet, "/playlists/"+pub.ID, bobToken, nil); view["subscribed"] != true {
+		t.Fatalf("expected subscribed=true after subscribing, got %+v", view["subscribed"])
 	}
 
 	// Subscribing to a private playlist is refused.
@@ -62,13 +75,48 @@ func TestPublicPlaylistSubscriptionFlow(t *testing.T) {
 		t.Fatalf("subscribing to a private playlist must be 403, got %d", code)
 	}
 
-	// Unsubscribe → removed from library.
+	// Unsubscribe → removed from library, detail view flips back.
 	if code := doStatus(t, srv, http.MethodDelete, "/playlists/"+pub.ID+"/subscription", bobToken, nil); code != http.StatusNoContent {
 		t.Fatalf("unsubscribe failed: %d", code)
 	}
 	visible, _ = store.Playlists.ListVisible(ctx, bob.ID)
 	if containsPlaylist(visible, pub.ID) {
 		t.Fatal("after unsubscribe the playlist must leave bob's library")
+	}
+	if _, view = doMap(t, srv, http.MethodGet, "/playlists/"+pub.ID, bobToken, nil); view["subscribed"] != false {
+		t.Fatalf("expected subscribed=false after unsubscribing, got %+v", view["subscribed"])
+	}
+}
+
+// TestFederatedPlaylistSubscribableByNominalOwner covers a real bug: a
+// federated playlist's owner_id is just an internal attribution (whichever
+// admin the sync process picked, to satisfy the FK) — it must not block that
+// same account from subscribing to it, the only way a federated playlist ever
+// joins anyone's library (see ListVisible).
+func TestFederatedPlaylistSubscribableByNominalOwner(t *testing.T) {
+	srv, store := newEnv(t)
+	ctx := context.Background()
+
+	alice, _ := store.Users.GetByUsername(ctx, "alice")
+	now := time.Now()
+	fed := models.Playlist{ID: uuid.NewString(), Name: "Hub Picks", OwnerID: alice.ID, Public: true, Federated: true, CreatedAt: now, UpdatedAt: now}
+	_ = store.Playlists.Create(ctx, fed)
+
+	aliceToken := login(t, srv, "alice")
+
+	// Not visible by default, even to its nominal owner.
+	visible, _ := store.Playlists.ListVisible(ctx, alice.ID)
+	if containsPlaylist(visible, fed.ID) {
+		t.Fatal("a federated playlist must not appear via owner_id alone")
+	}
+
+	// But it must be subscribable by that same account.
+	if code := doStatus(t, srv, http.MethodPut, "/playlists/"+fed.ID+"/subscription", aliceToken, nil); code != http.StatusNoContent {
+		t.Fatalf("subscribing to one's own nominally-owned federated playlist: %d", code)
+	}
+	visible, _ = store.Playlists.ListVisible(ctx, alice.ID)
+	if !containsPlaylist(visible, fed.ID) {
+		t.Fatal("subscribed federated playlist should now appear in the library")
 	}
 }
 

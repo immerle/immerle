@@ -56,6 +56,10 @@ type songView struct {
 	Starred   *time.Time `json:"starred,omitempty"`
 	Rating    int        `json:"rating,omitempty"`
 	PlayCount int        `json:"playCount,omitempty"`
+	// Unresolved marks a federated-playlist entry not yet matched to a local
+	// track: id is empty and only title/artist/album are populated. Resolve it
+	// via POST /playlists/{id}/tracks/{position}/resolve before playing.
+	Unresolved bool `json:"unresolved,omitempty"`
 }
 
 // participantView mirrors models.Participant locally so the OpenAPI generator
@@ -81,7 +85,7 @@ func toSongView(t models.Track) songView {
 		ContentType: t.ContentType, Size: t.Size,
 		BPM: t.BPM, ReplayGainTrack: t.ReplayGainTrack, ReplayGainAlbum: t.ReplayGainAlbum,
 		TitleSort: t.TitleSort, Work: t.Work, MovementName: t.MovementName, MovementNo: t.MovementNo,
-		Lyrics: t.Lyrics, Participants: participants,
+		Lyrics: t.Lyrics, Participants: participants, Unresolved: t.Unresolved,
 	}
 }
 

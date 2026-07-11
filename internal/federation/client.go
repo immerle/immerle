@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -355,88 +356,204 @@ func (s *Service) syncOnce(ctx context.Context) {
 	}
 }
 
-// SyncPlaylists fetches editorial/recommended playlists and materializes them as
+// maxFeedPages bounds the subscription-feed pagination loop (at up to 50
+// playlists/page, ~5000 playlists) — a safety net against a misbehaving hub
+// looping forever, not an expected ceiling.
+const maxFeedPages = 100
+
+// SyncPlaylists fetches the hub's editorial/recommendation catalog and, for
+// each subscribed instance, its public playlist feed — materializing both as
 // read-only federated playlists, resolving each track to a local one.
 func (s *Service) SyncPlaylists(ctx context.Context) error {
 	if !s.HubConfigured() {
 		return nil
 	}
-	playlists, err := s.hub.ListPlaylists(ctx, s.auth(), "")
-	if err != nil {
-		return err
-	}
-
 	owner, err := s.federationOwner(ctx)
 	if err != nil {
 		return err
 	}
 
-	for _, hp := range playlists {
-		if err := s.materialize(ctx, owner, hp); err != nil {
-			s.logger.Warn("materialize federated playlist failed", "name", deref(hp.Name), "error", err)
+	dist, err := s.hub.ListPlaylists(ctx, s.auth(), "")
+	if err != nil {
+		return err
+	}
+	for _, hp := range dist {
+		if err := s.materializeDistribution(ctx, owner, hp); err != nil {
+			s.logger.Warn("materialize distribution playlist failed", "name", deref(hp.Name), "error", err)
 		}
+	}
+
+	if err := s.syncFeed(ctx, owner); err != nil {
+		s.logger.Warn("playlist feed sync failed", "error", err)
 	}
 	return nil
 }
 
-// materialize creates/updates one federated playlist and resolves its tracks.
-func (s *Service) materialize(ctx context.Context, ownerID string, hp hub.PublicDistributionPlaylist) error {
-	var trackIDs []string
-	if hp.Tracks != nil {
-		for _, ht := range *hp.Tracks {
-			if id, ok := s.resolveTrack(ctx, ownerID, ht); ok {
-				trackIDs = append(trackIDs, id)
+// syncFeed pages through the subscribed-instances playlist feed and
+// materializes each header's full playlist (tracks are fetched per header, the
+// feed itself only carries metadata).
+func (s *Service) syncFeed(ctx context.Context, owner string) error {
+	var after string
+	for page := 0; page < maxFeedPages; page++ {
+		resp, err := s.hub.FeedPlaylists(ctx, s.auth(), after)
+		if err != nil {
+			return err
+		}
+		if resp.Playlists != nil {
+			for _, hdr := range *resp.Playlists {
+				if hdr.Author == nil || hdr.ExternalId == nil {
+					continue
+				}
+				full, err := s.hub.GetFeedPlaylist(ctx, s.auth(), deref(hdr.Author.Id), deref(hdr.ExternalId))
+				if err != nil {
+					s.logger.Warn("fetch feed playlist failed", "instance", deref(hdr.Author.Id), "externalId", deref(hdr.ExternalId), "error", err)
+					continue
+				}
+				if err := s.materializeFeed(ctx, owner, full); err != nil {
+					s.logger.Warn("materialize feed playlist failed", "name", full.Name, "error", err)
+				}
 			}
 		}
+		if resp.HasMore == nil || !*resp.HasMore || resp.NextUpdatedAfter == nil {
+			return nil
+		}
+		after = *resp.NextUpdatedAfter
 	}
+	s.logger.Warn("playlist feed sync stopped early", "pages", maxFeedPages)
+	return nil
+}
 
-	name, comment := deref(hp.Name), deref(hp.Comment)
-	existing, err := s.playlists.FindFederated(ctx, name)
+// materializeDistribution creates/updates one hub-editorial playlist (empty
+// source instance id). Tracks are resolved locally (by mbid) only — no
+// provider search here; an unmatched track is kept as an unresolved entry,
+// resolved lazily at play time (see ResolvePlaylistTrack).
+func (s *Service) materializeDistribution(ctx context.Context, ownerID string, hp hub.PublicDistributionPlaylist) error {
+	var entries []persistence.FederatedTrackRef
+	if hp.Tracks != nil {
+		for _, ht := range *hp.Tracks {
+			entries = append(entries, s.localTrackRef(ctx, deref(ht.Mbid), deref(ht.Artist), deref(ht.Title), deref(ht.Album)))
+		}
+	}
+	return s.upsertFederated(ctx, ownerID, "", deref(hp.Id), deref(hp.Name), deref(hp.Comment), deref(hp.Image), entries)
+}
+
+// materializeFeed creates/updates one subscribed-instance playlist, keyed by
+// (instance, externalId) so playlists sharing a name across instances don't
+// collapse into one. Tracks are resolved locally only, same as distribution.
+func (s *Service) materializeFeed(ctx context.Context, ownerID string, fp hub.FeedPlaylistDetail) error {
+	entries := make([]persistence.FederatedTrackRef, 0, len(fp.Tracks))
+	for _, ft := range fp.Tracks {
+		entries = append(entries, s.localTrackRef(ctx, ft.Mbid, ft.Artist, ft.Title, ""))
+	}
+	return s.upsertFederated(ctx, ownerID, fp.InstanceID, fp.ExternalID, fp.Name, fp.Description, fp.Image, entries)
+}
+
+// localTrackRef resolves a portable track against the local catalog by mbid
+// only (fast, no network); on a miss it keeps the portable identity for lazy
+// resolution at play time instead of dropping the track.
+func (s *Service) localTrackRef(ctx context.Context, mbid, artist, title, album string) persistence.FederatedTrackRef {
+	ref := persistence.FederatedTrackRef{MBID: mbid, Artist: artist, Title: title, Album: album}
+	if mbid != "" {
+		if id, exists, _ := s.catalog.TrackExistsByMBIDOrHash(ctx, mbid, ""); exists {
+			ref.TrackID = id
+		}
+	}
+	return ref
+}
+
+// upsertFederated creates or updates the federated playlist sourced from
+// (sourceInstanceID, sourceExternalID), replacing its tracks and cover.
+func (s *Service) upsertFederated(ctx context.Context, ownerID, sourceInstanceID, sourceExternalID, name, comment, image string, entries []persistence.FederatedTrackRef) error {
+	coverArt := s.federatedCoverArt(image)
+	existing, err := s.playlists.FindFederated(ctx, sourceInstanceID, sourceExternalID)
 	now := time.Now()
 	if err == nil {
+		existing.Name = name
 		existing.Comment = comment
 		_ = s.playlists.UpdateMeta(ctx, existing)
-		return s.playlists.ReplaceTracks(ctx, existing.ID, trackIDs, "")
+		if coverArt != existing.CoverArt {
+			_ = s.playlists.SetCover(ctx, existing.ID, coverArt)
+		}
+		return s.playlists.ReplaceFederatedTracks(ctx, existing.ID, entries)
 	}
 
 	p := models.Playlist{
-		ID:        uuid.NewString(),
-		Name:      name,
-		OwnerID:   ownerID,
-		Comment:   comment,
-		Public:    true,
-		Federated: true,
-		CreatedAt: now,
-		UpdatedAt: now,
+		ID:               uuid.NewString(),
+		Name:             name,
+		OwnerID:          ownerID,
+		Comment:          comment,
+		Public:           true,
+		Federated:        true,
+		SourceInstanceID: sourceInstanceID,
+		SourceExternalID: sourceExternalID,
+		CreatedAt:        now,
+		UpdatedAt:        now,
 	}
 	if err := s.playlists.Create(ctx, p); err != nil {
 		return err
 	}
-	return s.playlists.ReplaceTracks(ctx, p.ID, trackIDs, "")
+	// Create doesn't take a cover (playlists normally get one via a separate
+	// SetCover call), so set it explicitly here.
+	if coverArt != "" {
+		_ = s.playlists.SetCover(ctx, p.ID, coverArt)
+	}
+	return s.playlists.ReplaceFederatedTracks(ctx, p.ID, entries)
 }
 
-// resolveTrack maps a portable hub track to a local track id. Present tracks
-// resolve immediately; missing tracks are downloaded on demand when enabled.
-func (s *Service) resolveTrack(ctx context.Context, ownerID string, ht hub.PublicDistributionTrack) (string, bool) {
-	if mbid := deref(ht.Mbid); mbid != "" {
-		if id, exists, _ := s.catalog.TrackExistsByMBIDOrHash(ctx, mbid, ""); exists {
-			return id, true
+// ErrUnresolvable is returned by ResolvePlaylistTrack when a playlist entry
+// cannot be matched to a playable track (no local match and either portable-id
+// resolution is off or no provider search turned up a candidate).
+var ErrUnresolvable = fmt.Errorf("federation: track not resolvable")
+
+// ResolvePlaylistTrack resolves one playlist entry to a playable track,
+// lazily, at the moment the caller wants to play it: a local catalog lookup
+// first (persisted back so future plays skip it), then a provider search
+// returning an on-demand track (played progressively, downloaded in the
+// background on first listen, same as any other remote search result; not
+// persisted here, a later sync or resolve will pick up the local copy once it
+// lands).
+func (s *Service) ResolvePlaylistTrack(ctx context.Context, playlistID string, position int) (models.Track, error) {
+	ref, err := s.playlists.TrackRef(ctx, playlistID, position)
+	if err != nil {
+		return models.Track{}, err
+	}
+	if ref.TrackID != "" {
+		return s.catalog.GetTrack(ctx, ref.TrackID)
+	}
+	if ref.MBID != "" {
+		if id, exists, _ := s.catalog.TrackExistsByMBIDOrHash(ctx, ref.MBID, ""); exists {
+			_ = s.playlists.ResolveFederatedTrack(ctx, playlistID, position, id)
+			return s.catalog.GetTrack(ctx, id)
 		}
 	}
-	if !s.cfg().ResolveMissing || s.resolver == nil {
-		return "", false
+	if s.resolver == nil {
+		return models.Track{}, ErrUnresolvable
 	}
-	// On-demand resolution: search a provider for the track and download it.
-	query := deref(ht.Artist) + " " + deref(ht.Title)
+	query := strings.TrimSpace(ref.Artist + " " + ref.Title)
+	if query == "" {
+		return models.Track{}, ErrUnresolvable
+	}
 	remote, err := s.resolver.RemoteSearch(ctx, query, 1)
 	if err != nil || len(remote) == 0 {
-		return "", false
+		return models.Track{}, ErrUnresolvable
 	}
-	track, local, _, err := s.resolver.Resolve(ctx, ownerID, remote[0].ID)
-	if err != nil || !local {
-		return "", false
+	return remote[0], nil
+}
+
+// federatedCoverArt turns a hub-sourced cover reference into a local remote-
+// cover id (fetched and cached on demand by the cover service, subject to its
+// host allowlist). The hub returns cover URLs relative to itself (e.g.
+// "/api/v1/covers/<hash>"), so a relative value is resolved against the
+// configured hub URL; an already-absolute URL (the editorial catalog may send
+// one) is used as-is.
+func (s *Service) federatedCoverArt(image string) string {
+	if image == "" {
+		return ""
 	}
-	return track.ID, true
+	if strings.HasPrefix(image, "http://") || strings.HasPrefix(image, "https://") {
+		return models.RemoteCoverID(image)
+	}
+	return models.RemoteCoverID(strings.TrimRight(s.cfg().HubURL, "/") + image)
 }
 
 // ExportScrobbles pushes anonymized, aggregated scrobble counts to the hub. No

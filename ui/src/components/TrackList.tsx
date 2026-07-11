@@ -16,6 +16,10 @@ interface TrackListProps {
   onRefresh?: () => void;
   /** When set, each row's menu offers an "Edit" action (used by the local library). */
   onEditTrack?: (song: Song) => void;
+  /** Called instead of the normal play-from-here behavior when the tapped row
+   * is unresolved (a federated-playlist track pending resolution — see
+   * `Song.unresolved`). Required for lists that may contain such rows. */
+  onPlayUnresolved?: (song: Song, index: number) => void;
 }
 
 /**
@@ -32,6 +36,7 @@ export function TrackList({
   refreshing,
   onRefresh,
   onEditTrack,
+  onPlayUnresolved,
 }: TrackListProps) {
   const playSongs = usePlayer((s) => s.playSongs);
   const current = usePlayer((s) => (s.index >= 0 ? s.songs[s.index]?.id : undefined));
@@ -44,11 +49,11 @@ export function TrackList({
         active={item.id === current}
         showArtwork={showArtwork}
         number={index + 1}
-        onPress={() => playSongs(songs, index)}
+        onPress={() => (item.unresolved ? onPlayUnresolved?.(item, index) : playSongs(songs, index))}
         onMore={() => openMenu(item, onEditTrack ? { onEdit: onEditTrack } : undefined)}
       />
     ),
-    [songs, current, showArtwork, playSongs, openMenu, onEditTrack],
+    [songs, current, showArtwork, playSongs, openMenu, onEditTrack, onPlayUnresolved],
   );
 
   return (

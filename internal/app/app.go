@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -149,9 +150,18 @@ func federationConfig(f models.FederationRuntime, hubURL string) config.Federati
 		InstanceName:    f.InstanceName,
 		PrivateKey:      f.PrivateKey,
 		SyncPlaylists:   f.SyncPlaylists,
-		ResolveMissing:  f.ResolveMissing,
 		ExportScrobbles: f.ExportScrobbles,
 	}
+}
+
+// hubHost extracts the hostname from the configured hub URL (for the cover
+// service's SSRF allowlist); a malformed URL yields "" (matches nothing).
+func hubHost(hubURL string) string {
+	u, err := url.Parse(hubURL)
+	if err != nil {
+		return ""
+	}
+	return u.Hostname()
 }
 
 // New builds the application from configuration.
@@ -230,7 +240,9 @@ func New(cfg config.Config) (*App, error) {
 	extractor := scanner.NewExtractor(transcodeCfg.FFprobePath)
 	scan := scanner.New(store.Catalog, store.Genres, extractor, coversDir, logger)
 
-	coverSvc := stream.NewCoverService(store.Catalog, coversDir)
+	// Federated playlist covers are fetched from the hub, so its host needs the
+	// cover service's SSRF allowlist alongside the built-in provider hosts.
+	coverSvc := stream.NewCoverService(store.Catalog, coversDir, hubHost(cfg.HubURL))
 	streamer := stream.NewStreamer(transcodeCfg, logger)
 	nowPlaying := core.NewNowPlayingTracker(10 * time.Minute)
 	activitySvc := core.NewActivityService(store.Activity, store.Friends, store.Users)
