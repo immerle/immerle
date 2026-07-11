@@ -1,10 +1,14 @@
 package federation
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"image"
+	"image/color"
+	"image/jpeg"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -28,6 +32,35 @@ type fakeCovers struct{ data []byte }
 
 func (f fakeCovers) Get(_ context.Context, _ string, _ int) ([]byte, string, error) {
 	return f.data, "image/jpeg", nil
+}
+
+// perIDCovers serves distinct bytes per cover id, for tests that need each
+// tile to be individually addressable/distinguishable.
+type perIDCovers struct{ byID map[string][]byte }
+
+func (f perIDCovers) Get(_ context.Context, id string, _ int) ([]byte, string, error) {
+	data, ok := f.byID[id]
+	if !ok {
+		return nil, "", errNoCovers
+	}
+	return data, "image/jpeg", nil
+}
+
+// solidJPEG encodes a tiny single-color JPEG, decodable by image.Decode (a
+// real image, unlike the "JPEGDATA" placeholder used elsewhere in this file).
+func solidJPEG(t *testing.T, c color.RGBA) []byte {
+	t.Helper()
+	img := image.NewRGBA(image.Rect(0, 0, 8, 8))
+	for y := 0; y < 8; y++ {
+		for x := 0; x < 8; x++ {
+			img.Set(x, y, c)
+		}
+	}
+	var buf bytes.Buffer
+	if err := jpeg.Encode(&buf, img, nil); err != nil {
+		t.Fatal(err)
+	}
+	return buf.Bytes()
 }
 
 type syncStub struct {
@@ -164,4 +197,107 @@ func TestOutboxWorkerSyncsAndDeletesPublicPlaylist(t *testing.T) {
 		t.Fatalf("expected DELETE for /%s, got %q", plID, st.deleted)
 	}
 	st.mu.Unlock()
+}
+
+func TestPlaylistSyncComposesMosaicWhenNoCustomCover(t *testing.T) {
+	ctx := context.Background()
+	now := time.Now()
+	store := testutil.NewStore(t)
+
+	owner := models.User{ID: uuid.NewString(), Username: "admin", PasswordHash: "x", IsAdmin: true, CreatedAt: now}
+	_ = store.Users.Create(ctx, owner)
+	artistID, _ := store.Catalog.UpsertArtist(ctx, models.Artist{ID: uuid.NewString(), Name: "A", CreatedAt: now})
+	albumID, _ := store.Catalog.UpsertAlbum(ctx, models.Album{ID: uuid.NewString(), Name: "Al", ArtistID: artistID, CreatedAt: now})
+	trackA, _ := store.Catalog.UpsertTrack(ctx, models.Track{
+		ID: uuid.NewString(), Title: "A", AlbumID: albumID, ArtistID: artistID, CoverArt: "cover-a",
+		Path: "/a.mp3", CreatedAt: now, UpdatedAt: now,
+	})
+	trackB, _ := store.Catalog.UpsertTrack(ctx, models.Track{
+		ID: uuid.NewString(), Title: "B", AlbumID: albumID, ArtistID: artistID, CoverArt: "cover-b",
+		Path: "/b.mp3", CreatedAt: now, UpdatedAt: now,
+	})
+
+	plID := uuid.NewString()
+	_ = store.Playlists.Create(ctx, models.Playlist{ID: plID, Name: "Mosaic Test", OwnerID: owner.ID, Public: true, CreatedAt: now, UpdatedAt: now})
+	_ = store.Playlists.ReplaceTracks(ctx, plID, []string{trackA, trackB}, owner.ID)
+
+	srv, st := newSyncStub(t)
+	cfg := config.FederationConfig{HubURL: srv.URL, InstanceID: "inst-1", PrivateKey: "iml_key", SyncPlaylists: true}
+	fed := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, nil, testLogger())
+	worker := outbox.NewWorker(store.Outbox, testLogger())
+	covers := perIDCovers{byID: map[string][]byte{
+		"cover-a": solidJPEG(t, color.RGBA{R: 255, A: 255}),
+		"cover-b": solidJPEG(t, color.RGBA{B: 255, A: 255}),
+	}}
+	s := NewPlaylistSyncer(fed, worker, store.PlaylistSync, store.CoverUploads, store.Playlists, covers, testLogger())
+
+	if err := s.handle(ctx, persistence.OutboxJob{Kind: PlaylistSyncKind, DedupeKey: plID}); err != nil {
+		t.Fatal(err)
+	}
+
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	var body struct {
+		Image string `json:"image"`
+	}
+	if err := json.Unmarshal([]byte(st.putBody), &body); err != nil {
+		t.Fatalf("decode PUT body: %v (body=%s)", err, st.putBody)
+	}
+	if !strings.HasPrefix(body.Image, "/api/v1/covers/") {
+		t.Fatalf("expected a composed mosaic cover url, got %q", body.Image)
+	}
+	hash := strings.TrimPrefix(body.Image, "/api/v1/covers/")
+	found := false
+	for _, h := range st.uploaded {
+		if h == hash {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("mosaic %s was not uploaded, uploaded=%v", hash, st.uploaded)
+	}
+}
+
+func TestPlaylistSyncKeepsCustomCoverOverMosaic(t *testing.T) {
+	ctx := context.Background()
+	now := time.Now()
+	store := testutil.NewStore(t)
+
+	owner := models.User{ID: uuid.NewString(), Username: "admin2", PasswordHash: "x", IsAdmin: true, CreatedAt: now}
+	_ = store.Users.Create(ctx, owner)
+	artistID, _ := store.Catalog.UpsertArtist(ctx, models.Artist{ID: uuid.NewString(), Name: "A", CreatedAt: now})
+	albumID, _ := store.Catalog.UpsertAlbum(ctx, models.Album{ID: uuid.NewString(), Name: "Al", ArtistID: artistID, CreatedAt: now})
+	trackID, _ := store.Catalog.UpsertTrack(ctx, models.Track{
+		ID: uuid.NewString(), Title: "A", AlbumID: albumID, ArtistID: artistID, CoverArt: "cover-a",
+		Path: "/a.mp3", CreatedAt: now, UpdatedAt: now,
+	})
+
+	plID := uuid.NewString()
+	_ = store.Playlists.Create(ctx, models.Playlist{ID: plID, Name: "Custom Cover Test", OwnerID: owner.ID, Public: true, CreatedAt: now, UpdatedAt: now})
+	_ = store.Playlists.SetCover(ctx, plID, "custom-cover")
+	_ = store.Playlists.ReplaceTracks(ctx, plID, []string{trackID}, owner.ID)
+
+	srv, st := newSyncStub(t)
+	cfg := config.FederationConfig{HubURL: srv.URL, InstanceID: "inst-1", PrivateKey: "iml_key", SyncPlaylists: true}
+	fed := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, nil, testLogger())
+	worker := outbox.NewWorker(store.Outbox, testLogger())
+	covers := perIDCovers{byID: map[string][]byte{
+		"custom-cover": solidJPEG(t, color.RGBA{G: 255, A: 255}),
+		"cover-a":      solidJPEG(t, color.RGBA{R: 255, A: 255}),
+	}}
+	s := NewPlaylistSyncer(fed, worker, store.PlaylistSync, store.CoverUploads, store.Playlists, covers, testLogger())
+
+	if err := s.handle(ctx, persistence.OutboxJob{Kind: PlaylistSyncKind, DedupeKey: plID}); err != nil {
+		t.Fatal(err)
+	}
+
+	wantHash := func() string {
+		sum := sha256.Sum256(covers.byID["custom-cover"])
+		return hex.EncodeToString(sum[:])
+	}()
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	if !strings.Contains(st.putBody, `"image":"/api/v1/covers/`+wantHash+`"`) {
+		t.Fatalf("expected the custom cover, not a mosaic, got body=%s", st.putBody)
+	}
 }
