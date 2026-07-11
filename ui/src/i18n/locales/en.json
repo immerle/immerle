@@ -732,7 +732,8 @@
       "next": "Next",
       "shuffle": "Shuffle",
       "lyrics": "Lyrics",
-      "unresolvedSkipped": "Skipping “{{title}}” — not resolved yet, tap it from the playlist to load it"
+      "unresolvedSkipped": "Skipping “{{title}}” — not resolved yet, tap it from the playlist to load it",
+      "seekUnavailableRemote": "Downloading — seeking will be available once ready"
     },
     "local": {
       "title": "Local music",

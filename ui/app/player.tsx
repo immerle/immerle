@@ -99,6 +99,8 @@ export default function Player() {
 
         <View className="pt-6">
           <Slider
+            style={{ opacity: song.remote ? 0.4 : 1 }}
+            disabled={song.remote}
             minimumValue={0}
             maximumValue={duration > 0 ? duration : 1}
             value={shownPosition}
@@ -115,6 +117,9 @@ export default function Player() {
             <Text className="text-xs text-muted">{formatDuration(shownPosition)}</Text>
             <Text className="text-xs text-muted">{formatDuration(duration)}</Text>
           </View>
+          {song.remote ? (
+            <Text className="pt-1 text-center text-xs text-muted">{t('media.player.seekUnavailableRemote')}</Text>
+          ) : null}
         </View>
 
         <View className="flex-row items-center justify-between px-2 pt-6">
