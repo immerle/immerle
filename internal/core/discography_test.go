@@ -130,3 +130,41 @@ func TestRemoteTracksForAlbum(t *testing.T) {
 		t.Fatalf("unknown album should yield no tracks, got %d", len(got))
 	}
 }
+
+// TestRemoteTracksForAlbumFallsBackToSearch covers a real bug: a provider that
+// only implements the mandatory Search capability (no ArtistSearcher/
+// ArtistAlbumLister/AlbumBrowser — true of most on-demand HTTP providers, and
+// all three shipped built-ins) made RemoteTracksForAlbum silently return
+// nothing, forever, no matter how many times a partially-downloaded album was
+// reopened. It must fall back to a plain search, filtered to the requested
+// album (and artist, when known).
+func TestRemoteTracksForAlbumFallsBackToSearch(t *testing.T) {
+	store := testutil.NewStore(t)
+	reg := NewProviderRegistry()
+	reg.Register(&fakeProvider{name: "basic", results: []providers.Result{
+		{ProviderTrackID: "t1", Title: "One More Time", Artist: "Daft Punk", Album: "Discovery"},
+		{ProviderTrackID: "t2", Title: "Aerodynamic", Artist: "Daft Punk", Album: "Discovery"},
+		{ProviderTrackID: "t3", Title: "Around the World", Artist: "Daft Punk", Album: "Homework"},
+	}})
+	svc := NewCatalogService(CatalogServiceConfig{
+		Catalog: store.Catalog, Downloads: store.Downloads, Registry: reg,
+		Settings: StaticProviderSettings{}, Logger: testutil.NewLogger(),
+	})
+	ctx := context.Background()
+
+	tracks, err := svc.RemoteTracksForAlbum(ctx, "Daft Punk", "Discovery")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(tracks) != 2 {
+		t.Fatalf("expected 2 tracks from the Discovery album, got %+v", tracks)
+	}
+	for _, tr := range tracks {
+		if tr.AlbumName != "Discovery" {
+			t.Fatalf("a track from a different album leaked in: %+v", tr)
+		}
+		if !tr.Remote || !IsRemoteID(tr.ID) {
+			t.Fatalf("fallback tracks should be remote/playable: %+v", tr)
+		}
+	}
+}

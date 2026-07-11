@@ -470,9 +470,13 @@ func (s *CatalogService) RemoteAlbumsForArtist(ctx context.Context, artistName s
 
 // RemoteTracksForAlbum returns an album's full tracklist from the provider,
 // matched by artist + album name — used to enrich a partially-owned local album
-// with the tracks the user does not have (as remote, play-on-demand tracks).
-// Returns nil (not an error) when the provider lacks the needed capabilities or
-// no matching artist/album is found, so the caller falls back to local-only.
+// (one that only has the tracks the user has actually downloaded so far) with
+// the remaining tracks, as remote, play-on-demand ones. Prefers the precise
+// artist/album-browse capabilities when the provider has them, but always
+// falls back to a plain search+filter (remoteTracksForAlbumBySearch) — most
+// on-demand HTTP providers only implement the three mandatory endpoints
+// (search/resolve/download), and without this fallback such a provider would
+// silently enrich nothing, forever, however many times the album is reopened.
 func (s *CatalogService) RemoteTracksForAlbum(ctx context.Context, artistName, albumName string) ([]models.Track, error) {
 	if s == nil || s.state == nil || strings.TrimSpace(albumName) == "" {
 		return nil, nil
@@ -481,20 +485,21 @@ func (s *CatalogService) RemoteTracksForAlbum(ctx context.Context, artistName, a
 	if !ok {
 		return nil, nil
 	}
+	ctx, cancel := s.searchCtx(ctx)
+	defer cancel()
+
 	as, aok := prov.(providers.ArtistSearcher)
 	lister, lok := prov.(providers.ArtistAlbumLister)
 	browser, bok := prov.(providers.AlbumBrowser)
 	if !aok || !lok || !bok {
-		s.state.logger.Debug("album enrichment skipped: provider lacks browse capability",
+		s.state.logger.Debug("album enrichment: provider lacks browse capability, falling back to search",
 			"provider", prov.Name(), "artistSearcher", aok, "artistAlbumLister", lok, "albumBrowser", bok)
-		return nil, nil
+		return s.remoteTracksForAlbumBySearch(ctx, prov, artistName, albumName)
 	}
-	ctx, cancel := s.searchCtx(ctx)
-	defer cancel()
 
 	arts, err := s.cachedArtistSearch(ctx, as, prov.Name(), artistName, 5)
 	if err != nil {
-		return nil, nil
+		return s.remoteTracksForAlbumBySearch(ctx, prov, artistName, albumName)
 	}
 	artistID := ""
 	for _, a := range arts {
@@ -504,11 +509,11 @@ func (s *CatalogService) RemoteTracksForAlbum(ctx context.Context, artistName, a
 		}
 	}
 	if artistID == "" {
-		return nil, nil
+		return s.remoteTracksForAlbumBySearch(ctx, prov, artistName, albumName)
 	}
 	pas, err := lister.ArtistAlbums(ctx, artistID, 100)
 	if err != nil {
-		return nil, nil
+		return s.remoteTracksForAlbumBySearch(ctx, prov, artistName, albumName)
 	}
 	albumID := ""
 	for _, pa := range pas {
@@ -518,18 +523,43 @@ func (s *CatalogService) RemoteTracksForAlbum(ctx context.Context, artistName, a
 		}
 	}
 	if albumID == "" {
-		s.state.logger.Debug("album enrichment: no album-name match",
+		s.state.logger.Debug("album enrichment: no album-name match, falling back to search",
 			"provider", prov.Name(), "artist", artistName, "album", albumName)
-		return nil, nil
+		return s.remoteTracksForAlbumBySearch(ctx, prov, artistName, albumName)
 	}
 	results, err := browser.AlbumTracks(ctx, albumID, 200)
 	if err != nil {
-		s.state.logger.Warn("album enrichment: provider album tracks failed",
+		s.state.logger.Warn("album enrichment: provider album tracks failed, falling back to search",
 			"provider", prov.Name(), "albumId", albumID, "error", err)
+		return s.remoteTracksForAlbumBySearch(ctx, prov, artistName, albumName)
+	}
+	out := make([]models.Track, 0, len(results))
+	for _, res := range results {
+		out = append(out, toRemoteTrack(prov.Name(), res))
+	}
+	return out, nil
+}
+
+// remoteTracksForAlbumBySearch is RemoteTracksForAlbum's fallback for a
+// provider that only implements the mandatory Search capability: it searches
+// by artist+album and keeps results whose album (and, when known, artist)
+// name matches exactly — the same exact-match filtering
+// providerArtistTracks's fallback already uses. ctx must already carry the
+// caller's search timeout (searchCtx).
+func (s *CatalogService) remoteTracksForAlbumBySearch(ctx context.Context, prov providers.Provider, artistName, albumName string) ([]models.Track, error) {
+	query := strings.TrimSpace(artistName + " " + albumName)
+	results, err := s.cachedTrackSearch(ctx, prov, query, 100)
+	if err != nil {
 		return nil, nil
 	}
 	out := make([]models.Track, 0, len(results))
 	for _, res := range results {
+		if !strings.EqualFold(strings.TrimSpace(res.Album), strings.TrimSpace(albumName)) {
+			continue
+		}
+		if artistName != "" && !strings.EqualFold(strings.TrimSpace(res.Artist), strings.TrimSpace(artistName)) {
+			continue
+		}
 		out = append(out, toRemoteTrack(prov.Name(), res))
 	}
 	return out, nil
