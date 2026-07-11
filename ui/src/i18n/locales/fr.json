@@ -732,7 +732,8 @@
       "next": "Suivant",
       "shuffle": "Lecture aléatoire",
       "lyrics": "Paroles",
-      "unresolvedSkipped": "« {{title}} » ignoré — pas encore résolu, appuyez dessus depuis la playlist pour le charger"
+      "unresolvedSkipped": "« {{title}} » ignoré — pas encore résolu, appuyez dessus depuis la playlist pour le charger",
+      "seekUnavailableRemote": "Téléchargement en cours — le déplacement du curseur sera possible une fois terminé"
     },
     "local": {
       "title": "Musiques locales",

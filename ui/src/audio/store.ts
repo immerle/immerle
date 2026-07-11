@@ -261,6 +261,12 @@ export const usePlayer = create<AudioState>((set, get) => ({
   },
 
   seekTo: async (seconds) => {
+    // A not-yet-downloaded track streams progressively (see songToTrack): the
+    // server can't serve byte ranges for it yet, so a seek would silently
+    // restart playback from 0. Guarded here (not just in the UI) so an OS
+    // media-session seek control (lock screen / headset) can't trigger it
+    // either.
+    if (get().songs[get().index]?.remote) return;
     await get().engine?.seekTo(seconds);
     set({ position: seconds });
   },

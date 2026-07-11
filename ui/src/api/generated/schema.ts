@@ -8533,6 +8533,13 @@ export interface components {
             participants?: components["schemas"]["immerle.participantView"][];
             playCount?: number;
             rating?: number;
+            /**
+             * @description Remote marks a track not yet downloaded (an on-demand provider result,
+             *     not a row in the local catalog). Playing it streams progressively — the
+             *     server can't yet serve byte ranges for it, so seeking isn't available
+             *     until the background download finishes and it's replayed.
+             */
+            remote?: boolean;
             replayGainAlbum?: number;
             replayGainTrack?: number;
             size?: number;
