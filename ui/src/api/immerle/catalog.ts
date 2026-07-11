@@ -49,6 +49,7 @@ export function toSong(v: SongView): Song {
     size: v.size,
     starred: v.starred,
     unresolved: v.unresolved,
+    remote: v.remote,
   };
 }
 

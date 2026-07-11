@@ -208,3 +208,18 @@ func TestToAlbumViewFallsBackToAlbumIDForCoverArt(t *testing.T) {
 		t.Fatalf("expected fallback to the album id, got %q", got)
 	}
 }
+
+// TestToSongViewExposesRemote covers the client-visible signal for a real
+// bug: a not-yet-downloaded (on-demand provider) track streams progressively,
+// which can't serve byte ranges — seeking it silently resets playback to
+// 0:00. The client needs to know a song is still remote to disable seeking
+// instead, so toSongView must expose models.Track.Remote (it's otherwise
+// `json:"-"` and invisible to the API).
+func TestToSongViewExposesRemote(t *testing.T) {
+	if got := toSongView(models.Track{ID: "t1", Remote: true}).Remote; !got {
+		t.Fatal("expected Remote to carry through to the song view")
+	}
+	if got := toSongView(models.Track{ID: "t2", Remote: false}).Remote; got {
+		t.Fatal("expected Remote to stay false for a local track")
+	}
+}

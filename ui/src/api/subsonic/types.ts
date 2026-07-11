@@ -87,6 +87,10 @@ export interface Song {
   /** A federated-playlist entry not yet matched to a playable track (name-only;
    * resolve via playlists.resolveTrack before playing). */
   unresolved?: boolean;
+  /** Not yet downloaded (an on-demand provider result): plays via progressive
+   * streaming, which can't serve byte ranges yet — seeking is unavailable
+   * until the background download finishes and it's replayed. */
+  remote?: boolean;
 }
 
 export interface Genre {

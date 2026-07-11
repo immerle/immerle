@@ -60,6 +60,11 @@ type songView struct {
 	// track: id is empty and only title/artist/album are populated. Resolve it
 	// via POST /playlists/{id}/tracks/{position}/resolve before playing.
 	Unresolved bool `json:"unresolved,omitempty"`
+	// Remote marks a track not yet downloaded (an on-demand provider result,
+	// not a row in the local catalog). Playing it streams progressively — the
+	// server can't yet serve byte ranges for it, so seeking isn't available
+	// until the background download finishes and it's replayed.
+	Remote bool `json:"remote,omitempty"`
 }
 
 // participantView mirrors models.Participant locally so the OpenAPI generator
@@ -85,7 +90,7 @@ func toSongView(t models.Track) songView {
 		ContentType: t.ContentType, Size: t.Size,
 		BPM: t.BPM, ReplayGainTrack: t.ReplayGainTrack, ReplayGainAlbum: t.ReplayGainAlbum,
 		TitleSort: t.TitleSort, Work: t.Work, MovementName: t.MovementName, MovementNo: t.MovementNo,
-		Lyrics: t.Lyrics, Participants: participants, Unresolved: t.Unresolved,
+		Lyrics: t.Lyrics, Participants: participants, Unresolved: t.Unresolved, Remote: t.Remote,
 	}
 }
 

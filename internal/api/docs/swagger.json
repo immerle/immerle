@@ -2083,6 +2083,10 @@
                     "rating": {
                         "type": "integer"
                     },
+                    "remote": {
+                        "description": "Remote marks a track not yet downloaded (an on-demand provider result,\nnot a row in the local catalog). Playing it streams progressively — the\nserver can't yet serve byte ranges for it, so seeking isn't available\nuntil the background download finishes and it's replayed.",
+                        "type": "boolean"
+                    },
                     "replayGainAlbum": {
                         "type": "number"
                     },
