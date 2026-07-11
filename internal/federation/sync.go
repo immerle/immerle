@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/immerle/immerle/internal/federation/hub"
@@ -27,6 +28,13 @@ const (
 	maxCoverBytes = 5 << 20
 	// rateLimitRetry is the retry delay after the hub rate-limits us (429).
 	rateLimitRetry = time.Minute
+	// maxMosaicCovers mirrors the client's PlaylistMosaic: at most the first 4
+	// tracks (by position) contribute a cover.
+	maxMosaicCovers = 4
+	// mosaicPrefix marks a pre-resolution Image value as "compose a mosaic from
+	// these cover ids" rather than a single stored cover id — see
+	// playlistImageRef/resolveCovers.
+	mosaicPrefix = "mosaic:"
 )
 
 // CoverSource resolves a cover id (playlist cover, track cover, or album id) to
@@ -186,7 +194,7 @@ func buildPayload(p models.Playlist, tracks []models.Track) syncPayload {
 	out := syncPayload{
 		Name:        p.Name,
 		Description: p.Comment,
-		Image:       p.CoverArt, // local cover id; resolved to a hub URL below
+		Image:       playlistImageRef(p, tracks), // pre-resolution ref; resolved to a hub URL below
 		Tracks:      make([]syncTrack, 0, len(tracks)),
 	}
 	if p.OwnerName != "" {
@@ -215,13 +223,61 @@ func trackCoverID(t models.Track) string {
 	return t.AlbumID
 }
 
-// resolveCovers hashes every referenced cover, uploads the ones the hub is
-// missing (content-addressed de-dup), and rewrites image/track covers to hub
-// URLs. Covers that can't be read or exceed the size cap are dropped.
+// playlistImageRef is the pre-resolution Image value for the sync payload:
+// the owner-chosen cover id when set, else a "mosaic:id1,id2,..." marker
+// listing up to the first 4 tracks' covers — resolveCovers composes and
+// uploads an actual mosaic image for it, the same one the client would render
+// locally for a playlist with no custom cover. Empty when there's nothing to
+// show a cover for at all.
+func playlistImageRef(p models.Playlist, tracks []models.Track) string {
+	if p.CoverArt != "" {
+		return p.CoverArt
+	}
+	ids := mosaicCoverIDs(tracks)
+	if len(ids) == 0 {
+		return ""
+	}
+	return mosaicPrefix + strings.Join(ids, ",")
+}
+
+// mosaicCoverIDs returns the covers of up to the first maxMosaicCovers tracks
+// by position, skipping tracks with no cover — mirrors coverArtsByPlaylist in
+// internal/persistence/playlists.go (the client-side mosaic's data source).
+func mosaicCoverIDs(tracks []models.Track) []string {
+	ids := make([]string, 0, maxMosaicCovers)
+	for _, t := range tracks {
+		if len(ids) == maxMosaicCovers {
+			break
+		}
+		if id := trackCoverID(t); id != "" {
+			ids = append(ids, id)
+		}
+	}
+	return ids
+}
+
+// mosaicIDsFromRef extracts the cover ids from a "mosaic:..." Image ref, or
+// nil if ref isn't one (a plain cover id, or empty).
+func mosaicIDsFromRef(ref string) []string {
+	if !strings.HasPrefix(ref, mosaicPrefix) {
+		return nil
+	}
+	return strings.Split(strings.TrimPrefix(ref, mosaicPrefix), ",")
+}
+
+// resolveCovers hashes every referenced cover, composes a mosaic image for a
+// playlist with no custom cover (see playlistImageRef), uploads whatever the
+// hub is missing (content-addressed de-dup), and rewrites image/track covers
+// to hub URLs. Covers that can't be read or exceed the size cap are dropped.
 func (s *PlaylistSyncer) resolveCovers(ctx context.Context, p *syncPayload) error {
+	mosaicIDs := mosaicIDsFromRef(p.Image)
+
 	ids := map[string]bool{}
-	if p.Image != "" {
+	if p.Image != "" && mosaicIDs == nil {
 		ids[p.Image] = true
+	}
+	for _, id := range mosaicIDs {
+		ids[id] = true
 	}
 	for i := range p.Tracks {
 		if p.Tracks[i].Cover != "" {
@@ -242,6 +298,27 @@ func (s *PlaylistSyncer) resolveCovers(ctx context.Context, p *syncPayload) erro
 		idHash[id] = h
 		blobs[h] = data
 		ctypes[h] = ct
+	}
+
+	// Compose the mosaic from the tile covers just fetched above, and register
+	// it under the marker itself (in the same idHash/blobs/ctypes maps the
+	// upload pass below walks) so the coverURL lookup for p.Image at the end
+	// resolves it exactly like any other cover. Silently skipped (p.Image ends
+	// up unresolved → "") if none of the tile covers could be read/decoded.
+	if len(mosaicIDs) > 0 {
+		tiles := make([][]byte, 0, len(mosaicIDs))
+		for _, id := range mosaicIDs {
+			if h, ok := idHash[id]; ok {
+				tiles = append(tiles, blobs[h])
+			}
+		}
+		if mosaic, ct, err := renderMosaic(tiles); err == nil {
+			sum := sha256.Sum256(mosaic)
+			h := hex.EncodeToString(sum[:])
+			idHash[p.Image] = h
+			blobs[h] = mosaic
+			ctypes[h] = ct
+		}
 	}
 
 	if len(idHash) > 0 {
