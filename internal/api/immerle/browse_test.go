@@ -8,8 +8,10 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	chi "github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 
 	"github.com/immerle/immerle/internal/config"
 	"github.com/immerle/immerle/internal/core"
@@ -51,6 +53,9 @@ func newBrowseEnv(t *testing.T) (*httptest.Server, string, *persistence.Store) {
 		t.Fatal(err)
 	}
 
+	onDemand := core.NewCatalogService(core.CatalogServiceConfig{
+		Catalog: store.Catalog, Downloads: store.Downloads, Registry: core.NewProviderRegistry(), Logger: testutil.NewLogger(),
+	})
 	h := NewHandler(Deps{
 		Auth:        auth,
 		Users:       store.Users,
@@ -61,6 +66,7 @@ func newBrowseEnv(t *testing.T) (*httptest.Server, string, *persistence.Store) {
 		Scrobbles:   store.Scrobbles,
 		PlayQueues:  store.PlayQueues,
 		NowPlaying:  core.NewNowPlayingTracker(0),
+		OnDemand:    onDemand,
 		Streamer:    stream.NewStreamer(config.TranscodeConfig{FFmpegPath: "ffmpeg", CacheDir: filepath.Join(t.TempDir(), "tc")}, testutil.NewLogger()),
 		Cover:       stream.NewCoverService(store.Catalog, coversDir),
 		Shares:      store.Shares,
@@ -206,5 +212,53 @@ func TestToAlbumViewFallsBackToAlbumIDForCoverArt(t *testing.T) {
 	noCover := models.Album{ID: "album-2", Name: "Al"}
 	if got := toAlbumView(noCover, nil, nil).CoverArt; got != "album-2" {
 		t.Fatalf("expected fallback to the album id, got %q", got)
+	}
+}
+
+// TestSongLocalStatus covers the polling endpoint the player uses to upgrade
+// a still-progressive-streaming track to the seekable local one once ready
+// (see ui/src/audio/store.ts's seekTo, which no-ops seeks on a remote track
+// otherwise). A remote id with no completed download reports local=false;
+// once a download job completes — the same bookkeeping
+// internal/core/ondemand_stream.go's finalizeStreamed performs — it reports
+// the resolved local song.
+func TestSongLocalStatus(t *testing.T) {
+	srv, token, store := newBrowseEnv(t)
+	ctx := context.Background()
+
+	// Never downloaded → not local, no error.
+	var status songLocalStatusView
+	if st := getJSON(t, srv, token, "/songs/remote:basic:ptid-1/local", &status); st != http.StatusOK {
+		t.Fatalf("status: %d", st)
+	}
+	if status.Local || status.Song != nil {
+		t.Fatalf("expected not-local for a never-downloaded track, got %+v", status)
+	}
+
+	// A real local track from the fixture library, to resolve the remote id to.
+	var search searchView
+	if st := getJSON(t, srv, token, "/search?q=So+What", &search); st != http.StatusOK || len(search.Songs) != 1 {
+		t.Fatalf("search: status %d songs=%+v", st, search.Songs)
+	}
+	localTrackID := search.Songs[0].ID
+
+	// Simulate a completed background download without a real provider/ffmpeg
+	// download run.
+	job, err := store.Downloads.Enqueue(ctx, models.DownloadJob{
+		ID: uuid.NewString(), UserID: "u1", Provider: "basic", ProviderTrackID: "ptid-1",
+		Status: models.DownloadQueued, CreatedAt: time.Now(), UpdatedAt: time.Now(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Downloads.Complete(ctx, job.ID, localTrackID); err != nil {
+		t.Fatal(err)
+	}
+
+	if st := getJSON(t, srv, token, "/songs/remote:basic:ptid-1/local", &status); st != http.StatusOK {
+		t.Fatalf("status: %d", st)
+	}
+	if !status.Local || status.Song == nil || status.Song.ID != localTrackID {
+		t.Fatalf("expected local=true with the resolved song, got %+v", status)
 	}
 }

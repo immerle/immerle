@@ -6888,6 +6888,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/songs/{id}/local": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Check whether a remote track has finished downloading
+         * @description Read-only, never downloads. Poll this while playing a remote (not-yet-local) track to know when it's safe to seek.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Track id (remote or local) */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.songLocalStatusView"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/songs/{id}/lyrics": {
         parameters: {
             query?: never;
@@ -8459,6 +8510,10 @@ export interface components {
         };
         "immerle.smartToggleRequest": {
             enabled?: boolean;
+        };
+        "immerle.songLocalStatusView": {
+            local?: boolean;
+            song?: components["schemas"]["immerle.songView"];
         };
         "immerle.songView": {
             album?: string;

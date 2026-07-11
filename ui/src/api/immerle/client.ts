@@ -275,6 +275,17 @@ export class ImmerleClient {
   }
 
   /**
+   * Whether a remote (on-demand) track id has finished downloading in the
+   * background, without ever triggering a download itself. Used to upgrade a
+   * still-progressive-streaming track to the seekable local one once ready.
+   */
+  async getSongLocalStatus(id: string, signal?: AbortSignal): Promise<{ local: boolean; song?: Song }> {
+    const { data, error } = await this.api.GET('/songs/{id}/local', { params: { path: { id } }, signal });
+    if (error) throw apiErr(error, 'browse.songLocalStatus');
+    return { local: !!data.local, song: data.song ? toSong(data.song) : undefined };
+  }
+
+  /**
    * Lyrics for a song. The server parses stored LRC text into plain or synced
    * lines (same implementation as the Subsonic surface). Returns null when the
    * track has none.
