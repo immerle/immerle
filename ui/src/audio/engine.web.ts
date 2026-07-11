@@ -71,6 +71,15 @@ class WebAudioEngine implements AudioEngine {
     this.emitState();
   }
 
+  async replaceAt(index: number, track: PlayableTrack): Promise<void> {
+    if (index < 0 || index >= this.queue.length) return;
+    this.queue[index] = track;
+    if (index !== this.index) return;
+    const wasPlaying = this.status === 'playing';
+    await this.load(index);
+    if (wasPlaying) await this.play();
+  }
+
   async move(from: number, to: number): Promise<void> {
     if (from === to) return;
     const [item] = this.queue.splice(from, 1);

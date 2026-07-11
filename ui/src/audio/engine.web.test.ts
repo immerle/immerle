@@ -69,3 +69,30 @@ describe('web engine end of queue', () => {
     expect(engine.getState().position).toBe(0);
   });
 });
+
+describe('web engine replaceAt', () => {
+  it('reloads the currently playing track in place and resumes playback', async () => {
+    const engine = createEngine();
+    await engine.setup();
+    await engine.setQueue([track('a'), track('b')], 0);
+    lastAudio.fire('playing');
+    await flush();
+    expect(engine.getState().status).toBe('playing');
+
+    await engine.replaceAt(0, track('a-local'));
+    expect(lastAudio.src).toBe('http://x/a-local');
+    lastAudio.fire('playing');
+    await flush();
+    expect(engine.getState().status).toBe('playing');
+  });
+
+  it('swaps a non-current track without touching playback', async () => {
+    const engine = createEngine();
+    await engine.setup();
+    await engine.setQueue([track('a'), track('b')], 0);
+    const srcBeforeSwap = lastAudio.src;
+
+    await engine.replaceAt(1, track('b-local'));
+    expect(lastAudio.src).toBe(srcBeforeSwap);
+  });
+});

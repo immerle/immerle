@@ -157,9 +157,10 @@ function WideBar({ song, status, position, duration }: BarProps) {
   // A live radio has no queue, no seeking and no prev/next: grey those out.
   const isRadio = useIsRadio(song.id);
   // A not-yet-downloaded track streams progressively — the server can't serve
-  // byte ranges for it yet, so seeking would silently reset playback to 0:00.
-  // Disabled until the background download finishes (replay it to seek).
-  const seekDisabled = isRadio || !!song.remote;
+  // byte ranges for it yet. The bar stays interactive though: dragging it
+  // triggers usePlayer.seekTo's check-and-upgrade-or-toast flow, which seeks
+  // for real once the background download has finished.
+  const seekDisabled = isRadio;
 
   return (
     <View className="flex-row items-center gap-4 px-4 py-2">
@@ -211,7 +212,7 @@ function WideBar({ song, status, position, duration }: BarProps) {
         <View className="w-full max-w-xl flex-row items-center gap-2">
           <Text className="w-10 text-right text-[11px] text-muted">{formatDuration(shown)}</Text>
           <Slider
-            style={{ flex: 1, opacity: seekDisabled ? 0.4 : 1 }}
+            style={{ flex: 1, opacity: seekDisabled ? 0.4 : song.remote ? 0.7 : 1 }}
             disabled={seekDisabled}
             minimumValue={0}
             maximumValue={duration > 0 ? duration : 1}

@@ -58,6 +58,14 @@ export interface AudioEngine {
   /** Remove the queue entry at `index`. */
   removeAt(index: number): Promise<void>;
 
+  /**
+   * Swap the queue entry at `index` for a freshly-resolved track (e.g. a
+   * remote track that has finished downloading in the background), without
+   * disturbing the rest of the queue. Best-effort resumes playback if that
+   * index was playing.
+   */
+  replaceAt(index: number, track: PlayableTrack): Promise<void>;
+
   /** Move a queue entry (for drag-to-reorder). */
   move(from: number, to: number): Promise<void>;
 

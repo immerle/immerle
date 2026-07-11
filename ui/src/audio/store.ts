@@ -120,6 +120,31 @@ function client(): ImmerleClient | null {
   return useAuth.getState().client;
 }
 
+/**
+ * If a remote track's background download has finished, swap it in place for
+ * the resolved local song so it becomes seekable. Returns whether the swap
+ * happened. Re-checks `index`/`song` after the network round trip in case the
+ * queue moved on while the check was in flight.
+ */
+async function upgradeIfDownloaded(
+  get: () => AudioState,
+  set: (partial: Partial<AudioState>) => void,
+  index: number,
+  song: Song,
+): Promise<boolean> {
+  const c = client();
+  const engine = get().engine;
+  if (!c || !engine) return false;
+  const status = await c.getSongLocalStatus(song.id).catch(() => null);
+  if (!status?.local || !status.song) return false;
+  if (get().index !== index || get().songs[index]?.id !== song.id) return false;
+  const songs = [...get().songs];
+  songs[index] = status.song;
+  set({ songs });
+  await engine.replaceAt(index, await songToTrack(c, status.song, get().qualityId));
+  return true;
+}
+
 export const usePlayer = create<AudioState>((set, get) => ({
   engine: null,
   songs: [],
@@ -261,13 +286,22 @@ export const usePlayer = create<AudioState>((set, get) => ({
   },
 
   seekTo: async (seconds) => {
+    const engine = get().engine;
+    if (!engine) return;
     // A not-yet-downloaded track streams progressively (see songToTrack): the
     // server can't serve byte ranges for it yet, so a seek would silently
-    // restart playback from 0. Guarded here (not just in the UI) so an OS
-    // media-session seek control (lock screen / headset) can't trigger it
-    // either.
-    if (get().songs[get().index]?.remote) return;
-    await get().engine?.seekTo(seconds);
+    // restart playback from 0. If the background download has since
+    // finished, swap in the now-local (seekable) track first — otherwise
+    // bail out with a toast, same as before this check existed. Guarded here
+    // (not just in the UI) so an OS media-session seek control (lock screen /
+    // headset) can't trigger a raw seek either.
+    const index = get().index;
+    const song = get().songs[index];
+    if (song?.remote && !(await upgradeIfDownloaded(get, set, index, song))) {
+      useToast.getState().warning(t('media.player.seekUnavailableRemote'));
+      return;
+    }
+    await engine.seekTo(seconds);
     set({ position: seconds });
   },
 
