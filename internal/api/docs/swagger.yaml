@@ -1409,6 +1409,13 @@ components:
         enabled:
           type: boolean
       type: object
+    immerle.songLocalStatusView:
+      properties:
+        local:
+          type: boolean
+        song:
+          $ref: '#/components/schemas/immerle.songView'
+      type: object
     immerle.songView:
       properties:
         album:
@@ -5920,6 +5927,35 @@ paths:
       summary: Download a track
       tags:
       - media
+  /songs/{id}/local:
+    get:
+      description: Read-only, never downloads. Poll this while playing a remote (not-yet-local)
+        track to know when it's safe to seek.
+      parameters:
+      - description: Track id (remote or local)
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.songLocalStatusView'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Check whether a remote track has finished downloading
+      tags:
+      - catalog
   /songs/{id}/lyrics:
     get:
       description: Returns a track's lyrics. When the stored tags carry [mm:ss.xx]

@@ -142,6 +142,10 @@ class NativeAudioEngine implements AudioEngine {
     TrackPlayer.removeMediaItem(index);
   }
 
+  async replaceAt(index: number, track: PlayableTrack): Promise<void> {
+    TrackPlayer.replaceMediaItem(index, toMediaItem(track));
+  }
+
   async move(from: number, to: number): Promise<void> {
     TrackPlayer.moveMediaItem(from, to);
   }

@@ -249,6 +249,41 @@ func (h *Handler) handleGetSong(w http.ResponseWriter, r *http.Request) {
 	writeResource(w, http.StatusOK, toSongViewAnnotated(te.Track, te.Annotation))
 }
 
+// songLocalStatusView reports whether a remote (on-demand) track has finished
+// downloading in the background, with the resolved local song when it has.
+type songLocalStatusView struct {
+	Local bool      `json:"local"`
+	Song  *songView `json:"song,omitempty"`
+}
+
+// handleGetSongLocalStatus reports whether a remote track id has finished
+// downloading, without ever triggering a download itself — used by the player
+// to upgrade a still-progressive-streaming track to the seekable local one
+// once it's ready, instead of requiring the user to replay it. A non-remote
+// id (already local, or unknown) just reports local=false; it's not an error.
+//
+// @Summary      Check whether a remote track has finished downloading
+// @Description  Read-only, never downloads. Poll this while playing a remote (not-yet-local) track to know when it's safe to seek.
+// @Tags         catalog
+// @Security     BearerAuth
+// @Produce      json
+// @Param        id   path   string  true  "Track id (remote or local)"
+// @Success      200  {object}  songLocalStatusView
+// @Failure      401  {object}  errorResponse
+// @Router       /songs/{id}/local [get]
+func (h *Handler) handleGetSongLocalStatus(w http.ResponseWriter, r *http.Request) {
+	if h.OnDemand != nil {
+		if localID, ok := h.OnDemand.LocalTrackIDForRemote(r.Context(), pathParam(r, "id")); ok {
+			if te, err := h.library.Song(r.Context(), userFrom(r.Context()).ID, localID); err == nil {
+				view := toSongViewAnnotated(te.Track, te.Annotation)
+				writeResource(w, http.StatusOK, songLocalStatusView{Local: true, Song: &view})
+				return
+			}
+		}
+	}
+	writeResource(w, http.StatusOK, songLocalStatusView{Local: false})
+}
+
 // handleGetSongLyrics returns a track's lyrics, parsed into plain or synced lines.
 //
 // @Summary      Get song lyrics
