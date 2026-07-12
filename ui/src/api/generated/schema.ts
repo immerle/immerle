@@ -8565,6 +8565,15 @@ export interface components {
         "immerle.playQueueRequest": {
             client?: string;
             current?: string;
+            /**
+             * @description Entries carries display metadata (title/artist/cover/duration/remote)
+             *     for each of IDs — used as a fallback when a track can't be resolved
+             *     via the local catalog (most commonly a not-yet-downloaded on-demand
+             *     remote track), so it still shows up correctly when this queue is
+             *     mirrored on another device. Optional; entries without a match here
+             *     just rely on the catalog lookup succeeding, as before.
+             */
+            entries?: components["schemas"]["immerle.queueEntryRequest"][];
             ids?: string[];
             /**
              * @description Playing reports whether Current is playing (vs paused). A spectator
@@ -8648,6 +8657,15 @@ export interface components {
                 [key: string]: string;
             };
             enabled?: boolean;
+        };
+        "immerle.queueEntryRequest": {
+            album?: string;
+            artist?: string;
+            coverArt?: string;
+            duration?: number;
+            id?: string;
+            remote?: boolean;
+            title?: string;
         };
         "immerle.radioRequest": {
             /** @description CoverURL is the station logo source URL (fetched + cached server-side). */

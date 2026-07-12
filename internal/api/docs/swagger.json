@@ -1691,6 +1691,14 @@
                     "current": {
                         "type": "string"
                     },
+                    "entries": {
+                        "description": "Entries carries display metadata (title/artist/cover/duration/remote)\nfor each of IDs — used as a fallback when a track can't be resolved\nvia the local catalog (most commonly a not-yet-downloaded on-demand\nremote track), so it still shows up correctly when this queue is\nmirrored on another device. Optional; entries without a match here\njust rely on the catalog lookup succeeding, as before.",
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.queueEntryRequest"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
                     "ids": {
                         "items": {
                             "type": "string"
@@ -1887,6 +1895,32 @@
                     },
                     "enabled": {
                         "type": "boolean"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.queueEntryRequest": {
+                "properties": {
+                    "album": {
+                        "type": "string"
+                    },
+                    "artist": {
+                        "type": "string"
+                    },
+                    "coverArt": {
+                        "type": "string"
+                    },
+                    "duration": {
+                        "type": "integer"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "remote": {
+                        "type": "boolean"
+                    },
+                    "title": {
+                        "type": "string"
                     }
                 },
                 "type": "object"

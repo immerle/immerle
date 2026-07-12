@@ -154,3 +154,51 @@ func TestPlayQueueSSEKeepsClientsSynced(t *testing.T) {
 		t.Fatal("did not receive SSE play-queue update")
 	}
 }
+
+// TestPlayQueueRemoteTrackFallsBackToSentMetadata covers a real bug: a
+// not-yet-downloaded on-demand track's id was never inserted as a real
+// catalog row, so resolving the queue via the local catalog alone silently
+// dropped it — a spectator device mirroring this queue would find its
+// current track missing entirely the moment it became current. The saving
+// client's own display metadata (entries) must be used as a fallback for
+// exactly this case, while a real catalog track keeps taking priority.
+func TestPlayQueueRemoteTrackFallsBackToSentMetadata(t *testing.T) {
+	srv, token, _ := newBrowseEnv(t)
+
+	var search searchView
+	if st := getJSON(t, srv, token, "/search?q=So+What", &search); st != http.StatusOK || len(search.Songs) == 0 {
+		t.Fatalf("search: status %d, songs %d", st, len(search.Songs))
+	}
+	localID := search.Songs[0].ID
+	remoteID := "remote:deezer:62847142"
+
+	if st := doStatus(t, srv, http.MethodPut, "/play-queue", token, map[string]any{
+		"ids": []string{localID, remoteID}, "current": remoteID, "position": 0, "playing": true,
+		"entries": []map[string]any{
+			// A real catalog track sent with (deliberately wrong) metadata —
+			// the catalog lookup must win, not this.
+			{"id": localID, "title": "stale title", "artist": "stale artist"},
+			{"id": remoteID, "title": "On Demand Track", "artist": "Some Artist", "remote": true},
+		},
+	}); st != http.StatusNoContent {
+		t.Fatalf("save queue: status %d", st)
+	}
+
+	var q playQueueView
+	if st := getJSON(t, srv, token, "/play-queue", &q); st != http.StatusOK {
+		t.Fatalf("get queue: status %d", st)
+	}
+	if len(q.Entries) != 2 {
+		t.Fatalf("expected both entries to survive, got %+v", q.Entries)
+	}
+	byID := map[string]songView{}
+	for _, e := range q.Entries {
+		byID[e.ID] = e
+	}
+	if byID[localID].Title != "So What" {
+		t.Fatalf("catalog track should keep its real title, got %q", byID[localID].Title)
+	}
+	if byID[remoteID].Title != "On Demand Track" || byID[remoteID].Artist != "Some Artist" {
+		t.Fatalf("remote track should fall back to the sent metadata, got %+v", byID[remoteID])
+	}
+}

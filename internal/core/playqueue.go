@@ -100,20 +100,41 @@ func (s *PlayQueueService) Get(ctx context.Context, userID string) (PlayQueueRes
 		return PlayQueueResult{}, err
 	}
 	trackAnn, _ := s.annotations.AnnotationMap(ctx, userID, models.ItemTrack)
+	entryMeta := make(map[string]models.QueueEntry, len(q.Entries))
+	for _, e := range q.Entries {
+		entryMeta[e.ID] = e
+	}
 	entries := make([]TrackEntry, 0, len(q.TrackIDs))
 	for _, id := range q.TrackIDs {
-		t, err := s.catalog.GetTrack(ctx, id)
-		if err != nil {
+		if t, err := s.catalog.GetTrack(ctx, id); err == nil {
+			entries = append(entries, TrackEntry{Track: t, Annotation: annPtr(trackAnn, id)})
 			continue
 		}
-		entries = append(entries, TrackEntry{Track: t, Annotation: annPtr(trackAnn, id)})
+		// Not in the local catalog — most commonly a not-yet-downloaded
+		// on-demand remote track, which was never inserted as a real row.
+		// Fall back to whatever the saving client reported about it, so it
+		// doesn't just vanish from another device's mirrored queue the
+		// moment it becomes current.
+		if meta, ok := entryMeta[id]; ok {
+			entries = append(entries, TrackEntry{Track: models.Track{
+				ID:         meta.ID,
+				Title:      meta.Title,
+				ArtistName: meta.Artist,
+				AlbumName:  meta.Album,
+				CoverArt:   meta.CoverArt,
+				Duration:   meta.Duration,
+				Remote:     meta.Remote,
+			}})
+		}
 	}
 	return PlayQueueResult{Queue: q, Entries: entries}, nil
 }
 
 // Save persists the user's play queue, stamped with the current time, and
-// notifies subscribers (see Subscribe).
-func (s *PlayQueueService) Save(ctx context.Context, userID, current string, positionMs int64, playing bool, changedBy string, trackIDs []string) error {
+// notifies subscribers (see Subscribe). entries is a display-metadata
+// snapshot for each of trackIDs (see models.PlayQueue.Entries) — may be nil
+// (e.g. from a Subsonic client, which has no rich metadata to offer).
+func (s *PlayQueueService) Save(ctx context.Context, userID, current string, positionMs int64, playing bool, changedBy string, trackIDs []string, entries []models.QueueEntry) error {
 	if err := s.playQueues.Save(ctx, models.PlayQueue{
 		UserID:     userID,
 		Current:    current,
@@ -122,6 +143,7 @@ func (s *PlayQueueService) Save(ctx context.Context, userID, current string, pos
 		ChangedBy:  changedBy,
 		ChangedAt:  time.Now(),
 		TrackIDs:   trackIDs,
+		Entries:    entries,
 	}); err != nil {
 		return err
 	}

@@ -513,11 +513,30 @@ type PlayQueue struct {
 	ChangedBy string    `json:"changedBy,omitempty"`
 	ChangedAt time.Time `json:"changed"`
 	TrackIDs  []string  `json:"trackIds"`
+	// Entries is a snapshot of each queued track's display metadata, as
+	// reported by the saving client — used as a fallback when resolving a
+	// TrackID via the local catalog fails, most commonly a not-yet-downloaded
+	// on-demand remote track (its id was never inserted as a real catalog
+	// row). Without this, such a track would silently disappear from another
+	// device's mirrored queue the moment it became current.
+	Entries []QueueEntry `json:"entries,omitempty"`
 	// TargetDeviceID, when set, is the sole device that should be actively
 	// playing this queue — other devices pause instead of doubling the audio.
 	// Empty means unrestricted: every device manages its own playback.
 	TargetDeviceID  string     `json:"targetDeviceId,omitempty"`
 	TargetChangedAt *time.Time `json:"targetChangedAt,omitempty"`
+}
+
+// QueueEntry is a lightweight display-metadata snapshot for one queued
+// track, supplied by the client that saved the queue (see PlayQueue.Entries).
+type QueueEntry struct {
+	ID       string `json:"id"`
+	Title    string `json:"title"`
+	Artist   string `json:"artist"`
+	Album    string `json:"album"`
+	CoverArt string `json:"coverArt,omitempty"`
+	Duration int    `json:"duration,omitempty"`
+	Remote   bool   `json:"remote,omitempty"`
 }
 
 // Scrobble records a play submission.

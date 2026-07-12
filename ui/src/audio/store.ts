@@ -189,14 +189,7 @@ function sendRemoteCommand(get: () => AudioState, current: string, positionMs: n
   const c = client();
   const { songs } = get();
   if (!c || !songs.length) return;
-  void c
-    .savePlayQueue(
-      songs.map((s) => s.id),
-      current,
-      positionMs,
-      playing,
-    )
-    .catch(() => undefined);
+  void c.savePlayQueue(songs, current, positionMs, playing).catch(() => undefined);
 }
 
 /**
@@ -865,14 +858,7 @@ function flushSaveQueue(get: () => AudioState): void {
   const c = client();
   const { songs, index, position, status } = get();
   if (!c || songs.length === 0 || index < 0) return;
-  void c
-    .savePlayQueue(
-      songs.map((s) => s.id),
-      songs[index]?.id,
-      Math.floor(position * 1000),
-      status === 'playing',
-    )
-    .catch(() => undefined);
+  void c.savePlayQueue(songs, songs[index]?.id, Math.floor(position * 1000), status === 'playing').catch(() => undefined);
 }
 
 /**

@@ -427,9 +427,30 @@ export class ImmerleClient {
    * this install's own device id (falling back to a generic label
    * pre-login) so a listener can tell "I wrote this" from "someone else did".
    */
-  async savePlayQueue(songIds: string[], current?: string, positionMs?: number, playing?: boolean): Promise<void> {
+  /**
+   * `songs` (not just ids) so the server can persist each track's display
+   * metadata alongside it — required for a not-yet-downloaded remote track,
+   * which has no real catalog row the server could otherwise resolve it
+   * from when this queue is mirrored on another device.
+   */
+  async savePlayQueue(songs: Song[], current?: string, positionMs?: number, playing?: boolean): Promise<void> {
     const { error } = await this.api.PUT('/play-queue', {
-      body: { ids: songIds, current, position: positionMs, playing: !!playing, client: this.session?.deviceId || 'immerle' },
+      body: {
+        ids: songs.map((s) => s.id),
+        entries: songs.map((s) => ({
+          id: s.id,
+          title: s.title,
+          artist: s.artist ?? '',
+          album: s.album ?? '',
+          coverArt: s.coverArt ?? '',
+          duration: s.duration ?? 0,
+          remote: !!s.remote,
+        })),
+        current,
+        position: positionMs,
+        playing: !!playing,
+        client: this.session?.deviceId || 'immerle',
+      },
     });
     if (error) throw apiErr(error, 'playqueue.save');
   }

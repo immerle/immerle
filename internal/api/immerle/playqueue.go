@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/immerle/immerle/internal/core"
+	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 )
 
@@ -153,6 +154,17 @@ func (h *Handler) writePlayQueueEvent(w http.ResponseWriter, flusher http.Flushe
 	flusher.Flush()
 }
 
+// queueEntryRequest is one entry of playQueueRequest.Entries.
+type queueEntryRequest struct {
+	ID       string `json:"id"`
+	Title    string `json:"title"`
+	Artist   string `json:"artist"`
+	Album    string `json:"album"`
+	CoverArt string `json:"coverArt"`
+	Duration int    `json:"duration"`
+	Remote   bool   `json:"remote"`
+}
+
 // playQueueRequest is the body for PUT /play-queue.
 type playQueueRequest struct {
 	IDs      []string `json:"ids"`
@@ -164,6 +176,13 @@ type playQueueRequest struct {
 	// notices Current/Playing changed on its next poll.
 	Playing bool   `json:"playing"`
 	Client  string `json:"client"`
+	// Entries carries display metadata (title/artist/cover/duration/remote)
+	// for each of IDs — used as a fallback when a track can't be resolved
+	// via the local catalog (most commonly a not-yet-downloaded on-demand
+	// remote track), so it still shows up correctly when this queue is
+	// mirrored on another device. Optional; entries without a match here
+	// just rely on the catalog lookup succeeding, as before.
+	Entries []queueEntryRequest `json:"entries,omitempty"`
 }
 
 // handleSavePlayQueue persists the caller's play queue.
@@ -186,7 +205,14 @@ func (h *Handler) handleSavePlayQueue(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
 	h.Logger.Info("play-queue save", "user", user.Username, "current", req.Current, "playing", req.Playing,
 		"position", req.Position, "changedBy", req.Client, "tracks", len(req.IDs))
-	if err := h.playQueue.Save(r.Context(), user.ID, req.Current, req.Position, req.Playing, req.Client, req.IDs); err != nil {
+	entries := make([]models.QueueEntry, 0, len(req.Entries))
+	for _, e := range req.Entries {
+		entries = append(entries, models.QueueEntry{
+			ID: e.ID, Title: e.Title, Artist: e.Artist, Album: e.Album,
+			CoverArt: e.CoverArt, Duration: e.Duration, Remote: e.Remote,
+		})
+	}
+	if err := h.playQueue.Save(r.Context(), user.ID, req.Current, req.Position, req.Playing, req.Client, req.IDs, entries); err != nil {
 		writeServiceError(w, err)
 		return
 	}
