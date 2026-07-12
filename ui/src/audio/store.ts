@@ -154,6 +154,10 @@ const ENGINE_RELOAD_GRACE_MS = 3000;
 // promise of whichever reload most recently claimed the lock (already
 // resolved if none is in flight).
 let engineReloadChain: Promise<void> = Promise.resolve();
+// Bumped by every acquireEngineReloadLock() call — lets a caller that was
+// queued behind another one notice, once it's finally its turn, that a
+// *newer* reload was requested in the meantime (see stale() below).
+let reloadSeq = 0;
 
 /**
  * Exclusive lock for reloading the engine (setQueue + friends), serialized
@@ -173,12 +177,25 @@ let engineReloadChain: Promise<void> = Promise.resolve();
  * from the other. This version has no such gap: the lock is claimed
  * up-front, not after doing the async prep work.
  *
+ * Serializing isn't enough on its own though: once a reload is queued
+ * behind another one, it should only still run if it's still the *latest*
+ * request — otherwise it's replaying a decision that's since been
+ * superseded. E.g. an incoming "apply the session you're taking over"
+ * reconciliation queued behind the user's own more recent play action would,
+ * once its turn came, blindly reload the old session on top of what the
+ * user just started (a few seconds later, once the winner's grace period
+ * lifted — this is exactly what was reported: the new track played
+ * correctly for a moment, then reverted). Callers must check `stale()`
+ * right after acquiring and bail out if it's true.
+ *
  * Sets suppressEngineEvents so the engine event handlers ignore stray
  * events during the reload. The returned release() must be called once the
- * reload settles; it keeps suppressing (and the lock held) for one more
- * grace period after that — see ENGINE_RELOAD_GRACE_MS.
+ * reload (or the stale bail-out) is done; it keeps suppressing (and the
+ * lock held) for one more grace period after that — see
+ * ENGINE_RELOAD_GRACE_MS.
  */
-function acquireEngineReloadLock(): Promise<() => void> {
+function acquireEngineReloadLock(): Promise<{ stale: () => boolean; release: () => void }> {
+  const mySeq = ++reloadSeq;
   const previous = engineReloadChain;
   let releaseChain = () => {};
   engineReloadChain = new Promise<void>((resolve) => {
@@ -186,11 +203,14 @@ function acquireEngineReloadLock(): Promise<() => void> {
   });
   return previous.then(() => {
     suppressEngineEvents = true;
-    return () => {
-      setTimeout(() => {
-        suppressEngineEvents = false;
-        releaseChain();
-      }, ENGINE_RELOAD_GRACE_MS);
+    return {
+      stale: () => mySeq !== reloadSeq,
+      release: () => {
+        setTimeout(() => {
+          suppressEngineEvents = false;
+          releaseChain();
+        }, ENGINE_RELOAD_GRACE_MS);
+      },
     };
   });
 }
@@ -270,8 +290,9 @@ async function applyRemoteQueue(
   remote: PlayQueueSnapshot,
   autoplay: boolean,
 ): Promise<void> {
-  const release = await acquireEngineReloadLock();
+  const { stale, release } = await acquireEngineReloadLock();
   try {
+    if (stale()) return; // superseded by a newer local/remote reload while queued — see acquireEngineReloadLock
     const c = client();
     const engine = get().engine;
     if (!c || !engine || !remote.songs.length) return;
@@ -608,8 +629,9 @@ export const usePlayer = create<AudioState>((set, get) => ({
   },
 
   playSongs: async (songs, startIndex = 0) => {
-    const release = await acquireEngineReloadLock();
+    const { stale, release } = await acquireEngineReloadLock();
     try {
+      if (stale()) return; // superseded while queued — see acquireEngineReloadLock
       const c = client();
       const engine = get().engine;
       if (!c || !engine || songs.length === 0) return;
@@ -636,8 +658,9 @@ export const usePlayer = create<AudioState>((set, get) => ({
   },
 
   playRadio: async (station) => {
-    const release = await acquireEngineReloadLock();
+    const { stale, release } = await acquireEngineReloadLock();
     try {
+      if (stale()) return; // superseded while queued — see acquireEngineReloadLock
       const engine = get().engine;
       if (!engine || !station.streamUrl) return;
       claimActiveDevice(get, set);
@@ -659,8 +682,9 @@ export const usePlayer = create<AudioState>((set, get) => ({
   },
 
   playTrackById: async (id, positionSec, autoplay) => {
-    const release = await acquireEngineReloadLock();
+    const { stale, release } = await acquireEngineReloadLock();
     try {
+      if (stale()) return; // superseded while queued — see acquireEngineReloadLock
       const c = client();
       const engine = get().engine;
       if (!c || !engine) return;
