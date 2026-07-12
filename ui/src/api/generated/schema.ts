@@ -4909,7 +4909,7 @@ export interface paths {
         };
         /**
          * Save play queue
-         * @description Replaces the caller's saved play queue (tracks, current track and position).
+         * @description Replaces the caller's saved play queue (tracks, current track, position and playing state).
          */
         put: {
             parameters: {
@@ -4952,6 +4952,162 @@ export interface paths {
                 };
             };
         };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/play-queue/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stream play-queue events (SSE)
+         * @description Server-Sent Events stream. Emits the current queue immediately, then again on every change (save, target change).
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description SSE stream */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/event-stream": string;
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/event-stream": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/play-queue/target": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set the active playback device
+         * @description Assigns (or, with an empty deviceId, clears) the sole device that should be actively playing the caller's queue.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Target device */
+            requestBody: {
+                content: {
+                    "application/json": Record<string, never> | components["schemas"]["immerle.setPlaybackTargetRequest"];
+                };
+            };
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/play-queue/targets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List playback targets
+         * @description Lists the caller's recently-active app installs (device-kind API tokens), for the "cast to device" picker.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.playbackTargetView"][];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -7712,6 +7868,11 @@ export interface components {
             createdAt?: string;
             expiresAt?: string;
             id?: string;
+            /**
+             * @description IsDevice marks an app login session rather than a manually-created
+             *     personal/CLI token.
+             */
+            isDevice?: boolean;
             lastUsedAt?: string;
             /** @example my-cli */
             name?: string;
@@ -8326,6 +8487,12 @@ export interface components {
         };
         "immerle.createTokenRequest": {
             /**
+             * @description Device marks this token as an app login session (one per installed
+             *     client) rather than a manually-created personal/CLI token — only
+             *     device tokens are offered as playback-transfer targets.
+             */
+            device?: boolean;
+            /**
              * @description ExpiresAt is an optional RFC3339 timestamp; omit or null for a token that
              *     never expires.
              */
@@ -8398,7 +8565,23 @@ export interface components {
         "immerle.playQueueRequest": {
             client?: string;
             current?: string;
+            /**
+             * @description Entries carries display metadata (title/artist/cover/duration/remote)
+             *     for each of IDs — used as a fallback when a track can't be resolved
+             *     via the local catalog (most commonly a not-yet-downloaded on-demand
+             *     remote track), so it still shows up correctly when this queue is
+             *     mirrored on another device. Optional; entries without a match here
+             *     just rely on the catalog lookup succeeding, as before.
+             */
+            entries?: components["schemas"]["immerle.queueEntryRequest"][];
             ids?: string[];
+            /**
+             * @description Playing reports whether Current is playing (vs paused). A spectator
+             *     device (see TargetDeviceID) can also use this write to push a
+             *     play/pause/skip command — the active device applies it once it
+             *     notices Current/Playing changed on its next poll.
+             */
+            playing?: boolean;
             position?: number;
         };
         "immerle.playQueueView": {
@@ -8406,7 +8589,24 @@ export interface components {
             changedBy?: string;
             current?: string;
             entries?: components["schemas"]["immerle.songView"][];
+            /**
+             * @description Playing reports whether Current was playing (vs paused) as of
+             *     ChangedAt — see playQueueRequest.Playing.
+             */
+            playing?: boolean;
             position?: number;
+            /**
+             * @description TargetDeviceID, when set, is the id of the sole device that should be
+             *     actively playing this queue right now — every other device should
+             *     pause instead of doubling the audio. Empty means unrestricted: each
+             *     device manages its own playback independently (the default).
+             */
+            targetDeviceId?: string;
+        };
+        "immerle.playbackTargetView": {
+            id?: string;
+            lastUsedAt?: string;
+            name?: string;
         };
         "immerle.playlistCreateRequest": {
             ids?: string[];
@@ -8458,6 +8658,15 @@ export interface components {
             };
             enabled?: boolean;
         };
+        "immerle.queueEntryRequest": {
+            album?: string;
+            artist?: string;
+            coverArt?: string;
+            duration?: number;
+            id?: string;
+            remote?: boolean;
+            title?: string;
+        };
         "immerle.radioRequest": {
             /** @description CoverURL is the station logo source URL (fetched + cached server-side). */
             coverUrl?: string;
@@ -8489,6 +8698,13 @@ export interface components {
         };
         "immerle.setEnabledRequest": {
             enabled?: boolean;
+        };
+        "immerle.setPlaybackTargetRequest": {
+            /**
+             * @description DeviceID is the device to make the sole active player; empty clears the
+             *     restriction so every device plays independently again.
+             */
+            deviceId?: string;
         };
         "immerle.shareCreateRequest": {
             description?: string;

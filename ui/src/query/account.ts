@@ -8,6 +8,7 @@ const KEYS = {
   nowPlaying: ['account', 'nowPlaying'] as const,
   tokens: ['account', 'tokens'] as const,
   account: ['account', 'me'] as const,
+  playbackTargets: ['account', 'playbackTargets'] as const,
 };
 
 /** The caller's own account (display name + email), editable via `/account`. */
@@ -42,6 +43,16 @@ export function useNowPlaying() {
     enabled: !!client,
     refetchInterval: 10000,
     queryFn: () => client!.getNowPlaying(),
+  });
+}
+
+/** Recently-active app installs on this account, for the "cast to device" picker. Fetched fresh each time it opens. */
+export function usePlaybackTargets(enabled: boolean) {
+  const client = useAuth((s) => s.client);
+  return useQuery({
+    queryKey: KEYS.playbackTargets,
+    enabled: enabled && !!client,
+    queryFn: ({ signal }) => client!.listPlaybackTargets(signal),
   });
 }
 

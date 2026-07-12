@@ -3,6 +3,7 @@ package persistence
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"strings"
 	"time"
@@ -21,11 +22,17 @@ type PlayQueueRepo struct{ *base }
 // Save stores the user's queue.
 func (r *PlayQueueRepo) Save(ctx context.Context, q models.PlayQueue) error {
 	ids := strings.Join(q.TrackIDs, ",")
-	_, err := r.bexec(ctx, r.mel.NewInsert("play_queues").
+	entriesJSON, err := json.Marshal(q.Entries)
+	if err != nil {
+		return err
+	}
+	_, err = r.bexec(ctx, r.mel.NewInsert("play_queues").
 		Set("user_id", q.UserID).
 		Set("track_ids", ids).UpdateDuplicateKey().
+		Set("entries_json", string(entriesJSON)).UpdateDuplicateKey().
 		Set("current", q.Current).UpdateDuplicateKey().
 		Set("position_ms", q.PositionMs).UpdateDuplicateKey().
+		Set("playing", db.Bool(q.Playing)).UpdateDuplicateKey().
 		Set("changed_by", q.ChangedBy).UpdateDuplicateKey().
 		Set("changed_at", db.Millis(q.ChangedAt)).UpdateDuplicateKey().
 		OnConflict("user_id"))
@@ -35,11 +42,13 @@ func (r *PlayQueueRepo) Save(ctx context.Context, q models.PlayQueue) error {
 // Get returns the user's queue, or ErrNotFound.
 func (r *PlayQueueRepo) Get(ctx context.Context, userID string) (models.PlayQueue, error) {
 	var q models.PlayQueue
-	var ids string
+	var ids, entriesJSON string
 	var changedAt int64
+	var playing int
+	var targetChangedAt sql.NullInt64
 	err := r.bqueryRow(ctx, r.mel.New("play_queues").
-		Select("user_id", "track_ids", "current", "position_ms", "changed_by", "changed_at").
-		Where("user_id", "=", userID)).Scan(&q.UserID, &ids, &q.Current, &q.PositionMs, &q.ChangedBy, &changedAt)
+		Select("user_id", "track_ids", "entries_json", "current", "position_ms", "playing", "changed_by", "changed_at", "target_device_id", "target_changed_at").
+		Where("user_id", "=", userID)).Scan(&q.UserID, &ids, &entriesJSON, &q.Current, &q.PositionMs, &playing, &q.ChangedBy, &changedAt, &q.TargetDeviceID, &targetChangedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return q, ErrNotFound
 	}
@@ -49,8 +58,26 @@ func (r *PlayQueueRepo) Get(ctx context.Context, userID string) (models.PlayQueu
 	if ids != "" {
 		q.TrackIDs = strings.Split(ids, ",")
 	}
+	if entriesJSON != "" {
+		_ = json.Unmarshal([]byte(entriesJSON), &q.Entries)
+	}
+	q.Playing = playing != 0
 	q.ChangedAt = db.FromMillis(changedAt)
+	q.TargetChangedAt = db.TimePtr(targetChangedAt)
 	return q, nil
+}
+
+// SetTarget assigns (or clears, with an empty deviceID) the device that
+// should be the sole active player for the user's queue. Independent of
+// Save so a normal playback-position sync never clobbers it.
+func (r *PlayQueueRepo) SetTarget(ctx context.Context, userID, deviceID string) error {
+	_, err := r.bexec(ctx, r.mel.NewInsert("play_queues").
+		Set("user_id", userID).
+		Set("changed_at", db.Millis(time.Now())).
+		Set("target_device_id", deviceID).UpdateDuplicateKey().
+		Set("target_changed_at", db.Millis(time.Now())).UpdateDuplicateKey().
+		OnConflict("user_id"))
+	return err
 }
 
 // ---- Scrobbles ----

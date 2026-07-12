@@ -13,6 +13,10 @@
                     "id": {
                         "type": "string"
                     },
+                    "isDevice": {
+                        "description": "IsDevice marks an app login session rather than a manually-created\npersonal/CLI token.",
+                        "type": "boolean"
+                    },
                     "lastUsedAt": {
                         "type": "string"
                     },
@@ -1478,6 +1482,10 @@
             },
             "immerle.createTokenRequest": {
                 "properties": {
+                    "device": {
+                        "description": "Device marks this token as an app login session (one per installed\nclient) rather than a manually-created personal/CLI token — only\ndevice tokens are offered as playback-transfer targets.",
+                        "type": "boolean"
+                    },
                     "expiresAt": {
                         "description": "ExpiresAt is an optional RFC3339 timestamp; omit or null for a token that\nnever expires.",
                         "type": "string"
@@ -1683,12 +1691,24 @@
                     "current": {
                         "type": "string"
                     },
+                    "entries": {
+                        "description": "Entries carries display metadata (title/artist/cover/duration/remote)\nfor each of IDs — used as a fallback when a track can't be resolved\nvia the local catalog (most commonly a not-yet-downloaded on-demand\nremote track), so it still shows up correctly when this queue is\nmirrored on another device. Optional; entries without a match here\njust rely on the catalog lookup succeeding, as before.",
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.queueEntryRequest"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
                     "ids": {
                         "items": {
                             "type": "string"
                         },
                         "type": "array",
                         "uniqueItems": false
+                    },
+                    "playing": {
+                        "description": "Playing reports whether Current is playing (vs paused). A spectator\ndevice (see TargetDeviceID) can also use this write to push a\nplay/pause/skip command — the active device applies it once it\nnotices Current/Playing changed on its next poll.",
+                        "type": "boolean"
                     },
                     "position": {
                         "type": "integer"
@@ -1714,8 +1734,30 @@
                         "type": "array",
                         "uniqueItems": false
                     },
+                    "playing": {
+                        "description": "Playing reports whether Current was playing (vs paused) as of\nChangedAt — see playQueueRequest.Playing.",
+                        "type": "boolean"
+                    },
                     "position": {
                         "type": "integer"
+                    },
+                    "targetDeviceId": {
+                        "description": "TargetDeviceID, when set, is the id of the sole device that should be\nactively playing this queue right now — every other device should\npause instead of doubling the audio. Empty means unrestricted: each\ndevice manages its own playback independently (the default).",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.playbackTargetView": {
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "lastUsedAt": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
                     }
                 },
                 "type": "object"
@@ -1857,6 +1899,32 @@
                 },
                 "type": "object"
             },
+            "immerle.queueEntryRequest": {
+                "properties": {
+                    "album": {
+                        "type": "string"
+                    },
+                    "artist": {
+                        "type": "string"
+                    },
+                    "coverArt": {
+                        "type": "string"
+                    },
+                    "duration": {
+                        "type": "integer"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "remote": {
+                        "type": "boolean"
+                    },
+                    "title": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "immerle.radioRequest": {
                 "properties": {
                     "coverUrl": {
@@ -1959,6 +2027,15 @@
                 "properties": {
                     "enabled": {
                         "type": "boolean"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.setPlaybackTargetRequest": {
+                "properties": {
+                    "deviceId": {
+                        "description": "DeviceID is the device to make the sole active player; empty clears the\nrestriction so every device plays independently again.",
+                        "type": "string"
                     }
                 },
                 "type": "object"
@@ -7425,7 +7502,7 @@
                 ]
             },
             "put": {
-                "description": "Replaces the caller's saved play queue (tracks, current track and position).",
+                "description": "Replaces the caller's saved play queue (tracks, current track, position and playing state).",
                 "requestBody": {
                     "content": {
                         "application/json": {
@@ -7477,6 +7554,140 @@
                     }
                 ],
                 "summary": "Save play queue",
+                "tags": [
+                    "playback"
+                ]
+            }
+        },
+        "/play-queue/events": {
+            "get": {
+                "description": "Server-Sent Events stream. Emits the current queue immediately, then again on every change (save, target change).",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "text/event-stream": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "description": "SSE stream"
+                    },
+                    "401": {
+                        "content": {
+                            "text/event-stream": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Stream play-queue events (SSE)",
+                "tags": [
+                    "playback"
+                ]
+            }
+        },
+        "/play-queue/target": {
+            "put": {
+                "description": "Assigns (or, with an empty deviceId, clears) the sole device that should be actively playing the caller's queue.",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/immerle.setPlaybackTargetRequest",
+                                        "summary": "body",
+                                        "description": "Target device"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Target device",
+                    "required": true
+                },
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Set the active playback device",
+                "tags": [
+                    "playback"
+                ]
+            }
+        },
+        "/play-queue/targets": {
+            "get": {
+                "description": "Lists the caller's recently-active app installs (device-kind API tokens), for the \"cast to device\" picker.",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/immerle.playbackTargetView"
+                                    },
+                                    "type": "array"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "List playback targets",
                 "tags": [
                     "playback"
                 ]

@@ -733,7 +733,14 @@
       "shuffle": "Shuffle",
       "lyrics": "Lyrics",
       "unresolvedSkipped": "Skipping “{{title}}” — not resolved yet, tap it from the playlist to load it",
-      "seekUnavailableRemote": "Downloading — seeking will be available once ready"
+      "seekUnavailableRemote": "Downloading — seeking will be available once ready",
+      "cast": "Play on…",
+      "castTitle": "Play on",
+      "castEverywhere": "Everywhere",
+      "castThisDevice": "This device",
+      "castNoOtherDevices": "No other devices found",
+      "castPlayingElsewhere": "Playing on another device",
+      "castPlayingOnDevice": "Playing on {{name}}"
     },
     "local": {
       "title": "Local music",
@@ -887,7 +894,14 @@
       "close": "Close",
       "playlistNamePlaceholder": "Playlist name",
       "cancel": "Cancel",
-      "create": "Create"
+      "create": "Create",
+      "cast": "Play on…",
+      "castTitle": "Play on",
+      "castEverywhere": "Everywhere",
+      "castThisDevice": "This device",
+      "castNoOtherDevices": "No other devices found",
+      "castPlayingElsewhere": "Playing on another device",
+      "castPlayingOnDevice": "Playing on {{name}}"
     },
     "topbar": {
       "back": "Back",

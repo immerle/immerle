@@ -502,12 +502,41 @@ type Playlist struct {
 
 // PlayQueue is a user's saved server-side playback queue.
 type PlayQueue struct {
-	UserID     string    `json:"userId"`
-	Current    string    `json:"current,omitempty"`
-	PositionMs int64     `json:"position"`
-	ChangedBy  string    `json:"changedBy,omitempty"`
-	ChangedAt  time.Time `json:"changed"`
-	TrackIDs   []string  `json:"trackIds"`
+	UserID     string `json:"userId"`
+	Current    string `json:"current,omitempty"`
+	PositionMs int64  `json:"position"`
+	// Playing reports whether Current was playing (vs paused) as of ChangedAt
+	// — lets another device tell playing from paused when it applies this
+	// queue, and lets a spectator device push a play/pause/skip command that
+	// the active device picks up (see TargetDeviceID).
+	Playing   bool      `json:"playing"`
+	ChangedBy string    `json:"changedBy,omitempty"`
+	ChangedAt time.Time `json:"changed"`
+	TrackIDs  []string  `json:"trackIds"`
+	// Entries is a snapshot of each queued track's display metadata, as
+	// reported by the saving client — used as a fallback when resolving a
+	// TrackID via the local catalog fails, most commonly a not-yet-downloaded
+	// on-demand remote track (its id was never inserted as a real catalog
+	// row). Without this, such a track would silently disappear from another
+	// device's mirrored queue the moment it became current.
+	Entries []QueueEntry `json:"entries,omitempty"`
+	// TargetDeviceID, when set, is the sole device that should be actively
+	// playing this queue — other devices pause instead of doubling the audio.
+	// Empty means unrestricted: every device manages its own playback.
+	TargetDeviceID  string     `json:"targetDeviceId,omitempty"`
+	TargetChangedAt *time.Time `json:"targetChangedAt,omitempty"`
+}
+
+// QueueEntry is a lightweight display-metadata snapshot for one queued
+// track, supplied by the client that saved the queue (see PlayQueue.Entries).
+type QueueEntry struct {
+	ID       string `json:"id"`
+	Title    string `json:"title"`
+	Artist   string `json:"artist"`
+	Album    string `json:"album"`
+	CoverArt string `json:"coverArt,omitempty"`
+	Duration int    `json:"duration,omitempty"`
+	Remote   bool   `json:"remote,omitempty"`
 }
 
 // Scrobble records a play submission.
@@ -722,6 +751,10 @@ type APIToken struct {
 	LastUsedAt *time.Time `json:"lastUsedAt,omitempty"`
 	ExpiresAt  *time.Time `json:"expiresAt,omitempty"`
 	Revoked    bool       `json:"revoked"`
+	// IsDevice marks a token minted by the app's own login flow (one per
+	// installed client) rather than a manually-created personal/CLI token —
+	// only these are offered as playback-transfer targets.
+	IsDevice bool `json:"isDevice,omitempty"`
 }
 
 // Device is an authenticated client session identified by a JWT's jti. The row

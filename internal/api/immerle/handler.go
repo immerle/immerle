@@ -139,7 +139,7 @@ func NewHandler(d Deps) *Handler {
 		Deps:        d,
 		library:     core.NewLibraryService(d.Catalog, d.Annotations, d.OnDemand),
 		playback:    core.NewPlaybackService(d.Catalog, d.Annotations, d.Scrobbles, d.OnDemand, d.Activity, d.NowPlaying),
-		playQueue:   core.NewPlayQueueService(d.PlayQueues, d.Catalog, d.Annotations),
+		playQueue:   core.NewPlayQueueService(d.PlayQueues, d.Catalog, d.Annotations, d.Logger),
 		playlistSvc: core.NewPlaylistService(d.Playlists, d.Annotations, d.Activity, d.PlaylistSync, d.OnDemand),
 		userSvc:     core.NewUserService(d.Users, d.Auth),
 		shareSvc:    core.NewShareService(d.Shares, d.Catalog, d.Playlists),
@@ -265,6 +265,9 @@ func (h *Handler) Register(mux chi.Router) {
 			// Saved play queue (cross-device) and the now-playing feed.
 			r.Get("/play-queue", h.handleGetPlayQueue)
 			r.Put("/play-queue", h.handleSavePlayQueue)
+			r.Get("/play-queue/events", h.handleStreamPlayQueue)
+			r.Get("/play-queue/targets", h.handleListPlaybackTargets)
+			r.Put("/play-queue/target", h.handleSetPlaybackTarget)
 			r.Get("/now-playing", h.handleNowPlaying)
 
 			// Mint short-lived signed stream/download URLs for the {id} track.

@@ -355,7 +355,7 @@ func TestAPITokenAuthenticatesRequests(t *testing.T) {
 	// Mint a token for bob directly via the auth service.
 	auth, _ := core.NewAuthService(e.store.Users, e.store.APITokens, e.store.Devices, "secret")
 	bob, _ := e.store.Users.GetByUsername(ctx, "bob")
-	secret, _, err := auth.CreateAPIToken(ctx, bob.ID, "test", nil)
+	secret, _, err := auth.CreateAPIToken(ctx, bob.ID, "test", nil, false)
 	if err != nil {
 		t.Fatal(err)
 	}

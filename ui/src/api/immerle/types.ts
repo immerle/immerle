@@ -59,6 +59,8 @@ export interface ImmerleSession {
   userId: string;
   username: string;
   isAdmin: boolean;
+  /** This install's own personal-token id — used to recognize "this device" in the playback-transfer picker. */
+  deviceId?: string;
 }
 
 // --- Admin: library --------------------------------------------------------

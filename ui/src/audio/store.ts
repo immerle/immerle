@@ -3,7 +3,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../auth/store';
 import { queryClient } from '../query/queryClient';
 import { ImmerleClient } from '../api/immerle/client';
-import { Song } from '../api/subsonic/types';
+import { toPlayQueueSnapshot } from '../api/immerle/catalog';
+import { PlayQueueView } from '../api/immerleApi';
+import { PlayQueueSnapshot, Song } from '../api/subsonic/types';
 import { offlinePlayableUrl } from '../offline/store';
 import { AudioEngine, PlayableTrack, RepeatMode } from './types';
 import { createEngine } from './engine';
@@ -83,6 +85,19 @@ interface AudioState {
   /** 0..1 playback volume. */
   volume: number;
   qualityId: string;
+  /**
+   * Server-assigned sole active-playback device id for this account ('' =
+   * unrestricted — every device plays independently, today's default). When
+   * set to another device, this one should stop driving local audio.
+   */
+  castTargetId: string;
+  /**
+   * The device id that last wrote the mirrored state shown here (see
+   * applyDisplaySnapshot) — who's actually making the sound right now, even
+   * in unrestricted mode where castTargetId is empty. '' when unknown (e.g.
+   * this device itself is the source, or nothing's ever been saved).
+   */
+  playingDeviceId: string;
 
   init: () => Promise<void>;
   hydrateSettings: () => Promise<void>;
@@ -106,18 +121,387 @@ interface AudioState {
   toggleShuffle: () => Promise<void>;
   setVolume: (volume: number) => void;
   setQuality: (id: string) => Promise<void>;
+  /** Make `deviceId` the sole active player ('' clears it back to independent/"everywhere"). */
+  setCastTarget: (deviceId: string) => Promise<void>;
 
   current: () => Song | undefined;
 }
 
 // Module-scoped scrobble state (not reactive UI state).
 let scrobble: ScrobbleFlags = { nowPlayingSent: false, submitted: false };
-let saveQueueTimer: ReturnType<typeof setTimeout> | null = null;
+// See scheduleSaveQueue/flushSaveQueue.
+let lastQueueSaveAt = 0;
+const QUEUE_SAVE_THROTTLE_MS = 5000;
 // Original queue order, kept so shuffle can be turned off again.
 let orderBackup: Song[] | null = null;
+// True while any action that reloads the engine (engine.setQueue) is
+// mid-flight — a fresh load momentarily reports the *previous* track's
+// position/status (its own progress/state events haven't caught up to the
+// new source yet) before the explicit reset that follows takes effect. A
+// stray event landing in that gap must not be treated as this device's real
+// playback position — that's what made a brand-new track start playback
+// from wherever the old one had gotten to.
+let suppressEngineEvents = false;
+// How long to keep suppressing past the awaited engine calls settling. A
+// remote/on-demand track's old audio source can take a while to actually
+// abort over a real network, longer than a fixed short window might assume —
+// generous on purpose, since the cost of a false positive here (briefly not
+// reflecting a genuine late position change) is much lower than the cost of
+// a false negative (a stray event silently corrupting the saved position).
+const ENGINE_RELOAD_GRACE_MS = 3000;
+
+// Chained promise backing acquireEngineReloadLock — always the completion
+// promise of whichever reload most recently claimed the lock (already
+// resolved if none is in flight).
+let engineReloadChain: Promise<void> = Promise.resolve();
+// Bumped by every acquireEngineReloadLock() call — lets a caller that was
+// queued behind another one notice, once it's finally its turn, that a
+// *newer* reload was requested in the meantime (see stale() below).
+let reloadSeq = 0;
+
+/**
+ * Exclusive lock for reloading the engine (setQueue + friends), serialized
+ * against any other in-flight reload. Call as the very first statement,
+ * before any other `await` — capturing and replacing `engineReloadChain`
+ * happens synchronously, with no `await` in between, so two concurrent
+ * callers can never both slip through: whichever calls this second always
+ * ends up chained behind the first, deterministically. An earlier version
+ * of this guard instead polled a `while (suppressEngineEvents) await
+ * sleep()` loop — but there's a real gap between that check passing and
+ * suppressEngineEvents actually being set true (network calls like
+ * Promise.all(songToTrack) run in between), and two reloads (an incoming
+ * "you're now the active device, apply this session" reconciliation and a
+ * simultaneous local play action) could both pass the check before either
+ * set the flag, run concurrently, and each write their own final
+ * position/status — mixing the *track* from one with the *position/status*
+ * from the other. This version has no such gap: the lock is claimed
+ * up-front, not after doing the async prep work.
+ *
+ * Serializing isn't enough on its own though: once a reload is queued
+ * behind another one, it should only still run if it's still the *latest*
+ * request — otherwise it's replaying a decision that's since been
+ * superseded. E.g. an incoming "apply the session you're taking over"
+ * reconciliation queued behind the user's own more recent play action would,
+ * once its turn came, blindly reload the old session on top of what the
+ * user just started (a few seconds later, once the winner's grace period
+ * lifted — this is exactly what was reported: the new track played
+ * correctly for a moment, then reverted). Callers must check `stale()`
+ * right after acquiring and bail out if it's true.
+ *
+ * Sets suppressEngineEvents so the engine event handlers ignore stray
+ * events during the reload. The returned release() must be called once the
+ * reload (or the stale bail-out) is done; it keeps suppressing (and the
+ * lock held) for one more grace period after that — see
+ * ENGINE_RELOAD_GRACE_MS.
+ */
+function acquireEngineReloadLock(): Promise<{ stale: () => boolean; release: () => void }> {
+  const mySeq = ++reloadSeq;
+  const previous = engineReloadChain;
+  let releaseChain = () => {};
+  engineReloadChain = new Promise<void>((resolve) => {
+    releaseChain = resolve;
+  });
+  return previous.then(() => {
+    suppressEngineEvents = true;
+    return {
+      stale: () => mySeq !== reloadSeq,
+      release: () => {
+        setTimeout(() => {
+          suppressEngineEvents = false;
+          releaseChain();
+        }, ENGINE_RELOAD_GRACE_MS);
+      },
+    };
+  });
+}
+
+/**
+ * Waits for any in-flight engine reload to finish without becoming a lock
+ * holder itself — for playNext/enqueue, which touch the engine (add/move)
+ * but don't reload it wholesale, so they don't need their own grace period.
+ */
+function waitForEngineReloadSlot(): Promise<void> {
+  return engineReloadChain;
+}
 
 function client(): ImmerleClient | null {
   return useAuth.getState().client;
+}
+
+// Fallback poll interval for platforms without EventSource (native — see
+// connectPlayQueueLive). Web gets real push updates over SSE instead.
+const PLAYQUEUE_POLL_MS = 5000;
+
+/** Whether this device is watching another device's session (cast elsewhere). */
+function isSpectating(get: () => AudioState): boolean {
+  const myId = client()?.getSession()?.deviceId;
+  const target = get().castTargetId;
+  return !!target && target !== myId;
+}
+
+/**
+ * If this device is spectating, claim the active-device role before driving
+ * the local engine directly — every action that touches `engine` (playSongs,
+ * enqueue, ...) must call this first. Without it, while spectating: the
+ * local engine is idle/empty (applyDisplaySnapshot never loads anything
+ * into it — see its docstring), so any of those actions would either play
+ * on top of whatever the actual active device is doing (double audio) or
+ * desync from the mirrored queue the store otherwise shows. Matches how
+ * Spotify Connect behaves: pressing play on a new thing here takes over
+ * from wherever it was playing, rather than just adding a second source.
+ * Best-effort/fire-and-forget — the local playback about to start is the
+ * real source of truth from this point on regardless of whether the claim
+ * itself has landed on the server yet.
+ */
+function claimActiveDevice(get: () => AudioState, set: (partial: Partial<AudioState>) => void): void {
+  if (!isSpectating(get)) return;
+  const c = client();
+  const myId = c?.getSession()?.deviceId;
+  if (!c || !myId) return;
+  set({ castTargetId: myId });
+  void c.setPlaybackTarget(myId).catch(() => undefined);
+}
+
+/**
+ * Push a desired current/position/playing state to the server — how a
+ * spectator device (see isSpectating) controls the actual active device,
+ * which picks the change up on its next poll. Reuses the same write the
+ * active device itself uses to sync its own progress (see scheduleSaveQueue);
+ * the two are told apart by which device id last wrote it.
+ */
+function sendRemoteCommand(get: () => AudioState, current: string, positionMs: number, playing: boolean): void {
+  const c = client();
+  const { songs } = get();
+  if (!c || !songs.length) return;
+  // eslint-disable-next-line no-console
+  console.log('[playqueue] flush', { reason: 'sendRemoteCommand', force: true, current, position: positionMs / 1000, playing });
+  void c.savePlayQueue(songs, current, positionMs, playing).catch(() => undefined);
+}
+
+/**
+ * Load a saved server-side queue into local state and the engine, at its
+ * saved position — shared by the launch restore and by "this device is (or
+ * just became) the active player". Always lands paused unless `autoplay`,
+ * matching playTrackById's pattern for a single-track load.
+ *
+ * `verifyStillCurrent`: re-fetch the queue right after acquiring the reload
+ * lock and bail if its changedBy has moved on from `remote.changedBy` —
+ * for reconcilePlayQueue's "taking over" path only. `remote` there comes
+ * from an SSE event that can describe an already-superseded moment: the
+ * reload-order mutex above only orders reloads by when each one *called*
+ * acquireEngineReloadLock, not by how current the data it's about to apply
+ * actually is — a "you're now the target, apply the outgoing device's
+ * session" reconciliation can queue up *after* the user's own local play
+ * action (so it isn't stale by call order) while still carrying data from
+ * before that local action happened, and would silently steamroll it a few
+ * seconds later once its turn came (confirmed via logs: the local track
+ * played correctly, then reverted to the outgoing session exactly one grace
+ * period later). Checking the server's current authoritative state right
+ * before committing catches this regardless of call order.
+ */
+async function applyRemoteQueue(
+  get: () => AudioState,
+  set: (partial: Partial<AudioState>) => void,
+  remote: PlayQueueSnapshot,
+  autoplay: boolean,
+  verifyStillCurrent = false,
+): Promise<void> {
+  const { stale, release } = await acquireEngineReloadLock();
+  try {
+    if (stale()) return; // superseded by a newer local/remote reload while queued — see acquireEngineReloadLock
+    const c = client();
+    const engine = get().engine;
+    if (!c || !engine || !remote.songs.length) return;
+    if (verifyStillCurrent) {
+      const fresh = await c.getPlayQueue().catch(() => null);
+      if (fresh && fresh.changedBy !== remote.changedBy) return; // someone (possibly this device) has already written something newer
+    }
+    const idx = Math.max(0, remote.songs.findIndex((s) => s.id === remote.currentId));
+    orderBackup = null;
+    scrobble = { nowPlayingSent: false, submitted: false };
+    set({ songs: remote.songs, index: idx, position: remote.positionMs / 1000, playingDeviceId: client()?.getSession()?.deviceId ?? '' });
+    const tracks = await Promise.all(remote.songs.map((s) => songToTrack(c, s, get().qualityId)));
+    await engine.setQueue(tracks, idx);
+    await engine.seekTo(remote.positionMs / 1000);
+    if (!autoplay) await engine.pause();
+  } finally {
+    // Keep suppressing engine-driven writes for a short grace period past
+    // the awaited calls above settling: a browser audio element's own
+    // pause/playing/waiting events (from the reload inside setQueue) don't
+    // necessarily fire in lockstep with those promises resolving — a
+    // trailing one landing right as the guard lifts would otherwise
+    // override the reassertion below with a stale mid-transition value
+    // (this is what made a spectator's seek/remote command flip the play
+    // button back to "paused" even though playback carried on correctly).
+    release();
+  }
+  // Re-assert: the engine's own state/progress events were dropped, not
+  // corrected, during the guarded window above (status would otherwise stay
+  // whatever it was before this call — engine.setQueue/pause's own events
+  // never landed).
+  set({ position: remote.positionMs / 1000, status: autoplay ? 'playing' : 'paused' });
+  sendNowPlaying(get);
+  // Immediately, not throttled, and forced past isSpectating: this is the
+  // moment this device reclaims the shared queue (changedBy becomes this
+  // device's id), so a stale write from whoever it took over from doesn't
+  // keep getting re-applied on every poll.
+  flushSaveQueue(get, true, 'applyRemoteQueue');
+}
+
+/**
+ * Mirror a saved queue into local state for display only — used whenever
+ * another device is (or might be) the one actually producing sound, so this
+ * device never starts audio just because it noticed a change. songs/index
+ * still get set (not just cosmetic text) so a spectator's transport taps
+ * (see isSpectating) have something to compute the next command against.
+ */
+function applyDisplaySnapshot(set: (partial: Partial<AudioState>) => void, remote: PlayQueueSnapshot): void {
+  if (!remote.songs.length) return; // nothing saved yet — leave whatever's already shown alone
+  const idx = Math.max(0, remote.songs.findIndex((s) => s.id === remote.currentId));
+  set({
+    songs: remote.songs,
+    index: idx,
+    position: remote.positionMs / 1000,
+    duration: remote.songs[idx]?.duration ?? 0,
+    status: remote.playing ? 'playing' : 'paused',
+    // Prefer the explicit cast target (who's supposed to be playing) over
+    // changedBy (who last wrote) — the target stays authoritative even for
+    // one poll/event cycle where a fresh write hasn't landed from them yet.
+    playingDeviceId: remote.targetDeviceId || remote.changedBy || '',
+  });
+}
+
+/**
+ * Restore the last-known cross-device state at launch. Loads it into the
+ * engine (paused, ready to hit play) unless another device is explicitly the
+ * active target, in which case it's display-only — this device shouldn't
+ * start buffering audio it was never asked to play.
+ */
+async function restoreQueue(get: () => AudioState, set: (partial: Partial<AudioState>) => void): Promise<void> {
+  const c = client();
+  if (!c || !get().engine) return;
+  const remote = await c.getPlayQueue().catch(() => null);
+  if (!remote) return;
+  set({ castTargetId: remote.targetDeviceId });
+  const myId = c.getSession()?.deviceId;
+  if (remote.targetDeviceId && remote.targetDeviceId !== myId) {
+    applyDisplaySnapshot(set, remote);
+  } else {
+    await applyRemoteQueue(get, set, remote, false);
+  }
+}
+
+/**
+ * Reconciles this device against a freshly-received queue snapshot (from the
+ * SSE stream, or a poll on platforms without it). The explicit active device
+ * (target === my id) applies real playback changes — that's how a
+ * spectator's remote command (see sendRemoteCommand) actually reaches it.
+ * Every other device (spectating someone else, or in the default
+ * unrestricted mode) only ever mirrors state for display; it never starts
+ * local audio on its own say-so.
+ */
+async function reconcilePlayQueue(
+  get: () => AudioState,
+  set: (partial: Partial<AudioState>) => void,
+  remote: PlayQueueSnapshot,
+): Promise<void> {
+  const engine = get().engine;
+  const myId = client()?.getSession()?.deviceId;
+  const target = remote.targetDeviceId;
+  // eslint-disable-next-line no-console
+  console.log('[playqueue] reconcile', {
+    myId,
+    target,
+    changedBy: remote.changedBy,
+    current: remote.currentId,
+    playing: remote.playing,
+    hasEngine: !!engine,
+  });
+  if (!engine) return;
+  set({ castTargetId: target });
+
+  if (target && target === myId) {
+    // I'm explicitly the active device. Only react to a write that isn't my
+    // own — re-applying my own (possibly lagging) save would revert a more
+    // recent local change made since that save went out.
+    if (remote.changedBy && remote.changedBy !== myId) {
+      // eslint-disable-next-line no-console
+      console.log('[playqueue] taking over (remote command applied)');
+      await applyRemoteQueue(get, set, remote, remote.playing, true);
+    }
+    return;
+  }
+
+  if (target && get().status === 'playing') await engine.pause(); // handed off elsewhere — avoid double audio
+  applyDisplaySnapshot(set, remote);
+}
+
+/**
+ * Live-updates this device on every play-queue change: Server-Sent Events on
+ * platforms that have them (web), a short poll everywhere else (native —
+ * React Native has no EventSource, and adding an SSE polyfill for one
+ * feature isn't worth the dependency). Same reconciliation either way — see
+ * reconcilePlayQueue. EventSource reconnects on its own, so no retry logic
+ * is needed for the SSE path.
+ */
+function connectPlayQueueLive(get: () => AudioState, set: (partial: Partial<AudioState>) => void): void {
+  const c = client();
+  if (!c) return;
+  const ES = (globalThis as { EventSource?: new (url: string) => EventSourceLike }).EventSource;
+  if (ES) {
+    const url = c.playQueueEventsUrl();
+    // eslint-disable-next-line no-console
+    console.log('[playqueue] connecting SSE', url.replace(/apiKey=[^&]+/, 'apiKey=***'));
+    const es = new ES(url);
+    es.addEventListener('open', () => {
+      // eslint-disable-next-line no-console
+      console.log('[playqueue] SSE open');
+    });
+    es.addEventListener('error', (e) => {
+      // eslint-disable-next-line no-console
+      console.warn('[playqueue] SSE error (browser will auto-reconnect)', e);
+    });
+    es.addEventListener('state', (e: { data?: string }) => {
+      // eslint-disable-next-line no-console
+      console.log('[playqueue] SSE message', e.data);
+      if (!e.data) return;
+      try {
+        const view = JSON.parse(e.data) as PlayQueueView;
+        void reconcilePlayQueue(get, set, toPlayQueueSnapshot(view));
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn('[playqueue] failed to parse SSE event', err);
+      }
+    });
+    return;
+  }
+  const poll = () =>
+    client()
+      ?.getPlayQueue()
+      .then((remote) => reconcilePlayQueue(get, set, remote))
+      .catch(() => undefined);
+  setInterval(() => void poll(), PLAYQUEUE_POLL_MS);
+}
+
+/**
+ * While spectating and the mirrored session is playing, position only moves
+ * in jumps — once per update (SSE push, or the native poll interval), which
+ * can be several seconds apart, reading as the progress bar visibly
+ * skipping. Tick it forward locally once a second in between so it moves
+ * smoothly instead; every real update (applyDisplaySnapshot) still
+ * overwrites it with the authoritative value regardless, so this can never
+ * drift for more than a second or two.
+ */
+function startFakeProgressTicker(get: () => AudioState, set: (partial: Partial<AudioState>) => void): void {
+  setInterval(() => {
+    if (!isSpectating(get) || get().status !== 'playing') return;
+    const { position, duration } = get();
+    set({ position: duration > 0 ? Math.min(position + 1, duration) : position + 1 });
+  }, 1000);
+}
+
+interface EventSourceLike {
+  addEventListener: (type: string, listener: (e: { data?: string }) => void) => void;
 }
 
 /**
@@ -156,6 +540,8 @@ export const usePlayer = create<AudioState>((set, get) => ({
   shuffle: false,
   volume: 1,
   qualityId: DEFAULT_QUALITY_ID,
+  castTargetId: '',
+  playingDeviceId: '',
 
   hydrateSettings: async () => {
     try {
@@ -169,23 +555,41 @@ export const usePlayer = create<AudioState>((set, get) => ({
   },
 
   init: async () => {
+    // eslint-disable-next-line no-console
+    console.log('[playqueue] init() called', { alreadyHasEngine: !!get().engine });
     if (get().engine) return;
     const engine = createEngine();
     await engine.setup();
 
+    // While spectating (isSpectating), the local engine sits idle — it's
+    // never given anything to play (applyDisplaySnapshot deliberately never
+    // touches it, see its docstring). But it can still fire a stray
+    // state/progress event on the way to idle (e.g. right after the poll's
+    // own engine.pause() call above resolves), and without this guard that
+    // event would win the race and stomp the mirrored remote status/position
+    // right back to this device's own (idle) values — the player bar and
+    // progress bar would then show the wrong thing until the next update.
     engine.on('state', (s) => {
+      if (isSpectating(get) || suppressEngineEvents) return;
+      const wasPlaying = get().status === 'playing';
       set({ status: s.status, index: s.index, duration: s.duration || get().duration });
+      // Capture a pause immediately (not throttled) — it stops the progress
+      // ticks that would otherwise eventually trigger a save, so without
+      // this the paused position/state could sit unsaved indefinitely.
+      if (wasPlaying && s.status !== 'playing') flushSaveQueue(get, false, 'engine:state-pause');
     });
     engine.on('progress', (position, duration) => {
+      if (isSpectating(get) || suppressEngineEvents) return;
       set({ position, duration: duration || get().duration });
       maybeScrobble(get, position, duration);
       scheduleSaveQueue(get);
     });
     engine.on('trackChange', (index) => {
+      if (isSpectating(get) || suppressEngineEvents) return;
       scrobble = { nowPlayingSent: false, submitted: false };
       set({ index, position: 0 });
       sendNowPlaying(get);
-      scheduleSaveQueue(get);
+      flushSaveQueue(get, false, 'engine:trackChange');
       // Landed on a federated-playlist track that hasn't been resolved yet
       // (empty-url placeholder — see songToTrack): warn instead of silently
       // sitting on dead air, and move on. ponytail: if the whole queue is
@@ -200,55 +604,139 @@ export const usePlayer = create<AudioState>((set, get) => ({
 
     await engine.setVolume(get().volume);
     set({ engine });
+    startFakeProgressTicker(get, set);
+
+    // Cross-device state: show what's already playing (paused) on launch,
+    // then stay live-updated on every change from any device (see
+    // connectPlayQueueLive) — someone else starting/pausing/skipping, or
+    // handing playback to/from this one. init() runs in the same effect as
+    // useAuth's restore(), racing it — client() is still null the vast
+    // majority of the time at this exact point, since restoring a session
+    // is async (secure storage read, capability probe, account fetch).
+    // Both restoreQueue and connectPlayQueueLive silently no-op without a
+    // client and, unlike a user-triggered action, nothing would otherwise
+    // call them again — so wait for the client to actually exist first.
+    const startLiveSync = () => {
+      // eslint-disable-next-line no-console
+      console.log('[playqueue] starting live sync', { deviceId: client()?.getSession()?.deviceId });
+      void restoreQueue(get, set);
+      connectPlayQueueLive(get, set);
+    };
+    if (client()) {
+      // eslint-disable-next-line no-console
+      console.log('[playqueue] client already ready at init()');
+      startLiveSync();
+    } else {
+      // eslint-disable-next-line no-console
+      console.log('[playqueue] client not ready yet, waiting for auth');
+      const unsub = useAuth.subscribe((s) => {
+        if (s.client) {
+          unsub();
+          startLiveSync();
+        }
+      });
+    }
+
+    // Best-effort final save when the tab is backgrounded/closed (web only —
+    // document is undefined on native, where the app-background lifecycle
+    // doesn't give the same "about to lose this" moment). Catches state that
+    // hasn't hit the 5s throttle yet.
+    if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') flushSaveQueue(get, false, 'visibilitychange');
+      });
+    }
   },
 
   playSongs: async (songs, startIndex = 0) => {
-    const c = client();
-    const engine = get().engine;
-    if (!c || !engine || songs.length === 0) return;
-    const tracks = await Promise.all(songs.map((s) => songToTrack(c, s, get().qualityId)));
-    orderBackup = null; // new playback context invalidates any shuffle backup
-    set({ songs, index: startIndex, position: 0 });
-    scrobble = { nowPlayingSent: false, submitted: false };
-    await engine.setQueue(tracks, startIndex);
+    const { stale, release } = await acquireEngineReloadLock();
+    try {
+      if (stale()) return; // superseded while queued — see acquireEngineReloadLock
+      const c = client();
+      const engine = get().engine;
+      if (!c || !engine || songs.length === 0) return;
+      claimActiveDevice(get, set);
+      const tracks = await Promise.all(songs.map((s) => songToTrack(c, s, get().qualityId)));
+      orderBackup = null; // new playback context invalidates any shuffle backup
+      set({ songs, index: startIndex, position: 0 });
+      scrobble = { nowPlayingSent: false, submitted: false };
+      await engine.setQueue(tracks, startIndex);
+    } finally {
+      release();
+    }
+    set({ position: 0, status: 'playing' }); // setQueue always starts playback
     sendNowPlaying(get);
-    scheduleSaveQueue(get);
+    // Forced: claimActiveDevice's server write is still in flight, and the
+    // device this took over from can still land an ambient broadcast of its
+    // own in the meantime — one carrying the *old* target, which would
+    // reset castTargetId and make isSpectating look true again right as
+    // this save runs. Without force, that silently drops the very save that
+    // was supposed to hand this device the session (the local engine had
+    // already started the new track, so the UI looked right while nothing
+    // had actually synced out).
+    flushSaveQueue(get, true, 'playSongs');
   },
 
   playRadio: async (station) => {
-    const engine = get().engine;
-    if (!engine || !station.streamUrl) return;
-    // Live streams aren't scrobbled and have no real duration. The raw URL is
-    // played directly (not routed through the Subsonic stream endpoint).
-    const track: PlayableTrack = { id: station.id, url: station.streamUrl, title: station.name, artist: '', duration: 0 };
-    const c = client();
-    const coverUrl = station.hasCover && c ? c.radioCoverUrl(station.id) : undefined;
-    const song = { id: station.id, title: station.name, artist: '', coverUrl } as Song;
-    orderBackup = null;
-    scrobble = { nowPlayingSent: true, submitted: true };
-    set({ songs: [song], index: 0, position: 0 });
-    await engine.setQueue([track], 0);
+    const { stale, release } = await acquireEngineReloadLock();
+    try {
+      if (stale()) return; // superseded while queued — see acquireEngineReloadLock
+      const engine = get().engine;
+      if (!engine || !station.streamUrl) return;
+      claimActiveDevice(get, set);
+      // Live streams aren't scrobbled and have no real duration. The raw URL
+      // is played directly (not routed through the Subsonic stream endpoint).
+      const track: PlayableTrack = { id: station.id, url: station.streamUrl, title: station.name, artist: '', duration: 0 };
+      const c = client();
+      const coverUrl = station.hasCover && c ? c.radioCoverUrl(station.id) : undefined;
+      const song = { id: station.id, title: station.name, artist: '', coverUrl } as Song;
+      orderBackup = null;
+      scrobble = { nowPlayingSent: true, submitted: true };
+      set({ songs: [song], index: 0, position: 0 });
+      await engine.setQueue([track], 0);
+    } finally {
+      release();
+    }
+    set({ position: 0, status: 'playing' });
+    flushSaveQueue(get, true, 'playRadio'); // see playSongs — claimActiveDevice's write may not have landed yet
   },
 
   playTrackById: async (id, positionSec, autoplay) => {
-    const c = client();
-    const engine = get().engine;
-    if (!c || !engine) return;
-    const song = await c.getSong(id).catch(() => ({ id, title: 'Piste' }) as Song);
-    orderBackup = null;
-    scrobble = { nowPlayingSent: false, submitted: false };
-    set({ songs: [song], index: 0, position: positionSec });
-    await engine.setQueue([await songToTrack(c, song, get().qualityId)], 0);
-    await engine.seekTo(positionSec);
-    if (!autoplay) await engine.pause();
+    const { stale, release } = await acquireEngineReloadLock();
+    try {
+      if (stale()) return; // superseded while queued — see acquireEngineReloadLock
+      const c = client();
+      const engine = get().engine;
+      if (!c || !engine) return;
+      claimActiveDevice(get, set);
+      const song = await c.getSong(id).catch(() => ({ id, title: 'Piste' }) as Song);
+      orderBackup = null;
+      scrobble = { nowPlayingSent: false, submitted: false };
+      set({ songs: [song], index: 0, position: positionSec });
+      await engine.setQueue([await songToTrack(c, song, get().qualityId)], 0);
+      await engine.seekTo(positionSec);
+      if (!autoplay) await engine.pause();
+    } finally {
+      release();
+    }
+    set({ position: positionSec, status: autoplay ? 'playing' : 'paused' });
     sendNowPlaying(get);
+    flushSaveQueue(get, true, 'playTrackById'); // see playSongs — claimActiveDevice's write may not have landed yet
   },
 
   playNext: async (songs) => {
+    await waitForEngineReloadSlot();
     const c = client();
     const engine = get().engine;
     if (!c || !engine) return get().playSongs(songs);
     if (get().songs.length === 0) return get().playSongs(songs);
+    // ponytail: while spectating this only claims the device — it doesn't
+    // reload the engine with the mirrored queue first, so the insert below
+    // still targets whatever the (idle, out of sync) local engine already
+    // has. Fine for the common case (claim, then use the transport
+    // normally); a genuine "insert next" mid-spectate is a rarer path to
+    // get fully right and isn't what was reported.
+    claimActiveDevice(get, set);
     // Insert right after the current track in our source mirror + engine queue.
     const at = get().index + 1;
     const next = [...get().songs];
@@ -262,15 +750,26 @@ export const usePlayer = create<AudioState>((set, get) => ({
   },
 
   enqueue: async (songs) => {
+    await waitForEngineReloadSlot();
     const c = client();
     const engine = get().engine;
     if (!c || !engine) return;
     if (get().songs.length === 0) return get().playSongs(songs);
+    claimActiveDevice(get, set);
     set({ songs: [...get().songs, ...songs] });
     await engine.add(await Promise.all(songs.map((s) => songToTrack(c, s, get().qualityId))));
   },
 
   toggle: async () => {
+    if (isSpectating(get)) {
+      const { songs, index, position, status } = get();
+      const song = songs[index];
+      if (!song) return;
+      const playing = status !== 'playing';
+      set({ status: playing ? 'playing' : 'paused' }); // optimistic; the active device converges on its next poll
+      sendRemoteCommand(get, song.id, Math.floor(position * 1000), playing);
+      return;
+    }
     const engine = get().engine;
     if (!engine) return;
     if (get().status === 'playing') await engine.pause();
@@ -278,14 +777,38 @@ export const usePlayer = create<AudioState>((set, get) => ({
   },
 
   next: async () => {
+    if (isSpectating(get)) {
+      const { songs, index } = get();
+      const song = songs[index + 1];
+      if (!song) return;
+      set({ index: index + 1, position: 0, status: 'playing' });
+      sendRemoteCommand(get, song.id, 0, true);
+      return;
+    }
     await get().engine?.next();
   },
 
   previous: async () => {
+    if (isSpectating(get)) {
+      const { songs, index } = get();
+      const song = songs[index - 1];
+      if (!song) return;
+      set({ index: index - 1, position: 0, status: 'playing' });
+      sendRemoteCommand(get, song.id, 0, true);
+      return;
+    }
     await get().engine?.previous();
   },
 
   seekTo: async (seconds) => {
+    if (isSpectating(get)) {
+      const { songs, index, status } = get();
+      const song = songs[index];
+      if (!song) return;
+      set({ position: seconds }); // optimistic
+      sendRemoteCommand(get, song.id, Math.floor(seconds * 1000), status === 'playing');
+      return;
+    }
     const engine = get().engine;
     if (!engine) return;
     // A not-yet-downloaded track streams progressively (see songToTrack): the
@@ -306,6 +829,13 @@ export const usePlayer = create<AudioState>((set, get) => ({
   },
 
   skipTo: async (index) => {
+    if (isSpectating(get)) {
+      const song = get().songs[index];
+      if (!song) return;
+      set({ index, position: 0, status: 'playing' });
+      sendRemoteCommand(get, song.id, 0, true);
+      return;
+    }
     await get().engine?.skipTo(index);
   },
 
@@ -393,6 +923,27 @@ export const usePlayer = create<AudioState>((set, get) => ({
     await engine.seekTo(pos);
   },
 
+  setCastTarget: async (deviceId) => {
+    const c = client();
+    if (!c) return;
+    try {
+      await c.setPlaybackTarget(deviceId);
+    } catch {
+      return; // best-effort; UI keeps its previous state
+    }
+    set({ castTargetId: deviceId });
+    if (!deviceId) return; // cleared — independent mode, no forced action
+    const myId = c.getSession()?.deviceId;
+    if (deviceId === myId) {
+      const remote = await c.getPlayQueue().catch(() => null);
+      if (remote) await applyRemoteQueue(get, set, remote, true);
+      return;
+    }
+    if (get().status === 'playing') await get().engine?.pause();
+    const remote = await c.getPlayQueue().catch(() => null);
+    if (remote) applyDisplaySnapshot(set, remote); // show the new target's state right away, don't wait for the next poll
+  },
+
   current: () => {
     const { songs, index } = get();
     return index >= 0 ? songs[index] : undefined;
@@ -429,19 +980,52 @@ function maybeScrobble(get: () => AudioState, position: number, duration: number
     .catch(() => undefined);
 }
 
-/** Debounced savePlayQueue so the queue follows the user across devices. */
+/**
+ * Immediately persists the current queue/track/position/playing state. Never
+ * writes while spectating (mirroring another device — see isSpectating):
+ * its local songs/index/status are a copy of what that device already told
+ * the server, so writing them back here would just churn `changedBy` to this
+ * device's id for no real change, tricking the active device's poll into
+ * thinking a genuine command arrived and needlessly re-applying (restarting)
+ * its own playback. Deliberate remote commands (sendRemoteCommand) bypass
+ * this and always write — they're the one case a spectator legitimately
+ * changes the shared session.
+ *
+ * `force` skips the isSpectating check entirely — for playSongs/playRadio/
+ * playTrackById's own final save, right after claimActiveDevice. That claim
+ * is a fire-and-forget write to the server; until it actually lands, the
+ * previously-active device can still be broadcasting its own ambient
+ * progress saves carrying the *old* target, and if one of those is
+ * processed in between, it resets castTargetId back and isSpectating would
+ * wrongly look true again — silently dropping the very save that was
+ * supposed to hand this device the session (the local engine had already
+ * started the new track, so the UI looked right while nothing had actually
+ * synced — "had to click twice, the second time reset it and started
+ * correctly"). Once claimActiveDevice has run, this device's intent to be
+ * active is already decided locally; the save must land regardless.
+ */
+function flushSaveQueue(get: () => AudioState, force = false, reason = 'unknown'): void {
+  if (!force && isSpectating(get)) return;
+  lastQueueSaveAt = Date.now();
+  const c = client();
+  const { songs, index, position, status } = get();
+  if (!c || songs.length === 0 || index < 0) return;
+  // eslint-disable-next-line no-console
+  console.log('[playqueue] flush', { reason, force, current: songs[index]?.id, position, status, suppressEngineEvents });
+  void c.savePlayQueue(songs, songs[index]?.id, Math.floor(position * 1000), status === 'playing').catch(() => undefined);
+}
+
+/**
+ * Throttled savePlayQueue for the high-frequency progress tick (fires every
+ * ~250ms-1s during playback). A plain debounce here — reset on every call —
+ * would never actually land during continuous playback, since each tick
+ * cancels the pending one before it fires: the server-side queue would stay
+ * stale until playback stops, losing state entirely if the tab/app closes
+ * mid-song. Save at most once every 5s instead; discrete transitions (pause,
+ * track change, taking over a cast) call flushSaveQueue directly so those
+ * moments are captured immediately rather than waiting out the throttle.
+ */
 function scheduleSaveQueue(get: () => AudioState): void {
-  if (saveQueueTimer) clearTimeout(saveQueueTimer);
-  saveQueueTimer = setTimeout(() => {
-    const c = client();
-    const { songs, index, position } = get();
-    if (!c || songs.length === 0 || index < 0) return;
-    void c
-      .savePlayQueue(
-        songs.map((s) => s.id),
-        songs[index]?.id,
-        Math.floor(position * 1000),
-      )
-      .catch(() => undefined);
-  }, 3000);
+  if (Date.now() - lastQueueSaveAt < QUEUE_SAVE_THROTTLE_MS) return;
+  flushSaveQueue(get, false, 'engine:progress-throttled');
 }

@@ -5,8 +5,10 @@ import {
   ArtistWithAlbums,
   Genre,
   NowPlayingEntry,
+  PlaybackTarget,
   Playlist,
   PlaylistWithSongs,
+  PlayQueueSnapshot,
   SearchResult3,
   Song,
   SubsonicUser,
@@ -21,6 +23,7 @@ import {
   toNowPlaying,
   toPlaylist,
   toPlaylistWithSongs,
+  toPlayQueueSnapshot,
   toSearchResult,
   toSong,
   toStarred,
@@ -416,11 +419,69 @@ export class ImmerleClient {
     if (error) throw apiErr(error, 'scrobble');
   }
 
-  async savePlayQueue(songIds: string[], current?: string, positionMs?: number): Promise<void> {
+  /**
+   * `playing` also doubles as a remote-control command: a spectator device
+   * (see setPlaybackTarget) can push a new current/position/playing here and
+   * the active device applies it once it notices the change (over the
+   * real-time channel, see playQueueEventsUrl). The write is tagged with
+   * this install's own device id (falling back to a generic label
+   * pre-login) so a listener can tell "I wrote this" from "someone else did".
+   */
+  /**
+   * `songs` (not just ids) so the server can persist each track's display
+   * metadata alongside it — required for a not-yet-downloaded remote track,
+   * which has no real catalog row the server could otherwise resolve it
+   * from when this queue is mirrored on another device.
+   */
+  async savePlayQueue(songs: Song[], current?: string, positionMs?: number, playing?: boolean): Promise<void> {
     const { error } = await this.api.PUT('/play-queue', {
-      body: { ids: songIds, current, position: positionMs, client: 'immerle' },
+      body: {
+        ids: songs.map((s) => s.id),
+        entries: songs.map((s) => ({
+          id: s.id,
+          title: s.title,
+          artist: s.artist ?? '',
+          album: s.album ?? '',
+          coverArt: s.coverArt ?? '',
+          duration: s.duration ?? 0,
+          remote: !!s.remote,
+        })),
+        current,
+        position: positionMs,
+        playing: !!playing,
+        client: this.session?.deviceId || 'immerle',
+      },
     });
     if (error) throw apiErr(error, 'playqueue.save');
+  }
+
+  /** The caller's saved cross-device play queue — restore it on launch, or to see what's playing elsewhere. */
+  async getPlayQueue(signal?: AbortSignal): Promise<PlayQueueSnapshot> {
+    const { data, error } = await this.api.GET('/play-queue', { signal });
+    if (error) throw apiErr(error, 'playqueue.get');
+    return toPlayQueueSnapshot(data);
+  }
+
+  /** SSE endpoint URL for real-time play-queue updates (cross-device sync,
+   * remote control). EventSource can't set headers, so the Bearer token is
+   * passed via the `apiKey` query fallback — see connectPlayQueueLive in
+   * ui/src/audio/store.ts. */
+  playQueueEventsUrl(): string {
+    const token = this.session?.token ?? '';
+    return `${this.serverUrl}/api/v1/play-queue/events?apiKey=${encodeURIComponent(token)}`;
+  }
+
+  /** Recently-active app installs on this account — candidates for "cast to device". */
+  async listPlaybackTargets(signal?: AbortSignal): Promise<PlaybackTarget[]> {
+    const { data, error } = await this.api.GET('/play-queue/targets', { signal });
+    if (error) throw apiErr(error, 'playqueue.targets');
+    return (data ?? []).map((d) => ({ id: d.id ?? '', name: d.name ?? '', lastUsedAt: d.lastUsedAt }));
+  }
+
+  /** Make `deviceId` the sole active player for this account's queue; an empty id clears the restriction. */
+  async setPlaybackTarget(deviceId: string): Promise<void> {
+    const { error } = await this.api.PUT('/play-queue/target', { body: { deviceId } });
+    if (error) throw apiErr(error, 'playqueue.setTarget');
   }
 
   async getNowPlaying(signal?: AbortSignal): Promise<NowPlayingEntry[]> {
@@ -1206,9 +1267,10 @@ export class ImmerleClient {
   }
 
   /** Create a token. The secret is returned ONCE in `token`. `expiresAt` is an
-   * optional RFC3339 timestamp. */
-  async createToken(name?: string, expiresAt?: string): Promise<CreateTokenResponse> {
-    const { data, error } = await this.api.POST('/tokens', { body: { name, expiresAt } });
+   * optional RFC3339 timestamp. `device` marks it as an app login session
+   * (one per install) rather than a personal/CLI token — see listPlaybackTargets. */
+  async createToken(name?: string, expiresAt?: string, device?: boolean): Promise<CreateTokenResponse> {
+    const { data, error } = await this.api.POST('/tokens', { body: { name, expiresAt, device } });
     if (error || !data) throw apiErr(error, 'token_create_failed');
     return data;
   }

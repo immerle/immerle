@@ -6,8 +6,10 @@ import Slider from '@react-native-community/slider';
 import { CoverArt } from '../src/components/CoverArt';
 import { IconButton } from '../src/components/ui';
 import { PlayButton } from '../src/components/PlayButton';
+import { CastButton, usePlayingElsewhere } from '../src/components/PlayerBar';
 import { Lyrics } from '../src/components/Lyrics';
 import { usePlayer } from '../src/audio/store';
+import { useAuth } from '../src/auth/store';
 import { useLyrics } from '../src/query/lyrics';
 import { formatDuration } from '../src/utils/format';
 import { useColors } from '../src/theme/colors';
@@ -34,6 +36,14 @@ export default function Player() {
   const cycleRepeat = usePlayer((s) => s.cycleRepeat);
   const shuffle = usePlayer((s) => s.shuffle);
   const toggleShuffle = usePlayer((s) => s.toggleShuffle);
+  // Another device has claimed active playback: play/pause, seek and skip
+  // still work (the store turns them into remote commands, see
+  // usePlayer.isSpectating) — only shuffle/repeat, which aren't
+  // remote-controllable, stay disabled here.
+  const myId = useAuth((s) => s.client?.getSession()?.deviceId);
+  const castTargetId = usePlayer((s) => s.castTargetId);
+  const remoteControlled = !!castTargetId && castTargetId !== myId;
+  const playingElsewhere = usePlayingElsewhere();
 
   const [scrubbing, setScrubbing] = useState<number | null>(null);
   const [showLyrics, setShowLyrics] = useState(false);
@@ -73,6 +83,7 @@ export default function Player() {
               accessibilityLabel={t('media.player.lyrics')}
             />
           ) : null}
+          <CastButton active={remoteControlled} />
           <IconButton name="list" size={24} onPress={() => router.push('/queue')} accessibilityLabel={t('media.player.queue')} />
         </View>
       </View>
@@ -93,7 +104,11 @@ export default function Player() {
             {song.title}
           </Text>
           <Text numberOfLines={1} className="pt-1 text-lg text-muted">
-            {song.artist}
+            {playingElsewhere.elsewhere
+              ? playingElsewhere.name
+                ? t('media.player.castPlayingOnDevice', { name: playingElsewhere.name })
+                : t('media.player.castPlayingElsewhere')
+              : song.artist}
           </Text>
         </View>
 
@@ -127,6 +142,7 @@ export default function Player() {
             size={24}
             color={repeatActive ? colors.primary : colors.muted}
             onPress={cycleRepeat}
+            disabled={remoteControlled}
             accessibilityLabel={t('media.player.repeat')}
           />
           <IconButton name="play-skip-back" size={34} onPress={previous} accessibilityLabel={t('media.player.previous')} />
@@ -137,6 +153,7 @@ export default function Player() {
             size={24}
             color={shuffle ? colors.primary : colors.muted}
             onPress={toggleShuffle}
+            disabled={remoteControlled}
             accessibilityLabel={t('media.player.shuffle')}
           />
         </View>

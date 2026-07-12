@@ -733,7 +733,14 @@
       "shuffle": "Lecture aléatoire",
       "lyrics": "Paroles",
       "unresolvedSkipped": "« {{title}} » ignoré — pas encore résolu, appuyez dessus depuis la playlist pour le charger",
-      "seekUnavailableRemote": "Téléchargement en cours — le déplacement du curseur sera possible une fois terminé"
+      "seekUnavailableRemote": "Téléchargement en cours — le déplacement du curseur sera possible une fois terminé",
+      "cast": "Écouter sur…",
+      "castTitle": "Écouter sur",
+      "castEverywhere": "Partout",
+      "castThisDevice": "Cet appareil",
+      "castNoOtherDevices": "Aucun autre appareil trouvé",
+      "castPlayingElsewhere": "Lecture sur un autre appareil",
+      "castPlayingOnDevice": "Lecture sur {{name}}"
     },
     "local": {
       "title": "Musiques locales",
@@ -887,7 +894,14 @@
       "close": "Fermer",
       "playlistNamePlaceholder": "Nom de la playlist",
       "cancel": "Annuler",
-      "create": "Créer"
+      "create": "Créer",
+      "cast": "Écouter sur…",
+      "castTitle": "Écouter sur",
+      "castEverywhere": "Partout",
+      "castThisDevice": "Cet appareil",
+      "castNoOtherDevices": "Aucun autre appareil trouvé",
+      "castPlayingElsewhere": "Lecture sur un autre appareil",
+      "castPlayingOnDevice": "Lecture sur {{name}}"
     },
     "topbar": {
       "back": "Retour",

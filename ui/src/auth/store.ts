@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { create } from 'zustand';
 import { normalizeServerUrl } from '../utils/serverUrl';
 import { createAuthedImmerleApi, createImmerleApi } from '../api/immerleApi';
@@ -23,8 +24,20 @@ interface StoredAuth {
   tokenId: string;
 }
 
-/** Label for the minted device token / session. */
-const DEVICE = 'immerle-app';
+/**
+ * Best-effort friendly label for this install, shown in the "cast to device"
+ * picker — e.g. "iPhone/iPad", "Chrome (Mac)". Language-neutral (no i18n
+ * string) since it's a generated device name, not fixed UI copy. Falls back
+ * to the bare platform name where a user agent isn't available (native).
+ */
+function deviceLabel(): string {
+  if (Platform.OS === 'ios') return 'iPhone/iPad';
+  if (Platform.OS === 'android') return 'Android';
+  const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+  const browser = /Edg\//.test(ua) ? 'Edge' : /Chrome\//.test(ua) ? 'Chrome' : /Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : 'Web';
+  const os = /Windows/.test(ua) ? 'Windows' : /Mac OS/.test(ua) ? 'Mac' : /Linux/.test(ua) ? 'Linux' : '';
+  return os ? `${browser} (${os})` : browser;
+}
 
 interface AuthState {
   status: AuthStatus;
@@ -55,12 +68,13 @@ interface AuthState {
  */
 async function nativeLogin(serverUrl: string, username: string, password: string): Promise<StoredAuth> {
   const pub = createImmerleApi(serverUrl);
-  const login = await pub.POST('/auth/sessions', { body: { username, password, device: DEVICE } });
+  const label = deviceLabel();
+  const login = await pub.POST('/auth/sessions', { body: { username, password, device: label } });
   if (login.error || !login.data?.token) {
     throw new Error(login.error?.error?.message ?? 'invalid credentials');
   }
   const authed = createAuthedImmerleApi(serverUrl, login.data.token);
-  const tok = await authed.POST('/tokens', { body: { name: DEVICE } });
+  const tok = await authed.POST('/tokens', { body: { name: label, device: true } });
   if (tok.error || !tok.data?.token) {
     throw new Error(tok.error?.error?.message ?? 'could not create an access token');
   }
@@ -78,6 +92,7 @@ async function buildClient(stored: StoredAuth): Promise<ImmerleClient> {
     userId: '',
     username: stored.username,
     isAdmin: false,
+    deviceId: stored.tokenId || undefined,
   };
   const client = new ImmerleClient(stored.serverUrl, stored.username, capabilities, session);
   try {

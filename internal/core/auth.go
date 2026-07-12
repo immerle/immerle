@@ -232,7 +232,9 @@ const apiTokenPrefix = "gsk_"
 
 // CreateAPIToken mints a personal access token for a user. The plaintext secret
 // is returned once and never stored (only its SHA-256 hash is persisted).
-func (a *AuthService) CreateAPIToken(ctx context.Context, userID, name string, expiresAt *time.Time) (string, models.APIToken, error) {
+// isDevice marks a token minted by the app's own login flow, distinguishing it
+// from a manually-created personal/CLI token (see ListDeviceSessions).
+func (a *AuthService) CreateAPIToken(ctx context.Context, userID, name string, expiresAt *time.Time, isDevice bool) (string, models.APIToken, error) {
 	if a.tokens == nil {
 		return "", models.APIToken{}, errors.New("api tokens disabled")
 	}
@@ -249,6 +251,7 @@ func (a *AuthService) CreateAPIToken(ctx context.Context, userID, name string, e
 		Prefix:    plaintext[:12], // e.g. "gsk_AbC12…" for display
 		CreatedAt: time.Now(),
 		ExpiresAt: expiresAt,
+		IsDevice:  isDevice,
 	}
 	if err := a.tokens.Create(ctx, tok); err != nil {
 		return "", models.APIToken{}, err
@@ -262,6 +265,19 @@ func (a *AuthService) ListAPITokens(ctx context.Context, userID string) ([]model
 		return nil, nil
 	}
 	return a.tokens.ListByUser(ctx, userID)
+}
+
+// deviceOnlineWindow is how recently a device token must have been used to
+// still count as "connected" for playback-transfer purposes.
+const deviceOnlineWindow = 10 * time.Minute
+
+// ListDeviceSessions returns the user's recently-active app installs — the
+// pool of playback-transfer targets.
+func (a *AuthService) ListDeviceSessions(ctx context.Context, userID string) ([]models.APIToken, error) {
+	if a.tokens == nil {
+		return nil, nil
+	}
+	return a.tokens.ListDeviceSessions(ctx, userID, time.Now().Add(-deviceOnlineWindow))
 }
 
 // RevokeAPIToken revokes one of the user's tokens.
