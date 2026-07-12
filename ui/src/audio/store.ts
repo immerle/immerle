@@ -202,7 +202,17 @@ async function applyRemoteQueue(
     await engine.seekTo(remote.positionMs / 1000);
     if (!autoplay) await engine.pause();
   } finally {
-    applyingRemoteQueue = false;
+    // Keep suppressing engine-driven writes for a short grace period past
+    // the awaited calls above settling: a browser audio element's own
+    // pause/playing/waiting events (from the reload inside setQueue) don't
+    // necessarily fire in lockstep with those promises resolving — a
+    // trailing one landing right as the guard lifts would otherwise
+    // override the reassertion below with a stale mid-transition value
+    // (this is what made a spectator's seek/remote command flip the play
+    // button back to "paused" even though playback carried on correctly).
+    setTimeout(() => {
+      applyingRemoteQueue = false;
+    }, 500);
   }
   // Re-assert: the engine's own state/progress events were dropped, not
   // corrected, during the guarded window above (status would otherwise stay
