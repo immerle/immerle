@@ -134,11 +134,14 @@ let lastQueueSaveAt = 0;
 const QUEUE_SAVE_THROTTLE_MS = 5000;
 // Original queue order, kept so shuffle can be turned off again.
 let orderBackup: Song[] | null = null;
-// True while applyRemoteQueue is mid-flight (see there): engine.setQueue
-// reloads the audio element, which momentarily reports position 0 before
-// the follow-up seekTo corrects it — a stray progress/state event landing
-// in that gap must not be treated as this device's real playback position.
-let applyingRemoteQueue = false;
+// True while any action that reloads the engine (engine.setQueue) is
+// mid-flight — a fresh load momentarily reports the *previous* track's
+// position/status (its own progress/state events haven't caught up to the
+// new source yet) before the explicit reset that follows takes effect. A
+// stray event landing in that gap must not be treated as this device's real
+// playback position — that's what made a brand-new track start playback
+// from wherever the old one had gotten to.
+let suppressEngineEvents = false;
 
 function client(): ImmerleClient | null {
   return useAuth.getState().client;
@@ -211,7 +214,7 @@ async function applyRemoteQueue(
   orderBackup = null;
   scrobble = { nowPlayingSent: false, submitted: false };
   set({ songs: remote.songs, index: idx, position: remote.positionMs / 1000, playingDeviceId: client()?.getSession()?.deviceId ?? '' });
-  applyingRemoteQueue = true;
+  suppressEngineEvents = true;
   try {
     const tracks = await Promise.all(remote.songs.map((s) => songToTrack(c, s, get().qualityId)));
     await engine.setQueue(tracks, idx);
@@ -227,7 +230,7 @@ async function applyRemoteQueue(
     // (this is what made a spectator's seek/remote command flip the play
     // button back to "paused" even though playback carried on correctly).
     setTimeout(() => {
-      applyingRemoteQueue = false;
+      suppressEngineEvents = false;
     }, 500);
   }
   // Re-assert: the engine's own state/progress events were dropped, not
@@ -464,7 +467,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
     // right back to this device's own (idle) values — the player bar and
     // progress bar would then show the wrong thing until the next update.
     engine.on('state', (s) => {
-      if (isSpectating(get) || applyingRemoteQueue) return;
+      if (isSpectating(get) || suppressEngineEvents) return;
       const wasPlaying = get().status === 'playing';
       set({ status: s.status, index: s.index, duration: s.duration || get().duration });
       // Capture a pause immediately (not throttled) — it stops the progress
@@ -473,13 +476,13 @@ export const usePlayer = create<AudioState>((set, get) => ({
       if (wasPlaying && s.status !== 'playing') flushSaveQueue(get);
     });
     engine.on('progress', (position, duration) => {
-      if (isSpectating(get) || applyingRemoteQueue) return;
+      if (isSpectating(get) || suppressEngineEvents) return;
       set({ position, duration: duration || get().duration });
       maybeScrobble(get, position, duration);
       scheduleSaveQueue(get);
     });
     engine.on('trackChange', (index) => {
-      if (isSpectating(get) || applyingRemoteQueue) return;
+      if (isSpectating(get) || suppressEngineEvents) return;
       scrobble = { nowPlayingSent: false, submitted: false };
       set({ index, position: 0 });
       sendNowPlaying(get);
@@ -551,7 +554,15 @@ export const usePlayer = create<AudioState>((set, get) => ({
     orderBackup = null; // new playback context invalidates any shuffle backup
     set({ songs, index: startIndex, position: 0 });
     scrobble = { nowPlayingSent: false, submitted: false };
-    await engine.setQueue(tracks, startIndex);
+    suppressEngineEvents = true;
+    try {
+      await engine.setQueue(tracks, startIndex);
+    } finally {
+      setTimeout(() => {
+        suppressEngineEvents = false;
+      }, 500);
+    }
+    set({ position: 0, status: 'playing' }); // setQueue always starts playback
     sendNowPlaying(get);
     flushSaveQueue(get);
   },
@@ -569,7 +580,15 @@ export const usePlayer = create<AudioState>((set, get) => ({
     orderBackup = null;
     scrobble = { nowPlayingSent: true, submitted: true };
     set({ songs: [song], index: 0, position: 0 });
-    await engine.setQueue([track], 0);
+    suppressEngineEvents = true;
+    try {
+      await engine.setQueue([track], 0);
+    } finally {
+      setTimeout(() => {
+        suppressEngineEvents = false;
+      }, 500);
+    }
+    set({ position: 0, status: 'playing' });
   },
 
   playTrackById: async (id, positionSec, autoplay) => {
@@ -581,9 +600,17 @@ export const usePlayer = create<AudioState>((set, get) => ({
     orderBackup = null;
     scrobble = { nowPlayingSent: false, submitted: false };
     set({ songs: [song], index: 0, position: positionSec });
-    await engine.setQueue([await songToTrack(c, song, get().qualityId)], 0);
-    await engine.seekTo(positionSec);
-    if (!autoplay) await engine.pause();
+    suppressEngineEvents = true;
+    try {
+      await engine.setQueue([await songToTrack(c, song, get().qualityId)], 0);
+      await engine.seekTo(positionSec);
+      if (!autoplay) await engine.pause();
+    } finally {
+      setTimeout(() => {
+        suppressEngineEvents = false;
+      }, 500);
+    }
+    set({ position: positionSec, status: autoplay ? 'playing' : 'paused' });
     sendNowPlaying(get);
   },
 
