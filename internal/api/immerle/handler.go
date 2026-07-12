@@ -139,7 +139,7 @@ func NewHandler(d Deps) *Handler {
 		Deps:        d,
 		library:     core.NewLibraryService(d.Catalog, d.Annotations, d.OnDemand),
 		playback:    core.NewPlaybackService(d.Catalog, d.Annotations, d.Scrobbles, d.OnDemand, d.Activity, d.NowPlaying),
-		playQueue:   core.NewPlayQueueService(d.PlayQueues, d.Catalog, d.Annotations),
+		playQueue:   core.NewPlayQueueService(d.PlayQueues, d.Catalog, d.Annotations, d.Logger),
 		playlistSvc: core.NewPlaylistService(d.Playlists, d.Annotations, d.Activity, d.PlaylistSync, d.OnDemand),
 		userSvc:     core.NewUserService(d.Users, d.Auth),
 		shareSvc:    core.NewShareService(d.Shares, d.Catalog, d.Playlists),

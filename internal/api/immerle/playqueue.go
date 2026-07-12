@@ -103,6 +103,9 @@ func (h *Handler) handleStreamPlayQueue(w http.ResponseWriter, r *http.Request) 
 	ch, unsubscribe := h.playQueue.Subscribe(user.ID)
 	defer unsubscribe()
 
+	h.Logger.Info("play-queue SSE connected", "user", user.Username, "remote", r.RemoteAddr)
+	defer h.Logger.Info("play-queue SSE disconnected", "user", user.Username, "remote", r.RemoteAddr)
+
 	// Bound each write so a stalled/slow client connection errors out instead
 	// of leaking this goroutine and its subscription forever.
 	rc := http.NewResponseController(w)
@@ -116,7 +119,7 @@ func (h *Handler) handleStreamPlayQueue(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	setDeadline()
-	writePlayQueueEvent(w, flusher, toPlayQueueView(res))
+	h.writePlayQueueEvent(w, flusher, user.Username, "snapshot", toPlayQueueView(res))
 
 	// Keep-alive so idle connections (and dead peers behind a proxy) are detected.
 	heartbeat := time.NewTicker(20 * time.Second)
@@ -137,13 +140,15 @@ func (h *Handler) handleStreamPlayQueue(w http.ResponseWriter, r *http.Request) 
 				return
 			}
 			setDeadline()
-			writePlayQueueEvent(w, flusher, toPlayQueueView(ev.Queue))
+			h.writePlayQueueEvent(w, flusher, user.Username, "update", toPlayQueueView(ev.Queue))
 		}
 	}
 }
 
-func writePlayQueueEvent(w http.ResponseWriter, flusher http.Flusher, view playQueueView) {
+func (h *Handler) writePlayQueueEvent(w http.ResponseWriter, flusher http.Flusher, username, reason string, view playQueueView) {
 	payload, _ := json.Marshal(view)
+	h.Logger.Info("play-queue SSE event sent", "user", username, "reason", reason,
+		"current", view.Current, "playing", view.Playing, "target", view.TargetDeviceID, "changedBy", view.ChangedBy)
 	fmt.Fprintf(w, "event: state\ndata: %s\n\n", payload)
 	flusher.Flush()
 }
@@ -178,7 +183,10 @@ func (h *Handler) handleSavePlayQueue(w http.ResponseWriter, r *http.Request) {
 	if !decodeJSON(w, r, &req) {
 		return
 	}
-	if err := h.playQueue.Save(r.Context(), userFrom(r.Context()).ID, req.Current, req.Position, req.Playing, req.Client, req.IDs); err != nil {
+	user := userFrom(r.Context())
+	h.Logger.Info("play-queue save", "user", user.Username, "current", req.Current, "playing", req.Playing,
+		"position", req.Position, "changedBy", req.Client, "tracks", len(req.IDs))
+	if err := h.playQueue.Save(r.Context(), user.ID, req.Current, req.Position, req.Playing, req.Client, req.IDs); err != nil {
 		writeServiceError(w, err)
 		return
 	}
@@ -241,7 +249,9 @@ func (h *Handler) handleSetPlaybackTarget(w http.ResponseWriter, r *http.Request
 	if !decodeJSON(w, r, &req) {
 		return
 	}
-	if err := h.playQueue.SetTarget(r.Context(), userFrom(r.Context()).ID, req.DeviceID); err != nil {
+	user := userFrom(r.Context())
+	h.Logger.Info("play-queue target set", "user", user.Username, "deviceId", req.DeviceID)
+	if err := h.playQueue.SetTarget(r.Context(), user.ID, req.DeviceID); err != nil {
 		writeServiceError(w, err)
 		return
 	}

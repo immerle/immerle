@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -52,15 +53,20 @@ func (h *playQueueHub) unsubscribe(userID string, ch chan PlayQueueEvent) {
 	}
 }
 
-func (h *playQueueHub) broadcast(userID string, ev PlayQueueEvent) {
+// broadcast sends ev to every subscriber and returns how many there were, so
+// the caller can log/notice a save that had nobody listening for it.
+func (h *playQueueHub) broadcast(userID string, ev PlayQueueEvent) int {
 	h.mu.Lock()
 	defer h.mu.Unlock()
+	n := 0
 	for ch := range h.subs[userID] {
+		n++
 		select {
 		case ch <- ev:
 		default: // drop for slow consumers; they get the next snapshot
 		}
 	}
+	return n
 }
 
 // PlayQueueService holds the saved play-queue sync logic shared by every
@@ -71,11 +77,13 @@ type PlayQueueService struct {
 	catalog     *persistence.CatalogRepo
 	annotations *persistence.AnnotationRepo
 	hub         *playQueueHub
+	logger      *slog.Logger
 }
 
-// NewPlayQueueService wires the play-queue application service.
-func NewPlayQueueService(playQueues *persistence.PlayQueueRepo, catalog *persistence.CatalogRepo, annotations *persistence.AnnotationRepo) *PlayQueueService {
-	return &PlayQueueService{playQueues: playQueues, catalog: catalog, annotations: annotations, hub: newPlayQueueHub()}
+// NewPlayQueueService wires the play-queue application service. logger may
+// be nil (tests), in which case notify() logging is skipped.
+func NewPlayQueueService(playQueues *persistence.PlayQueueRepo, catalog *persistence.CatalogRepo, annotations *persistence.AnnotationRepo, logger *slog.Logger) *PlayQueueService {
+	return &PlayQueueService{playQueues: playQueues, catalog: catalog, annotations: annotations, hub: newPlayQueueHub(), logger: logger}
 }
 
 // PlayQueueResult is a saved queue resolved into its tracks.
@@ -144,5 +152,9 @@ func (s *PlayQueueService) notify(ctx context.Context, userID string) {
 	if err != nil {
 		return
 	}
-	s.hub.broadcast(userID, PlayQueueEvent{Queue: res, At: time.Now()})
+	n := s.hub.broadcast(userID, PlayQueueEvent{Queue: res, At: time.Now()})
+	if s.logger != nil {
+		s.logger.Info("play-queue notify", "user", userID, "subscribers", n,
+			"current", res.Queue.Current, "playing", res.Queue.Playing, "target", res.Queue.TargetDeviceID)
+	}
 }
