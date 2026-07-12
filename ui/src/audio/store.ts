@@ -142,6 +142,13 @@ let orderBackup: Song[] | null = null;
 // playback position — that's what made a brand-new track start playback
 // from wherever the old one had gotten to.
 let suppressEngineEvents = false;
+// How long to keep suppressing past the awaited engine calls settling. A
+// remote/on-demand track's old audio source can take a while to actually
+// abort over a real network, longer than a fixed short window might assume —
+// generous on purpose, since the cost of a false positive here (briefly not
+// reflecting a genuine late position change) is much lower than the cost of
+// a false negative (a stray event silently corrupting the saved position).
+const ENGINE_RELOAD_GRACE_MS = 3000;
 
 function client(): ImmerleClient | null {
   return useAuth.getState().client;
@@ -192,6 +199,8 @@ function sendRemoteCommand(get: () => AudioState, current: string, positionMs: n
   const c = client();
   const { songs } = get();
   if (!c || !songs.length) return;
+  // eslint-disable-next-line no-console
+  console.log('[playqueue] flush', { reason: 'sendRemoteCommand', force: true, current, position: positionMs / 1000, playing });
   void c.savePlayQueue(songs, current, positionMs, playing).catch(() => undefined);
 }
 
@@ -231,7 +240,7 @@ async function applyRemoteQueue(
     // button back to "paused" even though playback carried on correctly).
     setTimeout(() => {
       suppressEngineEvents = false;
-    }, 500);
+    }, ENGINE_RELOAD_GRACE_MS);
   }
   // Re-assert: the engine's own state/progress events were dropped, not
   // corrected, during the guarded window above (status would otherwise stay
@@ -243,7 +252,7 @@ async function applyRemoteQueue(
   // moment this device reclaims the shared queue (changedBy becomes this
   // device's id), so a stale write from whoever it took over from doesn't
   // keep getting re-applied on every poll.
-  flushSaveQueue(get, true);
+  flushSaveQueue(get, true, 'applyRemoteQueue');
 }
 
 /**
@@ -474,7 +483,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
       // Capture a pause immediately (not throttled) — it stops the progress
       // ticks that would otherwise eventually trigger a save, so without
       // this the paused position/state could sit unsaved indefinitely.
-      if (wasPlaying && s.status !== 'playing') flushSaveQueue(get);
+      if (wasPlaying && s.status !== 'playing') flushSaveQueue(get, false, 'engine:state-pause');
     });
     engine.on('progress', (position, duration) => {
       if (isSpectating(get) || suppressEngineEvents) return;
@@ -487,7 +496,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
       scrobble = { nowPlayingSent: false, submitted: false };
       set({ index, position: 0 });
       sendNowPlaying(get);
-      flushSaveQueue(get);
+      flushSaveQueue(get, false, 'engine:trackChange');
       // Landed on a federated-playlist track that hasn't been resolved yet
       // (empty-url placeholder — see songToTrack): warn instead of silently
       // sitting on dead air, and move on. ponytail: if the whole queue is
@@ -541,7 +550,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
     // hasn't hit the 5s throttle yet.
     if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
       document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'hidden') flushSaveQueue(get);
+        if (document.visibilityState === 'hidden') flushSaveQueue(get, false, 'visibilitychange');
       });
     }
   },
@@ -561,7 +570,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
     } finally {
       setTimeout(() => {
         suppressEngineEvents = false;
-      }, 500);
+      }, ENGINE_RELOAD_GRACE_MS);
     }
     set({ position: 0, status: 'playing' }); // setQueue always starts playback
     sendNowPlaying(get);
@@ -573,7 +582,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
     // was supposed to hand this device the session (the local engine had
     // already started the new track, so the UI looked right while nothing
     // had actually synced out).
-    flushSaveQueue(get, true);
+    flushSaveQueue(get, true, 'playSongs');
   },
 
   playRadio: async (station) => {
@@ -595,10 +604,10 @@ export const usePlayer = create<AudioState>((set, get) => ({
     } finally {
       setTimeout(() => {
         suppressEngineEvents = false;
-      }, 500);
+      }, ENGINE_RELOAD_GRACE_MS);
     }
     set({ position: 0, status: 'playing' });
-    flushSaveQueue(get, true); // see playSongs — claimActiveDevice's write may not have landed yet
+    flushSaveQueue(get, true, 'playRadio'); // see playSongs — claimActiveDevice's write may not have landed yet
   },
 
   playTrackById: async (id, positionSec, autoplay) => {
@@ -618,11 +627,11 @@ export const usePlayer = create<AudioState>((set, get) => ({
     } finally {
       setTimeout(() => {
         suppressEngineEvents = false;
-      }, 500);
+      }, ENGINE_RELOAD_GRACE_MS);
     }
     set({ position: positionSec, status: autoplay ? 'playing' : 'paused' });
     sendNowPlaying(get);
-    flushSaveQueue(get, true); // see playSongs — claimActiveDevice's write may not have landed yet
+    flushSaveQueue(get, true, 'playTrackById'); // see playSongs — claimActiveDevice's write may not have landed yet
   },
 
   playNext: async (songs) => {
@@ -903,12 +912,14 @@ function maybeScrobble(get: () => AudioState, position: number, duration: number
  * correctly"). Once claimActiveDevice has run, this device's intent to be
  * active is already decided locally; the save must land regardless.
  */
-function flushSaveQueue(get: () => AudioState, force = false): void {
+function flushSaveQueue(get: () => AudioState, force = false, reason = 'unknown'): void {
   if (!force && isSpectating(get)) return;
   lastQueueSaveAt = Date.now();
   const c = client();
   const { songs, index, position, status } = get();
   if (!c || songs.length === 0 || index < 0) return;
+  // eslint-disable-next-line no-console
+  console.log('[playqueue] flush', { reason, force, current: songs[index]?.id, position, status, suppressEngineEvents });
   void c.savePlayQueue(songs, songs[index]?.id, Math.floor(position * 1000), status === 'playing').catch(() => undefined);
 }
 
@@ -924,5 +935,5 @@ function flushSaveQueue(get: () => AudioState, force = false): void {
  */
 function scheduleSaveQueue(get: () => AudioState): void {
   if (Date.now() - lastQueueSaveAt < QUEUE_SAVE_THROTTLE_MS) return;
-  flushSaveQueue(get);
+  flushSaveQueue(get, false, 'engine:progress-throttled');
 }
