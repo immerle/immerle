@@ -134,6 +134,11 @@ let lastQueueSaveAt = 0;
 const QUEUE_SAVE_THROTTLE_MS = 5000;
 // Original queue order, kept so shuffle can be turned off again.
 let orderBackup: Song[] | null = null;
+// True while applyRemoteQueue is mid-flight (see there): engine.setQueue
+// reloads the audio element, which momentarily reports position 0 before
+// the follow-up seekTo corrects it — a stray progress/state event landing
+// in that gap must not be treated as this device's real playback position.
+let applyingRemoteQueue = false;
 
 function client(): ImmerleClient | null {
   return useAuth.getState().client;
@@ -190,10 +195,20 @@ async function applyRemoteQueue(
   orderBackup = null;
   scrobble = { nowPlayingSent: false, submitted: false };
   set({ songs: remote.songs, index: idx, position: remote.positionMs / 1000, playingDeviceId: client()?.getSession()?.deviceId ?? '' });
-  const tracks = await Promise.all(remote.songs.map((s) => songToTrack(c, s, get().qualityId)));
-  await engine.setQueue(tracks, idx);
-  await engine.seekTo(remote.positionMs / 1000);
-  if (!autoplay) await engine.pause();
+  applyingRemoteQueue = true;
+  try {
+    const tracks = await Promise.all(remote.songs.map((s) => songToTrack(c, s, get().qualityId)));
+    await engine.setQueue(tracks, idx);
+    await engine.seekTo(remote.positionMs / 1000);
+    if (!autoplay) await engine.pause();
+  } finally {
+    applyingRemoteQueue = false;
+  }
+  // Re-assert: the engine's own state/progress events were dropped, not
+  // corrected, during the guarded window above (status would otherwise stay
+  // whatever it was before this call — engine.setQueue/pause's own events
+  // never landed).
+  set({ position: remote.positionMs / 1000, status: autoplay ? 'playing' : 'paused' });
   sendNowPlaying(get);
   // Immediately, not throttled: this is the moment this device reclaims the
   // shared queue (changedBy becomes this device's id), so a stale write from
@@ -336,6 +351,23 @@ function connectPlayQueueLive(get: () => AudioState, set: (partial: Partial<Audi
   setInterval(() => void poll(), PLAYQUEUE_POLL_MS);
 }
 
+/**
+ * While spectating and the mirrored session is playing, position only moves
+ * in jumps — once per update (SSE push, or the native poll interval), which
+ * can be several seconds apart, reading as the progress bar visibly
+ * skipping. Tick it forward locally once a second in between so it moves
+ * smoothly instead; every real update (applyDisplaySnapshot) still
+ * overwrites it with the authoritative value regardless, so this can never
+ * drift for more than a second or two.
+ */
+function startFakeProgressTicker(get: () => AudioState, set: (partial: Partial<AudioState>) => void): void {
+  setInterval(() => {
+    if (!isSpectating(get) || get().status !== 'playing') return;
+    const { position, duration } = get();
+    set({ position: duration > 0 ? Math.min(position + 1, duration) : position + 1 });
+  }, 1000);
+}
+
 interface EventSourceLike {
   addEventListener: (type: string, listener: (e: { data?: string }) => void) => void;
 }
@@ -406,7 +438,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
     // right back to this device's own (idle) values — the player bar and
     // progress bar would then show the wrong thing until the next update.
     engine.on('state', (s) => {
-      if (isSpectating(get)) return;
+      if (isSpectating(get) || applyingRemoteQueue) return;
       const wasPlaying = get().status === 'playing';
       set({ status: s.status, index: s.index, duration: s.duration || get().duration });
       // Capture a pause immediately (not throttled) — it stops the progress
@@ -415,13 +447,13 @@ export const usePlayer = create<AudioState>((set, get) => ({
       if (wasPlaying && s.status !== 'playing') flushSaveQueue(get);
     });
     engine.on('progress', (position, duration) => {
-      if (isSpectating(get)) return;
+      if (isSpectating(get) || applyingRemoteQueue) return;
       set({ position, duration: duration || get().duration });
       maybeScrobble(get, position, duration);
       scheduleSaveQueue(get);
     });
     engine.on('trackChange', (index) => {
-      if (isSpectating(get)) return;
+      if (isSpectating(get) || applyingRemoteQueue) return;
       scrobble = { nowPlayingSent: false, submitted: false };
       set({ index, position: 0 });
       sendNowPlaying(get);
@@ -440,6 +472,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
 
     await engine.setVolume(get().volume);
     set({ engine });
+    startFakeProgressTicker(get, set);
 
     // Cross-device state: show what's already playing (paused) on launch,
     // then stay live-updated on every change from any device (see
