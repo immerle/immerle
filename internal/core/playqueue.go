@@ -58,3 +58,9 @@ func (s *PlayQueueService) Save(ctx context.Context, userID, current string, pos
 		TrackIDs:   trackIDs,
 	})
 }
+
+// SetTarget assigns (deviceID != "") or clears (deviceID == "") the sole
+// device that should be actively playing the user's queue.
+func (s *PlayQueueService) SetTarget(ctx context.Context, userID, deviceID string) error {
+	return s.playQueues.SetTarget(ctx, userID, deviceID)
+}

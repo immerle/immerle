@@ -19,14 +19,20 @@ type playQueueView struct {
 	ChangedBy string     `json:"changedBy,omitempty"`
 	ChangedAt *time.Time `json:"changedAt,omitempty"`
 	Entries   []songView `json:"entries"`
+	// TargetDeviceID, when set, is the id of the sole device that should be
+	// actively playing this queue right now — every other device should
+	// pause instead of doubling the audio. Empty means unrestricted: each
+	// device manages its own playback independently (the default).
+	TargetDeviceID string `json:"targetDeviceId,omitempty"`
 }
 
 func toPlayQueueView(res core.PlayQueueResult) playQueueView {
 	v := playQueueView{
-		Current:   res.Queue.Current,
-		Position:  res.Queue.PositionMs,
-		ChangedBy: res.Queue.ChangedBy,
-		Entries:   make([]songView, 0, len(res.Entries)),
+		Current:        res.Queue.Current,
+		Position:       res.Queue.PositionMs,
+		ChangedBy:      res.Queue.ChangedBy,
+		Entries:        make([]songView, 0, len(res.Entries)),
+		TargetDeviceID: res.Queue.TargetDeviceID,
 	}
 	if !res.Queue.ChangedAt.IsZero() {
 		v.ChangedAt = &res.Queue.ChangedAt
@@ -87,6 +93,69 @@ func (h *Handler) handleSavePlayQueue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.playQueue.Save(r.Context(), userFrom(r.Context()).ID, req.Current, req.Position, req.Client, req.IDs); err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	writeResource(w, http.StatusNoContent, nil)
+}
+
+// playbackTargetView is a device the caller can transfer active playback to.
+type playbackTargetView struct {
+	ID         string     `json:"id"`
+	Name       string     `json:"name"`
+	LastUsedAt *time.Time `json:"lastUsedAt,omitempty"`
+}
+
+// handleListPlaybackTargets lists the caller's recently-active app installs —
+// the devices playback can be transferred to.
+//
+// @Summary  List playback targets
+// @Description  Lists the caller's recently-active app installs (device-kind API tokens), for the "cast to device" picker.
+// @Tags     playback
+// @Security BearerAuth
+// @Produce  json
+// @Success  200  {array}  playbackTargetView
+// @Failure  401  {object}  errorResponse
+// @Router   /play-queue/targets [get]
+func (h *Handler) handleListPlaybackTargets(w http.ResponseWriter, r *http.Request) {
+	sessions, err := h.Auth.ListDeviceSessions(r.Context(), userFrom(r.Context()).ID)
+	if err != nil {
+		writeInternal(w, err)
+		return
+	}
+	out := make([]playbackTargetView, 0, len(sessions))
+	for _, s := range sessions {
+		out = append(out, playbackTargetView{ID: s.ID, Name: s.Name, LastUsedAt: s.LastUsedAt})
+	}
+	writeResource(w, http.StatusOK, out)
+}
+
+// setPlaybackTargetRequest is the body for PUT /play-queue/target.
+type setPlaybackTargetRequest struct {
+	// DeviceID is the device to make the sole active player; empty clears the
+	// restriction so every device plays independently again.
+	DeviceID string `json:"deviceId"`
+}
+
+// handleSetPlaybackTarget assigns or clears the caller's active playback
+// device.
+//
+// @Summary  Set the active playback device
+// @Description  Assigns (or, with an empty deviceId, clears) the sole device that should be actively playing the caller's queue.
+// @Tags     playback
+// @Security BearerAuth
+// @Accept   json
+// @Param    body  body  setPlaybackTargetRequest  true  "Target device"
+// @Success  204  "No Content"
+// @Failure  400  {object}  errorResponse
+// @Failure  401  {object}  errorResponse
+// @Router   /play-queue/target [put]
+func (h *Handler) handleSetPlaybackTarget(w http.ResponseWriter, r *http.Request) {
+	var req setPlaybackTargetRequest
+	if !decodeJSON(w, r, &req) {
+		return
+	}
+	if err := h.playQueue.SetTarget(r.Context(), userFrom(r.Context()).ID, req.DeviceID); err != nil {
 		writeServiceError(w, err)
 		return
 	}

@@ -16,6 +16,7 @@ import {
   usePlaylists,
   useRemoveFromPlaylist,
 } from '../query/playlists';
+import { usePlaybackTargets } from '../query/account';
 import { useRadioStations, useRadioLike } from '../query/radio';
 import { RadioStation } from '../api/immerle/types';
 import { queryClient } from '../query/queryClient';
@@ -156,11 +157,17 @@ function WideBar({ song, status, position, duration }: BarProps) {
   const shown = scrub ?? position;
   // A live radio has no queue, no seeking and no prev/next: grey those out.
   const isRadio = useIsRadio(song.id);
+  // Another device has claimed active playback (see CastButton) — this one
+  // just mirrors state, so its transport controls are inert until reclaimed.
+  const myId = useAuth((s) => s.client?.getSession()?.deviceId);
+  const castTargetId = usePlayer((s) => s.castTargetId);
+  const remoteControlled = !!castTargetId && castTargetId !== myId;
+  const transportDisabled = isRadio || remoteControlled;
   // A not-yet-downloaded track streams progressively — the server can't serve
   // byte ranges for it yet. The bar stays interactive though: dragging it
   // triggers usePlayer.seekTo's check-and-upgrade-or-toast flow, which seeks
   // for real once the background download has finished.
-  const seekDisabled = isRadio;
+  const seekDisabled = transportDisabled;
 
   return (
     <View className="flex-row items-center gap-4 px-4 py-2">
@@ -174,7 +181,7 @@ function WideBar({ song, status, position, duration }: BarProps) {
             {song.title}
           </Text>
           <Text numberOfLines={1} className="text-xs text-muted">
-            {song.artist}
+            {remoteControlled ? t('components.player.castPlayingElsewhere') : song.artist}
           </Text>
         </View>
         <LikeButton key={song.id} song={song} />
@@ -189,19 +196,19 @@ function WideBar({ song, status, position, duration }: BarProps) {
             size={20}
             color={shuffle ? colors.primary : colors.muted}
             onPress={toggleShuffle}
-            disabled={isRadio}
+            disabled={transportDisabled}
             accessibilityLabel={t('components.player.shuffle')}
           />
-          <IconButton name="play-skip-back" size={22} onPress={previous} disabled={isRadio} accessibilityLabel={t('components.player.previous')} />
-          <PlayButton playing={isPlaying} onPress={toggle} size={40} />
-          <IconButton name="play-skip-forward" size={22} onPress={next} disabled={isRadio} accessibilityLabel={t('components.player.next')} />
+          <IconButton name="play-skip-back" size={22} onPress={previous} disabled={transportDisabled} accessibilityLabel={t('components.player.previous')} />
+          <PlayButton playing={isPlaying} onPress={toggle} size={40} disabled={transportDisabled} />
+          <IconButton name="play-skip-forward" size={22} onPress={next} disabled={transportDisabled} accessibilityLabel={t('components.player.next')} />
           <View>
             <IconButton
               name={repeat === 'track' ? 'repeat-outline' : 'repeat'}
               size={20}
               color={repeat !== 'off' ? colors.primary : colors.muted}
               onPress={cycleRepeat}
-              disabled={isRadio}
+              disabled={transportDisabled}
               accessibilityLabel={t('components.player.repeat')}
             />
             {repeat === 'track' ? (
@@ -230,9 +237,10 @@ function WideBar({ song, status, position, duration }: BarProps) {
         </View>
       </View>
 
-      {/* Right — queue + volume + fullscreen */}
+      {/* Right — queue + cast + volume + fullscreen */}
       <View className="flex-1 flex-row items-center justify-end gap-3">
         <IconButton name="list" size={22} onPress={() => router.push('/queue')} disabled={isRadio} accessibilityLabel={t('components.player.queue')} />
+        <CastButton active={remoteControlled} disabled={isRadio} />
         <VolumeControl />
         <IconButton name="expand" size={20} onPress={() => router.push('/player')} accessibilityLabel={t('components.player.fullscreen')} />
       </View>
@@ -478,6 +486,91 @@ function PlaylistCheckRow({ playlistId, name, songId }: { playlistId: string; na
         {name}
       </Text>
       {isLoading || busy ? <ActivityIndicator size="small" color={colors.muted} /> : null}
+    </Pressable>
+  );
+}
+
+/**
+ * Icon button opening a picker of this account's recently-active devices:
+ * pick one to make it the sole active player (every other device pauses),
+ * "This device" to take over playback here, or "Everywhere" to go back to
+ * independent mode (today's default — every device manages its own playback).
+ */
+export function CastButton({ active, disabled }: { active?: boolean; disabled?: boolean }) {
+  const t = useT();
+  const colors = useColors();
+  const { height: screenH } = useWindowDimensions();
+  const anchorRef = useRef<View>(null);
+  const [anchor, setAnchor] = useState<{ x: number; y: number } | null>(null);
+  const open = !!anchor;
+
+  const myId = useAuth((s) => s.client?.getSession()?.deviceId);
+  const castTargetId = usePlayer((s) => s.castTargetId);
+  const setCastTarget = usePlayer((s) => s.setCastTarget);
+  const { data: targets, isLoading } = usePlaybackTargets(open);
+  const others = (targets ?? []).filter((d) => d.id !== myId);
+
+  const openPicker = () => anchorRef.current?.measureInWindow((x, y) => setAnchor({ x, y }));
+  const close = () => setAnchor(null);
+  const pick = (deviceId: string) => {
+    close();
+    void setCastTarget(deviceId);
+  };
+
+  return (
+    <>
+      <Pressable
+        ref={anchorRef}
+        onPress={openPicker}
+        disabled={disabled}
+        accessibilityState={{ disabled: !!disabled }}
+        accessibilityLabel={t('components.player.cast')}
+        className={`h-8 w-8 items-center justify-center rounded-full ${disabled ? 'opacity-40' : 'active:opacity-70'}`}
+      >
+        <Ionicon name={active ? 'tv' : 'tv-outline'} size={20} color={active ? colors.primary : colors.foreground} />
+      </Pressable>
+
+      <Modal transparent visible={open} animationType="fade" onRequestClose={close}>
+        <Pressable className="flex-1" onPress={close}>
+          {anchor ? (
+            <View
+              style={{ position: 'absolute', left: Math.max(8, anchor.x - 180), bottom: screenH - anchor.y + 8, width: 240 }}
+              className="overflow-hidden rounded-2xl border border-border bg-surface"
+            >
+              <Pressable onPress={(e) => e.stopPropagation()}>
+                <Text className="px-4 pb-1 pt-3 text-xs font-medium uppercase tracking-wider text-muted">
+                  {t('components.player.castTitle')}
+                </Text>
+                <CastRow label={t('components.player.castEverywhere')} selected={!castTargetId} onPress={() => pick('')} />
+                {myId ? (
+                  <CastRow label={t('components.player.castThisDevice')} selected={castTargetId === myId} onPress={() => pick(myId)} />
+                ) : null}
+                {isLoading ? (
+                  <View className="items-center py-3">
+                    <ActivityIndicator size="small" color={colors.muted} />
+                  </View>
+                ) : others.length === 0 ? (
+                  <Text className="px-4 py-2 text-sm text-muted">{t('components.player.castNoOtherDevices')}</Text>
+                ) : (
+                  others.map((d) => <CastRow key={d.id} label={d.name} selected={castTargetId === d.id} onPress={() => pick(d.id)} />)
+                )}
+              </Pressable>
+            </View>
+          ) : null}
+        </Pressable>
+      </Modal>
+    </>
+  );
+}
+
+function CastRow({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
+  const colors = useColors();
+  return (
+    <Pressable onPress={onPress} className="flex-row items-center gap-3 px-4 py-2.5 active:bg-surface-alt">
+      <Text className="flex-1 text-sm text-foreground" numberOfLines={1}>
+        {label}
+      </Text>
+      {selected ? <Ionicon name="checkmark" size={16} color={colors.primary} /> : null}
     </Pressable>
   );
 }

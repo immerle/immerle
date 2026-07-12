@@ -508,6 +508,11 @@ type PlayQueue struct {
 	ChangedBy  string    `json:"changedBy,omitempty"`
 	ChangedAt  time.Time `json:"changed"`
 	TrackIDs   []string  `json:"trackIds"`
+	// TargetDeviceID, when set, is the sole device that should be actively
+	// playing this queue — other devices pause instead of doubling the audio.
+	// Empty means unrestricted: every device manages its own playback.
+	TargetDeviceID  string     `json:"targetDeviceId,omitempty"`
+	TargetChangedAt *time.Time `json:"targetChangedAt,omitempty"`
 }
 
 // Scrobble records a play submission.
@@ -722,6 +727,10 @@ type APIToken struct {
 	LastUsedAt *time.Time `json:"lastUsedAt,omitempty"`
 	ExpiresAt  *time.Time `json:"expiresAt,omitempty"`
 	Revoked    bool       `json:"revoked"`
+	// IsDevice marks a token minted by the app's own login flow (one per
+	// installed client) rather than a manually-created personal/CLI token —
+	// only these are offered as playback-transfer targets.
+	IsDevice bool `json:"isDevice,omitempty"`
 }
 
 // Device is an authenticated client session identified by a JWT's jti. The row

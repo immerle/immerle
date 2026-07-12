@@ -52,3 +52,60 @@ func TestPlayQueueAndNowPlaying(t *testing.T) {
 		t.Fatalf("now-playing feed: %+v", np.NowPlaying)
 	}
 }
+
+// TestPlaybackTargets covers the "cast to device" feature: setting/clearing
+// the active-playback device on the saved queue, and listing candidate
+// targets — which must include only device-kind tokens (app logins) that
+// have actually been used, not manually-created personal/CLI tokens.
+func TestPlaybackTargets(t *testing.T) {
+	srv, token, _ := newBrowseEnv(t)
+
+	if st := doStatus(t, srv, http.MethodPut, "/play-queue/target", token, map[string]any{"deviceId": "some-device"}); st != http.StatusNoContent {
+		t.Fatalf("set target: status %d", st)
+	}
+	var q playQueueView
+	if st := getJSON(t, srv, token, "/play-queue", &q); st != http.StatusOK {
+		t.Fatalf("get queue: status %d", st)
+	}
+	if q.TargetDeviceID != "some-device" {
+		t.Fatalf("target not persisted: %+v", q)
+	}
+
+	if st := doStatus(t, srv, http.MethodPut, "/play-queue/target", token, map[string]any{"deviceId": ""}); st != http.StatusNoContent {
+		t.Fatalf("clear target: status %d", st)
+	}
+	// Fresh struct: TargetDeviceID has `omitempty`, so a cleared value is
+	// absent from the response JSON and decoding into the same `q` from
+	// above would just leave its stale non-empty value in place.
+	var cleared playQueueView
+	if st := getJSON(t, srv, token, "/play-queue", &cleared); st != http.StatusOK {
+		t.Fatalf("get queue: status %d", st)
+	}
+	if cleared.TargetDeviceID != "" {
+		t.Fatalf("target not cleared: %+v", cleared)
+	}
+
+	// A device-kind token, once used, shows up as a playback target; a
+	// manually-created one never does.
+	deviceStatus, deviceBody := doMap(t, srv, http.MethodPost, "/tokens", token, map[string]any{"name": "phone", "device": true})
+	if deviceStatus != http.StatusCreated {
+		t.Fatalf("create device token: status %d", deviceStatus)
+	}
+	deviceSecret, _ := deviceBody["token"].(string)
+	if cliStatus, _ := doMap(t, srv, http.MethodPost, "/tokens", token, map[string]any{"name": "cli-script"}); cliStatus != http.StatusCreated {
+		t.Fatalf("create cli token: status %d", cliStatus)
+	}
+
+	// Exercise the device token once so it counts as "recently used".
+	if st := doStatus(t, srv, http.MethodGet, "/artists", deviceSecret, nil); st != http.StatusOK {
+		t.Fatalf("authenticate as device token: status %d", st)
+	}
+
+	var targets []playbackTargetView
+	if st := getJSON(t, srv, token, "/play-queue/targets", &targets); st != http.StatusOK {
+		t.Fatalf("list targets: status %d", st)
+	}
+	if len(targets) != 1 || targets[0].Name != "phone" {
+		t.Fatalf("expected only the used device token, got %+v", targets)
+	}
+}

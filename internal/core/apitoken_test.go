@@ -19,7 +19,7 @@ func TestAPITokenCreateAuthenticateRevoke(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	secret, tok, err := auth.CreateAPIToken(ctx, user.ID, "cli", nil)
+	secret, tok, err := auth.CreateAPIToken(ctx, user.ID, "cli", nil, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,7 +61,7 @@ func TestAPITokenScopedToCreator(t *testing.T) {
 	alice, _ := auth.CreateUser(ctx, "alice", "pw", "", "", false)
 	bob, _ := auth.CreateUser(ctx, "bob", "pw", "", "", false)
 
-	secret, tok, _ := auth.CreateAPIToken(ctx, alice.ID, "a", nil)
+	secret, tok, _ := auth.CreateAPIToken(ctx, alice.ID, "a", nil, false)
 
 	// Token authenticates as Alice (its creator), never Bob.
 	got, _ := auth.Authenticate(ctx, Credentials{APIToken: secret})
@@ -82,6 +82,40 @@ func TestAPITokenScopedToCreator(t *testing.T) {
 	}
 }
 
+// TestListDeviceSessions covers the pool of playback-transfer targets: only
+// device-kind tokens (minted by the app's own login flow, see
+// AuthService.CreateAPIToken's isDevice param) that were used recently enough
+// to still count as "connected" should show up — not manually-created
+// personal/CLI tokens, and not devices that have gone stale.
+func TestListDeviceSessions(t *testing.T) {
+	store := testutil.NewStore(t)
+	auth, _ := NewAuthService(store.Users, store.APITokens, store.Devices, "secret")
+	ctx := context.Background()
+	user, _ := auth.CreateUser(ctx, "alice", "pw", "", "", false)
+
+	_, cli, _ := auth.CreateAPIToken(ctx, user.ID, "backup-script", nil, false)
+	_, phone, _ := auth.CreateAPIToken(ctx, user.ID, "iPhone", nil, true)
+	_, stale, _ := auth.CreateAPIToken(ctx, user.ID, "old-laptop", nil, true)
+
+	if err := store.APITokens.TouchLastUsed(ctx, cli.ID, time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.APITokens.TouchLastUsed(ctx, phone.ID, time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.APITokens.TouchLastUsed(ctx, stale.ID, time.Now().Add(-deviceOnlineWindow-time.Minute)); err != nil {
+		t.Fatal(err)
+	}
+
+	sessions, err := auth.ListDeviceSessions(ctx, user.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(sessions) != 1 || sessions[0].ID != phone.ID {
+		t.Fatalf("expected only the recently-used device token, got %+v", sessions)
+	}
+}
+
 func TestAPITokenExpiry(t *testing.T) {
 	store := testutil.NewStore(t)
 	auth, _ := NewAuthService(store.Users, store.APITokens, store.Devices, "secret")
@@ -89,7 +123,7 @@ func TestAPITokenExpiry(t *testing.T) {
 	user, _ := auth.CreateUser(ctx, "alice", "pw", "", "", false)
 
 	past := time.Now().Add(-time.Hour)
-	secret, _, _ := auth.CreateAPIToken(ctx, user.ID, "expired", &past)
+	secret, _, _ := auth.CreateAPIToken(ctx, user.ID, "expired", &past, false)
 	if _, err := auth.Authenticate(ctx, Credentials{APIToken: secret}); err == nil {
 		t.Fatal("expired token must be rejected")
 	}

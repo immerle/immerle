@@ -32,6 +32,7 @@ func (h *Handler) handleTokens(w http.ResponseWriter, r *http.Request) {
 			"createdAt":  t.CreatedAt,
 			"lastUsedAt": t.LastUsedAt,
 			"expiresAt":  t.ExpiresAt,
+			"isDevice":   t.IsDevice,
 		})
 	}
 	writeResource(w, http.StatusOK, out)
@@ -43,6 +44,10 @@ type createTokenRequest struct {
 	// ExpiresAt is an optional RFC3339 timestamp; omit or null for a token that
 	// never expires.
 	ExpiresAt *time.Time `json:"expiresAt"`
+	// Device marks this token as an app login session (one per installed
+	// client) rather than a manually-created personal/CLI token — only
+	// device tokens are offered as playback-transfer targets.
+	Device bool `json:"device"`
 }
 
 // handleCreateToken mints a new personal access token for the caller. The secret
@@ -66,7 +71,7 @@ func (h *Handler) handleCreateToken(w http.ResponseWriter, r *http.Request) {
 	if !decodeJSON(w, r, &req) {
 		return
 	}
-	secret, tok, err := h.Auth.CreateAPIToken(r.Context(), user.ID, req.Name, req.ExpiresAt)
+	secret, tok, err := h.Auth.CreateAPIToken(r.Context(), user.ID, req.Name, req.ExpiresAt, req.Device)
 	if err != nil {
 		writeInternal(w, err)
 		return

@@ -465,6 +465,9 @@ type APITokenDTO struct {
 	CreatedAt  string `json:"createdAt" example:"2026-06-15T09:00:00Z"`
 	LastUsedAt string `json:"lastUsedAt,omitempty"`
 	ExpiresAt  string `json:"expiresAt,omitempty"`
+	// IsDevice marks an app login session rather than a manually-created
+	// personal/CLI token.
+	IsDevice bool `json:"isDevice,omitempty"`
 }
 
 // CreateTokenDTO is returned once when a token is created; "token" is the secret

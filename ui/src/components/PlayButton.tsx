@@ -12,19 +12,23 @@ export function PlayButton({
   onPress,
   size = 56,
   accessibilityLabel,
+  disabled,
 }: {
   playing?: boolean;
   onPress?: () => void;
   size?: number;
   accessibilityLabel?: string;
+  disabled?: boolean;
 }) {
   const colors = useColors();
   return (
     <Pressable
       onPress={onPress}
+      disabled={disabled}
       accessibilityRole="button"
+      accessibilityState={{ disabled: !!disabled }}
       accessibilityLabel={accessibilityLabel ?? (playing ? 'Pause' : 'Lecture')}
-      className="items-center justify-center rounded-full bg-primary active:scale-95"
+      className={`items-center justify-center rounded-full bg-primary active:scale-95 ${disabled ? 'opacity-40' : ''}`}
       style={{
         width: size,
         height: size,

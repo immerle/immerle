@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../auth/store';
 import { queryClient } from '../query/queryClient';
 import { ImmerleClient } from '../api/immerle/client';
-import { Song } from '../api/subsonic/types';
+import { PlayQueueSnapshot, Song } from '../api/subsonic/types';
 import { offlinePlayableUrl } from '../offline/store';
 import { AudioEngine, PlayableTrack, RepeatMode } from './types';
 import { createEngine } from './engine';
@@ -83,6 +83,12 @@ interface AudioState {
   /** 0..1 playback volume. */
   volume: number;
   qualityId: string;
+  /**
+   * Server-assigned sole active-playback device id for this account ('' =
+   * unrestricted — every device plays independently, today's default). When
+   * set to another device, this one should stop driving local audio.
+   */
+  castTargetId: string;
 
   init: () => Promise<void>;
   hydrateSettings: () => Promise<void>;
@@ -106,6 +112,8 @@ interface AudioState {
   toggleShuffle: () => Promise<void>;
   setVolume: (volume: number) => void;
   setQuality: (id: string) => Promise<void>;
+  /** Make `deviceId` the sole active player ('' clears it back to independent/"everywhere"). */
+  setCastTarget: (deviceId: string) => Promise<void>;
 
   current: () => Song | undefined;
 }
@@ -118,6 +126,73 @@ let orderBackup: Song[] | null = null;
 
 function client(): ImmerleClient | null {
   return useAuth.getState().client;
+}
+
+/** How often each device checks whether the active-playback target changed. */
+const PLAYQUEUE_POLL_MS = 15000;
+
+/**
+ * Load a saved server-side queue into local state and the engine, at its
+ * saved position — shared by the launch restore and by "this device just
+ * became the active player". Always lands paused unless `autoplay`, matching
+ * playTrackById's pattern for a single-track load.
+ */
+async function applyRemoteQueue(
+  get: () => AudioState,
+  set: (partial: Partial<AudioState>) => void,
+  remote: PlayQueueSnapshot,
+  autoplay: boolean,
+): Promise<void> {
+  const c = client();
+  const engine = get().engine;
+  if (!c || !engine || !remote.songs.length) return;
+  const idx = Math.max(0, remote.songs.findIndex((s) => s.id === remote.currentId));
+  orderBackup = null;
+  scrobble = { nowPlayingSent: false, submitted: false };
+  set({ songs: remote.songs, index: idx, position: remote.positionMs / 1000 });
+  const tracks = await Promise.all(remote.songs.map((s) => songToTrack(c, s, get().qualityId)));
+  await engine.setQueue(tracks, idx);
+  await engine.seekTo(remote.positionMs / 1000);
+  if (!autoplay) await engine.pause();
+  sendNowPlaying(get);
+  scheduleSaveQueue(get);
+}
+
+/**
+ * Restore the last-known cross-device state at launch (paused — never
+ * autoplays), so opening the app on any device shows what's currently
+ * playing instead of a blank player.
+ */
+async function restoreQueue(get: () => AudioState, set: (partial: Partial<AudioState>) => void): Promise<void> {
+  const c = client();
+  if (!c || !get().engine) return;
+  const remote = await c.getPlayQueue().catch(() => null);
+  if (!remote) return;
+  set({ castTargetId: remote.targetDeviceId });
+  await applyRemoteQueue(get, set, remote, false);
+}
+
+/**
+ * Periodically checks whether the active-playback device changed since the
+ * last check. ponytail: polling, not a push channel (SSE) — simpler, and
+ * "every ~15s" is plenty fresh for a manual device switch.
+ */
+async function pollPlayQueue(get: () => AudioState, set: (partial: Partial<AudioState>) => void): Promise<void> {
+  const c = client();
+  const engine = get().engine;
+  if (!c || !engine) return;
+  const remote = await c.getPlayQueue().catch(() => null);
+  if (!remote) return;
+  const prevTarget = get().castTargetId;
+  if (remote.targetDeviceId === prevTarget) return;
+  set({ castTargetId: remote.targetDeviceId });
+  const myId = c.getSession()?.deviceId;
+  if (!remote.targetDeviceId) return; // cleared — independent mode resumes, no forced action
+  if (remote.targetDeviceId === myId) {
+    await applyRemoteQueue(get, set, remote, true); // I've just been designated — take over
+  } else if (get().status === 'playing') {
+    await engine.pause(); // handed off elsewhere — stop here to avoid double audio
+  }
 }
 
 /**
@@ -156,6 +231,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
   shuffle: false,
   volume: 1,
   qualityId: DEFAULT_QUALITY_ID,
+  castTargetId: '',
 
   hydrateSettings: async () => {
     try {
@@ -200,6 +276,12 @@ export const usePlayer = create<AudioState>((set, get) => ({
 
     await engine.setVolume(get().volume);
     set({ engine });
+
+    // Cross-device state: show what's already playing (paused) on launch,
+    // then keep checking whether another device has taken over — or handed
+    // playback to this one.
+    void restoreQueue(get, set);
+    setInterval(() => void pollPlayQueue(get, set), PLAYQUEUE_POLL_MS);
   },
 
   playSongs: async (songs, startIndex = 0) => {
@@ -391,6 +473,25 @@ export const usePlayer = create<AudioState>((set, get) => ({
     const tracks = await Promise.all(get().songs.map((s) => songToTrack(c, s, id)));
     await engine.setQueue(tracks, idx);
     await engine.seekTo(pos);
+  },
+
+  setCastTarget: async (deviceId) => {
+    const c = client();
+    if (!c) return;
+    try {
+      await c.setPlaybackTarget(deviceId);
+    } catch {
+      return; // best-effort; UI keeps its previous state
+    }
+    set({ castTargetId: deviceId });
+    if (!deviceId) return; // cleared — independent mode, no forced action
+    const myId = c.getSession()?.deviceId;
+    if (deviceId === myId) {
+      const remote = await c.getPlayQueue().catch(() => null);
+      if (remote) await applyRemoteQueue(get, set, remote, true);
+    } else if (get().status === 'playing') {
+      await get().engine?.pause();
+    }
   },
 
   current: () => {

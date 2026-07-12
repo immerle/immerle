@@ -9,6 +9,11 @@ components:
           type: string
         id:
           type: string
+        isDevice:
+          description: |-
+            IsDevice marks an app login session rather than a manually-created
+            personal/CLI token.
+          type: boolean
         lastUsedAt:
           type: string
         name:
@@ -1037,6 +1042,12 @@ components:
       type: object
     immerle.createTokenRequest:
       properties:
+        device:
+          description: |-
+            Device marks this token as an app login session (one per installed
+            client) rather than a manually-created personal/CLI token — only
+            device tokens are offered as playback-transfer targets.
+          type: boolean
         expiresAt:
           description: |-
             ExpiresAt is an optional RFC3339 timestamp; omit or null for a token that
@@ -1199,6 +1210,22 @@ components:
           uniqueItems: false
         position:
           type: integer
+        targetDeviceId:
+          description: |-
+            TargetDeviceID, when set, is the id of the sole device that should be
+            actively playing this queue right now — every other device should
+            pause instead of doubling the audio. Empty means unrestricted: each
+            device manages its own playback independently (the default).
+          type: string
+      type: object
+    immerle.playbackTargetView:
+      properties:
+        id:
+          type: string
+        lastUsedAt:
+          type: string
+        name:
+          type: string
       type: object
     immerle.playlistCreateRequest:
       properties:
@@ -1367,6 +1394,14 @@ components:
       properties:
         enabled:
           type: boolean
+      type: object
+    immerle.setPlaybackTargetRequest:
+      properties:
+        deviceId:
+          description: |-
+            DeviceID is the device to make the sole active player; empty clears the
+            restriction so every device plays independently again.
+          type: string
       type: object
     immerle.shareCreateRequest:
       properties:
@@ -4721,6 +4756,65 @@ paths:
       security:
       - BearerAuth: []
       summary: Save play queue
+      tags:
+      - playback
+  /play-queue/target:
+    put:
+      description: Assigns (or, with an empty deviceId, clears) the sole device that
+        should be actively playing the caller's queue.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/immerle.setPlaybackTargetRequest'
+                description: Target device
+                summary: body
+        description: Target device
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Set the active playback device
+      tags:
+      - playback
+  /play-queue/targets:
+    get:
+      description: Lists the caller's recently-active app installs (device-kind API
+        tokens), for the "cast to device" picker.
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/immerle.playbackTargetView'
+                type: array
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: List playback targets
       tags:
       - playback
   /playlists:

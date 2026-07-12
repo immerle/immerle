@@ -107,6 +107,22 @@ export interface NowPlayingEntry extends Song {
   playerName?: string;
 }
 
+/** A device this account is recently logged in on, offered as a playback-transfer target. */
+export interface PlaybackTarget {
+  id: string;
+  name: string;
+  lastUsedAt?: string;
+}
+
+/** The caller's saved cross-device play queue (see ImmerleClient.getPlayQueue). */
+export interface PlayQueueSnapshot {
+  songs: Song[];
+  currentId?: string;
+  positionMs: number;
+  /** The device id that should be the sole active player, or '' if unrestricted. */
+  targetDeviceId: string;
+}
+
 export interface Playlist {
   id: string;
   name: string;
