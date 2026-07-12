@@ -405,9 +405,27 @@ export const usePlayer = create<AudioState>((set, get) => ({
     // Cross-device state: show what's already playing (paused) on launch,
     // then stay live-updated on every change from any device (see
     // connectPlayQueueLive) — someone else starting/pausing/skipping, or
-    // handing playback to/from this one.
-    void restoreQueue(get, set);
-    connectPlayQueueLive(get, set);
+    // handing playback to/from this one. init() runs in the same effect as
+    // useAuth's restore(), racing it — client() is still null the vast
+    // majority of the time at this exact point, since restoring a session
+    // is async (secure storage read, capability probe, account fetch).
+    // Both restoreQueue and connectPlayQueueLive silently no-op without a
+    // client and, unlike a user-triggered action, nothing would otherwise
+    // call them again — so wait for the client to actually exist first.
+    const startLiveSync = () => {
+      void restoreQueue(get, set);
+      connectPlayQueueLive(get, set);
+    };
+    if (client()) {
+      startLiveSync();
+    } else {
+      const unsub = useAuth.subscribe((s) => {
+        if (s.client) {
+          unsub();
+          startLiveSync();
+        }
+      });
+    }
 
     // Best-effort final save when the tab is backgrounded/closed (web only —
     // document is undefined on native, where the app-background lifecycle
