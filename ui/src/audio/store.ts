@@ -283,12 +283,28 @@ function sendRemoteCommand(get: () => AudioState, current: string, positionMs: n
  * saved position — shared by the launch restore and by "this device is (or
  * just became) the active player". Always lands paused unless `autoplay`,
  * matching playTrackById's pattern for a single-track load.
+ *
+ * `verifyStillCurrent`: re-fetch the queue right after acquiring the reload
+ * lock and bail if its changedBy has moved on from `remote.changedBy` —
+ * for reconcilePlayQueue's "taking over" path only. `remote` there comes
+ * from an SSE event that can describe an already-superseded moment: the
+ * reload-order mutex above only orders reloads by when each one *called*
+ * acquireEngineReloadLock, not by how current the data it's about to apply
+ * actually is — a "you're now the target, apply the outgoing device's
+ * session" reconciliation can queue up *after* the user's own local play
+ * action (so it isn't stale by call order) while still carrying data from
+ * before that local action happened, and would silently steamroll it a few
+ * seconds later once its turn came (confirmed via logs: the local track
+ * played correctly, then reverted to the outgoing session exactly one grace
+ * period later). Checking the server's current authoritative state right
+ * before committing catches this regardless of call order.
  */
 async function applyRemoteQueue(
   get: () => AudioState,
   set: (partial: Partial<AudioState>) => void,
   remote: PlayQueueSnapshot,
   autoplay: boolean,
+  verifyStillCurrent = false,
 ): Promise<void> {
   const { stale, release } = await acquireEngineReloadLock();
   try {
@@ -296,6 +312,10 @@ async function applyRemoteQueue(
     const c = client();
     const engine = get().engine;
     if (!c || !engine || !remote.songs.length) return;
+    if (verifyStillCurrent) {
+      const fresh = await c.getPlayQueue().catch(() => null);
+      if (fresh && fresh.changedBy !== remote.changedBy) return; // someone (possibly this device) has already written something newer
+    }
     const idx = Math.max(0, remote.songs.findIndex((s) => s.id === remote.currentId));
     orderBackup = null;
     scrobble = { nowPlayingSent: false, submitted: false };
@@ -407,7 +427,7 @@ async function reconcilePlayQueue(
     if (remote.changedBy && remote.changedBy !== myId) {
       // eslint-disable-next-line no-console
       console.log('[playqueue] taking over (remote command applied)');
-      await applyRemoteQueue(get, set, remote, remote.playing);
+      await applyRemoteQueue(get, set, remote, remote.playing, true);
     }
     return;
   }
