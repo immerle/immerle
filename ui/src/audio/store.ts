@@ -3,6 +3,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../auth/store';
 import { queryClient } from '../query/queryClient';
 import { ImmerleClient } from '../api/immerle/client';
+import { toPlayQueueSnapshot } from '../api/immerle/catalog';
+import { PlayQueueView } from '../api/immerleApi';
 import { PlayQueueSnapshot, Song } from '../api/subsonic/types';
 import { offlinePlayableUrl } from '../offline/store';
 import { AudioEngine, PlayableTrack, RepeatMode } from './types';
@@ -89,6 +91,13 @@ interface AudioState {
    * set to another device, this one should stop driving local audio.
    */
   castTargetId: string;
+  /**
+   * The device id that last wrote the mirrored state shown here (see
+   * applyDisplaySnapshot) — who's actually making the sound right now, even
+   * in unrestricted mode where castTargetId is empty. '' when unknown (e.g.
+   * this device itself is the source, or nothing's ever been saved).
+   */
+  playingDeviceId: string;
 
   init: () => Promise<void>;
   hydrateSettings: () => Promise<void>;
@@ -130,16 +139,9 @@ function client(): ImmerleClient | null {
   return useAuth.getState().client;
 }
 
-// How often each device polls the shared queue. Tighter while an explicit
-// cast is active (either end of it) so remote control feels responsive;
-// looser otherwise since passive "what's playing elsewhere" awareness isn't
-// as time-sensitive. ponytail: polling, not a push channel (SSE) — simpler,
-// and this is fresh enough for a manual device switch or a remote play/pause
-// tap; it does mean a spectator's command can take up to ~3s to land, and the
-// mirrored position on a spectator device is a snapshot (not a live-ticking
-// clock) that only updates each poll.
-const PLAYQUEUE_IDLE_POLL_MS = 15000;
-const PLAYQUEUE_ACTIVE_POLL_MS = 3000;
+// Fallback poll interval for platforms without EventSource (native — see
+// connectPlayQueueLive). Web gets real push updates over SSE instead.
+const PLAYQUEUE_POLL_MS = 5000;
 
 /** Whether this device is watching another device's session (cast elsewhere). */
 function isSpectating(get: () => AudioState): boolean {
@@ -187,7 +189,7 @@ async function applyRemoteQueue(
   const idx = Math.max(0, remote.songs.findIndex((s) => s.id === remote.currentId));
   orderBackup = null;
   scrobble = { nowPlayingSent: false, submitted: false };
-  set({ songs: remote.songs, index: idx, position: remote.positionMs / 1000 });
+  set({ songs: remote.songs, index: idx, position: remote.positionMs / 1000, playingDeviceId: client()?.getSession()?.deviceId ?? '' });
   const tracks = await Promise.all(remote.songs.map((s) => songToTrack(c, s, get().qualityId)));
   await engine.setQueue(tracks, idx);
   await engine.seekTo(remote.positionMs / 1000);
@@ -207,6 +209,7 @@ async function applyRemoteQueue(
  * (see isSpectating) have something to compute the next command against.
  */
 function applyDisplaySnapshot(set: (partial: Partial<AudioState>) => void, remote: PlayQueueSnapshot): void {
+  if (!remote.songs.length) return; // nothing saved yet — leave whatever's already shown alone
   const idx = Math.max(0, remote.songs.findIndex((s) => s.id === remote.currentId));
   set({
     songs: remote.songs,
@@ -214,6 +217,10 @@ function applyDisplaySnapshot(set: (partial: Partial<AudioState>) => void, remot
     position: remote.positionMs / 1000,
     duration: remote.songs[idx]?.duration ?? 0,
     status: remote.playing ? 'playing' : 'paused',
+    // Prefer the explicit cast target (who's supposed to be playing) over
+    // changedBy (who last wrote) — the target stays authoritative even for
+    // one poll/event cycle where a fresh write hasn't landed from them yet.
+    playingDeviceId: remote.targetDeviceId || remote.changedBy || '',
   });
 }
 
@@ -238,20 +245,22 @@ async function restoreQueue(get: () => AudioState, set: (partial: Partial<AudioS
 }
 
 /**
- * Periodically reconciles this device against the shared queue. The explicit
- * active device (target === my id) applies real playback changes — that's
- * how a spectator's remote command (see sendRemoteCommand) actually reaches
- * it. Every other device (spectating someone else, or in the default
+ * Reconciles this device against a freshly-received queue snapshot (from the
+ * SSE stream, or a poll on platforms without it). The explicit active device
+ * (target === my id) applies real playback changes — that's how a
+ * spectator's remote command (see sendRemoteCommand) actually reaches it.
+ * Every other device (spectating someone else, or in the default
  * unrestricted mode) only ever mirrors state for display; it never starts
  * local audio on its own say-so.
  */
-async function pollPlayQueue(get: () => AudioState, set: (partial: Partial<AudioState>) => void): Promise<void> {
-  const c = client();
+async function reconcilePlayQueue(
+  get: () => AudioState,
+  set: (partial: Partial<AudioState>) => void,
+  remote: PlayQueueSnapshot,
+): Promise<void> {
   const engine = get().engine;
-  if (!c || !engine) return;
-  const remote = await c.getPlayQueue().catch(() => null);
-  if (!remote) return;
-  const myId = c.getSession()?.deviceId;
+  if (!engine) return;
+  const myId = client()?.getSession()?.deviceId;
   const target = remote.targetDeviceId;
   set({ castTargetId: target });
 
@@ -269,12 +278,40 @@ async function pollPlayQueue(get: () => AudioState, set: (partial: Partial<Audio
   applyDisplaySnapshot(set, remote);
 }
 
-/** Poll interval widens/narrows based on whether an explicit cast is active. */
-function schedulePlayQueuePoll(get: () => AudioState, set: (partial: Partial<AudioState>) => void): void {
-  const delay = get().castTargetId ? PLAYQUEUE_ACTIVE_POLL_MS : PLAYQUEUE_IDLE_POLL_MS;
-  setTimeout(() => {
-    void pollPlayQueue(get, set).finally(() => schedulePlayQueuePoll(get, set));
-  }, delay);
+/**
+ * Live-updates this device on every play-queue change: Server-Sent Events on
+ * platforms that have them (web), a short poll everywhere else (native —
+ * React Native has no EventSource, and adding an SSE polyfill for one
+ * feature isn't worth the dependency). Same reconciliation either way — see
+ * reconcilePlayQueue. EventSource reconnects on its own, so no retry logic
+ * is needed for the SSE path.
+ */
+function connectPlayQueueLive(get: () => AudioState, set: (partial: Partial<AudioState>) => void): void {
+  const c = client();
+  if (!c) return;
+  const ES = (globalThis as { EventSource?: new (url: string) => EventSourceLike }).EventSource;
+  if (ES) {
+    const es = new ES(c.playQueueEventsUrl());
+    es.addEventListener('state', (e: { data: string }) => {
+      try {
+        const view = JSON.parse(e.data) as PlayQueueView;
+        void reconcilePlayQueue(get, set, toPlayQueueSnapshot(view));
+      } catch {
+        /* ignore malformed events */
+      }
+    });
+    return;
+  }
+  const poll = () =>
+    client()
+      ?.getPlayQueue()
+      .then((remote) => reconcilePlayQueue(get, set, remote))
+      .catch(() => undefined);
+  setInterval(() => void poll(), PLAYQUEUE_POLL_MS);
+}
+
+interface EventSourceLike {
+  addEventListener: (type: string, listener: (e: { data: string }) => void) => void;
 }
 
 /**
@@ -314,6 +351,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
   volume: 1,
   qualityId: DEFAULT_QUALITY_ID,
   castTargetId: '',
+  playingDeviceId: '',
 
   hydrateSettings: async () => {
     try {
@@ -365,10 +403,11 @@ export const usePlayer = create<AudioState>((set, get) => ({
     set({ engine });
 
     // Cross-device state: show what's already playing (paused) on launch,
-    // then keep checking whether another device has taken over — or handed
-    // playback to this one.
+    // then stay live-updated on every change from any device (see
+    // connectPlayQueueLive) — someone else starting/pausing/skipping, or
+    // handing playback to/from this one.
     void restoreQueue(get, set);
-    schedulePlayQueuePoll(get, set);
+    connectPlayQueueLive(get, set);
 
     // Best-effort final save when the tab is backgrounded/closed (web only —
     // document is undefined on native, where the app-background lifecycle

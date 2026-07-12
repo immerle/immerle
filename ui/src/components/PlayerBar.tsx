@@ -166,6 +166,7 @@ function WideBar({ song, status, position, duration }: BarProps) {
   const remoteControlled = !!castTargetId && castTargetId !== myId;
   const transportDisabled = isRadio;
   const queueEditDisabled = isRadio || remoteControlled;
+  const playingElsewhere = usePlayingElsewhere();
   // A not-yet-downloaded track streams progressively — the server can't serve
   // byte ranges for it yet. The bar stays interactive though: dragging it
   // triggers usePlayer.seekTo's check-and-upgrade-or-toast flow, which seeks
@@ -184,7 +185,11 @@ function WideBar({ song, status, position, duration }: BarProps) {
             {song.title}
           </Text>
           <Text numberOfLines={1} className="text-xs text-muted">
-            {remoteControlled ? t('components.player.castPlayingElsewhere') : song.artist}
+            {playingElsewhere.elsewhere
+              ? playingElsewhere.name
+                ? t('components.player.castPlayingOnDevice', { name: playingElsewhere.name })
+                : t('components.player.castPlayingElsewhere')
+              : song.artist}
           </Text>
         </View>
         <LikeButton key={song.id} song={song} />
@@ -309,6 +314,22 @@ function useStation(id: string): RadioStation | undefined {
 
 function useIsRadio(id: string) {
   return !!useStation(id);
+}
+
+/**
+ * Whether the currently-shown track is actually being played by another
+ * device — whether from an explicit cast, or just from mirroring another
+ * device's playback while this one is idle (see usePlayer.playingDeviceId)
+ * — and that device's name if it's still a recently-active session. Purely
+ * informational: unlike castTargetId/isSpectating, this doesn't affect
+ * whether the transport controls act locally or send a remote command.
+ */
+export function usePlayingElsewhere(): { elsewhere: boolean; name?: string } {
+  const myId = useAuth((s) => s.client?.getSession()?.deviceId);
+  const playingDeviceId = usePlayer((s) => s.playingDeviceId);
+  const elsewhere = !!playingDeviceId && playingDeviceId !== myId;
+  const { data: targets } = usePlaybackTargets(elsewhere);
+  return { elsewhere, name: targets?.find((d) => d.id === playingDeviceId)?.name };
 }
 
 function LikeButton({ song }: { song: Song }) {

@@ -739,7 +739,8 @@
       "castEverywhere": "Partout",
       "castThisDevice": "Cet appareil",
       "castNoOtherDevices": "Aucun autre appareil trouvé",
-      "castPlayingElsewhere": "Lecture sur un autre appareil"
+      "castPlayingElsewhere": "Lecture sur un autre appareil",
+      "castPlayingOnDevice": "Lecture sur {{name}}"
     },
     "local": {
       "title": "Musiques locales",
@@ -899,7 +900,8 @@
       "castEverywhere": "Partout",
       "castThisDevice": "Cet appareil",
       "castNoOtherDevices": "Aucun autre appareil trouvé",
-      "castPlayingElsewhere": "Lecture sur un autre appareil"
+      "castPlayingElsewhere": "Lecture sur un autre appareil",
+      "castPlayingOnDevice": "Lecture sur {{name}}"
     },
     "topbar": {
       "back": "Retour",

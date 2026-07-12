@@ -1,7 +1,10 @@
 package immerle
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -69,6 +72,80 @@ func (h *Handler) handleGetPlayQueue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeResource(w, http.StatusOK, toPlayQueueView(res))
+}
+
+// handleStreamPlayQueue streams the caller's play-queue state over
+// Server-Sent Events — the real-time channel behind cross-device sync and
+// remote control (see ui/src/audio/store.ts, web only: native falls back to
+// polling since React Native has no EventSource).
+//
+// @Summary      Stream play-queue events (SSE)
+// @Description  Server-Sent Events stream. Emits the current queue immediately, then again on every change (save, target change).
+// @Tags         playback
+// @Security     BearerAuth
+// @Produce      text/event-stream
+// @Success      200  {string}  string  "SSE stream"
+// @Failure      401  {object}  errorResponse
+// @Router       /play-queue/events [get]
+func (h *Handler) handleStreamPlayQueue(w http.ResponseWriter, r *http.Request) {
+	user := userFrom(r.Context())
+
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		writeInternal(w, fmt.Errorf("streaming unsupported"))
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+
+	ch, unsubscribe := h.playQueue.Subscribe(user.ID)
+	defer unsubscribe()
+
+	// Bound each write so a stalled/slow client connection errors out instead
+	// of leaking this goroutine and its subscription forever.
+	rc := http.NewResponseController(w)
+	setDeadline := func() { _ = rc.SetWriteDeadline(time.Now().Add(10 * time.Second)) }
+
+	// Send the current snapshot immediately so a freshly-opened client is in
+	// sync without waiting on someone else's next change.
+	res, err := h.playQueue.Get(r.Context(), user.ID)
+	if err != nil && !errors.Is(err, persistence.ErrNotFound) {
+		writeInternal(w, err)
+		return
+	}
+	setDeadline()
+	writePlayQueueEvent(w, flusher, toPlayQueueView(res))
+
+	// Keep-alive so idle connections (and dead peers behind a proxy) are detected.
+	heartbeat := time.NewTicker(20 * time.Second)
+	defer heartbeat.Stop()
+
+	for {
+		select {
+		case <-r.Context().Done():
+			return
+		case <-heartbeat.C:
+			setDeadline()
+			if _, err := io.WriteString(w, ": ping\n\n"); err != nil {
+				return
+			}
+			flusher.Flush()
+		case ev, ok := <-ch:
+			if !ok {
+				return
+			}
+			setDeadline()
+			writePlayQueueEvent(w, flusher, toPlayQueueView(ev.Queue))
+		}
+	}
+}
+
+func writePlayQueueEvent(w http.ResponseWriter, flusher http.Flusher, view playQueueView) {
+	payload, _ := json.Marshal(view)
+	fmt.Fprintf(w, "event: state\ndata: %s\n\n", payload)
+	flusher.Flush()
 }
 
 // playQueueRequest is the body for PUT /play-queue.

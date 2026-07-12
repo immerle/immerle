@@ -4770,6 +4770,28 @@ paths:
       summary: Save play queue
       tags:
       - playback
+  /play-queue/events:
+    get:
+      description: Server-Sent Events stream. Emits the current queue immediately,
+        then again on every change (save, target change).
+      responses:
+        "200":
+          content:
+            text/event-stream:
+              schema:
+                type: string
+          description: SSE stream
+        "401":
+          content:
+            text/event-stream:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Stream play-queue events (SSE)
+      tags:
+      - playback
   /play-queue/target:
     put:
       description: Assigns (or, with an empty deviceId, clears) the sole device that

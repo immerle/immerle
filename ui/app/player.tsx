@@ -6,7 +6,7 @@ import Slider from '@react-native-community/slider';
 import { CoverArt } from '../src/components/CoverArt';
 import { IconButton } from '../src/components/ui';
 import { PlayButton } from '../src/components/PlayButton';
-import { CastButton } from '../src/components/PlayerBar';
+import { CastButton, usePlayingElsewhere } from '../src/components/PlayerBar';
 import { Lyrics } from '../src/components/Lyrics';
 import { usePlayer } from '../src/audio/store';
 import { useAuth } from '../src/auth/store';
@@ -43,6 +43,7 @@ export default function Player() {
   const myId = useAuth((s) => s.client?.getSession()?.deviceId);
   const castTargetId = usePlayer((s) => s.castTargetId);
   const remoteControlled = !!castTargetId && castTargetId !== myId;
+  const playingElsewhere = usePlayingElsewhere();
 
   const [scrubbing, setScrubbing] = useState<number | null>(null);
   const [showLyrics, setShowLyrics] = useState(false);
@@ -103,7 +104,11 @@ export default function Player() {
             {song.title}
           </Text>
           <Text numberOfLines={1} className="pt-1 text-lg text-muted">
-            {remoteControlled ? t('media.player.castPlayingElsewhere') : song.artist}
+            {playingElsewhere.elsewhere
+              ? playingElsewhere.name
+                ? t('media.player.castPlayingOnDevice', { name: playingElsewhere.name })
+                : t('media.player.castPlayingElsewhere')
+              : song.artist}
           </Text>
         </View>
 

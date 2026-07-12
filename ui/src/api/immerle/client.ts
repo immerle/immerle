@@ -23,6 +23,7 @@ import {
   toNowPlaying,
   toPlaylist,
   toPlaylistWithSongs,
+  toPlayQueueSnapshot,
   toSearchResult,
   toSong,
   toStarred,
@@ -421,10 +422,10 @@ export class ImmerleClient {
   /**
    * `playing` also doubles as a remote-control command: a spectator device
    * (see setPlaybackTarget) can push a new current/position/playing here and
-   * the active device applies it once it notices the change on its next poll
-   * (ui/src/audio/store.ts's pollPlayQueue). The write is tagged with this
-   * install's own device id (falling back to a generic label pre-login) so a
-   * poll can tell "I wrote this" from "someone else did".
+   * the active device applies it once it notices the change (over the
+   * real-time channel, see playQueueEventsUrl). The write is tagged with
+   * this install's own device id (falling back to a generic label
+   * pre-login) so a listener can tell "I wrote this" from "someone else did".
    */
   async savePlayQueue(songIds: string[], current?: string, positionMs?: number, playing?: boolean): Promise<void> {
     const { error } = await this.api.PUT('/play-queue', {
@@ -437,14 +438,16 @@ export class ImmerleClient {
   async getPlayQueue(signal?: AbortSignal): Promise<PlayQueueSnapshot> {
     const { data, error } = await this.api.GET('/play-queue', { signal });
     if (error) throw apiErr(error, 'playqueue.get');
-    return {
-      songs: (data.entries ?? []).map(toSong),
-      currentId: data.current || undefined,
-      positionMs: data.position ?? 0,
-      playing: !!data.playing,
-      changedBy: data.changedBy || undefined,
-      targetDeviceId: data.targetDeviceId ?? '',
-    };
+    return toPlayQueueSnapshot(data);
+  }
+
+  /** SSE endpoint URL for real-time play-queue updates (cross-device sync,
+   * remote control). EventSource can't set headers, so the Bearer token is
+   * passed via the `apiKey` query fallback — see connectPlayQueueLive in
+   * ui/src/audio/store.ts. */
+  playQueueEventsUrl(): string {
+    const token = this.session?.token ?? '';
+    return `${this.serverUrl}/api/v1/play-queue/events?apiKey=${encodeURIComponent(token)}`;
   }
 
   /** Recently-active app installs on this account — candidates for "cast to device". */

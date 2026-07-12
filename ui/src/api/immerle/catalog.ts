@@ -6,6 +6,7 @@ import type {
   GenreView,
   NowPlayingView,
   PlaylistView,
+  PlayQueueView,
   SearchView,
   SongView,
 } from '../immerleApi';
@@ -18,6 +19,7 @@ import type {
   NowPlayingEntry,
   Playlist,
   PlaylistWithSongs,
+  PlayQueueSnapshot,
   SearchResult3,
   Song,
   SubsonicUser,
@@ -50,6 +52,23 @@ export function toSong(v: SongView): Song {
     starred: v.starred,
     unresolved: v.unresolved,
     remote: v.remote,
+  };
+}
+
+/**
+ * Shared between ImmerleClient.getPlayQueue's typed response and the raw SSE
+ * "state" event payload (see connectPlayQueueLive in ui/src/audio/store.ts) —
+ * both carry the same wire shape, just one arrives pre-parsed by openapi-fetch
+ * and the other via JSON.parse on a raw event.
+ */
+export function toPlayQueueSnapshot(v: PlayQueueView): PlayQueueSnapshot {
+  return {
+    songs: (v.entries ?? []).map(toSong),
+    currentId: v.current || undefined,
+    positionMs: v.position ?? 0,
+    playing: !!v.playing,
+    changedBy: v.changedBy || undefined,
+    targetDeviceId: v.targetDeviceId ?? '',
   };
 }
 

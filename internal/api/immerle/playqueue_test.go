@@ -1,8 +1,11 @@
 package immerle
 
 import (
+	"bufio"
 	"net/http"
+	"strings"
 	"testing"
+	"time"
 )
 
 func TestPlayQueueAndNowPlaying(t *testing.T) {
@@ -109,5 +112,45 @@ func TestPlaybackTargets(t *testing.T) {
 	}
 	if len(targets) != 1 || targets[0].Name != "phone" {
 		t.Fatalf("expected only the used device token, got %+v", targets)
+	}
+}
+
+// TestPlayQueueSSEKeepsClientsSynced covers the real-time channel behind
+// cross-device sync: a connected client gets the current snapshot
+// immediately, then a fresh event the moment another client saves a change —
+// no polling delay. See ui/src/audio/store.ts (web uses this; native falls
+// back to polling since React Native has no EventSource).
+func TestPlayQueueSSEKeepsClientsSynced(t *testing.T) {
+	srv, token, _ := newBrowseEnv(t)
+
+	var search searchView
+	if st := getJSON(t, srv, token, "/search?q=So+What", &search); st != http.StatusOK || len(search.Songs) == 0 {
+		t.Fatalf("search: status %d, songs %d", st, len(search.Songs))
+	}
+	id := search.Songs[0].ID
+
+	resp := do(t, srv, http.MethodGet, "/play-queue/events", token, nil)
+	defer resp.Body.Close()
+	if ct := resp.Header.Get("Content-Type"); !strings.HasPrefix(ct, "text/event-stream") {
+		t.Fatalf("expected SSE content type, got %q", ct)
+	}
+	reader := bufio.NewReader(resp.Body)
+	readSSEData(t, reader) // initial (empty, nothing saved yet) snapshot
+
+	if st := doStatus(t, srv, http.MethodPut, "/play-queue", token, map[string]any{
+		"ids": []string{id}, "current": id, "position": 4200, "playing": true,
+	}); st != http.StatusNoContent {
+		t.Fatalf("save queue: status %d", st)
+	}
+
+	done := make(chan map[string]any, 1)
+	go func() { done <- readSSEData(t, reader) }()
+	select {
+	case data := <-done:
+		if data["current"] != id || data["playing"] != true {
+			t.Errorf("not synced via SSE: %+v", data)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("did not receive SSE play-queue update")
 	}
 }

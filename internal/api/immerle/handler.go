@@ -265,6 +265,7 @@ func (h *Handler) Register(mux chi.Router) {
 			// Saved play queue (cross-device) and the now-playing feed.
 			r.Get("/play-queue", h.handleGetPlayQueue)
 			r.Put("/play-queue", h.handleSavePlayQueue)
+			r.Get("/play-queue/events", h.handleStreamPlayQueue)
 			r.Get("/play-queue/targets", h.handleListPlaybackTargets)
 			r.Put("/play-queue/target", h.handleSetPlaybackTarget)
 			r.Get("/now-playing", h.handleNowPlaying)

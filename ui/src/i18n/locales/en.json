@@ -739,7 +739,8 @@
       "castEverywhere": "Everywhere",
       "castThisDevice": "This device",
       "castNoOtherDevices": "No other devices found",
-      "castPlayingElsewhere": "Playing on another device"
+      "castPlayingElsewhere": "Playing on another device",
+      "castPlayingOnDevice": "Playing on {{name}}"
     },
     "local": {
       "title": "Local music",
@@ -899,7 +900,8 @@
       "castEverywhere": "Everywhere",
       "castThisDevice": "This device",
       "castNoOtherDevices": "No other devices found",
-      "castPlayingElsewhere": "Playing on another device"
+      "castPlayingElsewhere": "Playing on another device",
+      "castPlayingOnDevice": "Playing on {{name}}"
     },
     "topbar": {
       "back": "Back",
