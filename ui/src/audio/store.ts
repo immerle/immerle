@@ -120,7 +120,9 @@ interface AudioState {
 
 // Module-scoped scrobble state (not reactive UI state).
 let scrobble: ScrobbleFlags = { nowPlayingSent: false, submitted: false };
-let saveQueueTimer: ReturnType<typeof setTimeout> | null = null;
+// See scheduleSaveQueue/flushSaveQueue.
+let lastQueueSaveAt = 0;
+const QUEUE_SAVE_THROTTLE_MS = 5000;
 // Original queue order, kept so shuffle can be turned off again.
 let orderBackup: Song[] | null = null;
 
@@ -191,7 +193,10 @@ async function applyRemoteQueue(
   await engine.seekTo(remote.positionMs / 1000);
   if (!autoplay) await engine.pause();
   sendNowPlaying(get);
-  scheduleSaveQueue(get);
+  // Immediately, not throttled: this is the moment this device reclaims the
+  // shared queue (changedBy becomes this device's id), so a stale write from
+  // whoever it took over from doesn't keep getting re-applied on every poll.
+  flushSaveQueue(get);
 }
 
 /**
@@ -327,7 +332,12 @@ export const usePlayer = create<AudioState>((set, get) => ({
     await engine.setup();
 
     engine.on('state', (s) => {
+      const wasPlaying = get().status === 'playing';
       set({ status: s.status, index: s.index, duration: s.duration || get().duration });
+      // Capture a pause immediately (not throttled) — it stops the progress
+      // ticks that would otherwise eventually trigger a save, so without
+      // this the paused position/state could sit unsaved indefinitely.
+      if (wasPlaying && s.status !== 'playing') flushSaveQueue(get);
     });
     engine.on('progress', (position, duration) => {
       set({ position, duration: duration || get().duration });
@@ -338,7 +348,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
       scrobble = { nowPlayingSent: false, submitted: false };
       set({ index, position: 0 });
       sendNowPlaying(get);
-      scheduleSaveQueue(get);
+      flushSaveQueue(get);
       // Landed on a federated-playlist track that hasn't been resolved yet
       // (empty-url placeholder — see songToTrack): warn instead of silently
       // sitting on dead air, and move on. ponytail: if the whole queue is
@@ -359,6 +369,16 @@ export const usePlayer = create<AudioState>((set, get) => ({
     // playback to this one.
     void restoreQueue(get, set);
     schedulePlayQueuePoll(get, set);
+
+    // Best-effort final save when the tab is backgrounded/closed (web only —
+    // document is undefined on native, where the app-background lifecycle
+    // doesn't give the same "about to lose this" moment). Catches state that
+    // hasn't hit the 5s throttle yet.
+    if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') flushSaveQueue(get);
+      });
+    }
   },
 
   playSongs: async (songs, startIndex = 0) => {
@@ -371,7 +391,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
     scrobble = { nowPlayingSent: false, submitted: false };
     await engine.setQueue(tracks, startIndex);
     sendNowPlaying(get);
-    scheduleSaveQueue(get);
+    flushSaveQueue(get);
   },
 
   playRadio: async (station) => {
@@ -649,20 +669,44 @@ function maybeScrobble(get: () => AudioState, position: number, duration: number
     .catch(() => undefined);
 }
 
-/** Debounced savePlayQueue so the queue follows the user across devices. */
+/**
+ * Immediately persists the current queue/track/position/playing state. Never
+ * writes while spectating (mirroring another device — see isSpectating):
+ * its local songs/index/status are a copy of what that device already told
+ * the server, so writing them back here would just churn `changedBy` to this
+ * device's id for no real change, tricking the active device's poll into
+ * thinking a genuine command arrived and needlessly re-applying (restarting)
+ * its own playback. Deliberate remote commands (sendRemoteCommand) bypass
+ * this and always write — they're the one case a spectator legitimately
+ * changes the shared session.
+ */
+function flushSaveQueue(get: () => AudioState): void {
+  if (isSpectating(get)) return;
+  lastQueueSaveAt = Date.now();
+  const c = client();
+  const { songs, index, position, status } = get();
+  if (!c || songs.length === 0 || index < 0) return;
+  void c
+    .savePlayQueue(
+      songs.map((s) => s.id),
+      songs[index]?.id,
+      Math.floor(position * 1000),
+      status === 'playing',
+    )
+    .catch(() => undefined);
+}
+
+/**
+ * Throttled savePlayQueue for the high-frequency progress tick (fires every
+ * ~250ms-1s during playback). A plain debounce here — reset on every call —
+ * would never actually land during continuous playback, since each tick
+ * cancels the pending one before it fires: the server-side queue would stay
+ * stale until playback stops, losing state entirely if the tab/app closes
+ * mid-song. Save at most once every 5s instead; discrete transitions (pause,
+ * track change, taking over a cast) call flushSaveQueue directly so those
+ * moments are captured immediately rather than waiting out the throttle.
+ */
 function scheduleSaveQueue(get: () => AudioState): void {
-  if (saveQueueTimer) clearTimeout(saveQueueTimer);
-  saveQueueTimer = setTimeout(() => {
-    const c = client();
-    const { songs, index, position, status } = get();
-    if (!c || songs.length === 0 || index < 0) return;
-    void c
-      .savePlayQueue(
-        songs.map((s) => s.id),
-        songs[index]?.id,
-        Math.floor(position * 1000),
-        status === 'playing',
-      )
-      .catch(() => undefined);
-  }, 3000);
+  if (Date.now() - lastQueueSaveAt < QUEUE_SAVE_THROTTLE_MS) return;
+  flushSaveQueue(get);
 }
