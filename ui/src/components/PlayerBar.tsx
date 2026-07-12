@@ -565,10 +565,10 @@ export function CastButton({ active, disabled }: { active?: boolean; disabled?: 
                 <Text className="px-4 pb-1 pt-3 text-xs font-medium uppercase tracking-wider text-muted">
                   {t('components.player.castTitle')}
                 </Text>
-                <CastRow label={t('components.player.castEverywhere')} selected={!castTargetId} onPress={() => pick('')} />
                 {myId ? (
                   <CastRow label={t('components.player.castThisDevice')} selected={castTargetId === myId} onPress={() => pick(myId)} />
                 ) : null}
+                <CastRow label={t('components.player.castEverywhere')} selected={!castTargetId} onPress={() => pick('')} />
                 {isLoading ? (
                   <View className="items-center py-3">
                     <ActivityIndicator size="small" color={colors.muted} />

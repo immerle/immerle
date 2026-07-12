@@ -397,7 +397,16 @@ export const usePlayer = create<AudioState>((set, get) => ({
     const engine = createEngine();
     await engine.setup();
 
+    // While spectating (isSpectating), the local engine sits idle — it's
+    // never given anything to play (applyDisplaySnapshot deliberately never
+    // touches it, see its docstring). But it can still fire a stray
+    // state/progress event on the way to idle (e.g. right after the poll's
+    // own engine.pause() call above resolves), and without this guard that
+    // event would win the race and stomp the mirrored remote status/position
+    // right back to this device's own (idle) values — the player bar and
+    // progress bar would then show the wrong thing until the next update.
     engine.on('state', (s) => {
+      if (isSpectating(get)) return;
       const wasPlaying = get().status === 'playing';
       set({ status: s.status, index: s.index, duration: s.duration || get().duration });
       // Capture a pause immediately (not throttled) — it stops the progress
@@ -406,11 +415,13 @@ export const usePlayer = create<AudioState>((set, get) => ({
       if (wasPlaying && s.status !== 'playing') flushSaveQueue(get);
     });
     engine.on('progress', (position, duration) => {
+      if (isSpectating(get)) return;
       set({ position, duration: duration || get().duration });
       maybeScrobble(get, position, duration);
       scheduleSaveQueue(get);
     });
     engine.on('trackChange', (index) => {
+      if (isSpectating(get)) return;
       scrobble = { nowPlayingSent: false, submitted: false };
       set({ index, position: 0 });
       sendNowPlaying(get);
