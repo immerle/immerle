@@ -128,14 +128,50 @@ function client(): ImmerleClient | null {
   return useAuth.getState().client;
 }
 
-/** How often each device checks whether the active-playback target changed. */
-const PLAYQUEUE_POLL_MS = 15000;
+// How often each device polls the shared queue. Tighter while an explicit
+// cast is active (either end of it) so remote control feels responsive;
+// looser otherwise since passive "what's playing elsewhere" awareness isn't
+// as time-sensitive. ponytail: polling, not a push channel (SSE) — simpler,
+// and this is fresh enough for a manual device switch or a remote play/pause
+// tap; it does mean a spectator's command can take up to ~3s to land, and the
+// mirrored position on a spectator device is a snapshot (not a live-ticking
+// clock) that only updates each poll.
+const PLAYQUEUE_IDLE_POLL_MS = 15000;
+const PLAYQUEUE_ACTIVE_POLL_MS = 3000;
+
+/** Whether this device is watching another device's session (cast elsewhere). */
+function isSpectating(get: () => AudioState): boolean {
+  const myId = client()?.getSession()?.deviceId;
+  const target = get().castTargetId;
+  return !!target && target !== myId;
+}
+
+/**
+ * Push a desired current/position/playing state to the server — how a
+ * spectator device (see isSpectating) controls the actual active device,
+ * which picks the change up on its next poll. Reuses the same write the
+ * active device itself uses to sync its own progress (see scheduleSaveQueue);
+ * the two are told apart by which device id last wrote it.
+ */
+function sendRemoteCommand(get: () => AudioState, current: string, positionMs: number, playing: boolean): void {
+  const c = client();
+  const { songs } = get();
+  if (!c || !songs.length) return;
+  void c
+    .savePlayQueue(
+      songs.map((s) => s.id),
+      current,
+      positionMs,
+      playing,
+    )
+    .catch(() => undefined);
+}
 
 /**
  * Load a saved server-side queue into local state and the engine, at its
- * saved position — shared by the launch restore and by "this device just
- * became the active player". Always lands paused unless `autoplay`, matching
- * playTrackById's pattern for a single-track load.
+ * saved position — shared by the launch restore and by "this device is (or
+ * just became) the active player". Always lands paused unless `autoplay`,
+ * matching playTrackById's pattern for a single-track load.
  */
 async function applyRemoteQueue(
   get: () => AudioState,
@@ -159,9 +195,28 @@ async function applyRemoteQueue(
 }
 
 /**
- * Restore the last-known cross-device state at launch (paused — never
- * autoplays), so opening the app on any device shows what's currently
- * playing instead of a blank player.
+ * Mirror a saved queue into local state for display only — used whenever
+ * another device is (or might be) the one actually producing sound, so this
+ * device never starts audio just because it noticed a change. songs/index
+ * still get set (not just cosmetic text) so a spectator's transport taps
+ * (see isSpectating) have something to compute the next command against.
+ */
+function applyDisplaySnapshot(set: (partial: Partial<AudioState>) => void, remote: PlayQueueSnapshot): void {
+  const idx = Math.max(0, remote.songs.findIndex((s) => s.id === remote.currentId));
+  set({
+    songs: remote.songs,
+    index: idx,
+    position: remote.positionMs / 1000,
+    duration: remote.songs[idx]?.duration ?? 0,
+    status: remote.playing ? 'playing' : 'paused',
+  });
+}
+
+/**
+ * Restore the last-known cross-device state at launch. Loads it into the
+ * engine (paused, ready to hit play) unless another device is explicitly the
+ * active target, in which case it's display-only — this device shouldn't
+ * start buffering audio it was never asked to play.
  */
 async function restoreQueue(get: () => AudioState, set: (partial: Partial<AudioState>) => void): Promise<void> {
   const c = client();
@@ -169,13 +224,21 @@ async function restoreQueue(get: () => AudioState, set: (partial: Partial<AudioS
   const remote = await c.getPlayQueue().catch(() => null);
   if (!remote) return;
   set({ castTargetId: remote.targetDeviceId });
-  await applyRemoteQueue(get, set, remote, false);
+  const myId = c.getSession()?.deviceId;
+  if (remote.targetDeviceId && remote.targetDeviceId !== myId) {
+    applyDisplaySnapshot(set, remote);
+  } else {
+    await applyRemoteQueue(get, set, remote, false);
+  }
 }
 
 /**
- * Periodically checks whether the active-playback device changed since the
- * last check. ponytail: polling, not a push channel (SSE) — simpler, and
- * "every ~15s" is plenty fresh for a manual device switch.
+ * Periodically reconciles this device against the shared queue. The explicit
+ * active device (target === my id) applies real playback changes — that's
+ * how a spectator's remote command (see sendRemoteCommand) actually reaches
+ * it. Every other device (spectating someone else, or in the default
+ * unrestricted mode) only ever mirrors state for display; it never starts
+ * local audio on its own say-so.
  */
 async function pollPlayQueue(get: () => AudioState, set: (partial: Partial<AudioState>) => void): Promise<void> {
   const c = client();
@@ -183,16 +246,30 @@ async function pollPlayQueue(get: () => AudioState, set: (partial: Partial<Audio
   if (!c || !engine) return;
   const remote = await c.getPlayQueue().catch(() => null);
   if (!remote) return;
-  const prevTarget = get().castTargetId;
-  if (remote.targetDeviceId === prevTarget) return;
-  set({ castTargetId: remote.targetDeviceId });
   const myId = c.getSession()?.deviceId;
-  if (!remote.targetDeviceId) return; // cleared — independent mode resumes, no forced action
-  if (remote.targetDeviceId === myId) {
-    await applyRemoteQueue(get, set, remote, true); // I've just been designated — take over
-  } else if (get().status === 'playing') {
-    await engine.pause(); // handed off elsewhere — stop here to avoid double audio
+  const target = remote.targetDeviceId;
+  set({ castTargetId: target });
+
+  if (target && target === myId) {
+    // I'm explicitly the active device. Only react to a write that isn't my
+    // own — re-applying my own (possibly lagging) save would revert a more
+    // recent local change made since that save went out.
+    if (remote.changedBy && remote.changedBy !== myId) {
+      await applyRemoteQueue(get, set, remote, remote.playing);
+    }
+    return;
   }
+
+  if (target && get().status === 'playing') await engine.pause(); // handed off elsewhere — avoid double audio
+  applyDisplaySnapshot(set, remote);
+}
+
+/** Poll interval widens/narrows based on whether an explicit cast is active. */
+function schedulePlayQueuePoll(get: () => AudioState, set: (partial: Partial<AudioState>) => void): void {
+  const delay = get().castTargetId ? PLAYQUEUE_ACTIVE_POLL_MS : PLAYQUEUE_IDLE_POLL_MS;
+  setTimeout(() => {
+    void pollPlayQueue(get, set).finally(() => schedulePlayQueuePoll(get, set));
+  }, delay);
 }
 
 /**
@@ -281,7 +358,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
     // then keep checking whether another device has taken over — or handed
     // playback to this one.
     void restoreQueue(get, set);
-    setInterval(() => void pollPlayQueue(get, set), PLAYQUEUE_POLL_MS);
+    schedulePlayQueuePoll(get, set);
   },
 
   playSongs: async (songs, startIndex = 0) => {
@@ -353,6 +430,15 @@ export const usePlayer = create<AudioState>((set, get) => ({
   },
 
   toggle: async () => {
+    if (isSpectating(get)) {
+      const { songs, index, position, status } = get();
+      const song = songs[index];
+      if (!song) return;
+      const playing = status !== 'playing';
+      set({ status: playing ? 'playing' : 'paused' }); // optimistic; the active device converges on its next poll
+      sendRemoteCommand(get, song.id, Math.floor(position * 1000), playing);
+      return;
+    }
     const engine = get().engine;
     if (!engine) return;
     if (get().status === 'playing') await engine.pause();
@@ -360,14 +446,38 @@ export const usePlayer = create<AudioState>((set, get) => ({
   },
 
   next: async () => {
+    if (isSpectating(get)) {
+      const { songs, index } = get();
+      const song = songs[index + 1];
+      if (!song) return;
+      set({ index: index + 1, position: 0, status: 'playing' });
+      sendRemoteCommand(get, song.id, 0, true);
+      return;
+    }
     await get().engine?.next();
   },
 
   previous: async () => {
+    if (isSpectating(get)) {
+      const { songs, index } = get();
+      const song = songs[index - 1];
+      if (!song) return;
+      set({ index: index - 1, position: 0, status: 'playing' });
+      sendRemoteCommand(get, song.id, 0, true);
+      return;
+    }
     await get().engine?.previous();
   },
 
   seekTo: async (seconds) => {
+    if (isSpectating(get)) {
+      const { songs, index, status } = get();
+      const song = songs[index];
+      if (!song) return;
+      set({ position: seconds }); // optimistic
+      sendRemoteCommand(get, song.id, Math.floor(seconds * 1000), status === 'playing');
+      return;
+    }
     const engine = get().engine;
     if (!engine) return;
     // A not-yet-downloaded track streams progressively (see songToTrack): the
@@ -388,6 +498,13 @@ export const usePlayer = create<AudioState>((set, get) => ({
   },
 
   skipTo: async (index) => {
+    if (isSpectating(get)) {
+      const song = get().songs[index];
+      if (!song) return;
+      set({ index, position: 0, status: 'playing' });
+      sendRemoteCommand(get, song.id, 0, true);
+      return;
+    }
     await get().engine?.skipTo(index);
   },
 
@@ -489,9 +606,11 @@ export const usePlayer = create<AudioState>((set, get) => ({
     if (deviceId === myId) {
       const remote = await c.getPlayQueue().catch(() => null);
       if (remote) await applyRemoteQueue(get, set, remote, true);
-    } else if (get().status === 'playing') {
-      await get().engine?.pause();
+      return;
     }
+    if (get().status === 'playing') await get().engine?.pause();
+    const remote = await c.getPlayQueue().catch(() => null);
+    if (remote) applyDisplaySnapshot(set, remote); // show the new target's state right away, don't wait for the next poll
   },
 
   current: () => {
@@ -535,13 +654,14 @@ function scheduleSaveQueue(get: () => AudioState): void {
   if (saveQueueTimer) clearTimeout(saveQueueTimer);
   saveQueueTimer = setTimeout(() => {
     const c = client();
-    const { songs, index, position } = get();
+    const { songs, index, position, status } = get();
     if (!c || songs.length === 0 || index < 0) return;
     void c
       .savePlayQueue(
         songs.map((s) => s.id),
         songs[index]?.id,
         Math.floor(position * 1000),
+        status === 'playing',
       )
       .catch(() => undefined);
   }, 3000);

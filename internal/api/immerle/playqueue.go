@@ -14,8 +14,11 @@ import (
 
 // playQueueView is the caller's saved play queue resolved into its tracks.
 type playQueueView struct {
-	Current   string     `json:"current,omitempty"`
-	Position  int64      `json:"position"`
+	Current  string `json:"current,omitempty"`
+	Position int64  `json:"position"`
+	// Playing reports whether Current was playing (vs paused) as of
+	// ChangedAt — see playQueueRequest.Playing.
+	Playing   bool       `json:"playing"`
 	ChangedBy string     `json:"changedBy,omitempty"`
 	ChangedAt *time.Time `json:"changedAt,omitempty"`
 	Entries   []songView `json:"entries"`
@@ -30,6 +33,7 @@ func toPlayQueueView(res core.PlayQueueResult) playQueueView {
 	v := playQueueView{
 		Current:        res.Queue.Current,
 		Position:       res.Queue.PositionMs,
+		Playing:        res.Queue.Playing,
 		ChangedBy:      res.Queue.ChangedBy,
 		Entries:        make([]songView, 0, len(res.Entries)),
 		TargetDeviceID: res.Queue.TargetDeviceID,
@@ -72,13 +76,18 @@ type playQueueRequest struct {
 	IDs      []string `json:"ids"`
 	Current  string   `json:"current"`
 	Position int64    `json:"position"`
-	Client   string   `json:"client"`
+	// Playing reports whether Current is playing (vs paused). A spectator
+	// device (see TargetDeviceID) can also use this write to push a
+	// play/pause/skip command — the active device applies it once it
+	// notices Current/Playing changed on its next poll.
+	Playing bool   `json:"playing"`
+	Client  string `json:"client"`
 }
 
 // handleSavePlayQueue persists the caller's play queue.
 //
 // @Summary  Save play queue
-// @Description  Replaces the caller's saved play queue (tracks, current track and position).
+// @Description  Replaces the caller's saved play queue (tracks, current track, position and playing state).
 // @Tags     playback
 // @Security BearerAuth
 // @Accept   json
@@ -92,7 +101,7 @@ func (h *Handler) handleSavePlayQueue(w http.ResponseWriter, r *http.Request) {
 	if !decodeJSON(w, r, &req) {
 		return
 	}
-	if err := h.playQueue.Save(r.Context(), userFrom(r.Context()).ID, req.Current, req.Position, req.Client, req.IDs); err != nil {
+	if err := h.playQueue.Save(r.Context(), userFrom(r.Context()).ID, req.Current, req.Position, req.Playing, req.Client, req.IDs); err != nil {
 		writeServiceError(w, err)
 		return
 	}

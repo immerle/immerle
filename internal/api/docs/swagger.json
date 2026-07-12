@@ -1698,6 +1698,10 @@
                         "type": "array",
                         "uniqueItems": false
                     },
+                    "playing": {
+                        "description": "Playing reports whether Current is playing (vs paused). A spectator\ndevice (see TargetDeviceID) can also use this write to push a\nplay/pause/skip command — the active device applies it once it\nnotices Current/Playing changed on its next poll.",
+                        "type": "boolean"
+                    },
                     "position": {
                         "type": "integer"
                     }
@@ -1721,6 +1725,10 @@
                         },
                         "type": "array",
                         "uniqueItems": false
+                    },
+                    "playing": {
+                        "description": "Playing reports whether Current was playing (vs paused) as of\nChangedAt — see playQueueRequest.Playing.",
+                        "type": "boolean"
                     },
                     "position": {
                         "type": "integer"
@@ -7460,7 +7468,7 @@
                 ]
             },
             "put": {
-                "description": "Replaces the caller's saved play queue (tracks, current track and position).",
+                "description": "Replaces the caller's saved play queue (tracks, current track, position and playing state).",
                 "requestBody": {
                     "content": {
                         "application/json": {

@@ -502,12 +502,17 @@ type Playlist struct {
 
 // PlayQueue is a user's saved server-side playback queue.
 type PlayQueue struct {
-	UserID     string    `json:"userId"`
-	Current    string    `json:"current,omitempty"`
-	PositionMs int64     `json:"position"`
-	ChangedBy  string    `json:"changedBy,omitempty"`
-	ChangedAt  time.Time `json:"changed"`
-	TrackIDs   []string  `json:"trackIds"`
+	UserID     string `json:"userId"`
+	Current    string `json:"current,omitempty"`
+	PositionMs int64  `json:"position"`
+	// Playing reports whether Current was playing (vs paused) as of ChangedAt
+	// — lets another device tell playing from paused when it applies this
+	// queue, and lets a spectator device push a play/pause/skip command that
+	// the active device picks up (see TargetDeviceID).
+	Playing   bool      `json:"playing"`
+	ChangedBy string    `json:"changedBy,omitempty"`
+	ChangedAt time.Time `json:"changed"`
+	TrackIDs  []string  `json:"trackIds"`
 	// TargetDeviceID, when set, is the sole device that should be actively
 	// playing this queue — other devices pause instead of doubling the audio.
 	// Empty means unrestricted: every device manages its own playback.

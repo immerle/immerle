@@ -36,6 +36,10 @@ export default function Player() {
   const cycleRepeat = usePlayer((s) => s.cycleRepeat);
   const shuffle = usePlayer((s) => s.shuffle);
   const toggleShuffle = usePlayer((s) => s.toggleShuffle);
+  // Another device has claimed active playback: play/pause, seek and skip
+  // still work (the store turns them into remote commands, see
+  // usePlayer.isSpectating) — only shuffle/repeat, which aren't
+  // remote-controllable, stay disabled here.
   const myId = useAuth((s) => s.client?.getSession()?.deviceId);
   const castTargetId = usePlayer((s) => s.castTargetId);
   const remoteControlled = !!castTargetId && castTargetId !== myId;
@@ -106,7 +110,6 @@ export default function Player() {
         <View className="pt-6">
           <Slider
             style={{ opacity: song.remote ? 0.4 : 1 }}
-            disabled={remoteControlled}
             minimumValue={0}
             maximumValue={duration > 0 ? duration : 1}
             value={shownPosition}
@@ -137,9 +140,9 @@ export default function Player() {
             disabled={remoteControlled}
             accessibilityLabel={t('media.player.repeat')}
           />
-          <IconButton name="play-skip-back" size={34} onPress={previous} disabled={remoteControlled} accessibilityLabel={t('media.player.previous')} />
-          <PlayButton playing={isPlaying} onPress={toggle} size={72} disabled={remoteControlled} />
-          <IconButton name="play-skip-forward" size={34} onPress={next} disabled={remoteControlled} accessibilityLabel={t('media.player.next')} />
+          <IconButton name="play-skip-back" size={34} onPress={previous} accessibilityLabel={t('media.player.previous')} />
+          <PlayButton playing={isPlaying} onPress={toggle} size={72} />
+          <IconButton name="play-skip-forward" size={34} onPress={next} accessibilityLabel={t('media.player.next')} />
           <IconButton
             name="shuffle"
             size={24}

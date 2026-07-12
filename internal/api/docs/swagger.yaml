@@ -1192,6 +1192,13 @@ components:
             type: string
           type: array
           uniqueItems: false
+        playing:
+          description: |-
+            Playing reports whether Current is playing (vs paused). A spectator
+            device (see TargetDeviceID) can also use this write to push a
+            play/pause/skip command — the active device applies it once it
+            notices Current/Playing changed on its next poll.
+          type: boolean
         position:
           type: integer
       type: object
@@ -1208,6 +1215,11 @@ components:
             $ref: '#/components/schemas/immerle.songView'
           type: array
           uniqueItems: false
+        playing:
+          description: |-
+            Playing reports whether Current was playing (vs paused) as of
+            ChangedAt — see playQueueRequest.Playing.
+          type: boolean
         position:
           type: integer
         targetDeviceId:
@@ -4725,8 +4737,8 @@ paths:
       tags:
       - playback
     put:
-      description: Replaces the caller's saved play queue (tracks, current track and
-        position).
+      description: Replaces the caller's saved play queue (tracks, current track,
+        position and playing state).
       requestBody:
         content:
           application/json:

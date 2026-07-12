@@ -48,11 +48,12 @@ func (s *PlayQueueService) Get(ctx context.Context, userID string) (PlayQueueRes
 }
 
 // Save persists the user's play queue, stamped with the current time.
-func (s *PlayQueueService) Save(ctx context.Context, userID, current string, positionMs int64, changedBy string, trackIDs []string) error {
+func (s *PlayQueueService) Save(ctx context.Context, userID, current string, positionMs int64, playing bool, changedBy string, trackIDs []string) error {
 	return s.playQueues.Save(ctx, models.PlayQueue{
 		UserID:     userID,
 		Current:    current,
 		PositionMs: positionMs,
+		Playing:    playing,
 		ChangedBy:  changedBy,
 		ChangedAt:  time.Now(),
 		TrackIDs:   trackIDs,

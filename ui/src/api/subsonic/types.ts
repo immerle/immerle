@@ -119,8 +119,12 @@ export interface PlayQueueSnapshot {
   songs: Song[];
   currentId?: string;
   positionMs: number;
+  /** Whether currentId was playing (vs paused) as of this snapshot. */
+  playing: boolean;
   /** The device id that should be the sole active player, or '' if unrestricted. */
   targetDeviceId: string;
+  /** The device id that wrote this snapshot — tells "I wrote this" from "someone else did". */
+  changedBy?: string;
 }
 
 export interface Playlist {

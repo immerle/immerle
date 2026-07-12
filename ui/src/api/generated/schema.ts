@@ -4909,7 +4909,7 @@ export interface paths {
         };
         /**
          * Save play queue
-         * @description Replaces the caller's saved play queue (tracks, current track and position).
+         * @description Replaces the caller's saved play queue (tracks, current track, position and playing state).
          */
         put: {
             parameters: {
@@ -8518,6 +8518,13 @@ export interface components {
             client?: string;
             current?: string;
             ids?: string[];
+            /**
+             * @description Playing reports whether Current is playing (vs paused). A spectator
+             *     device (see TargetDeviceID) can also use this write to push a
+             *     play/pause/skip command — the active device applies it once it
+             *     notices Current/Playing changed on its next poll.
+             */
+            playing?: boolean;
             position?: number;
         };
         "immerle.playQueueView": {
@@ -8525,6 +8532,11 @@ export interface components {
             changedBy?: string;
             current?: string;
             entries?: components["schemas"]["immerle.songView"][];
+            /**
+             * @description Playing reports whether Current was playing (vs paused) as of
+             *     ChangedAt — see playQueueRequest.Playing.
+             */
+            playing?: boolean;
             position?: number;
             /**
              * @description TargetDeviceID, when set, is the id of the sole device that should be

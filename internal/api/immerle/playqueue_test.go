@@ -24,9 +24,11 @@ func TestPlayQueueAndNowPlaying(t *testing.T) {
 		t.Fatalf("expected empty queue, got %d entries", len(empty.Entries))
 	}
 
-	// Save then read back.
+	// Save then read back — including the playing flag, which a spectator
+	// device uses to push a remote play/pause/skip command (see
+	// TestPlaybackTargets and ui/src/audio/store.ts's pollPlayQueue).
 	if st := doStatus(t, srv, http.MethodPut, "/play-queue", token, map[string]any{
-		"ids": []string{id}, "current": id, "position": 4200,
+		"ids": []string{id}, "current": id, "position": 4200, "playing": true,
 	}); st != http.StatusNoContent {
 		t.Fatalf("save queue: status %d", st)
 	}
@@ -34,7 +36,7 @@ func TestPlayQueueAndNowPlaying(t *testing.T) {
 	if st := getJSON(t, srv, token, "/play-queue", &q); st != http.StatusOK {
 		t.Fatalf("get queue: status %d", st)
 	}
-	if q.Current != id || q.Position != 4200 || len(q.Entries) != 1 {
+	if q.Current != id || q.Position != 4200 || !q.Playing || len(q.Entries) != 1 {
 		t.Fatalf("queue not persisted: %+v", q)
 	}
 
