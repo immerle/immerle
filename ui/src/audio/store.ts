@@ -150,6 +150,29 @@ let suppressEngineEvents = false;
 // a false negative (a stray event silently corrupting the saved position).
 const ENGINE_RELOAD_GRACE_MS = 3000;
 
+/**
+ * Mutex: waits for any in-flight engine reload to finish (see
+ * suppressEngineEvents) before returning. applyRemoteQueue/playSongs/
+ * playRadio/playTrackById all call this first — without it, an incoming
+ * "you're now the active device, apply this session" reconciliation and a
+ * simultaneous local action (e.g. casting to this device, then immediately
+ * pressing play on something else) could run concurrently: both call
+ * engine.setQueue and both write their own final position/status, and
+ * whichever's write lands last wins — mixing the *track* from one with the
+ * *position/status* from the other. suppressEngineEvents only ever guarded
+ * against stray engine-driven events; this makes it also serialize the
+ * reload functions against each other.
+ */
+async function waitForEngineReloadSlot(): Promise<void> {
+  if (suppressEngineEvents) {
+    // eslint-disable-next-line no-console
+    console.log('[playqueue] waiting for an in-flight reload to finish before starting another');
+  }
+  while (suppressEngineEvents) {
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+}
+
 function client(): ImmerleClient | null {
   return useAuth.getState().client;
 }
@@ -216,6 +239,7 @@ async function applyRemoteQueue(
   remote: PlayQueueSnapshot,
   autoplay: boolean,
 ): Promise<void> {
+  await waitForEngineReloadSlot();
   const c = client();
   const engine = get().engine;
   if (!c || !engine || !remote.songs.length) return;
@@ -556,6 +580,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
   },
 
   playSongs: async (songs, startIndex = 0) => {
+    await waitForEngineReloadSlot();
     const c = client();
     const engine = get().engine;
     if (!c || !engine || songs.length === 0) return;
@@ -586,6 +611,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
   },
 
   playRadio: async (station) => {
+    await waitForEngineReloadSlot();
     const engine = get().engine;
     if (!engine || !station.streamUrl) return;
     claimActiveDevice(get, set);
@@ -611,6 +637,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
   },
 
   playTrackById: async (id, positionSec, autoplay) => {
+    await waitForEngineReloadSlot();
     const c = client();
     const engine = get().engine;
     if (!c || !engine) return;
@@ -635,6 +662,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
   },
 
   playNext: async (songs) => {
+    await waitForEngineReloadSlot();
     const c = client();
     const engine = get().engine;
     if (!c || !engine) return get().playSongs(songs);
@@ -659,6 +687,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
   },
 
   enqueue: async (songs) => {
+    await waitForEngineReloadSlot();
     const c = client();
     const engine = get().engine;
     if (!c || !engine) return;
