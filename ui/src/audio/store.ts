@@ -150,27 +150,58 @@ let suppressEngineEvents = false;
 // a false negative (a stray event silently corrupting the saved position).
 const ENGINE_RELOAD_GRACE_MS = 3000;
 
+// Chained promise backing acquireEngineReloadLock — always the completion
+// promise of whichever reload most recently claimed the lock (already
+// resolved if none is in flight).
+let engineReloadChain: Promise<void> = Promise.resolve();
+
 /**
- * Mutex: waits for any in-flight engine reload to finish (see
- * suppressEngineEvents) before returning. applyRemoteQueue/playSongs/
- * playRadio/playTrackById all call this first — without it, an incoming
+ * Exclusive lock for reloading the engine (setQueue + friends), serialized
+ * against any other in-flight reload. Call as the very first statement,
+ * before any other `await` — capturing and replacing `engineReloadChain`
+ * happens synchronously, with no `await` in between, so two concurrent
+ * callers can never both slip through: whichever calls this second always
+ * ends up chained behind the first, deterministically. An earlier version
+ * of this guard instead polled a `while (suppressEngineEvents) await
+ * sleep()` loop — but there's a real gap between that check passing and
+ * suppressEngineEvents actually being set true (network calls like
+ * Promise.all(songToTrack) run in between), and two reloads (an incoming
  * "you're now the active device, apply this session" reconciliation and a
- * simultaneous local action (e.g. casting to this device, then immediately
- * pressing play on something else) could run concurrently: both call
- * engine.setQueue and both write their own final position/status, and
- * whichever's write lands last wins — mixing the *track* from one with the
- * *position/status* from the other. suppressEngineEvents only ever guarded
- * against stray engine-driven events; this makes it also serialize the
- * reload functions against each other.
+ * simultaneous local play action) could both pass the check before either
+ * set the flag, run concurrently, and each write their own final
+ * position/status — mixing the *track* from one with the *position/status*
+ * from the other. This version has no such gap: the lock is claimed
+ * up-front, not after doing the async prep work.
+ *
+ * Sets suppressEngineEvents so the engine event handlers ignore stray
+ * events during the reload. The returned release() must be called once the
+ * reload settles; it keeps suppressing (and the lock held) for one more
+ * grace period after that — see ENGINE_RELOAD_GRACE_MS.
  */
-async function waitForEngineReloadSlot(): Promise<void> {
-  if (suppressEngineEvents) {
-    // eslint-disable-next-line no-console
-    console.log('[playqueue] waiting for an in-flight reload to finish before starting another');
-  }
-  while (suppressEngineEvents) {
-    await new Promise((resolve) => setTimeout(resolve, 50));
-  }
+function acquireEngineReloadLock(): Promise<() => void> {
+  const previous = engineReloadChain;
+  let releaseChain = () => {};
+  engineReloadChain = new Promise<void>((resolve) => {
+    releaseChain = resolve;
+  });
+  return previous.then(() => {
+    suppressEngineEvents = true;
+    return () => {
+      setTimeout(() => {
+        suppressEngineEvents = false;
+        releaseChain();
+      }, ENGINE_RELOAD_GRACE_MS);
+    };
+  });
+}
+
+/**
+ * Waits for any in-flight engine reload to finish without becoming a lock
+ * holder itself — for playNext/enqueue, which touch the engine (add/move)
+ * but don't reload it wholesale, so they don't need their own grace period.
+ */
+function waitForEngineReloadSlot(): Promise<void> {
+  return engineReloadChain;
 }
 
 function client(): ImmerleClient | null {
@@ -239,16 +270,15 @@ async function applyRemoteQueue(
   remote: PlayQueueSnapshot,
   autoplay: boolean,
 ): Promise<void> {
-  await waitForEngineReloadSlot();
-  const c = client();
-  const engine = get().engine;
-  if (!c || !engine || !remote.songs.length) return;
-  const idx = Math.max(0, remote.songs.findIndex((s) => s.id === remote.currentId));
-  orderBackup = null;
-  scrobble = { nowPlayingSent: false, submitted: false };
-  set({ songs: remote.songs, index: idx, position: remote.positionMs / 1000, playingDeviceId: client()?.getSession()?.deviceId ?? '' });
-  suppressEngineEvents = true;
+  const release = await acquireEngineReloadLock();
   try {
+    const c = client();
+    const engine = get().engine;
+    if (!c || !engine || !remote.songs.length) return;
+    const idx = Math.max(0, remote.songs.findIndex((s) => s.id === remote.currentId));
+    orderBackup = null;
+    scrobble = { nowPlayingSent: false, submitted: false };
+    set({ songs: remote.songs, index: idx, position: remote.positionMs / 1000, playingDeviceId: client()?.getSession()?.deviceId ?? '' });
     const tracks = await Promise.all(remote.songs.map((s) => songToTrack(c, s, get().qualityId)));
     await engine.setQueue(tracks, idx);
     await engine.seekTo(remote.positionMs / 1000);
@@ -262,9 +292,7 @@ async function applyRemoteQueue(
     // override the reassertion below with a stale mid-transition value
     // (this is what made a spectator's seek/remote command flip the play
     // button back to "paused" even though playback carried on correctly).
-    setTimeout(() => {
-      suppressEngineEvents = false;
-    }, ENGINE_RELOAD_GRACE_MS);
+    release();
   }
   // Re-assert: the engine's own state/progress events were dropped, not
   // corrected, during the guarded window above (status would otherwise stay
@@ -580,22 +608,19 @@ export const usePlayer = create<AudioState>((set, get) => ({
   },
 
   playSongs: async (songs, startIndex = 0) => {
-    await waitForEngineReloadSlot();
-    const c = client();
-    const engine = get().engine;
-    if (!c || !engine || songs.length === 0) return;
-    claimActiveDevice(get, set);
-    const tracks = await Promise.all(songs.map((s) => songToTrack(c, s, get().qualityId)));
-    orderBackup = null; // new playback context invalidates any shuffle backup
-    set({ songs, index: startIndex, position: 0 });
-    scrobble = { nowPlayingSent: false, submitted: false };
-    suppressEngineEvents = true;
+    const release = await acquireEngineReloadLock();
     try {
+      const c = client();
+      const engine = get().engine;
+      if (!c || !engine || songs.length === 0) return;
+      claimActiveDevice(get, set);
+      const tracks = await Promise.all(songs.map((s) => songToTrack(c, s, get().qualityId)));
+      orderBackup = null; // new playback context invalidates any shuffle backup
+      set({ songs, index: startIndex, position: 0 });
+      scrobble = { nowPlayingSent: false, submitted: false };
       await engine.setQueue(tracks, startIndex);
     } finally {
-      setTimeout(() => {
-        suppressEngineEvents = false;
-      }, ENGINE_RELOAD_GRACE_MS);
+      release();
     }
     set({ position: 0, status: 'playing' }); // setQueue always starts playback
     sendNowPlaying(get);
@@ -611,50 +636,44 @@ export const usePlayer = create<AudioState>((set, get) => ({
   },
 
   playRadio: async (station) => {
-    await waitForEngineReloadSlot();
-    const engine = get().engine;
-    if (!engine || !station.streamUrl) return;
-    claimActiveDevice(get, set);
-    // Live streams aren't scrobbled and have no real duration. The raw URL is
-    // played directly (not routed through the Subsonic stream endpoint).
-    const track: PlayableTrack = { id: station.id, url: station.streamUrl, title: station.name, artist: '', duration: 0 };
-    const c = client();
-    const coverUrl = station.hasCover && c ? c.radioCoverUrl(station.id) : undefined;
-    const song = { id: station.id, title: station.name, artist: '', coverUrl } as Song;
-    orderBackup = null;
-    scrobble = { nowPlayingSent: true, submitted: true };
-    set({ songs: [song], index: 0, position: 0 });
-    suppressEngineEvents = true;
+    const release = await acquireEngineReloadLock();
     try {
+      const engine = get().engine;
+      if (!engine || !station.streamUrl) return;
+      claimActiveDevice(get, set);
+      // Live streams aren't scrobbled and have no real duration. The raw URL
+      // is played directly (not routed through the Subsonic stream endpoint).
+      const track: PlayableTrack = { id: station.id, url: station.streamUrl, title: station.name, artist: '', duration: 0 };
+      const c = client();
+      const coverUrl = station.hasCover && c ? c.radioCoverUrl(station.id) : undefined;
+      const song = { id: station.id, title: station.name, artist: '', coverUrl } as Song;
+      orderBackup = null;
+      scrobble = { nowPlayingSent: true, submitted: true };
+      set({ songs: [song], index: 0, position: 0 });
       await engine.setQueue([track], 0);
     } finally {
-      setTimeout(() => {
-        suppressEngineEvents = false;
-      }, ENGINE_RELOAD_GRACE_MS);
+      release();
     }
     set({ position: 0, status: 'playing' });
     flushSaveQueue(get, true, 'playRadio'); // see playSongs — claimActiveDevice's write may not have landed yet
   },
 
   playTrackById: async (id, positionSec, autoplay) => {
-    await waitForEngineReloadSlot();
-    const c = client();
-    const engine = get().engine;
-    if (!c || !engine) return;
-    claimActiveDevice(get, set);
-    const song = await c.getSong(id).catch(() => ({ id, title: 'Piste' }) as Song);
-    orderBackup = null;
-    scrobble = { nowPlayingSent: false, submitted: false };
-    set({ songs: [song], index: 0, position: positionSec });
-    suppressEngineEvents = true;
+    const release = await acquireEngineReloadLock();
     try {
+      const c = client();
+      const engine = get().engine;
+      if (!c || !engine) return;
+      claimActiveDevice(get, set);
+      const song = await c.getSong(id).catch(() => ({ id, title: 'Piste' }) as Song);
+      orderBackup = null;
+      scrobble = { nowPlayingSent: false, submitted: false };
+      set({ songs: [song], index: 0, position: positionSec });
       await engine.setQueue([await songToTrack(c, song, get().qualityId)], 0);
       await engine.seekTo(positionSec);
       if (!autoplay) await engine.pause();
     } finally {
-      setTimeout(() => {
-        suppressEngineEvents = false;
-      }, ENGINE_RELOAD_GRACE_MS);
+      release();
     }
     set({ position: positionSec, status: autoplay ? 'playing' : 'paused' });
     sendNowPlaying(get);
