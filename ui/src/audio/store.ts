@@ -259,9 +259,18 @@ async function reconcilePlayQueue(
   remote: PlayQueueSnapshot,
 ): Promise<void> {
   const engine = get().engine;
-  if (!engine) return;
   const myId = client()?.getSession()?.deviceId;
   const target = remote.targetDeviceId;
+  // eslint-disable-next-line no-console
+  console.log('[playqueue] reconcile', {
+    myId,
+    target,
+    changedBy: remote.changedBy,
+    current: remote.currentId,
+    playing: remote.playing,
+    hasEngine: !!engine,
+  });
+  if (!engine) return;
   set({ castTargetId: target });
 
   if (target && target === myId) {
@@ -269,6 +278,8 @@ async function reconcilePlayQueue(
     // own — re-applying my own (possibly lagging) save would revert a more
     // recent local change made since that save went out.
     if (remote.changedBy && remote.changedBy !== myId) {
+      // eslint-disable-next-line no-console
+      console.log('[playqueue] taking over (remote command applied)');
       await applyRemoteQueue(get, set, remote, remote.playing);
     }
     return;
@@ -291,13 +302,28 @@ function connectPlayQueueLive(get: () => AudioState, set: (partial: Partial<Audi
   if (!c) return;
   const ES = (globalThis as { EventSource?: new (url: string) => EventSourceLike }).EventSource;
   if (ES) {
-    const es = new ES(c.playQueueEventsUrl());
-    es.addEventListener('state', (e: { data: string }) => {
+    const url = c.playQueueEventsUrl();
+    // eslint-disable-next-line no-console
+    console.log('[playqueue] connecting SSE', url.replace(/apiKey=[^&]+/, 'apiKey=***'));
+    const es = new ES(url);
+    es.addEventListener('open', () => {
+      // eslint-disable-next-line no-console
+      console.log('[playqueue] SSE open');
+    });
+    es.addEventListener('error', (e) => {
+      // eslint-disable-next-line no-console
+      console.warn('[playqueue] SSE error (browser will auto-reconnect)', e);
+    });
+    es.addEventListener('state', (e: { data?: string }) => {
+      // eslint-disable-next-line no-console
+      console.log('[playqueue] SSE message', e.data);
+      if (!e.data) return;
       try {
         const view = JSON.parse(e.data) as PlayQueueView;
         void reconcilePlayQueue(get, set, toPlayQueueSnapshot(view));
-      } catch {
-        /* ignore malformed events */
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn('[playqueue] failed to parse SSE event', err);
       }
     });
     return;
@@ -311,7 +337,7 @@ function connectPlayQueueLive(get: () => AudioState, set: (partial: Partial<Audi
 }
 
 interface EventSourceLike {
-  addEventListener: (type: string, listener: (e: { data: string }) => void) => void;
+  addEventListener: (type: string, listener: (e: { data?: string }) => void) => void;
 }
 
 /**
@@ -365,6 +391,8 @@ export const usePlayer = create<AudioState>((set, get) => ({
   },
 
   init: async () => {
+    // eslint-disable-next-line no-console
+    console.log('[playqueue] init() called', { alreadyHasEngine: !!get().engine });
     if (get().engine) return;
     const engine = createEngine();
     await engine.setup();
@@ -413,12 +441,18 @@ export const usePlayer = create<AudioState>((set, get) => ({
     // client and, unlike a user-triggered action, nothing would otherwise
     // call them again — so wait for the client to actually exist first.
     const startLiveSync = () => {
+      // eslint-disable-next-line no-console
+      console.log('[playqueue] starting live sync', { deviceId: client()?.getSession()?.deviceId });
       void restoreQueue(get, set);
       connectPlayQueueLive(get, set);
     };
     if (client()) {
+      // eslint-disable-next-line no-console
+      console.log('[playqueue] client already ready at init()');
       startLiveSync();
     } else {
+      // eslint-disable-next-line no-console
+      console.log('[playqueue] client not ready yet, waiting for auth');
       const unsub = useAuth.subscribe((s) => {
         if (s.client) {
           unsub();
