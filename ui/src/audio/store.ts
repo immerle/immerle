@@ -156,6 +156,29 @@ function isSpectating(get: () => AudioState): boolean {
 }
 
 /**
+ * If this device is spectating, claim the active-device role before driving
+ * the local engine directly — every action that touches `engine` (playSongs,
+ * enqueue, ...) must call this first. Without it, while spectating: the
+ * local engine is idle/empty (applyDisplaySnapshot never loads anything
+ * into it — see its docstring), so any of those actions would either play
+ * on top of whatever the actual active device is doing (double audio) or
+ * desync from the mirrored queue the store otherwise shows. Matches how
+ * Spotify Connect behaves: pressing play on a new thing here takes over
+ * from wherever it was playing, rather than just adding a second source.
+ * Best-effort/fire-and-forget — the local playback about to start is the
+ * real source of truth from this point on regardless of whether the claim
+ * itself has landed on the server yet.
+ */
+function claimActiveDevice(get: () => AudioState, set: (partial: Partial<AudioState>) => void): void {
+  if (!isSpectating(get)) return;
+  const c = client();
+  const myId = c?.getSession()?.deviceId;
+  if (!c || !myId) return;
+  set({ castTargetId: myId });
+  void c.setPlaybackTarget(myId).catch(() => undefined);
+}
+
+/**
  * Push a desired current/position/playing state to the server — how a
  * spectator device (see isSpectating) controls the actual active device,
  * which picks the change up on its next poll. Reuses the same write the
@@ -530,6 +553,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
     const c = client();
     const engine = get().engine;
     if (!c || !engine || songs.length === 0) return;
+    claimActiveDevice(get, set);
     const tracks = await Promise.all(songs.map((s) => songToTrack(c, s, get().qualityId)));
     orderBackup = null; // new playback context invalidates any shuffle backup
     set({ songs, index: startIndex, position: 0 });
@@ -542,6 +566,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
   playRadio: async (station) => {
     const engine = get().engine;
     if (!engine || !station.streamUrl) return;
+    claimActiveDevice(get, set);
     // Live streams aren't scrobbled and have no real duration. The raw URL is
     // played directly (not routed through the Subsonic stream endpoint).
     const track: PlayableTrack = { id: station.id, url: station.streamUrl, title: station.name, artist: '', duration: 0 };
@@ -558,6 +583,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
     const c = client();
     const engine = get().engine;
     if (!c || !engine) return;
+    claimActiveDevice(get, set);
     const song = await c.getSong(id).catch(() => ({ id, title: 'Piste' }) as Song);
     orderBackup = null;
     scrobble = { nowPlayingSent: false, submitted: false };
@@ -573,6 +599,13 @@ export const usePlayer = create<AudioState>((set, get) => ({
     const engine = get().engine;
     if (!c || !engine) return get().playSongs(songs);
     if (get().songs.length === 0) return get().playSongs(songs);
+    // ponytail: while spectating this only claims the device — it doesn't
+    // reload the engine with the mirrored queue first, so the insert below
+    // still targets whatever the (idle, out of sync) local engine already
+    // has. Fine for the common case (claim, then use the transport
+    // normally); a genuine "insert next" mid-spectate is a rarer path to
+    // get fully right and isn't what was reported.
+    claimActiveDevice(get, set);
     // Insert right after the current track in our source mirror + engine queue.
     const at = get().index + 1;
     const next = [...get().songs];
@@ -590,6 +623,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
     const engine = get().engine;
     if (!c || !engine) return;
     if (get().songs.length === 0) return get().playSongs(songs);
+    claimActiveDevice(get, set);
     set({ songs: [...get().songs, ...songs] });
     await engine.add(await Promise.all(songs.map((s) => songToTrack(c, s, get().qualityId))));
   },
