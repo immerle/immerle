@@ -239,10 +239,11 @@ async function applyRemoteQueue(
   // never landed).
   set({ position: remote.positionMs / 1000, status: autoplay ? 'playing' : 'paused' });
   sendNowPlaying(get);
-  // Immediately, not throttled: this is the moment this device reclaims the
-  // shared queue (changedBy becomes this device's id), so a stale write from
-  // whoever it took over from doesn't keep getting re-applied on every poll.
-  flushSaveQueue(get);
+  // Immediately, not throttled, and forced past isSpectating: this is the
+  // moment this device reclaims the shared queue (changedBy becomes this
+  // device's id), so a stale write from whoever it took over from doesn't
+  // keep getting re-applied on every poll.
+  flushSaveQueue(get, true);
 }
 
 /**
@@ -564,7 +565,15 @@ export const usePlayer = create<AudioState>((set, get) => ({
     }
     set({ position: 0, status: 'playing' }); // setQueue always starts playback
     sendNowPlaying(get);
-    flushSaveQueue(get);
+    // Forced: claimActiveDevice's server write is still in flight, and the
+    // device this took over from can still land an ambient broadcast of its
+    // own in the meantime — one carrying the *old* target, which would
+    // reset castTargetId and make isSpectating look true again right as
+    // this save runs. Without force, that silently drops the very save that
+    // was supposed to hand this device the session (the local engine had
+    // already started the new track, so the UI looked right while nothing
+    // had actually synced out).
+    flushSaveQueue(get, true);
   },
 
   playRadio: async (station) => {
@@ -589,6 +598,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
       }, 500);
     }
     set({ position: 0, status: 'playing' });
+    flushSaveQueue(get, true); // see playSongs — claimActiveDevice's write may not have landed yet
   },
 
   playTrackById: async (id, positionSec, autoplay) => {
@@ -612,6 +622,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
     }
     set({ position: positionSec, status: autoplay ? 'playing' : 'paused' });
     sendNowPlaying(get);
+    flushSaveQueue(get, true); // see playSongs — claimActiveDevice's write may not have landed yet
   },
 
   playNext: async (songs) => {
@@ -878,9 +889,22 @@ function maybeScrobble(get: () => AudioState, position: number, duration: number
  * its own playback. Deliberate remote commands (sendRemoteCommand) bypass
  * this and always write — they're the one case a spectator legitimately
  * changes the shared session.
+ *
+ * `force` skips the isSpectating check entirely — for playSongs/playRadio/
+ * playTrackById's own final save, right after claimActiveDevice. That claim
+ * is a fire-and-forget write to the server; until it actually lands, the
+ * previously-active device can still be broadcasting its own ambient
+ * progress saves carrying the *old* target, and if one of those is
+ * processed in between, it resets castTargetId back and isSpectating would
+ * wrongly look true again — silently dropping the very save that was
+ * supposed to hand this device the session (the local engine had already
+ * started the new track, so the UI looked right while nothing had actually
+ * synced — "had to click twice, the second time reset it and started
+ * correctly"). Once claimActiveDevice has run, this device's intent to be
+ * active is already decided locally; the save must land regardless.
  */
-function flushSaveQueue(get: () => AudioState): void {
-  if (isSpectating(get)) return;
+function flushSaveQueue(get: () => AudioState, force = false): void {
+  if (!force && isSpectating(get)) return;
   lastQueueSaveAt = Date.now();
   const c = client();
   const { songs, index, position, status } = get();
