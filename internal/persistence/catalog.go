@@ -434,6 +434,20 @@ func (r *CatalogRepo) TrackExistsByMBIDOrHash(ctx context.Context, mbid, hash st
 	return "", false, nil
 }
 
+// FindByArtistTitle looks up a local, non-remote track by exact
+// (case-insensitive) artist+title match — the same key a federated entry
+// falls back to when it carries no mbid, so a track already in the catalog
+// (e.g. manually uploaded, tagged without an mbid) is found before resorting
+// to a remote provider search.
+func (r *CatalogRepo) FindByArtistTitle(ctx context.Context, artist, title string) (models.Track, bool, error) {
+	row := r.queryRow(ctx, trackSelect+` WHERE t.remote=0 AND LOWER(ar.name)=LOWER(?) AND LOWER(t.title)=LOWER(?) LIMIT 1`, artist, title)
+	t, err := scanTrack(row)
+	if errors.Is(err, sql.ErrNoRows) {
+		return t, false, nil
+	}
+	return t, err == nil, err
+}
+
 // GetTrack returns one track.
 func (r *CatalogRepo) GetTrack(ctx context.Context, id string) (models.Track, error) {
 	row := r.queryRow(ctx, trackSelect+` WHERE t.id=?`, id)
