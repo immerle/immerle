@@ -3,6 +3,7 @@ package federation
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -151,5 +152,33 @@ func TestApplyStreamDeleteRemovesMaterializedPlaylist(t *testing.T) {
 	// Deleting again (already gone) is a no-op, not an error.
 	if err := svc.applyStreamDelete(ctx, stream.Frame{Type: stream.TypePlaylistDelete, AuthorID: "pub-1", ExternalID: "ext-1"}); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// TestUnlinkClosesStream covers RFC-socket-federation-client.md §10.3: Unlink
+// must close the feed socket right away instead of leaving it open under
+// credentials it just revoked until the next missed heartbeat.
+func TestUnlinkClosesStream(t *testing.T) {
+	ctx := context.Background()
+	store := testutil.NewStore(t)
+	srv, _ := newSyncStub(t)
+
+	cfg := config.FederationConfig{HubURL: srv.URL, InstanceID: "inst-1", PrivateKey: "key"}
+	svc := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, store.FeedCursors, nil, testLogger())
+	startStream(t, svc)
+
+	if err := svc.Unlink(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	deadline := time.Now().Add(2 * time.Second)
+	for {
+		if errors.Is(svc.stream.Send(ctx, stream.Frame{Type: stream.TypeHeartbeat}), stream.ErrNotConnected) {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("expected the stream to be disconnected right after Unlink")
+		}
+		time.Sleep(time.Millisecond)
 	}
 }

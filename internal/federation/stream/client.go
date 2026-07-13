@@ -228,3 +228,17 @@ func (c *Client) Send(ctx context.Context, f Frame) error {
 	}
 	return c.send(ctx, conn, f)
 }
+
+// Disconnect force-closes the current connection, if any (no-op while already
+// disconnected). This makes the blocked read loop exit immediately and Run
+// reconnect on its own schedule, instead of leaving a connection open under
+// credentials that were just revoked (e.g. Unlink) until the next missed
+// heartbeat notices.
+func (c *Client) Disconnect() {
+	c.mu.Lock()
+	conn := c.conn
+	c.mu.Unlock()
+	if conn != nil {
+		_ = conn.CloseNow()
+	}
+}

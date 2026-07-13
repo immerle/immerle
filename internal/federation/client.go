@@ -450,6 +450,10 @@ func (s *Service) Unlink(ctx context.Context) error {
 			s.logger.Warn("hub data deletion failed (unlinking locally anyway)", "error", err)
 		}
 	}
+	// Close the feed socket now rather than leave it open under credentials
+	// about to be revoked until the hub notices a missed heartbeat (RFC-socket-
+	// federation-client.md §10.3).
+	s.stream.Disconnect()
 	if s.clearCreds != nil {
 		return s.clearCreds(ctx)
 	}
