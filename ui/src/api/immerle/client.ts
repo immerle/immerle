@@ -2,7 +2,6 @@ import {
   Album,
   AlbumWithSongs,
   ArtistWithAlbums,
-  Genre,
   NowPlayingEntry,
   PlaybackTarget,
   Playlist,
@@ -17,7 +16,6 @@ import {
   toAlbum,
   toAlbumWithSongs,
   toArtistWithAlbums,
-  toGenre,
   toNowPlaying,
   toPlaylist,
   toPlaylistWithSongs,
@@ -247,12 +245,6 @@ export class ImmerleClient {
     });
     if (error) throw apiErr(error, 'browse.albumList');
     return (data.albums ?? []).map(toAlbum);
-  }
-
-  async getGenres(signal?: AbortSignal): Promise<Genre[]> {
-    const { data, error } = await this.api.GET('/genres', { signal });
-    if (error) throw apiErr(error, 'browse.genres');
-    return (data.genres ?? []).map(toGenre);
   }
 
   async getSongsByGenre(genre: string, count = 200, signal?: AbortSignal): Promise<Song[]> {
