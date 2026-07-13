@@ -35,7 +35,7 @@ type Deps struct {
 	PlaylistSync core.PlaylistSyncEnqueuer // optional: enqueue public-playlist hub sync
 	Jam          *core.JamService
 	Setup        *core.SetupService
-	Federation   FederationStatusProvider
+	Federation   *federation.Service
 	// Catalog and OnDemand enrich activity feed items with titles/cover/etc.
 	// (OnDemand maps a remote favorite to its downloaded local track). Catalog,
 	// Annotations and OnDemand also back the catalog browse resources via the
@@ -91,25 +91,6 @@ func (h *Handler) deviceTokenTTL() time.Duration {
 		return h.Settings.DeviceTokenTTL()
 	}
 	return 720 * time.Hour
-}
-
-// FederationStatusProvider drives the hub link lifecycle (S7): reporting whether
-// the instance is linked, linking it (register/bootstrap), refreshing and
-// pushing the name/sqid, and unlinking.
-type FederationStatusProvider interface {
-	Enabled() bool
-	Register(ctx context.Context) error
-	RefreshProfile(ctx context.Context) error
-	UpdateInstance(ctx context.Context, name, sqid string) error
-	Unlink(ctx context.Context) error
-	// Discovery / subscriptions (instance → instance).
-	SearchInstances(ctx context.Context, query string) ([]federation.InstanceSummary, error)
-	Subscriptions(ctx context.Context) ([]federation.InstanceSummary, error)
-	Subscribe(ctx context.Context, instanceID, sqid string) error
-	Unsubscribe(ctx context.Context, instanceID string) error
-	// ResolvePlaylistTrack resolves one federated-playlist entry to a playable
-	// track, lazily, at the moment the caller wants to play it.
-	ResolvePlaylistTrack(ctx context.Context, playlistID string, position int) (models.Track, error)
 }
 
 // CleanupController runs an immediate eviction sweep. The enabled/retention

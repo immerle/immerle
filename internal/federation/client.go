@@ -104,8 +104,7 @@ func New(cfgFn func() config.FederationConfig, catalog *persistence.CatalogRepo,
 }
 
 // Enabled reports whether federation is active — i.e. the instance is linked to
-// the hub (implements the immerle FederationStatusProvider interface). There is
-// no separate enable flag: linked means active. Read live.
+// the hub. There is no separate enable flag: linked means active. Read live.
 func (s *Service) Enabled() bool { return s.HubConfigured() }
 
 // HubConfigured reports whether the instance has bootstrapped with the hub
