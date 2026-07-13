@@ -614,10 +614,22 @@ func (s *CatalogService) Worker(ctx context.Context) {
 
 func (s *CatalogService) drainQueue(ctx context.Context) {
 	st := s.state
+	var lastID string
+	repeats := 0
 	for {
 		job, err := st.downloads.ClaimNext(ctx)
 		if err != nil {
 			return // empty queue or error
+		}
+		// Guard against a job that stays eligible and is re-claimed without ever
+		// making progress (e.g. it fails but isn't backed off yet): stop draining
+		// so the outer ticker retries later instead of tight-looping.
+		if job.ID == lastID {
+			if repeats++; repeats >= 3 {
+				return
+			}
+		} else {
+			lastID, repeats = job.ID, 0
 		}
 		prov, ok := st.registry.Get(job.Provider)
 		if !ok {
@@ -638,33 +650,6 @@ func (s *CatalogService) drainQueue(ctx context.Context) {
 		}
 		_ = st.downloads.Complete(ctx, job.ID, trackID)
 	}
-}
-
-// EnqueueDownload queues a remote track for background download and wakes the worker.
-func (s *CatalogService) EnqueueDownload(ctx context.Context, userID, trackID string) (string, error) {
-	st := s.state
-	provName, ptid, ok := decodeRemoteID(trackID)
-	if !ok {
-		return "", fmt.Errorf("not a remote track")
-	}
-	now := time.Now()
-	job, err := st.downloads.Enqueue(ctx, models.DownloadJob{
-		ID:              uuid.NewString(),
-		UserID:          userID,
-		Provider:        provName,
-		ProviderTrackID: ptid,
-		Status:          models.DownloadQueued,
-		CreatedAt:       now,
-		UpdatedAt:       now,
-	})
-	if err != nil {
-		return "", err
-	}
-	select {
-	case st.wakeCh <- struct{}{}:
-	default:
-	}
-	return job.ID, nil
 }
 
 // AutoDownloadOnPlay reports whether a remote track should be downloaded when

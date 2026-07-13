@@ -4,9 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
+
+	"github.com/immerle/immerle/internal/providers"
 )
 
 func init() { RegisterFactory("deezer", newDeezer) }
@@ -20,7 +24,7 @@ type deezerSource struct {
 }
 
 func newDeezer(SourceDeps) (Source, error) {
-	return &deezerSource{client: http.DefaultClient, base: "https://api.deezer.com"}, nil
+	return &deezerSource{client: providers.NewHTTPClient(30 * time.Second), base: "https://api.deezer.com"}, nil
 }
 
 func (d *deezerSource) Name() string { return "deezer" }
@@ -100,7 +104,7 @@ func (d *deezerSource) getJSON(ctx context.Context, url string, dst any) error {
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("deezer: %s returned %s", url, resp.Status)
 	}
-	return json.NewDecoder(resp.Body).Decode(dst)
+	return json.NewDecoder(io.LimitReader(resp.Body, providers.MaxMetadataBytes)).Decode(dst)
 }
 
 var deezerDigits = regexp.MustCompile(`\d+`)

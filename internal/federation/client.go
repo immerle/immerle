@@ -94,7 +94,7 @@ func (s *Service) SetOwnerResolver(fn func(context.Context) (string, error)) { s
 func New(cfgFn func() config.FederationConfig, catalog *persistence.CatalogRepo, playlists *persistence.PlaylistRepo, scrobbles *persistence.ScrobbleRepo, resolver Resolver, logger *slog.Logger) *Service {
 	return &Service{
 		cfgFn:     cfgFn,
-		hub:       hub.New(cfgFn().HubURL, &http.Client{Timeout: 30 * time.Second}),
+		hub:       hub.New(func() string { return cfgFn().HubURL }, &http.Client{Timeout: 30 * time.Second}),
 		catalog:   catalog,
 		playlists: playlists,
 		scrobbles: scrobbles,
@@ -104,8 +104,7 @@ func New(cfgFn func() config.FederationConfig, catalog *persistence.CatalogRepo,
 }
 
 // Enabled reports whether federation is active — i.e. the instance is linked to
-// the hub (implements the immerle FederationStatusProvider interface). There is
-// no separate enable flag: linked means active. Read live.
+// the hub. There is no separate enable flag: linked means active. Read live.
 func (s *Service) Enabled() bool { return s.HubConfigured() }
 
 // HubConfigured reports whether the instance has bootstrapped with the hub

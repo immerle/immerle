@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"image"
 	_ "image/gif"
 	"image/jpeg"
@@ -42,13 +43,30 @@ type CoverService struct {
 // (e.g. the federation hub's host, for covers on federated playlists) are
 // allowed in addition to the built-in provider hosts.
 func NewCoverService(catalog *persistence.CatalogRepo, coversDir string, extraHosts ...string) *CoverService {
-	return &CoverService{
+	c := &CoverService{
 		catalog:    catalog,
 		coversDir:  coversDir,
 		cacheDir:   filepath.Join(coversDir, "cache"),
-		http:       &http.Client{Timeout: 20 * time.Second},
 		allowHosts: append([]string{"dzcdn.net"}, extraHosts...),
 	}
+	// Re-validate every redirect hop against the host allowlist: the initial URL
+	// check is not enough, since an allowlisted host could redirect to a private
+	// or metadata address (SSRF).
+	c.http = &http.Client{
+		Timeout: 20 * time.Second,
+		CheckRedirect: func(req *http.Request, _ []*http.Request) error {
+			if !c.allowedURL(req.URL) {
+				return fmt.Errorf("cover: refusing redirect to disallowed host %q", req.URL.Hostname())
+			}
+			return nil
+		},
+	}
+	return c
+}
+
+// allowedURL reports whether u is an http(s) URL pointing at an allowlisted host.
+func (c *CoverService) allowedURL(u *url.URL) bool {
+	return (u.Scheme == "http" || u.Scheme == "https") && c.hostAllowed(u.Hostname())
 }
 
 // ErrNoCover indicates no cover art could be resolved for an id.
@@ -223,7 +241,7 @@ func (c *CoverService) fetchRemoteCover(ctx context.Context, id string) ([]byte,
 		return nil, ErrNoCover
 	}
 	u, err := url.Parse(imageURL)
-	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || !c.hostAllowed(u.Hostname()) {
+	if err != nil || !c.allowedURL(u) {
 		return nil, ErrNoCover
 	}
 

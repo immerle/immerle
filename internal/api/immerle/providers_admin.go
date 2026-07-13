@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/immerle/immerle/internal/api/httputil"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 )
@@ -110,9 +111,14 @@ func (h *Handler) handleProviderUpsert(w http.ResponseWriter, r *http.Request) {
 	}
 	// No name + an endpoint → create a dynamic provider from its URL.
 	if req.Name == "" && req.Endpoint != "" {
+		if err := httputil.ValidateFetchURL(r.Context(), req.Endpoint); err != nil {
+			writeError(w, http.StatusBadRequest, "provider_invalid_config", "endpoint URL is not allowed")
+			return
+		}
 		saved, err := h.Providers.CreateFromURL(r.Context(), req.Endpoint)
 		if err != nil {
-			writeErrorParams(w, http.StatusBadRequest, "provider_invalid_config", err.Error(), map[string]any{"detail": err.Error()})
+			h.Logger.Warn("provider create from url failed", "endpoint", req.Endpoint, "error", err)
+			writeError(w, http.StatusBadRequest, "provider_invalid_config", "could not create provider from URL")
 			return
 		}
 		h.Logger.Info("provider created from url", "provider", saved.Name, "by", userFrom(r.Context()).Username)
@@ -131,7 +137,8 @@ func (h *Handler) handleProviderUpsert(w http.ResponseWriter, r *http.Request) {
 		Enabled:  enabled,
 	})
 	if err != nil {
-		writeErrorParams(w, http.StatusBadRequest, "provider_invalid_config", err.Error(), map[string]any{"detail": err.Error()})
+		h.Logger.Warn("provider upsert failed", "provider", req.Name, "error", err)
+		writeError(w, http.StatusBadRequest, "provider_invalid_config", "invalid provider configuration")
 		return
 	}
 	h.Logger.Info("provider upserted", "provider", saved.Name, "enabled", saved.Enabled, "by", userFrom(r.Context()).Username)
@@ -292,5 +299,6 @@ func (h *Handler) writeProviderError(w http.ResponseWriter, err error) {
 		writeError(w, http.StatusNotFound, "not_found", "provider not found")
 		return
 	}
-	writeErrorParams(w, http.StatusBadRequest, "provider_invalid_config", err.Error(), map[string]any{"detail": err.Error()})
+	h.Logger.Warn("provider operation failed", "error", err)
+	writeError(w, http.StatusBadRequest, "provider_invalid_config", "invalid provider configuration")
 }

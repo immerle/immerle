@@ -167,18 +167,27 @@ func hubHost(hubURL string) string {
 // New builds the application from configuration.
 func New(cfg config.Config) (*App, error) {
 	logger := logging.New(cfg.Log.Level, cfg.Log.Format)
+	// Make the configured logger the process default so package-level helpers
+	// (e.g. the API's writeInternal) log through it instead of the stderr default.
+	slog.SetDefault(logger)
 
 	database, err := db.Open(cfg.Database.Driver, cfg.Database.DSN)
 	if err != nil {
 		return nil, err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-	if err := database.Migrate(ctx); err != nil {
+	// Migrations get their own budget so a slow migration can't starve the later
+	// bootstrap steps of their share of the timeout.
+	migrateCtx, migrateCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	err = database.Migrate(migrateCtx)
+	migrateCancel()
+	if err != nil {
 		return nil, err
 	}
 	logger.Info("migrations applied")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
 
 	store := persistence.New(database)
 
@@ -474,10 +483,11 @@ func New(cfg config.Config) (*App, error) {
 		logPruner:  logPruner,
 		settings:   settingsSvc,
 		imports:    importSvc,
-		// Security headers outermost (apply to every response), then CORS
-		// (answers preflight before routing), then logging. Origins are read live
-		// from the runtime settings (hot-reloadable).
-		handler:   securityHeadersMiddleware(corsMiddleware(settingsSvc.CORSOrigins, loggingMiddleware(logger, mux))),
+		// Panic recovery outermost (so it catches every downstream handler), then
+		// security headers (apply to every response), then CORS (answers preflight
+		// before routing), then logging. Origins are read live from the runtime
+		// settings (hot-reloadable).
+		handler:   recoverMiddleware(logger, securityHeadersMiddleware(corsMiddleware(settingsSvc.CORSOrigins, loggingMiddleware(logger, mux)))),
 		scanPaths: scanPaths,
 		watch:     rs.Scan.Watch,
 	}, nil

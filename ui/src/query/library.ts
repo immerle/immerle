@@ -4,15 +4,6 @@ import { qk } from './keys';
 
 /** All library/browse hooks. Each reads the live client from the auth store. */
 
-export function useArtists() {
-  const client = useAuth((s) => s.client);
-  return useQuery({
-    queryKey: qk.artists,
-    enabled: !!client,
-    queryFn: ({ signal }) => client!.getArtists(),
-  });
-}
-
 export function useArtist(id: string) {
   const client = useAuth((s) => s.client);
   return useQuery({
@@ -37,15 +28,6 @@ export function useAlbumList(type: string, genre?: string) {
     queryKey: qk.albumList(type, genre),
     enabled: !!client,
     queryFn: () => client!.getAlbumList(type, { size: 100, genre }),
-  });
-}
-
-export function useGenres() {
-  const client = useAuth((s) => s.client);
-  return useQuery({
-    queryKey: qk.genres,
-    enabled: !!client,
-    queryFn: () => client!.getGenres(),
   });
 }
 

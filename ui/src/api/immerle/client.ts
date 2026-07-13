@@ -1,9 +1,7 @@
 import {
   Album,
   AlbumWithSongs,
-  Artist,
   ArtistWithAlbums,
-  Genre,
   NowPlayingEntry,
   PlaybackTarget,
   Playlist,
@@ -17,9 +15,7 @@ import {
   Starred,
   toAlbum,
   toAlbumWithSongs,
-  toArtist,
   toArtistWithAlbums,
-  toGenre,
   toNowPlaying,
   toPlaylist,
   toPlaylistWithSongs,
@@ -63,11 +59,9 @@ import {
   ProviderLog,
   ScanProgress,
   RadioStation,
-  ServerSettings,
   SmartPlaylist,
   SmartRules,
   TrackEdit,
-  TranscodeProfile,
   Wrapped,
 } from './types';
 import { Lyrics } from '../../lyrics/lyrics';
@@ -225,12 +219,6 @@ export class ImmerleClient {
    * the app's domain types (see catalog.ts), so these are drop-in replacements
    * for the Subsonic browse methods.
    */
-  async getArtists(signal?: AbortSignal): Promise<Artist[]> {
-    const { data, error } = await this.api.GET('/artists', { signal });
-    if (error) throw apiErr(error, 'browse.artists');
-    return (data.artists ?? []).map(toArtist);
-  }
-
   async getArtist(id: string, signal?: AbortSignal): Promise<ArtistWithAlbums> {
     const { data, error } = await this.api.GET('/artists/{id}', {
       params: { path: { id } },
@@ -257,12 +245,6 @@ export class ImmerleClient {
     });
     if (error) throw apiErr(error, 'browse.albumList');
     return (data.albums ?? []).map(toAlbum);
-  }
-
-  async getGenres(signal?: AbortSignal): Promise<Genre[]> {
-    const { data, error } = await this.api.GET('/genres', { signal });
-    if (error) throw apiErr(error, 'browse.genres');
-    return (data.genres ?? []).map(toGenre);
   }
 
   async getSongsByGenre(genre: string, count = 200, signal?: AbortSignal): Promise<Song[]> {
@@ -1016,29 +998,6 @@ export class ImmerleClient {
   /** Stop following the instance with the given hub id (UUID). Server-side. */
   async unsubscribeInstance(id: string): Promise<void> {
     await this.request<{ ok: boolean }>('DELETE', `admin/federation/subscriptions/${encodeURIComponent(id)}`);
-  }
-
-  // --- Admin: server / transcoding ----------------------------------------
-
-  async getTranscodeProfiles(signal?: AbortSignal): Promise<TranscodeProfile[]> {
-    return this.request<TranscodeProfile[]>(
-      'GET',
-      'admin/transcode-profiles',
-      undefined,
-      signal,
-    );
-  }
-
-  async upsertTranscodeProfile(profile: Partial<TranscodeProfile>): Promise<TranscodeProfile> {
-    return this.request<TranscodeProfile>('PUT', 'admin/transcode-profiles', profile);
-  }
-
-  async getServerSettings(signal?: AbortSignal): Promise<ServerSettings> {
-    return this.request<ServerSettings>('GET', 'admin/settings', undefined, signal);
-  }
-
-  async updateServerSettings(settings: Partial<ServerSettings>): Promise<ServerSettings> {
-    return this.request<ServerSettings>('PATCH', 'admin/settings', settings);
   }
 
   // --- Social: friends & activity (typed via OpenAPI) ----------------------

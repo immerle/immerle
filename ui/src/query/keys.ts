@@ -1,11 +1,9 @@
 /** Centralized query-key factory so invalidation stays consistent. */
 export const qk = {
   ping: ['ping'] as const,
-  artists: ['artists'] as const,
   artist: (id: string) => ['artist', id] as const,
   album: (id: string) => ['album', id] as const,
   albumList: (type: string, genre?: string) => ['albumList', type, genre ?? null] as const,
-  genres: ['genres'] as const,
   songsByGenre: (genre: string) => ['songsByGenre', genre] as const,
   lyrics: (id: string) => ['lyrics', id] as const,
   search: (query: string) => ['search', query] as const,
@@ -35,8 +33,6 @@ export const qk = {
   federation: ['admin', 'federation'] as const,
   federationSubscriptions: ['admin', 'federation', 'subscriptions'] as const,
   federationSearch: (q: string) => ['admin', 'federation', 'search', q] as const,
-  transcodeProfiles: ['admin', 'transcodeProfiles'] as const,
-  serverSettings: ['admin', 'serverSettings'] as const,
   settings: ['admin', 'settings'] as const,
   cleanup: ['admin', 'cleanup'] as const,
 } as const;

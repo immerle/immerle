@@ -204,9 +204,6 @@ func sanitizeSettings(rs models.RuntimeSettings) models.RuntimeSettings {
 	if rs.Transcode.FFprobePath == "" {
 		rs.Transcode.FFprobePath = "ffprobe"
 	}
-	if len(rs.Server.CORSAllowedOrigins) == 0 {
-		rs.Server.CORSAllowedOrigins = []string{"*"}
-	}
 	if rs.Cleanup.MaxAgeSeconds <= 0 {
 		rs.Cleanup.MaxAgeSeconds = 720 * 3600
 	}

@@ -225,7 +225,9 @@ type FederationRuntime struct {
 // DefaultRuntimeSettings returns the seed settings used on first boot.
 func DefaultRuntimeSettings() RuntimeSettings {
 	return RuntimeSettings{
-		Server: ServerRuntime{CORSAllowedOrigins: []string{"*"}},
+		// No CORS origins by default: same-origin requests need no CORS headers, so
+		// a fresh instance doesn't silently allow arbitrary browser origins.
+		Server: ServerRuntime{CORSAllowedOrigins: []string{}},
 		Auth:   AuthRuntime{DeviceTokenTTLSeconds: 720 * 3600}, // 30 days
 		Transcode: TranscodeRuntime{
 			FFmpegPath:  "ffmpeg",

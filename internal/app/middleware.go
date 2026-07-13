@@ -4,11 +4,43 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"runtime/debug"
 	"strings"
 	"time"
 
 	"github.com/immerle/immerle/internal/persistence"
 )
+
+// recoverMiddleware is the outermost middleware: it recovers from a panic in any
+// downstream handler, logs the stack, and writes a generic 500 so one bad request
+// can't drop the connection (net/http's default) or take down the process.
+func recoverMiddleware(logger *slog.Logger, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			rec := recover()
+			if rec == nil {
+				return
+			}
+			// http.ErrAbortHandler is the sanctioned way to abort a response; the
+			// server handles it specially, so re-panic instead of swallowing it.
+			if rec == http.ErrAbortHandler {
+				panic(rec)
+			}
+			logger.Error("panic recovered",
+				"method", r.Method,
+				"path", r.URL.Path,
+				"panic", rec,
+				"stack", string(debug.Stack()),
+			)
+			// Best effort: if the handler already wrote headers (e.g. mid-stream)
+			// this is a no-op, but recovering still prevents the crash.
+			w.Header().Set("Content-Type", "application/json; charset=utf-8")
+			w.WriteHeader(http.StatusInternalServerError)
+			_, _ = w.Write([]byte(`{"error":"internal server error"}`))
+		}()
+		next.ServeHTTP(w, r)
+	})
+}
 
 // statusRecorder captures the response status for access logging.
 type statusRecorder struct {

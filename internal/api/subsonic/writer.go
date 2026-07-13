@@ -5,7 +5,12 @@ import (
 	"encoding/xml"
 	"fmt"
 	"net/http"
+	"regexp"
 )
+
+// jsonpCallbackRe restricts JSONP callback names to a safe identifier form so a
+// caller can't inject arbitrary script into the application/javascript body.
+var jsonpCallbackRe = regexp.MustCompile(`^[A-Za-z0-9_.]+$`)
 
 // Subsonic error codes.
 const (
@@ -34,7 +39,7 @@ func write(w http.ResponseWriter, r *http.Request, resp *Response) {
 		writeJSON(w, resp, "")
 	case "jsonp":
 		callback := r.URL.Query().Get("callback")
-		if callback == "" {
+		if !jsonpCallbackRe.MatchString(callback) {
 			callback = "callback"
 		}
 		writeJSON(w, resp, callback)

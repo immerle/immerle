@@ -2,10 +2,49 @@
 package httputil
 
 import (
+	"context"
+	"errors"
 	"net"
 	"net/http"
+	"net/url"
 	"strings"
 )
+
+// ValidateFetchURL rejects rawURL unless it is an http(s) URL whose host resolves
+// only to routable public addresses. It guards outbound fetches of user- or
+// admin-supplied URLs (podcast feeds, provider endpoints, station logos) against
+// SSRF into the server's own network. The returned errors are safe to surface to
+// clients — they carry no resolved-address detail.
+func ValidateFetchURL(ctx context.Context, rawURL string) error {
+	u, err := url.Parse(strings.TrimSpace(rawURL))
+	if err != nil {
+		return errors.New("invalid URL")
+	}
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return errors.New("URL scheme must be http or https")
+	}
+	host := u.Hostname()
+	if host == "" {
+		return errors.New("URL has no host")
+	}
+	ips, err := net.DefaultResolver.LookupIPAddr(ctx, host)
+	if err != nil || len(ips) == 0 {
+		return errors.New("could not resolve URL host")
+	}
+	for _, ip := range ips {
+		if !isPublicIP(ip.IP) {
+			return errors.New("URL resolves to a disallowed address")
+		}
+	}
+	return nil
+}
+
+// isPublicIP reports whether ip is routable on the public internet, i.e. not a
+// loopback, link-local, private, unspecified or multicast address.
+func isPublicIP(ip net.IP) bool {
+	return !ip.IsLoopback() && !ip.IsLinkLocalUnicast() && !ip.IsLinkLocalMulticast() &&
+		!ip.IsMulticast() && !ip.IsUnspecified() && !ip.IsPrivate()
+}
 
 // ClientIP returns the best-effort client IP (first X-Forwarded-For hop, else
 // the remote address without its port).

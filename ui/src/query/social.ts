@@ -69,17 +69,6 @@ export function useFriendMutations() {
 
 // --- Jam -------------------------------------------------------------------
 
-export function useJamState(sessionId: string) {
-  const client = useAuth((s) => s.client);
-  return useQuery({
-    queryKey: KEYS.jam(sessionId),
-    enabled: !!client && !!sessionId,
-    // Poll for cross-device sync (works on web + native without an SSE lib).
-    refetchInterval: 2000,
-    queryFn: ({ signal }) => client!.jamState(sessionId, signal),
-  });
-}
-
 export function useJamMutations() {
   const client = useAuth((s) => s.client);
   const qc = useQueryClient();
