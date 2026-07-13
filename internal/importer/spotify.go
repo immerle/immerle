@@ -2,28 +2,37 @@ package importer
 
 import (
 	"context"
-	"fmt"
+
+	"github.com/immerle/immerle/internal/spotifyweb"
 )
 
 func init() { RegisterFactory("spotify", newSpotify) }
 
-// spotifySource imports a public Spotify playlist through the immerle hub. The
-// hub owns the Spotify credentials and exposes a "fetch public playlist"
-// endpoint, so this source needs no client id/secret of its own — it just
-// delegates, passing the user-supplied reference (id or URL) straight through.
+// spotifySource imports a public Spotify playlist by calling Spotify's own
+// web-player API directly (see internal/spotifyweb) — no Spotify credentials
+// or hub needed, since the playlist is public.
 type spotifySource struct {
-	hub HubFetcher
+	client *spotifyweb.Client
 }
 
-func newSpotify(d SourceDeps) (Source, error) {
-	if d.Hub == nil || !d.Hub.Available() {
-		return nil, fmt.Errorf("spotify import requires a configured hub (set the federation hub URL and keys)")
-	}
-	return &spotifySource{hub: d.Hub}, nil
+func newSpotify(SourceDeps) (Source, error) {
+	return &spotifySource{client: spotifyweb.NewClient()}, nil
 }
 
 func (s *spotifySource) Name() string { return "spotify" }
 
 func (s *spotifySource) FetchPlaylist(ctx context.Context, ref string) (Playlist, error) {
-	return s.hub.FetchPlaylist(ctx, "spotify", ref)
+	pl, err := s.client.FetchPlaylist(ctx, ref)
+	if err != nil {
+		return Playlist{}, err
+	}
+	return toImporterPlaylist(pl), nil
+}
+
+func toImporterPlaylist(pl spotifyweb.Playlist) Playlist {
+	tracks := make([]Track, len(pl.Tracks))
+	for i, t := range pl.Tracks {
+		tracks[i] = Track{Title: t.Title, Artist: t.Artist, Album: t.Album}
+	}
+	return Playlist{Tracks: tracks}
 }
