@@ -746,6 +746,10 @@ func (r *CatalogRepo) Search(ctx context.Context, q string, artistCount, albumCo
 		}
 		artists = append(artists, a)
 	}
+	if err := artRows.Err(); err != nil {
+		artRows.Close()
+		return nil, nil, nil, err
+	}
 	artRows.Close()
 
 	albums, err := r.listAlbums(ctx, albumSelect+` WHERE LOWER(al.name) LIKE ? ORDER BY al.name LIMIT ?`, like, albumCount)

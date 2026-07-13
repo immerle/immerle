@@ -459,23 +459,58 @@ func (r *PlaylistRepo) AppendTracks(ctx context.Context, playlistID string, trac
 }
 
 // RemoveIndexes removes the tracks at the given zero-based positions and
-// compacts the remaining ordering.
+// compacts the remaining ordering. It deletes only the targeted rows and
+// renumbers the survivors in place, so kept rows retain their identity
+// (including unresolved federated stubs, which carry no track_id) and their
+// added_by/added_at.
 func (r *PlaylistRepo) RemoveIndexes(ctx context.Context, playlistID string, indexes []int) error {
-	remove := make(map[int]bool, len(indexes))
-	for _, i := range indexes {
-		remove[i] = true
+	if len(indexes) == 0 {
+		return nil
 	}
-	current, err := r.Tracks(ctx, playlistID)
-	if err != nil {
-		return err
-	}
-	var kept []string
-	for i, t := range current {
-		if !remove[i] {
-			kept = append(kept, t.ID)
+	return r.withTx(ctx, func(tx *sql.Tx) error {
+		placeholders := make([]string, len(indexes))
+		args := make([]any, 0, len(indexes)+1)
+		args = append(args, playlistID)
+		for i, idx := range indexes {
+			placeholders[i] = "?"
+			args = append(args, idx)
 		}
-	}
-	return r.ReplaceTracks(ctx, playlistID, kept, "")
+		if _, err := tx.ExecContext(ctx, r.rebind(
+			`DELETE FROM playlist_tracks WHERE playlist_id=? AND position IN (`+strings.Join(placeholders, ",")+`)`), args...); err != nil {
+			return err
+		}
+		// Renumber survivors to a contiguous 0-based sequence. Positions only ever
+		// decrease and are reassigned in ascending order, so no interim UPDATE
+		// collides with an existing (playlist_id, position) row.
+		rows, err := tx.QueryContext(ctx, r.rebind(`SELECT position FROM playlist_tracks WHERE playlist_id=? ORDER BY position`), playlistID)
+		if err != nil {
+			return err
+		}
+		var positions []int
+		for rows.Next() {
+			var p int
+			if err := rows.Scan(&p); err != nil {
+				rows.Close()
+				return err
+			}
+			positions = append(positions, p)
+		}
+		if err := rows.Err(); err != nil {
+			rows.Close()
+			return err
+		}
+		rows.Close()
+		for newPos, oldPos := range positions {
+			if newPos == oldPos {
+				continue
+			}
+			if _, err := tx.ExecContext(ctx, r.rebind(`UPDATE playlist_tracks SET position=? WHERE playlist_id=? AND position=?`), newPos, playlistID, oldPos); err != nil {
+				return err
+			}
+		}
+		_, err = tx.ExecContext(ctx, r.rebind(`UPDATE playlists SET updated_at=? WHERE id=?`), db.Millis(time.Now()), playlistID)
+		return err
+	})
 }
 
 // IsCollaborator reports whether a user may edit a collaborative playlist.
