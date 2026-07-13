@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Text, View } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { useLocalSongs, useUploadTracks } from '../src/query/local';
 import { TrackList } from '../src/components/TrackList';
 import { LocalCover } from '../src/components/LocalCover';
@@ -20,6 +20,7 @@ import { useT } from '../src/i18n/store';
  */
 export default function Local() {
   const t = useT();
+  const { title, artist } = useLocalSearchParams<{ title?: string; artist?: string }>();
   const q = useLocalSongs();
   const upload = useUploadTracks();
   const playSongs = usePlayer((s) => s.playSongs);
@@ -35,6 +36,11 @@ export default function Local() {
       <Text className="text-xs text-muted">
         {t('media.local.trackCount', { count: songs.length })} · {formatDuration(totalDuration)}
       </Text>
+      {title ? (
+        <Text className="text-center text-sm text-muted">
+          {t('media.local.lookingFor', { name: artist ? `${title} — ${artist}` : title })}
+        </Text>
+      ) : null}
       <View className="w-full py-2">
         <UploadDropzone onFiles={(files) => upload.mutate(files)} busy={upload.isPending} />
       </View>

@@ -13,7 +13,9 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -31,8 +33,16 @@ const instanceVersion = "0.2.0"
 // Resolver turns a portable track identifier into a local track id, optionally
 // downloading the track on demand when it is missing.
 type Resolver interface {
-	RemoteSearch(ctx context.Context, query string, limit int) ([]models.Track, error)
+	// ResolveBestRemoteMatch searches every active provider for the track
+	// best matching artist/title — a federated entry isn't tied to any single
+	// provider, so unlike a plain RemoteSearch this can't stop at the admin's
+	// first-ranked provider's single top guess.
+	ResolveBestRemoteMatch(ctx context.Context, artist, title string) (models.Track, bool)
 	Resolve(ctx context.Context, userID, trackID string) (models.Track, bool, string, error)
+	// AutoDownloadOnPlay reports whether a remote result should be downloaded
+	// on first listen (admin setting) — same policy ResolvePlaylistTrack
+	// follows before persisting a provider-search hit for a federated entry.
+	AutoDownloadOnPlay() bool
 }
 
 // Service is the federation client. Its configuration is read live (hot-
@@ -63,6 +73,23 @@ type Service struct {
 	// (registered by PlaylistSyncer, which owns that state); nil until then, or
 	// on an instance that only subscribes and never publishes.
 	replayHandler func(context.Context, stream.Frame) error
+
+	// resolveCacheMu/resolveCache short-circuit repeat taps on the same
+	// unresolved playlist entry: a provider-search hit is remembered for a
+	// while so it isn't re-searched on every play until either it downloads
+	// locally (picked up by the MBID branch in ResolvePlaylistTrack) or the
+	// entry is re-synced from the hub.
+	resolveCacheMu sync.Mutex
+	resolveCache   map[string]resolveCacheEntry
+}
+
+// resolveCacheTTL bounds how long a provider-search hit is reused for a given
+// playlist entry before ResolvePlaylistTrack searches again.
+const resolveCacheTTL = 10 * time.Minute
+
+type resolveCacheEntry struct {
+	track models.Track
+	at    time.Time
 }
 
 // Credentials carries hub-issued identity persisted into the runtime settings.
@@ -664,10 +691,14 @@ var ErrUnresolvable = fmt.Errorf("federation: track not resolvable")
 // ResolvePlaylistTrack resolves one playlist entry to a playable track,
 // lazily, at the moment the caller wants to play it: a local catalog lookup
 // first (persisted back so future plays skip it), then a provider search
-// returning an on-demand track (played progressively, downloaded in the
-// background on first listen, same as any other remote search result; not
-// persisted here, a later sync or resolve will pick up the local copy once it
-// lands).
+// returning an on-demand track (played progressively; the caller doesn't wait
+// for a download). The entry's track_id column is a real foreign key into the
+// local catalog, so a synthetic remote id can never be written there — a
+// provider-search hit is kept in cachedResolve/cacheResolve for a while so
+// repeat taps skip the search while a real local copy is pending. When the
+// admin's auto-download-on-play setting is on (same policy as any other
+// remote search result), a background download is kicked off so the entry
+// gets a real, permanent track_id once it lands — see persistResolvedTrack.
 func (s *Service) ResolvePlaylistTrack(ctx context.Context, playlistID string, position int) (models.Track, error) {
 	ref, err := s.playlists.TrackRef(ctx, playlistID, position)
 	if err != nil {
@@ -682,18 +713,63 @@ func (s *Service) ResolvePlaylistTrack(ctx context.Context, playlistID string, p
 			return s.catalog.GetTrack(ctx, id)
 		}
 	}
+	// Keyed by content, not just position: a re-sync can replace the entry at
+	// this position with a different track, which must not reuse a stale hit.
+	cacheKey := playlistID + ":" + strconv.Itoa(position) + ":" + ref.Artist + "|" + ref.Title
+	if t, ok := s.cachedResolve(cacheKey); ok {
+		return t, nil
+	}
 	if s.resolver == nil {
 		return models.Track{}, ErrUnresolvable
 	}
-	query := strings.TrimSpace(ref.Artist + " " + ref.Title)
-	if query == "" {
+	hit, ok := s.resolver.ResolveBestRemoteMatch(ctx, ref.Artist, ref.Title)
+	if !ok {
 		return models.Track{}, ErrUnresolvable
 	}
-	remote, err := s.resolver.RemoteSearch(ctx, query, 1)
-	if err != nil || len(remote) == 0 {
-		return models.Track{}, ErrUnresolvable
+	s.cacheResolve(cacheKey, hit)
+	if s.resolver.AutoDownloadOnPlay() {
+		go s.persistResolvedTrack(playlistID, position, hit.ID)
 	}
-	return remote[0], nil
+	return hit, nil
+}
+
+// persistResolvedTrack downloads a provider hit in the background and, once it
+// lands as a real local track, writes its id back to the playlist entry so
+// future plays skip both the search and the download. Runs detached from the
+// triggering request's context, which is very likely gone by the time a
+// download finishes.
+func (s *Service) persistResolvedTrack(playlistID string, position int, remoteID string) {
+	ctx := context.Background()
+	track, local, _, err := s.resolver.Resolve(ctx, "", remoteID)
+	if err != nil || !local {
+		return
+	}
+	_ = s.playlists.ResolveFederatedTrack(ctx, playlistID, position, track.ID)
+}
+
+// cachedResolve returns a still-fresh provider-search hit cached by
+// cacheResolve, so repeat taps on the same unresolved entry skip the search.
+func (s *Service) cachedResolve(key string) (models.Track, bool) {
+	s.resolveCacheMu.Lock()
+	defer s.resolveCacheMu.Unlock()
+	e, ok := s.resolveCache[key]
+	if !ok || time.Since(e.at) > resolveCacheTTL {
+		return models.Track{}, false
+	}
+	return e.track, true
+}
+
+// cacheResolve remembers a provider-search hit for cacheKey.
+// ponytail: process-memory only (lost on restart, not shared across
+// instances behind a load balancer); promote to a DB column
+// (provider/providerTrackID on playlist_tracks) if that turns out to matter.
+func (s *Service) cacheResolve(key string, t models.Track) {
+	s.resolveCacheMu.Lock()
+	defer s.resolveCacheMu.Unlock()
+	if s.resolveCache == nil {
+		s.resolveCache = map[string]resolveCacheEntry{}
+	}
+	s.resolveCache[key] = resolveCacheEntry{track: t, at: time.Now()}
 }
 
 // federatedCoverArt turns a hub-sourced cover reference into a local remote-

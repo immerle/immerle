@@ -360,26 +360,68 @@ type FederatedTrackRef struct {
 }
 
 // ReplaceFederatedTracks atomically sets a federated playlist's full ordered
-// track list, resolved and unresolved entries alike.
+// track list, resolved and unresolved entries alike. An incoming entry with no
+// TrackID (no mbid match at sync time) inherits whatever track_id the same
+// track was already resolved to before this sync — e.g. by an on-demand
+// resolve of a provider hit with no mbid of its own — identified by mbid when
+// present, else by artist+title, so that resolve isn't lost on the next sync.
 func (r *PlaylistRepo) ReplaceFederatedTracks(ctx context.Context, playlistID string, entries []FederatedTrackRef) error {
 	return r.withTx(ctx, func(tx *sql.Tx) error {
+		resolved, err := r.resolvedFederatedTrackIDs(ctx, tx, playlistID)
+		if err != nil {
+			return err
+		}
 		if _, err := tx.ExecContext(ctx, r.rebind(`DELETE FROM playlist_tracks WHERE playlist_id=?`), playlistID); err != nil {
 			return err
 		}
 		now := db.Millis(time.Now())
 		for i, e := range entries {
+			id := e.TrackID
+			if id == "" {
+				id = resolved[federatedTrackKey(e.MBID, e.Artist, e.Title)]
+			}
 			var trackID any
-			if e.TrackID != "" {
-				trackID = e.TrackID
+			if id != "" {
+				trackID = id
 			}
 			if _, err := tx.ExecContext(ctx, r.rebind(`INSERT INTO playlist_tracks (playlist_id, track_id, position, added_by, added_at, mbid, artist, title, album)
 				VALUES (?, ?, ?, '', ?, ?, ?, ?, ?)`), playlistID, trackID, i, now, e.MBID, e.Artist, e.Title, e.Album); err != nil {
 				return err
 			}
 		}
-		_, err := tx.ExecContext(ctx, r.rebind(`UPDATE playlists SET updated_at=? WHERE id=?`), now, playlistID)
+		_, err = tx.ExecContext(ctx, r.rebind(`UPDATE playlists SET updated_at=? WHERE id=?`), now, playlistID)
 		return err
 	})
+}
+
+// resolvedFederatedTrackIDs maps every currently-resolved entry of a federated
+// playlist to its track_id, keyed by federatedTrackKey, for ReplaceFederatedTracks
+// to carry forward across a resync.
+func (r *PlaylistRepo) resolvedFederatedTrackIDs(ctx context.Context, tx *sql.Tx, playlistID string) (map[string]string, error) {
+	rows, err := tx.QueryContext(ctx, r.rebind(`SELECT track_id, mbid, artist, title FROM playlist_tracks WHERE playlist_id=? AND track_id IS NOT NULL`), playlistID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := map[string]string{}
+	for rows.Next() {
+		var trackID, mbid, artist, title string
+		if err := rows.Scan(&trackID, &mbid, &artist, &title); err != nil {
+			return nil, err
+		}
+		out[federatedTrackKey(mbid, artist, title)] = trackID
+	}
+	return out, rows.Err()
+}
+
+// federatedTrackKey identifies a federated track for carrying a resolved
+// track_id across a resync: by mbid when present (most precise), else by a
+// case-insensitive artist+title pair.
+func federatedTrackKey(mbid, artist, title string) string {
+	if mbid != "" {
+		return "mbid:" + mbid
+	}
+	return "at:" + strings.ToLower(artist) + "|" + strings.ToLower(title)
 }
 
 // TrackRef returns the raw (possibly unresolved) entry at a playlist position.

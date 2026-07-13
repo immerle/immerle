@@ -102,6 +102,49 @@ func toRemoteTrack(provider string, res providers.Result) models.Track {
 	}
 }
 
+// ResolveBestRemoteMatch searches every active provider for the track that
+// best matches artist/title and returns it, re-ranked the same way normal
+// search results are (see relevance in library.go). Unlike RemoteSearch —
+// which intentionally queries a single provider for a single top result (see
+// searchProvider) — this is for callers with no specific provider in mind,
+// e.g. resolving a hub-federated playlist entry that could be catalogued
+// under any of them, and for whom a single provider's #1 guess isn't good
+// enough to declare the track unresolvable.
+//
+// A candidate whose title shares nothing with the wanted title is rejected
+// outright (ok=false), even if it's the only/best-ranked result a provider's
+// free-text search returned: providers like Internet Archive or Free Music
+// Archive always return *something* for a query, and silently playing an
+// unrelated track is worse than reporting the entry unresolvable. Artist is
+// used only to break ties among candidates that already pass the title gate,
+// since hub/provider artist metadata (aliases, "feat." credits, ...) is less
+// reliable than title.
+func (s *CatalogService) ResolveBestRemoteMatch(ctx context.Context, artist, title string) (models.Track, bool) {
+	if s == nil || s.state == nil {
+		return models.Track{}, false
+	}
+	title = strings.TrimSpace(title)
+	if title == "" {
+		return models.Track{}, false
+	}
+	query := strings.TrimSpace(artist + " " + title)
+	_, _, tracks := s.RemoteSearch3(ctx, query, 1, 1, 20)
+
+	var best models.Track
+	bestScore := -1
+	for _, t := range tracks {
+		titleScore := relevance(title, t.Title)
+		if titleScore >= 3 {
+			continue // shares nothing with the wanted title: never an acceptable match
+		}
+		score := titleScore*10 + relevance(artist, t.ArtistName)
+		if bestScore == -1 || score < bestScore {
+			best, bestScore = t, score
+		}
+	}
+	return best, bestScore != -1
+}
+
 // RemoteSearch3 gathers remote artists, albums and tracks for search3/search2.
 // It queries every active provider in parallel and merges their results into
 // three deduplicated lists (artists by name, albums by artist+name, tracks by
