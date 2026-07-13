@@ -553,6 +553,9 @@ func TestUnsubscribeDropsUnkeptFederatedPlaylists(t *testing.T) {
 	if err := store.Playlists.Subscribe(ctx, kept.ID, user.ID); err != nil {
 		t.Fatal(err)
 	}
+	if err := store.FeedCursors.Set(ctx, "inst-x", "v42"); err != nil {
+		t.Fatal(err)
+	}
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(hub.PublicSubscriptionStateResponse{Ok: boolptr(true), Subscribed: boolptr(false)})
@@ -569,5 +572,8 @@ func TestUnsubscribeDropsUnkeptFederatedPlaylists(t *testing.T) {
 	}
 	if _, err := store.Playlists.Get(ctx, dropped.ID); !errors.Is(err, persistence.ErrNotFound) {
 		t.Fatalf("unsubscribed playlist should be dropped on unfollow, got: %v", err)
+	}
+	if v, err := store.FeedCursors.Get(ctx, "inst-x"); err != nil || v != "" {
+		t.Fatalf("feed cursor should be cleared on unfollow (so a resubscribe fully catches up), got %q, %v", v, err)
 	}
 }
