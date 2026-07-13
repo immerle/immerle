@@ -3,6 +3,7 @@ module github.com/immerle/immerle
 go 1.26.5
 
 require (
+	github.com/coder/websocket v1.8.15
 	github.com/dhowden/tag v0.0.0-20240417053706-3d75831295e8
 	github.com/ermos/melody/v2 v2.1.1
 	github.com/fsnotify/fsnotify v1.10.1
