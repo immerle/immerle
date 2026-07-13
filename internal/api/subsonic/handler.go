@@ -20,10 +20,6 @@ import (
 	"github.com/immerle/immerle/internal/stream"
 )
 
-// RadioToggle reports whether internet radio is enabled (a runtime setting).
-// Implemented by *core.SettingsService; nil-safe checks treat absence as on.
-type RadioToggle interface{ RadioEnabled() bool }
-
 // Deps holds the dependencies of the Subsonic handler. Optional fields (OnDemand)
 // may be nil when the feature is disabled.
 type Deps struct {
@@ -38,7 +34,7 @@ type Deps struct {
 	Users        *persistence.UserRepo
 	Radio        *persistence.RadioRepo
 	Podcasts     *core.PodcastService
-	Settings     RadioToggle
+	Settings     *core.SettingsService
 	Cover        *stream.CoverService
 	Streamer     *stream.Streamer
 	NowPlaying   *core.NowPlayingTracker
