@@ -2,6 +2,7 @@ package immerle
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"net/url"
 
@@ -58,9 +59,12 @@ func writeErrorParams(w http.ResponseWriter, status int, code, message string, p
 	writeResource(w, status, errorResponse{Error: apiError{Code: code, Message: message, Params: params}})
 }
 
-// writeInternal reports a 500 from an unexpected error.
+// writeInternal reports a 500 from an unexpected error. The real error is logged
+// server-side and never returned to the client: it can carry SQL, filesystem
+// paths or other internal detail that must not leak over the API.
 func writeInternal(w http.ResponseWriter, err error) {
-	writeErrorParams(w, http.StatusInternalServerError, "internal", err.Error(), map[string]any{"detail": err.Error()})
+	slog.Error("internal server error", "error", err)
+	writeError(w, http.StatusInternalServerError, "internal", "internal server error")
 }
 
 // writeValidation sends a 400 with per-field details.
