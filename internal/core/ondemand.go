@@ -614,10 +614,22 @@ func (s *CatalogService) Worker(ctx context.Context) {
 
 func (s *CatalogService) drainQueue(ctx context.Context) {
 	st := s.state
+	var lastID string
+	repeats := 0
 	for {
 		job, err := st.downloads.ClaimNext(ctx)
 		if err != nil {
 			return // empty queue or error
+		}
+		// Guard against a job that stays eligible and is re-claimed without ever
+		// making progress (e.g. it fails but isn't backed off yet): stop draining
+		// so the outer ticker retries later instead of tight-looping.
+		if job.ID == lastID {
+			if repeats++; repeats >= 3 {
+				return
+			}
+		} else {
+			lastID, repeats = job.ID, 0
 		}
 		prov, ok := st.registry.Get(job.Provider)
 		if !ok {

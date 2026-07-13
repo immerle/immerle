@@ -12,8 +12,12 @@ import (
 )
 
 // secretBox provides reversible password encryption keyed by the config secret.
-// Subsonic's token authentication requires the server to recover the plaintext
-// password, so passwords cannot be stored as one-way hashes.
+// Passwords are encrypted rather than one-way hashed because Subsonic's legacy
+// token auth (md5(password+salt)) requires the server to recover the plaintext
+// to verify each request. The trade-off: an attacker who obtains BOTH the
+// database and the config secret can decrypt every user's password. Changing
+// this to hashing would break Subsonic auth for existing users and needs a real
+// migration.
 type secretBox struct {
 	gcm cipher.AEAD
 }

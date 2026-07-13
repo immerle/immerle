@@ -141,8 +141,17 @@ func (s *CatalogService) StreamPending(ctx context.Context, pd *PendingDownload,
 // file is discarded.
 func (s *CatalogService) finalizeStreamed(ctx context.Context, pd *PendingDownload, tmp, dest string) {
 	st := s.state
+	// Only the singleflight winner consumes tmp into dest; every other racing
+	// request wrote its own temp too and must delete it or it leaks on disk.
+	won := false
+	defer func() {
+		if !won {
+			_ = os.Remove(tmp)
+		}
+	}()
 	key := "job:" + pd.prov.Name() + ":" + pd.ptid
 	_, _, _ = st.group.Do(key, func() (any, error) {
+		won = true
 		if job, err := st.downloads.GetByProviderTrack(ctx, pd.prov.Name(), pd.ptid); err == nil &&
 			job.Status == models.DownloadCompleted && job.TrackID != "" {
 			_ = os.Remove(tmp)

@@ -22,6 +22,12 @@ import (
 // a password change against that load.
 const ldapBindTTL = 5 * time.Minute
 
+// ldapCacheMax bounds the bind cache so a stream of distinct username+password
+// attempts (including failed guesses that reach a successful bind) can't grow the
+// map without limit. When full, store sweeps expired entries and, if still at
+// capacity, evicts an arbitrary (map-random) live one.
+const ldapCacheMax = 1024
+
 // ldapConfig provides the live LDAP settings (read on each login so admin edits
 // in the UI apply without a restart). Implemented by *SettingsService.
 type ldapConfig interface {
@@ -112,6 +118,20 @@ func (l *ldapAuth) store(key string) {
 	defer l.mu.Unlock()
 	if l.cache == nil {
 		l.cache = make(map[string]time.Time)
+	}
+	if len(l.cache) >= ldapCacheMax {
+		now := time.Now()
+		for k, exp := range l.cache {
+			if now.After(exp) {
+				delete(l.cache, k)
+			}
+		}
+		for k := range l.cache {
+			if len(l.cache) < ldapCacheMax {
+				break
+			}
+			delete(l.cache, k)
+		}
 	}
 	l.cache[key] = time.Now().Add(ldapBindTTL)
 }
