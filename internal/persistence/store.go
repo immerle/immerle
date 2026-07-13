@@ -45,6 +45,7 @@ type Store struct {
 	Outbox          *OutboxRepo
 	PlaylistSync    *PlaylistSyncRepo
 	CoverUploads    *CoverUploadRepo
+	FeedCursors     *FeedCursorRepo
 }
 
 // New builds a Store over the given database.
@@ -75,6 +76,7 @@ func New(database *db.DB) *Store {
 		Outbox:          &OutboxRepo{base},
 		PlaylistSync:    &PlaylistSyncRepo{base},
 		CoverUploads:    &CoverUploadRepo{base},
+		FeedCursors:     &FeedCursorRepo{base},
 	}
 }
 
