@@ -39,6 +39,13 @@ type Scanner struct {
 	onComplete func(context.Context, Result)
 }
 
+// Scanning reports whether a full scan is currently in progress.
+func (s *Scanner) Scanning() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.scanning
+}
+
 // SetOnComplete registers a callback invoked after each full scan completes.
 func (s *Scanner) SetOnComplete(fn func(context.Context, Result)) {
 	s.mu.Lock()

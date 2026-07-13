@@ -1,6 +1,7 @@
 package subsonic
 
 import (
+	"path/filepath"
 	"time"
 
 	"github.com/immerle/immerle/internal/models"
@@ -38,7 +39,7 @@ func toChild(t models.Track, ann *models.Annotation) Child {
 		Suffix:         t.Suffix,
 		Duration:       t.Duration,
 		BitRate:        t.BitRate,
-		Path:           t.Path,
+		Path:           basePath(t.Path),
 		IsVideo:        false,
 		DiscNumber:     t.DiscNo,
 		Created:        formatTime(t.CreatedAt),
@@ -64,6 +65,16 @@ func toChild(t models.Track, ann *models.Annotation) Child {
 		c.Starred = starredStr(ann)
 	}
 	return c
+}
+
+// basePath returns just the file name of a stored track path. Tracks are stored
+// with absolute filesystem paths, which must not be disclosed to clients, so we
+// expose only the leaf name rather than the server's directory layout.
+func basePath(p string) string {
+	if p == "" {
+		return ""
+	}
+	return filepath.Base(p)
 }
 
 func coverOrAlbum(t models.Track) string {
