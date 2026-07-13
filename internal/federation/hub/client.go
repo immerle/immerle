@@ -14,18 +14,36 @@ import (
 // Client is a thin, typed client for the immerle-hub instance API (the /api/v1
 // routes). It wraps the generated wire types with one method per instance call.
 type Client struct {
-	baseURL string
+	// baseURL resolves the hub root live on each call, so an operator changing
+	// the configured hub URL at runtime takes effect without a restart.
+	baseURL func() string
 	http    *http.Client
 }
 
-// New builds a hub client. baseURL is the hub root (e.g. https://hub.immerle.com);
-// hc may be nil (http.DefaultClient is used).
-func New(baseURL string, hc *http.Client) *Client {
+// maxHubResponseBytes caps an in-memory hub API response, so a hostile or buggy
+// hub cannot exhaust memory with an unbounded body. Hub payloads are small JSON.
+const maxHubResponseBytes = 8 << 20 // 8 MiB
+
+// New builds a hub client. baseURL resolves the hub root live (e.g.
+// https://hub.immerle.com); hc may be nil (a default client is used). Redirects
+// are restricted to the hub's own host to prevent SSRF via a hostile redirect.
+func New(baseURL func() string, hc *http.Client) *Client {
 	if hc == nil {
-		hc = http.DefaultClient
+		hc = &http.Client{}
 	}
-	return &Client{baseURL: strings.TrimRight(baseURL, "/"), http: hc}
+	c := &Client{baseURL: baseURL, http: hc}
+	hc.CheckRedirect = func(req *http.Request, _ []*http.Request) error {
+		base, err := url.Parse(c.base())
+		if err != nil || !strings.EqualFold(req.URL.Hostname(), base.Hostname()) {
+			return fmt.Errorf("hub: refusing redirect to disallowed host %q", req.URL.Hostname())
+		}
+		return nil
+	}
+	return c
 }
+
+// base returns the current hub root with any trailing slash trimmed.
+func (c *Client) base() string { return strings.TrimRight(c.baseURL(), "/") }
 
 // Auth carries the per-instance credentials sent on authenticated calls: the
 // private key as a Bearer token and the instance UUID as the X-Instance-ID
@@ -273,7 +291,7 @@ func (c *Client) doRaw(ctx context.Context, method, path string, a Auth, content
 	if body != nil {
 		reader = bytes.NewReader(body)
 	}
-	req, err := http.NewRequestWithContext(ctx, method, c.baseURL+path, reader)
+	req, err := http.NewRequestWithContext(ctx, method, c.base()+path, reader)
 	if err != nil {
 		return err
 	}
@@ -289,7 +307,7 @@ func (c *Client) doRaw(ctx context.Context, method, path string, a Auth, content
 		return err
 	}
 	defer resp.Body.Close()
-	data, _ := io.ReadAll(resp.Body)
+	data, _ := io.ReadAll(io.LimitReader(resp.Body, maxHubResponseBytes))
 	if resp.StatusCode >= 300 {
 		return &HTTPError{Status: resp.StatusCode, Method: method, Path: path, Message: errorMessage(data)}
 	}
