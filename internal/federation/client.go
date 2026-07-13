@@ -721,6 +721,13 @@ func (s *Service) ResolvePlaylistTrack(ctx context.Context, playlistID string, p
 			return s.catalog.GetTrack(ctx, id)
 		}
 	}
+	// No (or no matching) mbid: the track may still already be in the local
+	// catalog under a different mbid (or none at all, e.g. manually uploaded)
+	// — check by artist+title before resorting to a remote provider search.
+	if t, found, _ := s.catalog.FindByArtistTitle(ctx, ref.Artist, ref.Title); found {
+		_ = s.playlists.ResolveFederatedTrack(ctx, playlistID, position, t.ID)
+		return t, nil
+	}
 	// Keyed by content, not just position: a re-sync can replace the entry at
 	// this position with a different track, which must not reuse a stale hit.
 	cacheKey := playlistID + ":" + strconv.Itoa(position) + ":" + ref.Artist + "|" + ref.Title

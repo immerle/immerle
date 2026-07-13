@@ -415,11 +415,13 @@ func TestFederationResolvePersistsProviderHitWhenAutoDownloadEnabled(t *testing.
 	owner := models.User{ID: uuid.NewString(), Username: "admin4", PasswordHash: "x", IsAdmin: true, CreatedAt: now}
 	_ = store.Users.Create(ctx, owner)
 
-	// The track the provider "downloads" to, once resolved.
-	artistID, _ := store.Catalog.UpsertArtist(ctx, models.Artist{ID: uuid.NewString(), Name: "Nobody Knows", CreatedAt: now})
+	// The track the provider "downloads" to, once resolved — named distinctly
+	// from the feed track below so it isn't found by the local artist+title
+	// fallback (this test covers the no-local-match, provider-search path).
+	artistID, _ := store.Catalog.UpsertArtist(ctx, models.Artist{ID: uuid.NewString(), Name: "Downloaded Copy Artist", CreatedAt: now})
 	albumID, _ := store.Catalog.UpsertAlbum(ctx, models.Album{ID: uuid.NewString(), Name: "Al", ArtistID: artistID, CreatedAt: now})
 	downloadedID, _ := store.Catalog.UpsertTrack(ctx, models.Track{
-		ID: uuid.NewString(), Title: "Unlisted Track", AlbumID: albumID, ArtistID: artistID,
+		ID: uuid.NewString(), Title: "Downloaded Copy Title", AlbumID: albumID, ArtistID: artistID,
 		Path: "/music/unlisted.mp3", CreatedAt: now, UpdatedAt: now,
 	})
 
@@ -480,6 +482,61 @@ func TestFederationResolvePersistsProviderHitWhenAutoDownloadEnabled(t *testing.
 	}
 	if ref.TrackID != downloadedID {
 		t.Fatalf("resync overwrote the resolved track_id: got %+v, want %q", ref, downloadedID)
+	}
+}
+
+// TestResolvePlaylistTrackFindsLocalCopyByArtistTitle covers the bug: a track
+// already in the local catalog (e.g. from another playlist) with no mbid, or
+// an mbid that doesn't match the federated entry's, was never found — the old
+// code checked mbid only, then jumped straight to a remote provider search.
+func TestResolvePlaylistTrackFindsLocalCopyByArtistTitle(t *testing.T) {
+	store := testutil.NewStore(t)
+	ctx := context.Background()
+	now := time.Now()
+
+	owner := models.User{ID: uuid.NewString(), Username: "admin5", PasswordHash: "x", IsAdmin: true, CreatedAt: now}
+	_ = store.Users.Create(ctx, owner)
+
+	// Already in the local catalog (e.g. uploaded manually into another
+	// playlist), tagged with no mbid at all.
+	artistID, _ := store.Catalog.UpsertArtist(ctx, models.Artist{ID: uuid.NewString(), Name: "Nicki Minaj", CreatedAt: now})
+	albumID, _ := store.Catalog.UpsertAlbum(ctx, models.Album{ID: uuid.NewString(), Name: "Al", ArtistID: artistID, CreatedAt: now})
+	localID, _ := store.Catalog.UpsertTrack(ctx, models.Track{
+		ID: uuid.NewString(), Title: "Rap Barbie", AlbumID: albumID, ArtistID: artistID,
+		Path: "/music/rap-barbie.mp3", CreatedAt: now, UpdatedAt: now,
+	})
+
+	feed := []stubFeedPlaylist{{
+		instanceID: "inst-e", instanceName: "E", externalID: "ext-11",
+		name: "Shared",
+		tracks: []map[string]any{
+			{"artist": "Nicki Minaj", "title": "Rap Barbie"}, // no mbid from the remote instance either
+		},
+	}}
+	srv, _ := stubHub(t, nil, feed)
+
+	resolver := &fakeProviderResolver{} // never matches "Nicki Minaj" — proves it isn't reached
+	cfg := config.FederationConfig{HubURL: srv.URL, InstanceID: "self", PrivateKey: "iml_key"}
+	svc := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, store.FeedCursors, resolver, testLogger())
+	svc.SetOwner(owner.ID)
+
+	if err := svc.SyncPlaylists(ctx); err != nil {
+		t.Fatal(err)
+	}
+	p, err := store.Playlists.FindFederated(ctx, "inst-e", "ext-11")
+	if err != nil {
+		t.Fatalf("playlist not materialized: %v", err)
+	}
+
+	resolved, err := svc.ResolvePlaylistTrack(ctx, p.ID, 0)
+	if err != nil {
+		t.Fatalf("ResolvePlaylistTrack: %v (should have found the local copy)", err)
+	}
+	if resolved.ID != localID {
+		t.Fatalf("expected the existing local track %q, got %+v", localID, resolved)
+	}
+	if len(resolver.searched) != 0 {
+		t.Fatalf("should never reach the provider once a local artist+title match exists, got %v", resolver.searched)
 	}
 }
 
