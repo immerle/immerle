@@ -59,6 +59,10 @@ type Service struct {
 	saveCreds func(context.Context, Credentials) error
 	// clearCreds wipes the stored hub identity on unlink (optional).
 	clearCreds func(context.Context) error
+	// replayHandler answers a replay.request with our current published state
+	// (registered by PlaylistSyncer, which owns that state); nil until then, or
+	// on an instance that only subscribes and never publishes.
+	replayHandler func(context.Context, stream.Frame) error
 }
 
 // Credentials carries hub-issued identity persisted into the runtime settings.
@@ -77,6 +81,14 @@ func (s *Service) SetCredentialsSaver(fn func(context.Context, Credentials) erro
 // SetCredentialsClearer registers a callback used to wipe the stored hub
 // identity when the operator unlinks the instance.
 func (s *Service) SetCredentialsClearer(fn func(context.Context) error) { s.clearCreds = fn }
+
+// SetReplayHandler registers the callback that answers a replay.request from a
+// reconnected subscriber (registered by PlaylistSyncer, the owner of published
+// state). Until set (or on a subscribe-only instance), replay requests are
+// just logged — see handleReplayRequest.
+func (s *Service) SetReplayHandler(fn func(context.Context, stream.Frame) error) {
+	s.replayHandler = fn
+}
 
 // auth returns the per-instance hub credentials (private key + instance UUID).
 func (s *Service) auth() hub.Auth {
@@ -223,12 +235,15 @@ func (s *Service) applyStreamDelete(ctx context.Context, f stream.Frame) error {
 }
 
 // handleReplayRequest responds to a replay.request from a subscriber that just
-// reconnected. Left unimplemented until the push path itself moves to the
-// socket (RFC §6/§7): logged so a request isn't silently swallowed while push
-// still goes over REST.
-func (s *Service) handleReplayRequest(_ context.Context, f stream.Frame) error {
-	s.logger.Debug("federation stream: replay request ignored (push still over REST)", "forSubscriberId", f.ForSubscriberID, "sinceVersion", f.SinceVersion)
-	return nil
+// reconnected, delegating to the registered replayHandler (PlaylistSyncer,
+// which owns our published state). Just logged on an instance that never
+// publishes (no PlaylistSyncer wired), rather than swallowed silently.
+func (s *Service) handleReplayRequest(ctx context.Context, f stream.Frame) error {
+	if s.replayHandler == nil {
+		s.logger.Debug("federation stream: replay request with no publisher registered", "forSubscriberId", f.ForSubscriberID, "sinceVersion", f.SinceVersion)
+		return nil
+	}
+	return s.replayHandler(ctx, f)
 }
 
 // subscribedTo reports whether id is among the given subscriptions.

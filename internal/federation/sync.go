@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/immerle/immerle/internal/federation/hub"
+	"github.com/immerle/immerle/internal/federation/stream"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/outbox"
 	"github.com/immerle/immerle/internal/persistence"
@@ -67,6 +68,7 @@ func NewPlaylistSyncer(fed *Service, worker *outbox.Worker, syncState *persisten
 		playlists: playlists, covers: covers, logger: logger,
 	}
 	worker.Register(PlaylistSyncKind, s.handle)
+	fed.SetReplayHandler(s.handleReplayRequest)
 	return s
 }
 
@@ -132,13 +134,10 @@ func (s *PlaylistSyncer) process(ctx context.Context, playlistID string) error {
 }
 
 func (s *PlaylistSyncer) deletePlaylist(ctx context.Context, playlistID string) error {
-	s.throttle()
-	// A 404 means the playlist was never synced — treat it as already-gone.
-	if err := s.fed.hub.DeletePlaylist(ctx, s.fed.auth(), playlistID); err != nil {
-		var he *hub.HTTPError
-		if !errors.As(err, &he) || he.Status != http.StatusNotFound {
-			return err
-		}
+	// Fire-and-forget over the socket (RFC-socket-federation-client.md §7):
+	// unlike the REST DELETE, there's no "already gone" response to special-case.
+	if err := s.fed.stream.Send(ctx, stream.Frame{Type: stream.TypePlaylistDelete, ExternalID: playlistID}); err != nil {
+		return outbox.ErrNotReady
 	}
 	return s.syncState.Delete(ctx, playlistID)
 }
@@ -161,11 +160,76 @@ func (s *PlaylistSyncer) syncPlaylist(ctx context.Context, p models.Playlist) er
 	if err := s.resolveCovers(ctx, &payload); err != nil {
 		return err
 	}
-	s.throttle()
-	if err := s.fed.hub.SyncPlaylist(ctx, s.fed.auth(), p.ID, payload); err != nil {
+	version := p.UpdatedAt.Format(time.RFC3339Nano)
+	frame, err := buildUpsertFrame(p.ID, version, payload)
+	if err != nil {
+		return err
+	}
+	// Socket down: retried later (once reconnected) rather than falling back to
+	// REST — see RFC §7. The hourly REST pull still catches up other instances
+	// in the meantime.
+	if err := s.fed.stream.Send(ctx, frame); err != nil {
+		return outbox.ErrNotReady
+	}
+	resolved, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+	if err := s.syncState.SetPayload(ctx, p.ID, string(resolved), version); err != nil {
 		return err
 	}
 	return s.syncState.Set(ctx, p.ID, contentHash)
+}
+
+// handleReplayRequest answers a replay.request (RFC §6): for every playlist
+// still synced, replay its last resolved payload if the subscriber's cursor is
+// older than it — no recomputation, PlaylistSyncRepo already has it (§8).
+func (s *PlaylistSyncer) handleReplayRequest(ctx context.Context, f stream.Frame) error {
+	ids, err := s.syncState.IDs(ctx)
+	if err != nil {
+		return err
+	}
+	for _, id := range ids {
+		resolved, version, err := s.syncState.LastPayload(ctx, id)
+		if err != nil {
+			return err
+		}
+		if resolved == "" || version <= f.SinceVersion {
+			continue // never pushed yet, or the subscriber already has this state
+		}
+		var payload syncPayload
+		if err := json.Unmarshal([]byte(resolved), &payload); err != nil {
+			s.logger.Warn("replay: corrupt stored payload, skipping", "playlist", id, "error", err)
+			continue
+		}
+		frame, err := buildUpsertFrame(id, version, payload)
+		if err != nil {
+			return err
+		}
+		frame.Target = f.ForSubscriberID
+		if err := s.fed.stream.Send(ctx, frame); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// buildUpsertFrame turns a resolved sync payload into the socket's
+// playlist.upsert wire shape — name/description travel inside Metadata (the
+// Frame itself has no dedicated fields for them, see streamMetadata).
+func buildUpsertFrame(externalID, version string, p syncPayload) (stream.Frame, error) {
+	metadata, err := json.Marshal(streamMetadata{Name: p.Name, Description: p.Description})
+	if err != nil {
+		return stream.Frame{}, err
+	}
+	tracks, err := json.Marshal(p.Tracks)
+	if err != nil {
+		return stream.Frame{}, err
+	}
+	return stream.Frame{
+		Type: stream.TypePlaylistUpsert, ExternalID: externalID, Version: version,
+		Image: p.Image, Tracks: tracks, Metadata: metadata,
+	}, nil
 }
 
 // syncPayload is the clean (typed) schema PUT to the hub. tracks is a JSON array,

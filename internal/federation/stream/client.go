@@ -3,15 +3,22 @@ package stream
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"math/rand"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/coder/websocket"
 
 	"github.com/immerle/immerle/internal/federation/hub"
 )
+
+// ErrNotConnected is returned by Send when the socket is currently down; the
+// caller (playlist push, RFC §7) maps it to outbox.ErrNotReady so the job is
+// retried once reconnected instead of falling back to REST.
+var ErrNotConnected = errors.New("federation stream: not connected")
 
 // maxFramePayload mirrors the hub's own limit (internal/ws.MaxFramePayload) so
 // a locally-built oversized frame fails fast instead of getting the connection
@@ -47,6 +54,9 @@ type Client struct {
 	cursors func(ctx context.Context) (map[string]string, error)
 	h       Handlers
 	logger  *slog.Logger
+
+	mu   sync.Mutex
+	conn *websocket.Conn // current active connection; nil while disconnected
 }
 
 // New builds a Client. auth and hubURL are read live (same pattern as
@@ -115,6 +125,9 @@ func (c *Client) connectAndServe(ctx context.Context) error {
 	}
 	defer func() { _ = conn.CloseNow() }()
 	conn.SetReadLimit(maxFramePayload)
+
+	c.setConn(conn)
+	defer c.setConn(nil)
 
 	hbCtx, stopHeartbeat := context.WithCancel(ctx)
 	defer stopHeartbeat()
@@ -193,4 +206,25 @@ func (c *Client) send(ctx context.Context, conn *websocket.Conn, f Frame) error 
 	writeCtx, cancel := context.WithTimeout(ctx, writeTimeout)
 	defer cancel()
 	return conn.Write(writeCtx, websocket.MessageText, data)
+}
+
+func (c *Client) setConn(conn *websocket.Conn) {
+	c.mu.Lock()
+	c.conn = conn
+	c.mu.Unlock()
+}
+
+// Send pushes a frame (e.g. playlist.upsert/delete, or a replay reply with
+// Target set) over the currently active connection. Writes are safe to call
+// concurrently with the read loop and with each other (the underlying library
+// guarantees this — see websocket.Conn's doc comment). Returns
+// ErrNotConnected while the socket is down.
+func (c *Client) Send(ctx context.Context, f Frame) error {
+	c.mu.Lock()
+	conn := c.conn
+	c.mu.Unlock()
+	if conn == nil {
+		return ErrNotConnected
+	}
+	return c.send(ctx, conn, f)
 }
