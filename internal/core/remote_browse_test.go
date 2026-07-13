@@ -174,6 +174,32 @@ func TestResolveBestRemoteMatchAcceptsTitleMatch(t *testing.T) {
 	}
 }
 
+// TestResolveBestRemoteMatchAcceptsNoisyHubTitle covers the bug: a federated
+// entry's title often carries extra qualifiers a provider's canonical title
+// doesn't ("Get Lucky (Radio Edit - feat. Pharrell Williams and Nile
+// Rodgers)" vs "Get Lucky") — the wanted (long) title never "contains" the
+// candidate (short) one in the relevance sense used for the title gate, so
+// the match was rejected even though the candidate is clearly a prefix of it.
+func TestResolveBestRemoteMatchAcceptsNoisyHubTitle(t *testing.T) {
+	store := testutil.NewStore(t)
+	registry := NewProviderRegistry()
+	registry.Register(&browsableProvider{
+		name: "prov",
+		searchResult: []providers.Result{
+			{ProviderTrackID: "right", Title: "Get Lucky", Artist: "Daft Punk"},
+		},
+	})
+	svc := NewCatalogService(CatalogServiceConfig{
+		Catalog: store.Catalog, Downloads: store.Downloads, Registry: registry,
+		Settings: StaticProviderSettings{}, Logger: testutil.NewLogger(),
+	})
+
+	track, ok := svc.ResolveBestRemoteMatch(context.Background(), "Daft Punk", "Get Lucky (Radio Edit - feat. Pharrell Williams and Nile Rodgers)")
+	if !ok || track.Title != "Get Lucky" {
+		t.Fatalf("expected the matching track, got ok=%v track=%+v", ok, track)
+	}
+}
+
 func TestRemoteSearch3DerivesAlbums(t *testing.T) {
 	store := testutil.NewStore(t)
 	registry := NewProviderRegistry()
