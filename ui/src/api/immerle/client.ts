@@ -63,11 +63,9 @@ import {
   ProviderLog,
   ScanProgress,
   RadioStation,
-  ServerSettings,
   SmartPlaylist,
   SmartRules,
   TrackEdit,
-  TranscodeProfile,
   Wrapped,
 } from './types';
 import { Lyrics } from '../../lyrics/lyrics';
@@ -1016,29 +1014,6 @@ export class ImmerleClient {
   /** Stop following the instance with the given hub id (UUID). Server-side. */
   async unsubscribeInstance(id: string): Promise<void> {
     await this.request<{ ok: boolean }>('DELETE', `admin/federation/subscriptions/${encodeURIComponent(id)}`);
-  }
-
-  // --- Admin: server / transcoding ----------------------------------------
-
-  async getTranscodeProfiles(signal?: AbortSignal): Promise<TranscodeProfile[]> {
-    return this.request<TranscodeProfile[]>(
-      'GET',
-      'admin/transcode-profiles',
-      undefined,
-      signal,
-    );
-  }
-
-  async upsertTranscodeProfile(profile: Partial<TranscodeProfile>): Promise<TranscodeProfile> {
-    return this.request<TranscodeProfile>('PUT', 'admin/transcode-profiles', profile);
-  }
-
-  async getServerSettings(signal?: AbortSignal): Promise<ServerSettings> {
-    return this.request<ServerSettings>('GET', 'admin/settings', undefined, signal);
-  }
-
-  async updateServerSettings(settings: Partial<ServerSettings>): Promise<ServerSettings> {
-    return this.request<ServerSettings>('PATCH', 'admin/settings', settings);
   }
 
   // --- Social: friends & activity (typed via OpenAPI) ----------------------
