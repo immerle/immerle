@@ -106,11 +106,14 @@ func (c *Client) connectAndServe(ctx context.Context) error {
 	header.Set("Authorization", "Bearer "+a.PrivateKey)
 	header.Set("X-Instance-ID", a.InstanceID)
 
-	conn, _, err := websocket.Dial(ctx, c.hubURL()+"/api/v1/instances/me/stream", &websocket.DialOptions{HTTPHeader: header})
+	conn, resp, err := websocket.Dial(ctx, c.hubURL()+"/api/v1/instances/me/stream", &websocket.DialOptions{HTTPHeader: header})
+	if resp != nil && resp.Body != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		return err
 	}
-	defer conn.CloseNow()
+	defer func() { _ = conn.CloseNow() }()
 	conn.SetReadLimit(maxFramePayload)
 
 	hbCtx, stopHeartbeat := context.WithCancel(ctx)
