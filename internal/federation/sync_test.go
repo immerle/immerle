@@ -155,6 +155,9 @@ func newSyncStub(t *testing.T) (*httptest.Server, *syncStub) {
 			_ = json.NewEncoder(w).Encode(map[string]any{"ok": true})
 		}
 	})
+	mux.HandleFunc("/api/v1/instances/me/data", func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true})
+	})
 	mux.HandleFunc("/api/v1/instances/me/stream", func(w http.ResponseWriter, r *http.Request) {
 		c, err := websocket.Accept(w, r, nil)
 		if err != nil {

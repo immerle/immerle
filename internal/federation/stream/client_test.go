@@ -3,6 +3,7 @@ package stream_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"log/slog"
 	"net/http"
@@ -170,4 +171,36 @@ func TestClientDispatch(t *testing.T) {
 	case <-time.After(2 * time.Second):
 		t.Fatal("OnReplay not called")
 	}
+}
+
+// TestClientDisconnect covers RFC-socket-federation-client.md §10.3: Disconnect
+// must force-close the active connection immediately (Send then fails with
+// ErrNotConnected) rather than leaving it open under revoked credentials, and
+// Run must reconnect on its own afterward.
+func TestClientDisconnect(t *testing.T) {
+	srv, _ := newFakeHub(t)
+	wsURL := strings.Replace(srv.URL, "http://", "ws://", 1)
+
+	c := stream.New(
+		func() hub.Auth { return hub.Auth{InstanceID: "inst-1", PrivateKey: "key-1"} },
+		func() string { return wsURL },
+		func(context.Context) (map[string]string, error) { return nil, nil },
+		stream.Handlers{},
+		testLogger(),
+	)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go c.Run(ctx)
+
+	connected := func() bool { return c.Send(context.Background(), stream.Frame{Type: stream.TypeHeartbeat}) == nil }
+	waitFor(t, connected)
+
+	c.Disconnect()
+	waitFor(t, func() bool {
+		return errors.Is(c.Send(context.Background(), stream.Frame{Type: stream.TypeHeartbeat}), stream.ErrNotConnected)
+	})
+
+	// Run's own reconnect loop brings it back up without any extra help.
+	waitFor(t, connected)
 }
