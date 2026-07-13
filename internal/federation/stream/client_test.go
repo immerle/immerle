@@ -39,7 +39,9 @@ func newFakeHub(t *testing.T) (*httptest.Server, *fakeHub) {
 		if err != nil {
 			return
 		}
+		fh.mu.Lock()
 		fh.conn = c
+		fh.mu.Unlock()
 		for {
 			_, data, err := c.Read(r.Context())
 			if err != nil {
@@ -65,15 +67,21 @@ func (fh *fakeHub) send(t *testing.T, f stream.Frame) {
 		t.Fatal(err)
 	}
 	deadline := time.Now().Add(2 * time.Second)
-	for fh.conn == nil {
+	var conn *websocket.Conn
+	for conn == nil {
 		if time.Now().After(deadline) {
 			t.Fatal("client never connected")
 		}
-		time.Sleep(time.Millisecond)
+		fh.mu.Lock()
+		conn = fh.conn
+		fh.mu.Unlock()
+		if conn == nil {
+			time.Sleep(time.Millisecond)
+		}
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	if err := fh.conn.Write(ctx, websocket.MessageText, data); err != nil {
+	if err := conn.Write(ctx, websocket.MessageText, data); err != nil {
 		t.Fatal(err)
 	}
 }
