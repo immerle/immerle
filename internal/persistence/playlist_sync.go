@@ -158,3 +158,11 @@ func (r *FeedCursorRepo) Set(ctx context.Context, sourceInstanceID, version stri
 		sourceInstanceID, version, db.Millis(time.Now()))
 	return err
 }
+
+// Delete forgets the cursor for a source instance, so a later resubscribe
+// resumes from empty (a full catch-up) instead of picking up mid-feed from a
+// stale version.
+func (r *FeedCursorRepo) Delete(ctx context.Context, sourceInstanceID string) error {
+	_, err := r.exec(ctx, `DELETE FROM federation_feed_cursor WHERE source_instance_id = ?`, sourceInstanceID)
+	return err
+}
