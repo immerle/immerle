@@ -94,7 +94,7 @@ func (s *Service) SetOwnerResolver(fn func(context.Context) (string, error)) { s
 func New(cfgFn func() config.FederationConfig, catalog *persistence.CatalogRepo, playlists *persistence.PlaylistRepo, scrobbles *persistence.ScrobbleRepo, resolver Resolver, logger *slog.Logger) *Service {
 	return &Service{
 		cfgFn:     cfgFn,
-		hub:       hub.New(cfgFn().HubURL, &http.Client{Timeout: 30 * time.Second}),
+		hub:       hub.New(func() string { return cfgFn().HubURL }, &http.Client{Timeout: 30 * time.Second}),
 		catalog:   catalog,
 		playlists: playlists,
 		scrobbles: scrobbles,
