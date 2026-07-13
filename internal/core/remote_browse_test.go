@@ -128,6 +128,52 @@ func TestRemoteSearch3QueriesAllProviders(t *testing.T) {
 	}
 }
 
+// TestResolveBestRemoteMatchRejectsUnrelatedResult reproduces the "Rap
+// Barbie - Stuck Up" bug: a free-text provider search always returns
+// *something*, and the wanted track isn't among it. Accepting that "best of a
+// bad lot" result plays a completely unrelated song instead of reporting the
+// entry unresolvable (which the UI surfaces with an "add manually" CTA).
+func TestResolveBestRemoteMatchRejectsUnrelatedResult(t *testing.T) {
+	store := testutil.NewStore(t)
+	registry := NewProviderRegistry()
+	registry.Register(&browsableProvider{
+		name: "prov",
+		searchResult: []providers.Result{
+			{ProviderTrackID: "wrong", Title: "D.I.S.C.O. (Lust For Life)", Artist: "E-Rotic"},
+		},
+	})
+	svc := NewCatalogService(CatalogServiceConfig{
+		Catalog: store.Catalog, Downloads: store.Downloads, Registry: registry,
+		Settings: StaticProviderSettings{}, Logger: testutil.NewLogger(),
+	})
+
+	track, ok := svc.ResolveBestRemoteMatch(context.Background(), "Rap Barbie", "Stuck Up")
+	if ok {
+		t.Fatalf("expected no acceptable match, got %+v", track)
+	}
+}
+
+func TestResolveBestRemoteMatchAcceptsTitleMatch(t *testing.T) {
+	store := testutil.NewStore(t)
+	registry := NewProviderRegistry()
+	registry.Register(&browsableProvider{
+		name: "prov",
+		searchResult: []providers.Result{
+			{ProviderTrackID: "wrong", Title: "D.I.S.C.O. (Lust For Life)", Artist: "E-Rotic"},
+			{ProviderTrackID: "right", Title: "Stuck Up", Artist: "Rap Barbie"},
+		},
+	})
+	svc := NewCatalogService(CatalogServiceConfig{
+		Catalog: store.Catalog, Downloads: store.Downloads, Registry: registry,
+		Settings: StaticProviderSettings{}, Logger: testutil.NewLogger(),
+	})
+
+	track, ok := svc.ResolveBestRemoteMatch(context.Background(), "Rap Barbie", "Stuck Up")
+	if !ok || track.Title != "Stuck Up" {
+		t.Fatalf("expected the matching track, got ok=%v track=%+v", ok, track)
+	}
+}
+
 func TestRemoteSearch3DerivesAlbums(t *testing.T) {
 	store := testutil.NewStore(t)
 	registry := NewProviderRegistry()

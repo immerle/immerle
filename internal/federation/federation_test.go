@@ -298,24 +298,34 @@ func TestFederationSyncFeedHandlesSameNameAcrossInstances(t *testing.T) {
 	}
 }
 
-// fakeProviderResolver mimics the on-demand content providers: RemoteSearch
-// finds a candidate by query text (an undownloaded "remote:" track, as the
-// real on-demand catalog service returns).
+// fakeProviderResolver mimics the on-demand content providers:
+// ResolveBestRemoteMatch finds a candidate by artist/title (an undownloaded
+// "remote:" track, as the real on-demand catalog service returns).
+// autoDownload defaults to false, so existing tests keep asserting
+// ResolvePlaylistTrack never triggers a download/persist unless a test opts in.
 type fakeProviderResolver struct {
-	searched []string
+	searched     []string
+	autoDownload bool
+	resolved     models.Track // returned by Resolve when autoDownload is true
 }
 
-func (f *fakeProviderResolver) RemoteSearch(_ context.Context, query string, _ int) ([]models.Track, error) {
+func (f *fakeProviderResolver) ResolveBestRemoteMatch(_ context.Context, artist, title string) (models.Track, bool) {
+	query := strings.TrimSpace(artist + " " + title)
 	f.searched = append(f.searched, query)
 	if strings.Contains(query, "Nobody Knows") {
-		return []models.Track{{ID: "remote:fake:1", Title: "Unlisted Track", ArtistName: "Nobody Knows", Remote: true}}, nil
+		return models.Track{ID: "remote:fake:1", Title: "Unlisted Track", ArtistName: "Nobody Knows", Remote: true}, true
 	}
-	return nil, nil
+	return models.Track{}, false
 }
 
 func (f *fakeProviderResolver) Resolve(context.Context, string, string) (models.Track, bool, string, error) {
-	panic("not used: ResolvePlaylistTrack only searches, it doesn't download")
+	if !f.autoDownload {
+		panic("not used: auto-download-on-play is off in this test")
+	}
+	return f.resolved, true, "", nil
 }
+
+func (f *fakeProviderResolver) AutoDownloadOnPlay() bool { return f.autoDownload }
 
 // TestFederationSyncKeepsTracksUnresolvedAndForwardsCover covers the two gaps
 // found after the feed pull started working: sync must not eagerly hit
@@ -387,6 +397,88 @@ func TestFederationSyncKeepsTracksUnresolvedAndForwardsCover(t *testing.T) {
 	}
 	if _, err := svc.ResolvePlaylistTrack(ctx, p.ID, 0); !errors.Is(err, ErrUnresolvable) {
 		t.Fatalf("expected ErrUnresolvable, got %v", err)
+	}
+}
+
+// TestFederationResolvePersistsProviderHitWhenAutoDownloadEnabled covers the
+// on-tap resolve of a federated entry with no mbid: once the admin's
+// auto-download-on-play setting is on, a provider-search hit gets downloaded
+// in the background and its (real, local) track id is written back to the
+// playlist entry — and a later resync must not wipe that out just because the
+// track still carries no mbid of its own.
+func TestFederationResolvePersistsProviderHitWhenAutoDownloadEnabled(t *testing.T) {
+	store := testutil.NewStore(t)
+	ctx := context.Background()
+	now := time.Now()
+
+	owner := models.User{ID: uuid.NewString(), Username: "admin4", PasswordHash: "x", IsAdmin: true, CreatedAt: now}
+	_ = store.Users.Create(ctx, owner)
+
+	// The track the provider "downloads" to, once resolved.
+	artistID, _ := store.Catalog.UpsertArtist(ctx, models.Artist{ID: uuid.NewString(), Name: "Nobody Knows", CreatedAt: now})
+	albumID, _ := store.Catalog.UpsertAlbum(ctx, models.Album{ID: uuid.NewString(), Name: "Al", ArtistID: artistID, CreatedAt: now})
+	downloadedID, _ := store.Catalog.UpsertTrack(ctx, models.Track{
+		ID: uuid.NewString(), Title: "Unlisted Track", AlbumID: albumID, ArtistID: artistID,
+		Path: "/music/unlisted.mp3", CreatedAt: now, UpdatedAt: now,
+	})
+
+	feed := []stubFeedPlaylist{{
+		instanceID: "inst-d", instanceName: "D", externalID: "ext-10",
+		name: "Discoveries",
+		tracks: []map[string]any{
+			{"artist": "Nobody Knows", "title": "Unlisted Track"}, // no mbid: stays unresolved at sync
+		},
+	}}
+	srv, _ := stubHub(t, nil, feed)
+
+	resolver := &fakeProviderResolver{autoDownload: true, resolved: models.Track{ID: downloadedID}}
+	cfg := config.FederationConfig{HubURL: srv.URL, InstanceID: "self", PrivateKey: "iml_key"}
+	svc := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, store.FeedCursors, resolver, testLogger())
+	svc.SetOwner(owner.ID)
+
+	if err := svc.SyncPlaylists(ctx); err != nil {
+		t.Fatal(err)
+	}
+	p, err := store.Playlists.FindFederated(ctx, "inst-d", "ext-10")
+	if err != nil {
+		t.Fatalf("playlist not materialized: %v", err)
+	}
+
+	resolved, err := svc.ResolvePlaylistTrack(ctx, p.ID, 0)
+	if err != nil {
+		t.Fatalf("ResolvePlaylistTrack: %v", err)
+	}
+	if resolved.ID != "remote:fake:1" {
+		t.Fatalf("expected the transparent, immediate remote hit, got %+v", resolved)
+	}
+
+	// The download+persist happens in the background; poll for it.
+	deadline := time.Now().Add(2 * time.Second)
+	for {
+		ref, err := store.Playlists.TrackRef(ctx, p.ID, 0)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if ref.TrackID == downloadedID {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("track_id was never persisted, got ref=%+v", ref)
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	// A resync of the same (still mbid-less) track must not wipe the resolve
+	// out just because it can't be re-derived by mbid.
+	if err := svc.SyncPlaylists(ctx); err != nil {
+		t.Fatal(err)
+	}
+	ref, err := store.Playlists.TrackRef(ctx, p.ID, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ref.TrackID != downloadedID {
+		t.Fatalf("resync overwrote the resolved track_id: got %+v, want %q", ref, downloadedID)
 	}
 }
 
