@@ -183,9 +183,6 @@ func (s *Service) ResolveItem(ctx context.Context, userID, itemID, query string)
 	if err != nil {
 		return models.ImportItem{}, fmt.Errorf("download failed: %w", err)
 	}
-	if err := s.playlists.AppendTracks(ctx, im.PlaylistID, []string{localID}, userID); err != nil {
-		return models.ImportItem{}, fmt.Errorf("add to playlist failed: %w", err)
-	}
 
 	// Move the item to matched and rebalance the import counters.
 	switch it.Status {
@@ -208,7 +205,32 @@ func (s *Service) ResolveItem(ctx context.Context, userID, itemID, query string)
 	if err := s.imports.Update(ctx, im); err != nil {
 		return models.ImportItem{}, err
 	}
+	// Rewrite the playlist's full track order from every matched item, in
+	// source order — so this item (resolved after later ones may already be
+	// matched) lands at its original position instead of at the end.
+	if err := s.syncPlaylistTracks(ctx, im.ID, im.PlaylistID, userID); err != nil {
+		return models.ImportItem{}, fmt.Errorf("add to playlist failed: %w", err)
+	}
 	return it, nil
+}
+
+// syncPlaylistTracks rewrites playlistID's full track list from every matched
+// item of importID, in source order (ImportItem.Position). Called whenever an
+// item newly matches, whether during the initial batch pass or a later manual
+// resolution, so track order always reflects the source playlist regardless
+// of resolution order.
+func (s *Service) syncPlaylistTracks(ctx context.Context, importID, playlistID, userID string) error {
+	items, err := s.imports.ListItems(ctx, importID)
+	if err != nil {
+		return err
+	}
+	trackIDs := make([]string, 0, len(items))
+	for _, it := range items {
+		if it.Status == models.ImportItemMatched && it.MatchedTrackID != "" {
+			trackIDs = append(trackIDs, it.MatchedTrackID)
+		}
+	}
+	return s.playlists.ReplaceTracks(ctx, playlistID, trackIDs, userID)
 }
 
 func (s *Service) signal() {
@@ -318,6 +340,15 @@ func (s *Service) process(ctx context.Context, im *models.Import) error {
 		if err := s.imports.UpdateItem(ctx, items[i]); err != nil {
 			s.logger.Warn("import item update failed", "item", items[i].ID, "error", err)
 		}
+		if items[i].Status == models.ImportItemMatched {
+			// Rewrite the playlist's full order from every matched item so far
+			// (in source order) rather than appending — a later item may match
+			// here while an earlier, doubtful one is still unresolved, and that
+			// earlier item must still land at its own position once resolved.
+			if err := s.syncPlaylistTracks(ctx, im.ID, im.PlaylistID, im.UserID); err != nil {
+				s.logger.Warn("playlist sync failed", "import", im.ID, "error", err)
+			}
+		}
 		if err := s.imports.Update(ctx, *im); err != nil {
 			s.logger.Warn("import progress update failed", "import", im.ID, "error", err)
 		}
@@ -326,8 +357,9 @@ func (s *Service) process(ctx context.Context, im *models.Import) error {
 }
 
 // resolveItem searches the content providers for one source track, decides the
-// outcome (matched/doubtful/missing/failed) and, when confident, downloads it and
-// appends it to the playlist. It mutates the item and the import's counters.
+// outcome (matched/doubtful/missing/failed) and, when confident, downloads it.
+// It mutates the item and the import's counters; the caller is responsible for
+// persisting the item and syncing the playlist (see syncPlaylistTracks).
 func (s *Service) resolveItem(ctx context.Context, im *models.Import, it *models.ImportItem) {
 	query := strings.TrimSpace(it.SourceArtist + " " + it.SourceTitle)
 	cands, err := s.resolver.SearchTracks(ctx, query, 5)
@@ -363,12 +395,6 @@ func (s *Service) resolveItem(ctx context.Context, im *models.Import, it *models
 	if err != nil {
 		it.Status = models.ImportItemFailed
 		it.Note = "download failed: " + err.Error()
-		im.Failed++
-		return
-	}
-	if err := s.playlists.AppendTracks(ctx, im.PlaylistID, []string{localID}, im.UserID); err != nil {
-		it.Status = models.ImportItemFailed
-		it.Note = "add to playlist failed: " + err.Error()
 		im.Failed++
 		return
 	}

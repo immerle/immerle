@@ -166,22 +166,24 @@ func TestResolveItemValidateAndModify(t *testing.T) {
 		t.Fatalf("expected a doubtful item with a stored candidate: %+v", doubtful)
 	}
 
-	// Validate the doubtful item (no query → uses the stored candidate).
-	resolved, err := svc.ResolveItem(ctx, owner.ID, doubtful.ID, "")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if resolved.Status != models.ImportItemMatched || resolved.MatchedTrackID == "" {
-		t.Fatalf("validate did not match the item: %+v", resolved)
-	}
-
-	// Modify the missing item with a corrected query that now finds a candidate.
-	resolved, err = svc.ResolveItem(ctx, owner.ID, missing.ID, "Daft Punk Da Funk")
+	// Resolve out of source order — modify the later (position 2) missing item
+	// before validating the earlier (position 1) doubtful one — to prove final
+	// playlist order follows source position, not resolution order.
+	resolved, err := svc.ResolveItem(ctx, owner.ID, missing.ID, "Daft Punk Da Funk")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if resolved.Status != models.ImportItemMatched {
 		t.Fatalf("modify did not match the item: %+v", resolved)
+	}
+
+	// Validate the doubtful item (no query → uses the stored candidate).
+	resolved, err = svc.ResolveItem(ctx, owner.ID, doubtful.ID, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resolved.Status != models.ImportItemMatched || resolved.MatchedTrackID == "" {
+		t.Fatalf("validate did not match the item: %+v", resolved)
 	}
 
 	// Counters rebalanced and both tracks added to the playlist.
@@ -192,6 +194,20 @@ func TestResolveItemValidateAndModify(t *testing.T) {
 	tracks, _ := store.Playlists.Tracks(ctx, after.PlaylistID)
 	if len(tracks) != 3 {
 		t.Fatalf("expected 3 tracks after validate+modify, got %d", len(tracks))
+	}
+
+	// Order matches the source playlist (by Position), not resolution order:
+	// the doubtful item (position 1) was validated before the missing one
+	// (position 2), yet both must land after the originally-matched track
+	// (position 0) in their source order.
+	byID := map[string]models.ImportItem{}
+	for _, it := range after.Items {
+		byID[it.MatchedTrackID] = it
+	}
+	for i, tr := range tracks {
+		if byID[tr.ID].Position != i {
+			t.Fatalf("track at playlist position %d is item with source position %d: %+v", i, byID[tr.ID].Position, tr)
+		}
 	}
 
 	// Re-validating an already-matched item is rejected; foreign user is hidden.
