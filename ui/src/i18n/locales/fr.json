@@ -666,8 +666,8 @@
     },
     "playlist": {
       "notFound": "Playlist introuvable.",
-      "resolveErrorTitle": "Morceau indisponible",
       "resolveErrorMessage": "Ce morceau est introuvable localement ou via un fournisseur.",
+      "resolveErrorCta": "Ajouter manuellement",
       "unsubscribeTitle": "Se désabonner ?",
       "unsubscribeMessage": "« {{name}} » sera retirée de votre bibliothèque.",
       "unsubscribeConfirm": "Se désabonner",
@@ -749,6 +749,7 @@
       "loadError": "Impossible de charger les musiques locales.",
       "empty": "Aucune musique locale",
       "emptySubtitle": "Glissez-déposez vos fichiers audio ci-dessus pour les importer.",
+      "lookingFor": "Vous cherchiez : {{name}}",
       "dropHere": "Déposez vos fichiers audio ici",
       "dropHint": "ou cliquez pour parcourir",
       "uploading": "Import en cours…",

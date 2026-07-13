@@ -24,6 +24,7 @@ import { Song } from '../../src/api/subsonic/types';
 import { formatDuration } from '../../src/utils/format';
 import { useColors } from '../../src/theme/colors';
 import { useT } from '../../src/i18n/store';
+import { useToast } from '../../src/stores/toast';
 import { useWebTitle } from '../../src/utils/documentTitle';
 
 /**
@@ -91,13 +92,16 @@ export default function PlaylistDetail() {
   // ponytail: only covers tapping a row or "play all" from track 0 — skipping
   // to a later unresolved track mid-queue during playback still won't
   // resolve; add if that turns out to matter in practice.
-  const playUnresolved = async (_song: Song, index: number) => {
+  const playUnresolved = async (song: Song, index: number) => {
     if (!client) return;
     try {
       const resolved = await client.resolvePlaylistTrack(id, index);
       playSongs([...songs.slice(0, index), resolved, ...songs.slice(index + 1)], index);
     } catch {
-      Alert.alert(t('media.playlist.resolveErrorTitle'), t('media.playlist.resolveErrorMessage'));
+      useToast.getState().warning(t('media.playlist.resolveErrorMessage'), {
+        label: t('media.playlist.resolveErrorCta'),
+        onPress: () => router.push({ pathname: '/local', params: { title: song.title, artist: song.artist ?? '' } }),
+      });
     }
   };
 

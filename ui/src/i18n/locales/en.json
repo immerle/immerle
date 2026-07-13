@@ -666,8 +666,8 @@
     },
     "playlist": {
       "notFound": "Playlist not found.",
-      "resolveErrorTitle": "Track unavailable",
       "resolveErrorMessage": "This track couldn't be found locally or via a provider.",
+      "resolveErrorCta": "Add manually",
       "unsubscribeTitle": "Unsubscribe?",
       "unsubscribeMessage": "“{{name}}” will be removed from your library.",
       "unsubscribeConfirm": "Unsubscribe",
@@ -749,6 +749,7 @@
       "loadError": "Could not load your local music.",
       "empty": "No local music yet",
       "emptySubtitle": "Drag and drop your audio files above to import them.",
+      "lookingFor": "Looking for: {{name}}",
       "dropHere": "Drop your audio files here",
       "dropHint": "or click to browse",
       "uploading": "Uploading…",

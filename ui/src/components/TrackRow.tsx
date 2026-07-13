@@ -37,7 +37,7 @@ export const TrackRow = memo(function TrackRow({
     <Pressable
       onPress={onPress}
       onLongPress={onMore}
-      className={`flex-row items-center gap-3 px-4 py-2 active:bg-surface-alt ${song.unresolved ? 'opacity-50' : ''}`}
+      className="flex-row items-center gap-3 px-4 py-2 active:bg-surface-alt"
     >
       {showArtwork ? (
         <CoverArt coverArt={song.coverArt} size={48} rounded="rounded-md" />
