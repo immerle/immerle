@@ -120,7 +120,7 @@ func TestFederationDiscoveryAndSubscriptions(t *testing.T) {
 
 	store := testutil.NewStore(t)
 	cfg := config.FederationConfig{HubURL: srv.URL, InstanceID: "uuid-1", PrivateKey: "iml_key"}
-	svc := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, nil, testLogger())
+	svc := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, store.FeedCursors, nil, testLogger())
 
 	found, err := svc.SearchInstances(ctx, "other")
 	if err != nil || len(found) != 1 || found[0].Sqid != "other-node" {
@@ -186,7 +186,7 @@ func TestFederationSyncMaterializesReadOnlyPlaylist(t *testing.T) {
 		InstanceID: "inst-1",
 		PrivateKey: "iml_key",
 	}
-	svc := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, nil, testLogger())
+	svc := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, store.FeedCursors, nil, testLogger())
 	svc.SetOwner(owner.ID)
 
 	if err := svc.Register(ctx); err != nil {
@@ -260,7 +260,7 @@ func TestFederationSyncFeedHandlesSameNameAcrossInstances(t *testing.T) {
 	srv, _ := stubHub(t, nil, feed)
 
 	cfg := config.FederationConfig{HubURL: srv.URL, InstanceID: "self", PrivateKey: "iml_key"}
-	svc := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, nil, testLogger())
+	svc := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, store.FeedCursors, nil, testLogger())
 	svc.SetOwner(owner.ID)
 
 	if err := svc.SyncPlaylists(ctx); err != nil {
@@ -342,7 +342,7 @@ func TestFederationSyncKeepsTracksUnresolvedAndForwardsCover(t *testing.T) {
 
 	resolver := &fakeProviderResolver{}
 	cfg := config.FederationConfig{HubURL: srv.URL, InstanceID: "self", PrivateKey: "iml_key"}
-	svc := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, resolver, testLogger())
+	svc := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, store.FeedCursors, resolver, testLogger())
 	svc.SetOwner(owner.ID)
 
 	if err := svc.SyncPlaylists(ctx); err != nil {
@@ -407,7 +407,7 @@ func TestFederationExportsAnonymizedScrobbles(t *testing.T) {
 
 	srv, state := stubHub(t, nil, nil)
 	cfg := config.FederationConfig{HubURL: srv.URL, InstanceID: "inst-1", PrivateKey: "iml_key", ExportScrobbles: true}
-	svc := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, nil, testLogger())
+	svc := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, store.FeedCursors, nil, testLogger())
 
 	if err := svc.ExportScrobbles(ctx); err != nil {
 		t.Fatal(err)

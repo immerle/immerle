@@ -8,6 +8,8 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -18,6 +20,7 @@ import (
 
 	"github.com/immerle/immerle/internal/config"
 	"github.com/immerle/immerle/internal/federation/hub"
+	"github.com/immerle/immerle/internal/federation/stream"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 )
@@ -36,13 +39,15 @@ type Resolver interface {
 // reloadable): enabling/disabling, the hub URL/keys, the sync interval and the
 // feature flags all take effect without a restart.
 type Service struct {
-	cfgFn     func() config.FederationConfig
-	hub       *hub.Client
-	catalog   *persistence.CatalogRepo
-	playlists *persistence.PlaylistRepo
-	scrobbles *persistence.ScrobbleRepo
-	resolver  Resolver // optional (on-demand catalog); may be nil
-	logger    *slog.Logger
+	cfgFn       func() config.FederationConfig
+	hub         *hub.Client
+	catalog     *persistence.CatalogRepo
+	playlists   *persistence.PlaylistRepo
+	scrobbles   *persistence.ScrobbleRepo
+	feedCursors *persistence.FeedCursorRepo
+	resolver    Resolver // optional (on-demand catalog); may be nil
+	stream      *stream.Client
+	logger      *slog.Logger
 	// ownerID is the cached nominal owner for federated (public, read-only)
 	// playlists; ownerFn resolves it lazily when unset (so enabling federation
 	// after first-run setup still finds an admin).
@@ -91,16 +96,149 @@ func (s *Service) SetOwnerResolver(fn func(context.Context) (string, error)) { s
 
 // New builds a federation Service. cfgFn supplies the live config; resolver may
 // be nil to disable on-demand resolution of missing tracks.
-func New(cfgFn func() config.FederationConfig, catalog *persistence.CatalogRepo, playlists *persistence.PlaylistRepo, scrobbles *persistence.ScrobbleRepo, resolver Resolver, logger *slog.Logger) *Service {
-	return &Service{
-		cfgFn:     cfgFn,
-		hub:       hub.New(func() string { return cfgFn().HubURL }, &http.Client{Timeout: 30 * time.Second}),
-		catalog:   catalog,
-		playlists: playlists,
-		scrobbles: scrobbles,
-		resolver:  resolver,
-		logger:    logger,
+func New(cfgFn func() config.FederationConfig, catalog *persistence.CatalogRepo, playlists *persistence.PlaylistRepo, scrobbles *persistence.ScrobbleRepo, feedCursors *persistence.FeedCursorRepo, resolver Resolver, logger *slog.Logger) *Service {
+	s := &Service{
+		cfgFn:       cfgFn,
+		hub:         hub.New(func() string { return cfgFn().HubURL }, &http.Client{Timeout: 30 * time.Second}),
+		catalog:     catalog,
+		playlists:   playlists,
+		scrobbles:   scrobbles,
+		feedCursors: feedCursors,
+		resolver:    resolver,
+		logger:      logger,
 	}
+	s.stream = stream.New(s.auth, func() string { return s.cfg().HubURL }, s.resumeCursors, stream.Handlers{
+		OnUpsert: s.applyStreamUpsert,
+		OnDelete: s.applyStreamDelete,
+		OnReplay: s.handleReplayRequest,
+	}, logger)
+	return s
+}
+
+// RunStream starts the federation feed socket once the instance is linked to
+// the hub (HubConfigured), so an unlinked/never-configured instance opens no
+// outbound socket at all (federation stays fully opt-in). It waits on the same
+// tick as Run and, once linked, delegates to the socket client's own
+// reconnect-with-backoff loop for the rest of the process lifetime.
+func (s *Service) RunStream(ctx context.Context) {
+	ticker := time.NewTicker(federationTick)
+	defer ticker.Stop()
+	for !s.HubConfigured() {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+		}
+	}
+	s.stream.Run(ctx)
+}
+
+// resumeCursors builds the socket's resume payload: for every source instance
+// currently followed, the last feed version applied locally (empty for one
+// never seen, meaning full catch-up) — see stream.Client.
+func (s *Service) resumeCursors(ctx context.Context) (map[string]string, error) {
+	subs, err := s.Subscriptions(ctx)
+	if err != nil {
+		return nil, err
+	}
+	cursors := make(map[string]string, len(subs))
+	for _, sub := range subs {
+		v, err := s.feedCursors.Get(ctx, sub.ID)
+		if err != nil {
+			return nil, err
+		}
+		cursors[sub.ID] = v
+	}
+	return cursors, nil
+}
+
+// streamMetadata is the free-form JSON the frame's Metadata field carries for
+// a playlist.upsert (opaque to the hub, meaningful only between instances) —
+// name/description have no dedicated Frame field, unlike the REST sync payload.
+type streamMetadata struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+// applyStreamUpsert materializes a playlist.upsert frame relayed from a
+// followed instance, reusing materializeFeed exactly as the REST feed pull
+// does (RFC-socket-federation-client.md §5) — no new materialization logic.
+func (s *Service) applyStreamUpsert(ctx context.Context, f stream.Frame) error {
+	subs, err := s.Subscriptions(ctx)
+	if err != nil {
+		return err
+	}
+	// Defense in depth: the hub already filters relayed frames by
+	// instance_subscriptions, so this only guards against a frame for a
+	// subscription that ended locally in the gap before the hub notices.
+	if !subscribedTo(subs, f.AuthorID) {
+		return nil
+	}
+
+	var meta streamMetadata
+	if len(f.Metadata) > 0 {
+		_ = json.Unmarshal(f.Metadata, &meta) // best-effort; malformed metadata just yields an unnamed playlist
+	}
+	var tracks []hub.FeedTrack
+	if len(f.Tracks) > 0 {
+		_ = json.Unmarshal(f.Tracks, &tracks) // best-effort; malformed tracks are simply dropped
+	}
+
+	owner, err := s.federationOwner(ctx)
+	if err != nil {
+		return err
+	}
+	if err := s.materializeFeed(ctx, owner, hub.FeedPlaylistDetail{
+		InstanceID:  f.AuthorID,
+		ExternalID:  f.ExternalID,
+		Name:        meta.Name,
+		Description: meta.Description,
+		Image:       f.Image,
+		Tracks:      tracks,
+	}); err != nil {
+		return err
+	}
+	// A per-source (not per-playlist) watermark: only used to build the next
+	// resume request, not to gate applying this frame. ponytail: no
+	// per-playlist reordering guard here (would need a version column on the
+	// federated playlist itself); add one if stale-overwrite reports show up.
+	if f.Version > "" {
+		return s.feedCursors.Set(ctx, f.AuthorID, f.Version)
+	}
+	return nil
+}
+
+// applyStreamDelete removes the local copy of a playlist.delete'd source
+// playlist, if materialized. No-op if we never had it (already gone, or never
+// synced in the first place).
+func (s *Service) applyStreamDelete(ctx context.Context, f stream.Frame) error {
+	existing, err := s.playlists.FindFederated(ctx, f.AuthorID, f.ExternalID)
+	if err != nil {
+		if errors.Is(err, persistence.ErrNotFound) {
+			return nil
+		}
+		return err
+	}
+	return s.playlists.Delete(ctx, existing.ID)
+}
+
+// handleReplayRequest responds to a replay.request from a subscriber that just
+// reconnected. Left unimplemented until the push path itself moves to the
+// socket (RFC §6/§7): logged so a request isn't silently swallowed while push
+// still goes over REST.
+func (s *Service) handleReplayRequest(_ context.Context, f stream.Frame) error {
+	s.logger.Debug("federation stream: replay request ignored (push still over REST)", "forSubscriberId", f.ForSubscriberID, "sinceVersion", f.SinceVersion)
+	return nil
+}
+
+// subscribedTo reports whether id is among the given subscriptions.
+func subscribedTo(subs []InstanceSummary, id string) bool {
+	for _, s := range subs {
+		if s.ID == id {
+			return true
+		}
+	}
+	return false
 }
 
 // Enabled reports whether federation is active — i.e. the instance is linked to

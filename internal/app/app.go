@@ -323,7 +323,7 @@ func New(cfg config.Config) (*App, error) {
 	}
 	fed := federation.New(
 		func() config.FederationConfig { return federationConfig(settingsSvc.Get().Federation, cfg.HubURL) },
-		store.Catalog, store.Playlists, store.Scrobbles, fedResolver, logger)
+		store.Catalog, store.Playlists, store.Scrobbles, store.FeedCursors, fedResolver, logger)
 	fed.SetOwnerResolver(func(ctx context.Context) (string, error) { return firstAdmin(ctx, store.Users) })
 	// Persist hub-issued identity (instance UUID, sqid, private key, name) back
 	// into the runtime settings after bootstrap/update. Empty fields are left
@@ -526,6 +526,7 @@ func (a *App) Run(ctx context.Context) error {
 	}
 	if a.federation != nil {
 		a.spawn(func() { a.federation.Run(ctx) })
+		a.spawn(func() { a.federation.RunStream(ctx) })
 	}
 	if a.outbox != nil {
 		a.spawn(func() { a.outbox.Run(ctx) })

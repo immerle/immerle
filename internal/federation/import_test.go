@@ -43,7 +43,7 @@ func TestFetchExternalPlaylist(t *testing.T) {
 	store := testutil.NewStore(t)
 	// Import works even with sync disabled, as long as the instance is registered.
 	cfg := config.FederationConfig{HubURL: srv.URL, InstanceID: "inst-1", PrivateKey: "iml_key-1"}
-	svc := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, nil, testLogger())
+	svc := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, store.FeedCursors, nil, testLogger())
 
 	pl, err := svc.FetchExternalPlaylist(context.Background(), "spotify", "https://open.spotify.com/playlist/PL?si=x")
 	if err != nil {
@@ -79,7 +79,7 @@ func TestFetchExternalPlaylistFailedJob(t *testing.T) {
 
 	store := testutil.NewStore(t)
 	cfg := config.FederationConfig{HubURL: srv.URL, InstanceID: "i", PrivateKey: "iml_k"}
-	svc := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, nil, testLogger())
+	svc := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, store.FeedCursors, nil, testLogger())
 	if _, err := svc.FetchExternalPlaylist(context.Background(), "spotify", "PL"); err == nil ||
 		!strings.Contains(err.Error(), "playlist is private") {
 		t.Fatalf("expected failed-job error, got %v", err)
@@ -102,7 +102,7 @@ func TestRegisterBootstrapsAndPersistsCredentials(t *testing.T) {
 
 	store := testutil.NewStore(t)
 	cfg := config.FederationConfig{HubURL: srv.URL, UserID: "user-1", InstanceName: "My immerle"}
-	svc := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, nil, testLogger())
+	svc := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, store.FeedCursors, nil, testLogger())
 	var saved Credentials
 	svc.SetCredentialsSaver(func(_ context.Context, c Credentials) error { saved = c; return nil })
 
@@ -124,7 +124,7 @@ func TestRegisterBootstrapsAndPersistsCredentials(t *testing.T) {
 
 func TestFetchExternalPlaylistNoHub(t *testing.T) {
 	store := testutil.NewStore(t)
-	svc := New(func() config.FederationConfig { return config.FederationConfig{} }, store.Catalog, store.Playlists, store.Scrobbles, nil, testLogger())
+	svc := New(func() config.FederationConfig { return config.FederationConfig{} }, store.Catalog, store.Playlists, store.Scrobbles, store.FeedCursors, nil, testLogger())
 	if _, err := svc.FetchExternalPlaylist(context.Background(), "spotify", "PL"); err == nil {
 		t.Fatal("expected error when no hub is configured")
 	}

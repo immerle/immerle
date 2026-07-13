@@ -133,7 +133,7 @@ func TestOutboxWorkerSyncsAndDeletesPublicPlaylist(t *testing.T) {
 
 	srv, st := newSyncStub(t)
 	cfg := config.FederationConfig{HubURL: srv.URL, InstanceID: "inst-1", PrivateKey: "iml_key", SyncPlaylists: true}
-	fed := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, nil, testLogger())
+	fed := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, store.FeedCursors, nil, testLogger())
 	worker := outbox.NewWorker(store.Outbox, testLogger())
 	s := NewPlaylistSyncer(fed, worker, store.PlaylistSync, store.CoverUploads, store.Playlists, fakeCovers{data: []byte("JPEGDATA")}, testLogger())
 	job := persistence.OutboxJob{Kind: PlaylistSyncKind, DedupeKey: plID}
@@ -223,7 +223,7 @@ func TestPlaylistSyncComposesMosaicWhenNoCustomCover(t *testing.T) {
 
 	srv, st := newSyncStub(t)
 	cfg := config.FederationConfig{HubURL: srv.URL, InstanceID: "inst-1", PrivateKey: "iml_key", SyncPlaylists: true}
-	fed := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, nil, testLogger())
+	fed := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, store.FeedCursors, nil, testLogger())
 	worker := outbox.NewWorker(store.Outbox, testLogger())
 	covers := perIDCovers{byID: map[string][]byte{
 		"cover-a": solidJPEG(t, color.RGBA{R: 255, A: 255}),
@@ -279,7 +279,7 @@ func TestPlaylistSyncKeepsCustomCoverOverMosaic(t *testing.T) {
 
 	srv, st := newSyncStub(t)
 	cfg := config.FederationConfig{HubURL: srv.URL, InstanceID: "inst-1", PrivateKey: "iml_key", SyncPlaylists: true}
-	fed := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, nil, testLogger())
+	fed := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, store.FeedCursors, nil, testLogger())
 	worker := outbox.NewWorker(store.Outbox, testLogger())
 	covers := perIDCovers{byID: map[string][]byte{
 		"custom-cover": solidJPEG(t, color.RGBA{G: 255, A: 255}),
