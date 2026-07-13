@@ -61,22 +61,35 @@ func (h *Handler) handleSettingsUpdate(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusServiceUnavailable, "unavailable", "settings unavailable")
 		return
 	}
-	// Decode the body over the current values → partial update.
+	// Decode the body over the current values → partial update (omitted fields
+	// keep their current value).
 	current := h.Settings.Get()
-	next := current
+	merged := current
 	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
-	if err := json.NewDecoder(r.Body).Decode(&next); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&merged); err != nil {
 		writeErrorParams(w, http.StatusBadRequest, "invalid_body", "invalid settings JSON: "+err.Error(), map[string]any{"detail": err.Error()})
 		return
 	}
-	// Hub-managed federation identity is never settable via this generic endpoint:
-	// the instance UUID, sqid and private key come from the hub (bootstrap /
-	// /admin/federation), so restore them from the current values regardless of
-	// what the client sent.
-	next.Federation.InstanceID = current.Federation.InstanceID
-	next.Federation.Sqid = current.Federation.Sqid
-	next.Federation.InstanceName = current.Federation.InstanceName
-	next.Federation.PrivateKey = current.Federation.PrivateKey
+	// Guard against mass assignment: only the sections exposed by RuntimeSettingsDTO
+	// are settable here. Start from the current settings and copy over exactly the
+	// admin-settable sections; every other field (Import credentials, the
+	// Radio/Wrapped/Offline/SmartPlaylists feature toggles — each with its own
+	// endpoint — and the hub-managed federation identity) keeps its current value.
+	next := current
+	next.Server = merged.Server
+	next.Auth = merged.Auth
+	next.LDAP = merged.LDAP
+	next.Transcode = merged.Transcode
+	next.Providers = merged.Providers
+	next.Scan = merged.Scan
+	next.Cleanup = merged.Cleanup
+	next.Logs = merged.Logs
+	// Federation: only the operator-editable fields. The instance UUID, sqid, name
+	// and private key come from the hub (bootstrap / /admin/federation), never from
+	// this generic endpoint.
+	next.Federation.UserID = merged.Federation.UserID
+	next.Federation.SyncPlaylists = merged.Federation.SyncPlaylists
+	next.Federation.ExportScrobbles = merged.Federation.ExportScrobbles
 	saved, pending, err := h.Settings.Update(next)
 	if err != nil {
 		writeInternal(w, err)

@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/immerle/immerle/internal/api/httputil"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 )
@@ -231,9 +232,14 @@ func (h *Handler) handlePodcastCreate(w http.ResponseWriter, r *http.Request) {
 	if !decodeJSON(w, r, &req) {
 		return
 	}
+	if err := httputil.ValidateFetchURL(r.Context(), req.URL); err != nil {
+		writeError(w, http.StatusBadRequest, "validation", "feed URL is not allowed")
+		return
+	}
 	ch, err := h.Podcasts.CreateChannel(r.Context(), req.URL)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "validation", err.Error())
+		h.Logger.Warn("podcast subscribe failed", "url", req.URL, "error", err)
+		writeError(w, http.StatusBadRequest, "validation", "could not subscribe to feed")
 		return
 	}
 	writeResource(w, http.StatusCreated, toChannelView(ch))
@@ -353,7 +359,8 @@ func (h *Handler) handlePodcastProviderUpdate(w http.ResponseWriter, r *http.Req
 			writeError(w, http.StatusNotFound, "not_found", "provider not found")
 			return
 		}
-		writeError(w, http.StatusBadRequest, "validation", err.Error())
+		h.Logger.Warn("podcast provider update failed", "provider", pathParam(r, "name"), "error", err)
+		writeError(w, http.StatusBadRequest, "validation", "could not update provider")
 		return
 	}
 	writeResource(w, http.StatusNoContent, nil)
@@ -374,7 +381,8 @@ func (h *Handler) handlePodcastSearch(w http.ResponseWriter, r *http.Request) {
 	}
 	results, err := h.Podcasts.Search(r.Context(), r.URL.Query().Get("q"))
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "validation", err.Error())
+		h.Logger.Warn("podcast directory search failed", "error", err)
+		writeError(w, http.StatusBadRequest, "validation", "podcast search failed")
 		return
 	}
 	writeResource(w, http.StatusOK, map[string]any{"results": results})

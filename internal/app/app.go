@@ -167,6 +167,9 @@ func hubHost(hubURL string) string {
 // New builds the application from configuration.
 func New(cfg config.Config) (*App, error) {
 	logger := logging.New(cfg.Log.Level, cfg.Log.Format)
+	// Make the configured logger the process default so package-level helpers
+	// (e.g. the API's writeInternal) log through it instead of the stderr default.
+	slog.SetDefault(logger)
 
 	database, err := db.Open(cfg.Database.Driver, cfg.Database.DSN)
 	if err != nil {

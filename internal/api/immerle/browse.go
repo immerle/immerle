@@ -37,6 +37,12 @@ func intQuery(r *http.Request, name string, def int) int {
 	if err != nil {
 		return def
 	}
+	if n < 0 {
+		// Negative sizes/offsets are meaningless for pagination; clamp to 0 so
+		// they never reach the query layer (atoiDefault in tracks.go rejects them
+		// the same way).
+		return 0
+	}
 	return n
 }
 

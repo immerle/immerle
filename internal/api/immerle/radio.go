@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/immerle/immerle/internal/api/httputil"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 	"github.com/immerle/immerle/radio"
@@ -338,6 +339,9 @@ func (h *Handler) handleRadioCover(w http.ResponseWriter, r *http.Request) {
 
 // fetchRadioCover downloads a logo, enforcing an image content-type and a size cap.
 func fetchRadioCover(ctx context.Context, url string) ([]byte, string, error) {
+	if err := httputil.ValidateFetchURL(ctx, url); err != nil {
+		return nil, "", err
+	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, "", err

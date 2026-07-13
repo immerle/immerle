@@ -115,7 +115,7 @@ func (h *Handler) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	u, err := h.userSvc.GetUser(r.Context(), caller, req.Username)
 	if err != nil {
-		writeResource(w, http.StatusCreated, nil)
+		writeServiceError(w, err)
 		return
 	}
 	writeResource(w, http.StatusCreated, toAdminUserView(u))
