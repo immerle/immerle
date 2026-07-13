@@ -55,7 +55,11 @@ type streamURLs struct {
 // @Failure  401  {object}  errorResponse
 // @Router   /songs/{id}/stream-url [get]
 func (h *Handler) handleStreamURL(w http.ResponseWriter, r *http.Request) {
-	id := pathParam(r, "id")
+	// Sign and embed the raw (still percent-encoded) path segment, exactly what
+	// mediaAuthMiddleware reads back via chi.URLParam when verifying. Signing the
+	// decoded id while embedding it unescaped breaks verification for any id that
+	// needs URL escaping.
+	id := chi.URLParam(r, "id")
 	exp, sig := h.media.SignToken(id)
 	q := "?exp=" + exp + "&sig=" + sig
 	writeResource(w, http.StatusOK, streamURLs{
