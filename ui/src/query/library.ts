@@ -40,15 +40,6 @@ export function useAlbumList(type: string, genre?: string) {
   });
 }
 
-export function useGenres() {
-  const client = useAuth((s) => s.client);
-  return useQuery({
-    queryKey: qk.genres,
-    enabled: !!client,
-    queryFn: () => client!.getGenres(),
-  });
-}
-
 export function useSongsByGenre(genre: string) {
   const client = useAuth((s) => s.client);
   return useQuery({
