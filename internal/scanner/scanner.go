@@ -119,10 +119,17 @@ func (s *Scanner) ScanPaths(ctx context.Context, paths []string) (Result, error)
 			}
 			abs, _ := filepath.Abs(path)
 			res.Scanned++
-			id, added, err := s.indexFile(ctx, abs)
+			id, added, err := s.indexFile(ctx, abs, existing)
 			if err != nil {
 				res.Errors++
 				s.logger.Warn("index error", "path", abs, "error", err)
+				// A file that failed to index (e.g. a transient ffprobe/read error)
+				// is still present on disk — WalkDir just visited it — so keep its
+				// existing track rather than letting the prune step below delete it
+				// and its annotations. A genuinely-removed file is never visited.
+				if prevID, ok := existing[abs]; ok {
+					seenIDs[prevID] = true
+				}
 				return nil
 			}
 			seenIDs[id] = true
@@ -167,7 +174,7 @@ func (s *Scanner) ScanFile(ctx context.Context, path string) error {
 		return nil
 	}
 	abs, _ := filepath.Abs(path)
-	_, _, err := s.indexFile(ctx, abs)
+	_, _, err := s.indexFile(ctx, abs, nil)
 	return err
 }
 
@@ -178,7 +185,7 @@ func (s *Scanner) IngestFile(ctx context.Context, path string) (string, error) {
 		return "", fmt.Errorf("unsupported audio file: %s", filepath.Base(path))
 	}
 	abs, _ := filepath.Abs(path)
-	id, _, err := s.indexFile(ctx, abs)
+	id, _, err := s.indexFile(ctx, abs, nil)
 	return id, err
 }
 
@@ -196,8 +203,11 @@ func (s *Scanner) RemoveFile(ctx context.Context, path string) error {
 }
 
 // indexFile upserts the artist/album/track for a single file. It returns the
-// resulting track id and whether the track was newly added.
-func (s *Scanner) indexFile(ctx context.Context, path string) (string, bool, error) {
+// resulting track id and whether the track was newly added. existingPaths, when
+// non-nil, is the already-loaded path→id set used to detect an exact-path match
+// without re-querying the catalog per file (a full scan passes it to avoid O(N²)
+// lookups); single-file callers pass nil to have it queried on demand.
+func (s *Scanner) indexFile(ctx context.Context, path string, existingPaths map[string]string) (string, bool, error) {
 	info, err := os.Stat(path)
 	if err != nil {
 		return "", false, err
@@ -277,7 +287,10 @@ func (s *Scanner) indexFile(ctx context.Context, path string) (string, bool, err
 	_, existed, _ := s.catalog.TrackExistsByMBIDOrHash(ctx, md.MBTrackID, hash)
 	if !existed {
 		// Also treat an exact-path match as existing.
-		paths, _ := s.catalog.AllTrackPaths(ctx)
+		paths := existingPaths
+		if paths == nil {
+			paths, _ = s.catalog.AllTrackPaths(ctx)
+		}
 		if _, ok := paths[path]; ok {
 			existed = true
 		}
