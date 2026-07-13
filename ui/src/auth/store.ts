@@ -172,10 +172,3 @@ export const useAuth = create<AuthState>((set, get) => ({
     set({ status: 'unauthenticated', client: null, displayName: null, error: null });
   },
 }));
-
-/** Convenience selector: the live client, or throw if used before auth. */
-export function useClient(): ImmerleClient {
-  const client = useAuth((s) => s.client);
-  if (!client) throw new Error('useClient called before authentication');
-  return client;
-}
