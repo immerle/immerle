@@ -440,7 +440,9 @@ func (s *Service) Subscribe(ctx context.Context, instanceID, sqid string) error 
 	return nil
 }
 
-// Unsubscribe stops following the instance with the given hub id (UUID).
+// Unsubscribe stops following the instance with the given hub id (UUID), then
+// drops its materialized playlists locally — except any a user subscribed to
+// (kept in their library), which survive the unfollow.
 func (s *Service) Unsubscribe(ctx context.Context, instanceID string) error {
 	if !s.HubConfigured() {
 		return fmt.Errorf("federation: instance not linked to the hub")
@@ -448,7 +450,7 @@ func (s *Service) Unsubscribe(ctx context.Context, instanceID string) error {
 	if _, err := s.hub.Unsubscribe(ctx, s.auth(), instanceID); err != nil {
 		return err
 	}
-	return nil
+	return s.playlists.DeleteUnsubscribedFederated(ctx, instanceID)
 }
 
 // RefreshProfile fetches this instance's current name/sqid from the hub (the

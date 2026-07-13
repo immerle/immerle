@@ -18,6 +18,7 @@ import (
 	"github.com/immerle/immerle/internal/config"
 	"github.com/immerle/immerle/internal/federation/hub"
 	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/persistence"
 	"github.com/immerle/immerle/internal/testutil"
 )
 
@@ -525,5 +526,48 @@ func TestFederationExportsAnonymizedScrobbles(t *testing.T) {
 	}
 	if len(state.scrobbleBatches) != 1 {
 		t.Fatal("scrobbles were exported twice")
+	}
+}
+
+// TestUnsubscribeDropsUnkeptFederatedPlaylists covers the fix: unfollowing an
+// instance must remove its materialized playlists locally, except any a user
+// subscribed to (kept in their library) — those survive the unfollow.
+func TestUnsubscribeDropsUnkeptFederatedPlaylists(t *testing.T) {
+	store := testutil.NewStore(t)
+	ctx := context.Background()
+	now := time.Now()
+
+	owner := models.User{ID: uuid.NewString(), Username: "admin3", PasswordHash: "x", IsAdmin: true, CreatedAt: now}
+	_ = store.Users.Create(ctx, owner)
+	user := models.User{ID: uuid.NewString(), Username: "u3", PasswordHash: "x", CreatedAt: now}
+	_ = store.Users.Create(ctx, user)
+
+	kept := models.Playlist{ID: uuid.NewString(), Name: "Kept", OwnerID: owner.ID, Federated: true, SourceInstanceID: "inst-x", SourceExternalID: "ext-kept", CreatedAt: now, UpdatedAt: now}
+	dropped := models.Playlist{ID: uuid.NewString(), Name: "Dropped", OwnerID: owner.ID, Federated: true, SourceInstanceID: "inst-x", SourceExternalID: "ext-dropped", CreatedAt: now, UpdatedAt: now}
+	if err := store.Playlists.Create(ctx, kept); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Playlists.Create(ctx, dropped); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Playlists.Subscribe(ctx, kept.ID, user.ID); err != nil {
+		t.Fatal(err)
+	}
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(hub.PublicSubscriptionStateResponse{Ok: boolptr(true), Subscribed: boolptr(false)})
+	}))
+	defer srv.Close()
+	cfg := config.FederationConfig{HubURL: srv.URL, InstanceID: "self", PrivateKey: "iml_key"}
+	svc := New(func() config.FederationConfig { return cfg }, store.Catalog, store.Playlists, store.Scrobbles, store.FeedCursors, nil, testLogger())
+
+	if err := svc.Unsubscribe(ctx, "inst-x"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.Playlists.Get(ctx, kept.ID); err != nil {
+		t.Fatalf("kept (subscribed) playlist should survive unfollow: %v", err)
+	}
+	if _, err := store.Playlists.Get(ctx, dropped.ID); !errors.Is(err, persistence.ErrNotFound) {
+		t.Fatalf("unsubscribed playlist should be dropped on unfollow, got: %v", err)
 	}
 }

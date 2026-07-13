@@ -571,6 +571,16 @@ func (r *PlaylistRepo) AddCollaborator(ctx context.Context, playlistID, userID s
 	return err
 }
 
+// DeleteUnsubscribedFederated removes every federated playlist sourced from
+// instanceID that no user has subscribed to (kept in their library). Called
+// when unfollowing an instance: playlists nobody chose to keep go away with
+// it, but a subscription is a deliberate keep and survives the unfollow.
+func (r *PlaylistRepo) DeleteUnsubscribedFederated(ctx context.Context, instanceID string) error {
+	_, err := r.exec(ctx, `DELETE FROM playlists WHERE federated=1 AND source_instance_id=?
+		AND id NOT IN (SELECT playlist_id FROM playlist_subscriptions)`, instanceID)
+	return err
+}
+
 // FindFederated returns the federated playlist sourced from (instanceID,
 // externalID), if any — instanceID is "" for the hub's own editorial catalog.
 // This (not name) is the dedupe key, so same-named playlists from different
