@@ -11,8 +11,8 @@ import (
 
 // shutdownGrace caps how long shutdown waits for in-flight requests. When nothing
 // is in flight, Shutdown returns immediately — so Ctrl+C on an idle server exits
-// instantly.
-const shutdownGrace = 10 * time.Second
+// instantly. A var (not const) so tests can shrink it instead of waiting it out.
+var shutdownGrace = 10 * time.Second
 
 // Server wraps http.Server with graceful shutdown.
 type Server struct {
@@ -53,6 +53,15 @@ func (s *Server) Run(ctx context.Context) error {
 		s.logger.Info("shutting down http server")
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownGrace)
 		defer cancel()
-		return s.httpServer.Shutdown(shutdownCtx)
+		err := s.httpServer.Shutdown(shutdownCtx)
+		if errors.Is(err, context.DeadlineExceeded) {
+			// Grace period elapsed with a connection still open (e.g. a live SSE
+			// stream) — Shutdown never force-closes those, it only waits. That's
+			// an expected outcome of an intentional shutdown, not an app failure;
+			// the process exiting now closes them anyway.
+			s.logger.Warn("shutdown grace period elapsed with connections still open, exiting anyway", "grace", shutdownGrace)
+			return nil
+		}
+		return err
 	}
 }
