@@ -232,14 +232,17 @@ func (h *Handler) artistInfoBase(r *http.Request, a models.Artist) ArtistInfoBas
 	return base
 }
 
-// coverURL builds an absolute getCoverArt URL, echoing the caller's auth params
-// so the returned link is directly usable.
+// coverURL builds an absolute getCoverArt URL, forwarding the caller's auth
+// params so the returned link is directly usable. The cleartext password ("p")
+// is deliberately omitted: these URLs end up cached/logged/proxied client-side,
+// so token+salt ("t"/"s") auth is forwarded instead. Password-only callers get
+// a link that still requires them to re-supply credentials.
 func (h *Handler) coverURL(r *http.Request, coverArt string, size int) string {
 	if coverArt == "" {
 		return ""
 	}
 	q := url.Values{}
-	for _, k := range []string{"u", "t", "s", "p", "c", "v"} {
+	for _, k := range []string{"u", "t", "s", "c", "v"} {
 		if v := r.Form.Get(k); v != "" {
 			q.Set(k, v)
 		}

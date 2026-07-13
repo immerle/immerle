@@ -106,10 +106,11 @@ func (h *Handler) handleGetPodcastEpisode(w http.ResponseWriter, r *http.Request
 
 // handleRefreshPodcasts re-fetches every channel feed (admin only).
 func (h *Handler) handleRefreshPodcasts(w http.ResponseWriter, r *http.Request) {
-	if !requireAdmin(w, r) || h.Podcasts == nil {
-		if h.Podcasts == nil {
-			writeError(w, r, ErrGeneric, "podcasts not available")
-		}
+	if !requireAdmin(w, r) {
+		return
+	}
+	if h.Podcasts == nil {
+		writeError(w, r, ErrGeneric, "podcasts not available")
 		return
 	}
 	if err := h.Podcasts.RefreshAll(r.Context()); err != nil {
@@ -121,10 +122,11 @@ func (h *Handler) handleRefreshPodcasts(w http.ResponseWriter, r *http.Request) 
 
 // handleCreatePodcastChannel subscribes to a feed URL (admin only).
 func (h *Handler) handleCreatePodcastChannel(w http.ResponseWriter, r *http.Request) {
-	if !requireAdmin(w, r) || h.Podcasts == nil {
-		if h.Podcasts == nil {
-			writeError(w, r, ErrGeneric, "podcasts not available")
-		}
+	if !requireAdmin(w, r) {
+		return
+	}
+	if h.Podcasts == nil {
+		writeError(w, r, ErrGeneric, "podcasts not available")
 		return
 	}
 	url := param(r, "url")
@@ -141,10 +143,11 @@ func (h *Handler) handleCreatePodcastChannel(w http.ResponseWriter, r *http.Requ
 
 // handleDeletePodcastChannel removes a channel (admin only).
 func (h *Handler) handleDeletePodcastChannel(w http.ResponseWriter, r *http.Request) {
-	if !requireAdmin(w, r) || h.Podcasts == nil {
-		if h.Podcasts == nil {
-			writeError(w, r, ErrGeneric, "podcasts not available")
-		}
+	if !requireAdmin(w, r) {
+		return
+	}
+	if h.Podcasts == nil {
+		writeError(w, r, ErrGeneric, "podcasts not available")
 		return
 	}
 	if err := h.Podcasts.DeleteChannel(r.Context(), param(r, "id")); err != nil {
@@ -156,10 +159,11 @@ func (h *Handler) handleDeletePodcastChannel(w http.ResponseWriter, r *http.Requ
 
 // handleDeletePodcastEpisode removes a single episode (admin only).
 func (h *Handler) handleDeletePodcastEpisode(w http.ResponseWriter, r *http.Request) {
-	if !requireAdmin(w, r) || h.Podcasts == nil {
-		if h.Podcasts == nil {
-			writeError(w, r, ErrGeneric, "podcasts not available")
-		}
+	if !requireAdmin(w, r) {
+		return
+	}
+	if h.Podcasts == nil {
+		writeError(w, r, ErrGeneric, "podcasts not available")
 		return
 	}
 	if err := h.Podcasts.DeleteEpisode(r.Context(), param(r, "id")); err != nil {

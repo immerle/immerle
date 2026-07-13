@@ -224,6 +224,20 @@ func intParam(r *http.Request, name string, def int) int {
 	return n
 }
 
+// int64Param reads a 64-bit integer param (e.g. epoch-millisecond timestamps
+// that overflow a 32-bit int), returning def when absent or unparseable.
+func int64Param(r *http.Request, name string, def int64) int64 {
+	v := r.Form.Get(name)
+	if v == "" {
+		return def
+	}
+	n, err := strconv.ParseInt(v, 10, 64)
+	if err != nil {
+		return def
+	}
+	return n
+}
+
 func boolParam(r *http.Request, name string, def bool) bool {
 	v := r.Form.Get(name)
 	if v == "" {

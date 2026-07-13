@@ -26,9 +26,13 @@ func (h *Handler) handleGetOpenSubsonicExtensions(w http.ResponseWriter, r *http
 }
 
 func (h *Handler) handleGetScanStatus(w http.ResponseWriter, r *http.Request) {
+	_, _, tracks, err := h.Catalog.Stats(r.Context())
+	if err != nil {
+		h.failInternal(w, r, err)
+		return
+	}
 	resp := newResponse()
-	_, _, tracks, _ := h.Catalog.Stats(r.Context())
-	resp.ScanStatus = &ScanStatus{Scanning: false, Count: tracks}
+	resp.ScanStatus = &ScanStatus{Scanning: h.Scanner != nil && h.Scanner.Scanning(), Count: tracks}
 	write(w, r, resp)
 }
 
@@ -36,13 +40,14 @@ func (h *Handler) handleStartScan(w http.ResponseWriter, r *http.Request) {
 	if !requireAdmin(w, r) {
 		return
 	}
-	if h.Scanner != nil && len(h.MusicFolderPaths) > 0 {
+	started := h.Scanner != nil && len(h.MusicFolderPaths) > 0
+	if started {
 		go func() {
 			// Detached background context: the scan must outlive this request.
 			_, _ = h.Scanner.ScanPaths(context.Background(), h.MusicFolderPaths)
 		}()
 	}
 	resp := newResponse()
-	resp.ScanStatus = &ScanStatus{Scanning: true}
+	resp.ScanStatus = &ScanStatus{Scanning: started}
 	write(w, r, resp)
 }
