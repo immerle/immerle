@@ -2,6 +2,11 @@ components:
   schemas:
     immerle.APITokenDTO:
       properties:
+        connected:
+          description: |-
+            Connected is true if the token was used within the last few minutes.
+            Only meaningful for device tokens (IsDevice).
+          type: boolean
         createdAt:
           example: "2026-06-15T09:00:00Z"
           type: string
@@ -149,6 +154,10 @@ components:
       type: object
     immerle.DeviceDTO:
       properties:
+        connected:
+          description: Connected is true if the device was seen within the last few
+            minutes.
+          type: boolean
         createdAt:
           type: string
         expiresAt:
@@ -3843,7 +3852,8 @@ paths:
   /devices:
     get:
       description: Lists the caller's active device sessions (one per issued JWT),
-        with last-seen time, IP and user agent.
+        with last-seen time, IP, user agent, and whether it's currently connected
+        (seen recently).
       responses:
         "200":
           content:

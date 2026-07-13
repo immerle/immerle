@@ -2,10 +2,15 @@ package immerle
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/immerle/immerle/internal/api/httputil"
 	"github.com/immerle/immerle/internal/core"
 )
+
+// deviceOnlineWindow is how recently a device must have been seen (via an
+// authenticated request) to be reported as "connected".
+const deviceOnlineWindow = 5 * time.Minute
 
 // loginRequest is the body for POST /auth/sessions.
 type loginRequest struct {
@@ -65,7 +70,7 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 // handleDevices lists the caller's active device sessions.
 //
 // @Summary      List devices
-// @Description  Lists the caller's active device sessions (one per issued JWT), with last-seen time, IP and user agent.
+// @Description  Lists the caller's active device sessions (one per issued JWT), with last-seen time, IP, user agent, and whether it's currently connected (seen recently).
 // @Tags         devices
 // @Security     BearerAuth
 // @Produce      json
@@ -90,6 +95,7 @@ func (h *Handler) handleDevices(w http.ResponseWriter, r *http.Request) {
 			"lastIp":    d.LastIP,
 			"createdAt": d.CreatedAt,
 			"expiresAt": d.ExpiresAt,
+			"connected": d.LastSeenAt != nil && time.Since(*d.LastSeenAt) < deviceOnlineWindow,
 		})
 	}
 	writeResource(w, http.StatusOK, out)

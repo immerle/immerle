@@ -813,14 +813,18 @@
     },
     "devices": {
       "title": "Appareils connectés",
-      "subtitle": "Sessions de lecture actives sur le serveur",
+      "subtitle": "Appareils connectés à votre compte",
       "loadError": "Impossible de charger les appareils.",
-      "emptyTitle": "Aucune session active",
-      "emptySubtitle": "Personne n'écoute en ce moment.",
+      "emptyTitle": "Aucun appareil",
+      "emptySubtitle": "Les appareils sur lesquels vous vous connectez apparaîtront ici.",
       "fallbackName": "Appareil",
-      "justNow": "à l'instant",
-      "minutesAgo": "il y a {{count}} min",
-      "hoursAgo": "il y a {{count}} h"
+      "online": "En ligne",
+      "offline": "Hors ligne",
+      "lastSeen": "Vu {{date}}",
+      "neverSeen": "jamais",
+      "revokeConfirmTitle": "Déconnecter cet appareil ?",
+      "cancel": "Annuler",
+      "revoke": "Déconnecter"
     },
     "tokens": {
       "title": "API",

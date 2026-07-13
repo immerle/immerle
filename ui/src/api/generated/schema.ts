@@ -3387,7 +3387,7 @@ export interface paths {
         };
         /**
          * List devices
-         * @description Lists the caller's active device sessions (one per issued JWT), with last-seen time, IP and user agent.
+         * @description Lists the caller's active device sessions (one per issued JWT), with last-seen time, IP, user agent, and whether it's currently connected (seen recently).
          */
         get: {
             parameters: {
@@ -7864,6 +7864,11 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         "immerle.APITokenDTO": {
+            /**
+             * @description Connected is true if the token was used within the last few minutes.
+             *     Only meaningful for device tokens (IsDevice).
+             */
+            connected?: boolean;
             /** @example 2026-06-15T09:00:00Z */
             createdAt?: string;
             expiresAt?: string;
@@ -7960,6 +7965,8 @@ export interface components {
             token?: string;
         };
         "immerle.DeviceDTO": {
+            /** @description Connected is true if the device was seen within the last few minutes. */
+            connected?: boolean;
             createdAt?: string;
             expiresAt?: string;
             id?: string;

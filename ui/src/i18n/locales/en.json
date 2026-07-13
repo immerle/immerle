@@ -813,14 +813,18 @@
     },
     "devices": {
       "title": "Connected devices",
-      "subtitle": "Active playback sessions on the server",
+      "subtitle": "Devices signed in to your account",
       "loadError": "Unable to load devices.",
-      "emptyTitle": "No active session",
-      "emptySubtitle": "Nobody is listening right now.",
+      "emptyTitle": "No device",
+      "emptySubtitle": "Devices you sign in with will show up here.",
       "fallbackName": "Device",
-      "justNow": "just now",
-      "minutesAgo": "{{count}} min ago",
-      "hoursAgo": "{{count}} h ago"
+      "online": "Online",
+      "offline": "Offline",
+      "lastSeen": "Last seen {{date}}",
+      "neverSeen": "never",
+      "revokeConfirmTitle": "Sign this device out?",
+      "cancel": "Cancel",
+      "revoke": "Sign out"
     },
     "tokens": {
       "title": "API",
