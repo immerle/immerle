@@ -1,7 +1,6 @@
 /** Centralized query-key factory so invalidation stays consistent. */
 export const qk = {
   ping: ['ping'] as const,
-  artists: ['artists'] as const,
   artist: (id: string) => ['artist', id] as const,
   album: (id: string) => ['album', id] as const,
   albumList: (type: string, genre?: string) => ['albumList', type, genre ?? null] as const,

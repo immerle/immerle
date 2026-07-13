@@ -1,7 +1,6 @@
 import {
   Album,
   AlbumWithSongs,
-  Artist,
   ArtistWithAlbums,
   Genre,
   NowPlayingEntry,
@@ -17,7 +16,6 @@ import {
   Starred,
   toAlbum,
   toAlbumWithSongs,
-  toArtist,
   toArtistWithAlbums,
   toGenre,
   toNowPlaying,
@@ -223,12 +221,6 @@ export class ImmerleClient {
    * the app's domain types (see catalog.ts), so these are drop-in replacements
    * for the Subsonic browse methods.
    */
-  async getArtists(signal?: AbortSignal): Promise<Artist[]> {
-    const { data, error } = await this.api.GET('/artists', { signal });
-    if (error) throw apiErr(error, 'browse.artists');
-    return (data.artists ?? []).map(toArtist);
-  }
-
   async getArtist(id: string, signal?: AbortSignal): Promise<ArtistWithAlbums> {
     const { data, error } = await this.api.GET('/artists/{id}', {
       params: { path: { id } },

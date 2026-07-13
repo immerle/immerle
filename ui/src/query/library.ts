@@ -4,15 +4,6 @@ import { qk } from './keys';
 
 /** All library/browse hooks. Each reads the live client from the auth store. */
 
-export function useArtists() {
-  const client = useAuth((s) => s.client);
-  return useQuery({
-    queryKey: qk.artists,
-    enabled: !!client,
-    queryFn: ({ signal }) => client!.getArtists(),
-  });
-}
-
 export function useArtist(id: string) {
   const client = useAuth((s) => s.client);
   return useQuery({
