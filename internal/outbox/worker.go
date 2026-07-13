@@ -105,14 +105,14 @@ func (w *Worker) drain(ctx context.Context) {
 		h := w.handlers[job.Kind]
 		if h == nil {
 			w.logger.Warn("outbox: no handler for kind; dropping job", "kind", job.Kind, "id", job.ID)
-			_ = w.repo.Done(ctx, job.ID)
+			_ = w.repo.Done(ctx, job.ID, job.ClaimToken)
 			continue
 		}
 		switch err := h(ctx, job); {
 		case err == nil:
-			_ = w.repo.Done(ctx, job.ID)
+			_ = w.repo.Done(ctx, job.ID, job.ClaimToken)
 		case errors.Is(err, ErrNotReady):
-			_ = w.repo.Defer(ctx, job.ID, time.Now().Add(notReadyDelay))
+			_ = w.repo.Defer(ctx, job.ID, job.ClaimToken, time.Now().Add(notReadyDelay))
 			return // dependency down → ease off this round
 		default:
 			d := backoff(job.Attempts)
@@ -121,7 +121,7 @@ func (w *Worker) drain(ctx context.Context) {
 				d = ra.d
 			}
 			w.logger.Warn("outbox: job failed; will retry", "kind", job.Kind, "id", job.ID, "attempt", job.Attempts+1, "retryIn", d, "error", err)
-			_ = w.repo.Backoff(ctx, job.ID, time.Now().Add(d))
+			_ = w.repo.Backoff(ctx, job.ID, job.ClaimToken, time.Now().Add(d))
 		}
 	}
 }
