@@ -304,7 +304,7 @@ func (a *AuthService) authenticateToken(ctx context.Context, plaintext string) (
 	if err != nil {
 		return models.User{}, ErrUnauthorized
 	}
-	_ = a.tokens.TouchLastUsed(ctx, tok.ID, time.Now())
+	_ = a.tokens.TouchLastUsed(ctx, tok, time.Now())
 	return user, nil
 }
 
@@ -375,7 +375,7 @@ func (a *AuthService) authenticateJWT(ctx context.Context, token, ip string) (mo
 	if err != nil {
 		return models.User{}, ErrUnauthorized
 	}
-	_ = a.devices.TouchSeen(ctx, dev.ID, ip, time.Now())
+	_ = a.devices.TouchSeen(ctx, dev, ip, time.Now())
 	return user, nil
 }
 

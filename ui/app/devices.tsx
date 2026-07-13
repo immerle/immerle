@@ -1,27 +1,34 @@
-import { Text, View } from 'react-native';
+import { Alert, Platform, Text, View } from 'react-native';
 import { Stack } from 'expo-router';
-import { useNowPlaying } from '../src/query/account';
-import { Card, EmptyState, ErrorState, Loading } from '../src/components/ui';
+import { useDevices, useTokenMutations } from '../src/query/account';
+import { Badge, Card, EmptyState, ErrorState, IconButton, Loading } from '../src/components/ui';
 import { AdminHeader, AdminScroll } from '../src/components/AdminUI';
-import { CoverArt } from '../src/components/CoverArt';
 import { Ionicon } from '../src/components/Ionicon';
+import { APITokenDTO } from '../src/api/immerleApi';
 import { useColors } from '../src/theme/colors';
 import { useT } from '../src/i18n/store';
 
 /**
- * Connected devices / active sessions, from the Subsonic `getNowPlaying`
- * endpoint: who is playing what, on which player, and how long ago.
+ * Connected devices: the caller's app-login sessions (API tokens minted by
+ * the app's own login flow, `isDevice`, from `GET /tokens` — see
+ * useDevices), each flagged online/offline based on whether it's made an
+ * authenticated request in the last few minutes (server-computed
+ * `connected`). Distinct from manually-created personal/CLI tokens, which
+ * are managed on the API tokens screen.
  */
 export default function Devices() {
   const t = useT();
-  const colors = useColors();
-  const q = useNowPlaying();
+  const q = useDevices();
+  const { revoke } = useTokenMutations();
 
-  const ago = (m?: number) => {
-    if (m == null) return '';
-    if (m <= 0) return t('tools.devices.justNow');
-    if (m < 60) return t('tools.devices.minutesAgo', { count: m });
-    return t('tools.devices.hoursAgo', { count: Math.floor(m / 60) });
+  const confirmRevoke = (id: string, label: string) => {
+    const doIt = () => revoke.mutate(id);
+    if (Platform.OS === 'web') doIt();
+    else
+      Alert.alert(t('tools.devices.revokeConfirmTitle'), label, [
+        { text: t('tools.devices.cancel'), style: 'cancel' },
+        { text: t('tools.devices.revoke'), style: 'destructive', onPress: doIt },
+      ]);
   };
 
   return (
@@ -37,27 +44,35 @@ export default function Devices() {
         ) : !q.data?.length ? (
           <EmptyState icon="phone-portrait-outline" title={t('tools.devices.emptyTitle')} subtitle={t('tools.devices.emptySubtitle')} />
         ) : (
-          q.data.map((e, i) => (
-            <Card key={`${e.playerId ?? e.username ?? i}:${i}`} className="flex-row items-center gap-3">
-              <CoverArt coverArt={e.coverArt} size={48} rounded="rounded-md" />
-              <View className="flex-1">
-                <View className="flex-row items-center gap-2">
-                  <Ionicon name="hardware-chip-outline" size={16} color={colors.primary} />
-                  <Text className="text-base font-semibold text-foreground">{e.playerName || e.username || t('tools.devices.fallbackName')}</Text>
-                </View>
-                <Text numberOfLines={1} className="text-sm text-muted">
-                  {e.title}
-                  {e.artist ? ` · ${e.artist}` : ''}
-                </Text>
-                <Text className="text-xs text-muted">
-                  {e.username ? `${e.username} · ` : ''}
-                  {ago(e.minutesAgo)}
-                </Text>
-              </View>
-            </Card>
+          q.data.map((d) => (
+            <DeviceRow
+              key={d.id}
+              device={d}
+              onRevoke={() => confirmRevoke(d.id!, d.name || t('tools.devices.fallbackName'))}
+            />
           ))
         )}
       </AdminScroll>
     </>
+  );
+}
+
+function DeviceRow({ device, onRevoke }: { device: APITokenDTO; onRevoke: () => void }) {
+  const t = useT();
+  const colors = useColors();
+  const fmt = (d?: string) => (d ? new Date(d).toLocaleString() : t('tools.devices.neverSeen'));
+
+  return (
+    <Card className="gap-2">
+      <View className="flex-row items-center gap-2">
+        <Ionicon name="hardware-chip-outline" size={18} color={colors.primary} />
+        <Text className="flex-1 text-base font-semibold text-foreground">{device.name || t('tools.devices.fallbackName')}</Text>
+        <Badge label={device.connected ? t('tools.devices.online') : t('tools.devices.offline')} tone={device.connected ? 'success' : 'default'} />
+        <IconButton name="trash-outline" size={20} color={colors.danger} onPress={onRevoke} accessibilityLabel={t('tools.devices.revoke')} />
+      </View>
+      <Text numberOfLines={1} className="text-xs text-muted">
+        {t('tools.devices.lastSeen', { date: fmt(device.lastUsedAt) })}
+      </Text>
+    </Card>
   );
 }

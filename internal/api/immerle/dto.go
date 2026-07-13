@@ -455,6 +455,8 @@ type DeviceDTO struct {
 	LastIP    string `json:"lastIp,omitempty"`
 	CreatedAt string `json:"createdAt,omitempty"`
 	ExpiresAt string `json:"expiresAt,omitempty"`
+	// Connected is true if the device was seen within the last few minutes.
+	Connected bool `json:"connected"`
 }
 
 // APITokenDTO is a personal access token (without its secret).
@@ -468,6 +470,9 @@ type APITokenDTO struct {
 	// IsDevice marks an app login session rather than a manually-created
 	// personal/CLI token.
 	IsDevice bool `json:"isDevice,omitempty"`
+	// Connected is true if the token was used within the last few minutes.
+	// Only meaningful for device tokens (IsDevice).
+	Connected bool `json:"connected"`
 }
 
 // CreateTokenDTO is returned once when a token is created; "token" is the secret

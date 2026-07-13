@@ -568,6 +568,16 @@ func (a *App) spawn(fn func()) {
 
 // Close releases resources.
 func (a *App) Close() error {
+	// Best-effort: persist any last-seen/last-used touches buffered in memory
+	// before closing the DB, so a graceful shutdown doesn't lose them (see
+	// DeviceRepo.TouchSeen / APITokenRepo.TouchLastUsed).
+	ctx := context.Background()
+	if err := a.store.Devices.FlushSeen(ctx); err != nil {
+		a.logger.Warn("flushing device last-seen on shutdown failed", "error", err)
+	}
+	if err := a.store.APITokens.FlushLastUsed(ctx); err != nil {
+		a.logger.Warn("flushing token last-used on shutdown failed", "error", err)
+	}
 	return a.database.Close()
 }
 

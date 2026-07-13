@@ -33,6 +33,7 @@ func (h *Handler) handleTokens(w http.ResponseWriter, r *http.Request) {
 			"lastUsedAt": t.LastUsedAt,
 			"expiresAt":  t.ExpiresAt,
 			"isDevice":   t.IsDevice,
+			"connected":  t.LastUsedAt != nil && time.Since(*t.LastUsedAt) < deviceOnlineWindow,
 		})
 	}
 	writeResource(w, http.StatusOK, out)

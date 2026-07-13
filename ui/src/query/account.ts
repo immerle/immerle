@@ -35,7 +35,7 @@ export function useUpdateAccount() {
   });
 }
 
-/** Connected devices / active sessions, via Subsonic `getNowPlaying`. */
+/** Who's playing what right now (across the account), via Subsonic `getNowPlaying`. */
 export function useNowPlaying() {
   const client = useAuth((s) => s.client);
   return useQuery({
@@ -61,8 +61,19 @@ export function useTokens() {
   return useQuery({
     queryKey: KEYS.tokens,
     enabled: !!client,
+    refetchInterval: 10000,
     queryFn: ({ signal }) => client!.listTokens(signal),
   });
+}
+
+/**
+ * The caller's device sessions (app logins, `isDevice`) — the "Connected
+ * devices" screen. Shares the `/tokens` list with useTokens, filtered down;
+ * revoke via useTokenMutations().revoke.
+ */
+export function useDevices() {
+  const q = useTokens();
+  return { ...q, data: q.data?.filter((t) => t.isDevice) };
 }
 
 export function useTokenMutations() {
