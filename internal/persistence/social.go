@@ -16,14 +16,17 @@ import (
 // FriendRepo persists friend relationships.
 type FriendRepo struct{ *base }
 
-// Request creates or refreshes a pending friend request.
+// Request creates or refreshes a pending friend request. The conflict guard
+// (status <> 'accepted') keeps a re-sent request from silently reverting an
+// already-accepted friendship back to pending. Hand-written because the WHERE
+// on the conflict clause is not expressible by melody.
 func (r *FriendRepo) Request(ctx context.Context, f models.Friendship) error {
-	_, err := r.bexec(ctx, r.mel.NewInsert("friendships").
-		Set("id", f.ID).Set("user_id", f.UserID).Set("friend_id", f.FriendID).
-		Set("status", string(f.Status)).UpdateDuplicateKey().
-		Set("created_at", db.Millis(f.CreatedAt)).
-		Set("updated_at", db.Millis(f.UpdatedAt)).UpdateDuplicateKey().
-		OnConflict("user_id", "friend_id"))
+	_, err := r.exec(ctx,
+		`INSERT INTO friendships (id, user_id, friend_id, status, created_at, updated_at)
+		 VALUES (?, ?, ?, ?, ?, ?)
+		 ON CONFLICT(user_id, friend_id) DO UPDATE SET status=excluded.status, updated_at=excluded.updated_at
+		 WHERE friendships.status <> 'accepted'`,
+		f.ID, f.UserID, f.FriendID, string(f.Status), db.Millis(f.CreatedAt), db.Millis(f.UpdatedAt))
 	return err
 }
 

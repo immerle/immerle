@@ -107,7 +107,7 @@ func (w *Worker) drain(ctx context.Context) {
 		h := w.handlers[job.Kind]
 		if h == nil {
 			w.logger.Warn("outbox: no handler for kind; dropping job", "kind", job.Kind, "id", job.ID)
-			if err := w.repo.Done(ctx, job.ID); err != nil {
+			if err := w.repo.Done(ctx, job.ID, job.ClaimToken); err != nil {
 				w.logger.Error("outbox: marking job done failed", "kind", job.Kind, "id", job.ID, "error", err)
 				return // don't hot-loop re-claiming the same job
 			}
@@ -115,14 +115,14 @@ func (w *Worker) drain(ctx context.Context) {
 		}
 		switch err := h(ctx, job); {
 		case err == nil:
-			if err := w.repo.Done(ctx, job.ID); err != nil {
+			if err := w.repo.Done(ctx, job.ID, job.ClaimToken); err != nil {
 				// The job ran (side effects done) but couldn't be marked done; stop
 				// this pass so the ticker paces the retry instead of re-running it.
 				w.logger.Error("outbox: marking job done failed", "kind", job.Kind, "id", job.ID, "error", err)
 				return
 			}
 		case errors.Is(err, ErrNotReady):
-			if err := w.repo.Defer(ctx, job.ID, time.Now().Add(notReadyDelay)); err != nil {
+			if err := w.repo.Defer(ctx, job.ID, job.ClaimToken, time.Now().Add(notReadyDelay)); err != nil {
 				w.logger.Error("outbox: deferring job failed", "kind", job.Kind, "id", job.ID, "error", err)
 			}
 			return // dependency down → ease off this round
@@ -130,7 +130,7 @@ func (w *Worker) drain(ctx context.Context) {
 			// Permanently failing: park it (retry far in the future) so it stops
 			// hot-logging a warning every cycle but stays inspectable for triage.
 			w.logger.Error("outbox: job abandoned after max attempts", "kind", job.Kind, "id", job.ID, "attempts", job.Attempts+1, "error", err)
-			if err := w.repo.Backoff(ctx, job.ID, time.Now().Add(parkDelay)); err != nil {
+			if err := w.repo.Backoff(ctx, job.ID, job.ClaimToken, time.Now().Add(parkDelay)); err != nil {
 				w.logger.Error("outbox: parking job failed", "kind", job.Kind, "id", job.ID, "error", err)
 				return
 			}
@@ -141,7 +141,7 @@ func (w *Worker) drain(ctx context.Context) {
 				d = ra.d
 			}
 			w.logger.Warn("outbox: job failed; will retry", "kind", job.Kind, "id", job.ID, "attempt", job.Attempts+1, "retryIn", d, "error", err)
-			if err := w.repo.Backoff(ctx, job.ID, time.Now().Add(d)); err != nil {
+			if err := w.repo.Backoff(ctx, job.ID, job.ClaimToken, time.Now().Add(d)); err != nil {
 				w.logger.Error("outbox: backing off job failed", "kind", job.Kind, "id", job.ID, "error", err)
 				return
 			}
