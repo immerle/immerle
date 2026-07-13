@@ -28,7 +28,7 @@ func (r *ProviderLogRepo) Insert(ctx context.Context, l models.ProviderLog) erro
 func (r *ProviderLogRepo) LogTableName() string { return "provider_logs" }
 
 // PruneOlderThan deletes log rows created before cutoff and returns the number
-// removed. Implements the pruner's PrunableLog interface.
+// removed. Used by the daily core.LogPruner.
 func (r *ProviderLogRepo) PruneOlderThan(ctx context.Context, cutoff time.Time) (int64, error) {
 	res, err := r.bexec(ctx, r.mel.NewDelete("provider_logs").Where("created_at", "<", db.Millis(cutoff)))
 	if err != nil {
