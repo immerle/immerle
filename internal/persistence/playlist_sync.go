@@ -42,6 +42,28 @@ func (r *PlaylistSyncRepo) Delete(ctx context.Context, playlistID string) error 
 	return err
 }
 
+// SetPayload records the resolved payload (covers already rewritten to hub
+// URLs) and its version for a playlist, so a replay.request can be answered
+// without recomputing anything.
+func (r *PlaylistSyncRepo) SetPayload(ctx context.Context, playlistID, payload, version string) error {
+	_, err := r.exec(ctx,
+		`INSERT INTO playlist_sync (playlist_id, last_payload, last_version, last_synced_at)
+		 VALUES (?, ?, ?, ?)
+		 ON CONFLICT (playlist_id) DO UPDATE SET last_payload = excluded.last_payload, last_version = excluded.last_version, last_synced_at = excluded.last_synced_at`,
+		playlistID, payload, version, db.Millis(time.Now()))
+	return err
+}
+
+// LastPayload returns the last resolved payload and its version for a
+// playlist ("", "" if never synced).
+func (r *PlaylistSyncRepo) LastPayload(ctx context.Context, playlistID string) (payload, version string, err error) {
+	err = r.queryRow(ctx, `SELECT last_payload, last_version FROM playlist_sync WHERE playlist_id = ?`, playlistID).Scan(&payload, &version)
+	if err == sql.ErrNoRows {
+		return "", "", nil
+	}
+	return payload, version, err
+}
+
 // IDs returns the playlist ids currently synced to the hub.
 func (r *PlaylistSyncRepo) IDs(ctx context.Context) ([]string, error) {
 	rows, err := r.query(ctx, `SELECT playlist_id FROM playlist_sync`)
@@ -109,4 +131,30 @@ func (r *CoverUploadRepo) Mark(ctx context.Context, hashes ...string) error {
 		}
 	}
 	return nil
+}
+
+// FeedCursorRepo tracks, per followed source instance, the version of the
+// last federation feed item applied locally, so a socket reconnect can resume
+// instead of re-pulling the whole feed (RFC-socket-federation-client.md §4).
+type FeedCursorRepo struct{ *base }
+
+// Get returns the last applied version for a source instance ("" if none,
+// meaning a full catch-up is needed).
+func (r *FeedCursorRepo) Get(ctx context.Context, sourceInstanceID string) (string, error) {
+	var v string
+	err := r.queryRow(ctx, `SELECT last_version FROM federation_feed_cursor WHERE source_instance_id = ?`, sourceInstanceID).Scan(&v)
+	if err == sql.ErrNoRows {
+		return "", nil
+	}
+	return v, err
+}
+
+// Set records the version of the last feed item applied for a source instance.
+func (r *FeedCursorRepo) Set(ctx context.Context, sourceInstanceID, version string) error {
+	_, err := r.exec(ctx,
+		`INSERT INTO federation_feed_cursor (source_instance_id, last_version, updated_at)
+		 VALUES (?, ?, ?)
+		 ON CONFLICT (source_instance_id) DO UPDATE SET last_version = excluded.last_version, updated_at = excluded.updated_at`,
+		sourceInstanceID, version, db.Millis(time.Now()))
+	return err
 }
