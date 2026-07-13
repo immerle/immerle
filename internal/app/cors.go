@@ -37,7 +37,7 @@ func corsMiddleware(origins func() []string, next http.Handler) http.Handler {
 			} else {
 				h.Set("Access-Control-Allow-Origin", origin)
 			}
-			h.Set("Access-Control-Allow-Methods", "GET, POST, HEAD, OPTIONS")
+			h.Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS")
 			// Fixed allow-list rather than reflecting the client-controlled
 			// Access-Control-Request-Headers verbatim.
 			h.Set("Access-Control-Allow-Headers", "Authorization, Content-Type, Range")

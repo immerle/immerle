@@ -27,6 +27,9 @@ func New(address string, handler http.Handler, logger *slog.Logger) *Server {
 			Addr:              address,
 			Handler:           handler,
 			ReadHeaderTimeout: 10 * time.Second,
+			// No WriteTimeout on purpose: streaming responses are long-lived and it
+			// would cut them off. IdleTimeout bounds idle keep-alive connections.
+			IdleTimeout: 120 * time.Second,
 		},
 		logger: logger,
 	}
