@@ -640,33 +640,6 @@ func (s *CatalogService) drainQueue(ctx context.Context) {
 	}
 }
 
-// EnqueueDownload queues a remote track for background download and wakes the worker.
-func (s *CatalogService) EnqueueDownload(ctx context.Context, userID, trackID string) (string, error) {
-	st := s.state
-	provName, ptid, ok := decodeRemoteID(trackID)
-	if !ok {
-		return "", fmt.Errorf("not a remote track")
-	}
-	now := time.Now()
-	job, err := st.downloads.Enqueue(ctx, models.DownloadJob{
-		ID:              uuid.NewString(),
-		UserID:          userID,
-		Provider:        provName,
-		ProviderTrackID: ptid,
-		Status:          models.DownloadQueued,
-		CreatedAt:       now,
-		UpdatedAt:       now,
-	})
-	if err != nil {
-		return "", err
-	}
-	select {
-	case st.wakeCh <- struct{}{}:
-	default:
-	}
-	return job.ID, nil
-}
-
 // AutoDownloadOnPlay reports whether a remote track should be downloaded when
 // first streamed.
 func (s *CatalogService) AutoDownloadOnPlay() bool {
