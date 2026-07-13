@@ -133,7 +133,7 @@ func (s *CatalogService) ResolveBestRemoteMatch(ctx context.Context, artist, tit
 	var best models.Track
 	bestScore := -1
 	for _, t := range tracks {
-		titleScore := relevance(title, t.Title)
+		titleScore := titleOverlap(title, t.Title)
 		if titleScore >= 3 {
 			continue // shares nothing with the wanted title: never an acceptable match
 		}
@@ -143,6 +143,20 @@ func (s *CatalogService) ResolveBestRemoteMatch(ctx context.Context, artist, tit
 		}
 	}
 	return best, bestScore != -1
+}
+
+// titleOverlap is relevance checked in both directions and takes the better
+// (lower) score: a hub/federated title routinely carries extra qualifiers a
+// provider's canonical title doesn't ("Get Lucky (Radio Edit - feat. ...)" vs
+// "Get Lucky"), so plain one-directional containment (does the wanted title
+// contain the candidate, or the reverse) misses the common case where one is
+// simply a longer superstring of the other.
+func titleOverlap(wanted, candidate string) int {
+	score := relevance(wanted, candidate)
+	if r := relevance(candidate, wanted); r < score {
+		score = r
+	}
+	return score
 }
 
 // RemoteSearch3 gathers remote artists, albums and tracks for search3/search2.
