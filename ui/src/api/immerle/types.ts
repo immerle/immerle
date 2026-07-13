@@ -154,24 +154,6 @@ export interface DownloadJob {
 // Federation is configured through the runtime settings (RuntimeSettingsDTO.federation)
 // and registered via client.registerInstance(); no dedicated state type is needed.
 
-// --- Admin: server / transcoding ------------------------------------------
-
-export interface TranscodeProfile {
-  id: string;
-  name: string;
-  targetFormat: string;
-  maxBitRate: number;
-  isDefault: boolean;
-}
-
-export interface ServerSettings {
-  serverName?: string;
-  defaultTranscodeProfileId?: string;
-  scrobblingEnabled: boolean;
-  /** Maximum bitrate streamed without explicit override. */
-  maxStreamBitRate?: number;
-}
-
 // --- Smart playlists (rule-based) ------------------------------------------
 
 export interface SmartCondition {

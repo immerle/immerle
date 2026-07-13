@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth/store';
-import { ServerSettings, TranscodeProfile } from '../api/immerle/types';
 import { RuntimeSettingsDTO } from '../api/immerleApi';
 import { qk } from './keys';
 
@@ -305,38 +304,4 @@ export function useSubscriptionMutations() {
     onSuccess: invalidate,
   });
   return { subscribe, unsubscribe };
-}
-
-// --- Server / transcoding --------------------------------------------------
-
-export function useTranscodeProfiles() {
-  const client = useAuth((s) => s.client);
-  return useQuery({
-    queryKey: qk.transcodeProfiles,
-    enabled: !!client && !!client.has('adminExtended'),
-    queryFn: ({ signal }) => client!.getTranscodeProfiles(signal),
-  });
-}
-
-export function useServerSettings() {
-  const client = useAuth((s) => s.client);
-  return useQuery({
-    queryKey: qk.serverSettings,
-    enabled: !!client && !!client.has('adminExtended'),
-    queryFn: ({ signal }) => client!.getServerSettings(signal),
-  });
-}
-
-export function useServerMutations() {
-  const client = useAuth((s) => s.client);
-  const qc = useQueryClient();
-  const updateSettings = useMutation({
-    mutationFn: (settings: Partial<ServerSettings>) => client!.updateServerSettings(settings),
-    onSuccess: () => qc.invalidateQueries({ queryKey: qk.serverSettings }),
-  });
-  const upsertProfile = useMutation({
-    mutationFn: (profile: Partial<TranscodeProfile>) => client!.upsertTranscodeProfile(profile),
-    onSuccess: () => qc.invalidateQueries({ queryKey: qk.transcodeProfiles }),
-  });
-  return { updateSettings, upsertProfile };
 }
