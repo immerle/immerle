@@ -93,7 +93,9 @@ func (s *UserService) UpdateUser(ctx context.Context, caller models.User, userna
 		return err
 	}
 	if upd.Password != "" {
-		_ = s.auth.SetPassword(ctx, u.ID, upd.Password)
+		if err := s.auth.SetPassword(ctx, u.ID, upd.Password); err != nil {
+			return err
+		}
 	}
 	return nil
 }
