@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, router } from 'expo-router';
 import { useRadioStations } from '../../src/query/radio';
 import { useAuth } from '../../src/auth/store';
 import { EmptyState, ErrorState, Loading } from '../../src/components/ui';
-import { AdminHeader, AdminScroll } from '../../src/components/AdminUI';
 import { Ionicon } from '../../src/components/Ionicon';
 import { useColors } from '../../src/theme/colors';
 import { useT } from '../../src/i18n/store';
@@ -17,7 +17,6 @@ const FLAG: Record<string, string> = { fr: '🇫🇷', es: '🇪🇸', gb: '🇬
  * has been liked), then browse that country's stations. */
 export default function RadiosHome() {
   const t = useT();
-  const colors = useColors();
   const client = useAuth((s) => s.client);
   const q = useRadioStations();
 
@@ -37,9 +36,12 @@ export default function RadiosHome() {
 
   if (!client?.isFeatureEnabled('internetRadio')) {
     return (
-      <AdminScroll header={<AdminHeader color={colors.primary} title={t('radio.title')} showBack />}>
-        <EmptyState icon="radio-outline" title={t('radio.unavailableTitle')} subtitle={t('radio.unavailableSubtitle')} />
-      </AdminScroll>
+      <>
+        <Stack.Screen options={{ title: t('radio.title') }} />
+        <SafeAreaView edges={['top']} className="flex-1 bg-background">
+          <EmptyState icon="radio-outline" title={t('radio.unavailableTitle')} subtitle={t('radio.unavailableSubtitle')} />
+        </SafeAreaView>
+      </>
     );
   }
   if (q.isLoading) return <Loading />;
@@ -47,30 +49,32 @@ export default function RadiosHome() {
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
-      <AdminScroll header={<AdminHeader color={colors.primary} title={t('radio.title')} subtitle={t('radio.tabSubtitle')} showBack />}>
-        <View className="flex-row flex-wrap gap-2.5">
-          {likedCount > 0 ? (
-            <CountryCard
-              emoji="❤️"
-              label={t('radio.favorites')}
-              count={likedCount}
-              accent
-              onPress={() => router.push('/radios/favorites' as never)}
-            />
-          ) : null}
-          {groups.map((g) => (
-            <CountryCard
-              key={g.code}
-              emoji={FLAG[g.code] ?? '🌍'}
-              label={t(`radio.country.${g.code}`)}
-              count={g.count}
-              onPress={() => router.push(`/radios/${g.code}` as never)}
-            />
-          ))}
-        </View>
-        {!groups.length ? <EmptyState icon="radio-outline" title={t('radio.emptyTitle')} subtitle={t('radio.emptySubtitle')} /> : null}
-      </AdminScroll>
+      <Stack.Screen options={{ title: t('radio.title') }} />
+      <SafeAreaView edges={['top']} className="flex-1 bg-background">
+        <ScrollView contentContainerStyle={{ padding: 16, gap: 14 }}>
+          <View className="flex-row flex-wrap gap-2.5">
+            {likedCount > 0 ? (
+              <CountryCard
+                emoji="❤️"
+                label={t('radio.favorites')}
+                count={likedCount}
+                accent
+                onPress={() => router.push('/radios/favorites' as never)}
+              />
+            ) : null}
+            {groups.map((g) => (
+              <CountryCard
+                key={g.code}
+                emoji={FLAG[g.code] ?? '🌍'}
+                label={t(`radio.country.${g.code}`)}
+                count={g.count}
+                onPress={() => router.push(`/radios/${g.code}` as never)}
+              />
+            ))}
+          </View>
+          {!groups.length ? <EmptyState icon="radio-outline" title={t('radio.emptyTitle')} subtitle={t('radio.emptySubtitle')} /> : null}
+        </ScrollView>
+      </SafeAreaView>
     </>
   );
 }
