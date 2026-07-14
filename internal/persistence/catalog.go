@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/immerle/immerle/internal/db"
+	"github.com/immerle/immerle/internal/matching"
 	"github.com/immerle/immerle/internal/models"
 )
 
@@ -440,12 +441,26 @@ func (r *CatalogRepo) TrackExistsByMBIDOrHash(ctx context.Context, mbid, hash st
 // (e.g. manually uploaded, tagged without an mbid) is found before resorting
 // to a remote provider search.
 func (r *CatalogRepo) FindByArtistTitle(ctx context.Context, artist, title string) (models.Track, bool, error) {
-	row := r.queryRow(ctx, trackSelect+` WHERE t.remote=0 AND LOWER(ar.name)=LOWER(?) AND LOWER(t.title)=LOWER(?) LIMIT 1`, artist, title)
-	t, err := scanTrack(row)
-	if errors.Is(err, sql.ErrNoRows) {
-		return t, false, nil
+	candidates, err := r.listTracks(ctx, trackSelect+` WHERE t.remote=0 AND LOWER(ar.name)=LOWER(?) AND LOWER(t.title)=LOWER(?)`, artist, title)
+	if err != nil {
+		return models.Track{}, false, err
 	}
-	return t, err == nil, err
+	if len(candidates) == 0 {
+		return models.Track{}, false, nil
+	}
+	// Same artist+title can legitimately exist more than once in a library
+	// (an alternate version scanned alongside the original) — prefer whichever
+	// isn't flagged as one by matching.VersionMarkerPenalty, the same
+	// disambiguation core.ResolveBestRemoteMatch applies to remote candidates,
+	// so a candidate can't dodge it just by already being local.
+	best := candidates[0]
+	bestPenalty := matching.VersionMarkerPenalty(title, best.Title, best.AlbumName)
+	for _, c := range candidates[1:] {
+		if p := matching.VersionMarkerPenalty(title, c.Title, c.AlbumName); p < bestPenalty {
+			best, bestPenalty = c, p
+		}
+	}
+	return best, true, nil
 }
 
 // GetTrack returns one track.

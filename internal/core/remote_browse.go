@@ -6,6 +6,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/immerle/immerle/internal/matching"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/providers"
 )
@@ -137,44 +138,12 @@ func (s *CatalogService) ResolveBestRemoteMatch(ctx context.Context, artist, tit
 		if titleScore >= 3 {
 			continue // shares nothing with the wanted title: never an acceptable match
 		}
-		score := titleScore*10 + relevance(artist, t.ArtistName) + versionMarkerPenalty(title, t)*100
+		score := titleScore*10 + relevance(artist, t.ArtistName) + matching.VersionMarkerPenalty(title, t.Title, t.AlbumName)*100
 		if bestScore == -1 || score < bestScore {
 			best, bestScore = t, score
 		}
 	}
 	return best, bestScore != -1
-}
-
-// versionMarkers flag a candidate as a probable alternate version (remix,
-// live recording, cover, instrumental, ...) of the wanted track rather than
-// the original. Scraped provider metadata for an alternate version is
-// sometimes *cleaner* than the original's own listing (e.g. a "Gospel" cover
-// simply titled "Pilé", while the original single carries extra qualifiers
-// like "Pilé (Original Mix)") — without this, the title-only scoring above
-// can prefer the wrong version purely because its title string happens to
-// match the query more tightly. Checked against title AND album, since the
-// qualifier commonly lives in either.
-var versionMarkers = []string{
-	"remix", "live", "acoustic", "instrumental", "karaoke", "cover version",
-	"tribute", "a cappella", "acapella", "gospel", "reprise", "extended mix",
-	"radio edit", "sped up", "slowed", "nightcore", "mashup",
-}
-
-// versionMarkerPenalty returns 1 if t looks like an alternate version the
-// wanted title doesn't itself ask for (so requesting "Song (Live)" isn't
-// penalized against itself), else 0.
-func versionMarkerPenalty(wanted string, t models.Track) int {
-	w := strings.ToLower(wanted)
-	title, album := strings.ToLower(t.Title), strings.ToLower(t.AlbumName)
-	for _, m := range versionMarkers {
-		if strings.Contains(w, m) {
-			continue
-		}
-		if strings.Contains(title, m) || strings.Contains(album, m) {
-			return 1
-		}
-	}
-	return 0
 }
 
 // titleOverlap is relevance checked in both directions and takes the better
