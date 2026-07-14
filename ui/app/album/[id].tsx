@@ -3,6 +3,7 @@ import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAlbum } from '../../src/query/library';
 import { useAuth } from '../../src/auth/store';
+import { useOfflineCatalog } from '../../src/offline/catalog';
 import { CoverArt } from '../../src/components/CoverArt';
 import { HeroBackdrop } from '../../src/components/HeroBackdrop';
 import { TrackList } from '../../src/components/TrackList';
@@ -26,10 +27,11 @@ export default function AlbumDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const client = useAuth((s) => s.client);
   const q = useAlbum(id);
+  const cached = useOfflineCatalog((s) => s.albums[id]);
   const playSongs = usePlayer((s) => s.playSongs);
   useWebTitle(q.data?.name);
 
-  if (q.isLoading) {
+  if (q.isLoading && !cached) {
     return (
       <>
         <Stack.Screen options={{ headerShown: false }} />
@@ -63,7 +65,7 @@ export default function AlbumDetail() {
       </>
     );
   }
-  if (q.isError || !q.data) {
+  if ((q.isError || !q.data) && !cached) {
     return (
       <>
         <Stack.Screen options={{ headerShown: false }} />
@@ -72,7 +74,9 @@ export default function AlbumDetail() {
     );
   }
 
-  const album = q.data;
+  // Prefer live data; fall back to the offline snapshot (from downloading the
+  // whole album) when the server can't be reached.
+  const album = q.data ?? { id: cached!.id, name: cached!.name, artist: cached!.artist, artistId: cached!.artistId, year: cached!.year, coverArt: cached!.coverArt, song: cached!.songs };
   const songs = album.song ?? [];
   const totalDuration = songs.reduce((n, s) => n + (s.duration ?? 0), 0);
   const coverUrl = client?.coverArtUrl(album.coverArt, 700);
@@ -122,7 +126,11 @@ export default function AlbumDetail() {
       <View className="flex-row items-center gap-5 px-4 py-4">
         <PlayButton onPress={playAll} size={56} accessibilityLabel={t('media.album.play')} />
         <IconButton name="shuffle" size={26} color={colors.muted} onPress={shuffle} accessibilityLabel={t('media.album.shuffle')} />
-        <DownloadButton songs={songs} size={26} />
+        <DownloadButton
+          songs={songs}
+          size={26}
+          snapshot={{ type: 'album', id: album.id, name: album.name, artist: album.artist, artistId: album.artistId, year: album.year, coverArt: album.coverArt }}
+        />
       </View>
     </View>
   );

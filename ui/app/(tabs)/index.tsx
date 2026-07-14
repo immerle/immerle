@@ -6,8 +6,10 @@ import { useAlbumList, useStarred } from '../../src/query/library';
 import { useAuth } from '../../src/auth/store';
 import { usePlayer } from '../../src/audio/store';
 import { useDownloads, OfflineEntry } from '../../src/offline/store';
+import { useOfflineCatalog } from '../../src/offline/catalog';
 import { AlbumTile } from '../../src/components/AlbumCard';
 import { CoverArt } from '../../src/components/CoverArt';
+import { PlaylistCover } from '../../src/components/PlaylistCover';
 import { Ionicon } from '../../src/components/Ionicon';
 import { Button, Card, Loading, SectionHeader } from '../../src/components/ui';
 import { useColors } from '../../src/theme/colors';
@@ -102,6 +104,57 @@ function OfflineTracksRow() {
   );
 }
 
+/** Fully-downloaded albums (cover + name + artist), navigable offline since
+ * album/[id] falls back to this same snapshot when the server is unreachable. */
+function OfflineAlbumsRow() {
+  const t = useT();
+  const albums = Object.values(useOfflineCatalog((s) => s.albums));
+  if (!albums.length) return null;
+  return (
+    <View>
+      <SectionHeader title={t('home.home.offlineAlbums')} />
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
+        {albums.map((a) => (
+          <Pressable key={a.id} onPress={() => router.push(`/album/${a.id}` as never)} style={{ width: TILE }} className="mr-3 active:opacity-70">
+            <CoverArt coverArt={a.coverArt} size={TILE} rounded="rounded-xl" />
+            <Text numberOfLines={1} className="mt-2 text-sm font-semibold text-foreground">
+              {a.name}
+            </Text>
+            <Text numberOfLines={1} className="text-xs text-muted">
+              {a.artist}
+            </Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+    </View>
+  );
+}
+
+/** Fully-downloaded playlists, same idea as OfflineAlbumsRow. */
+function OfflinePlaylistsRow() {
+  const t = useT();
+  const playlists = Object.values(useOfflineCatalog((s) => s.playlists));
+  if (!playlists.length) return null;
+  return (
+    <View>
+      <SectionHeader title={t('home.home.offlinePlaylists')} />
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
+        {playlists.map((p) => (
+          <Pressable key={p.id} onPress={() => router.push(`/playlist/${p.id}` as never)} style={{ width: TILE }} className="mr-3 active:opacity-70">
+            <PlaylistCover coverArt={p.coverArt} covers={[]} size={TILE} rounded="rounded-xl" fallbackIcon="list" />
+            <Text numberOfLines={1} className="mt-2 text-sm font-semibold text-foreground">
+              {p.name}
+            </Text>
+            <Text numberOfLines={1} className="text-xs text-muted">
+              {t('media.playlist.trackCount', { count: p.songs.length })}
+            </Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+    </View>
+  );
+}
+
 /** Horizontal album carousel. */
 function AlbumRow({ title, albums }: { title: string; albums: Album[] | undefined }) {
   if (!albums || albums.length === 0) return null;
@@ -155,6 +208,8 @@ export default function Home() {
         {offline ? (
           <>
             <OfflineBanner onRetry={retry} retrying={retrying} />
+            <OfflineAlbumsRow />
+            <OfflinePlaylistsRow />
             <OfflineTracksRow />
           </>
         ) : loading ? (
