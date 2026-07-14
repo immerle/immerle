@@ -54,9 +54,11 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	token, dev, err := h.Auth.IssueDeviceToken(r.Context(), creds, deviceName, h.deviceTokenTTL())
 	if err != nil {
+		h.Logger.Warn("login failed", "username", req.Username, "remote", r.RemoteAddr)
 		writeError(w, http.StatusUnauthorized, "unauthorized", "invalid credentials")
 		return
 	}
+	h.Logger.Info("user logged in", "username", req.Username, "device", dev.Name, "remote", r.RemoteAddr)
 	writeResource(w, http.StatusCreated, map[string]any{
 		"token": token, // the JWT — store it
 		"device": map[string]any{
@@ -124,5 +126,6 @@ func (h *Handler) handleRevokeDevice(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "not_found", "device not found")
 		return
 	}
+	h.Logger.Info("device revoked", "user", user.Username, "device", pathParam(r, "id"))
 	writeResource(w, http.StatusNoContent, nil)
 }

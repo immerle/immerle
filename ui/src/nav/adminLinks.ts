@@ -52,4 +52,11 @@ export const ADMIN_LINKS: AdminLink[] = [
     color: '#0ea5e9',
     requires: 'runtimeSettings',
   },
+  {
+    href: '/admin/logs',
+    icon: 'terminal',
+    titleKey: 'home.admin.link.logs.title',
+    subtitleKey: 'home.admin.link.logs.subtitle',
+    color: '#64748b',
+  },
 ];

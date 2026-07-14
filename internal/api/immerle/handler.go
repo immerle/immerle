@@ -16,6 +16,7 @@ import (
 	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/federation"
 	"github.com/immerle/immerle/internal/importer"
+	"github.com/immerle/immerle/internal/logging"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 	"github.com/immerle/immerle/internal/scanner"
@@ -82,6 +83,8 @@ type Deps struct {
 	// Wrapped computes the per-user year-in-review from the scrobble history.
 	Wrapped *persistence.WrappedRepo
 	Logger  *slog.Logger
+	// LogHub streams live server log lines to the admin log viewer (SSE).
+	LogHub *logging.Hub
 }
 
 // deviceTokenTTL returns the device-session JWT lifetime from the runtime
@@ -347,6 +350,9 @@ func (h *Handler) Register(mux chi.Router) {
 			// Admin: DB-backed runtime settings.
 			r.Get("/admin/settings", h.handleSettings)
 			r.Patch("/admin/settings", h.handleSettingsUpdate)
+
+			// Admin: live server log stream (SSE).
+			r.Get("/admin/logs/stream", h.handleStreamLogs)
 
 			// Admin: hub link lifecycle. GET refreshes the live name/sqid from the
 			// hub; register bootstraps (links) under the configured user id; PATCH

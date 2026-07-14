@@ -166,7 +166,7 @@ func hubHost(hubURL string) string {
 
 // New builds the application from configuration.
 func New(cfg config.Config) (*App, error) {
-	logger := logging.New(cfg.Log.Level, cfg.Log.Format)
+	logger, logHub := logging.New(cfg.Log.Level)
 	// Make the configured logger the process default so package-level helpers
 	// (e.g. the API's writeInternal) log through it instead of the stderr default.
 	slog.SetDefault(logger)
@@ -440,6 +440,7 @@ func New(cfg config.Config) (*App, error) {
 		UploadsDir:     filepath.Join(downloadDir, "uploads"),
 		CoversDir:      coversDir,
 		Logger:         logger,
+		LogHub:         logHub,
 	})
 
 	// Warm the analytics cache from whatever is already indexed (the post-scan

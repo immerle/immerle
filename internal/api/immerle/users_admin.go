@@ -118,6 +118,7 @@ func (h *Handler) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 		writeServiceError(w, err)
 		return
 	}
+	h.Logger.Info("user created", "by", caller.Username, "username", req.Username, "admin", req.Admin)
 	writeResource(w, http.StatusCreated, toAdminUserView(u))
 }
 
@@ -177,10 +178,13 @@ func (h *Handler) handleUpdateUser(w http.ResponseWriter, r *http.Request) {
 // @Failure  404  {object}  errorResponse
 // @Router   /admin/users/{username} [delete]
 func (h *Handler) handleDeleteUser(w http.ResponseWriter, r *http.Request) {
-	if err := h.userSvc.DeleteUser(r.Context(), userFrom(r.Context()), pathParam(r, "username")); err != nil {
+	caller := userFrom(r.Context())
+	username := pathParam(r, "username")
+	if err := h.userSvc.DeleteUser(r.Context(), caller, username); err != nil {
 		writeServiceError(w, err)
 		return
 	}
+	h.Logger.Info("user deleted", "by", caller.Username, "username", username)
 	writeResource(w, http.StatusNoContent, nil)
 }
 

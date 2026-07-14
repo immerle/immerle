@@ -3366,6 +3366,52 @@
                 ]
             }
         },
+        "/admin/logs/stream": {
+            "get": {
+                "description": "Admin only. Server-Sent Events stream of structured JSON log lines. Sends recent history immediately, then every new line as it's logged.",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "text/event-stream": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "description": "SSE stream"
+                    },
+                    "401": {
+                        "content": {
+                            "text/event-stream": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "content": {
+                            "text/event-stream": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Stream server logs (SSE)",
+                "tags": [
+                    "admin"
+                ]
+            }
+        },
         "/admin/offline": {
             "get": {
                 "responses": {

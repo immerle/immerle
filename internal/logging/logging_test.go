@@ -28,7 +28,7 @@ func TestParseLevel(t *testing.T) {
 }
 
 func TestNewRespectsLevel(t *testing.T) {
-	logger := New("warn", "text")
+	logger, _ := New("warn")
 	if logger.Enabled(context.Background(), slog.LevelInfo) {
 		t.Error("info should be disabled at warn level")
 	}
@@ -37,17 +37,30 @@ func TestNewRespectsLevel(t *testing.T) {
 	}
 }
 
-func TestNewFormats(t *testing.T) {
-	if _, ok := New("info", "json").Handler().(*slog.JSONHandler); !ok {
-		t.Error("expected a *slog.JSONHandler for json format")
+func TestNewIsJSON(t *testing.T) {
+	logger, _ := New("info")
+	if _, ok := logger.Handler().(*slog.JSONHandler); !ok {
+		t.Error("expected a *slog.JSONHandler")
 	}
-	if _, ok := New("info", "JSON").Handler().(*slog.JSONHandler); !ok {
-		t.Error("format should be matched case-insensitively")
+}
+
+func TestHubBroadcastsAndKeepsHistory(t *testing.T) {
+	logger, hub := New("info")
+	logger.Info("first")
+
+	ch, history, unsubscribe := hub.Subscribe()
+	defer unsubscribe()
+	if len(history) != 1 {
+		t.Fatalf("expected 1 history line, got %d", len(history))
 	}
-	if _, ok := New("info", "text").Handler().(*slog.TextHandler); !ok {
-		t.Error("expected a *slog.TextHandler for text format")
-	}
-	if _, ok := New("info", "anything-else").Handler().(*slog.TextHandler); !ok {
-		t.Error("unknown format should default to text")
+
+	logger.Info("second")
+	select {
+	case line := <-ch:
+		if len(line) == 0 {
+			t.Error("expected a non-empty broadcast line")
+		}
+	default:
+		t.Error("expected the new log line to be broadcast to the subscriber")
 	}
 }

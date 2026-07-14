@@ -277,6 +277,7 @@ func (h *Handler) handleTrackDelete(w http.ResponseWriter, r *http.Request) {
 	if t.CoverArt != "" && t.CoverArt != t.AlbumID {
 		_ = os.Remove(filepath.Join(h.CoversDir, t.CoverArt))
 	}
+	h.Logger.Info("uploaded track deleted", "track", t.ID, "by", userFrom(r.Context()).Username)
 	writeResource(w, http.StatusNoContent, nil)
 }
 
