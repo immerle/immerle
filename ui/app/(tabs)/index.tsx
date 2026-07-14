@@ -1,13 +1,19 @@
+import { useMemo } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useAlbumList, useStarred } from '../../src/query/library';
 import { useAuth } from '../../src/auth/store';
+import { usePlayer } from '../../src/audio/store';
+import { useDownloads, OfflineEntry } from '../../src/offline/store';
+import { useOfflineCatalog } from '../../src/offline/catalog';
 import { AlbumTile } from '../../src/components/AlbumCard';
+import { CoverArt } from '../../src/components/CoverArt';
+import { PlaylistCover } from '../../src/components/PlaylistCover';
 import { Ionicon } from '../../src/components/Ionicon';
-import { Loading, SectionHeader } from '../../src/components/ui';
+import { Button, Card, Loading, SectionHeader } from '../../src/components/ui';
 import { useColors } from '../../src/theme/colors';
-import { Album } from '../../src/api/subsonic/types';
+import { Album, Song } from '../../src/api/subsonic/types';
 import { useT } from '../../src/i18n/store';
 
 const TILE = 150;
@@ -47,6 +53,108 @@ function QuickAccessRow() {
   );
 }
 
+/** Shown on Home when the server can't be reached, with a retry button —
+ * the tracks actually available offline are listed separately below. */
+function OfflineBanner({ onRetry, retrying }: { onRetry: () => void; retrying: boolean }) {
+  const t = useT();
+  const colors = useColors();
+  return (
+    <View className="px-4 pb-2">
+      <Card className="flex-row items-center gap-3">
+        <Ionicon name="cloud-offline-outline" size={22} color={colors.muted} />
+        <Text className="flex-1 text-base font-semibold text-foreground">{t('home.home.offlineTitle')}</Text>
+        <Button title={t('home.home.retry')} variant="secondary" size="sm" loading={retrying} onPress={onRetry} />
+      </Card>
+    </View>
+  );
+}
+
+/** An offline entry carries enough to play it (the file is resolved locally). */
+function toSong(e: OfflineEntry): Song {
+  return { id: e.id, title: e.title, artist: e.artist, album: e.album, coverArt: e.coverArt, duration: e.duration };
+}
+
+/** Same carousel look as the online album rows, but built from whatever is
+ * actually saved for offline playback. */
+function OfflineTracksRow() {
+  const t = useT();
+  const entries = useDownloads((s) => s.entries);
+  const list = useMemo(() => Object.values(entries).sort((a, b) => b.downloadedAt - a.downloadedAt), [entries]);
+  if (!list.length) return null;
+
+  const play = (index: number) => void usePlayer.getState().playSongs(list.map(toSong), index);
+
+  return (
+    <View>
+      <SectionHeader title={t('home.home.availableOffline')} />
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
+        {list.map((e, i) => (
+          <Pressable key={e.id} onPress={() => play(i)} style={{ width: TILE }} className="mr-3 active:opacity-70">
+            <CoverArt coverArt={e.coverArt} size={TILE} rounded="rounded-xl" />
+            <Text numberOfLines={1} className="mt-2 text-sm font-semibold text-foreground">
+              {e.title}
+            </Text>
+            <Text numberOfLines={1} className="text-xs text-muted">
+              {e.artist}
+            </Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+    </View>
+  );
+}
+
+/** Fully-downloaded albums (cover + name + artist), navigable offline since
+ * album/[id] falls back to this same snapshot when the server is unreachable. */
+function OfflineAlbumsRow() {
+  const t = useT();
+  const albums = Object.values(useOfflineCatalog((s) => s.albums));
+  if (!albums.length) return null;
+  return (
+    <View>
+      <SectionHeader title={t('home.home.offlineAlbums')} />
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
+        {albums.map((a) => (
+          <Pressable key={a.id} onPress={() => router.push(`/album/${a.id}` as never)} style={{ width: TILE }} className="mr-3 active:opacity-70">
+            <CoverArt coverArt={a.coverArt} size={TILE} rounded="rounded-xl" />
+            <Text numberOfLines={1} className="mt-2 text-sm font-semibold text-foreground">
+              {a.name}
+            </Text>
+            <Text numberOfLines={1} className="text-xs text-muted">
+              {a.artist}
+            </Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+    </View>
+  );
+}
+
+/** Fully-downloaded playlists, same idea as OfflineAlbumsRow. */
+function OfflinePlaylistsRow() {
+  const t = useT();
+  const playlists = Object.values(useOfflineCatalog((s) => s.playlists));
+  if (!playlists.length) return null;
+  return (
+    <View>
+      <SectionHeader title={t('home.home.offlinePlaylists')} />
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
+        {playlists.map((p) => (
+          <Pressable key={p.id} onPress={() => router.push(`/playlist/${p.id}` as never)} style={{ width: TILE }} className="mr-3 active:opacity-70">
+            <PlaylistCover coverArt={p.coverArt} covers={[]} size={TILE} rounded="rounded-xl" fallbackIcon="list" />
+            <Text numberOfLines={1} className="mt-2 text-sm font-semibold text-foreground">
+              {p.name}
+            </Text>
+            <Text numberOfLines={1} className="text-xs text-muted">
+              {t('media.playlist.trackCount', { count: p.songs.length })}
+            </Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+    </View>
+  );
+}
+
 /** Horizontal album carousel. */
 function AlbumRow({ title, albums }: { title: string; albums: Album[] | undefined }) {
   if (!albums || albums.length === 0) return null;
@@ -75,6 +183,15 @@ export default function Home() {
   const starred = useStarred();
 
   const loading = recentlyPlayed.isLoading && frequent.isLoading && random.isLoading;
+  // All three failing (rather than just one) is a reasonable proxy for "the
+  // server is unreachable" — there's no dedicated connectivity check today.
+  const offline = recentlyPlayed.isError && frequent.isError && random.isError;
+  const retrying = recentlyPlayed.isFetching || frequent.isFetching || random.isFetching;
+  const retry = () => {
+    void recentlyPlayed.refetch();
+    void frequent.refetch();
+    void random.refetch();
+  };
 
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-background">
@@ -88,7 +205,14 @@ export default function Home() {
           <QuickAccessRow />
         </View>
 
-        {loading ? (
+        {offline ? (
+          <>
+            <OfflineBanner onRetry={retry} retrying={retrying} />
+            <OfflineAlbumsRow />
+            <OfflinePlaylistsRow />
+            <OfflineTracksRow />
+          </>
+        ) : loading ? (
           <Loading />
         ) : (
           <>

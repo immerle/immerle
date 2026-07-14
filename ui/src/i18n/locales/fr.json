@@ -262,7 +262,12 @@
       "recentlyPlayed": "Écoutés récemment",
       "mostPlayed": "Les plus écoutés",
       "favorites": "Vos favoris",
-      "random": "Au hasard"
+      "random": "Au hasard",
+      "offlineTitle": "Serveur injoignable",
+      "retry": "Réessayer",
+      "availableOffline": "Disponible hors ligne",
+      "offlineAlbums": "Albums disponibles hors ligne",
+      "offlinePlaylists": "Playlists disponibles hors ligne"
     },
     "playlists": {
       "title": "Playlists",

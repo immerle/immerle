@@ -14,6 +14,7 @@ import { useTheme } from '../src/theme/store';
 import { usePlayer } from '../src/audio/store';
 import { useSearchUI } from '../src/search/store';
 import { useDownloads } from '../src/offline/store';
+import { useOfflineCatalog } from '../src/offline/catalog';
 import { TrackMenu } from '../src/components/trackMenu';
 import { ToastHost } from '../src/components/Toast';
 import { PlayerBar } from '../src/components/PlayerBar';
@@ -52,6 +53,7 @@ export default function RootLayout() {
   const hydrateUI = useUI((s) => s.hydrate);
   const hydrateLocale = useLocale((s) => s.hydrate);
   const hydrateDownloads = useDownloads((s) => s.hydrate);
+  const hydrateOfflineCatalog = useOfflineCatalog((s) => s.hydrate);
   const detectSelf = useSelfServer((s) => s.detect);
   const authStatus = useAuth((s) => s.status);
   const themeHydrated = useTheme((s) => s.hydrated);
@@ -66,8 +68,9 @@ export default function RootLayout() {
     void hydrateUI();
     void hydrateLocale();
     void hydrateDownloads();
+    void hydrateOfflineCatalog();
     void detectSelf();
-  }, [hydrateTheme, restore, hydratePlayer, initPlayer, loadRecents, hydrateUI, hydrateLocale, hydrateDownloads, detectSelf]);
+  }, [hydrateTheme, restore, hydratePlayer, initPlayer, loadRecents, hydrateUI, hydrateLocale, hydrateDownloads, hydrateOfflineCatalog, detectSelf]);
 
   // Web only: expo-router disables automatic document titles, so set the
   // browser tab title from the current route.

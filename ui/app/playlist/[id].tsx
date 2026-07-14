@@ -13,6 +13,7 @@ import {
   useSetPlaylistPublic,
   useSubscriptionMutations,
 } from '../../src/query/playlists';
+import { useOfflineCatalog } from '../../src/offline/catalog';
 import { PlaylistCover } from '../../src/components/PlaylistCover';
 import { TrackList } from '../../src/components/TrackList';
 import { Badge, Button, ErrorState, Field, IconButton, Loading } from '../../src/components/ui';
@@ -44,6 +45,7 @@ export default function PlaylistDetail() {
   const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const q = usePlaylist(id);
+  const cached = useOfflineCatalog((s) => s.playlists[id]);
   const rename = useRenamePlaylist();
   const reorder = useReorderPlaylist();
   const del = useDeletePlaylist();
@@ -74,10 +76,15 @@ export default function PlaylistDetail() {
   }, [q.data]);
   useWebTitle(q.data?.name);
 
-  if (q.isLoading) return <Loading />;
-  if (q.isError || !q.data) return <ErrorState message={t('media.playlist.notFound')} onRetry={q.refetch} />;
+  if (q.isLoading && !cached) return <Loading />;
+  if ((q.isError || !q.data) && !cached) return <ErrorState message={t('media.playlist.notFound')} onRetry={q.refetch} />;
 
-  const playlist = q.data;
+  // Prefer live data; fall back to the offline snapshot (from downloading the
+  // whole playlist) when the server can't be reached. The fallback is
+  // read-only — no edit/subscribe/collaborator controls, since none of those
+  // mutations can work offline anyway.
+  const offline = !q.data && !!cached;
+  const playlist = q.data ?? { id, name: cached!.name, coverArt: cached!.coverArt, entry: cached!.songs };
   const songs = playlist.entry ?? [];
   const totalDuration = songs.reduce((n, s) => n + (s.duration ?? 0), 0);
   // Subsonic omits `owner` for one's own playlists on some servers; treat a
@@ -85,7 +92,7 @@ export default function PlaylistDetail() {
   // federated playlist is never "owned" — its owner field is just an internal
   // attribution the server had to pick — so it's always read-only/subscribable,
   // even for the account that field happens to name.
-  const isOwner = !playlist.federated && (playlist.owner ? playlist.owner === username : true);
+  const isOwner = !offline && !playlist.federated && (playlist.owner ? playlist.owner === username : true);
 
   const togglePublic = (next: boolean) => {
     setIsPublic(next);
@@ -192,6 +199,8 @@ export default function PlaylistDetail() {
         <View className="w-full flex-row items-center justify-between pt-1">
           {isOwner ? (
             <IconButton name="create-outline" size={24} color={colors.muted} onPress={() => setEditing(true)} accessibilityLabel={t('media.playlist.edit')} />
+          ) : offline ? (
+            <View />
           ) : playlist.subscribed ? (
             <IconButton name="heart-dislike-outline" size={24} color={colors.danger} onPress={confirmUnsubscribe} accessibilityLabel={t('media.playlist.unsubscribe')} />
           ) : (
@@ -205,7 +214,7 @@ export default function PlaylistDetail() {
             />
           )}
           <View className="flex-row items-center gap-4">
-            <DownloadButton songs={songs} size={24} />
+            <DownloadButton songs={songs} size={24} snapshot={{ type: 'playlist', id: playlist.id, name: playlist.name, coverArt: playlist.coverArt }} />
             <PlayButton
               onPress={() => {
                 if (!songs.length) return;
