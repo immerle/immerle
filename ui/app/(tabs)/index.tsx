@@ -12,16 +12,16 @@ import { useT } from '../../src/i18n/store';
 
 const TILE = 150;
 
-/** Small, muted shortcut chip — deliberately understated next to the greeting. */
+/** Shortcut chip in the user's accent color. */
 function ShortcutChip({ icon, label, onPress }: { icon: string; label: string; onPress: () => void }) {
   const colors = useColors();
   return (
     <Pressable
       onPress={onPress}
-      className="flex-row items-center gap-1.5 rounded-full border border-border px-3 py-1.5 active:bg-surface-alt"
+      className="flex-row items-center gap-2 rounded-full border border-primary px-4 py-2 active:bg-primary/10"
     >
-      <Ionicon name={icon} size={13} color={colors.muted} />
-      <Text className="text-xs font-medium text-muted">{label}</Text>
+      <Ionicon name={icon} size={16} color={colors.primary} />
+      <Text className="text-sm font-semibold text-primary">{label}</Text>
     </Pressable>
   );
 }
