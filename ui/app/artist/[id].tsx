@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ScrollView, Text, useWindowDimensions, View } from 'react-native';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useArtist } from '../../src/query/library';
 import { useAuth } from '../../src/auth/store';
 import { HeroBackdrop } from '../../src/components/HeroBackdrop';
@@ -19,14 +20,29 @@ export default function ArtistDetail() {
   const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const client = useAuth((s) => s.client);
   const q = useArtist(id);
   const playSongs = usePlayer((s) => s.playSongs);
   const [busy, setBusy] = useState(false);
   useWebTitle(q.data?.name);
 
-  if (q.isLoading) return <Loading />;
-  if (q.isError || !q.data) return <ErrorState message={t('media.artist.notFound')} onRetry={q.refetch} />;
+  if (q.isLoading) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: false }} />
+        <Loading />
+      </>
+    );
+  }
+  if (q.isError || !q.data) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: false }} />
+        <ErrorState message={t('media.artist.notFound')} onRetry={q.refetch} />
+      </>
+    );
+  }
 
   const artist = q.data;
   const albums = artist.album ?? [];
@@ -64,9 +80,14 @@ export default function ArtistDetail() {
 
   return (
     <>
-      <Stack.Screen options={{ title: artist.name }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <ScrollView className="flex-1 bg-background" contentContainerStyle={{ paddingBottom: 24 }}>
-        <HeroBackdrop url={heroUrl} height={wide ? 170 : 150}>
+        <HeroBackdrop url={heroUrl} height={wide ? 170 : 150 + insets.top}>
+          {!wide ? (
+            <View className="absolute left-4 z-10" style={{ top: insets.top + 8 }}>
+              <IconButton name="chevron-back" size={24} color="#fff" onPress={() => router.back()} accessibilityLabel={t('components.admin.back')} />
+            </View>
+          ) : null}
           <View className="px-4 pb-3">
             <Text className="text-[11px] font-semibold uppercase tracking-wide text-white/80">{t('media.artist.label')}</Text>
             <Text
