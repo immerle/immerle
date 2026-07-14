@@ -73,7 +73,7 @@ export default function Player() {
       <View className="flex-row items-center justify-between px-4 pt-2">
         <IconButton name="chevron-down" size={28} onPress={() => router.back()} accessibilityLabel={t('media.player.close')} />
         <Text className="text-sm font-medium text-muted">{t('media.player.nowPlaying')}</Text>
-        <View className="flex-row items-center gap-1">
+        <View className="flex-row items-center gap-3">
           {hasLyrics ? (
             <IconButton
               name="mic"
