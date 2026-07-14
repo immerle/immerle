@@ -919,7 +919,16 @@ export const usePlayer = create<AudioState>((set, get) => ({
     }
     const engine = get().engine;
     if (!engine) return;
-    if (get().status === 'playing') await engine.pause();
+    const wasPlaying = get().status === 'playing';
+    // Optimistic, like the spectating branch above: the user's own click is
+    // truth for local playback intent. Needed because right after a reload
+    // (e.g. the launch restore) the engine's real 'playing'/'pause' events are
+    // still swallowed by the reload grace window (suppressEngineEvents) — see
+    // acquireEngineReloadLock — which otherwise left the button stuck on
+    // "play" while audio was actually playing. A later engine 'state' event
+    // still corrects this if the actual outcome differs (e.g. play() failed).
+    set({ status: wasPlaying ? 'paused' : 'playing' });
+    if (wasPlaying) await engine.pause();
     else await engine.play();
   },
 
