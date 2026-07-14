@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, router } from 'expo-router';
 import { useRadioStations } from '../../src/query/radio';
 import { useAuth } from '../../src/auth/store';
@@ -18,6 +18,7 @@ const FLAG: Record<string, string> = { fr: '🇫🇷', es: '🇪🇸', gb: '🇬
  * has been liked), then browse that country's stations. */
 export default function RadiosHome() {
   const t = useT();
+  const colors = useColors();
   const { width } = useWindowDimensions();
   const wide = width >= 640;
   const insets = useSafeAreaInsets();
@@ -41,7 +42,7 @@ export default function RadiosHome() {
   const heroUrl = coverStation && client ? client.radioCoverUrl(coverStation.id) : undefined;
 
   const Hero = (
-    <HeroBackdrop url={heroUrl} height={wide ? 170 : 150 + insets.top}>
+    <HeroBackdrop url={heroUrl} tint={colors.primary} height={wide ? 170 : 150 + insets.top}>
       {!wide ? (
         <View className="absolute left-4 z-10" style={{ top: insets.top + 8 }}>
           <IconButton name="chevron-back" size={24} color="#fff" onPress={() => router.back()} accessibilityLabel={t('components.admin.back')} />
@@ -60,10 +61,10 @@ export default function RadiosHome() {
     return (
       <>
         <Stack.Screen options={{ headerShown: false }} />
-        <SafeAreaView edges={['top']} className="flex-1 bg-background">
+        <View className="flex-1 bg-background">
           {Hero}
           <EmptyState icon="radio-outline" title={t('radio.unavailableTitle')} subtitle={t('radio.unavailableSubtitle')} />
-        </SafeAreaView>
+        </View>
       </>
     );
   }
@@ -87,7 +88,7 @@ export default function RadiosHome() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <SafeAreaView edges={['top']} className="flex-1 bg-background">
+      <View className="flex-1 bg-background">
         <ScrollView contentContainerStyle={{ paddingBottom: 16 }}>
           {Hero}
           <View className="flex-row flex-wrap gap-2.5 px-4 pt-4">
@@ -112,7 +113,7 @@ export default function RadiosHome() {
           </View>
           {!groups.length ? <EmptyState icon="radio-outline" title={t('radio.emptyTitle')} subtitle={t('radio.emptySubtitle')} /> : null}
         </ScrollView>
-      </SafeAreaView>
+      </View>
     </>
   );
 }
