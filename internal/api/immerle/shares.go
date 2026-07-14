@@ -104,11 +104,13 @@ func (h *Handler) handleCreateShare(w http.ResponseWriter, r *http.Request) {
 		writeValidation(w, []fieldError{{Field: "itemId", Message: "itemId is required"}})
 		return
 	}
-	swe, err := h.shareSvc.Create(r.Context(), userFrom(r.Context()).ID, req.ItemID, req.Description, shareExpiry(req.ExpiresAt))
+	user := userFrom(r.Context())
+	swe, err := h.shareSvc.Create(r.Context(), user.ID, req.ItemID, req.Description, shareExpiry(req.ExpiresAt))
 	if err != nil {
 		writeServiceError(w, err)
 		return
 	}
+	h.Logger.Info("share created", "by", user.Username, "item", req.ItemID)
 	writeResource(w, http.StatusCreated, h.toShareView(swe))
 }
 

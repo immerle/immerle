@@ -77,6 +77,7 @@ func (h *Handler) handleCreateToken(w http.ResponseWriter, r *http.Request) {
 		writeInternal(w, err)
 		return
 	}
+	h.Logger.Info("API token created", "user", user.Username, "name", tok.Name, "tokenId", tok.ID)
 	writeResource(w, http.StatusCreated, map[string]any{
 		"token":  secret, // shown once
 		"id":     tok.ID,
@@ -107,5 +108,6 @@ func (h *Handler) handleRevokeToken(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "not_found", "token not found")
 		return
 	}
+	h.Logger.Info("API token revoked", "user", user.Username, "tokenId", pathParam(r, "id"))
 	writeResource(w, http.StatusNoContent, nil)
 }
