@@ -33,7 +33,7 @@ function QuickAccessRow() {
   const canHallOfFame = useAuth((s) => s.client?.isFeatureEnabled('hallOfFame') ?? false);
 
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 16 }}>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingLeft: 12, paddingRight: 16 }}>
       <ShortcutChip icon="heart" label={t('home.playlists.likedTracks')} onPress={() => router.push('/liked' as never)} />
       <ShortcutChip icon="cloud-upload" label={t('components.sidebar.localSongs')} onPress={() => router.push('/local' as never)} />
       {canHallOfFame ? (
