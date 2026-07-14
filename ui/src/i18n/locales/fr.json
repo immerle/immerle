@@ -262,7 +262,8 @@
       "recentlyPlayed": "Écoutés récemment",
       "mostPlayed": "Les plus écoutés",
       "favorites": "Vos favoris",
-      "random": "Au hasard"
+      "random": "Au hasard",
+      "offlineTitle": "Serveur injoignable"
     },
     "playlists": {
       "title": "Playlists",

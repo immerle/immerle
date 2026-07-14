@@ -262,7 +262,8 @@
       "recentlyPlayed": "Recently played",
       "mostPlayed": "Most played",
       "favorites": "Your favorites",
-      "random": "Random picks"
+      "random": "Random picks",
+      "offlineTitle": "Can't reach the server"
     },
     "playlists": {
       "title": "Playlists",

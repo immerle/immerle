@@ -3,11 +3,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useAlbumList, useStarred } from '../../src/query/library';
 import { useAuth } from '../../src/auth/store';
+import { useDownloads } from '../../src/offline/store';
 import { AlbumTile } from '../../src/components/AlbumCard';
 import { Ionicon } from '../../src/components/Ionicon';
-import { Loading, SectionHeader } from '../../src/components/ui';
+import { Card, Loading, SectionHeader } from '../../src/components/ui';
 import { useColors } from '../../src/theme/colors';
 import { Album } from '../../src/api/subsonic/types';
+import { formatBytes } from '../../src/utils/format';
 import { useT } from '../../src/i18n/store';
 
 const TILE = 150;
@@ -47,6 +49,34 @@ function QuickAccessRow() {
   );
 }
 
+/** Shown on Home when the server can't be reached — points to whatever is
+ * already downloaded for offline playback, since the usual album rows come
+ * back empty (no data, no error UI) in that case. */
+function OfflineBanner() {
+  const t = useT();
+  const colors = useColors();
+  const entries = useDownloads((s) => s.entries);
+  const list = Object.values(entries);
+  const totalSize = list.reduce((n, e) => n + (e.size ?? 0), 0);
+
+  return (
+    <View className="px-4 pb-2">
+      <Pressable onPress={() => router.push('/offline' as never)}>
+        <Card className="flex-row items-center gap-3">
+          <Ionicon name="cloud-offline-outline" size={22} color={colors.muted} />
+          <View className="flex-1">
+            <Text className="text-base font-semibold text-foreground">{t('home.home.offlineTitle')}</Text>
+            <Text className="text-sm text-muted">
+              {list.length ? t('offline.summary', { count: list.length, size: formatBytes(totalSize) }) : t('offline.emptyTitle')}
+            </Text>
+          </View>
+          <Ionicon name="chevron-forward" size={18} color={colors.muted} />
+        </Card>
+      </Pressable>
+    </View>
+  );
+}
+
 /** Horizontal album carousel. */
 function AlbumRow({ title, albums }: { title: string; albums: Album[] | undefined }) {
   if (!albums || albums.length === 0) return null;
@@ -75,6 +105,9 @@ export default function Home() {
   const starred = useStarred();
 
   const loading = recentlyPlayed.isLoading && frequent.isLoading && random.isLoading;
+  // All three failing (rather than just one) is a reasonable proxy for "the
+  // server is unreachable" — there's no dedicated connectivity check today.
+  const offline = recentlyPlayed.isError && frequent.isError && random.isError;
 
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-background">
@@ -87,6 +120,8 @@ export default function Home() {
         <View className="pb-2 pt-1">
           <QuickAccessRow />
         </View>
+
+        {offline ? <OfflineBanner /> : null}
 
         {loading ? (
           <Loading />
