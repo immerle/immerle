@@ -263,7 +263,9 @@
       "mostPlayed": "Most played",
       "favorites": "Your favorites",
       "random": "Random picks",
-      "offlineTitle": "Can't reach the server"
+      "offlineTitle": "Can't reach the server",
+      "retry": "Retry",
+      "availableOffline": "Available offline"
     },
     "playlists": {
       "title": "Playlists",
