@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Modal, Text, useWindowDimensions, View } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { useHallOfFame, useSetHallOfFameOrder, useSetHallOfFameNote } from '../src/query/hallOfFame';
 import { HeroBackdrop } from '../src/components/HeroBackdrop';
@@ -29,6 +30,7 @@ export default function HallOfFameScreen() {
   const colors = useColors();
   const { width } = useWindowDimensions();
   const wide = width >= 640;
+  const insets = useSafeAreaInsets();
   const client = useAuth((s) => s.client);
   const q = useHallOfFame();
   const setOrder = useSetHallOfFameOrder();
@@ -45,8 +47,22 @@ export default function HallOfFameScreen() {
   }, [q.data]);
   useWebTitle(t('media.hallOfFame.title'));
 
-  if (q.isLoading) return <Loading />;
-  if (q.isError || !q.data) return <ErrorState message={t('media.hallOfFame.loadError')} onRetry={q.refetch} />;
+  if (q.isLoading) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: false }} />
+        <Loading />
+      </>
+    );
+  }
+  if (q.isError || !q.data) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: false }} />
+        <ErrorState message={t('media.hallOfFame.loadError')} onRetry={q.refetch} />
+      </>
+    );
+  }
 
   const songs = q.data.entries;
   const totalDuration = songs.reduce((n, s) => n + (s.duration ?? 0), 0);
@@ -86,7 +102,12 @@ export default function HallOfFameScreen() {
 
   const Header = (
     <View>
-      <HeroBackdrop url={coverUrl} height={wide ? 260 : 300}>
+      <HeroBackdrop url={coverUrl} height={wide ? 260 : 300 + insets.top}>
+        {!wide ? (
+          <View className="absolute left-4 z-10" style={{ top: insets.top + 8 }}>
+            <IconButton name="chevron-back" size={24} color="#fff" onPress={() => router.back()} accessibilityLabel={t('components.admin.back')} />
+          </View>
+        ) : null}
         <View className={`pb-5 ${wide ? 'flex-row items-end justify-between gap-6 pl-4 pr-10' : 'items-center gap-4 px-4'}`}>
           <View className={wide ? 'min-w-0' : 'items-center'}>
             <Text

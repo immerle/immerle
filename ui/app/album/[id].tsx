@@ -1,11 +1,12 @@
 import { Text, useWindowDimensions, View } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAlbum } from '../../src/query/library';
 import { useAuth } from '../../src/auth/store';
 import { CoverArt } from '../../src/components/CoverArt';
 import { HeroBackdrop } from '../../src/components/HeroBackdrop';
 import { TrackList } from '../../src/components/TrackList';
-import { ErrorState, IconButton, Loading } from '../../src/components/ui';
+import { ErrorState, IconButton, Skeleton } from '../../src/components/ui';
 import { PlayButton } from '../../src/components/PlayButton';
 import { DownloadButton } from '../../src/components/DownloadButton';
 import { usePlayer } from '../../src/audio/store';
@@ -21,15 +22,54 @@ export default function AlbumDetail() {
   const colors = useColors();
   const { width } = useWindowDimensions();
   const wide = width >= 640;
+  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const client = useAuth((s) => s.client);
   const q = useAlbum(id);
   const playSongs = usePlayer((s) => s.playSongs);
   useWebTitle(q.data?.name);
 
-  if (q.isLoading) return <Loading />;
+  if (q.isLoading) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View className="flex-1 bg-background">
+          <HeroBackdrop height={wide ? 300 : 360 + insets.top}>
+            {!wide ? (
+              <View className="absolute left-4 z-10" style={{ top: insets.top + 8 }}>
+                <IconButton name="chevron-back" size={24} color="#fff" onPress={() => router.back()} accessibilityLabel={t('components.admin.back')} />
+              </View>
+            ) : null}
+            <View className={`px-4 pb-5 ${wide ? 'flex-row items-end gap-5' : 'items-center gap-3'}`}>
+              <Skeleton style={{ width: wide ? 196 : 150, height: wide ? 196 : 150 }} />
+              <View className={wide ? 'min-w-0 flex-1 gap-2' : 'items-center gap-2'}>
+                <Skeleton style={{ width: wide ? 320 : 220, height: wide ? 44 : 30 }} />
+                <Skeleton style={{ width: wide ? 200 : 160, height: 16 }} />
+              </View>
+            </View>
+          </HeroBackdrop>
+          <View className="gap-4 px-4 py-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <View key={i} className="flex-row items-center gap-3">
+                <Skeleton style={{ width: 20, height: 14 }} />
+                <View className="flex-1 gap-2">
+                  <Skeleton style={{ width: '70%', height: 14 }} />
+                  <Skeleton style={{ width: '40%', height: 12 }} />
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
+      </>
+    );
+  }
   if (q.isError || !q.data) {
-    return <ErrorState message={t('media.album.notFound')} onRetry={q.refetch} />;
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: false }} />
+        <ErrorState message={t('media.album.notFound')} onRetry={q.refetch} />
+      </>
+    );
   }
 
   const album = q.data;
@@ -42,7 +82,12 @@ export default function AlbumDetail() {
 
   const Header = (
     <View>
-      <HeroBackdrop url={coverUrl} height={wide ? 300 : 360}>
+      <HeroBackdrop url={coverUrl} height={wide ? 300 : 360 + insets.top}>
+        {!wide ? (
+          <View className="absolute left-4 z-10" style={{ top: insets.top + 8 }}>
+            <IconButton name="chevron-back" size={24} color="#fff" onPress={() => router.back()} accessibilityLabel={t('components.admin.back')} />
+          </View>
+        ) : null}
         <View className={`px-4 pb-5 ${wide ? 'flex-row items-end gap-5' : 'items-center gap-3'}`}>
           <View className="rounded-md shadow-2xl" style={{ elevation: 8 }}>
             <CoverArt coverArt={album.coverArt} size={wide ? 196 : 150} rounded="rounded-md" />
@@ -84,7 +129,7 @@ export default function AlbumDetail() {
 
   return (
     <>
-      <Stack.Screen options={{ title: album.name }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <View className="flex-1 bg-background">
         <TrackList songs={songs} showArtwork={false} header={Header} refreshing={q.isRefetching} onRefresh={q.refetch} />
       </View>

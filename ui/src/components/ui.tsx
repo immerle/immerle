@@ -1,4 +1,4 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -8,10 +8,24 @@ import {
   TextInput,
   TextInputProps,
   View,
+  ViewStyle,
 } from 'react-native';
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { Ionicon } from './Ionicon';
 import { useColors } from '../theme/colors';
 import { useT } from '../i18n/store';
+
+// --- Skeleton ----------------------------------------------------------------
+
+/** Pulsing placeholder box for loading states (Facebook-style content skeleton). */
+export function Skeleton({ className, style }: { className?: string; style?: ViewStyle }) {
+  const opacity = useSharedValue(0.5);
+  useEffect(() => {
+    opacity.value = withRepeat(withTiming(1, { duration: 700, easing: Easing.inOut(Easing.ease) }), -1, true);
+  }, [opacity]);
+  const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  return <Animated.View style={[animatedStyle, style]} className={`rounded-md bg-surface-alt ${className ?? ''}`} />;
+}
 
 // --- Button ----------------------------------------------------------------
 
