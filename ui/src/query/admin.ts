@@ -1,7 +1,8 @@
+import { useEffect, useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth/store';
 import { RuntimeSettingsDTO } from '../api/immerleApi';
-import { qk } from './keys';
+import { invalidateCatalog, qk } from './keys';
 
 // --- Library stats & scan --------------------------------------------------
 
@@ -18,12 +19,28 @@ export function useLibraryStats() {
 /** Scan progress; polls every 2s while a scan is running. */
 export function useScanProgress() {
   const client = useAuth((s) => s.client);
-  return useQuery({
+  const qc = useQueryClient();
+  const query = useQuery({
     queryKey: qk.scanProgress,
     enabled: !!client,
     queryFn: ({ signal }) => client!.getScanProgress(signal),
     refetchInterval: (q) => (q.state.data?.scanning ? 2000 : false),
   });
+
+  // useStartScan's own onSuccess only invalidates scanProgress (to kick off
+  // this polling) — completion is only observable here, so this is the only
+  // place that can refresh the catalog once a scan actually finishes.
+  const wasScanning = useRef(false);
+  useEffect(() => {
+    const scanning = query.data?.scanning ?? false;
+    if (wasScanning.current && !scanning) {
+      invalidateCatalog(qc);
+      qc.invalidateQueries({ queryKey: qk.libraryStats });
+    }
+    wasScanning.current = scanning;
+  }, [query.data?.scanning, qc]);
+
+  return query;
 }
 
 export function useStartScan() {
@@ -169,7 +186,13 @@ export function useJobMutations() {
     mutationFn: (id: string) => client!.cancelDownloadJob(id),
     onSuccess: invalidate,
   });
-  const purge = useMutation({ mutationFn: () => client!.purgeCache() });
+  const purge = useMutation({
+    mutationFn: () => client!.purgeCache(),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.jobs });
+      qc.invalidateQueries({ queryKey: qk.libraryStats });
+    },
+  });
   return { retry, cancel, purge };
 }
 
@@ -213,7 +236,10 @@ export function useCleanupMutations() {
     mutationFn: (enabled: boolean) => client!.setCleanupEnabled(enabled),
     onSuccess: (status) => qc.setQueryData(qk.cleanup, status),
   });
-  const run = useMutation({ mutationFn: () => client!.runCleanup() });
+  const run = useMutation({
+    mutationFn: () => client!.runCleanup(),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.libraryStats }),
+  });
   return { setEnabled, run };
 }
 

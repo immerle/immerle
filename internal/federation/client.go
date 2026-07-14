@@ -311,7 +311,8 @@ func (s *Service) Register(ctx context.Context) error {
 	if _, err := s.hub.Register(ctx, s.auth(), instanceVersion); err != nil {
 		return fmt.Errorf("hub heartbeat: %w", err)
 	}
-	s.logger.Info("heartbeat sent to immerle-hub", "instanceId", c.InstanceID)
+	// Debug: fires unconditionally every sync interval, pure liveness noise.
+	s.logger.Debug("heartbeat sent to immerle-hub", "instanceId", c.InstanceID)
 	return nil
 }
 
@@ -490,8 +491,11 @@ func (s *Service) Unlink(ctx context.Context) error {
 	// federation-client.md §10.3).
 	s.stream.Disconnect()
 	if s.clearCreds != nil {
-		return s.clearCreds(ctx)
+		if err := s.clearCreds(ctx); err != nil {
+			return err
+		}
 	}
+	s.logger.Info("unlinked from immerle-hub")
 	return nil
 }
 

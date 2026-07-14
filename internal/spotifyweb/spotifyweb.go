@@ -50,6 +50,7 @@ type Client struct {
 	cached accessToken
 }
 
+// NewClient builds a Client ready to fetch public Spotify playlists.
 func NewClient() *Client {
 	return &Client{http: providers.NewHTTPClient(30 * time.Second)}
 }

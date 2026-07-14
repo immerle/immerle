@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth/store';
+import { qk } from './keys';
 
 /** Social + Jam hooks, all gated by the relevant capability at the call site. */
 
@@ -52,17 +53,21 @@ export function useActivity() {
 export function useFriendMutations() {
   const client = useAuth((s) => s.client);
   const qc = useQueryClient();
-  const invalidate = () => {
+  // Also refresh that user's profile (its `isFriend` flag) — not just the
+  // friends/pending lists — since a profile page may already be cached from
+  // before the request/accept.
+  const invalidate = (username: string) => {
     qc.invalidateQueries({ queryKey: KEYS.friends });
     qc.invalidateQueries({ queryKey: KEYS.pending });
+    qc.invalidateQueries({ queryKey: KEYS.profile(username) });
   };
   const request = useMutation({
     mutationFn: (username: string) => client!.requestFriend(username),
-    onSuccess: invalidate,
+    onSuccess: (_d, username) => invalidate(username),
   });
   const accept = useMutation({
     mutationFn: (username: string) => client!.acceptFriend(username),
-    onSuccess: invalidate,
+    onSuccess: (_d, username) => invalidate(username),
   });
   return { request, accept };
 }
@@ -97,8 +102,10 @@ export function useJamMutations() {
 
 export function useAddCollaborator() {
   const client = useAuth((s) => s.client);
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: (p: { playlistId: string; username: string }) =>
       client!.addPlaylistCollaborator(p.playlistId, p.username),
+    onSuccess: (_d, p) => qc.invalidateQueries({ queryKey: qk.playlist(p.playlistId) }),
   });
 }

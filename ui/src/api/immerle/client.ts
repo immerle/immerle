@@ -6,6 +6,7 @@ import {
   PlaybackTarget,
   Playlist,
   PlaylistWithSongs,
+  PlayQueueCommand,
   PlayQueueSnapshot,
   SearchResult3,
   Song,
@@ -484,6 +485,16 @@ export class ImmerleClient {
     if (error) throw apiErr(error, 'playqueue.setTarget');
   }
 
+  /**
+   * Send a remote-control command (toggle/next/previous/seekTo/skipTo) for the
+   * active device to apply itself — an intent, not a computed snapshot. See
+   * PlayQueueCommand and ui/src/audio/store.ts's sendRemoteCommand.
+   */
+  async sendPlayQueueCommand(cmd: PlayQueueCommand): Promise<void> {
+    const { error } = await this.api.POST('/play-queue/commands', { body: cmd });
+    if (error) throw apiErr(error, 'playqueue.command');
+  }
+
   async getNowPlaying(signal?: AbortSignal): Promise<NowPlayingEntry[]> {
     const { data, error } = await this.api.GET('/now-playing', { signal });
     if (error) throw apiErr(error, 'nowplaying');
@@ -758,6 +769,14 @@ export class ImmerleClient {
   /** Recent warn/error events for a provider (newest first). Admin-only. */
   async getProviderLogs(name: string, signal?: AbortSignal): Promise<ProviderLog[]> {
     return this.request<ProviderLog[]>('GET', `admin/providers/${encodeURIComponent(name)}/logs`, undefined, signal);
+  }
+
+  /** SSE endpoint URL for the live server log stream (admin log viewer).
+   * EventSource can't set headers, so the Bearer token is passed via the
+   * `apiKey` query fallback — see connectLogStream in ui/src/admin/logs.ts. */
+  logsStreamUrl(): string {
+    const token = this.session?.token ?? '';
+    return `${this.serverUrl}/api/v1/admin/logs/stream?apiKey=${encodeURIComponent(token)}`;
   }
 
   // --- Admin: runtime settings --------------------------------------------

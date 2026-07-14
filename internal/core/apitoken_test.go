@@ -97,13 +97,16 @@ func TestListDeviceSessions(t *testing.T) {
 	_, phone, _ := auth.CreateAPIToken(ctx, user.ID, "iPhone", nil, true)
 	_, stale, _ := auth.CreateAPIToken(ctx, user.ID, "old-laptop", nil, true)
 
-	if err := store.APITokens.TouchLastUsed(ctx, cli.ID, time.Now()); err != nil {
+	if err := store.APITokens.TouchLastUsed(ctx, cli, time.Now()); err != nil {
 		t.Fatal(err)
 	}
-	if err := store.APITokens.TouchLastUsed(ctx, phone.ID, time.Now()); err != nil {
+	if err := store.APITokens.TouchLastUsed(ctx, phone, time.Now()); err != nil {
 		t.Fatal(err)
 	}
-	if err := store.APITokens.TouchLastUsed(ctx, stale.ID, time.Now().Add(-deviceOnlineWindow-time.Minute)); err != nil {
+	if err := store.APITokens.TouchLastUsed(ctx, stale, time.Now().Add(-deviceOnlineWindow-time.Minute)); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.APITokens.FlushLastUsed(ctx); err != nil {
 		t.Fatal(err)
 	}
 

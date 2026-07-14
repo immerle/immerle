@@ -1,3 +1,5 @@
+import type { QueryClient } from '@tanstack/react-query';
+
 /** Centralized query-key factory so invalidation stays consistent. */
 export const qk = {
   ping: ['ping'] as const,
@@ -38,3 +40,22 @@ export const qk = {
   settings: ['admin', 'settings'] as const,
   cleanup: ['admin', 'cleanup'] as const,
 } as const;
+
+/**
+ * Invalidates every cache that can independently render a track's identity
+ * (title, cover, favorite status, or existence) — album/artist detail, browse
+ * lists, search, favorites, playlists, Wrapped. A Song is embedded
+ * independently in each of these, so a mutation that changes one (an admin
+ * track edit/delete, a favorite toggle, a completed library scan) needs to
+ * refresh all of them, not just the screen it was triggered from.
+ */
+export function invalidateCatalog(qc: QueryClient): void {
+  qc.invalidateQueries({ queryKey: ['artist'] });
+  qc.invalidateQueries({ queryKey: ['album'] });
+  qc.invalidateQueries({ queryKey: ['albumList'] });
+  qc.invalidateQueries({ queryKey: ['songsByGenre'] });
+  qc.invalidateQueries({ queryKey: ['search'] });
+  qc.invalidateQueries({ queryKey: qk.starred });
+  qc.invalidateQueries({ queryKey: ['playlist'] });
+  qc.invalidateQueries({ queryKey: ['wrapped'] });
+}

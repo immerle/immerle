@@ -328,6 +328,10 @@
         "settings": {
           "title": "Settings",
           "subtitle": "Runtime, transcoding, cleanup"
+        },
+        "logs": {
+          "title": "Logs",
+          "subtitle": "Live server log stream"
         }
       }
     }
@@ -641,6 +645,21 @@
       "statusCancelled": "Cancelled",
       "retry": "Retry",
       "cancel": "Cancel"
+    },
+    "logs": {
+      "title": "Logs",
+      "headerSubtitle": "Live server log stream",
+      "connected": "Connected",
+      "disconnected": "Disconnected",
+      "unsupportedTitle": "Available on the web",
+      "unsupportedSubtitle": "Live log streaming needs a browser (EventSource).",
+      "emptyTitle": "No logs yet",
+      "emptySubtitle": "Log lines will appear here as the server emits them.",
+      "searchPlaceholder": "Search logs…",
+      "clear": "Clear",
+      "showingCount": "{{shown}} of {{total}}",
+      "noMatchesTitle": "No matching logs",
+      "noMatchesSubtitle": "Try a different search or re-enable a severity filter."
     }
   },
   "media": {
@@ -829,14 +848,18 @@
     },
     "devices": {
       "title": "Connected devices",
-      "subtitle": "Active playback sessions on the server",
+      "subtitle": "Devices signed in to your account",
       "loadError": "Unable to load devices.",
-      "emptyTitle": "No active session",
-      "emptySubtitle": "Nobody is listening right now.",
+      "emptyTitle": "No device",
+      "emptySubtitle": "Devices you sign in with will show up here.",
       "fallbackName": "Device",
-      "justNow": "just now",
-      "minutesAgo": "{{count}} min ago",
-      "hoursAgo": "{{count}} h ago"
+      "online": "Online",
+      "offline": "Offline",
+      "lastSeen": "Last seen {{date}}",
+      "neverSeen": "never",
+      "revokeConfirmTitle": "Sign this device out?",
+      "cancel": "Cancel",
+      "revoke": "Sign out"
     },
     "tokens": {
       "title": "API",
@@ -919,7 +942,8 @@
       "castThisDevice": "This device",
       "castNoOtherDevices": "No other devices found",
       "castPlayingElsewhere": "Playing on another device",
-      "castPlayingOnDevice": "Playing on {{name}}"
+      "castPlayingOnDevice": "Playing on {{name}}",
+      "offline": "Can't reach the server — playing locally downloaded music still works"
     },
     "topbar": {
       "back": "Back",

@@ -65,6 +65,7 @@ func (h *Handler) handleSetupInit(w http.ResponseWriter, r *http.Request) {
 	user, err := h.Setup.InitFirstAdmin(r.Context(), strings.TrimSpace(req.Username), req.Password, strings.TrimSpace(req.Email), req.DisplayName, req.SetupToken)
 	switch {
 	case err == nil:
+		h.Logger.Info("first admin created via setup", "username", user.Username)
 		writeResource(w, http.StatusCreated, map[string]any{
 			"id":          user.ID,
 			"username":    user.Username,

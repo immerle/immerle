@@ -118,6 +118,24 @@ export interface PlaybackTarget {
   lastUsedAt?: string;
 }
 
+/**
+ * A spectator device's remote-control command (see ImmerleClient.sendPlayQueueCommand) —
+ * an intent for the active device to apply itself, not a computed snapshot.
+ */
+export interface PlayQueueCommand {
+  type: 'toggle' | 'next' | 'previous' | 'seekTo' | 'skipTo';
+  /** Target position for a "seekTo" command. */
+  positionMs?: number;
+  /** Track to jump to for a "skipTo" command — resolved against the receiver's own queue. */
+  trackId?: string;
+  /** Disambiguates "skipTo" if trackId appears more than once in the queue — a hint only. */
+  queueIndex?: number;
+  /** The sender's view of the current active device id; ignored if the receiver isn't (or is no longer) that device. */
+  forTarget?: string;
+  /** The sending device's id. */
+  issuedBy?: string;
+}
+
 /** The caller's saved cross-device play queue (see ImmerleClient.getPlayQueue). */
 export interface PlayQueueSnapshot {
   songs: Song[];
@@ -129,6 +147,10 @@ export interface PlayQueueSnapshot {
   targetDeviceId: string;
   /** The device id that wrote this snapshot — tells "I wrote this" from "someone else did". */
   changedBy?: string;
+  /** A spectator's not-yet-applied remote-control command, if any (see PlayQueueCommand). */
+  pendingCommand?: PlayQueueCommand;
+  /** Increases on every new command — lets a device tell a new one from one it already applied. */
+  commandSeq: number;
 }
 
 export interface Playlist {

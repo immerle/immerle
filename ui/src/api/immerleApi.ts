@@ -70,7 +70,8 @@ export type ActivityEventDTO = components['schemas']['immerle.ActivityEventDTO']
 export type JamSessionDTO = components['schemas']['immerle.JamSessionDTO'];
 export type JamParticipantDTO = components['schemas']['immerle.JamParticipantDTO'];
 
-// API tokens (personal access tokens).
+// API tokens (personal access tokens). Device-flagged ones (isDevice) back
+// the "Connected devices" screen — see APITokenRepo.ListDeviceSessions.
 export type APITokenDTO = components['schemas']['immerle.APITokenDTO'];
 export type CreateTokenResponse = components['schemas']['immerle.CreateTokenDTO'];
 

@@ -3,6 +3,10 @@
         "schemas": {
             "immerle.APITokenDTO": {
                 "properties": {
+                    "connected": {
+                        "description": "Connected is true if the token was used within the last few minutes.\nOnly meaningful for device tokens (IsDevice).",
+                        "type": "boolean"
+                    },
                     "createdAt": {
                         "example": "2026-06-15T09:00:00Z",
                         "type": "string"
@@ -210,6 +214,10 @@
             },
             "immerle.DeviceDTO": {
                 "properties": {
+                    "connected": {
+                        "description": "Connected is true if the device was seen within the last few minutes.",
+                        "type": "boolean"
+                    },
                     "createdAt": {
                         "type": "string"
                     },
@@ -1465,6 +1473,30 @@
                 },
                 "type": "object"
             },
+            "immerle.commandView": {
+                "description": "PendingCommand is a spectator's remote-control command for the active\ndevice to apply (see POST /play-queue/commands). CommandSeq increases\non every new command, so a receiver can tell a new one from one it\nalready applied.",
+                "properties": {
+                    "forTarget": {
+                        "type": "string"
+                    },
+                    "issuedBy": {
+                        "type": "string"
+                    },
+                    "positionMs": {
+                        "type": "integer"
+                    },
+                    "queueIndex": {
+                        "type": "integer"
+                    },
+                    "trackId": {
+                        "type": "string"
+                    },
+                    "type": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "immerle.createJamRequest": {
                 "properties": {
                     "name": {
@@ -1729,6 +1761,35 @@
                 },
                 "type": "object"
             },
+            "immerle.playQueueCommandRequest": {
+                "properties": {
+                    "forTarget": {
+                        "description": "ForTarget is the sender's view of the current active device id — the\nreceiver ignores this command if it isn't (or is no longer) that device.",
+                        "type": "string"
+                    },
+                    "issuedBy": {
+                        "description": "IssuedBy is the sending device's id.",
+                        "type": "string"
+                    },
+                    "positionMs": {
+                        "description": "PositionMs is the target position for a \"seekTo\" command.",
+                        "type": "integer"
+                    },
+                    "queueIndex": {
+                        "description": "QueueIndex disambiguates \"skipTo\" if TrackID appears more than once in\nthe queue — a hint only, never the primary lookup.",
+                        "type": "integer"
+                    },
+                    "trackId": {
+                        "description": "TrackID is the track to jump to for a \"skipTo\" command.",
+                        "type": "string"
+                    },
+                    "type": {
+                        "description": "Type is one of \"toggle\", \"next\", \"previous\", \"seekTo\", \"skipTo\".",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "immerle.playQueueRequest": {
                 "properties": {
                     "client": {
@@ -1770,6 +1831,9 @@
                     "changedBy": {
                         "type": "string"
                     },
+                    "commandSeq": {
+                        "type": "integer"
+                    },
                     "current": {
                         "type": "string"
                     },
@@ -1779,6 +1843,9 @@
                         },
                         "type": "array",
                         "uniqueItems": false
+                    },
+                    "pendingCommand": {
+                        "$ref": "#/components/schemas/immerle.commandView"
                     },
                     "playing": {
                         "description": "Playing reports whether Current was playing (vs paused) as of\nChangedAt — see playQueueRequest.Playing.",
@@ -3428,6 +3495,52 @@
                     }
                 ],
                 "summary": "Toggle the Hall of Fame feature",
+                "tags": [
+                    "admin"
+                ]
+            }
+        },
+        "/admin/logs/stream": {
+            "get": {
+                "description": "Admin only. Server-Sent Events stream of structured JSON log lines. Sends recent history immediately, then every new line as it's logged.",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "text/event-stream": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "description": "SSE stream"
+                    },
+                    "401": {
+                        "content": {
+                            "text/event-stream": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "content": {
+                            "text/event-stream": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Stream server logs (SSE)",
                 "tags": [
                     "admin"
                 ]
@@ -6094,7 +6207,7 @@
         },
         "/devices": {
             "get": {
-                "description": "Lists the caller's active device sessions (one per issued JWT), with last-seen time, IP and user agent.",
+                "description": "Lists the caller's active device sessions (one per issued JWT), with last-seen time, IP, user agent, and whether it's currently connected (seen recently).",
                 "responses": {
                     "200": {
                         "content": {
@@ -7933,6 +8046,65 @@
                     }
                 ],
                 "summary": "Save play queue",
+                "tags": [
+                    "playback"
+                ]
+            }
+        },
+        "/play-queue/commands": {
+            "post": {
+                "description": "Sends a remote-control command (toggle, next, previous, seekTo, skipTo) for the active device (see targetDeviceId) to apply. Does not modify the saved queue state directly.",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/immerle.playQueueCommandRequest",
+                                        "summary": "body",
+                                        "description": "Command"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Command",
+                    "required": true
+                },
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Send a play-queue command",
                 "tags": [
                     "playback"
                 ]

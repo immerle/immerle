@@ -1,10 +1,8 @@
 -- +goose Up
 -- +goose StatementBegin
--- Retry of 00038: goose tracks migrations by version number, not content, so
--- an install where version 38 was already recorded (under an earlier,
--- abandoned "ranked playlist" approach) never got the hall_of_fame tables
--- from the rewritten 00038. IF NOT EXISTS makes this a no-op on installs
--- where 00038 already created them correctly.
+-- Hall of Fame: a user's personal top-tracks ranking. A dedicated table (not a
+-- flag on playlists) — exactly one per user, auto-created on first access (see
+-- core.HallOfFameService.Get).
 CREATE TABLE IF NOT EXISTS hall_of_fame (
     id         TEXT PRIMARY KEY,
     owner_id   TEXT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
@@ -12,6 +10,12 @@ CREATE TABLE IF NOT EXISTS hall_of_fame (
     updated_at INTEGER NOT NULL
 );
 
+-- One row per ranked track. track_id is unique per hall_of_fame_id: a track
+-- can only appear once in a ranking. comment is the personal nostalgia note
+-- ("listened to this in college"). Reordering/adding/removing all go through
+-- HallOfFameRepo.ReplaceEntries, which deletes and reinserts every row but
+-- carries each track's existing comment forward — so notes survive a reorder
+-- despite the position-keyed primary key.
 CREATE TABLE IF NOT EXISTS hall_of_fame_entries (
     hall_of_fame_id TEXT NOT NULL REFERENCES hall_of_fame(id) ON DELETE CASCADE,
     track_id        TEXT NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
@@ -25,6 +29,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_hall_of_fame_entries_track ON hall_of_fame
 
 -- +goose Down
 -- +goose StatementBegin
-DROP TABLE IF EXISTS hall_of_fame_entries;
-DROP TABLE IF EXISTS hall_of_fame;
+DROP TABLE hall_of_fame_entries;
+DROP TABLE hall_of_fame;
 -- +goose StatementEnd

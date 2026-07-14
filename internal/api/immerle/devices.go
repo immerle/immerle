@@ -2,10 +2,15 @@ package immerle
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/immerle/immerle/internal/api/httputil"
 	"github.com/immerle/immerle/internal/core"
 )
+
+// deviceOnlineWindow is how recently a device must have been seen (via an
+// authenticated request) to be reported as "connected".
+const deviceOnlineWindow = 5 * time.Minute
 
 // loginRequest is the body for POST /auth/sessions.
 type loginRequest struct {
@@ -49,9 +54,11 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	token, dev, err := h.Auth.IssueDeviceToken(r.Context(), creds, deviceName, h.deviceTokenTTL())
 	if err != nil {
+		h.Logger.Warn("login failed", "username", req.Username, "remote", r.RemoteAddr)
 		writeError(w, http.StatusUnauthorized, "unauthorized", "invalid credentials")
 		return
 	}
+	h.Logger.Info("user logged in", "username", req.Username, "device", dev.Name, "remote", r.RemoteAddr)
 	writeResource(w, http.StatusCreated, map[string]any{
 		"token": token, // the JWT — store it
 		"device": map[string]any{
@@ -65,7 +72,7 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 // handleDevices lists the caller's active device sessions.
 //
 // @Summary      List devices
-// @Description  Lists the caller's active device sessions (one per issued JWT), with last-seen time, IP and user agent.
+// @Description  Lists the caller's active device sessions (one per issued JWT), with last-seen time, IP, user agent, and whether it's currently connected (seen recently).
 // @Tags         devices
 // @Security     BearerAuth
 // @Produce      json
@@ -90,6 +97,7 @@ func (h *Handler) handleDevices(w http.ResponseWriter, r *http.Request) {
 			"lastIp":    d.LastIP,
 			"createdAt": d.CreatedAt,
 			"expiresAt": d.ExpiresAt,
+			"connected": d.LastSeenAt != nil && time.Since(*d.LastSeenAt) < deviceOnlineWindow,
 		})
 	}
 	writeResource(w, http.StatusOK, out)
@@ -118,5 +126,6 @@ func (h *Handler) handleRevokeDevice(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "not_found", "device not found")
 		return
 	}
+	h.Logger.Info("device revoked", "user", user.Username, "device", pathParam(r, "id"))
 	writeResource(w, http.StatusNoContent, nil)
 }

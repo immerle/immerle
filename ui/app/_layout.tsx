@@ -148,6 +148,7 @@ export default function RootLayout() {
                     options={{ presentation: 'modal', headerShown: false }}
                   />
                   <Stack.Screen name="queue" options={{ presentation: 'modal', title: 'File de lecture' }} />
+                  <Stack.Screen name="cast-target" options={{ presentation: 'modal', title: 'Lecture sur' }} />
                   <Stack.Screen name="ui-kit" options={{ title: 'UI Kit', headerShown: !wide }} />
                   <Stack.Screen name="devices" options={{ title: 'Appareils connectés', headerShown: !wide }} />
                   <Stack.Screen name="api-tokens" options={{ title: 'API', headerShown: !wide }} />

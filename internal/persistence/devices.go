@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"sort"
+	"sync"
 	"time"
 
 	melody "github.com/ermos/melody/v2"
@@ -13,7 +15,14 @@ import (
 )
 
 // DeviceRepo persists device sessions (JWT jti registry + revocation + tracking).
-type DeviceRepo struct{ *base }
+type DeviceRepo struct {
+	*base
+	// seenMu/pending buffer TouchSeen writes in memory instead of hitting the DB
+	// on every authenticated request; FlushSeen persists them in one batch. Get/
+	// ListByUser overlay pending entries so reads still see the freshest state.
+	seenMu  sync.Mutex
+	pending map[string]models.Device
+}
 
 const deviceColumns = `id, user_id, name, user_agent, created_at, last_seen_at, last_ip, expires_at, revoked`
 
@@ -48,7 +57,10 @@ func (r *DeviceRepo) Get(ctx context.Context, id string) (models.Device, error) 
 	if errors.Is(err, sql.ErrNoRows) {
 		return d, ErrNotFound
 	}
-	return d, err
+	if err != nil {
+		return d, err
+	}
+	return r.withPending(d), nil
 }
 
 // ListByUser returns a user's active (non-revoked) devices, most recent first.
@@ -66,9 +78,27 @@ func (r *DeviceRepo) ListByUser(ctx context.Context, userID string) ([]models.De
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, d)
+		out = append(out, r.withPending(d))
 	}
-	return out, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	// A pending (not yet flushed) touch can make a device fresher than what the
+	// DB-ordered query above reflects; re-sort so "most recent first" still holds.
+	sort.SliceStable(out, func(i, j int) bool {
+		a, b := out[i].LastSeenAt, out[j].LastSeenAt
+		switch {
+		case a == nil && b == nil:
+			return false
+		case a == nil:
+			return false
+		case b == nil:
+			return true
+		default:
+			return a.After(*b)
+		}
+	})
+	return out, nil
 }
 
 // Revoke marks a device revoked (owner-scoped). Returns whether a row matched.
@@ -82,9 +112,59 @@ func (r *DeviceRepo) Revoke(ctx context.Context, id, userID string) (bool, error
 	return n > 0, nil
 }
 
-// TouchSeen records last-seen time and IP (best effort).
-func (r *DeviceRepo) TouchSeen(ctx context.Context, id, ip string, at time.Time) error {
-	_, err := r.bexec(ctx, r.mel.NewUpdate("devices").
-		Set("last_seen_at", db.Millis(at)).Set("last_ip", ip).Where("id", "=", id))
-	return err
+// TouchSeen buffers a device's last-seen time/IP in memory rather than
+// writing to the DB on every authenticated request. dev is the caller's
+// current view of the device (already fetched via Get), so a flush can
+// recreate its row from this snapshot if it's ever missing. Call FlushSeen
+// (on shutdown) to persist buffered touches.
+func (r *DeviceRepo) TouchSeen(_ context.Context, dev models.Device, ip string, at time.Time) error {
+	dev.LastSeenAt = &at
+	dev.LastIP = ip
+	r.seenMu.Lock()
+	if r.pending == nil {
+		r.pending = make(map[string]models.Device)
+	}
+	r.pending[dev.ID] = dev
+	r.seenMu.Unlock()
+	return nil
+}
+
+// FlushSeen persists every buffered last-seen touch to the DB. A hard kill
+// between flushes only loses those touches — a device just shows "offline" a
+// little longer, self-healing on its next request.
+func (r *DeviceRepo) FlushSeen(ctx context.Context) error {
+	r.seenMu.Lock()
+	pending := r.pending
+	r.pending = nil
+	r.seenMu.Unlock()
+
+	for _, dev := range pending {
+		res, err := r.bexec(ctx, r.mel.NewUpdate("devices").
+			Set("last_seen_at", db.NullMillis(dev.LastSeenAt)).Set("last_ip", dev.LastIP).
+			Where("id", "=", dev.ID))
+		if err != nil {
+			return err
+		}
+		if n, _ := res.RowsAffected(); n == 0 {
+			// The row disappeared between the original Get and this flush (or
+			// never existed) — recreate it from the cached snapshot.
+			if err := r.Create(ctx, dev); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// withPending overlays a not-yet-flushed touch onto a DB-scanned row, so reads
+// reflect the freshest last-seen state even before the next FlushSeen.
+func (r *DeviceRepo) withPending(d models.Device) models.Device {
+	r.seenMu.Lock()
+	p, ok := r.pending[d.ID]
+	r.seenMu.Unlock()
+	if ok {
+		d.LastSeenAt = p.LastSeenAt
+		d.LastIP = p.LastIP
+	}
+	return d
 }

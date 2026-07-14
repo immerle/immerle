@@ -39,7 +39,7 @@ DATABASE_DSN=immerle.db
 
 # --- Logging ---
 LOG_LEVEL=info     # debug | info | warn | error
-LOG_FORMAT=text    # text | json
+# Output is always structured JSON, streamable live from the admin UI.
 
 # --- Library ---
 LIBRARY_PATHS=/music

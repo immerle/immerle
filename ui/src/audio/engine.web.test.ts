@@ -11,12 +11,14 @@ class FakeAudio {
   volume = 1;
   playbackRate = 1;
   preload = '';
+  playCalls = 0;
   addEventListener(type: string, cb: () => void) {
     (this.listeners[type] ||= []).push(cb);
   }
   removeAttribute() {}
   load() {}
   async play() {
+    this.playCalls += 1;
     this.fire('playing');
   }
   pause() {
@@ -35,6 +37,26 @@ let lastAudio: FakeAudio;
 
 const flush = () => new Promise((r) => setTimeout(r, 0));
 const track = (id: string): PlayableTrack => ({ id, url: `http://x/${id}`, title: id });
+
+describe('web engine setQueue', () => {
+  it('loads without starting playback, so a caller can seek before playing', async () => {
+    const engine = createEngine();
+    await engine.setup();
+    await engine.setQueue([track('a'), track('b')], 0);
+
+    // Regression: setQueue used to call play() unconditionally, racing a
+    // caller's subsequent seekTo — a fresh source could start audibly
+    // playing from 0 before the seek landed, and on a real browser that
+    // early seek could silently not stick (see engine.web.ts). Loading
+    // paused means a caller's seekTo below is never in that race.
+    expect(lastAudio.playCalls).toBe(0);
+    expect(engine.getState().status).not.toBe('playing');
+
+    await engine.seekTo(42);
+    expect(lastAudio.currentTime).toBe(42);
+    expect(lastAudio.playCalls).toBe(0); // still hasn't started — caller decides
+  });
+});
 
 describe('web engine end of queue', () => {
   it('auto-advances between tracks, then rewinds to track 1 and pauses at the end', async () => {

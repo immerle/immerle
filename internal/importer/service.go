@@ -106,6 +106,7 @@ func (s *Service) Start(ctx context.Context, userID, source, ref string) (models
 	if err := s.imports.Create(ctx, im); err != nil {
 		return models.Import{}, err
 	}
+	s.logger.Info("import queued", "import", im.ID, "source", source, "ref", ref)
 	s.signal()
 	return im, nil
 }

@@ -47,7 +47,6 @@ class WebAudioEngine implements AudioEngine {
     this.index = tracks.length ? Math.max(0, Math.min(startIndex, tracks.length - 1)) : -1;
     if (this.index >= 0) {
       await this.load(this.index);
-      await this.play();
     }
   }
 

@@ -16,6 +16,7 @@ import (
 	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/federation"
 	"github.com/immerle/immerle/internal/importer"
+	"github.com/immerle/immerle/internal/logging"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 	"github.com/immerle/immerle/internal/scanner"
@@ -84,6 +85,8 @@ type Deps struct {
 	// HallOfFame persists each user's personal top-tracks ranking.
 	HallOfFame *persistence.HallOfFameRepo
 	Logger     *slog.Logger
+	// LogHub streams live server log lines to the admin log viewer (SSE).
+	LogHub *logging.Hub
 }
 
 // deviceTokenTTL returns the device-session JWT lifetime from the runtime
@@ -253,6 +256,7 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Get("/play-queue/events", h.handleStreamPlayQueue)
 			r.Get("/play-queue/targets", h.handleListPlaybackTargets)
 			r.Put("/play-queue/target", h.handleSetPlaybackTarget)
+			r.Post("/play-queue/commands", h.handleSendPlayQueueCommand)
 			r.Get("/now-playing", h.handleNowPlaying)
 
 			// Mint short-lived signed stream/download URLs for the {id} track.
@@ -357,6 +361,9 @@ func (h *Handler) Register(mux chi.Router) {
 			// Admin: DB-backed runtime settings.
 			r.Get("/admin/settings", h.handleSettings)
 			r.Patch("/admin/settings", h.handleSettingsUpdate)
+
+			// Admin: live server log stream (SSE).
+			r.Get("/admin/logs/stream", h.handleStreamLogs)
 
 			// Admin: hub link lifecycle. GET refreshes the live name/sqid from the
 			// hub; register bootstraps (links) under the configured user id; PATCH

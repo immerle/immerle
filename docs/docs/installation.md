@@ -45,7 +45,6 @@ services:
       AUTH_REQUIRE_SETUP_TOKEN: "false"
       # ADMIN_USERNAME: "admin"
       # ADMIN_PASSWORD: "change-me"
-      LOG_FORMAT: "json"
     volumes:
       - ./music:/music:ro
       - immerle-data:/data

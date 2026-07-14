@@ -71,10 +71,9 @@ type DatabaseConfig struct {
 	DSN    string
 }
 
-// LogConfig controls structured logging.
+// LogConfig controls structured logging. Output is always JSON.
 type LogConfig struct {
-	Level  string // debug | info | warn | error
-	Format string // json | text
+	Level string // debug | info | warn | error
 }
 
 // LibraryConfig holds the (bootstrap) library locations. Scan-on-start is always
@@ -133,7 +132,7 @@ func Default() Config {
 			Driver: "sqlite",
 			DSN:    "immerle.db",
 		},
-		Log:     LogConfig{Level: "info", Format: "text"},
+		Log:     LogConfig{Level: "info"},
 		Library: LibraryConfig{DataDir: "data"},
 		HubURL:  DefaultHubURL,
 	}
@@ -251,7 +250,6 @@ func applyEnv(c *Config, lookup func(string) (string, bool)) {
 	setString(&c.Database.Driver, lookup, "DATABASE_DRIVER")
 	setString(&c.Database.DSN, lookup, "DATABASE_DSN")
 	setString(&c.Log.Level, lookup, "LOG_LEVEL")
-	setString(&c.Log.Format, lookup, "LOG_FORMAT")
 	setString(&c.Library.DataDir, lookup, "LIBRARY_DATA_DIR")
 	if v, ok := lookup("LIBRARY_PATHS"); ok && v != "" {
 		c.Library.Paths = splitAndTrim(v)

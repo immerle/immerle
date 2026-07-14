@@ -35,7 +35,7 @@ export function useUpdateAccount() {
   });
 }
 
-/** Connected devices / active sessions, via Subsonic `getNowPlaying`. */
+/** Who's playing what right now (across the account), via Subsonic `getNowPlaying`. */
 export function useNowPlaying() {
   const client = useAuth((s) => s.client);
   return useQuery({
@@ -46,12 +46,22 @@ export function useNowPlaying() {
   });
 }
 
-/** Recently-active app installs on this account, for the "cast to device" picker. Fetched fresh each time it opens. */
+/**
+ * Recently-active app installs on this account, for the "cast to device"
+ * picker. Fetched fresh every time it's enabled — this key is also read
+ * opportunistically by usePlayingElsewhere (PlayerBar.tsx) whenever something
+ * plays elsewhere, so without staleTime:0 + refetchOnMount:'always' the
+ * picker could show whatever snapshot that left behind (stale for up to the
+ * global 5min staleTime) instead of the live list — most visible on native,
+ * where the app/QueryClient can stay alive far longer than a web page load.
+ */
 export function usePlaybackTargets(enabled: boolean) {
   const client = useAuth((s) => s.client);
   return useQuery({
     queryKey: KEYS.playbackTargets,
     enabled: enabled && !!client,
+    staleTime: 0,
+    refetchOnMount: 'always',
     queryFn: ({ signal }) => client!.listPlaybackTargets(signal),
   });
 }
@@ -61,8 +71,19 @@ export function useTokens() {
   return useQuery({
     queryKey: KEYS.tokens,
     enabled: !!client,
+    refetchInterval: 10000,
     queryFn: ({ signal }) => client!.listTokens(signal),
   });
+}
+
+/**
+ * The caller's device sessions (app logins, `isDevice`) — the "Connected
+ * devices" screen. Shares the `/tokens` list with useTokens, filtered down;
+ * revoke via useTokenMutations().revoke.
+ */
+export function useDevices() {
+  const q = useTokens();
+  return { ...q, data: q.data?.filter((t) => t.isDevice) };
 }
 
 export function useTokenMutations() {

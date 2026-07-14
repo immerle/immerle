@@ -552,6 +552,14 @@ type PlayQueue struct {
 	// Empty means unrestricted: every device manages its own playback.
 	TargetDeviceID  string     `json:"targetDeviceId,omitempty"`
 	TargetChangedAt *time.Time `json:"targetChangedAt,omitempty"`
+	// PendingCommand is a spectator's remote-control intent, applied by the
+	// active (TargetDeviceID) device itself rather than adopted as raw state
+	// — see CommandEnvelope. Set independently of Current/PositionMs/Playing
+	// (see PlayQueueRepo.SetCommand), so it survives a normal position sync.
+	PendingCommand *CommandEnvelope `json:"pendingCommand,omitempty"`
+	// CommandSeq increases on every SetCommand call — lets a device tell "a
+	// new command arrived" from "the same one I already applied".
+	CommandSeq int64 `json:"commandSeq,omitempty"`
 }
 
 // QueueEntry is a lightweight display-metadata snapshot for one queued
@@ -564,6 +572,37 @@ type QueueEntry struct {
 	CoverArt string `json:"coverArt,omitempty"`
 	Duration int    `json:"duration,omitempty"`
 	Remote   bool   `json:"remote,omitempty"`
+}
+
+// CommandEnvelope is a spectator device's remote-control command (next,
+// previous, seek, toggle, skip to a track) — sent as an intent instead of a
+// computed snapshot, so the active device applies it against its own true
+// state instead of adopting the spectator's (possibly stale) guess of what
+// the resulting state should be. This is a "latest command wins" model, not
+// a real queue: a second command overwrites the first before either is
+// necessarily applied. That's a deliberate, accepted trade-off (matches the
+// old guessed-snapshot mechanism's same characteristic) — not something to
+// "fix" into a real queue without discussing it first.
+type CommandEnvelope struct {
+	// Type is one of "toggle", "next", "previous", "seekTo", "skipTo".
+	Type string `json:"type"`
+	// PositionMs is the target position for a "seekTo" command.
+	PositionMs int64 `json:"positionMs,omitempty"`
+	// TrackID is the track to jump to for a "skipTo" command — the receiving
+	// device resolves it against its own queue (not the sender's), since
+	// queue contents can differ momentarily between devices.
+	TrackID string `json:"trackId,omitempty"`
+	// QueueIndex disambiguates a "skipTo" when TrackID appears more than once
+	// in the queue (nearest match to this index) — never the primary lookup.
+	QueueIndex int `json:"queueIndex,omitempty"`
+	// ForTarget is the device id this command was addressed to (the sender's
+	// view of TargetDeviceID at send time). The receiver ignores a command
+	// where ForTarget doesn't match its own id, even if it is now the
+	// target — a command is scoped to one specific active-device tenure, so
+	// a stale command from before a handoff can never fire late.
+	ForTarget string `json:"forTarget,omitempty"`
+	// IssuedBy is the sending device's id.
+	IssuedBy string `json:"issuedBy,omitempty"`
 }
 
 // Scrobble records a play submission.
