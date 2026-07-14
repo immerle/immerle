@@ -20,7 +20,7 @@ import { usePlaybackTargets } from '../query/account';
 import { useRadioStations, useRadioLike } from '../query/radio';
 import { RadioStation } from '../api/immerle/types';
 import { queryClient } from '../query/queryClient';
-import { qk } from '../query/keys';
+import { invalidateCatalog } from '../query/keys';
 import { Song } from '../api/subsonic/types';
 import { formatDuration } from '../utils/format';
 import { useColors } from '../theme/colors';
@@ -386,8 +386,9 @@ function SongLikeButton({ song }: { song: Song }) {
     setLiked(next); // optimistic
     const op = next ? client.star({ id: song.id }) : client.unstar({ id: song.id });
     op.then(
-      // Refresh the "Mes titres likés" list so it reflects the change.
-      () => void queryClient.invalidateQueries({ queryKey: qk.starred }),
+      // Refresh everywhere this song's starred flag is independently cached
+      // (favorites list, album/artist detail, search, playlists...).
+      () => invalidateCatalog(queryClient),
       () => setLiked(!next),
     );
   };
