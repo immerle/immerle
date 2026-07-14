@@ -18,7 +18,7 @@ function ShortcutChip({ icon, label, onPress }: { icon: string; label: string; o
   return (
     <Pressable onPress={onPress} className="flex-row items-center gap-2 rounded-full bg-surface-alt px-4 py-2 active:opacity-70">
       <Ionicon name={icon} size={16} color={colors.primary} />
-      <Text className="text-sm font-semibold text-primary">{label}</Text>
+      <Text className="text-sm font-semibold text-foreground">{label}</Text>
     </Pressable>
   );
 }
