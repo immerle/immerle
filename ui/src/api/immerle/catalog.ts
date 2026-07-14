@@ -19,6 +19,7 @@ import type {
   NowPlayingEntry,
   Playlist,
   PlaylistWithSongs,
+  PlayQueueCommand,
   PlayQueueSnapshot,
   SearchResult3,
   Song,
@@ -69,6 +70,17 @@ export function toPlayQueueSnapshot(v: PlayQueueView): PlayQueueSnapshot {
     playing: !!v.playing,
     changedBy: v.changedBy || undefined,
     targetDeviceId: v.targetDeviceId ?? '',
+    pendingCommand: v.pendingCommand
+      ? {
+          type: v.pendingCommand.type as PlayQueueCommand['type'],
+          positionMs: v.pendingCommand.positionMs,
+          trackId: v.pendingCommand.trackId,
+          queueIndex: v.pendingCommand.queueIndex,
+          forTarget: v.pendingCommand.forTarget,
+          issuedBy: v.pendingCommand.issuedBy,
+        }
+      : undefined,
+    commandSeq: v.commandSeq ?? 0,
   };
 }
 

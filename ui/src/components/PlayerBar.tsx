@@ -94,8 +94,26 @@ function IdleBar() {
         <PlayButton size={40} />
       </View>
       <View className="flex-1 flex-row items-center justify-end gap-3">
+        <OfflineIndicator />
         <VolumeControl />
       </View>
+    </View>
+  );
+}
+
+/**
+ * Small permanent indicator shown while cross-device sync can't reach the
+ * server (see usePlayer.serverReachable) — local/downloaded playback is
+ * unaffected, this is purely informational.
+ */
+function OfflineIndicator() {
+  const t = useT();
+  const colors = useColors();
+  const reachable = usePlayer((s) => s.serverReachable);
+  if (reachable) return null;
+  return (
+    <View accessibilityLabel={t('components.player.offline')}>
+      <Ionicon name="cloud-offline-outline" size={18} color={colors.muted} />
     </View>
   );
 }
@@ -130,6 +148,7 @@ function CompactBar({ song, status, position, duration }: BarProps) {
             {song.artist}
           </Text>
         </View>
+        <OfflineIndicator />
         <IconButton name={isPlaying ? 'pause' : 'play'} size={26} onPress={toggle} accessibilityLabel={isPlaying ? t('components.player.pause') : t('components.player.play')} />
         <IconButton name="play-skip-forward" size={22} onPress={next} disabled={isRadio} accessibilityLabel={t('components.player.next')} />
       </Pressable>
@@ -247,6 +266,7 @@ function WideBar({ song, status, position, duration }: BarProps) {
 
       {/* Right — queue + cast + volume + fullscreen */}
       <View className="flex-1 flex-row items-center justify-end gap-3">
+        <OfflineIndicator />
         <IconButton name="list" size={22} onPress={() => router.push('/queue')} disabled={isRadio} accessibilityLabel={t('components.player.queue')} />
         <CastButton active={remoteControlled} disabled={isRadio} />
         <VolumeControl />

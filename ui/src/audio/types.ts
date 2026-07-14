@@ -49,7 +49,14 @@ export interface AudioEngine {
   /** One-time setup (registers the playback service / media session). */
   setup(): Promise<void>;
 
-  /** Replace the queue and optionally start at `startIndex`. */
+  /**
+   * Replace the queue, loading `startIndex` — paused. Does not itself start
+   * playback: callers that want it playing call play() explicitly afterward,
+   * once any seekTo() they need has also been applied. That ordering matters:
+   * calling play() before a caller-requested seek raced the seek against
+   * playback already starting from 0, which on the web engine could leave
+   * the seek silently dropped (see engine.web.ts).
+   */
   setQueue(tracks: PlayableTrack[], startIndex: number): Promise<void>;
 
   /** Append tracks to the end of the queue. */
