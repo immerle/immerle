@@ -565,8 +565,15 @@ export function CastButton({ active, disabled }: { active?: boolean; disabled?: 
     <>
       <Pressable
         ref={anchorRef}
+        // Without a border/background, Android can flatten this view out of
+        // the native tree as a rendering optimization, which makes
+        // measureInWindow (used by openPicker below) silently never call
+        // back — the tap then does nothing, with no error. collapsable=false
+        // keeps it a real native view so the measurement always fires.
+        collapsable={false}
         onPress={openPicker}
         disabled={disabled}
+        hitSlop={12}
         accessibilityState={{ disabled: !!disabled }}
         accessibilityLabel={t('components.player.cast')}
         className={`h-8 w-8 items-center justify-center rounded-full ${disabled ? 'opacity-40' : 'active:opacity-70'}`}
