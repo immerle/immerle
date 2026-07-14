@@ -980,6 +980,13 @@ export class ImmerleClient {
     return data.removed ?? 0;
   }
 
+  /** Sync curated chart playlists now; returns how many synced successfully. */
+  async runChartsSync(): Promise<number> {
+    const { data, error } = await this.api.POST('/admin/charts/sync', {});
+    if (error || !data) throw apiErr(error, 'charts_sync_failed');
+    return data.synced ?? 0;
+  }
+
   // --- Admin: on-demand catalog (download jobs, legacy) -------------------
 
   async getDownloadJobs(signal?: AbortSignal): Promise<DownloadJob[]> {

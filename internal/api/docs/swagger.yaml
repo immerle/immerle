@@ -120,6 +120,12 @@ components:
           example: 1
           type: integer
       type: object
+    immerle.ChartsSyncDTO:
+      properties:
+        synced:
+          example: 6
+          type: integer
+      type: object
     immerle.CleanupRunDTO:
       properties:
         removed:
@@ -1820,6 +1826,46 @@ paths:
       summary: Activity feed
       tags:
       - activity
+  /admin/charts/sync:
+    post:
+      description: Admin only. Fetches and upserts every curated chart playlist immediately,
+        returning how many synced successfully.
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.ChartsSyncDTO'
+          description: Created
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Forbidden
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Internal Server Error
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Service Unavailable
+      security:
+      - BearerAuth: []
+      summary: Sync curated chart playlists now
+      tags:
+      - admin
   /admin/cleanup:
     get:
       description: Admin only. Reports the eviction sweep state.

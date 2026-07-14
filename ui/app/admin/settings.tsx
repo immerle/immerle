@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { Stack } from 'expo-router';
 import {
+  useChartsSyncMutation,
   useCleanup,
   useCleanupMutations,
   useSettings,
@@ -30,7 +31,7 @@ const RESTART_LABEL_KEYS: Record<string, string> = {
   'scan.watch': 'admin.settings.restartScanWatch',
 };
 
-type SectionKey = 'auth' | 'ldap' | 'server' | 'transcode' | 'cleanup' | 'logs' | 'features';
+type SectionKey = 'auth' | 'ldap' | 'server' | 'transcode' | 'cleanup' | 'charts' | 'logs' | 'features';
 
 interface Section {
   key: SectionKey;
@@ -75,6 +76,7 @@ export default function AdminSettings() {
     { key: 'server', icon: 'server', color: '#0ea5e9', title: t('admin.settings.serverTitle'), subtitle: t('admin.settings.serverSubtitle') },
     { key: 'transcode', icon: 'film', color: '#a855f7', title: t('admin.settings.transcodeTitle'), subtitle: t('admin.settings.transcodeSubtitle') },
     { key: 'cleanup', icon: 'trash-bin', color: '#ef4444', title: t('admin.settings.cleanupTitle'), subtitle: t('admin.settings.cleanupSubtitle') },
+    { key: 'charts', icon: 'trending-up', color: '#1db954', title: t('admin.settings.chartsTitle'), subtitle: t('admin.settings.chartsSubtitle') },
     { key: 'logs', icon: 'document-text', color: '#f59e0b', title: t('admin.settings.logsTitle'), subtitle: t('admin.settings.logsSubtitle') },
     { key: 'features', icon: 'sparkles', color: '#8b5cf6', title: t('admin.settings.featuresTitle'), subtitle: t('admin.settings.featuresSubtitle') },
   ];
@@ -83,6 +85,7 @@ export default function AdminSettings() {
   const update = useUpdateSettings();
   const cleanup = useCleanup();
   const cleanupM = useCleanupMutations();
+  const chartsSync = useChartsSyncMutation();
   const smart = useSmartPlaylistsAdmin();
   const setSmart = useSetSmartPlaylists();
   const radio = useRadioAdmin();
@@ -96,6 +99,7 @@ export default function AdminSettings() {
   const [form, setForm] = useState<Form | null>(null);
   const [sheet, setSheet] = useState<SectionKey | null>(null);
   const [removed, setRemoved] = useState<number | null>(null);
+  const [synced, setSynced] = useState<number | null>(null);
 
   useEffect(() => {
     if (q.data?.settings) setForm(toForm(q.data.settings));
@@ -284,6 +288,18 @@ export default function AdminSettings() {
                     variant="secondary"
                     loading={cleanupM.run.isPending}
                     onPress={() => cleanupM.run.mutate(undefined, { onSuccess: (n) => setRemoved(n) })}
+                  />
+                </>
+              ) : null}
+              {sheet === 'charts' ? (
+                <>
+                  <Text className="text-xs text-muted">{t('admin.settings.chartsDescription')}</Text>
+                  <Button
+                    title={synced != null ? t('admin.settings.chartsSyncedCount', { count: synced }) : t('admin.settings.runChartsSync')}
+                    icon="trending-up"
+                    variant="secondary"
+                    loading={chartsSync.isPending}
+                    onPress={() => chartsSync.mutate(undefined, { onSuccess: (n) => setSynced(n) })}
                   />
                 </>
               ) : null}

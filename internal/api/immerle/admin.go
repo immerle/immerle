@@ -123,3 +123,34 @@ func (h *Handler) handleCleanupRun(w http.ResponseWriter, r *http.Request) {
 	h.Logger.Info("cleanup sweep run on demand", "removed", removed, "by", userFrom(r.Context()).Username)
 	writeResource(w, http.StatusCreated, map[string]any{"removed": removed})
 }
+
+// handleChartsSync triggers an immediate curated chart-playlist sync,
+// regardless of the weekly schedule.
+//
+// @Summary      Sync curated chart playlists now
+// @Description  Admin only. Fetches and upserts every curated chart playlist immediately, returning how many synced successfully.
+// @Tags         admin
+// @Security     BearerAuth
+// @Produce      json
+// @Success      201  {object}  ChartsSyncDTO
+// @Failure      401  {object}  errorResponse
+// @Failure      403  {object}  errorResponse
+// @Failure      500  {object}  errorResponse
+// @Failure      503  {object}  errorResponse
+// @Router       /admin/charts/sync [post]
+func (h *Handler) handleChartsSync(w http.ResponseWriter, r *http.Request) {
+	if !h.requireAdmin(w, r) {
+		return
+	}
+	if h.Charts == nil {
+		writeError(w, http.StatusServiceUnavailable, "unavailable", "charts sync not available")
+		return
+	}
+	synced, err := h.Charts.SyncNow(r.Context())
+	if err != nil {
+		writeInternal(w, err)
+		return
+	}
+	h.Logger.Info("chart playlists synced on demand", "synced", synced, "by", userFrom(r.Context()).Username)
+	writeResource(w, http.StatusCreated, map[string]any{"synced": synced})
+}
