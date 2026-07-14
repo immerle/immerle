@@ -83,7 +83,7 @@ func TestSyncNowMaterializesPublicPlaylists(t *testing.T) {
 	if !tracks[0].Unresolved || tracks[0].ArtistName != "PLK" || tracks[0].Title != "Pocahontas" {
 		t.Fatalf("track 0 = %+v", tracks[0])
 	}
-	if !tracks[1].Unresolved || tracks[1].ArtistName != "Aya Nakamura" || tracks[1].Title != "Sexy Nana (w/ La Rvfleuze)" {
+	if !tracks[1].Unresolved || tracks[1].ArtistName != "Aya Nakamura" || tracks[1].Title != "Sexy Nana" {
 		t.Fatalf("track 1 = %+v", tracks[1])
 	}
 
@@ -139,7 +139,8 @@ func TestSplitArtistAndTitle(t *testing.T) {
 		artist, title string
 	}{
 		{"PLK - Pocahontas", "PLK", "Pocahontas"},
-		{"Aya Nakamura - Sexy Nana (w/ La Rvfleuze)", "Aya Nakamura", "Sexy Nana (w/ La Rvfleuze)"},
+		{"Aya Nakamura - Sexy Nana (w/ La Rvfleuze)", "Aya Nakamura", "Sexy Nana"},
+		{"Artist - Song (W/ Someone)", "Artist", "Song"},
 		{"Artist - Song - Remix", "Artist", "Song - Remix"},
 		{"no separator here", "", ""},
 	}

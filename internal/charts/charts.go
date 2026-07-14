@@ -6,7 +6,10 @@
 // public, tracks resolved lazily by artist/title at play time).
 package charts
 
-import "strings"
+import (
+	"regexp"
+	"strings"
+)
 
 // Chart is one kworb source file to sync, and the display name of the
 // playlist it materializes as.
@@ -47,13 +50,21 @@ type kworbEntry struct {
 	ArtistAndTitle string `json:"Artist and Title"`
 }
 
+// coAuthorPattern matches kworb's featured/co-artist annotation, e.g.
+// "(w/ La Rvfleuze)". playlist_tracks has no co-author field to put this in
+// (only a single portable artist string), so it's stripped from the title
+// rather than left in as noise that would hurt title matching at play time.
+var coAuthorPattern = regexp.MustCompile(`(?i)\s*\(w/[^)]*\)`)
+
 // splitArtistAndTitle parses kworb's "Artist - Title" format, splitting on the
 // first " - " so a title containing its own " - " (e.g. a remix suffix) stays
-// intact. Returns ("", "") if the format doesn't match.
+// intact, and stripping any "(w/ ...)" co-artist annotation from the title.
+// Returns ("", "") if the format doesn't match.
 func splitArtistAndTitle(s string) (artist, title string) {
 	parts := strings.SplitN(s, " - ", 2)
 	if len(parts) != 2 {
 		return "", ""
 	}
-	return strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1])
+	title = coAuthorPattern.ReplaceAllString(strings.TrimSpace(parts[1]), "")
+	return strings.TrimSpace(parts[0]), strings.TrimSpace(title)
 }
