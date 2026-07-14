@@ -3,29 +3,24 @@ import { Image, Modal, Pressable, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicon } from './Ionicon';
-import { IconButton } from './ui';
 import { useAuth } from '../auth/store';
-import { useSearchUI } from '../search/store';
-import { useUI } from '../stores/ui';
 import { useColors } from '../theme/colors';
 import { useT } from '../i18n/store';
 
 /**
- * Compact global header for narrow (mobile) layouts: the logo on the left, a
- * search affordance and the account avatar on the right. The avatar opens the
- * same Réglages / Admin / Déconnexion menu as the desktop top bar. Rendered by
- * the tabs layout so it sits above every main screen; per-screen titles live
- * underneath.
+ * Compact global header for narrow (mobile) layouts: the logo + wordmark on
+ * the left, the account avatar on the right (search and library nav already
+ * live in the bottom tab bar, so they aren't duplicated here). The avatar
+ * opens the same Réglages / Déconnexion menu as the desktop top bar. Rendered
+ * by the tabs layout so it sits above every main screen; per-screen titles
+ * live underneath.
  */
 export function MobileHeader() {
   const t = useT();
-  const colors = useColors();
   const insets = useSafeAreaInsets();
   const client = useAuth((s) => s.client);
   const displayNameState = useAuth((s) => s.displayName);
   const logout = useAuth((s) => s.logout);
-  const openSearch = useSearchUI((s) => s.openSearch);
-  const openDrawer = useUI((s) => s.openDrawer);
   const [menu, setMenu] = useState(false);
 
   const displayName = displayNameState ?? client?.username ?? '?';
@@ -46,15 +41,12 @@ export function MobileHeader() {
       className="flex-row items-center justify-between border-b border-border bg-background px-4"
       style={{ paddingTop: insets.top, height: 52 + insets.top }}
     >
-      <View className="flex-row items-center gap-1.5">
-        <IconButton name="menu" size={26} color={colors.foreground} onPress={openDrawer} accessibilityLabel={t('components.sidebar.library')} />
-        <Pressable onPress={() => go('/')} accessibilityRole="button" accessibilityLabel="Immerle" className="active:opacity-70">
-          <Image source={require('../../assets/logo.png')} style={{ height: 28, width: 28 * (480 / 391) }} resizeMode="contain" />
-        </Pressable>
-      </View>
+      <Pressable onPress={() => go('/')} accessibilityRole="button" accessibilityLabel="Immerle" className="flex-row items-center gap-2 active:opacity-70">
+        <Image source={require('../../assets/logo.png')} style={{ height: 28, width: 28 * (480 / 391) }} resizeMode="contain" />
+        <Text className="text-lg font-bold text-[#333333] dark:text-white">Immerle</Text>
+      </Pressable>
 
       <View className="flex-row items-center gap-1">
-        <IconButton name="search" size={24} color={colors.foreground} onPress={openSearch} accessibilityLabel={t('components.topbar.searchPlaceholder')} />
         <Pressable
           onPress={() => setMenu(true)}
           accessibilityRole="button"
