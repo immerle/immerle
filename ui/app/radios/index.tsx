@@ -35,7 +35,7 @@ export default function RadiosHome() {
     };
   }, [q.data]);
 
-  if (!client?.has('internetRadio')) {
+  if (!client?.isFeatureEnabled('internetRadio')) {
     return (
       <AdminScroll header={<AdminHeader color={colors.primary} title={t('radio.title')} showBack />}>
         <EmptyState icon="radio-outline" title={t('radio.unavailableTitle')} subtitle={t('radio.unavailableSubtitle')} />

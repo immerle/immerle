@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Alert, Modal, Platform, Pressable, Switch, Text, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { FlashList } from '@shopify/flash-list';
+import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
+import { DragHandle } from '../../src/components/DragHandle';
 import {
   useDeletePlaylist,
   usePlaylist,
@@ -27,11 +28,16 @@ import { useT } from '../../src/i18n/store';
 import { useToast } from '../../src/stores/toast';
 import { useWebTitle } from '../../src/utils/documentTitle';
 
+// Editing needs a key that stays with a track as it moves (DraggableFlatList
+// relies on stable keys to track the dragged cell), unlike its position in the
+// list — and a playlist can contain the same track twice, so the track id
+// alone isn't unique. Assigned once when a playlist is loaded into edit state.
+type EditableSong = Song & { _key: string };
+
 /**
  * Playlist detail with full CRUD. View mode plays the playlist; edit mode lets
- * the user rename, reorder (up/down — works identically on web and native), and
- * remove tracks, then persists the new order in one rewrite. Delete removes the
- * whole playlist.
+ * the user rename, drag-reorder and remove tracks, then persists the new order
+ * in one rewrite. Delete removes the whole playlist.
  */
 export default function PlaylistDetail() {
   const t = useT();
@@ -55,14 +61,14 @@ export default function PlaylistDetail() {
   const [coverOpen, setCoverOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState('');
-  const [ordered, setOrdered] = useState<Song[]>([]);
+  const [ordered, setOrdered] = useState<EditableSong[]>([]);
   const [collaborator, setCollaborator] = useState('');
   const [isPublic, setIsPublic] = useState(false);
 
   useEffect(() => {
     if (q.data) {
       setName(q.data.name);
-      setOrdered(q.data.entry ?? []);
+      setOrdered((q.data.entry ?? []).map((s, i) => ({ ...s, _key: `${s.id}#${i}` })));
       setIsPublic(!!q.data.public);
     }
   }, [q.data]);
@@ -129,16 +135,8 @@ export default function PlaylistDetail() {
       ]);
   };
 
-  const move = (from: number, to: number) => {
-    if (to < 0 || to >= ordered.length) return;
-    const next = [...ordered];
-    const [item] = next.splice(from, 1);
-    next.splice(to, 0, item);
-    setOrdered(next);
-  };
-
-  const removeAt = (index: number) => {
-    setOrdered((prev) => prev.filter((_, i) => i !== index));
+  const removeSong = (key: string) => {
+    setOrdered((prev) => prev.filter((s) => s._key !== key));
   };
 
   const save = async () => {
@@ -274,25 +272,26 @@ export default function PlaylistDetail() {
       />
       <View className="flex-1 bg-background">
         {editing ? (
-          <FlashList<Song>
+          <DraggableFlatList<EditableSong>
             data={ordered}
-            keyExtractor={(s, i) => `${s.id}:${i}`}
-            estimatedItemSize={64}
+            keyExtractor={(s) => s._key}
+            onDragEnd={({ data }) => setOrdered(data)}
             ListHeaderComponent={Header}
-            renderItem={({ item, index }) => (
-              <View className="flex-row items-center gap-2 px-3 py-2">
-                <View className="flex-1">
-                  <Text numberOfLines={1} className="text-base text-foreground">
-                    {item.title}
-                  </Text>
-                  <Text numberOfLines={1} className="text-sm text-muted">
-                    {item.artist}
-                  </Text>
+            renderItem={({ item, drag, isActive }: RenderItemParams<EditableSong>) => (
+              <ScaleDecorator>
+                <View className={`flex-row items-center gap-2 px-3 py-2 ${isActive ? 'bg-surface-alt' : ''}`}>
+                  <DragHandle drag={drag} disabled={isActive} accessibilityLabel={t('media.playlist.reorderHandle')} />
+                  <View className="flex-1">
+                    <Text numberOfLines={1} className="text-base text-foreground">
+                      {item.title}
+                    </Text>
+                    <Text numberOfLines={1} className="text-sm text-muted">
+                      {item.artist}
+                    </Text>
+                  </View>
+                  <IconButton name="remove-circle" size={22} color={colors.danger} onPress={() => removeSong(item._key)} />
                 </View>
-                <IconButton name="chevron-up" size={22} color={colors.muted} onPress={() => move(index, index - 1)} />
-                <IconButton name="chevron-down" size={22} color={colors.muted} onPress={() => move(index, index + 1)} />
-                <IconButton name="remove-circle" size={22} color={colors.danger} onPress={() => removeAt(index)} />
-              </View>
+              </ScaleDecorator>
             )}
             contentContainerStyle={{ paddingBottom: 24 }}
           />

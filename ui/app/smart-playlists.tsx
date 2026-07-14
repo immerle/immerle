@@ -22,7 +22,7 @@ export default function SmartPlaylists() {
   const q = useSmartPlaylists();
   const { remove } = useSmartPlaylistMutations();
 
-  if (!client?.has('smartPlaylists')) {
+  if (!client?.isFeatureEnabled('smartPlaylists')) {
     return (
       <>
         <Stack.Screen options={{ title: t('smart.title') }} />

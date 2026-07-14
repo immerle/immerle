@@ -4,6 +4,7 @@ import type {
   ArtistView,
   FavoritesView,
   GenreView,
+  HallOfFameView,
   NowPlayingView,
   PlaylistView,
   PlayQueueView,
@@ -25,6 +26,7 @@ import type {
   Song,
   SubsonicUser,
 } from '../subsonic/types';
+import type { HallOfFame } from './types';
 
 /**
  * Map the native catalog DTOs (generated from the OpenAPI spec, where every
@@ -53,6 +55,7 @@ export function toSong(v: SongView): Song {
     starred: v.starred,
     unresolved: v.unresolved,
     remote: v.remote,
+    comment: v.comment,
   };
 }
 
@@ -164,6 +167,10 @@ export function toPlaylist(v: PlaylistView): Playlist {
 
 export function toPlaylistWithSongs(v: PlaylistView): PlaylistWithSongs {
   return { ...toPlaylist(v), entry: v.tracks?.map(toSong) };
+}
+
+export function toHallOfFame(v: HallOfFameView): HallOfFame {
+  return { entries: (v.tracks ?? []).map(toSong) };
 }
 
 export function toNowPlaying(v: NowPlayingView): NowPlayingEntry {

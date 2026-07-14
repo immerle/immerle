@@ -1155,6 +1155,36 @@ components:
         songCount:
           type: integer
       type: object
+    immerle.hallOfFameAddRequest:
+      properties:
+        id:
+          type: string
+      type: object
+    immerle.hallOfFameNoteRequest:
+      properties:
+        comment:
+          type: string
+      type: object
+    immerle.hallOfFameOrderRequest:
+      properties:
+        ids:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+      type: object
+    immerle.hallOfFameView:
+      properties:
+        changedAt:
+          type: string
+        createdAt:
+          type: string
+        tracks:
+          items:
+            $ref: '#/components/schemas/immerle.songView'
+          type: array
+          uniqueItems: false
+      type: object
     immerle.loginRequest:
       properties:
         device:
@@ -1562,6 +1592,11 @@ components:
           type: string
         bpm:
           type: integer
+        comment:
+          description: |-
+            Comment is a personal nostalgia note on this track (e.g. "listened to
+            this in college"). Only populated on Hall of Fame entries.
+          type: string
         composer:
           type: string
         contentType:
@@ -2309,6 +2344,54 @@ paths:
       security:
       - BearerAuth: []
       summary: Unsubscribe from an instance
+      tags:
+      - admin
+  /admin/hall-of-fame:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: boolean
+                type: object
+          description: OK
+      security:
+      - BearerAuth: []
+      summary: Get the Hall of Fame feature state
+      tags:
+      - admin
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/immerle.toggleRequest'
+                description: Enable or disable
+                summary: body
+        description: Enable or disable
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: boolean
+                type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Bad Request
+      security:
+      - BearerAuth: []
+      summary: Toggle the Hall of Fame feature
       tags:
       - admin
   /admin/logs/stream:
@@ -4162,6 +4245,147 @@ paths:
       summary: List genres
       tags:
       - catalog
+  /hall-of-fame:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.hallOfFameView'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Not Found
+      security:
+      - BearerAuth: []
+      summary: Get (or create) the caller's Hall of Fame
+      tags:
+      - playlists
+  /hall-of-fame/tracks:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/immerle.hallOfFameAddRequest'
+                description: Track id
+                summary: body
+        description: Track id
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Not Found
+      security:
+      - BearerAuth: []
+      summary: Add a track to the Hall of Fame
+      tags:
+      - playlists
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/immerle.hallOfFameOrderRequest'
+                description: Track ids, in rank order
+                summary: body
+        description: Track ids, in rank order
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.hallOfFameView'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Not Found
+      security:
+      - BearerAuth: []
+      summary: Set the Hall of Fame's track order
+      tags:
+      - playlists
+  /hall-of-fame/tracks/{trackId}/note:
+    patch:
+      parameters:
+      - description: Track id
+        in: path
+        name: trackId
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/immerle.hallOfFameNoteRequest'
+                description: Note
+                summary: body
+        description: Note
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Not Found
+      security:
+      - BearerAuth: []
+      summary: Set a Hall of Fame track's note
+      tags:
+      - playlists
   /imports:
     get:
       description: Lists the caller's playlist imports (most recent first), without

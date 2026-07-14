@@ -9,7 +9,7 @@ export function useRadioStations() {
   const client = useAuth((s) => s.client);
   return useQuery({
     queryKey: qk.radio,
-    enabled: !!client && client.has('internetRadio'),
+    enabled: !!client && client.isFeatureEnabled('internetRadio'),
     queryFn: ({ signal }) => client!.listRadioStations(signal),
   });
 }

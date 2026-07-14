@@ -39,23 +39,24 @@ func NewPlaylistService(playlists *persistence.PlaylistRepo, annotations *persis
 }
 
 // resolveTrackIDs maps each id through the on-demand resolver when it's a
-// remote (not-yet-downloaded provider) track id, so playlist mutations only
-// ever reference real local tracks — playlist_tracks has a foreign key on
-// track_id, so inserting a remote id verbatim just fails with an opaque DB
-// error deep in the persistence layer. Errors on the first id that can't be
-// resolved (no on-demand resolver configured, or the search/download failed),
-// naming it so the caller sees why, instead of adding it half-broken.
-func (s *PlaylistService) resolveTrackIDs(ctx context.Context, userID string, ids []string) ([]string, error) {
+// remote (not-yet-downloaded provider) track id, so mutations that insert into
+// a table with a foreign key on track_id (playlist_tracks, hall_of_fame_entries)
+// only ever reference real local tracks — inserting a remote id verbatim just
+// fails with an opaque DB error deep in the persistence layer. Errors on the
+// first id that can't be resolved (no on-demand resolver configured, or the
+// search/download failed), naming it so the caller sees why, instead of adding
+// it half-broken. Shared by PlaylistService and HallOfFameService.
+func resolveTrackIDs(ctx context.Context, onDemand *CatalogService, userID string, ids []string) ([]string, error) {
 	out := make([]string, len(ids))
 	for i, id := range ids {
 		if !IsRemoteID(id) {
 			out[i] = id
 			continue
 		}
-		if s.onDemand == nil {
+		if onDemand == nil {
 			return nil, fmt.Errorf("track %s is not available locally", id)
 		}
-		track, _, _, err := s.onDemand.Resolve(ctx, userID, id)
+		track, _, _, err := onDemand.Resolve(ctx, userID, id)
 		if err != nil || track.ID == "" {
 			return nil, fmt.Errorf("resolve track %s: %w", id, err)
 		}
@@ -125,7 +126,7 @@ func (s *PlaylistService) Create(ctx context.Context, user models.User, name str
 		return PlaylistDetail{}, err
 	}
 	if len(songIDs) > 0 {
-		resolved, err := s.resolveTrackIDs(ctx, user.ID, songIDs)
+		resolved, err := resolveTrackIDs(ctx, s.onDemand, user.ID, songIDs)
 		if err != nil {
 			return PlaylistDetail{}, err
 		}
@@ -149,7 +150,7 @@ func (s *PlaylistService) Replace(ctx context.Context, user models.User, playlis
 	if !s.canEdit(ctx, p, user) {
 		return PlaylistDetail{}, ErrForbidden
 	}
-	resolved, err := s.resolveTrackIDs(ctx, user.ID, songIDs)
+	resolved, err := resolveTrackIDs(ctx, s.onDemand, user.ID, songIDs)
 	if err != nil {
 		return PlaylistDetail{}, err
 	}
@@ -186,7 +187,7 @@ func (s *PlaylistService) Update(ctx context.Context, user models.User, id strin
 		return err
 	}
 	if len(addSongIDs) > 0 {
-		resolved, err := s.resolveTrackIDs(ctx, user.ID, addSongIDs)
+		resolved, err := resolveTrackIDs(ctx, s.onDemand, user.ID, addSongIDs)
 		if err != nil {
 			return err
 		}

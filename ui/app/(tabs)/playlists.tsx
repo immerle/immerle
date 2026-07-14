@@ -8,6 +8,7 @@ import { useStarred } from '../../src/query/library';
 import { useAuth } from '../../src/auth/store';
 import { PlaylistCover } from '../../src/components/PlaylistCover';
 import { LikedCover } from '../../src/components/LikedCover';
+import { HallOfFameCover } from '../../src/components/HallOfFameCover';
 import { Button, EmptyState, ErrorState, Field, Loading } from '../../src/components/ui';
 import { IconButton } from '../../src/components/ui';
 import { Ionicon } from '../../src/components/Ionicon';
@@ -57,6 +58,24 @@ function SmartRow() {
   );
 }
 
+/** Pinned entry to the personal Hall of Fame. */
+function HallOfFameRow() {
+  const t = useT();
+  return (
+    <Pressable
+      onPress={() => router.push('/halloffame' as never)}
+      className="flex-row items-center gap-3 border-b border-border px-4 py-2 active:bg-surface-alt"
+    >
+      <HallOfFameCover size={56} rounded={8} />
+      <View className="flex-1">
+        <Text className="text-base font-semibold text-foreground">{t('components.sidebar.hallOfFame')}</Text>
+        <Text className="text-sm text-muted">{t('components.sidebar.playlist')}</Text>
+      </View>
+      <IconButton name="chevron-forward" size={18} accessibilityLabel={t('home.playlists.open')} />
+    </Pressable>
+  );
+}
+
 /** Pinned entry to internet radio. */
 function RadioRow() {
   const t = useT();
@@ -85,8 +104,9 @@ export default function Playlists() {
   const q = usePlaylists();
   const create = useCreatePlaylist();
   const canDiscover = useAuth((s) => s.client?.has('publicPlaylists') ?? false);
-  const canSmart = useAuth((s) => s.client?.has('smartPlaylists') ?? false);
-  const canRadio = useAuth((s) => s.client?.has('internetRadio') ?? false);
+  const canSmart = useAuth((s) => s.client?.isFeatureEnabled('smartPlaylists') ?? false);
+  const canRadio = useAuth((s) => s.client?.isFeatureEnabled('internetRadio') ?? false);
+  const canHallOfFame = useAuth((s) => s.client?.isFeatureEnabled('hallOfFame') ?? false);
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState('');
 
@@ -142,6 +162,7 @@ export default function Playlists() {
 
       {/* "Titres likés" is pinned at the very top, regardless of list state. */}
       <LikedRow />
+      {canHallOfFame ? <HallOfFameRow /> : null}
       {canSmart ? <SmartRow /> : null}
       {canRadio ? <RadioRow /> : null}
 

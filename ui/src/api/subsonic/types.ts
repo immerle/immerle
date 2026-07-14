@@ -91,6 +91,10 @@ export interface Song {
    * streaming, which can't serve byte ranges yet — seeking is unavailable
    * until the background download finishes and it's replayed. */
   remote?: boolean;
+  /** A personal nostalgia note on this track within its playlist (e.g. a tier
+   * list), like "listened to this in college". Only populated on a playlist's
+   * tracks. */
+  comment?: string;
 }
 
 export interface Genre {

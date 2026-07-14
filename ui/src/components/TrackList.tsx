@@ -14,6 +14,9 @@ interface TrackListProps {
   footer?: React.ReactElement;
   refreshing?: boolean;
   onRefresh?: () => void;
+  /** Shows each row's 1-based position as a colored rank badge to the left of
+   * the cover (medal colors for 1-3) — used by the Hall of Fame list. */
+  showRank?: boolean;
   /** When set, each row's menu offers an "Edit" action (used by the local library). */
   onEditTrack?: (song: Song) => void;
   /** Called instead of the normal play-from-here behavior when the tapped row
@@ -35,6 +38,7 @@ export function TrackList({
   footer,
   refreshing,
   onRefresh,
+  showRank = false,
   onEditTrack,
   onPlayUnresolved,
 }: TrackListProps) {
@@ -48,12 +52,12 @@ export function TrackList({
         song={item}
         active={item.id === current}
         showArtwork={showArtwork}
-        number={index + 1}
+        rank={showRank ? index + 1 : undefined}
         onPress={() => (item.unresolved ? onPlayUnresolved?.(item, index) : playSongs(songs, index))}
         onMore={() => openMenu(item, onEditTrack ? { onEdit: onEditTrack } : undefined)}
       />
     ),
-    [songs, current, showArtwork, playSongs, openMenu, onEditTrack, onPlayUnresolved],
+    [songs, current, showArtwork, showRank, playSongs, openMenu, onEditTrack, onPlayUnresolved],
   );
 
   return (

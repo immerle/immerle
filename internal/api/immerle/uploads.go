@@ -65,6 +65,9 @@ type songView struct {
 	// server can't yet serve byte ranges for it, so seeking isn't available
 	// until the background download finishes and it's replayed.
 	Remote bool `json:"remote,omitempty"`
+	// Comment is a personal nostalgia note on this track (e.g. "listened to
+	// this in college"). Only populated on Hall of Fame entries.
+	Comment string `json:"comment,omitempty"`
 }
 
 // participantView mirrors models.Participant locally so the OpenAPI generator

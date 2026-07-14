@@ -566,6 +566,7 @@
       "radioEnabled": "Radio internet",
       "wrappedEnabled": "Wrapped (rétrospective annuelle)",
       "offlineEnabled": "Téléchargements hors-ligne",
+      "hallOfFameEnabled": "Hall of Fame",
       "save": "Enregistrer"
     },
     "users": {
@@ -704,6 +705,7 @@
       "play": "Lecture de la playlist",
       "publicToggle": "Playlist publique",
       "publicHint": "Visible dans « Playlists publiques » ; abonnement opt-in.",
+      "reorderHandle": "Glisser pour réordonner",
       "collaborator": "Collaborateur",
       "usernamePlaceholder": "Nom d'utilisateur",
       "add": "Ajouter",
@@ -727,6 +729,20 @@
         "textPlaceholder": "Votre texte…",
         "size": "Taille du texte"
       }
+    },
+    "hallOfFame": {
+      "title": "Hall of Fame",
+      "trackCount": "{{count}} titres",
+      "loadError": "Impossible de charger votre Hall of Fame.",
+      "empty": "Votre Hall of Fame est vide",
+      "emptySubtitle": "Ajoutez des titres depuis le menu d'un morceau.",
+      "edit": "Modifier",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "reorderHandle": "Glisser pour réordonner",
+      "noteEdit": "Modifier la note",
+      "notePlaceholder": "Un souvenir sur ce morceau…",
+      "play": "Lecture du Hall of Fame"
     },
     "liked": {
       "title": "Titres likés",
@@ -897,7 +913,8 @@
       "playlistNamePlaceholder": "Nom de la playlist",
       "cancel": "Annuler",
       "create": "Créer",
-      "localSongs": "Musiques locales"
+      "localSongs": "Musiques locales",
+      "hallOfFame": "Hall of Fame"
     },
     "player": {
       "nothingPlaying": "Aucune lecture en cours",
@@ -945,6 +962,8 @@
       "playNext": "Lire ensuite",
       "addToQueue": "Ajouter à la file",
       "addToPlaylist": "Ajouter à une playlist",
+      "addToHallOfFame": "Ajouter au Hall of Fame",
+      "addedToHallOfFame": "Ajouté à votre Hall of Fame",
       "goToAlbum": "Aller à l'album",
       "goToArtist": "Aller à l'artiste",
       "choosePlaylist": "Choisir une playlist",

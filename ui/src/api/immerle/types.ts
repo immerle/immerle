@@ -1,3 +1,5 @@
+import type { Song } from '../subsonic/types';
+
 /**
  * Immerle-specific data model — everything that lives beyond the Subsonic
  * surface (capabilities discovery, on-demand catalog, federation, richer admin).
@@ -44,7 +46,19 @@ export interface Capabilities {
     internetRadio: boolean;
     /** Year-in-review ("Wrapped") stats endpoint (`/wrapped`). */
     wrapped: boolean;
+    /** Personal top-tracks ranking (`/hall-of-fame`), pinned in the sidebar. */
+    hallOfFame: boolean;
   };
+  /**
+   * Live on/off state for the handful of features an admin can toggle at
+   * runtime (smartPlaylists, internetRadio, wrapped, offlineDownloads,
+   * hallOfFame). Distinct from `features`, which only reflects whether this
+   * server build supports the feature at all — that stays true even while an
+   * admin has switched it off, so the admin toggle UI doesn't disappear the
+   * moment it's used. Use `ImmerleClient.isFeatureEnabled` rather than
+   * reading this directly.
+   */
+  toggles: Partial<Record<CapabilityFeature, boolean>>;
   /** Transcode formats the server can produce, for the quality picker. */
   transcoding?: { format: string; maxBitRate: number }[];
 }
@@ -221,6 +235,17 @@ export interface Wrapped {
   topGenres: WrappedCount[] | null;
   /** Plays per calendar month, index 0 = January .. 11 = December. */
   byMonth: number[];
+}
+
+// --- Hall of Fame (personal top-tracks ranking) -----------------------------
+
+/**
+ * A user's personal top-tracks ranking — its own dedicated entity, not a
+ * playlist. Exactly one per user; `entries` is in rank order (index 0 = #1).
+ * Each Song's `comment` is the personal nostalgia note on that entry.
+ */
+export interface HallOfFame {
+  entries: Song[];
 }
 
 /** A federated instance surfaced by discovery / subscriptions (no secrets). */

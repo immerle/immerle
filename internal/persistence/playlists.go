@@ -302,7 +302,7 @@ func (r *PlaylistRepo) Tracks(ctx context.Context, playlistID string) ([]models.
 			ids = append(ids, e.trackID.String)
 		}
 	}
-	byID, err := r.tracksByIDs(ctx, ids)
+	byID, err := tracksByIDs(ctx, r.base, ids)
 	if err != nil {
 		return nil, err
 	}
@@ -324,8 +324,9 @@ func (r *PlaylistRepo) Tracks(ctx context.Context, playlistID string) ([]models.
 }
 
 // tracksByIDs batch-fetches tracks by id, keyed by id (order not preserved —
-// callers re-order by looking each id up).
-func (r *PlaylistRepo) tracksByIDs(ctx context.Context, ids []string) (map[string]models.Track, error) {
+// callers re-order by looking each id up). Shared by PlaylistRepo.Tracks and
+// HallOfFameRepo.Entries.
+func tracksByIDs(ctx context.Context, b *base, ids []string) (map[string]models.Track, error) {
 	out := map[string]models.Track{}
 	if len(ids) == 0 {
 		return out, nil
@@ -335,7 +336,7 @@ func (r *PlaylistRepo) tracksByIDs(ctx context.Context, ids []string) (map[strin
 		args[i] = id
 	}
 	q := trackSelect + ` WHERE t.id IN (` + strings.TrimRight(strings.Repeat("?,", len(ids)), ",") + `)`
-	rows, err := r.query(ctx, q, args...)
+	rows, err := b.query(ctx, q, args...)
 	if err != nil {
 		return nil, err
 	}

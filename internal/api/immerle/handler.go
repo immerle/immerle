@@ -82,7 +82,9 @@ type Deps struct {
 	Podcasts *core.PodcastService
 	// Wrapped computes the per-user year-in-review from the scrobble history.
 	Wrapped *persistence.WrappedRepo
-	Logger  *slog.Logger
+	// HallOfFame persists each user's personal top-tracks ranking.
+	HallOfFame *persistence.HallOfFameRepo
+	Logger     *slog.Logger
 	// LogHub streams live server log lines to the admin log viewer (SSE).
 	LogHub *logging.Hub
 }
@@ -108,26 +110,28 @@ type Handler struct {
 	// library and playback back the catalog browse resources and the
 	// favorite/rating/scrobble mutations with the same application services the
 	// Subsonic handler uses.
-	library     *core.LibraryService
-	playback    *core.PlaybackService
-	playQueue   *core.PlayQueueService
-	playlistSvc *core.PlaylistService
-	userSvc     *core.UserService
-	shareSvc    *core.ShareService
-	media       *media.Server
+	library       *core.LibraryService
+	playback      *core.PlaybackService
+	playQueue     *core.PlayQueueService
+	playlistSvc   *core.PlaylistService
+	hallOfFameSvc *core.HallOfFameService
+	userSvc       *core.UserService
+	shareSvc      *core.ShareService
+	media         *media.Server
 }
 
 // NewHandler builds a immerle Handler.
 func NewHandler(d Deps) *Handler {
 	return &Handler{
-		Deps:        d,
-		library:     core.NewLibraryService(d.Catalog, d.Annotations, d.OnDemand),
-		playback:    core.NewPlaybackService(d.Catalog, d.Annotations, d.Scrobbles, d.OnDemand, d.Activity, d.NowPlaying),
-		playQueue:   core.NewPlayQueueService(d.PlayQueues, d.Catalog, d.Annotations, d.Logger),
-		playlistSvc: core.NewPlaylistService(d.Playlists, d.Annotations, d.Activity, d.PlaylistSync, d.OnDemand),
-		userSvc:     core.NewUserService(d.Users, d.Auth),
-		shareSvc:    core.NewShareService(d.Shares, d.Catalog, d.Playlists),
-		media:       media.NewServer(d.Catalog, d.Streamer, d.Cover, d.OnDemand, d.NowPlaying, d.Logger, d.SigningKey),
+		Deps:          d,
+		library:       core.NewLibraryService(d.Catalog, d.Annotations, d.OnDemand),
+		playback:      core.NewPlaybackService(d.Catalog, d.Annotations, d.Scrobbles, d.OnDemand, d.Activity, d.NowPlaying),
+		playQueue:     core.NewPlayQueueService(d.PlayQueues, d.Catalog, d.Annotations, d.Logger),
+		playlistSvc:   core.NewPlaylistService(d.Playlists, d.Annotations, d.Activity, d.PlaylistSync, d.OnDemand),
+		hallOfFameSvc: core.NewHallOfFameService(d.HallOfFame, d.OnDemand),
+		userSvc:       core.NewUserService(d.Users, d.Auth),
+		shareSvc:      core.NewShareService(d.Shares, d.Catalog, d.Playlists),
+		media:         media.NewServer(d.Catalog, d.Streamer, d.Cover, d.OnDemand, d.NowPlaying, d.Logger, d.SigningKey),
 	}
 }
 
@@ -294,6 +298,13 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Put("/playlists/{id}/cover", h.handlePlaylistCover)
 			r.Post("/playlists/{id}/cover/generate", h.handlePlaylistCoverGenerate)
 
+			// Hall of Fame: the caller's personal top-tracks ranking (its own
+			// dedicated tables, not a playlist — see core.HallOfFameService).
+			r.Get("/hall-of-fame", h.handleGetHallOfFame)
+			r.Put("/hall-of-fame/tracks", h.handleSetHallOfFameOrder)
+			r.Post("/hall-of-fame/tracks", h.handleAddHallOfFameTrack)
+			r.Patch("/hall-of-fame/tracks/{trackId}/note", h.handleSetHallOfFameNote)
+
 			// Share links over the shared share service.
 			r.Get("/shares", h.handleListShares)
 			r.Post("/shares", h.handleCreateShare)
@@ -378,6 +389,10 @@ func (h *Handler) Register(mux chi.Router) {
 			// Admin: offline-downloads feature toggle.
 			r.Get("/admin/offline", h.handleOfflineAdmin)
 			r.Put("/admin/offline", h.handleOfflineUpdate)
+
+			// Admin: Hall of Fame feature toggle.
+			r.Get("/admin/hall-of-fame", h.handleHallOfFameAdmin)
+			r.Put("/admin/hall-of-fame", h.handleHallOfFameToggle)
 		})
 	})
 }

@@ -17,6 +17,7 @@ import {
   toAlbum,
   toAlbumWithSongs,
   toArtistWithAlbums,
+  toHallOfFame,
   toNowPlaying,
   toPlaylist,
   toPlaylistWithSongs,
@@ -34,6 +35,7 @@ import {
   createAuthedImmerleApi,
   CreateTokenResponse,
   FriendDTO,
+  HallOfFameView,
   ImmerleApi,
   JamParticipantDTO,
   ImportDTO,
@@ -52,6 +54,7 @@ import {
   CapabilityFeature,
   Capabilities,
   DownloadJob,
+  HallOfFame,
   ImmerleApiError,
   ImmerleSession,
   InstanceSummary,
@@ -169,9 +172,24 @@ export class ImmerleClient {
     return this.session;
   }
 
-  /** Capability gate. Use everywhere a Immerle-only feature is offered. */
+  /**
+   * Capability gate: does this server build support the feature at all? True
+   * regardless of whether an admin has since switched it off — use this for
+   * the admin toggle UI itself, which must stay visible to be switched back
+   * on. For an entry point (sidebar row, tab, screen) that should disappear
+   * the moment the feature is turned off, use `isFeatureEnabled` instead.
+   */
   has(feature: CapabilityFeature): boolean {
     return this.capabilities.features[feature];
+  }
+
+  /**
+   * Whether a feature is currently usable: supported by this server build AND
+   * (for the handful of admin-togglable features) not switched off. Use this
+   * to gate an entry point into the feature.
+   */
+  isFeatureEnabled(feature: CapabilityFeature): boolean {
+    return this.capabilities.toggles[feature] ?? this.capabilities.features[feature];
   }
 
   // --- Low-level Immerle REST helper ------------------------------------
@@ -894,6 +912,42 @@ export class ImmerleClient {
   /** Admin: turn offline downloads on or off. */
   async setOfflineEnabled(enabled: boolean): Promise<boolean> {
     const r = await this.request<{ enabled: boolean }>('PUT', 'admin/offline', { enabled });
+    return !!r.enabled;
+  }
+
+  // --- Hall of Fame (personal top-tracks ranking) -------------------------
+
+  /** The caller's Hall of Fame, auto-created on first access. */
+  async getHallOfFame(signal?: AbortSignal): Promise<HallOfFame> {
+    const data = await this.request<HallOfFameView>('GET', 'hall-of-fame', undefined, signal);
+    return toHallOfFame(data);
+  }
+
+  /** Replaces the full ranked track list (reorder, add and remove all go through this). */
+  async setHallOfFameOrder(ids: string[]): Promise<HallOfFame> {
+    const data = await this.request<HallOfFameView>('PUT', 'hall-of-fame/tracks', { ids });
+    return toHallOfFame(data);
+  }
+
+  /** Appends one track (the "Add to Hall of Fame" track-menu action). */
+  async addToHallOfFame(trackId: string): Promise<void> {
+    await this.request<void>('POST', 'hall-of-fame/tracks', { id: trackId });
+  }
+
+  /** Sets (or, given an empty comment, clears) a track's nostalgia note. */
+  async setHallOfFameNote(trackId: string, comment: string): Promise<void> {
+    await this.request<void>('PATCH', `hall-of-fame/tracks/${trackId}/note`, { comment });
+  }
+
+  /** Admin: whether the Hall of Fame feature is enabled. */
+  async getHallOfFameEnabled(signal?: AbortSignal): Promise<boolean> {
+    const r = await this.request<{ enabled: boolean }>('GET', 'admin/hall-of-fame', undefined, signal);
+    return !!r.enabled;
+  }
+
+  /** Admin: turn the Hall of Fame feature on or off. */
+  async setHallOfFameEnabled(enabled: boolean): Promise<boolean> {
+    const r = await this.request<{ enabled: boolean }>('PUT', 'admin/hall-of-fame', { enabled });
     return !!r.enabled;
   }
 
