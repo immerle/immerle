@@ -1,7 +1,7 @@
 import '../global.css';
 
 import { useEffect } from 'react';
-import { ActivityIndicator, Platform, useWindowDimensions, View } from 'react-native';
+import { Platform, useWindowDimensions, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -20,6 +20,7 @@ import { PlayerBar } from '../src/components/PlayerBar';
 import { TopBar } from '../src/components/TopBar';
 import { SearchOverlay } from '../src/components/SearchOverlay';
 import { AccentScope } from '../src/components/AccentScope';
+import { LaunchLoading } from '../src/components/LaunchLoading';
 import { LibrarySidebar } from '../src/components/LibrarySidebar';
 import { AdminSidebar } from '../src/components/AdminSidebar';
 import { MobileDrawer } from '../src/components/MobileDrawer';
@@ -94,9 +95,7 @@ export default function RootLayout() {
   if (!themeHydrated) {
     return (
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <View style={{ flex: 1, backgroundColor: palette.dark.background, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator color={palette.dark.primary} />
-        </View>
+        <LaunchLoading />
       </GestureHandlerRootView>
     );
   }
