@@ -16,7 +16,7 @@ import { useSearchUI } from '../src/search/store';
 import { useDownloads } from '../src/offline/store';
 import { TrackMenu } from '../src/components/trackMenu';
 import { ToastHost } from '../src/components/Toast';
-import { PlayerBar } from '../src/components/PlayerBar';
+import { CastPicker, PlayerBar } from '../src/components/PlayerBar';
 import { TopBar } from '../src/components/TopBar';
 import { SearchOverlay } from '../src/components/SearchOverlay';
 import { AccentScope } from '../src/components/AccentScope';
@@ -160,6 +160,7 @@ export default function RootLayout() {
             <PlayerBar />
           </View>
           <TrackMenu />
+          <CastPicker />
           <SearchOverlay />
           {!wide ? <MobileDrawer /> : null}
           <ToastHost />
