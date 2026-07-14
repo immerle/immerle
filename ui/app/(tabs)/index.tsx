@@ -6,7 +6,6 @@ import { useAuth } from '../../src/auth/store';
 import { AlbumTile } from '../../src/components/AlbumCard';
 import { Ionicon } from '../../src/components/Ionicon';
 import { Loading, SectionHeader } from '../../src/components/ui';
-import { useColors } from '../../src/theme/colors';
 import { Album } from '../../src/api/subsonic/types';
 import { useT } from '../../src/i18n/store';
 
@@ -14,14 +13,10 @@ const TILE = 150;
 
 /** Shortcut chip in the user's accent color. */
 function ShortcutChip({ icon, label, onPress }: { icon: string; label: string; onPress: () => void }) {
-  const colors = useColors();
   return (
-    <Pressable
-      onPress={onPress}
-      className="flex-row items-center gap-2 rounded-full border border-primary px-4 py-2 active:bg-primary/10"
-    >
-      <Ionicon name={icon} size={16} color={colors.primary} />
-      <Text className="text-sm font-semibold text-primary">{label}</Text>
+    <Pressable onPress={onPress} className="flex-row items-center gap-2 rounded-full bg-primary px-4 py-2 active:opacity-80">
+      <Ionicon name={icon} size={16} color="#fff" />
+      <Text className="text-sm font-semibold text-white">{label}</Text>
     </Pressable>
   );
 }
