@@ -1,10 +1,11 @@
 import { useMemo } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, router } from 'expo-router';
 import { useRadioStations } from '../../src/query/radio';
 import { useAuth } from '../../src/auth/store';
-import { EmptyState, ErrorState, Loading } from '../../src/components/ui';
+import { EmptyState, ErrorState, IconButton, Loading } from '../../src/components/ui';
+import { HeroBackdrop } from '../../src/components/HeroBackdrop';
 import { Ionicon } from '../../src/components/Ionicon';
 import { useColors } from '../../src/theme/colors';
 import { useT } from '../../src/i18n/store';
@@ -17,6 +18,9 @@ const FLAG: Record<string, string> = { fr: '🇫🇷', es: '🇪🇸', gb: '🇬
  * has been liked), then browse that country's stations. */
 export default function RadiosHome() {
   const t = useT();
+  const { width } = useWindowDimensions();
+  const wide = width >= 640;
+  const insets = useSafeAreaInsets();
   const client = useAuth((s) => s.client);
   const q = useRadioStations();
 
@@ -33,26 +37,60 @@ export default function RadiosHome() {
       likedCount: list.filter((s) => s.liked).length,
     };
   }, [q.data]);
+  const coverStation = (q.data ?? []).find((s) => s.hasCover);
+  const heroUrl = coverStation && client ? client.radioCoverUrl(coverStation.id) : undefined;
+
+  const Hero = (
+    <HeroBackdrop url={heroUrl} height={wide ? 170 : 150 + insets.top}>
+      {!wide ? (
+        <View className="absolute left-4 z-10" style={{ top: insets.top + 8 }}>
+          <IconButton name="chevron-back" size={24} color="#fff" onPress={() => router.back()} accessibilityLabel={t('components.admin.back')} />
+        </View>
+      ) : null}
+      <View className="px-4 pb-3">
+        <Text numberOfLines={1} className={`font-extrabold tracking-tight text-white ${wide ? 'text-4xl' : 'text-3xl'}`}>
+          {t('radio.title')}
+        </Text>
+        <Text className="pt-1 text-sm text-white/90">{t('radio.tabSubtitle')}</Text>
+      </View>
+    </HeroBackdrop>
+  );
 
   if (!client?.isFeatureEnabled('internetRadio')) {
     return (
       <>
-        <Stack.Screen options={{ title: t('radio.title') }} />
+        <Stack.Screen options={{ headerShown: false }} />
         <SafeAreaView edges={['top']} className="flex-1 bg-background">
+          {Hero}
           <EmptyState icon="radio-outline" title={t('radio.unavailableTitle')} subtitle={t('radio.unavailableSubtitle')} />
         </SafeAreaView>
       </>
     );
   }
-  if (q.isLoading) return <Loading />;
-  if (q.isError) return <ErrorState message={t('radio.loadError')} onRetry={q.refetch} />;
+  if (q.isLoading) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: false }} />
+        <Loading />
+      </>
+    );
+  }
+  if (q.isError) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: false }} />
+        <ErrorState message={t('radio.loadError')} onRetry={q.refetch} />
+      </>
+    );
+  }
 
   return (
     <>
-      <Stack.Screen options={{ title: t('radio.title') }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <SafeAreaView edges={['top']} className="flex-1 bg-background">
-        <ScrollView contentContainerStyle={{ padding: 16, gap: 14 }}>
-          <View className="flex-row flex-wrap gap-2.5">
+        <ScrollView contentContainerStyle={{ paddingBottom: 16 }}>
+          {Hero}
+          <View className="flex-row flex-wrap gap-2.5 px-4 pt-4">
             {likedCount > 0 ? (
               <CountryCard
                 emoji="❤️"
