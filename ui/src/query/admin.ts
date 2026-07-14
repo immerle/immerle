@@ -243,6 +243,18 @@ export function useCleanupMutations() {
   return { setEnabled, run };
 }
 
+// --- Curated chart playlists (admin) ---------------------------------------
+
+/** Force-sync the curated chart playlists now; returns how many synced. */
+export function useChartsSyncMutation() {
+  const client = useAuth((s) => s.client);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => client!.runChartsSync(),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.publicPlaylists }),
+  });
+}
+
 // --- Federation ------------------------------------------------------------
 
 /** Register this instance with the hub. The response carries the refreshed

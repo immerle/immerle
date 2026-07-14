@@ -177,6 +177,11 @@ type CleanupRunDTO struct {
 	Removed int `json:"removed" example:"3"`
 }
 
+// ChartsSyncDTO reports the result of an on-demand curated chart-playlist sync.
+type ChartsSyncDTO struct {
+	Synced int `json:"synced" example:"6"`
+}
+
 // SmartConditionDTO is one smart-playlist filter.
 type SmartConditionDTO struct {
 	Field string `json:"field" example:"genre"`

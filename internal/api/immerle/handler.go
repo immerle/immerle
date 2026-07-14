@@ -68,6 +68,8 @@ type Deps struct {
 	CoversDir string
 	// Cleanup controls the provider-download eviction sweep (admin API).
 	Cleanup CleanupController
+	// Charts controls the curated chart-playlist sync (admin API).
+	Charts ChartsController
 	// Providers manages runtime-configurable on-demand providers (admin API).
 	// nil when on-demand is disabled; handlers guard with a nil check.
 	Providers *core.ProviderManager
@@ -102,6 +104,12 @@ func (h *Handler) deviceTokenTTL() time.Duration {
 // state lives in the runtime settings. Implemented by *core.Evictor.
 type CleanupController interface {
 	Sweep(ctx context.Context) (int, error)
+}
+
+// ChartsController runs an immediate curated chart-playlist sync, regardless
+// of the weekly schedule. Implemented by *charts.Service.
+type ChartsController interface {
+	SyncNow(ctx context.Context) (int, error)
 }
 
 // Handler implements the immerle native API.
@@ -349,6 +357,9 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Get("/admin/cleanup", h.handleCleanup)
 			r.Put("/admin/cleanup", h.handleCleanupUpdate)
 			r.Post("/admin/cleanup/runs", h.handleCleanupRun)
+
+			// Admin: curated chart-playlist sync (force-run, otherwise weekly).
+			r.Post("/admin/charts/sync", h.handleChartsSync)
 
 			// Admin: runtime-configurable on-demand providers.
 			r.Get("/admin/providers", h.handleProviders)

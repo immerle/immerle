@@ -19,6 +19,7 @@ import (
 	"github.com/immerle/immerle/internal/api/docs"
 	"github.com/immerle/immerle/internal/api/immerle"
 	"github.com/immerle/immerle/internal/api/subsonic"
+	"github.com/immerle/immerle/internal/charts"
 	"github.com/immerle/immerle/internal/config"
 	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/db"
@@ -49,6 +50,7 @@ type App struct {
 	outbox     *outbox.Worker
 	enricher   *core.ArtistImageEnricher
 	evictor    *core.Evictor
+	charts     *charts.Service
 	logPruner  *core.LogPruner
 	settings   *core.SettingsService
 	imports    *importer.Service
@@ -376,6 +378,13 @@ func New(cfg config.Config) (*App, error) {
 	evictor := core.NewEvictor(store.Catalog, store.Downloads,
 		settingsSvc.CleanupEnabled, settingsSvc.CleanupMaxAge, settingsSvc.CleanupInterval(), logger)
 
+	// Curated chart playlists (global + a handful of major markets), synced
+	// weekly from kworb-net-api. Materializes as public, federated-style
+	// playlists (same mechanism as hub imports), owned by the first admin —
+	// resolved lazily the same way federation's owner is.
+	chartsSvc := charts.New(store.Playlists, "", nil, logger)
+	chartsSvc.SetOwnerResolver(func(ctx context.Context) (string, error) { return firstAdmin(ctx, store.Users) })
+
 	// Daily retention sweep over persisted diagnostic logs. The window is read
 	// live from the runtime settings; register any future log table here.
 	logPruner := core.NewLogPruner(settingsSvc.LogRetention, 24*time.Hour, logger, store.ProviderLogs)
@@ -416,6 +425,7 @@ func New(cfg config.Config) (*App, error) {
 		Setup:          setupSvc,
 		Federation:     fed,
 		Cleanup:        evictor,
+		Charts:         chartsSvc,
 		Providers:      providerMgr,
 		Settings:       settingsSvc,
 		SmartPlaylists: store.SmartPlaylists,
@@ -482,6 +492,7 @@ func New(cfg config.Config) (*App, error) {
 		outbox:     outboxWorker,
 		enricher:   enricher,
 		evictor:    evictor,
+		charts:     chartsSvc,
 		logPruner:  logPruner,
 		settings:   settingsSvc,
 		imports:    importSvc,
@@ -541,6 +552,9 @@ func (a *App) Run(ctx context.Context) error {
 	if a.evictor != nil {
 		// Always started; it self-gates on the runtime enabled flag.
 		a.spawn(func() { a.evictor.Run(ctx) })
+	}
+	if a.charts != nil {
+		a.spawn(func() { a.charts.Run(ctx) })
 	}
 	if a.logPruner != nil {
 		a.spawn(func() { a.logPruner.Run(ctx) })
