@@ -16,7 +16,7 @@ import { useSearchUI } from '../src/search/store';
 import { useDownloads } from '../src/offline/store';
 import { TrackMenu } from '../src/components/trackMenu';
 import { ToastHost } from '../src/components/Toast';
-import { CastPicker, PlayerBar } from '../src/components/PlayerBar';
+import { PlayerBar } from '../src/components/PlayerBar';
 import { TopBar } from '../src/components/TopBar';
 import { SearchOverlay } from '../src/components/SearchOverlay';
 import { AccentScope } from '../src/components/AccentScope';
@@ -148,6 +148,7 @@ export default function RootLayout() {
                     options={{ presentation: 'modal', headerShown: false }}
                   />
                   <Stack.Screen name="queue" options={{ presentation: 'modal', title: 'File de lecture' }} />
+                  <Stack.Screen name="cast-target" options={{ presentation: 'modal', title: 'Lecture sur' }} />
                   <Stack.Screen name="ui-kit" options={{ title: 'UI Kit', headerShown: !wide }} />
                   <Stack.Screen name="devices" options={{ title: 'Appareils connectés', headerShown: !wide }} />
                   <Stack.Screen name="api-tokens" options={{ title: 'API', headerShown: !wide }} />
@@ -160,7 +161,6 @@ export default function RootLayout() {
             <PlayerBar />
           </View>
           <TrackMenu />
-          <CastPicker />
           <SearchOverlay />
           {!wide ? <MobileDrawer /> : null}
           <ToastHost />
