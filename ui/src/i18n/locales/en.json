@@ -328,6 +328,10 @@
         "settings": {
           "title": "Settings",
           "subtitle": "Runtime, transcoding, cleanup"
+        },
+        "logs": {
+          "title": "Logs",
+          "subtitle": "Live server log stream"
         }
       }
     }
@@ -640,6 +644,21 @@
       "statusCancelled": "Cancelled",
       "retry": "Retry",
       "cancel": "Cancel"
+    },
+    "logs": {
+      "title": "Logs",
+      "headerSubtitle": "Live server log stream",
+      "connected": "Connected",
+      "disconnected": "Disconnected",
+      "unsupportedTitle": "Available on the web",
+      "unsupportedSubtitle": "Live log streaming needs a browser (EventSource).",
+      "emptyTitle": "No logs yet",
+      "emptySubtitle": "Log lines will appear here as the server emits them.",
+      "searchPlaceholder": "Search logs…",
+      "clear": "Clear",
+      "showingCount": "{{shown}} of {{total}}",
+      "noMatchesTitle": "No matching logs",
+      "noMatchesSubtitle": "Try a different search or re-enable a severity filter."
     }
   },
   "media": {

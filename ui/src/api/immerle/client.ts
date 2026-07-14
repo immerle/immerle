@@ -753,6 +753,14 @@ export class ImmerleClient {
     return this.request<ProviderLog[]>('GET', `admin/providers/${encodeURIComponent(name)}/logs`, undefined, signal);
   }
 
+  /** SSE endpoint URL for the live server log stream (admin log viewer).
+   * EventSource can't set headers, so the Bearer token is passed via the
+   * `apiKey` query fallback — see connectLogStream in ui/src/admin/logs.ts. */
+  logsStreamUrl(): string {
+    const token = this.session?.token ?? '';
+    return `${this.serverUrl}/api/v1/admin/logs/stream?apiKey=${encodeURIComponent(token)}`;
+  }
+
   // --- Admin: runtime settings --------------------------------------------
 
   /** Current runtime settings, plus whether a restart is pending. */

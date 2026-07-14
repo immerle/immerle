@@ -328,6 +328,10 @@
         "settings": {
           "title": "Réglages",
           "subtitle": "Runtime, transcodage, nettoyage"
+        },
+        "logs": {
+          "title": "Logs",
+          "subtitle": "Flux des logs du serveur en direct"
         }
       }
     }
@@ -640,6 +644,21 @@
       "statusCancelled": "Annulé",
       "retry": "Relancer",
       "cancel": "Annuler"
+    },
+    "logs": {
+      "title": "Logs",
+      "headerSubtitle": "Flux des logs du serveur en direct",
+      "connected": "Connecté",
+      "disconnected": "Déconnecté",
+      "unsupportedTitle": "Disponible sur le web",
+      "unsupportedSubtitle": "Le flux de logs en direct nécessite un navigateur (EventSource).",
+      "emptyTitle": "Aucun log pour l'instant",
+      "emptySubtitle": "Les lignes de log apparaîtront ici au fur et à mesure.",
+      "searchPlaceholder": "Rechercher dans les logs…",
+      "clear": "Effacer",
+      "showingCount": "{{shown}} sur {{total}}",
+      "noMatchesTitle": "Aucun log ne correspond",
+      "noMatchesSubtitle": "Essayez une autre recherche ou réactivez un niveau de sévérité."
     }
   },
   "media": {
