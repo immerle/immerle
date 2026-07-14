@@ -50,7 +50,7 @@ func TestSyncNowMaterializesPublicPlaylists(t *testing.T) {
 		"fr": {"PLK - Pocahontas", "Aya Nakamura - Sexy Nana (w/ La Rvfleuze)"},
 	})
 
-	svc := New(store.Playlists, srv.URL, nil, testutil.NewLogger())
+	svc := New(store.Playlists, srv.URL, t.TempDir(), nil, testutil.NewLogger())
 	svc.charts = []Chart{{Slug: "fr", Name: "Top 50 France"}}
 	svc.SetOwner(owner.ID)
 
@@ -71,6 +71,9 @@ func TestSyncNowMaterializesPublicPlaylists(t *testing.T) {
 	}
 	if p.Name != "Top 50 France" {
 		t.Fatalf("name = %q, want %q", p.Name, "Top 50 France")
+	}
+	if p.CoverArt == "" {
+		t.Fatal("expected a generated cover")
 	}
 
 	tracks, err := store.Playlists.Tracks(ctx, p.ID)
@@ -117,7 +120,7 @@ func TestSyncNowSkipsFailingChartButSyncsOthers(t *testing.T) {
 
 	srv := stubKworb(t, map[string][]string{"fr": {"Artist - Title"}})
 
-	svc := New(store.Playlists, srv.URL, nil, testutil.NewLogger())
+	svc := New(store.Playlists, srv.URL, t.TempDir(), nil, testutil.NewLogger())
 	svc.charts = []Chart{
 		{Slug: "does-not-exist", Name: "Broken"},
 		{Slug: "fr", Name: "Top 50 France"},

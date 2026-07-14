@@ -2,9 +2,10 @@ package immerle
 
 import (
 	"bytes"
-	"image/color"
 	"image/png"
 	"testing"
+
+	"github.com/immerle/immerle/internal/covergen"
 )
 
 func TestRenderCover(t *testing.T) {
@@ -20,19 +21,7 @@ func TestRenderCover(t *testing.T) {
 	if err != nil {
 		t.Fatalf("output is not a PNG: %v", err)
 	}
-	if b := img.Bounds(); b.Dx() != renderSize || b.Dy() != renderSize {
-		t.Fatalf("size = %v, want %d square", b, renderSize)
-	}
-}
-
-func TestParseHex(t *testing.T) {
-	if got := parseHex("#ff0000", color.Black).(color.RGBA); got != (color.RGBA{255, 0, 0, 255}) {
-		t.Fatalf("ff0000 -> %v", got)
-	}
-	if got := parseHex("#0f0", color.Black).(color.RGBA); got != (color.RGBA{0, 255, 0, 255}) {
-		t.Fatalf("short hex #0f0 -> %v", got)
-	}
-	if got := parseHex("nope", color.Black); got != color.Black {
-		t.Fatalf("bad hex should fall back, got %v", got)
+	if b := img.Bounds(); b.Dx() != covergen.Size || b.Dy() != covergen.Size {
+		t.Fatalf("size = %v, want %d square", b, covergen.Size)
 	}
 }

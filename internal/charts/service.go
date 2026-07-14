@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/google/uuid"
@@ -33,6 +35,7 @@ type Service struct {
 	client    *client
 	charts    []Chart
 	interval  time.Duration
+	coversDir string
 	logger    *slog.Logger
 
 	ownerID string
@@ -40,13 +43,17 @@ type Service struct {
 }
 
 // New builds a Service. baseURL overrides the kworb data-set root (tests
-// only; empty uses the real GitHub content). hc may be nil.
-func New(playlists *persistence.PlaylistRepo, baseURL string, hc *http.Client, logger *slog.Logger) *Service {
+// only; empty uses the real GitHub content). hc may be nil. coversDir is
+// where generated chart covers are written (same directory as every other
+// cover file); a newly-created chart playlist with no cover art is skipped
+// (logged, not fatal) if empty.
+func New(playlists *persistence.PlaylistRepo, baseURL, coversDir string, hc *http.Client, logger *slog.Logger) *Service {
 	return &Service{
 		playlists: playlists,
 		client:    newClient(baseURL, hc),
 		charts:    DefaultCharts,
 		interval:  defaultInterval,
+		coversDir: coversDir,
 		logger:    logger,
 	}
 }
@@ -137,10 +144,37 @@ func (s *Service) syncOne(ctx context.Context, ownerID string, c Chart) error {
 		if err := s.playlists.Create(ctx, p); err != nil {
 			return err
 		}
+		if coverID, err := s.storeCover(c.Slug); err != nil {
+			s.logger.Warn("chart cover generation failed", "chart", c.Slug, "error", err)
+		} else if err := s.playlists.SetCover(ctx, p.ID, coverID); err != nil {
+			s.logger.Warn("chart cover save failed", "chart", c.Slug, "error", err)
+		}
 		return s.playlists.ReplaceFederatedTracks(ctx, p.ID, entries)
 	default:
 		return err
 	}
+}
+
+// storeCover generates a flag/globe cover for slug and writes it under
+// coversDir, returning the new cover id. Only called once, when the chart's
+// playlist is first created — the cover is deterministic per slug, so
+// there's nothing to refresh on subsequent syncs.
+func (s *Service) storeCover(slug string) (string, error) {
+	if s.coversDir == "" {
+		return "", fmt.Errorf("charts: covers dir not configured")
+	}
+	data, err := generateCover(slug)
+	if err != nil {
+		return "", err
+	}
+	if err := os.MkdirAll(s.coversDir, 0o755); err != nil {
+		return "", err
+	}
+	coverID := uuid.NewString()
+	if err := os.WriteFile(filepath.Join(s.coversDir, coverID), data, 0o644); err != nil {
+		return "", err
+	}
+	return coverID, nil
 }
 
 // Run syncs on the configured interval until ctx is cancelled — once
