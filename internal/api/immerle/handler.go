@@ -110,9 +110,9 @@ type Handler struct {
 	// library and playback back the catalog browse resources and the
 	// favorite/rating/scrobble mutations with the same application services the
 	// Subsonic handler uses.
-	library     *core.LibraryService
-	playback    *core.PlaybackService
-	playQueue   *core.PlayQueueService
+	library       *core.LibraryService
+	playback      *core.PlaybackService
+	playQueue     *core.PlayQueueService
 	playlistSvc   *core.PlaylistService
 	hallOfFameSvc *core.HallOfFameService
 	userSvc       *core.UserService
