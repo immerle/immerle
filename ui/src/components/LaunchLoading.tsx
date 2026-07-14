@@ -12,18 +12,19 @@ import Animated, {
 import { Ionicon } from './Ionicon';
 import { palette } from '../theme/colors';
 
-const LOGO_HEIGHT = 140;
+const LOGO_HEIGHT = 80;
 const LOGO_WIDTH = LOGO_HEIGHT * (480 / 391);
 
-// Notes placed around the logo in a ring, each with its own color, angle and
-// bounce delay so they twinkle out of sync — a little "dancefloor" flourish.
+// Notes placed in a ring clearly outside the logo's bounds, each with its own
+// color, angle and bounce delay so they twinkle out of sync — a little
+// "dancefloor" flourish.
 const NOTES: { icon: string; angle: number; radius: number; size: number; color: string; delay: number }[] = [
-  { icon: 'musical-notes', angle: -70, radius: 110, size: 26, color: '#1db954', delay: 0 },
-  { icon: 'musical-note', angle: -10, radius: 125, size: 20, color: '#ec4899', delay: 150 },
-  { icon: 'musical-note', angle: 55, radius: 105, size: 22, color: '#3b82f6', delay: 300 },
-  { icon: 'musical-notes', angle: 125, radius: 120, size: 24, color: '#f59e0b', delay: 450 },
-  { icon: 'musical-note', angle: 195, radius: 110, size: 20, color: '#8b5cf6', delay: 600 },
-  { icon: 'musical-note', angle: 260, radius: 120, size: 22, color: '#ef4444', delay: 750 },
+  { icon: 'musical-notes', angle: -70, radius: 90, size: 26, color: '#1db954', delay: 0 },
+  { icon: 'musical-note', angle: -10, radius: 105, size: 20, color: '#ec4899', delay: 150 },
+  { icon: 'musical-note', angle: 55, radius: 85, size: 22, color: '#3b82f6', delay: 300 },
+  { icon: 'musical-notes', angle: 125, radius: 100, size: 24, color: '#f59e0b', delay: 450 },
+  { icon: 'musical-note', angle: 195, radius: 90, size: 20, color: '#8b5cf6', delay: 600 },
+  { icon: 'musical-note', angle: 260, radius: 100, size: 22, color: '#ef4444', delay: 750 },
 ];
 
 function FloatingNote({ icon, angle, radius, size, color, delay }: (typeof NOTES)[number]) {
@@ -44,7 +45,7 @@ function FloatingNote({ icon, angle, radius, size, color, delay }: (typeof NOTES
   }));
 
   return (
-    <Animated.View style={[{ position: 'absolute' }, style]}>
+    <Animated.View style={[{ position: 'absolute', zIndex: 1, elevation: 1 }, style]}>
       <Ionicon name={icon} size={size} color={color} />
     </Animated.View>
   );
@@ -71,14 +72,14 @@ export function LaunchLoading() {
   return (
     <View style={{ flex: 1, backgroundColor: palette.dark.background, alignItems: 'center', justifyContent: 'center' }}>
       <View style={{ width: 1, height: 1, alignItems: 'center', justifyContent: 'center' }}>
-        {NOTES.map((note, i) => (
-          <FloatingNote key={i} {...note} />
-        ))}
         <Animated.Image
           source={require('../../assets/logo.png')}
           style={[{ width: LOGO_WIDTH, height: LOGO_HEIGHT }, logoStyle]}
           resizeMode="contain"
         />
+        {NOTES.map((note, i) => (
+          <FloatingNote key={i} {...note} />
+        ))}
       </View>
     </View>
   );
