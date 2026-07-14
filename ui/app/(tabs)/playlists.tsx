@@ -179,47 +179,46 @@ export default function Playlists() {
         </View>
       ) : null}
 
-      {/* "Titres likés" is pinned at the very top, regardless of list state. */}
-      <LikedRow />
-      <LocalRow />
-      {canHallOfFame ? <HallOfFameRow /> : null}
-      {canSmart ? <SmartRow /> : null}
-      {canRadio ? <RadioRow /> : null}
-
-      {q.isLoading ? (
-        <Loading />
-      ) : q.isError ? (
-        <ErrorState message={t('home.playlists.loadError')} onRetry={q.refetch} />
-      ) : !q.data?.length ? (
-        <EmptyState
-          icon="list"
-          title={t('home.playlists.empty')}
-          subtitle={t('home.playlists.emptySubtitle')}
-        />
-      ) : (
-        <FlashList<Playlist>
-          data={q.data}
-          keyExtractor={(p) => p.id}
-          estimatedItemSize={72}
-          refreshing={q.isRefetching}
-          onRefresh={q.refetch}
-          renderItem={({ item }) => (
-            <Pressable
-              onPress={() => router.push(`/playlist/${item.id}`)}
-              className="flex-row items-center gap-3 px-4 py-2 active:bg-surface-alt"
-            >
-              <PlaylistCover coverArt={item.coverArt} covers={item.coverArts ?? []} size={56} rounded="rounded-lg" fallbackIcon="list" />
-              <View className="flex-1">
-                <Text numberOfLines={1} className="text-base font-semibold text-foreground">
-                  {item.name}
-                </Text>
-                <Text className="text-sm text-muted">{t('home.playlists.trackCount', { count: formatCount(item.songCount) })}</Text>
-              </View>
-            </Pressable>
-          )}
-          contentContainerStyle={{ paddingBottom: 16 }}
-        />
-      )}
+      <FlashList<Playlist>
+        data={q.data ?? []}
+        keyExtractor={(p) => p.id}
+        estimatedItemSize={72}
+        refreshing={q.isRefetching}
+        onRefresh={q.refetch}
+        ListHeaderComponent={
+          <>
+            <LikedRow />
+            <LocalRow />
+            {canHallOfFame ? <HallOfFameRow /> : null}
+            {canSmart ? <SmartRow /> : null}
+            {canRadio ? <RadioRow /> : null}
+          </>
+        }
+        ListEmptyComponent={
+          q.isLoading ? (
+            <Loading />
+          ) : q.isError ? (
+            <ErrorState message={t('home.playlists.loadError')} onRetry={q.refetch} />
+          ) : (
+            <EmptyState icon="list" title={t('home.playlists.empty')} subtitle={t('home.playlists.emptySubtitle')} />
+          )
+        }
+        renderItem={({ item }) => (
+          <Pressable
+            onPress={() => router.push(`/playlist/${item.id}`)}
+            className="flex-row items-center gap-3 px-4 py-2 active:bg-surface-alt"
+          >
+            <PlaylistCover coverArt={item.coverArt} covers={item.coverArts ?? []} size={56} rounded="rounded-lg" fallbackIcon="list" />
+            <View className="flex-1">
+              <Text numberOfLines={1} className="text-base font-semibold text-foreground">
+                {item.name}
+              </Text>
+              <Text className="text-sm text-muted">{t('home.playlists.trackCount', { count: formatCount(item.songCount) })}</Text>
+            </View>
+          </Pressable>
+        )}
+        contentContainerStyle={{ paddingBottom: 16 }}
+      />
     </SafeAreaView>
   );
 }
