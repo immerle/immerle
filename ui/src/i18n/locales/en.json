@@ -562,6 +562,7 @@
       "radioEnabled": "Internet radio",
       "wrappedEnabled": "Wrapped (year-in-review)",
       "offlineEnabled": "Offline downloads",
+      "hallOfFameEnabled": "Hall of Fame",
       "save": "Save"
     },
     "users": {
@@ -685,6 +686,7 @@
       "play": "Play playlist",
       "publicToggle": "Public playlist",
       "publicHint": "Visible in “Public playlists”; opt-in subscription.",
+      "reorderHandle": "Drag to reorder",
       "collaborator": "Collaborator",
       "usernamePlaceholder": "Username",
       "add": "Add",
@@ -708,6 +710,20 @@
         "textPlaceholder": "Your text…",
         "size": "Text size"
       }
+    },
+    "hallOfFame": {
+      "title": "Hall of Fame",
+      "trackCount": "{{count}} tracks",
+      "loadError": "Unable to load your Hall of Fame.",
+      "empty": "Your Hall of Fame is empty",
+      "emptySubtitle": "Add tracks from a track's menu.",
+      "edit": "Edit",
+      "save": "Save",
+      "cancel": "Cancel",
+      "reorderHandle": "Drag to reorder",
+      "noteEdit": "Edit note",
+      "notePlaceholder": "A memory about this track…",
+      "play": "Play Hall of Fame"
     },
     "liked": {
       "title": "Liked tracks",
@@ -874,7 +890,8 @@
       "playlistNamePlaceholder": "Playlist name",
       "cancel": "Cancel",
       "create": "Create",
-      "localSongs": "Local music"
+      "localSongs": "Local music",
+      "hallOfFame": "Hall of Fame"
     },
     "player": {
       "nothingPlaying": "Nothing playing",
@@ -921,6 +938,8 @@
       "playNext": "Play next",
       "addToQueue": "Add to queue",
       "addToPlaylist": "Add to a playlist",
+      "addToHallOfFame": "Add to Hall of Fame",
+      "addedToHallOfFame": "Added to your Hall of Fame",
       "goToAlbum": "Go to album",
       "goToArtist": "Go to artist",
       "choosePlaylist": "Choose a playlist",

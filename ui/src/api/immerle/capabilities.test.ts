@@ -39,4 +39,30 @@ describe('adaptCapabilities', () => {
     } as CapabilitiesResponse);
     expect(caps.features.social).toBe(true);
   });
+
+  it('keeps a togglable feature "supported" while off, but reports it disabled in toggles', () => {
+    // Regression: an admin switching Hall of Fame off must hide its sidebar
+    // entry (isFeatureEnabled), without breaking the admin toggle UI, which
+    // needs the feature to stay "supported" (has) so it can be switched back on.
+    const caps = adaptCapabilities({
+      ok: true,
+      capabilities: { hallOfFame: { version: 1, admin: true, enabled: false } },
+    } as CapabilitiesResponse);
+    expect(caps.features.hallOfFame).toBe(true);
+    expect(caps.toggles.hallOfFame).toBe(false);
+  });
+
+  it('reports a togglable feature enabled when the server says so', () => {
+    const caps = adaptCapabilities({
+      ok: true,
+      capabilities: { hallOfFame: { version: 1, admin: true, enabled: true } },
+    } as CapabilitiesResponse);
+    expect(caps.features.hallOfFame).toBe(true);
+    expect(caps.toggles.hallOfFame).toBe(true);
+  });
+
+  it('leaves toggles empty for an unadvertised feature', () => {
+    const caps = adaptCapabilities({ ok: true, capabilities: {} } as CapabilitiesResponse);
+    expect(caps.toggles.hallOfFame).toBeUndefined();
+  });
 });

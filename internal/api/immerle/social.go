@@ -38,6 +38,7 @@ func (h *Handler) handleCapabilities(w http.ResponseWriter, r *http.Request) {
 	smart := h.smartEnabled() && h.SmartPlaylists != nil
 	radio := h.radioEnabled() && h.Radio != nil
 	offline := h.offlineEnabled()
+	hallOfFame := h.hallOfFameEnabled()
 	writeResource(w, http.StatusOK, map[string]any{
 		"server":          "immerle",
 		"protocolVersion": ProtocolVersion,
@@ -63,6 +64,7 @@ func (h *Handler) handleCapabilities(w http.ResponseWriter, r *http.Request) {
 			"internetRadio":          map[string]any{"version": 1, "admin": true, "enabled": radio},
 			"wrapped":                map[string]any{"version": 1, "admin": true, "enabled": wrapped},
 			"offlineDownloads":       map[string]any{"version": 1, "admin": true, "enabled": offline},
+			"hallOfFame":             map[string]any{"version": 1, "admin": true, "enabled": hallOfFame},
 		},
 	})
 }

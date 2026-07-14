@@ -275,5 +275,8 @@ func (s *SettingsService) WrappedEnabled() bool { return s.Get().Wrapped.Enabled
 // OfflineEnabled reports whether offline downloads are on (read live).
 func (s *SettingsService) OfflineEnabled() bool { return s.Get().Offline.Enabled }
 
+// HallOfFameEnabled reports whether the personal Hall of Fame feature is on (read live).
+func (s *SettingsService) HallOfFameEnabled() bool { return s.Get().HallOfFame.Enabled }
+
 // LDAPConfig returns the live LDAP settings (read on each password login).
 func (s *SettingsService) LDAPConfig() models.LDAPRuntime { return s.Get().LDAP }

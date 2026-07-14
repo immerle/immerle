@@ -7,7 +7,7 @@ export function useSmartPlaylists() {
   const client = useAuth((s) => s.client);
   return useQuery({
     queryKey: qk.smartPlaylists,
-    enabled: !!client && client.has('smartPlaylists'),
+    enabled: !!client && client.isFeatureEnabled('smartPlaylists'),
     queryFn: ({ signal }) => client!.listSmartPlaylists(signal),
   });
 }

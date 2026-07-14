@@ -422,6 +422,7 @@ func New(cfg config.Config) (*App, error) {
 		Radio:          store.Radio,
 		Podcasts:       podcastSvc,
 		Wrapped:        store.Wrapped,
+		HallOfFame:     store.HallOfFame,
 		Catalog:        store.Catalog,
 		Annotations:    store.Annotations,
 		Genres:         store.Genres,

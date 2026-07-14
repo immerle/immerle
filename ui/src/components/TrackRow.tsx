@@ -1,12 +1,16 @@
 import { memo } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { Song } from '../api/subsonic/types';
+import { CommentQuote } from './CommentQuote';
 import { CoverArt } from './CoverArt';
 import { Ionicon } from './Ionicon';
 import { IconButton } from './ui';
 import { useDownloads } from '../offline/store';
 import { formatDuration } from '../utils/format';
 import { useColors } from '../theme/colors';
+
+// Medal color per rank (1/2/3); ranks below 3 fall back to the muted theme color.
+const RANK_COLOR: Record<number, string> = { 1: '#f2c94c', 2: '#c0c0c0', 3: '#cd7f32' };
 
 interface TrackRowProps {
   song: Song;
@@ -15,6 +19,9 @@ interface TrackRowProps {
   showArtwork?: boolean;
   /** Track number override (defaults to song.track). */
   number?: number;
+  /** 1-based rank shown as a colored badge to the left of the cover (used by
+   * Hall of Fame) — independent of showArtwork/number, so both can render. */
+  rank?: number;
   onPress: () => void;
   onMore?: () => void;
 }
@@ -28,6 +35,7 @@ export const TrackRow = memo(function TrackRow({
   active,
   showArtwork = true,
   number,
+  rank,
   onPress,
   onMore,
 }: TrackRowProps) {
@@ -39,6 +47,13 @@ export const TrackRow = memo(function TrackRow({
       onLongPress={onMore}
       className="flex-row items-center gap-3 px-4 py-2 active:bg-surface-alt"
     >
+      {rank ? (
+        <View className="w-6 items-center">
+          <Text className="text-sm font-bold" style={{ color: RANK_COLOR[rank] ?? colors.muted }}>
+            {rank}
+          </Text>
+        </View>
+      ) : null}
       {showArtwork ? (
         <CoverArt coverArt={song.coverArt} size={48} rounded="rounded-md" />
       ) : (
@@ -58,6 +73,7 @@ export const TrackRow = memo(function TrackRow({
         <Text numberOfLines={1} className="text-sm text-muted">
           {song.artist ?? 'Artiste inconnu'}
         </Text>
+        {song.comment ? <CommentQuote comment={song.comment} className="text-xs italic text-muted" /> : null}
       </View>
       {song.unresolved ? (
         <Ionicon name="help-circle-outline" size={15} color={colors.muted} />

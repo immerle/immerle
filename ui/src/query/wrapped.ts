@@ -7,7 +7,7 @@ export function useWrapped(year: number) {
   const client = useAuth((s) => s.client);
   return useQuery({
     queryKey: qk.wrapped(year),
-    enabled: !!client && client.has('wrapped'),
+    enabled: !!client && client.isFeatureEnabled('wrapped'),
     queryFn: ({ signal }) => client!.getWrapped(year, signal),
   });
 }

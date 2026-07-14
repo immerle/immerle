@@ -6,6 +6,7 @@ import { useAuth } from '../auth/store';
 import { PlaylistCover } from './PlaylistCover';
 import { LikedCover } from './LikedCover';
 import { LocalCover } from './LocalCover';
+import { HallOfFameCover } from './HallOfFameCover';
 import { Ionicon } from './Ionicon';
 import { IconButton, Field, Button } from './ui';
 import { useUI } from '../stores/ui';
@@ -50,7 +51,8 @@ export function LibrarySidebar() {
   const collapsed = wide && sidebarCollapsed;
   const toggle = wide ? toggleSidebar : () => {};
   const canDiscover = useAuth((s) => s.client?.has('publicPlaylists') ?? false);
-  const canRadio = useAuth((s) => s.client?.has('internetRadio') ?? false);
+  const canRadio = useAuth((s) => s.client?.isFeatureEnabled('internetRadio') ?? false);
+  const canHallOfFame = useAuth((s) => s.client?.isFeatureEnabled('hallOfFame') ?? false);
   const { data: playlists } = usePlaylists();
   const [creating, setCreating] = useState(false);
   const [filter, setFilter] = useState('');
@@ -69,6 +71,7 @@ export function LibrarySidebar() {
   const likedMatches = 'titres likés'.includes(q);
   const localMatches = 'musiques locales'.includes(q);
   const radioMatches = canRadio && (t('radio.title').toLowerCase().includes(q) || 'radio'.includes(q));
+  const hallOfFameMatches = canHallOfFame && t('components.sidebar.hallOfFame').toLowerCase().includes(q);
 
   return (
     <View style={{ width }} className="border-r border-border bg-surface">
@@ -194,6 +197,16 @@ export function LibrarySidebar() {
             onPress={() => router.push('/radios' as never)}
           />
         ) : null}
+        {hallOfFameMatches ? (
+          <Row
+            active={pathname === '/halloffame'}
+            collapsed={collapsed}
+            cover={<HallOfFameCover size={48} rounded={6} />}
+            title={t('components.sidebar.hallOfFame')}
+            subtitle={t('components.sidebar.playlist')}
+            onPress={() => router.push('/halloffame' as never)}
+          />
+        ) : null}
         {filtered.map((p: Playlist) => (
           <Row
             key={p.id}
@@ -205,7 +218,7 @@ export function LibrarySidebar() {
             onPress={() => router.push(`/playlist/${p.id}` as never)}
           />
         ))}
-        {!collapsed && filtered.length === 0 && !likedMatches && !localMatches && !radioMatches ? (
+        {!collapsed && filtered.length === 0 && !likedMatches && !localMatches && !radioMatches && !hallOfFameMatches ? (
           <Text className="px-3 py-4 text-sm text-muted">{t('components.sidebar.noResults')}</Text>
         ) : null}
       </ScrollView>

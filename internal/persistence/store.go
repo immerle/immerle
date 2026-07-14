@@ -46,6 +46,7 @@ type Store struct {
 	PlaylistSync    *PlaylistSyncRepo
 	CoverUploads    *CoverUploadRepo
 	FeedCursors     *FeedCursorRepo
+	HallOfFame      *HallOfFameRepo
 }
 
 // New builds a Store over the given database.
@@ -77,6 +78,7 @@ func New(database *db.DB) *Store {
 		PlaylistSync:    &PlaylistSyncRepo{base},
 		CoverUploads:    &CoverUploadRepo{base},
 		FeedCursors:     &FeedCursorRepo{base},
+		HallOfFame:      &HallOfFameRepo{base},
 	}
 }
 

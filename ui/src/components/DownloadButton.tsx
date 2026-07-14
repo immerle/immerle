@@ -15,7 +15,7 @@ import { useT } from '../i18n/store';
 export function DownloadButton({ songs, size = 24 }: { songs: Song[]; size?: number }) {
   const t = useT();
   const colors = useColors();
-  const canOffline = useAuth((s) => s.client?.has('offlineDownloads') ?? false) && offlineSupported;
+  const canOffline = useAuth((s) => s.client?.isFeatureEnabled('offlineDownloads') ?? false) && offlineSupported;
   const entries = useDownloads((s) => s.entries);
   const downloadMany = useDownloads((s) => s.downloadMany);
 

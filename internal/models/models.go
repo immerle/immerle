@@ -88,6 +88,7 @@ type RuntimeSettings struct {
 	Radio          RadioRuntime          `json:"radio"`
 	Wrapped        WrappedRuntime        `json:"wrapped"`
 	Offline        OfflineRuntime        `json:"offline"`
+	HallOfFame     HallOfFameRuntime     `json:"hallOfFame"`
 }
 
 // SmartPlaylistsRuntime toggles rule-based "smart" playlists (hot-reloadable).
@@ -112,6 +113,12 @@ type WrappedRuntime struct {
 // offlineDownloads capability advertises enabled=false and clients hide the
 // download-for-offline UI. The per-track download endpoint itself is unaffected.
 type OfflineRuntime struct {
+	Enabled bool `json:"enabled"`
+}
+
+// HallOfFameRuntime toggles the personal Hall of Fame feature (hot-reloadable).
+// When disabled, GET /hall-of-fame 404s and clients hide its sidebar entry.
+type HallOfFameRuntime struct {
 	Enabled bool `json:"enabled"`
 }
 
@@ -249,6 +256,7 @@ func DefaultRuntimeSettings() RuntimeSettings {
 		Radio:          RadioRuntime{Enabled: true},
 		Wrapped:        WrappedRuntime{Enabled: true},
 		Offline:        OfflineRuntime{Enabled: true},
+		HallOfFame:     HallOfFameRuntime{Enabled: true},
 	}
 }
 
@@ -500,6 +508,23 @@ type Playlist struct {
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 	Tracks    []Track   `json:"-"`
+}
+
+// HallOfFame is a user's personal top-tracks ranking — exactly one per user,
+// auto-created on first access (see core.HallOfFameService.Get). Deliberately
+// its own entity (not a playlist): a dedicated table, not a flag on playlists.
+type HallOfFame struct {
+	ID        string    `json:"id"`
+	OwnerID   string    `json:"-"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// HallOfFameEntry is one ranked track, in position order, with an optional
+// personal nostalgia note ("listened to this in college").
+type HallOfFameEntry struct {
+	Track   Track
+	Comment string
 }
 
 // PlayQueue is a user's saved server-side playback queue.

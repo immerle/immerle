@@ -8,6 +8,7 @@ import { Ionicon } from './Ionicon';
 import { Field } from './ui';
 import { usePlayer } from '../audio/store';
 import { useAddToPlaylist, useCreatePlaylist, usePlaylists } from '../query/playlists';
+import { useAddToHallOfFame } from '../query/hallOfFame';
 import { useAuth } from '../auth/store';
 import { useDownloads } from '../offline/store';
 import { isSupported as offlineSupported } from '../offline/fs';
@@ -66,7 +67,9 @@ export function TrackMenu() {
   const close = useTrackMenu((s) => s.close);
   const playNext = usePlayer((s) => s.playNext);
   const enqueue = usePlayer((s) => s.enqueue);
-  const canOffline = useAuth((s) => s.client?.has('offlineDownloads') ?? false) && offlineSupported;
+  const canOffline = useAuth((s) => s.client?.isFeatureEnabled('offlineDownloads') ?? false) && offlineSupported;
+  const canHallOfFame = useAuth((s) => s.client?.isFeatureEnabled('hallOfFame') ?? false);
+  const addToHallOfFame = useAddToHallOfFame();
   const downloaded = useDownloads((s) => (song ? !!s.entries[song.id] : false));
   const downloading = useDownloads((s) => (song ? s.progress[song.id] != null : false));
   const [picker, setPicker] = useState(false);
@@ -130,6 +133,19 @@ export function TrackMenu() {
                 }}
               />
               <Action icon="add-circle-outline" label={t('components.trackMenu.addToPlaylist')} onPress={() => setPicker(true)} />
+              {canHallOfFame ? (
+                <Action
+                  icon="trophy-outline"
+                  label={t('components.trackMenu.addToHallOfFame')}
+                  onPress={() => {
+                    dismiss();
+                    addToHallOfFame.mutate(song.id, {
+                      onSuccess: () => useToast.getState().success(t('components.trackMenu.addedToHallOfFame')),
+                      onError: (e) => useToast.getState().error(tError(e)),
+                    });
+                  }}
+                />
+              ) : null}
               {canOffline ? (
                 downloaded ? (
                   <Action

@@ -95,7 +95,7 @@ export const useDownloads = create<DownloadsState>((set, get) => ({
   download: async (song) => {
     if (!fs.isSupported) return;
     const client = useAuth.getState().client;
-    if (!client || !client.has('offlineDownloads')) return;
+    if (!client || !client.isFeatureEnabled('offlineDownloads')) return;
     const id = song.id;
     // Already downloaded or in flight — nothing to do.
     if (get().entries[id] || get().progress[id] != null) return;

@@ -55,6 +55,7 @@ export type GenreView = components['schemas']['immerle.genreView'];
 export type FavoritesView = components['schemas']['immerle.favoritesView'];
 export type SearchView = components['schemas']['immerle.searchView'];
 export type PlaylistView = components['schemas']['immerle.playlistView'];
+export type HallOfFameView = components['schemas']['immerle.hallOfFameView'];
 export type NowPlayingView = components['schemas']['immerle.nowPlayingView'];
 export type AdminUserView = components['schemas']['immerle.adminUserView'];
 export type PlayQueueView = components['schemas']['immerle.playQueueView'];

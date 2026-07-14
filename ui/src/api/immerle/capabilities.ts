@@ -28,8 +28,13 @@ export const SUBSONIC_ONLY_CAPABILITIES: Capabilities = {
     smartPlaylists: false,
     internetRadio: false,
     wrapped: false,
+    hallOfFame: false,
   },
+  toggles: {},
 };
+
+/** The admin-togglable capability keys — see `Capabilities.toggles`. */
+const TOGGLEABLE = ['smartPlaylists', 'internetRadio', 'wrapped', 'offlineDownloads', 'hallOfFame'] as const;
 
 /**
  * Probe an instance for Immerle capabilities via the generated client
@@ -54,12 +59,22 @@ export async function probeCapabilities(
 
 /**
  * Adapt the server's capability map (`{ [feature]: { version, ... } }`) to the
- * app's boolean feature flags. A feature is enabled when the server advertises
- * its key; everything unadvertised stays off.
+ * app's boolean feature flags. A feature is "supported" whenever the server
+ * advertises its key at all — that's `features`, and it stays true even while
+ * an admin has switched a togglable feature off (the admin toggle UI relies on
+ * this to stay visible so it can be switched back on). The live on/off state
+ * of the handful of admin-togglable features (see `TOGGLEABLE`) is captured
+ * separately in `toggles`, from their nested `enabled` value.
  */
 export function adaptCapabilities(payload: CapabilitiesResponse): Capabilities {
-  const caps = (payload.capabilities ?? {}) as Record<string, unknown>;
+  const caps = (payload.capabilities ?? {}) as Record<string, { enabled?: boolean } | undefined>;
   const has = (key: string) => Object.prototype.hasOwnProperty.call(caps, key);
+
+  const toggles: Capabilities['toggles'] = {};
+  for (const key of TOGGLEABLE) {
+    if (has(key)) toggles[key] = caps[key]?.enabled === true;
+  }
+
   return {
     version: payload.protocolVersion ?? SUBSONIC_ONLY_CAPABILITIES.version,
     apiRevision: 1,
@@ -82,6 +97,8 @@ export function adaptCapabilities(payload: CapabilitiesResponse): Capabilities {
       smartPlaylists: has('smartPlaylists'),
       internetRadio: has('internetRadio'),
       wrapped: has('wrapped'),
+      hallOfFame: has('hallOfFame'),
     },
+    toggles,
   };
 }

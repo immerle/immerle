@@ -18,6 +18,8 @@ export const qk = {
   wrapped: (year: number) => ['wrapped', year] as const,
   wrappedAdmin: ['admin', 'wrapped'] as const,
   offlineAdmin: ['admin', 'offline'] as const,
+  hallOfFame: ['hallOfFame'] as const,
+  hallOfFameAdmin: ['admin', 'hallOfFame'] as const,
 
   playlists: ['playlists'] as const,
   playlist: (id: string) => ['playlist', id] as const,
