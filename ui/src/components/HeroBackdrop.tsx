@@ -10,10 +10,14 @@ import { useColors } from '../theme/colors';
  */
 export function HeroBackdrop({
   url,
+  tint,
   height,
   children,
 }: {
   url?: string;
+  /** Colored gradient glow used instead of the flat gray panel when there's no
+   * artwork (e.g. radio: stations rarely have cover art). */
+  tint?: string;
   height: number;
   children: ReactNode;
 }) {
@@ -21,17 +25,27 @@ export function HeroBackdrop({
   return (
     <View style={{ height }} className="overflow-hidden">
       {url ? (
-        <Image
-          source={{ uri: url }}
+        <>
+          <Image
+            source={{ uri: url }}
+            style={StyleSheet.absoluteFill}
+            blurRadius={60}
+            resizeMode="cover"
+          />
+          {/* Darken the photo for legibility. */}
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.45)' }]} />
+        </>
+      ) : tint ? (
+        <LinearGradient
+          colors={[tint + '66', tint + '1f', 'transparent']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
           style={StyleSheet.absoluteFill}
-          blurRadius={60}
-          resizeMode="cover"
         />
       ) : (
         <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.surfaceAlt }]} />
       )}
-      {/* Darken for legibility, then fade to the page background. */}
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.45)' }]} />
+      {/* Fade to the page background. */}
       <LinearGradient
         colors={['transparent', colors.background]}
         locations={[0.35, 1]}

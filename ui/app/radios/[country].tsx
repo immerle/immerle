@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useRadioStations, useRadioLike } from '../../src/query/radio';
 import { useAuth } from '../../src/auth/store';
@@ -58,9 +58,9 @@ export default function CountryRadios() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <SafeAreaView edges={['top']} className="flex-1 bg-background">
+      <View className="flex-1 bg-background">
         <ScrollView contentContainerStyle={{ paddingBottom: 16 }}>
-          <HeroBackdrop url={heroUrl} height={wide ? 170 : 150 + insets.top}>
+          <HeroBackdrop url={heroUrl} tint={colors.primary} height={wide ? 170 : 150 + insets.top}>
             {!wide ? (
               <View className="absolute left-4 z-10" style={{ top: insets.top + 8 }}>
                 <IconButton name="chevron-back" size={24} color="#fff" onPress={() => router.back()} accessibilityLabel={t('components.admin.back')} />
@@ -101,7 +101,7 @@ export default function CountryRadios() {
             )}
           </View>
         </ScrollView>
-      </SafeAreaView>
+      </View>
     </>
   );
 }
