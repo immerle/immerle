@@ -4959,6 +4959,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/play-queue/commands": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send a play-queue command
+         * @description Sends a remote-control command (toggle, next, previous, seekTo, skipTo) for the active device (see targetDeviceId) to apply. Does not modify the saved queue state directly.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Command */
+            requestBody: {
+                content: {
+                    "application/json": Record<string, never> | components["schemas"]["immerle.playQueueCommandRequest"];
+                };
+            };
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/play-queue/events": {
         parameters: {
             query?: never;
@@ -8488,6 +8548,20 @@ export interface components {
         "immerle.cleanupUpdateRequest": {
             enabled?: boolean;
         };
+        /**
+         * @description PendingCommand is a spectator's remote-control command for the active
+         *     device to apply (see POST /play-queue/commands). CommandSeq increases
+         *     on every new command, so a receiver can tell a new one from one it
+         *     already applied.
+         */
+        "immerle.commandView": {
+            forTarget?: string;
+            issuedBy?: string;
+            positionMs?: number;
+            queueIndex?: number;
+            trackId?: string;
+            type?: string;
+        };
         "immerle.createJamRequest": {
             name?: string;
             trackIds?: string[];
@@ -8569,6 +8643,26 @@ export interface components {
         "immerle.passwordRequest": {
             password?: string;
         };
+        "immerle.playQueueCommandRequest": {
+            /**
+             * @description ForTarget is the sender's view of the current active device id — the
+             *     receiver ignores this command if it isn't (or is no longer) that device.
+             */
+            forTarget?: string;
+            /** @description IssuedBy is the sending device's id. */
+            issuedBy?: string;
+            /** @description PositionMs is the target position for a "seekTo" command. */
+            positionMs?: number;
+            /**
+             * @description QueueIndex disambiguates "skipTo" if TrackID appears more than once in
+             *     the queue — a hint only, never the primary lookup.
+             */
+            queueIndex?: number;
+            /** @description TrackID is the track to jump to for a "skipTo" command. */
+            trackId?: string;
+            /** @description Type is one of "toggle", "next", "previous", "seekTo", "skipTo". */
+            type?: string;
+        };
         "immerle.playQueueRequest": {
             client?: string;
             current?: string;
@@ -8594,8 +8688,10 @@ export interface components {
         "immerle.playQueueView": {
             changedAt?: string;
             changedBy?: string;
+            commandSeq?: number;
             current?: string;
             entries?: components["schemas"]["immerle.songView"][];
+            pendingCommand?: components["schemas"]["immerle.commandView"];
             /**
              * @description Playing reports whether Current was playing (vs paused) as of
              *     ChangedAt — see playQueueRequest.Playing.

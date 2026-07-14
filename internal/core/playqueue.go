@@ -162,6 +162,18 @@ func (s *PlayQueueService) SetTarget(ctx context.Context, userID, deviceID strin
 	return nil
 }
 
+// SendCommand records a spectator's remote-control command (see
+// models.CommandEnvelope) for the active device to apply itself, and
+// notifies subscribers (see Subscribe) so it's delivered promptly over SSE
+// in addition to the next plain poll/Get.
+func (s *PlayQueueService) SendCommand(ctx context.Context, userID string, cmd models.CommandEnvelope) error {
+	if err := s.playQueues.SetCommand(ctx, userID, cmd); err != nil {
+		return err
+	}
+	s.notify(ctx, userID)
+	return nil
+}
+
 // Subscribe returns an event channel and an unsubscribe func for SSE
 // streaming of a user's play-queue changes.
 func (s *PlayQueueService) Subscribe(userID string) (<-chan PlayQueueEvent, func()) {

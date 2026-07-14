@@ -906,7 +906,8 @@
       "castThisDevice": "This device",
       "castNoOtherDevices": "No other devices found",
       "castPlayingElsewhere": "Playing on another device",
-      "castPlayingOnDevice": "Playing on {{name}}"
+      "castPlayingOnDevice": "Playing on {{name}}",
+      "offline": "Can't reach the server — playing locally downloaded music still works"
     },
     "topbar": {
       "back": "Back",

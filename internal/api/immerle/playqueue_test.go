@@ -155,6 +155,98 @@ func TestPlayQueueSSEKeepsClientsSynced(t *testing.T) {
 	}
 }
 
+// TestPlayQueueCommandDoesNotMutateSavedState covers the core design point of
+// the command channel: a spectator's remote-control command (POST
+// /play-queue/commands) must never touch the saved queue state directly
+// (current/position/playing/tracks/changedBy) — only the active device's own
+// subsequent save does that. The command only ever changes the side-channel
+// pendingCommand/commandSeq fields.
+func TestPlayQueueCommandDoesNotMutateSavedState(t *testing.T) {
+	srv, token, _ := newBrowseEnv(t)
+
+	var search searchView
+	if st := getJSON(t, srv, token, "/search?q=So+What", &search); st != http.StatusOK || len(search.Songs) == 0 {
+		t.Fatalf("search: status %d, songs %d", st, len(search.Songs))
+	}
+	id := search.Songs[0].ID
+
+	if st := doStatus(t, srv, http.MethodPut, "/play-queue", token, map[string]any{
+		"ids": []string{id}, "current": id, "position": 4200, "playing": true,
+	}); st != http.StatusNoContent {
+		t.Fatalf("save queue: status %d", st)
+	}
+	var before playQueueView
+	if st := getJSON(t, srv, token, "/play-queue", &before); st != http.StatusOK {
+		t.Fatalf("get queue: status %d", st)
+	}
+
+	if st := doStatus(t, srv, http.MethodPost, "/play-queue/commands", token, map[string]any{
+		"type": "next", "forTarget": "device-a", "issuedBy": "device-b",
+	}); st != http.StatusNoContent {
+		t.Fatalf("send command: status %d", st)
+	}
+
+	var after playQueueView
+	if st := getJSON(t, srv, token, "/play-queue", &after); st != http.StatusOK {
+		t.Fatalf("get queue: status %d", st)
+	}
+	if after.Current != before.Current || after.Position != before.Position || after.Playing != before.Playing || after.ChangedBy != before.ChangedBy || len(after.Entries) != len(before.Entries) {
+		t.Fatalf("command must not mutate saved state: before=%+v after=%+v", before, after)
+	}
+	if after.CommandSeq != before.CommandSeq+1 {
+		t.Fatalf("expected commandSeq to bump by 1, got %d -> %d", before.CommandSeq, after.CommandSeq)
+	}
+	if after.PendingCommand == nil || after.PendingCommand.Type != "next" || after.PendingCommand.ForTarget != "device-a" || after.PendingCommand.IssuedBy != "device-b" {
+		t.Fatalf("pending command not persisted: %+v", after.PendingCommand)
+	}
+
+	// Rejects an unknown command type.
+	if st := doStatus(t, srv, http.MethodPost, "/play-queue/commands", token, map[string]any{"type": "not-a-real-command"}); st != http.StatusBadRequest {
+		t.Fatalf("expected 400 for unknown command type, got %d", st)
+	}
+}
+
+// TestPlayQueueCommandDeliveredOverPollAndSSE covers both delivery paths a
+// command must reach: a plain GET (what native's poll fallback uses — it
+// never opens the SSE stream at all, see ui/src/audio/store.ts's
+// connectPlayQueueLive) and the SSE stream (the low-latency path web uses).
+func TestPlayQueueCommandDeliveredOverPollAndSSE(t *testing.T) {
+	srv, token, _ := newBrowseEnv(t)
+
+	resp := do(t, srv, http.MethodGet, "/play-queue/events", token, nil)
+	defer resp.Body.Close()
+	reader := bufio.NewReader(resp.Body)
+	readSSEData(t, reader) // initial snapshot
+
+	if st := doStatus(t, srv, http.MethodPost, "/play-queue/commands", token, map[string]any{
+		"type": "seekTo", "positionMs": 9000, "forTarget": "device-a", "issuedBy": "device-b",
+	}); st != http.StatusNoContent {
+		t.Fatalf("send command: status %d", st)
+	}
+
+	// Poll path: a plain GET must see it too, not just SSE subscribers.
+	var polled playQueueView
+	if st := getJSON(t, srv, token, "/play-queue", &polled); st != http.StatusOK {
+		t.Fatalf("get queue: status %d", st)
+	}
+	if polled.PendingCommand == nil || polled.PendingCommand.Type != "seekTo" || polled.PendingCommand.PositionMs != 9000 {
+		t.Fatalf("command not visible via poll: %+v", polled.PendingCommand)
+	}
+
+	// SSE path: the next event must carry it too.
+	done := make(chan map[string]any, 1)
+	go func() { done <- readSSEData(t, reader) }()
+	select {
+	case data := <-done:
+		cmd, _ := data["pendingCommand"].(map[string]any)
+		if cmd["type"] != "seekTo" {
+			t.Errorf("command not delivered via SSE: %+v", data)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("did not receive SSE command event")
+	}
+}
+
 // TestPlayQueueRemoteTrackFallsBackToSentMetadata covers a real bug: a
 // not-yet-downloaded on-demand track's id was never inserted as a real
 // catalog row, so resolving the queue via the local catalog alone silently

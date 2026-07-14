@@ -906,7 +906,8 @@
       "castThisDevice": "Cet appareil",
       "castNoOtherDevices": "Aucun autre appareil trouvé",
       "castPlayingElsewhere": "Lecture sur un autre appareil",
-      "castPlayingOnDevice": "Lecture sur {{name}}"
+      "castPlayingOnDevice": "Lecture sur {{name}}",
+      "offline": "Impossible de joindre le serveur — la musique téléchargée continue de fonctionner"
     },
     "topbar": {
       "back": "Retour",

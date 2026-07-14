@@ -6,6 +6,7 @@ import {
   PlaybackTarget,
   Playlist,
   PlaylistWithSongs,
+  PlayQueueCommand,
   PlayQueueSnapshot,
   SearchResult3,
   Song,
@@ -464,6 +465,16 @@ export class ImmerleClient {
   async setPlaybackTarget(deviceId: string): Promise<void> {
     const { error } = await this.api.PUT('/play-queue/target', { body: { deviceId } });
     if (error) throw apiErr(error, 'playqueue.setTarget');
+  }
+
+  /**
+   * Send a remote-control command (toggle/next/previous/seekTo/skipTo) for the
+   * active device to apply itself — an intent, not a computed snapshot. See
+   * PlayQueueCommand and ui/src/audio/store.ts's sendRemoteCommand.
+   */
+  async sendPlayQueueCommand(cmd: PlayQueueCommand): Promise<void> {
+    const { error } = await this.api.POST('/play-queue/commands', { body: cmd });
+    if (error) throw apiErr(error, 'playqueue.command');
   }
 
   async getNowPlaying(signal?: AbortSignal): Promise<NowPlayingEntry[]> {

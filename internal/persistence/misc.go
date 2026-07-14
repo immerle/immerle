@@ -42,13 +42,13 @@ func (r *PlayQueueRepo) Save(ctx context.Context, q models.PlayQueue) error {
 // Get returns the user's queue, or ErrNotFound.
 func (r *PlayQueueRepo) Get(ctx context.Context, userID string) (models.PlayQueue, error) {
 	var q models.PlayQueue
-	var ids, entriesJSON string
+	var ids, entriesJSON, commandJSON string
 	var changedAt int64
 	var playing int
 	var targetChangedAt sql.NullInt64
 	err := r.bqueryRow(ctx, r.mel.New("play_queues").
-		Select("user_id", "track_ids", "entries_json", "current", "position_ms", "playing", "changed_by", "changed_at", "target_device_id", "target_changed_at").
-		Where("user_id", "=", userID)).Scan(&q.UserID, &ids, &entriesJSON, &q.Current, &q.PositionMs, &playing, &q.ChangedBy, &changedAt, &q.TargetDeviceID, &targetChangedAt)
+		Select("user_id", "track_ids", "entries_json", "current", "position_ms", "playing", "changed_by", "changed_at", "target_device_id", "target_changed_at", "command_json", "command_seq").
+		Where("user_id", "=", userID)).Scan(&q.UserID, &ids, &entriesJSON, &q.Current, &q.PositionMs, &playing, &q.ChangedBy, &changedAt, &q.TargetDeviceID, &targetChangedAt, &commandJSON, &q.CommandSeq)
 	if errors.Is(err, sql.ErrNoRows) {
 		return q, ErrNotFound
 	}
@@ -60,6 +60,12 @@ func (r *PlayQueueRepo) Get(ctx context.Context, userID string) (models.PlayQueu
 	}
 	if entriesJSON != "" {
 		_ = json.Unmarshal([]byte(entriesJSON), &q.Entries)
+	}
+	if commandJSON != "" {
+		var cmd models.CommandEnvelope
+		if json.Unmarshal([]byte(commandJSON), &cmd) == nil {
+			q.PendingCommand = &cmd
+		}
 	}
 	q.Playing = playing != 0
 	q.ChangedAt = db.FromMillis(changedAt)
@@ -77,6 +83,35 @@ func (r *PlayQueueRepo) SetTarget(ctx context.Context, userID, deviceID string) 
 		Set("target_device_id", deviceID).UpdateDuplicateKey().
 		Set("target_changed_at", db.Millis(time.Now())).UpdateDuplicateKey().
 		OnConflict("user_id"))
+	return err
+}
+
+// SetCommand records a spectator's remote-control command for the active
+// device to pick up and apply itself (see models.CommandEnvelope) —
+// independent of Save/SetTarget so it never clobbers, or is clobbered by, a
+// normal position sync. command_seq increments atomically so a receiver can
+// tell a new command from one it already applied.
+func (r *PlayQueueRepo) SetCommand(ctx context.Context, userID string, cmd models.CommandEnvelope) error {
+	payload, err := json.Marshal(cmd)
+	if err != nil {
+		return err
+	}
+	res, err := r.exec(ctx,
+		`UPDATE play_queues SET command_json=?, command_seq=command_seq+1 WHERE user_id=?`,
+		string(payload), userID)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n > 0 {
+		return nil
+	}
+	// No queue row yet (a command sent before any queue was ever saved) —
+	// create one, starting the sequence at 1.
+	_, err = r.bexec(ctx, r.mel.NewInsert("play_queues").
+		Set("user_id", userID).
+		Set("changed_at", db.Millis(time.Now())).
+		Set("command_json", string(payload)).
+		Set("command_seq", 1))
 	return err
 }
 

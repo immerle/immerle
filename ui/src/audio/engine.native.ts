@@ -131,7 +131,6 @@ class NativeAudioEngine implements AudioEngine {
     const i = Math.max(0, Math.min(startIndex, tracks.length - 1));
     TrackPlayer.setMediaItems(tracks.map(toMediaItem), i);
     this.index = i;
-    TrackPlayer.play();
   }
 
   async add(tracks: PlayableTrack[]): Promise<void> {
