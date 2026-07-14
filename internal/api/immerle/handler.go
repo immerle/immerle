@@ -249,6 +249,7 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Get("/play-queue/events", h.handleStreamPlayQueue)
 			r.Get("/play-queue/targets", h.handleListPlaybackTargets)
 			r.Put("/play-queue/target", h.handleSetPlaybackTarget)
+			r.Post("/play-queue/commands", h.handleSendPlayQueueCommand)
 			r.Get("/now-playing", h.handleNowPlaying)
 
 			// Mint short-lived signed stream/download URLs for the {id} track.

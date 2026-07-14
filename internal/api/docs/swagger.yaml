@@ -1039,6 +1039,26 @@ components:
         enabled:
           type: boolean
       type: object
+    immerle.commandView:
+      description: |-
+        PendingCommand is a spectator's remote-control command for the active
+        device to apply (see POST /play-queue/commands). CommandSeq increases
+        on every new command, so a receiver can tell a new one from one it
+        already applied.
+      properties:
+        forTarget:
+          type: string
+        issuedBy:
+          type: string
+        positionMs:
+          type: integer
+        queueIndex:
+          type: integer
+        trackId:
+          type: string
+        type:
+          type: string
+      type: object
     immerle.createJamRequest:
       properties:
         name:
@@ -1190,6 +1210,31 @@ components:
         password:
           type: string
       type: object
+    immerle.playQueueCommandRequest:
+      properties:
+        forTarget:
+          description: |-
+            ForTarget is the sender's view of the current active device id — the
+            receiver ignores this command if it isn't (or is no longer) that device.
+          type: string
+        issuedBy:
+          description: IssuedBy is the sending device's id.
+          type: string
+        positionMs:
+          description: PositionMs is the target position for a "seekTo" command.
+          type: integer
+        queueIndex:
+          description: |-
+            QueueIndex disambiguates "skipTo" if TrackID appears more than once in
+            the queue — a hint only, never the primary lookup.
+          type: integer
+        trackId:
+          description: TrackID is the track to jump to for a "skipTo" command.
+          type: string
+        type:
+          description: Type is one of "toggle", "next", "previous", "seekTo", "skipTo".
+          type: string
+      type: object
     immerle.playQueueRequest:
       properties:
         client:
@@ -1229,6 +1274,8 @@ components:
           type: string
         changedBy:
           type: string
+        commandSeq:
+          type: integer
         current:
           type: string
         entries:
@@ -1236,6 +1283,8 @@ components:
             $ref: '#/components/schemas/immerle.songView'
           type: array
           uniqueItems: false
+        pendingCommand:
+          $ref: '#/components/schemas/immerle.commandView'
         playing:
           description: |-
             Playing reports whether Current was playing (vs paused) as of
@@ -4807,6 +4856,42 @@ paths:
       security:
       - BearerAuth: []
       summary: Save play queue
+      tags:
+      - playback
+  /play-queue/commands:
+    post:
+      description: Sends a remote-control command (toggle, next, previous, seekTo,
+        skipTo) for the active device (see targetDeviceId) to apply. Does not modify
+        the saved queue state directly.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/immerle.playQueueCommandRequest'
+                description: Command
+                summary: body
+        description: Command
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Send a play-queue command
       tags:
       - playback
   /play-queue/events:
