@@ -200,6 +200,56 @@ func TestResolveBestRemoteMatchAcceptsNoisyHubTitle(t *testing.T) {
 	}
 }
 
+// TestResolveBestRemoteMatchDeprioritizesAlternateVersions reproduces a real
+// bug report: "Mauvais djo - Pilé" auto-resolved to a "Gospel" cover instead
+// of the original, even though the original ranked first when searched
+// manually via the same provider. The Gospel candidate's title happened to
+// be a cleaner exact match ("Pilé") than the original's own listing ("Pilé
+// (Original Mix)"), and title alone decided the winner before this fix.
+func TestResolveBestRemoteMatchDeprioritizesAlternateVersions(t *testing.T) {
+	store := testutil.NewStore(t)
+	registry := NewProviderRegistry()
+	registry.Register(&browsableProvider{
+		name: "prov",
+		searchResult: []providers.Result{
+			{ProviderTrackID: "gospel", Title: "Pilé", Artist: "Mauvais djo", Album: "Pilé (Gospel Version)"},
+			{ProviderTrackID: "original", Title: "Pilé (Original Mix)", Artist: "Mauvais djo", Album: "Pilé"},
+		},
+	})
+	svc := NewCatalogService(CatalogServiceConfig{
+		Catalog: store.Catalog, Downloads: store.Downloads, Registry: registry,
+		Settings: StaticProviderSettings{}, Logger: testutil.NewLogger(),
+	})
+
+	track, ok := svc.ResolveBestRemoteMatch(context.Background(), "Mauvais djo", "Pilé")
+	if !ok || track.Title != "Pilé (Original Mix)" {
+		t.Fatalf("expected the original (non-Gospel) version, got ok=%v track=%+v", ok, track)
+	}
+}
+
+// TestResolveBestRemoteMatchAllowsAlternateVersionWhenAsked ensures the
+// penalty doesn't fire when the wanted title itself names the variant (e.g.
+// resolving a hub entry that IS the live/remix version).
+func TestResolveBestRemoteMatchAllowsAlternateVersionWhenAsked(t *testing.T) {
+	store := testutil.NewStore(t)
+	registry := NewProviderRegistry()
+	registry.Register(&browsableProvider{
+		name: "prov",
+		searchResult: []providers.Result{
+			{ProviderTrackID: "live", Title: "Song (Live)", Artist: "Band"},
+		},
+	})
+	svc := NewCatalogService(CatalogServiceConfig{
+		Catalog: store.Catalog, Downloads: store.Downloads, Registry: registry,
+		Settings: StaticProviderSettings{}, Logger: testutil.NewLogger(),
+	})
+
+	track, ok := svc.ResolveBestRemoteMatch(context.Background(), "Band", "Song (Live)")
+	if !ok || track.Title != "Song (Live)" {
+		t.Fatalf("expected the live version to be accepted when explicitly wanted, got ok=%v track=%+v", ok, track)
+	}
+}
+
 func TestRemoteSearch3DerivesAlbums(t *testing.T) {
 	store := testutil.NewStore(t)
 	registry := NewProviderRegistry()

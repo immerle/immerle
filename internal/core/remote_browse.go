@@ -6,6 +6,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/immerle/immerle/internal/matching"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/providers"
 )
@@ -137,7 +138,7 @@ func (s *CatalogService) ResolveBestRemoteMatch(ctx context.Context, artist, tit
 		if titleScore >= 3 {
 			continue // shares nothing with the wanted title: never an acceptable match
 		}
-		score := titleScore*10 + relevance(artist, t.ArtistName)
+		score := titleScore*10 + relevance(artist, t.ArtistName) + matching.VersionMarkerPenalty(title, t.Title, t.AlbumName)*100
 		if bestScore == -1 || score < bestScore {
 			best, bestScore = t, score
 		}
