@@ -539,82 +539,30 @@ function PlaylistCheckRow({ playlistId, name, songId }: { playlistId: string; na
  * pick one to make it the sole active player (every other device pauses),
  * "This device" to take over playback here, or "Everywhere" to go back to
  * independent mode (today's default — every device manages its own playback).
+ *
+ * Opens the cast-target picker as its own route (/cast-target), presented
+ * modally by the navigator — the same proven mechanism as the queue button
+ * right next to it (`router.push('/queue')`). A custom anchored <Modal>
+ * popover was tried here first (both nested in CastButton's own screen and
+ * root-mounted like TrackMenu) but proved unreliable on native: nested inside
+ * app/player.tsx (itself `presentation: 'modal'`) it silently never
+ * appeared, and root-mounting it left an invisible full-screen Modal
+ * lingering after leaving /player — since /player's own native modal window
+ * sits on top of the app while showing, the newly-opened root Modal rendered
+ * behind it, undismissed, and resurfaced (blocking all touches) once /player
+ * closed. A real navigator route sidesteps all of that.
  */
 export function CastButton({ active, disabled }: { active?: boolean; disabled?: boolean }) {
   const t = useT();
   const colors = useColors();
-  const { height: screenH } = useWindowDimensions();
-  const anchorRef = useRef<View>(null);
-  const [anchor, setAnchor] = useState<{ x: number; y: number } | null>(null);
-  const open = !!anchor;
-
-  const myId = useAuth((s) => s.client?.getSession()?.deviceId);
-  const castTargetId = usePlayer((s) => s.castTargetId);
-  const setCastTarget = usePlayer((s) => s.setCastTarget);
-  const { data: targets, isLoading } = usePlaybackTargets(open);
-  const others = (targets ?? []).filter((d) => d.id !== myId);
-
-  const openPicker = () => anchorRef.current?.measureInWindow((x, y) => setAnchor({ x, y }));
-  const close = () => setAnchor(null);
-  const pick = (deviceId: string) => {
-    close();
-    void setCastTarget(deviceId);
-  };
-
   return (
-    <>
-      <Pressable
-        ref={anchorRef}
-        onPress={openPicker}
-        disabled={disabled}
-        accessibilityState={{ disabled: !!disabled }}
-        accessibilityLabel={t('components.player.cast')}
-        className={`h-8 w-8 items-center justify-center rounded-full ${disabled ? 'opacity-40' : 'active:opacity-70'}`}
-      >
-        <Ionicon name={active ? 'tv' : 'tv-outline'} size={20} color={active ? colors.primary : colors.foreground} />
-      </Pressable>
-
-      <Modal transparent visible={open} animationType="fade" onRequestClose={close}>
-        <Pressable className="flex-1" onPress={close}>
-          {anchor ? (
-            <View
-              style={{ position: 'absolute', left: Math.max(8, anchor.x - 180), bottom: screenH - anchor.y + 8, width: 240 }}
-              className="overflow-hidden rounded-2xl border border-border bg-surface"
-            >
-              <Pressable onPress={(e) => e.stopPropagation()}>
-                <Text className="px-4 pb-1 pt-3 text-xs font-medium uppercase tracking-wider text-muted">
-                  {t('components.player.castTitle')}
-                </Text>
-                {myId ? (
-                  <CastRow label={t('components.player.castThisDevice')} selected={castTargetId === myId} onPress={() => pick(myId)} />
-                ) : null}
-                <CastRow label={t('components.player.castEverywhere')} selected={!castTargetId} onPress={() => pick('')} />
-                {isLoading ? (
-                  <View className="items-center py-3">
-                    <ActivityIndicator size="small" color={colors.muted} />
-                  </View>
-                ) : others.length === 0 ? (
-                  <Text className="px-4 py-2 text-sm text-muted">{t('components.player.castNoOtherDevices')}</Text>
-                ) : (
-                  others.map((d) => <CastRow key={d.id} label={d.name} selected={castTargetId === d.id} onPress={() => pick(d.id)} />)
-                )}
-              </Pressable>
-            </View>
-          ) : null}
-        </Pressable>
-      </Modal>
-    </>
-  );
-}
-
-function CastRow({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
-  const colors = useColors();
-  return (
-    <Pressable onPress={onPress} className="flex-row items-center gap-3 px-4 py-2.5 active:bg-surface-alt">
-      <Text className="flex-1 text-sm text-foreground" numberOfLines={1}>
-        {label}
-      </Text>
-      {selected ? <Ionicon name="checkmark" size={16} color={colors.primary} /> : null}
-    </Pressable>
+    <IconButton
+      name={active ? 'tv' : 'tv-outline'}
+      size={20}
+      color={active ? colors.primary : colors.foreground}
+      onPress={() => router.push('/cast-target')}
+      disabled={disabled}
+      accessibilityLabel={t('components.player.cast')}
+    />
   );
 }
