@@ -12,7 +12,6 @@ import { usePlayer } from '../audio/store';
 import { useTrackMenu } from './trackMenu';
 import { useColors } from '../theme/colors';
 import { useT } from '../i18n/store';
-import { formatCount } from '../utils/format';
 import { SearchHit } from '../api/immerle/catalog';
 
 /** Filter chips shown above the results, in display order. */
@@ -183,7 +182,7 @@ function SearchHitRow({ hit, onPress, onMore }: { hit: SearchHit; onPress: () =>
               {hit.playlist.name}
             </Text>
             <Text numberOfLines={1} className="text-sm text-muted">
-              {typeLabel} · {t('social.discover.byOwner', { owner: hit.playlist.owner ?? '—', count: formatCount(hit.playlist.songCount) })}
+              {typeLabel}
             </Text>
           </View>
         </Pressable>
