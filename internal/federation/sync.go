@@ -41,7 +41,7 @@ const (
 // CoverSource resolves a cover id (playlist cover, track cover, or album id) to
 // its original bytes + content type. Implemented by *stream.CoverService.
 type CoverSource interface {
-	Get(ctx context.Context, id string, size int) ([]byte, string, error)
+	Get(ctx context.Context, id string, size int, locale string) ([]byte, string, error)
 }
 
 // PlaylistSyncer is the outbox consumer that pushes public playlists to the
@@ -353,7 +353,7 @@ func (s *PlaylistSyncer) resolveCovers(ctx context.Context, p *syncPayload) erro
 	blobs := map[string][]byte{}  // hash -> bytes
 	ctypes := map[string]string{} // hash -> content type
 	for id := range ids {
-		data, ct, err := s.covers.Get(ctx, id, 0)
+		data, ct, err := s.covers.Get(ctx, id, 0, "")
 		if err != nil || len(data) == 0 || len(data) > maxCoverBytes {
 			continue
 		}

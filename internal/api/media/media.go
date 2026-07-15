@@ -92,9 +92,11 @@ func (s *Server) streamProgressive(w http.ResponseWriter, r *http.Request, pendi
 }
 
 // ServeCover serves cover art for an id at an optional size. Returns
-// stream.ErrNoCover when no cover resolves.
+// stream.ErrNoCover when no cover resolves. The `locale` query param only
+// matters for a chart-playlist cover (rendered with its label text in that
+// locale); ignored for every other kind of id.
 func (s *Server) ServeCover(w http.ResponseWriter, r *http.Request, id string, size int) error {
-	data, contentType, err := s.cover.Get(r.Context(), id, size)
+	data, contentType, err := s.cover.Get(r.Context(), id, size, r.URL.Query().Get("locale"))
 	if err != nil {
 		return err
 	}

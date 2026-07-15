@@ -23,6 +23,7 @@ import (
 
 	"github.com/dhowden/tag"
 
+	"github.com/immerle/immerle/internal/charts"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 )
@@ -73,19 +74,26 @@ func (c *CoverService) allowedURL(u *url.URL) bool {
 var ErrNoCover = errors.New("no cover art")
 
 // Get returns cover art bytes (optionally resized to a square of `size` px) and a
-// content type. size <= 0 returns the original.
-func (c *CoverService) Get(ctx context.Context, id string, size int) ([]byte, string, error) {
+// content type. size <= 0 returns the original. locale only matters for a
+// chart-playlist cover (models.IsChartCoverID) — it's generated on demand with
+// its label text in that locale; ignored (and excluded from the cache key)
+// for every other kind of id.
+func (c *CoverService) Get(ctx context.Context, id string, size int, locale string) ([]byte, string, error) {
 	if id == "" {
 		return nil, "", ErrNoCover
 	}
+	cacheLocale := ""
+	if models.IsChartCoverID(id) {
+		cacheLocale = charts.NormalizeLocale(locale)
+	}
 
 	if size > 0 {
-		if cached, err := os.ReadFile(c.cachePath(id, size)); err == nil {
+		if cached, err := os.ReadFile(c.cachePath(id, cacheLocale, size)); err == nil {
 			return cached, "image/jpeg", nil
 		}
 	}
 
-	raw, err := c.resolveOriginal(ctx, id)
+	raw, err := c.resolveOriginal(ctx, id, cacheLocale)
 	if err != nil {
 		return nil, "", err
 	}
@@ -100,13 +108,19 @@ func (c *CoverService) Get(ctx context.Context, id string, size int) ([]byte, st
 		return raw, http.DetectContentType(raw), nil
 	}
 	_ = os.MkdirAll(c.cacheDir, 0o755)
-	_ = os.WriteFile(c.cachePath(id, size), resized, 0o644)
+	_ = os.WriteFile(c.cachePath(id, cacheLocale, size), resized, 0o644)
 	return resized, "image/jpeg", nil
 }
 
 // resolveOriginal finds the source image bytes for an id, which may reference an
-// album/track cover file, embedded/sidecar art, or a remote provider image URL.
-func (c *CoverService) resolveOriginal(ctx context.Context, id string) ([]byte, error) {
+// album/track cover file, embedded/sidecar art, a remote provider image URL, or
+// (locale already normalized by Get) a dynamically-generated chart cover.
+func (c *CoverService) resolveOriginal(ctx context.Context, id, locale string) ([]byte, error) {
+	// Curated chart-playlist cover: generated on the fly, cached by (slug, locale).
+	if slug, ok := models.DecodeChartCoverID(id); ok {
+		return c.chartCover(slug, locale)
+	}
+
 	// Remote provider image (e.g. a Deezer CDN cover/avatar).
 	if models.IsRemoteCoverID(id) {
 		return c.fetchRemoteCover(ctx, id)
@@ -224,8 +238,29 @@ func (c *CoverService) coverFile(name string) (string, bool) {
 	return p, true
 }
 
-func (c *CoverService) cachePath(id string, size int) string {
-	return filepath.Join(c.cacheDir, sanitizeID(id)+"_"+strconv.Itoa(size)+".jpg")
+func (c *CoverService) cachePath(id, locale string, size int) string {
+	key := sanitizeID(id)
+	if locale != "" {
+		key += "_" + sanitizeID(locale)
+	}
+	return filepath.Join(c.cacheDir, key+"_"+strconv.Itoa(size)+".jpg")
+}
+
+// chartCover generates (or reads back from cache) a chart-playlist cover for
+// (slug, locale) — the raw, un-resized PNG. Get's own resize cache handles
+// the resized/thumbnail variants on top of this.
+func (c *CoverService) chartCover(slug, locale string) ([]byte, error) {
+	cache := filepath.Join(c.cacheDir, "chart_"+sanitizeID(slug)+"_"+sanitizeID(locale)+".png")
+	if data, err := os.ReadFile(cache); err == nil {
+		return data, nil
+	}
+	data, err := charts.GenerateCover(slug, locale)
+	if err != nil {
+		return nil, err
+	}
+	_ = os.MkdirAll(c.cacheDir, 0o755)
+	_ = os.WriteFile(cache, data, 0o644)
+	return data, nil
 }
 
 // sanitizeID makes an id safe for use as a cache filename.

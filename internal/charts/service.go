@@ -113,12 +113,20 @@ func (s *Service) syncOne(ctx context.Context, ownerID string, c Chart) error {
 	}
 
 	sourceExternalID := c.Slug + "_weekly"
+	chartCover := models.ChartCoverID(c.Slug)
 	existing, err := s.playlists.FindFederated(ctx, sourceInstanceID, sourceExternalID)
 	switch {
 	case err == nil:
 		existing.Name = c.Name
 		if err := s.playlists.UpdateMeta(ctx, existing); err != nil {
 			return err
+		}
+		// Migrate a playlist created before covers became dynamically
+		// generated (a stored file id) to the chart-cover sentinel.
+		if existing.CoverArt != chartCover {
+			if err := s.playlists.SetCover(ctx, existing.ID, chartCover); err != nil {
+				s.logger.Warn("chart cover migration failed", "chart", c.Slug, "error", err)
+			}
 		}
 		return s.playlists.ReplaceFederatedTracks(ctx, existing.ID, entries)
 	case errors.Is(err, persistence.ErrNotFound):
@@ -136,6 +144,11 @@ func (s *Service) syncOne(ctx context.Context, ownerID string, c Chart) error {
 		}
 		if err := s.playlists.Create(ctx, p); err != nil {
 			return err
+		}
+		// Create doesn't take a cover (playlists normally get one via a
+		// separate SetCover call), so set it explicitly here.
+		if err := s.playlists.SetCover(ctx, p.ID, chartCover); err != nil {
+			s.logger.Warn("chart cover save failed", "chart", c.Slug, "error", err)
 		}
 		return s.playlists.ReplaceFederatedTracks(ctx, p.ID, entries)
 	default:

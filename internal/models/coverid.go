@@ -35,3 +35,22 @@ func DecodeRemoteCoverID(id string) (string, bool) {
 	}
 	return string(raw), true
 }
+
+// ChartCoverPrefix marks a cover-art id as a curated chart-playlist cover:
+// generated on demand (not a stored file), since its text label is rendered
+// in the requesting client's locale — see internal/charts.GenerateCover.
+const ChartCoverPrefix = "chart:"
+
+// ChartCoverID builds the cover-art id for a chart playlist's slug.
+func ChartCoverID(slug string) string { return ChartCoverPrefix + slug }
+
+// IsChartCoverID reports whether id is a chart cover-art id.
+func IsChartCoverID(id string) bool { return strings.HasPrefix(id, ChartCoverPrefix) }
+
+// DecodeChartCoverID extracts the chart slug from a chart cover-art id.
+func DecodeChartCoverID(id string) (string, bool) {
+	if !IsChartCoverID(id) {
+		return "", false
+	}
+	return strings.TrimPrefix(id, ChartCoverPrefix), true
+}

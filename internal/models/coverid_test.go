@@ -37,3 +37,20 @@ func TestDecodeRemoteCoverIDRejectsMalformedBase64(t *testing.T) {
 		t.Error("decoding malformed base64 should fail")
 	}
 }
+
+func TestChartCoverIDRoundTrip(t *testing.T) {
+	id := ChartCoverID("fr")
+	if !IsChartCoverID(id) {
+		t.Fatalf("IsChartCoverID(%q) = false, want true", id)
+	}
+	got, ok := DecodeChartCoverID(id)
+	if !ok || got != "fr" {
+		t.Errorf("DecodeChartCoverID(%q) = (%q, %v), want (\"fr\", true)", id, got, ok)
+	}
+}
+
+func TestDecodeChartCoverIDRejectsNonChart(t *testing.T) {
+	if _, ok := DecodeChartCoverID("local-file-id"); ok {
+		t.Error("decoding a non-chart id should fail")
+	}
+}

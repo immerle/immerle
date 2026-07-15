@@ -113,12 +113,13 @@ func (h *Handler) handleDownload(w http.ResponseWriter, r *http.Request) {
 // handleCover serves cover art for a track or album id at an optional size.
 //
 // @Summary  Cover art
-// @Description  Returns the cover image for a track or album id, optionally resized.
+// @Description  Returns the cover image for a track or album id, optionally resized. For a chart-playlist cover (dynamically generated), locale picks the label text's language.
 // @Tags     media
 // @Security BearerAuth
 // @Produce  image/jpeg
-// @Param    id    path   string  true   "Track or album id"
-// @Param    size  query  int     false  "Square size in pixels"
+// @Param    id      path   string  true   "Track or album id"
+// @Param    size    query  int     false  "Square size in pixels"
+// @Param    locale  query  string  false  "Label language for a chart-playlist cover (e.g. \"en\", \"fr\")"
 // @Success  200  "Image bytes"
 // @Failure  401  {object}  errorResponse
 // @Failure  404  {object}  errorResponse

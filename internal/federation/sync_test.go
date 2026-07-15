@@ -31,7 +31,7 @@ import (
 // fakeCovers serves the same bytes for any cover id.
 type fakeCovers struct{ data []byte }
 
-func (f fakeCovers) Get(_ context.Context, _ string, _ int) ([]byte, string, error) {
+func (f fakeCovers) Get(_ context.Context, _ string, _ int, _ string) ([]byte, string, error) {
 	return f.data, "image/jpeg", nil
 }
 
@@ -39,7 +39,7 @@ func (f fakeCovers) Get(_ context.Context, _ string, _ int) ([]byte, string, err
 // tile to be individually addressable/distinguishable.
 type perIDCovers struct{ byID map[string][]byte }
 
-func (f perIDCovers) Get(_ context.Context, id string, _ int) ([]byte, string, error) {
+func (f perIDCovers) Get(_ context.Context, id string, _ int, _ string) ([]byte, string, error) {
 	data, ok := f.byID[id]
 	if !ok {
 		return nil, "", errNoCovers
