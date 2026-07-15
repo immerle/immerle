@@ -233,6 +233,57 @@ func TestSyncNowMaterializesPersonalListsAsPrivatePlaylists(t *testing.T) {
 	}
 }
 
+// TestSyncNowMaterializesWeeklyTrendingChart covers the shared (public,
+// single-instance) community chart: most-scrobbled tracks across every user
+// in the last trendingWindowDays, not any one user's own history.
+func TestSyncNowMaterializesWeeklyTrendingChart(t *testing.T) {
+	store := testutil.NewStore(t)
+	ctx := context.Background()
+	now := time.Now()
+
+	owner := models.User{ID: uuid.NewString(), Username: "admin", PasswordHash: "x", IsAdmin: true}
+	if err := store.Users.Create(ctx, owner); err != nil {
+		t.Fatal(err)
+	}
+	listener := models.User{ID: uuid.NewString(), Username: "listener", PasswordHash: "x"}
+	if err := store.Users.Create(ctx, listener); err != nil {
+		t.Fatal(err)
+	}
+
+	seedTracks(t, store, minTracks, "", 0)
+	tracks, err := store.Catalog.RandomTracks(ctx, minTracks, "", 0, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tr := range tracks {
+		if err := store.Scrobbles.Insert(ctx, models.Scrobble{ID: uuid.NewString(), UserID: listener.ID, TrackID: tr.ID, PlayedAt: now, Submitted: true}); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	svc := New(store.Catalog, store.Genres, store.Wrapped, store.Annotations, store.Users, store.Playlists, testutil.NewLogger())
+	svc.SetOwner(owner.ID)
+
+	if _, err := svc.SyncNow(ctx); err != nil {
+		t.Fatalf("SyncNow: %v", err)
+	}
+
+	trending, err := store.Playlists.FindFederated(ctx, sourceTrending, trendingExternalID)
+	if err != nil {
+		t.Fatalf("trending playlist not created: %v", err)
+	}
+	if !trending.Public || !trending.Federated {
+		t.Fatalf("expected a public, federated playlist, got %+v", trending)
+	}
+	trendingTracks, err := store.Playlists.Tracks(ctx, trending.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(trendingTracks) != minTracks {
+		t.Fatalf("expected %d tracks in the trending chart, got %d", minTracks, len(trendingTracks))
+	}
+}
+
 func TestDecadesSpansThe1950sToTheCurrentDecade(t *testing.T) {
 	d := decades()
 	if len(d) == 0 || d[0].from != 1950 || d[0].label != "1950s" {

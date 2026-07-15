@@ -87,6 +87,33 @@ func (r *WrappedRepo) TopTracks(ctx context.Context, userID string, start, end i
 	return out, rows.Err()
 }
 
+// GlobalTopTracks is TopTracks without the per-user filter — the most-played
+// tracks across every user in [start, end), for a community-wide "trending"
+// list rather than one person's chart.
+func (r *WrappedRepo) GlobalTopTracks(ctx context.Context, start, end int64, limit int) ([]models.WrappedTrack, error) {
+	rows, err := r.query(ctx, `SELECT t.id, t.title, ar.name, COUNT(*) AS plays
+		FROM scrobbles s
+		JOIN tracks t ON t.id = s.track_id
+		JOIN artists ar ON ar.id = t.artist_id
+		WHERE s.submitted=1 AND s.played_at>=? AND s.played_at<?
+		GROUP BY t.id, t.title, ar.name
+		ORDER BY plays DESC, t.title ASC
+		LIMIT ?`, start, end, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []models.WrappedTrack
+	for rows.Next() {
+		var t models.WrappedTrack
+		if err := rows.Scan(&t.ID, &t.Title, &t.Artist, &t.Plays); err != nil {
+			return nil, err
+		}
+		out = append(out, t)
+	}
+	return out, rows.Err()
+}
+
 // topByLabel powers the artist and genre charts (same shape, different column).
 func (r *WrappedRepo) topByLabel(ctx context.Context, query, userID string, start, end int64) ([]models.WrappedCount, error) {
 	rows, err := r.query(ctx, query, userID, start, end, chartLimit)

@@ -5,6 +5,8 @@
 //
 //   - Genre and decade playlists ("Rock", "Rap", "1990s"...): shared, public,
 //     one per genre/decade with enough tracks.
+//   - "Tendances de la semaine": shared, public, single community-wide chart
+//     of the most-scrobbled tracks (any user) in the last 7 days.
 //   - Personal listening lists ("Top du mois", "On Repeat", "Favoris
 //     oubliés", "Aléatoire"): one each per user, private, real playlist rows
 //     rather than a bespoke live-computed view. They're intentionally not
@@ -36,8 +38,9 @@ import (
 // GET /me/custom-playlists (internal/api/immerle) can look each one up
 // directly by (kind, callerID) without going through ListVisible/subscriptions.
 const (
-	sourceGenre  = "genre-mix"
-	sourceDecade = "decade-mix"
+	sourceGenre    = "genre-mix"
+	sourceDecade   = "decade-mix"
+	sourceTrending = "weekly-trending-mix"
 
 	SourceTopMonth  = "top-month-mix"
 	SourceOnRepeat  = "on-repeat-mix"
@@ -63,6 +66,12 @@ const randomTrackCount = 30
 // forgottenMinDays is how long a starred track must go unplayed (or never
 // played at all) to count as "forgotten."
 const forgottenMinDays = 90
+
+// trendingWindowDays/trendingTrackCount size the "Tendances de la semaine"
+// chart; trendingExternalID is its dedupe key (there's only ever one).
+const trendingWindowDays = 7
+const trendingTrackCount = 50
+const trendingExternalID = "global"
 
 // defaultInterval is the sync cadence. Daily (not weekly, like charts): unlike
 // a remote chart feed, the local catalog/scrobbles change every day, so
@@ -140,6 +149,7 @@ func (s *Service) SyncNow(ctx context.Context) (int, error) {
 	synced := 0
 	synced += s.syncGenres(ctx, ownerID)
 	synced += s.syncDecades(ctx, ownerID)
+	synced += s.syncTrending(ctx, ownerID)
 	synced += s.syncPersonal(ctx)
 	return synced, nil
 }
@@ -193,6 +203,33 @@ func (s *Service) syncDecades(ctx context.Context, ownerID string) int {
 		synced++
 	}
 	return synced
+}
+
+// syncTrending rebuilds the single community-wide "Tendances de la semaine"
+// chart from the last trendingWindowDays of scrobbles, any user. Below
+// minTracks it's skipped, same threshold as genre/decade.
+func (s *Service) syncTrending(ctx context.Context, ownerID string) int {
+	now := time.Now()
+	top, err := s.wrapped.GlobalTopTracks(ctx, now.AddDate(0, 0, -trendingWindowDays).UnixMilli(), now.UnixMilli(), trendingTrackCount)
+	if err != nil {
+		s.logger.Warn("autoplaylists: trending sync failed", "error", err)
+		return 0
+	}
+	ids := make([]string, len(top))
+	for i, t := range top {
+		ids[i] = t.ID
+	}
+	if len(ids) < minTracks {
+		return 0
+	}
+	if err := s.upsert(ctx, playlistSpec{
+		ownerID: ownerID, sourceInstanceID: sourceTrending, sourceExternalID: trendingExternalID,
+		name: trendingName, icon: fireIcon, public: true, ids: ids,
+	}); err != nil {
+		s.logger.Warn("autoplaylists: trending sync failed", "error", err)
+		return 0
+	}
+	return 1
 }
 
 // syncPersonal rebuilds every user's "Top du mois"/"On Repeat"/"Favoris
@@ -287,6 +324,7 @@ const (
 	onRepeatName  = "On Repeat"
 	forgottenName = "Favoris oubliés"
 	randomName    = "Aléatoire"
+	trendingName  = "Tendances de la semaine"
 )
 
 // Twemoji codepoints (see covergen.FetchEmoji) for each auto-playlist kind.
@@ -296,6 +334,7 @@ const (
 	repeatIcon     = "1f501" // 🔁 — On Repeat
 	diceIcon       = "1f3b2" // 🎲 — Aléatoire
 	hourglassIcon  = "23f3"  // ⏳ — Favoris oubliés
+	fireIcon       = "1f525" // 🔥 — Tendances de la semaine
 )
 
 // decade is one candidate decade bucket: [from, from+10).
