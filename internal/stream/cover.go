@@ -24,6 +24,7 @@ import (
 	"github.com/dhowden/tag"
 
 	"github.com/immerle/immerle/internal/charts"
+	"github.com/immerle/immerle/internal/covergen"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 )
@@ -75,15 +76,15 @@ var ErrNoCover = errors.New("no cover art")
 
 // Get returns cover art bytes (optionally resized to a square of `size` px) and a
 // content type. size <= 0 returns the original. locale only matters for a
-// chart-playlist cover (models.IsChartCoverID) — it's generated on demand with
-// its label text in that locale; ignored (and excluded from the cache key)
-// for every other kind of id.
+// generator cover (models.IsGeneratorCoverID) — its title/subTitle i18n keys
+// are resolved in that locale; ignored (and excluded from the cache key) for
+// every other kind of id.
 func (c *CoverService) Get(ctx context.Context, id string, size int, locale string) ([]byte, string, error) {
 	if id == "" {
 		return nil, "", ErrNoCover
 	}
 	cacheLocale := ""
-	if models.IsChartCoverID(id) {
+	if models.IsGeneratorCoverID(id) {
 		cacheLocale = charts.NormalizeLocale(locale)
 	}
 
@@ -116,9 +117,10 @@ func (c *CoverService) Get(ctx context.Context, id string, size int, locale stri
 // album/track cover file, embedded/sidecar art, a remote provider image URL, or
 // (locale already normalized by Get) a dynamically-generated chart cover.
 func (c *CoverService) resolveOriginal(ctx context.Context, id, locale string) ([]byte, error) {
-	// Curated chart-playlist cover: generated on the fly, cached by (slug, locale).
-	if slug, ok := models.DecodeChartCoverID(id); ok {
-		return c.chartCover(slug, locale)
+	// Generator cover: built on the fly from its own query params, cached by
+	// (params, locale).
+	if vals, ok := models.DecodeGeneratorCoverID(id); ok {
+		return c.generatorCover(ctx, vals, locale)
 	}
 
 	// Remote provider image (e.g. a Deezer CDN cover/avatar).
@@ -246,15 +248,27 @@ func (c *CoverService) cachePath(id, locale string, size int) string {
 	return filepath.Join(c.cacheDir, key+"_"+strconv.Itoa(size)+".jpg")
 }
 
-// chartCover generates (or reads back from cache) a chart-playlist cover for
-// (slug, locale) — the raw, un-resized PNG. Get's own resize cache handles
-// the resized/thumbnail variants on top of this.
-func (c *CoverService) chartCover(slug, locale string) ([]byte, error) {
-	cache := filepath.Join(c.cacheDir, "chart_"+sanitizeID(slug)+"_"+sanitizeID(locale)+".png")
+// generatorCover generates (or reads back from cache) a cover for a
+// generator id's builder params in locale — the raw, un-resized PNG. Get's
+// own resize cache handles the resized/thumbnail variants on top of this.
+// title/subTitle are resolved as i18n keys (see charts.ResolveLabel); an
+// unrecognized value is used as literal text instead.
+func (c *CoverService) generatorCover(ctx context.Context, vals url.Values, locale string) ([]byte, error) {
+	cache := filepath.Join(c.cacheDir, "generator_"+sanitizeID(vals.Encode())+"_"+sanitizeID(charts.NormalizeLocale(locale))+".png")
 	if data, err := os.ReadFile(cache); err == nil {
 		return data, nil
 	}
-	data, err := charts.GenerateCover(slug, locale)
+
+	title := charts.ResolveLabel(vals.Get("title"), locale)
+	subtitle := ""
+	if sub := vals.Get("subTitle"); sub != "" {
+		subtitle = charts.ResolveLabel(sub, locale)
+	}
+	angle, _ := strconv.ParseFloat(vals.Get("angle"), 64)
+	data, err := covergen.Render(ctx, covergen.Spec{
+		Color: vals.Get("color"), Color2: vals.Get("color2"), Angle: angle,
+		Icon: vals.Get("icon"), Text: title, Subtitle: subtitle, TextColor: "#ffffff", FontSize: 0.13,
+	}, nil)
 	if err != nil {
 		return nil, err
 	}

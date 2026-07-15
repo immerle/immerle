@@ -576,15 +576,25 @@ export class ImmerleClient {
   /**
    * Public cover-art URL for a track or album id (loadable as a plain <img>, no
    * credential in the URL). Returns undefined when there is no id.
+   *
+   * A "generator:"-prefixed id (e.g. a chart playlist's cover) is a stored
+   * builder spec (icon/title/subTitle/color/color2/angle), not a resource to
+   * look up — it's unpacked into real query params against the generic
+   * /cover/generator builder, instead of being opaquely URL-encoded into the
+   * path like every other id.
    */
   coverArtUrl(coverArtId: string | undefined, size?: number): string | undefined {
     if (!coverArtId) return undefined;
-    const url = `${this.serverUrl}/api/v1/cover/${encodeURIComponent(coverArtId)}`;
+    const generatorPrefix = 'generator:';
+    const isGenerator = coverArtId.startsWith(generatorPrefix);
+    const path = isGenerator ? 'generator' : encodeURIComponent(coverArtId);
+    const url = `${this.serverUrl}/api/v1/cover/${path}`;
     const params: string[] = [];
+    if (isGenerator) params.push(coverArtId.slice(generatorPrefix.length));
     if (size) params.push(`size=${size}`);
-    // A chart-playlist cover is generated server-side with its label text in
-    // the requesting locale — always pass the app's current one.
-    if (coverArtId.startsWith('chart:')) params.push(`locale=${encodeURIComponent(i18n.locale)}`);
+    // A generator cover's title/subTitle may be i18n keys, resolved
+    // server-side in the requesting locale — always pass the app's current one.
+    if (isGenerator) params.push(`locale=${encodeURIComponent(i18n.locale)}`);
     return params.length ? `${url}?${params.join('&')}` : url;
   }
 

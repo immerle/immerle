@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/base64"
+	"net/url"
 	"strings"
 )
 
@@ -36,21 +37,42 @@ func DecodeRemoteCoverID(id string) (string, bool) {
 	return string(raw), true
 }
 
-// ChartCoverPrefix marks a cover-art id as a curated chart-playlist cover:
-// generated on demand (not a stored file), since its text label is rendered
-// in the requesting client's locale — see internal/charts.GenerateCover.
-const ChartCoverPrefix = "chart:"
+// GeneratorCoverPrefix marks a cover-art id as generated on demand (not a
+// stored file) from a small set of builder params — icon, title, subTitle,
+// color, color2, angle — rather than referring to a specific resource. This
+// is the id form behind GET /cover/generator, which reads those same params
+// straight off the request's query string; see models.GeneratorCoverID.
+const GeneratorCoverPrefix = "generator:"
 
-// ChartCoverID builds the cover-art id for a chart playlist's slug.
-func ChartCoverID(slug string) string { return ChartCoverPrefix + slug }
+// generatorCoverKeys are the builder params kept in a generator cover id.
+// Everything else on the request (size, locale) is handled separately by
+// CoverService, not part of the id/cache key itself.
+var generatorCoverKeys = []string{"icon", "title", "subTitle", "color", "color2", "angle"}
 
-// IsChartCoverID reports whether id is a chart cover-art id.
-func IsChartCoverID(id string) bool { return strings.HasPrefix(id, ChartCoverPrefix) }
-
-// DecodeChartCoverID extracts the chart slug from a chart cover-art id.
-func DecodeChartCoverID(id string) (string, bool) {
-	if !IsChartCoverID(id) {
-		return "", false
+// GeneratorCoverID builds a cover-art id from a generator builder's query
+// params (a subset of q — size/locale are dropped).
+func GeneratorCoverID(q url.Values) string {
+	vals := url.Values{}
+	for _, k := range generatorCoverKeys {
+		if v := q.Get(k); v != "" {
+			vals.Set(k, v)
+		}
 	}
-	return strings.TrimPrefix(id, ChartCoverPrefix), true
+	return GeneratorCoverPrefix + vals.Encode()
+}
+
+// IsGeneratorCoverID reports whether id is a generator cover-art id.
+func IsGeneratorCoverID(id string) bool { return strings.HasPrefix(id, GeneratorCoverPrefix) }
+
+// DecodeGeneratorCoverID extracts the builder params from a generator
+// cover-art id.
+func DecodeGeneratorCoverID(id string) (url.Values, bool) {
+	if !IsGeneratorCoverID(id) {
+		return nil, false
+	}
+	vals, err := url.ParseQuery(strings.TrimPrefix(id, GeneratorCoverPrefix))
+	if err != nil {
+		return nil, false
+	}
+	return vals, true
 }

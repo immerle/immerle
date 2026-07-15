@@ -1,70 +1,53 @@
 package charts
 
-import (
-	"bytes"
-	"image/png"
-	"testing"
+import "testing"
 
-	"github.com/immerle/immerle/internal/covergen"
-)
-
-func TestGenerateCoverProducesADecodableSquarePNGForEveryDefaultChart(t *testing.T) {
-	for _, c := range DefaultCharts {
-		for _, locale := range []string{"fr", "en"} {
-			data, err := GenerateCover(c.Slug, locale)
-			if err != nil {
-				t.Fatalf("%s/%s: GenerateCover: %v", c.Slug, locale, err)
-			}
-			img, err := png.Decode(bytes.NewReader(data))
-			if err != nil {
-				t.Fatalf("%s/%s: output is not a PNG: %v", c.Slug, locale, err)
-			}
-			if b := img.Bounds(); b.Dx() != covergen.Size || b.Dy() != covergen.Size {
-				t.Fatalf("%s/%s: size = %v, want %d square", c.Slug, locale, b, covergen.Size)
-			}
-		}
+func TestGeneratorParamsSetsIconTitleAndGradient(t *testing.T) {
+	vals := GeneratorParams("fr")
+	if vals.Get("icon") != "1f1eb-1f1f7" {
+		t.Errorf("icon = %q, want the French flag codepoint", vals.Get("icon"))
+	}
+	if vals.Get("title") != "charts.top50" {
+		t.Errorf("title = %q, want %q", vals.Get("title"), "charts.top50")
+	}
+	if vals.Get("subTitle") != "charts.country.fr" {
+		t.Errorf("subTitle = %q, want %q", vals.Get("subTitle"), "charts.country.fr")
+	}
+	if vals.Get("color") == "" || vals.Get("color2") == "" || vals.Get("angle") == "" {
+		t.Errorf("expected a gradient, got %v", vals)
 	}
 }
 
-func TestGenerateCoverDiffersByLocale(t *testing.T) {
-	// "Top 50 France" (fr) vs "Top 50 French" (en) — different text drawn
-	// onto the canvas, so the encoded bytes must differ.
-	fr, err := GenerateCover("fr", "fr")
-	if err != nil {
-		t.Fatal(err)
+func TestGeneratorParamsFallsBackForAnUnknownSlug(t *testing.T) {
+	// No matching gradient/emoji/label entry — still yields a plain gradient,
+	// with no icon or subtitle.
+	vals := GeneratorParams("does-not-exist")
+	if vals.Get("icon") != "" || vals.Get("subTitle") != "" {
+		t.Errorf("expected no icon/subTitle for an unknown slug, got %v", vals)
 	}
-	en, err := GenerateCover("fr", "en")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if bytes.Equal(fr, en) {
-		t.Fatal("expected different cover bytes between locales")
+	if vals.Get("color") == "" || vals.Get("color2") == "" {
+		t.Errorf("expected a fallback gradient, got %v", vals)
 	}
 }
 
-func TestGenerateCoverFallsBackToFrenchForAnUnknownLocale(t *testing.T) {
-	fr, err := GenerateCover("fr", "fr")
-	if err != nil {
-		t.Fatal(err)
+func TestResolveLabel(t *testing.T) {
+	if got := ResolveLabel("charts.country.fr", "en"); got != "French" {
+		t.Errorf("ResolveLabel(fr, en) = %q, want %q", got, "French")
 	}
-	unknown, err := GenerateCover("fr", "xx")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !bytes.Equal(fr, unknown) {
-		t.Fatal("expected an unknown locale to fall back to the French label")
+	if got := ResolveLabel("charts.country.fr", "fr"); got != "France" {
+		t.Errorf("ResolveLabel(fr, fr) = %q, want %q", got, "France")
 	}
 }
 
-func TestGenerateCoverFallsBackForAnUnknownSlug(t *testing.T) {
-	// No matching emoji asset or gradient entry — should still produce a
-	// plain gradient cover rather than erroring.
-	data, err := GenerateCover("does-not-exist", "fr")
-	if err != nil {
-		t.Fatalf("GenerateCover: %v", err)
+func TestResolveLabelFallsBackToFrenchForAnUnknownLocale(t *testing.T) {
+	if got := ResolveLabel("charts.country.fr", "xx"); got != "France" {
+		t.Errorf("ResolveLabel with unknown locale = %q, want French fallback %q", got, "France")
 	}
-	if _, err := png.Decode(bytes.NewReader(data)); err != nil {
-		t.Fatalf("output is not a PNG: %v", err)
+}
+
+func TestResolveLabelReturnsUnknownKeysAsLiteralText(t *testing.T) {
+	if got := ResolveLabel("Road Trip", "en"); got != "Road Trip" {
+		t.Errorf("ResolveLabel(literal) = %q, want unchanged", got)
 	}
 }
 

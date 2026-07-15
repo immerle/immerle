@@ -1,6 +1,9 @@
 package models
 
-import "testing"
+import (
+	"net/url"
+	"testing"
+)
 
 func TestRemoteCoverIDRoundTrip(t *testing.T) {
 	url := "https://example.com/cover.jpg"
@@ -38,19 +41,27 @@ func TestDecodeRemoteCoverIDRejectsMalformedBase64(t *testing.T) {
 	}
 }
 
-func TestChartCoverIDRoundTrip(t *testing.T) {
-	id := ChartCoverID("fr")
-	if !IsChartCoverID(id) {
-		t.Fatalf("IsChartCoverID(%q) = false, want true", id)
+func TestGeneratorCoverIDRoundTrip(t *testing.T) {
+	q := url.Values{"icon": {"1f30d"}, "title": {"charts.top50"}, "size": {"180"}, "locale": {"fr"}}
+	id := GeneratorCoverID(q)
+	if !IsGeneratorCoverID(id) {
+		t.Fatalf("IsGeneratorCoverID(%q) = false, want true", id)
 	}
-	got, ok := DecodeChartCoverID(id)
-	if !ok || got != "fr" {
-		t.Errorf("DecodeChartCoverID(%q) = (%q, %v), want (\"fr\", true)", id, got, ok)
+	got, ok := DecodeGeneratorCoverID(id)
+	if !ok {
+		t.Fatalf("DecodeGeneratorCoverID(%q) failed", id)
+	}
+	if got.Get("icon") != "1f30d" || got.Get("title") != "charts.top50" {
+		t.Errorf("DecodeGeneratorCoverID(%q) = %v, want icon/title preserved", id, got)
+	}
+	// size/locale aren't builder params — dropped from the id/cache key.
+	if got.Get("size") != "" || got.Get("locale") != "" {
+		t.Errorf("DecodeGeneratorCoverID(%q) = %v, want size/locale excluded", id, got)
 	}
 }
 
-func TestDecodeChartCoverIDRejectsNonChart(t *testing.T) {
-	if _, ok := DecodeChartCoverID("local-file-id"); ok {
-		t.Error("decoding a non-chart id should fail")
+func TestDecodeGeneratorCoverIDRejectsNonGenerator(t *testing.T) {
+	if _, ok := DecodeGeneratorCoverID("local-file-id"); ok {
+		t.Error("decoding a non-generator id should fail")
 	}
 }

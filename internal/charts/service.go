@@ -113,7 +113,7 @@ func (s *Service) syncOne(ctx context.Context, ownerID string, c Chart) error {
 	}
 
 	sourceExternalID := c.Slug + "_weekly"
-	chartCover := models.ChartCoverID(c.Slug)
+	chartCover := models.GeneratorCoverID(GeneratorParams(c.Slug))
 	existing, err := s.playlists.FindFederated(ctx, sourceInstanceID, sourceExternalID)
 	switch {
 	case err == nil:
@@ -122,7 +122,7 @@ func (s *Service) syncOne(ctx context.Context, ownerID string, c Chart) error {
 			return err
 		}
 		// Migrate a playlist created before covers became dynamically
-		// generated (a stored file id) to the chart-cover sentinel.
+		// generated (a stored file id) to the generator-cover sentinel.
 		if existing.CoverArt != chartCover {
 			if err := s.playlists.SetCover(ctx, existing.ID, chartCover); err != nil {
 				s.logger.Warn("chart cover migration failed", "chart", c.Slug, "error", err)

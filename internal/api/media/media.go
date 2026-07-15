@@ -92,11 +92,18 @@ func (s *Server) streamProgressive(w http.ResponseWriter, r *http.Request, pendi
 }
 
 // ServeCover serves cover art for an id at an optional size. Returns
-// stream.ErrNoCover when no cover resolves. The `locale` query param only
-// matters for a chart-playlist cover (rendered with its label text in that
-// locale); ignored for every other kind of id.
+// stream.ErrNoCover when no cover resolves. The literal id "generator" builds
+// a cover on the fly straight from the request's own query params (icon,
+// title, subTitle, color, color2, angle — see models.GeneratorCoverID) rather
+// than looking up a stored id — the generic cover builder. The `locale`
+// query param picks the language for a generator cover's title/subTitle i18n
+// keys; ignored for every other kind of id.
 func (s *Server) ServeCover(w http.ResponseWriter, r *http.Request, id string, size int) error {
-	data, contentType, err := s.cover.Get(r.Context(), id, size, r.URL.Query().Get("locale"))
+	q := r.URL.Query()
+	if id == "generator" {
+		id = models.GeneratorCoverID(q)
+	}
+	data, contentType, err := s.cover.Get(r.Context(), id, size, q.Get("locale"))
 	if err != nil {
 		return err
 	}

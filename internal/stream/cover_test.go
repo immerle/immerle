@@ -6,15 +6,29 @@ import (
 	"image"
 	"image/color"
 	"image/jpeg"
+	"image/png"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/immerle/immerle/internal/charts"
+	"github.com/immerle/immerle/internal/covergen"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/testutil"
 )
+
+// TestMain stubs the Twemoji CDN with a local server serving a blank icon for
+// any path, so generator-cover tests are hermetic and don't hit the network.
+func TestMain(m *testing.M) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = png.Encode(w, image.NewRGBA(image.Rect(0, 0, 4, 4)))
+	}))
+	defer srv.Close()
+	covergen.TwemojiCDN = srv.URL + "/"
+	os.Exit(m.Run())
+}
 
 func jpegBytes(t *testing.T) []byte {
 	t.Helper()
@@ -27,13 +41,13 @@ func jpegBytes(t *testing.T) []byte {
 	return buf.Bytes()
 }
 
-func TestCoverServiceGeneratesChartCoverPerLocaleAndCaches(t *testing.T) {
+func TestCoverServiceGeneratesGeneratorCoverPerLocaleAndCaches(t *testing.T) {
 	store := testutil.NewStore(t)
 	ctx := context.Background()
 	dir := t.TempDir()
 	svc := NewCoverService(store.Catalog, filepath.Join(dir, "covers"))
 
-	id := models.ChartCoverID("fr")
+	id := models.GeneratorCoverID(charts.GeneratorParams("fr"))
 	fr, ct, err := svc.Get(ctx, id, 0, "fr")
 	if err != nil {
 		t.Fatal(err)
