@@ -6784,13 +6784,15 @@ export interface paths {
         };
         /**
          * Search the catalog
-         * @description Searches artists, albums, songs and public playlists (merging remote-provider results when enabled), returned as one list ranked by relevance to the query.
+         * @description Searches artists, albums, songs and public playlists (merging remote-provider results when enabled), returned as one list ranked by relevance to the query. `type` scopes the search server-side to just that result type.
          */
         get: {
             parameters: {
                 query: {
                     /** @description Search query */
                     q: string;
+                    /** @description Scope to one result type: artist, album, song or playlist (default: all) */
+                    type?: string;
                     /** @description Max artists */
                     artistCount?: number;
                     /** @description Max albums */

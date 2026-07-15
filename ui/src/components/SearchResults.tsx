@@ -2,26 +2,17 @@ import { useEffect } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useDebounced, useSearch } from '../query/search';
-import { searchNav, SearchTypeFilter, useSearchUI } from '../search/store';
+import { searchNav, useSearchUI } from '../search/store';
 import { CoverArt } from './CoverArt';
 import { PlaylistCover } from './PlaylistCover';
 import { TrackRow } from './TrackRow';
-import { Chip, EmptyState, Loading } from './ui';
+import { EmptyState, Loading } from './ui';
 import { Ionicon } from './Ionicon';
 import { usePlayer } from '../audio/store';
 import { useTrackMenu } from './trackMenu';
 import { useColors } from '../theme/colors';
 import { useT } from '../i18n/store';
 import { SearchHit } from '../api/immerle/catalog';
-
-/** Filter chips shown above the results, in display order. */
-const FILTERS: { key: SearchTypeFilter; labelKey: string }[] = [
-  { key: 'all', labelKey: 'components.search.filterAll' },
-  { key: 'artist', labelKey: 'components.search.artists' },
-  { key: 'album', labelKey: 'components.search.albums' },
-  { key: 'song', labelKey: 'components.search.songs' },
-  { key: 'playlist', labelKey: 'components.search.playlists' },
-];
 
 /** i18n key for a hit's type label, shown in its row's subtitle. */
 const TYPE_LABEL_KEY: Record<SearchHit['type'], string> = {
@@ -38,8 +29,9 @@ const TYPE_LABEL_KEY: Record<SearchHit['type'], string> = {
  * Artists, albums, songs and public playlists render as one vertical,
  * keyboard-navigable list (↑/↓/Enter, driven by `SearchOverlay`), in the
  * relevance order the backend already ranked them in — no per-type
- * grouping, just a filter row to narrow it down to one type. Selecting
- * anything records the query as recent and dismisses the search.
+ * grouping. The result-type filter (see SearchTypeFilterButton, in the
+ * search bar itself) is applied server-side, so `data` is already scoped.
+ * Selecting anything records the query as recent and dismisses the search.
  */
 export function SearchResults({ onClose }: { onClose: () => void }) {
   const t = useT();
@@ -50,15 +42,13 @@ export function SearchResults({ onClose }: { onClose: () => void }) {
   const addRecent = useSearchUI((s) => s.addRecent);
   const activeIndex = useSearchUI((s) => s.activeIndex);
   const typeFilter = useSearchUI((s) => s.typeFilter);
-  const setTypeFilter = useSearchUI((s) => s.setTypeFilter);
   const debounced = useDebounced(query, 250);
-  const { data, isLoading, isFetching } = useSearch(debounced);
+  const { data, isLoading, isFetching } = useSearch(debounced, typeFilter);
   const playSongs = usePlayer((s) => s.playSongs);
   const openMenu = useTrackMenu((s) => s.open);
 
   const trimmed = debounced.trim();
-  const allHits = data ?? [];
-  const hits = typeFilter === 'all' ? allHits : allHits.filter((h) => h.type === typeFilter);
+  const hits = data ?? [];
   const songs = hits.filter((h) => h.type === 'song').map((h) => h.song);
 
   const select = (action: () => void) => {
@@ -115,26 +105,17 @@ export function SearchResults({ onClose }: { onClose: () => void }) {
   }
 
   if (isLoading) return <Loading />;
-  if (!isFetching && allHits.length === 0) {
+  if (!isFetching && hits.length === 0) {
     return <EmptyState icon="sad-outline" title={t('components.search.noResults')} subtitle={t('components.search.nothingFor', { query: trimmed })} />;
   }
 
   return (
     <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 16 }}>
-      <View className="flex-row flex-wrap gap-2 px-4 pb-2 pt-3">
-        {FILTERS.map((f) => (
-          <Chip key={f.key} label={t(f.labelKey)} active={typeFilter === f.key} onPress={() => setTypeFilter(f.key)} />
-        ))}
-      </View>
-      {hits.length === 0 ? (
-        <EmptyState icon="funnel-outline" title={t('components.search.noResults')} subtitle={t('components.search.nothingFor', { query: trimmed })} />
-      ) : (
-        hits.map((hit, i) => (
-          <View key={`${hit.type}:${i}`} className={activeIndex === i ? 'bg-surface-alt' : ''}>
-            <SearchHitRow hit={hit} onPress={actionFor(hit)} onMore={hit.type === 'song' ? () => openMenu(hit.song) : undefined} />
-          </View>
-        ))
-      )}
+      {hits.map((hit, i) => (
+        <View key={`${hit.type}:${i}`} className={activeIndex === i ? 'bg-surface-alt' : ''}>
+          <SearchHitRow hit={hit} onPress={actionFor(hit)} onMore={hit.type === 'song' ? () => openMenu(hit.song) : undefined} />
+        </View>
+      ))}
     </ScrollView>
   );
 }

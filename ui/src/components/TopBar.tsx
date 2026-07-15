@@ -4,6 +4,7 @@ import { router, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicon } from './Ionicon';
 import { IconButton } from './ui';
+import { SearchTypeFilterButton } from './SearchTypeFilter';
 import { useAuth } from '../auth/store';
 import { useSearchUI } from '../search/store';
 import { useColors } from '../theme/colors';
@@ -79,6 +80,7 @@ export function TopBar({ wide }: { wide: boolean }) {
             searchFocused ? 'border-primary' : 'border-transparent'
           }`}
         >
+          <SearchTypeFilterButton />
           <Ionicon name="search" size={18} color={colors.muted} />
           <TextInput
             value={query}

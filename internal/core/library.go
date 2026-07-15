@@ -59,8 +59,11 @@ type SearchResults struct {
 
 // Search runs a catalog search, merges in remote-provider results (when on-demand
 // is enabled and the query is non-empty), re-sorts the merged lists by relevance
-// and caps them. Counts bound the local query; the final caps are fixed.
-func (s *LibraryService) Search(ctx context.Context, userID, query string, artistCount, albumCount, songCount int) (SearchResults, error) {
+// and caps them. Counts bound the local query, and — since a count of 0 skips
+// that type's query entirely — also let a caller scope the search to one
+// result type (see internal/api/immerle/browse.go's handleSearch). The final
+// caps are fixed.
+func (s *LibraryService) Search(ctx context.Context, userID, query string, artistCount, albumCount, songCount, playlistCount int) (SearchResults, error) {
 	// Subsonic clients sometimes quote queries or use "" to mean "everything".
 	query = strings.Trim(strings.TrimSpace(query), "\"")
 
@@ -68,53 +71,63 @@ func (s *LibraryService) Search(ctx context.Context, userID, query string, artis
 	if err != nil {
 		return SearchResults{}, err
 	}
-	playlists, err := s.playlists.SearchPublic(ctx, userID, query, maxSearchPlaylists)
-	if err != nil {
-		return SearchResults{}, err
+	var playlists []models.Playlist
+	if playlistCount > 0 {
+		playlists, err = s.playlists.SearchPublic(ctx, userID, query, playlistCount)
+		if err != nil {
+			return SearchResults{}, err
+		}
 	}
 
 	albumAnn, _ := s.annotations.AnnotationMap(ctx, userID, models.ItemAlbum)
 	trackAnn, _ := s.annotations.AnnotationMap(ctx, userID, models.ItemTrack)
 
 	// Merge remote results from every active provider, deduplicated by name for
-	// artists/albums and by id for songs.
-	if s.onDemand != nil && query != "" {
+	// artists/albums and by id for songs. Skipped entirely when every local
+	// type was itself skipped (a playlist-only search has no remote results anyway).
+	if s.onDemand != nil && query != "" && (artistCount > 0 || albumCount > 0 || songCount > 0) {
 		rArtists, rAlbums, rSongs := s.onDemand.RemoteSearch3(ctx, query, maxSearchArtists, maxSearchAlbums, maxSearchSongs)
 
-		seenA := make(map[string]bool, len(artists))
-		for _, a := range artists {
-			seenA[strings.ToLower(a.Name)] = true
-		}
-		for _, a := range rArtists {
-			if seenA[strings.ToLower(a.Name)] {
-				continue
+		if artistCount > 0 {
+			seenA := make(map[string]bool, len(artists))
+			for _, a := range artists {
+				seenA[strings.ToLower(a.Name)] = true
 			}
-			seenA[strings.ToLower(a.Name)] = true
-			artists = append(artists, a)
+			for _, a := range rArtists {
+				if seenA[strings.ToLower(a.Name)] {
+					continue
+				}
+				seenA[strings.ToLower(a.Name)] = true
+				artists = append(artists, a)
+			}
 		}
 
-		seenAl := make(map[string]bool, len(albums))
-		for _, a := range albums {
-			seenAl[strings.ToLower(a.ArtistName+"|"+a.Name)] = true
-		}
-		for _, a := range rAlbums {
-			if seenAl[strings.ToLower(a.ArtistName+"|"+a.Name)] {
-				continue
+		if albumCount > 0 {
+			seenAl := make(map[string]bool, len(albums))
+			for _, a := range albums {
+				seenAl[strings.ToLower(a.ArtistName+"|"+a.Name)] = true
 			}
-			seenAl[strings.ToLower(a.ArtistName+"|"+a.Name)] = true
-			albums = append(albums, a)
+			for _, a := range rAlbums {
+				if seenAl[strings.ToLower(a.ArtistName+"|"+a.Name)] {
+					continue
+				}
+				seenAl[strings.ToLower(a.ArtistName+"|"+a.Name)] = true
+				albums = append(albums, a)
+			}
 		}
 
-		seenS := make(map[string]bool, len(tracks))
-		for _, t := range tracks {
-			seenS[t.ID] = true
-		}
-		for _, t := range rSongs {
-			if seenS[t.ID] {
-				continue
+		if songCount > 0 {
+			seenS := make(map[string]bool, len(tracks))
+			for _, t := range tracks {
+				seenS[t.ID] = true
 			}
-			seenS[t.ID] = true
-			tracks = append(tracks, t)
+			for _, t := range rSongs {
+				if seenS[t.ID] {
+					continue
+				}
+				seenS[t.ID] = true
+				tracks = append(tracks, t)
+			}
 		}
 	}
 

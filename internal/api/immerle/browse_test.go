@@ -246,6 +246,42 @@ func TestSearchIsOneRelevanceRankedListIncludingPublicPlaylists(t *testing.T) {
 	}
 }
 
+// TestSearchTypeParamScopesServerSide covers the `type` query param: it must
+// filter server-side (the other types are never fetched at all — see
+// searchCounts), not just hide them from an already-mixed response.
+func TestSearchTypeParamScopesServerSide(t *testing.T) {
+	srv, token, _ := newBrowseEnv(t)
+
+	var albumOnly searchView
+	if st := getJSON(t, srv, token, "/search?q=Discovery&type=album", &albumOnly); st != http.StatusOK {
+		t.Fatalf("search: status %d", st)
+	}
+	if len(albumOnly.Results) == 0 {
+		t.Fatal("expected at least the Discovery album")
+	}
+	for _, r := range albumOnly.Results {
+		if r.Type != "album" {
+			t.Fatalf("type=album must only return albums, got a %q hit: %+v", r.Type, r)
+		}
+	}
+
+	var songOnly searchView
+	if st := getJSON(t, srv, token, "/search?q=So+What&type=song", &songOnly); st != http.StatusOK {
+		t.Fatalf("search: status %d", st)
+	}
+	if len(songOnly.Results) != 1 || songOnly.Results[0].Type != "song" {
+		t.Fatalf("type=song must only return songs, got %+v", songOnly.Results)
+	}
+
+	var artistOnly searchView
+	if st := getJSON(t, srv, token, "/search?q=So+What&type=artist", &artistOnly); st != http.StatusOK {
+		t.Fatalf("search: status %d", st)
+	}
+	if len(artistOnly.Results) != 0 {
+		t.Fatalf("type=artist for a song-only query must return nothing, got %+v", artistOnly.Results)
+	}
+}
+
 // TestToAlbumViewFallsBackToAlbumIDForCoverArt covers a real bug: an album
 // whose tracks only carry embedded (never cached) art has an empty
 // models.Album.CoverArt, and without a fallback the API returned an empty

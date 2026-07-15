@@ -409,15 +409,38 @@ func (v searchView) Songs() []songView {
 	return out
 }
 
+// searchCounts resolves the per-type fetch limits for handleSearch. A count of
+// 0 makes LibraryService.Search skip that type entirely, which is how the
+// optional `type` param scopes the search server-side to just one type
+// instead of filtering an already-fetched mixed list.
+func searchCounts(r *http.Request) (artistCount, albumCount, songCount, playlistCount int) {
+	artistCount = intQuery(r, "artistCount", 20)
+	albumCount = intQuery(r, "albumCount", 20)
+	songCount = intQuery(r, "songCount", 20)
+	playlistCount = 20
+	switch r.URL.Query().Get("type") {
+	case "artist":
+		albumCount, songCount, playlistCount = 0, 0, 0
+	case "album":
+		artistCount, songCount, playlistCount = 0, 0, 0
+	case "song":
+		artistCount, albumCount, playlistCount = 0, 0, 0
+	case "playlist":
+		artistCount, albumCount, songCount = 0, 0, 0
+	}
+	return
+}
+
 // handleSearch searches the catalog and public playlists (merging
 // remote-provider results), ranked together by relevance to the query.
 //
 // @Summary      Search the catalog
-// @Description  Searches artists, albums, songs and public playlists (merging remote-provider results when enabled), returned as one list ranked by relevance to the query.
+// @Description  Searches artists, albums, songs and public playlists (merging remote-provider results when enabled), returned as one list ranked by relevance to the query. `type` scopes the search server-side to just that result type.
 // @Tags         catalog
 // @Security     BearerAuth
 // @Produce      json
 // @Param        q            query  string  true   "Search query"
+// @Param        type         query  string  false  "Scope to one result type: artist, album, song or playlist (default: all)"
 // @Param        artistCount  query  int     false  "Max artists"  default(20)
 // @Param        albumCount   query  int     false  "Max albums"   default(20)
 // @Param        songCount    query  int     false  "Max songs"    default(20)
@@ -426,8 +449,8 @@ func (v searchView) Songs() []songView {
 // @Router       /search [get]
 func (h *Handler) handleSearch(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query().Get("q")
-	res, err := h.library.Search(r.Context(), userFrom(r.Context()).ID, q,
-		intQuery(r, "artistCount", 20), intQuery(r, "albumCount", 20), intQuery(r, "songCount", 20))
+	artistCount, albumCount, songCount, playlistCount := searchCounts(r)
+	res, err := h.library.Search(r.Context(), userFrom(r.Context()).ID, q, artistCount, albumCount, songCount, playlistCount)
 	if err != nil {
 		writeServiceError(w, err)
 		return

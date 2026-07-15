@@ -9557,13 +9557,21 @@
         },
         "/search": {
             "get": {
-                "description": "Searches artists, albums, songs and public playlists (merging remote-provider results when enabled), returned as one list ranked by relevance to the query.",
+                "description": "Searches artists, albums, songs and public playlists (merging remote-provider results when enabled), returned as one list ranked by relevance to the query. `type` scopes the search server-side to just that result type.",
                 "parameters": [
                     {
                         "description": "Search query",
                         "in": "query",
                         "name": "q",
                         "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Scope to one result type: artist, album, song or playlist (default: all)",
+                        "in": "query",
+                        "name": "type",
                         "schema": {
                             "type": "string"
                         }
