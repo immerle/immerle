@@ -754,41 +754,54 @@ func (r *CatalogRepo) AllTrackPaths(ctx context.Context) (map[string]string, err
 
 // Search performs a simple LIKE search across artists, albums and tracks. The
 // LOWER(col) LIKE filters (plus JOIN/subquery columns) can't be expressed by
-// melody, so these queries stay hand-written.
+// melody, so these queries stay hand-written. A count of 0 skips that type's
+// query entirely (rather than running it with LIMIT 0) — how a type filter
+// (see internal/api/immerle/browse.go's searchCounts) avoids querying types
+// the caller didn't ask for.
 func (r *CatalogRepo) Search(ctx context.Context, q string, artistCount, albumCount, songCount int) ([]models.Artist, []models.Album, []models.Track, error) {
 	like := "%" + strings.ToLower(q) + "%"
 
-	artRows, err := r.query(ctx, `
-		SELECT a.id, a.name, a.sort_name, a.mbid, a.cover_art, a.created_at,
-		       (SELECT COUNT(*) FROM albums al WHERE al.artist_id = a.id)
-		FROM artists a WHERE LOWER(a.name) LIKE ? ORDER BY a.name LIMIT ?`, like, artistCount)
-	if err != nil {
-		return nil, nil, nil, err
-	}
 	var artists []models.Artist
-	for artRows.Next() {
-		var a models.Artist
-		var createdAt int64
-		if err := artRows.Scan(&a.ID, &a.Name, &a.SortName, &a.MBID, &a.CoverArt, &createdAt, &a.AlbumCount); err != nil {
+	if artistCount > 0 {
+		artRows, err := r.query(ctx, `
+			SELECT a.id, a.name, a.sort_name, a.mbid, a.cover_art, a.created_at,
+			       (SELECT COUNT(*) FROM albums al WHERE al.artist_id = a.id)
+			FROM artists a WHERE LOWER(a.name) LIKE ? ORDER BY a.name LIMIT ?`, like, artistCount)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		for artRows.Next() {
+			var a models.Artist
+			var createdAt int64
+			if err := artRows.Scan(&a.ID, &a.Name, &a.SortName, &a.MBID, &a.CoverArt, &createdAt, &a.AlbumCount); err != nil {
+				artRows.Close()
+				return nil, nil, nil, err
+			}
+			artists = append(artists, a)
+		}
+		if err := artRows.Err(); err != nil {
 			artRows.Close()
 			return nil, nil, nil, err
 		}
-		artists = append(artists, a)
-	}
-	if err := artRows.Err(); err != nil {
 		artRows.Close()
-		return nil, nil, nil, err
-	}
-	artRows.Close()
-
-	albums, err := r.listAlbums(ctx, albumSelect+` WHERE LOWER(al.name) LIKE ? ORDER BY al.name LIMIT ?`, like, albumCount)
-	if err != nil {
-		return nil, nil, nil, err
 	}
 
-	tracks, err := r.listTracks(ctx, trackSelect+` WHERE LOWER(t.title) LIKE ? ORDER BY t.title LIMIT ?`, like, songCount)
-	if err != nil {
-		return nil, nil, nil, err
+	var albums []models.Album
+	if albumCount > 0 {
+		var err error
+		albums, err = r.listAlbums(ctx, albumSelect+` WHERE LOWER(al.name) LIKE ? ORDER BY al.name LIMIT ?`, like, albumCount)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+	}
+
+	var tracks []models.Track
+	if songCount > 0 {
+		var err error
+		tracks, err = r.listTracks(ctx, trackSelect+` WHERE LOWER(t.title) LIKE ? ORDER BY t.title LIMIT ?`, like, songCount)
+		if err != nil {
+			return nil, nil, nil, err
+		}
 	}
 	return artists, albums, tracks, nil
 }
