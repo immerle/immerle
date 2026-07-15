@@ -95,10 +95,17 @@ func (h *Handler) handleSubscribePlaylist(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusNotFound, "not_found", "playlist not found")
 		return
 	}
-	// Only public playlists are subscribable; the real owner needn't subscribe —
-	// but a federated playlist's "owner" is only an internal attribution (see
-	// ListVisible), so it must stay subscribable even for that account.
-	if !p.Public || (p.OwnerID == user.ID && !p.Federated) {
+	// Subscribable when it's public (and you don't already own it outright —
+	// no point subscribing to your own regular playlist), or it's your own
+	// private personal auto-playlist (Top du mois, etc.): Federated marks it
+	// read-only, but the owner genuinely is you there, and subscribing just
+	// pins it to your library like liking any playlist — unsubscribing later
+	// still won't lose it, since GET /me/custom-playlists finds it either way.
+	own := p.OwnerID == user.ID
+	switch {
+	case own && p.Federated:
+	case p.Public && !own:
+	default:
 		writeError(w, http.StatusForbidden, "forbidden", "playlist is not public")
 		return
 	}

@@ -356,12 +356,14 @@ func (s *Service) upsert(ctx context.Context, spec playlistSpec) error {
 // same look across resyncs, without needing a per-name color mapping (genre
 // names in particular are open-ended free-text tags, no fixed list to map).
 var coverGradients = [][2]string{
-	{"#1db954", "#0b3d20"},
-	{"#5b21b6", "#1e1b4b"},
-	{"#be123c", "#4c0519"},
-	{"#0369a1", "#0c2340"},
-	{"#b45309", "#451a03"},
-	{"#0f766e", "#042f2e"},
+	{"#22d3ee", "#0c4a6e"}, // cyan → deep teal
+	{"#f472b6", "#831843"}, // pink → deep magenta
+	{"#fb923c", "#7c2d12"}, // orange → burnt umber
+	{"#34d399", "#064e3b"}, // emerald → deep green
+	{"#a78bfa", "#3730a3"}, // violet → indigo
+	{"#facc15", "#78350f"}, // amber → deep gold-brown
+	{"#38bdf8", "#1e3a8a"}, // sky blue → navy
+	{"#fb7185", "#881337"}, // rose → deep maroon
 }
 
 // coverParams builds the generator-cover query values (see
