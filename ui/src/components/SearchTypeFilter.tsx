@@ -1,16 +1,14 @@
 import { useRef, useState } from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
-import { Ionicon } from './Ionicon';
 import { SearchTypeFilter, useSearchUI } from '../search/store';
-import { useColors } from '../theme/colors';
 import { useT } from '../i18n/store';
 
-const FILTERS: { key: SearchTypeFilter; labelKey: string; icon: string }[] = [
-  { key: 'all', labelKey: 'components.search.filterAll', icon: 'apps-outline' },
-  { key: 'artist', labelKey: 'components.search.typeArtist', icon: 'person-outline' },
-  { key: 'album', labelKey: 'components.search.typeAlbum', icon: 'disc-outline' },
-  { key: 'song', labelKey: 'components.search.typeSong', icon: 'musical-notes-outline' },
-  { key: 'playlist', labelKey: 'components.search.typePlaylist', icon: 'list-outline' },
+const FILTERS: { key: SearchTypeFilter; labelKey: string }[] = [
+  { key: 'all', labelKey: 'components.search.filterAll' },
+  { key: 'artist', labelKey: 'components.search.typeArtist' },
+  { key: 'album', labelKey: 'components.search.typeAlbum' },
+  { key: 'song', labelKey: 'components.search.typeSong' },
+  { key: 'playlist', labelKey: 'components.search.typePlaylist' },
 ];
 
 /**
@@ -22,7 +20,6 @@ const FILTERS: { key: SearchTypeFilter; labelKey: string; icon: string }[] = [
  */
 export function SearchTypeFilterButton() {
   const t = useT();
-  const colors = useColors();
   const typeFilter = useSearchUI((s) => s.typeFilter);
   const setTypeFilter = useSearchUI((s) => s.setTypeFilter);
   const anchorRef = useRef<View>(null);
@@ -39,10 +36,9 @@ export function SearchTypeFilterButton() {
         onPress={open}
         accessibilityRole="button"
         accessibilityLabel={t(current.labelKey)}
-        className="flex-row items-center gap-0.5 rounded-full bg-surface px-2 py-1 active:opacity-70"
+        className="rounded-full bg-surface px-2.5 py-1 active:opacity-70"
       >
-        <Ionicon name={current.icon} size={15} color={colors.foreground} />
-        <Ionicon name="chevron-down" size={12} color={colors.muted} />
+        <Text className="text-sm text-foreground">{t(current.labelKey)}</Text>
       </Pressable>
 
       <Modal transparent visible={!!anchor} animationType="fade" onRequestClose={close}>
@@ -59,11 +55,8 @@ export function SearchTypeFilterButton() {
                     setTypeFilter(f.key);
                     close();
                   }}
-                  className={`flex-row items-center gap-2 px-3 py-2.5 active:bg-surface-alt ${
-                    typeFilter === f.key ? 'bg-surface-alt' : ''
-                  }`}
+                  className={`px-3 py-2.5 active:bg-surface-alt ${typeFilter === f.key ? 'bg-surface-alt' : ''}`}
                 >
-                  <Ionicon name={f.icon} size={16} color={colors.foreground} />
                   <Text className={`text-sm text-foreground ${typeFilter === f.key ? 'font-semibold' : ''}`}>
                     {t(f.labelKey)}
                   </Text>
