@@ -72,7 +72,7 @@ func TestSyncNowMaterializesPublicPlaylists(t *testing.T) {
 	if p.Name != "Top 50 France" {
 		t.Fatalf("name = %q, want %q", p.Name, "Top 50 France")
 	}
-	if want := models.ChartCoverID("fr"); p.CoverArt != want {
+	if want := models.GeneratorCoverID(GeneratorParams("fr")); p.CoverArt != want {
 		t.Fatalf("coverArt = %q, want %q", p.CoverArt, want)
 	}
 
@@ -145,7 +145,7 @@ func TestSyncNowMigratesAnOldStoredCover(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if want := models.ChartCoverID("fr"); p.CoverArt != want {
+	if want := models.GeneratorCoverID(GeneratorParams("fr")); p.CoverArt != want {
 		t.Fatalf("coverArt after re-sync = %q, want %q (migrated)", p.CoverArt, want)
 	}
 }

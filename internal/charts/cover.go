@@ -1,18 +1,11 @@
 package charts
 
 import (
-	"bytes"
-	"embed"
-	"image"
-	"image/color"
-	_ "image/png"
+	"net/url"
 	"strings"
 
 	"github.com/immerle/immerle/internal/covergen"
 )
-
-//go:embed assets/*.png
-var emojiAssets embed.FS
 
 // coverGradient is the background gradient used behind a chart's flag/globe
 // icon — loosely evoking that country's flag colors (two of them, since the
@@ -28,36 +21,33 @@ var coverGradients = map[string]coverGradient{
 	"es":     {"#aa151b", "#f1bf00"},
 }
 
-// countryLabels give each chart slug a localized label, used as "Top 50
-// <label>" on the cover — e.g. "Top 50 France" (fr) vs "Top 50 French" (en),
-// matching how English favors the demonym where French favors the country
-// name. Extend with more locales/slugs as needed; chartLabel falls back to
-// "fr" for an unlisted locale.
-var countryLabels = map[string]map[string]string{
-	"global": {"fr": "Mondial", "en": "Global"},
-	"fr":     {"fr": "France", "en": "French"},
-	"us":     {"fr": "États-Unis", "en": "American"},
-	"gb":     {"fr": "Royaume-Uni", "en": "British"},
-	"de":     {"fr": "Allemagne", "en": "German"},
-	"es":     {"fr": "Espagne", "en": "Spanish"},
+// flagEmoji gives each chart slug its flag/globe emoji; GeneratorParams
+// converts it to the Twemoji codepoint stored in the generator cover id (see
+// covergen.EmojiCodepoint), so no PNG is bundled for it.
+var flagEmoji = map[string]string{
+	"global": "🌍",
+	"fr":     "🇫🇷",
+	"us":     "🇺🇸",
+	"gb":     "🇬🇧",
+	"de":     "🇩🇪",
+	"es":     "🇪🇸",
 }
 
-// emojiInset is how far the flag/globe icon is inset from each edge
-// horizontally, as a fraction of covergen.Size — the icon is emojiIconFrac
-// wide/tall (36% of the cover).
-const emojiInset = 0.32
-const emojiIconFrac = 1 - 2*emojiInset
-
-// titleFontFrac/countryFontFrac are the "Top 50" / country-label font sizes;
-// groupGapFrac is the gap between the icon and "Top 50", textGapFrac the
-// (tighter) gap between "Top 50" and the country label — all fractions of
-// covergen.Size. The icon+"Top 50"+country trio is centered as one group
-// (see GenerateCover), not each line centered independently, so the whole
-// composition reads as a single mark.
-const titleFontFrac = 0.13
-const countryFontFrac = 0.07
-const groupGapFrac = 0.045
-const textGapFrac = 0.02
+// labelKeys is the i18n dictionary behind the generator cover's `title`/
+// `subTitle` params — GET /cover/generator resolves a param through this
+// table (via ResolveLabel) when it matches a known key, e.g.
+// "charts.country.fr" -> "France" (fr) / "French" (en); an unrecognized
+// param is used as literal text instead. ResolveLabel falls back to French
+// for an unknown locale.
+var labelKeys = map[string]map[string]string{
+	"charts.top50":          {"fr": "Top 50", "en": "Top 50"},
+	"charts.country.global": {"fr": "Mondial", "en": "Global"},
+	"charts.country.fr":     {"fr": "France", "en": "French"},
+	"charts.country.us":     {"fr": "États-Unis", "en": "American"},
+	"charts.country.gb":     {"fr": "Royaume-Uni", "en": "British"},
+	"charts.country.de":     {"fr": "Allemagne", "en": "German"},
+	"charts.country.es":     {"fr": "Espagne", "en": "Spanish"},
+}
 
 // NormalizeLocale reduces a BCP47-ish tag ("en-US", "FR") to the bare
 // lowercase language code ("en", "fr") this package's tables key on.
@@ -69,12 +59,13 @@ func NormalizeLocale(locale string) string {
 	return locale
 }
 
-// chartLabel returns slug's localized label, falling back to French for an
-// unlisted locale (or slug) — same default the playlist's own Name uses.
-func chartLabel(slug, locale string) string {
-	labels, ok := countryLabels[slug]
+// ResolveLabel translates key through labelKeys in locale, falling back to
+// French for an unlisted locale. A key with no entry (e.g. literal text
+// passed straight through by a caller) is returned unchanged.
+func ResolveLabel(key, locale string) string {
+	labels, ok := labelKeys[key]
 	if !ok {
-		return ""
+		return key
 	}
 	if l, ok := labels[NormalizeLocale(locale)]; ok {
 		return l
@@ -82,57 +73,28 @@ func chartLabel(slug, locale string) string {
 	return labels["fr"]
 }
 
-// GenerateCover renders a gradient cover for slug with its flag/globe icon
-// (country flags clipped to a circle), a large "Top 50" line, and the
-// (smaller) country label below it in the given locale, PNG-encoded. Falls
-// back to a plain gradient (no error) if the slug has no matching emoji
-// asset; falls back to French text for an unknown locale.
-func GenerateCover(slug, locale string) ([]byte, error) {
-	img := covergen.NewCanvas()
-
+// GeneratorParams builds the GET /cover/generator query params for a chart
+// slug's cover: its flag/globe icon, "charts.top50"/"charts.country.<slug>"
+// title keys, and gradient. Stored as the chart playlist's CoverArt (see
+// service.go), it's resolved into a rendered PNG on demand, in the
+// requesting client's locale — an unknown slug still yields a plain
+// gradient with no icon/subtitle.
+func GeneratorParams(slug string) url.Values {
 	g, ok := coverGradients[slug]
 	if !ok {
 		g = coverGradient{"#333333", "#111111"}
 	}
-	covergen.FillGradient(img, covergen.ParseHex(g.from, color.Black), covergen.ParseHex(g.to, color.Black), 45)
 
-	// The icon, "Top 50" and the country label are centered as one group, not
-	// each centered independently — otherwise they'd read as "a centered icon
-	// with text tacked on after it" rather than a single composed mark.
-	label := chartLabel(slug, locale)
-	titleLineHFrac := titleFontFrac * 1.25
-	groupHeightFrac := emojiIconFrac + groupGapFrac + titleLineHFrac
-	if label != "" {
-		groupHeightFrac += textGapFrac + countryFontFrac*1.25
+	vals := url.Values{}
+	if icon := flagEmoji[slug]; icon != "" {
+		vals.Set("icon", covergen.EmojiCodepoint(icon))
 	}
-	groupTopFrac := (1 - groupHeightFrac) / 2
-
-	if data, err := emojiAssets.ReadFile("assets/" + slug + ".png"); err == nil {
-		if icon, _, err := image.Decode(bytes.NewReader(data)); err == nil {
-			hInset := int(emojiInset * covergen.Size)
-			top := int(groupTopFrac * covergen.Size)
-			r := image.Rect(hInset, top, covergen.Size-hInset, top+int(emojiIconFrac*covergen.Size))
-			if slug == "global" {
-				covergen.DrawImage(img, icon, r) // globe is already round
-			} else {
-				covergen.DrawImageRounded(img, icon, r, 0.5) // flag: circular crop
-			}
-		}
+	vals.Set("title", "charts.top50")
+	if _, ok := labelKeys["charts.country."+slug]; ok {
+		vals.Set("subTitle", "charts.country."+slug)
 	}
-
-	titleTop := groupTopFrac + emojiIconFrac + groupGapFrac
-	_ = covergen.DrawText(img, covergen.TextSpec{
-		Text: "Top 50", Color: color.White,
-		FontFrac: titleFontFrac, Align: "center", TopFrac: &titleTop,
-	})
-
-	if label != "" {
-		countryTop := titleTop + titleLineHFrac + textGapFrac
-		_ = covergen.DrawText(img, covergen.TextSpec{
-			Text: label, Color: color.White,
-			FontFrac: countryFontFrac, Align: "center", TopFrac: &countryTop,
-		})
-	}
-
-	return covergen.Encode(img)
+	vals.Set("color", g.from)
+	vals.Set("color2", g.to)
+	vals.Set("angle", "45")
+	return vals
 }

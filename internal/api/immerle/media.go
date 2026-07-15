@@ -111,15 +111,24 @@ func (h *Handler) handleDownload(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleCover serves cover art for a track or album id at an optional size.
+// The literal id "generator" is the generic cover builder instead: it
+// renders a cover on the fly from the icon/title/subTitle/color/color2/angle
+// query params, e.g. /cover/generator?icon=1f30d&title=charts.top50&color=%231db954&color2=%230b3d20&angle=45.
 //
 // @Summary  Cover art
-// @Description  Returns the cover image for a track or album id, optionally resized. For a chart-playlist cover (dynamically generated), locale picks the label text's language.
+// @Description  Returns the cover image for a track or album id, optionally resized. The id "generator" instead builds a cover on the fly from its own query params (icon, title, subTitle, color, color2, angle); title/subTitle may be a known i18n key (e.g. "charts.top50") resolved via locale, or literal text.
 // @Tags     media
 // @Security BearerAuth
 // @Produce  image/jpeg
-// @Param    id      path   string  true   "Track or album id"
-// @Param    size    query  int     false  "Square size in pixels"
-// @Param    locale  query  string  false  "Label language for a chart-playlist cover (e.g. \"en\", \"fr\")"
+// @Param    id        path   string   true   "Track/album id, or \"generator\" for the cover builder"
+// @Param    size      query  int      false  "Square size in pixels"
+// @Param    locale    query  string   false  "Label language for a generator cover's title/subTitle i18n keys (e.g. \"en\", \"fr\")"
+// @Param    icon      query  string   false  "Generator: Twemoji codepoint, e.g. \"1f30d\" or \"1f1eb-1f1f7\""
+// @Param    title     query  string   false  "Generator: title text or i18n key"
+// @Param    subTitle  query  string   false  "Generator: subtitle text or i18n key"
+// @Param    color     query  string   false  "Generator: background color, hex"
+// @Param    color2    query  string   false  "Generator: gradient end color, hex (empty = solid)"
+// @Param    angle     query  number   false  "Generator: gradient angle, degrees"
 // @Success  200  "Image bytes"
 // @Failure  401  {object}  errorResponse
 // @Failure  404  {object}  errorResponse

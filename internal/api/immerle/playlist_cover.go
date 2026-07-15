@@ -3,15 +3,12 @@ package immerle
 import (
 	"encoding/json"
 	"image"
-	"image/color"
 	_ "image/gif"
 	_ "image/jpeg"
 	"net/http"
 	"os"
-	"strings"
 
 	"github.com/google/uuid"
-	"golang.org/x/image/draw"
 
 	"github.com/immerle/immerle/internal/covergen"
 	"github.com/immerle/immerle/internal/models"
@@ -32,22 +29,9 @@ func (h *Handler) handlePlaylistCover(w http.ResponseWriter, r *http.Request) {
 	h.storePlaylistCover(w, r, p, data)
 }
 
-// coverSpec describes a generated cover: a solid or angled-gradient background
-// (or an uploaded background image, sent alongside as multipart field "file"),
-// with one positioned text block. Positions/size are fractions of the square.
-type coverSpec struct {
-	Color     string  `json:"color"`     // background, hex (#rrggbb)
-	Color2    string  `json:"color2"`    // gradient end; empty = solid
-	Angle     float64 `json:"angle"`     // gradient angle, degrees
-	Text      string  `json:"text"`      // may contain \n for multiple lines
-	TextColor string  `json:"textColor"` // hex
-	FontSize  float64 `json:"fontSize"`  // fraction of the square (default 0.12)
-	Align     string  `json:"align"`     // left|center|right (default center)
-	Valign    string  `json:"valign"`    // top|middle|bottom (default middle)
-}
-
 // handlePlaylistCoverGenerate renders a cover from a JSON spec (multipart field
-// "spec") plus an optional background image (field "file"). Owner-only.
+// "spec", covergen.Spec) plus an optional background image (field "file").
+// Owner-only.
 func (h *Handler) handlePlaylistCoverGenerate(w http.ResponseWriter, r *http.Request) {
 	p, ok := h.coverTarget(w, r)
 	if !ok {
@@ -58,7 +42,7 @@ func (h *Handler) handlePlaylistCoverGenerate(w http.ResponseWriter, r *http.Req
 		writeError(w, http.StatusBadRequest, "invalid_body", "malformed multipart form")
 		return
 	}
-	var spec coverSpec
+	var spec covergen.Spec
 	if err := json.Unmarshal([]byte(r.FormValue("spec")), &spec); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_body", "invalid cover spec")
 		return
@@ -72,7 +56,7 @@ func (h *Handler) handlePlaylistCoverGenerate(w http.ResponseWriter, r *http.Req
 		}
 	}
 
-	data, err := renderCover(spec, bg)
+	data, err := covergen.Render(r.Context(), spec, bg)
 	if err != nil {
 		writeInternal(w, err)
 		return
@@ -116,30 +100,4 @@ func (h *Handler) storePlaylistCover(w http.ResponseWriter, r *http.Request, p m
 		return
 	}
 	writeResource(w, http.StatusOK, detailToView(d))
-}
-
-// renderCover paints the background (image, gradient or solid) then the text,
-// returning PNG bytes.
-func renderCover(spec coverSpec, bg image.Image) ([]byte, error) {
-	img := covergen.NewCanvas()
-	switch {
-	case bg != nil:
-		draw.CatmullRom.Scale(img, img.Bounds(), bg, bg.Bounds(), draw.Over, nil)
-	case spec.Color2 != "":
-		covergen.FillGradient(img, covergen.ParseHex(spec.Color, color.Black), covergen.ParseHex(spec.Color2, color.Black), spec.Angle)
-	default:
-		covergen.FillSolid(img, covergen.ParseHex(spec.Color, color.Black))
-	}
-
-	if strings.TrimSpace(spec.Text) != "" {
-		textSpec := covergen.TextSpec{
-			Text: spec.Text, Color: covergen.ParseHex(spec.TextColor, color.White),
-			FontFrac: spec.FontSize, Align: spec.Align, Valign: spec.Valign,
-		}
-		if err := covergen.DrawText(img, textSpec); err != nil {
-			return nil, err
-		}
-	}
-
-	return covergen.Encode(img)
 }

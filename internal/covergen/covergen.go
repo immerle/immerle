@@ -7,6 +7,7 @@ package covergen
 
 import (
 	"bytes"
+	"context"
 	"image"
 	"image/color"
 	"image/png"
@@ -64,52 +65,6 @@ func FillGradient(img *image.RGBA, c1, c2 color.Color, angle float64) {
 // e.g. an uploaded background photo, or an emoji/icon overlay.
 func DrawImage(dst *image.RGBA, src image.Image, r image.Rectangle) {
 	draw.CatmullRom.Scale(dst, r, src, src.Bounds(), draw.Over, nil)
-}
-
-// DrawImageRounded is DrawImage with rounded corners clipped in: radiusFrac is
-// the corner radius as a fraction of min(r.Dx(), r.Dy()) — 0.5 clips a full
-// circle (or a pill, on a non-square r), matching CSS's border-radius: 50%.
-func DrawImageRounded(dst *image.RGBA, src image.Image, r image.Rectangle, radiusFrac float64) {
-	w, h := r.Dx(), r.Dy()
-	scaled := image.NewRGBA(image.Rect(0, 0, w, h))
-	draw.CatmullRom.Scale(scaled, scaled.Bounds(), src, src.Bounds(), draw.Over, nil)
-
-	radius := radiusFrac * math.Min(float64(w), float64(h))
-	mask := image.NewAlpha(image.Rect(0, 0, w, h))
-	for y := 0; y < h; y++ {
-		for x := 0; x < w; x++ {
-			if roundedRectContains(x, y, w, h, radius) {
-				mask.SetAlpha(x, y, color.Alpha{A: 255})
-			}
-		}
-	}
-	draw.DrawMask(dst, r, scaled, image.Point{}, mask, image.Point{}, draw.Over)
-}
-
-// roundedRectContains reports whether pixel (x,y) falls inside a w×h
-// rounded rectangle with corner radius r: outside the four corner regions
-// it's always inside (the straight edges/core), inside a corner region only
-// if within r of that corner's circle center.
-func roundedRectContains(x, y, w, h int, r float64) bool {
-	fx, fy := float64(x)+0.5, float64(y)+0.5
-	left, top, right, bottom := r, r, float64(w)-r, float64(h)-r
-	switch {
-	case fx < left && fy < top:
-		return dist(fx, fy, left, top) <= r
-	case fx > right && fy < top:
-		return dist(fx, fy, right, top) <= r
-	case fx < left && fy > bottom:
-		return dist(fx, fy, left, bottom) <= r
-	case fx > right && fy > bottom:
-		return dist(fx, fy, right, bottom) <= r
-	default:
-		return true
-	}
-}
-
-func dist(x1, y1, x2, y2 float64) float64 {
-	dx, dy := x1-x2, y1-y2
-	return math.Sqrt(dx*dx + dy*dy)
 }
 
 // TextSpec describes one block of aligned text (one line per "\n").
@@ -206,4 +161,112 @@ func Encode(img *image.RGBA) ([]byte, error) {
 		return nil, err
 	}
 	return buf.Bytes(), nil
+}
+
+// Spec describes a generated cover: a solid or angled-gradient background (or
+// a supplied overlay image), an optional centered icon (an emoji fetched from
+// Twemoji, see FetchEmoji), a title, and an optional smaller subtitle below
+// it. This is the single cover builder used both by the user-facing playlist
+// cover generator and the curated chart cover generator, so a new use case is
+// a new Spec, not a new renderer.
+type Spec struct {
+	Color     string  `json:"color"`     // background, hex (#rrggbb)
+	Color2    string  `json:"color2"`    // gradient end; empty = solid
+	Angle     float64 `json:"angle"`     // gradient angle, degrees
+	Icon      string  `json:"icon"`      // Twemoji codepoint (e.g. "1f30d", "1f1eb-1f1f7"), centered above the title
+	Text      string  `json:"text"`      // title; may contain \n for multiple lines. Always bold.
+	Subtitle  string  `json:"subTitle"`  // smaller text below the title; grouped with it (and the icon, if set)
+	TextColor string  `json:"textColor"` // hex, shared by the title and subtitle
+	FontSize  float64 `json:"fontSize"`  // title font size, fraction of the square (default 0.12); the subtitle is subtitleScale of this
+	Align     string  `json:"align"`     // left|center|right (default center)
+	Valign    string  `json:"valign"`    // top|middle|bottom (default middle); ignored if Icon or Subtitle is set
+}
+
+// iconInsetFrac/iconFrac/iconGapFrac lay out the icon above the title: the
+// icon is iconFrac square, inset iconInsetFrac from each edge, with
+// iconGapFrac of space before the title below it. textGapFrac is the
+// (tighter) gap between the title and the subtitle. subtitleScale is the
+// subtitle's font size relative to the title's.
+const iconInsetFrac = 0.32
+const iconFrac = 1 - 2*iconInsetFrac
+const iconGapFrac = 0.045
+const textGapFrac = 0.02
+const subtitleScale = 0.07 / 0.13
+
+// Render paints spec's background (bg if given, else its gradient/solid
+// color), then the icon/title/subtitle as one centered group, returning PNG
+// bytes. A failed icon fetch just omits the icon rather than erroring.
+func Render(ctx context.Context, spec Spec, bg image.Image) ([]byte, error) {
+	img := NewCanvas()
+	switch {
+	case bg != nil:
+		DrawImage(img, bg, img.Bounds())
+	case spec.Color2 != "":
+		FillGradient(img, ParseHex(spec.Color, color.Black), ParseHex(spec.Color2, color.Black), spec.Angle)
+	default:
+		FillSolid(img, ParseHex(spec.Color, color.Black))
+	}
+
+	titleFrac := spec.FontSize
+	if titleFrac <= 0 {
+		titleFrac = 0.12
+	}
+	subtitleFrac := titleFrac * subtitleScale
+	textColor := ParseHex(spec.TextColor, color.White)
+
+	var titleTop *float64
+	if spec.Icon != "" || spec.Subtitle != "" {
+		titleLines := 0.0
+		if strings.TrimSpace(spec.Text) != "" {
+			titleLines = float64(strings.Count(spec.Text, "\n") + 1)
+		}
+		titleHeightFrac := titleFrac * 1.25 * titleLines
+
+		subtitleHeightFrac := 0.0
+		if spec.Subtitle != "" {
+			subtitleLines := float64(strings.Count(spec.Subtitle, "\n") + 1)
+			subtitleHeightFrac = textGapFrac + subtitleFrac*1.25*subtitleLines
+		}
+
+		iconHeightFrac := 0.0
+		if spec.Icon != "" {
+			iconHeightFrac = iconFrac + iconGapFrac
+		}
+
+		groupTopFrac := (1 - (iconHeightFrac + titleHeightFrac + subtitleHeightFrac)) / 2
+
+		if spec.Icon != "" {
+			if icon, err := FetchEmoji(ctx, spec.Icon); err == nil {
+				inset := int(iconInsetFrac * Size)
+				top := int(groupTopFrac * Size)
+				DrawImage(img, icon, image.Rect(inset, top, Size-inset, top+int(iconFrac*Size)))
+			}
+		}
+
+		top := groupTopFrac + iconHeightFrac
+		titleTop = &top
+
+		if spec.Subtitle != "" {
+			subtitleTop := top + titleHeightFrac + textGapFrac
+			err := DrawText(img, TextSpec{
+				Text: spec.Subtitle, Color: textColor,
+				FontFrac: subtitleFrac, Align: spec.Align, TopFrac: &subtitleTop,
+			})
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	if strings.TrimSpace(spec.Text) != "" {
+		err := DrawText(img, TextSpec{
+			Text: spec.Text, Color: textColor,
+			FontFrac: titleFrac, Align: spec.Align, Valign: spec.Valign, TopFrac: titleTop,
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return Encode(img)
 }
