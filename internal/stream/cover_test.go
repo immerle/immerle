@@ -27,6 +27,55 @@ func jpegBytes(t *testing.T) []byte {
 	return buf.Bytes()
 }
 
+func TestCoverServiceGeneratesChartCoverPerLocaleAndCaches(t *testing.T) {
+	store := testutil.NewStore(t)
+	ctx := context.Background()
+	dir := t.TempDir()
+	svc := NewCoverService(store.Catalog, filepath.Join(dir, "covers"))
+
+	id := models.ChartCoverID("fr")
+	fr, ct, err := svc.Get(ctx, id, 0, "fr")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ct != "image/png" {
+		t.Fatalf("content type = %q, want image/png", ct)
+	}
+	en, _, err := svc.Get(ctx, id, 0, "en")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Equal(fr, en) {
+		t.Fatal("expected different bytes for different locales")
+	}
+
+	// Raw generation is cached per (slug, locale): the cache file must exist,
+	// and re-fetching the same locale must return byte-identical data.
+	frAgain, _, err := svc.Get(ctx, id, 0, "fr")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(fr, frAgain) {
+		t.Fatal("expected identical bytes from the cache on re-fetch")
+	}
+
+	// The resize cache must also key on locale, not just the id.
+	frSmall, ct, err := svc.Get(ctx, id, 64, "fr")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ct != "image/jpeg" {
+		t.Fatalf("resized content type = %q, want image/jpeg", ct)
+	}
+	enSmall, _, err := svc.Get(ctx, id, 64, "en")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Equal(frSmall, enSmall) {
+		t.Fatal("expected different resized bytes for different locales")
+	}
+}
+
 func TestCoverServiceServesSidecarImage(t *testing.T) {
 	store := testutil.NewStore(t)
 	ctx := context.Background()
@@ -53,7 +102,7 @@ func TestCoverServiceServesSidecarImage(t *testing.T) {
 	svc := NewCoverService(store.Catalog, filepath.Join(t.TempDir(), "covers"))
 
 	// Original (no resize) should return the sidecar JPEG.
-	data, ct, err := svc.Get(ctx, albumID, 0)
+	data, ct, err := svc.Get(ctx, albumID, 0, "")
 	if err != nil {
 		t.Fatalf("expected sidecar cover, got error: %v", err)
 	}
@@ -62,13 +111,13 @@ func TestCoverServiceServesSidecarImage(t *testing.T) {
 	}
 
 	// Resized variant should also resolve (re-encoded JPEG).
-	resized, ct, err := svc.Get(ctx, albumID, 64)
+	resized, ct, err := svc.Get(ctx, albumID, 64, "")
 	if err != nil || ct != "image/jpeg" || len(resized) == 0 {
 		t.Fatalf("resize from sidecar failed: ct=%s err=%v", ct, err)
 	}
 
 	// And via the track id too.
-	if _, _, err := svc.Get(ctx, "t", 0); err != nil {
+	if _, _, err := svc.Get(ctx, "t", 0, ""); err != nil {
 		t.Fatalf("sidecar should resolve via track id: %v", err)
 	}
 }
@@ -89,12 +138,12 @@ func TestCoverServiceServesRemoteImage(t *testing.T) {
 	svc.allowHosts = append(svc.allowHosts, "127.0.0.1") // httptest host
 
 	id := models.RemoteCoverID(srv.URL + "/cover.jpg")
-	data, ct, err := svc.Get(ctx, id, 0)
+	data, ct, err := svc.Get(ctx, id, 0, "")
 	if err != nil || ct != "image/jpeg" || !bytes.Equal(data, cover) {
 		t.Fatalf("remote cover not served: ct=%s err=%v", ct, err)
 	}
 	// Cached: a second request does not hit the origin again.
-	if _, _, err := svc.Get(ctx, id, 0); err != nil {
+	if _, _, err := svc.Get(ctx, id, 0, ""); err != nil {
 		t.Fatal(err)
 	}
 	if hits != 1 {
@@ -107,7 +156,7 @@ func TestCoverServiceRemoteHostNotAllowed(t *testing.T) {
 	svc := NewCoverService(store.Catalog, filepath.Join(t.TempDir(), "covers"))
 	// Default allowlist is dzcdn.net only — an internal URL must be refused (SSRF guard).
 	id := models.RemoteCoverID("http://169.254.169.254/latest/meta-data/")
-	if _, _, err := svc.Get(context.Background(), id, 0); err == nil {
+	if _, _, err := svc.Get(context.Background(), id, 0, ""); err == nil {
 		t.Fatal("disallowed remote host must be refused")
 	}
 }
@@ -116,7 +165,7 @@ func TestCoverServiceNoCover(t *testing.T) {
 	store := testutil.NewStore(t)
 	ctx := context.Background()
 	svc := NewCoverService(store.Catalog, filepath.Join(t.TempDir(), "covers"))
-	if _, _, err := svc.Get(ctx, "missing", 0); err == nil {
+	if _, _, err := svc.Get(ctx, "missing", 0, ""); err == nil {
 		t.Fatal("expected ErrNoCover for unknown id")
 	}
 }

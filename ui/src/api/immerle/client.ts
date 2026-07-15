@@ -69,6 +69,7 @@ import {
   Wrapped,
 } from './types';
 import { Lyrics } from '../../lyrics/lyrics';
+import { i18n } from '../../i18n';
 
 /**
  * Build an {@link ImmerleApiError} from an openapi-fetch error body, preferring
@@ -579,7 +580,12 @@ export class ImmerleClient {
   coverArtUrl(coverArtId: string | undefined, size?: number): string | undefined {
     if (!coverArtId) return undefined;
     const url = `${this.serverUrl}/api/v1/cover/${encodeURIComponent(coverArtId)}`;
-    return size ? `${url}?size=${size}` : url;
+    const params: string[] = [];
+    if (size) params.push(`size=${size}`);
+    // A chart-playlist cover is generated server-side with its label text in
+    // the requesting locale — always pass the app's current one.
+    if (coverArtId.startsWith('chart:')) params.push(`locale=${encodeURIComponent(i18n.locale)}`);
+    return params.length ? `${url}?${params.join('&')}` : url;
   }
 
   /**

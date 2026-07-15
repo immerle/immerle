@@ -50,7 +50,7 @@ func TestSyncNowMaterializesPublicPlaylists(t *testing.T) {
 		"fr": {"PLK - Pocahontas", "Aya Nakamura - Sexy Nana (w/ La Rvfleuze)"},
 	})
 
-	svc := New(store.Playlists, srv.URL, t.TempDir(), nil, testutil.NewLogger())
+	svc := New(store.Playlists, srv.URL, nil, testutil.NewLogger())
 	svc.charts = []Chart{{Slug: "fr", Name: "Top 50 France"}}
 	svc.SetOwner(owner.ID)
 
@@ -72,8 +72,8 @@ func TestSyncNowMaterializesPublicPlaylists(t *testing.T) {
 	if p.Name != "Top 50 France" {
 		t.Fatalf("name = %q, want %q", p.Name, "Top 50 France")
 	}
-	if p.CoverArt == "" {
-		t.Fatal("expected a generated cover")
+	if want := models.ChartCoverID("fr"); p.CoverArt != want {
+		t.Fatalf("coverArt = %q, want %q", p.CoverArt, want)
 	}
 
 	tracks, err := store.Playlists.Tracks(ctx, p.ID)
@@ -109,6 +109,47 @@ func TestSyncNowMaterializesPublicPlaylists(t *testing.T) {
 	}
 }
 
+// TestSyncNowMigratesAnOldStoredCover covers upgrading a playlist created
+// before covers became dynamically generated (a stored-file cover id) to the
+// chart-cover sentinel on the next sync.
+func TestSyncNowMigratesAnOldStoredCover(t *testing.T) {
+	store := testutil.NewStore(t)
+	ctx := context.Background()
+
+	owner := models.User{ID: uuid.NewString(), Username: "admin", PasswordHash: "x", IsAdmin: true}
+	if err := store.Users.Create(ctx, owner); err != nil {
+		t.Fatal(err)
+	}
+
+	srv := stubKworb(t, map[string][]string{"fr": {"Artist - Title"}})
+	svc := New(store.Playlists, srv.URL, nil, testutil.NewLogger())
+	svc.charts = []Chart{{Slug: "fr", Name: "Top 50 France"}}
+	svc.SetOwner(owner.ID)
+
+	if _, err := svc.SyncNow(ctx); err != nil {
+		t.Fatal(err)
+	}
+	p, err := store.Playlists.FindFederated(ctx, sourceInstanceID, "fr_weekly")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Simulate the old behavior: a stored-file cover id, not the sentinel.
+	if err := store.Playlists.SetCover(ctx, p.ID, "some-old-uuid-file-id"); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := svc.SyncNow(ctx); err != nil {
+		t.Fatal(err)
+	}
+	p, err = store.Playlists.FindFederated(ctx, sourceInstanceID, "fr_weekly")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := models.ChartCoverID("fr"); p.CoverArt != want {
+		t.Fatalf("coverArt after re-sync = %q, want %q (migrated)", p.CoverArt, want)
+	}
+}
+
 func TestSyncNowSkipsFailingChartButSyncsOthers(t *testing.T) {
 	store := testutil.NewStore(t)
 	ctx := context.Background()
@@ -120,7 +161,7 @@ func TestSyncNowSkipsFailingChartButSyncsOthers(t *testing.T) {
 
 	srv := stubKworb(t, map[string][]string{"fr": {"Artist - Title"}})
 
-	svc := New(store.Playlists, srv.URL, t.TempDir(), nil, testutil.NewLogger())
+	svc := New(store.Playlists, srv.URL, nil, testutil.NewLogger())
 	svc.charts = []Chart{
 		{Slug: "does-not-exist", Name: "Broken"},
 		{Slug: "fr", Name: "Top 50 France"},

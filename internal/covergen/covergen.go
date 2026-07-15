@@ -66,6 +66,52 @@ func DrawImage(dst *image.RGBA, src image.Image, r image.Rectangle) {
 	draw.CatmullRom.Scale(dst, r, src, src.Bounds(), draw.Over, nil)
 }
 
+// DrawImageRounded is DrawImage with rounded corners clipped in: radiusFrac is
+// the corner radius as a fraction of min(r.Dx(), r.Dy()) — 0.5 clips a full
+// circle (or a pill, on a non-square r), matching CSS's border-radius: 50%.
+func DrawImageRounded(dst *image.RGBA, src image.Image, r image.Rectangle, radiusFrac float64) {
+	w, h := r.Dx(), r.Dy()
+	scaled := image.NewRGBA(image.Rect(0, 0, w, h))
+	draw.CatmullRom.Scale(scaled, scaled.Bounds(), src, src.Bounds(), draw.Over, nil)
+
+	radius := radiusFrac * math.Min(float64(w), float64(h))
+	mask := image.NewAlpha(image.Rect(0, 0, w, h))
+	for y := 0; y < h; y++ {
+		for x := 0; x < w; x++ {
+			if roundedRectContains(x, y, w, h, radius) {
+				mask.SetAlpha(x, y, color.Alpha{A: 255})
+			}
+		}
+	}
+	draw.DrawMask(dst, r, scaled, image.Point{}, mask, image.Point{}, draw.Over)
+}
+
+// roundedRectContains reports whether pixel (x,y) falls inside a w×h
+// rounded rectangle with corner radius r: outside the four corner regions
+// it's always inside (the straight edges/core), inside a corner region only
+// if within r of that corner's circle center.
+func roundedRectContains(x, y, w, h int, r float64) bool {
+	fx, fy := float64(x)+0.5, float64(y)+0.5
+	left, top, right, bottom := r, r, float64(w)-r, float64(h)-r
+	switch {
+	case fx < left && fy < top:
+		return dist(fx, fy, left, top) <= r
+	case fx > right && fy < top:
+		return dist(fx, fy, right, top) <= r
+	case fx < left && fy > bottom:
+		return dist(fx, fy, left, bottom) <= r
+	case fx > right && fy > bottom:
+		return dist(fx, fy, right, bottom) <= r
+	default:
+		return true
+	}
+}
+
+func dist(x1, y1, x2, y2 float64) float64 {
+	dx, dy := x1-x2, y1-y2
+	return math.Sqrt(dx*dx + dy*dy)
+}
+
 // TextSpec describes one block of aligned text (one line per "\n").
 type TextSpec struct {
 	Text     string
@@ -73,6 +119,10 @@ type TextSpec struct {
 	FontFrac float64 // font size, fraction of Size; default 0.12
 	Align    string  // left|center|right (default center)
 	Valign   string  // top|middle|bottom (default middle)
+	// TopFrac, if non-nil, positions the text block's top at this fraction of
+	// Size directly, overriding Valign — for precise placement (e.g. a label
+	// under a composited icon) rather than the coarse top/middle/bottom.
+	TopFrac *float64
 }
 
 // DrawText renders spec as a block of lines, aligned to the chosen
@@ -114,6 +164,9 @@ func DrawText(img *image.RGBA, spec TextSpec) error {
 		top = margin
 	case "bottom":
 		top = Size - margin - blockH
+	}
+	if spec.TopFrac != nil {
+		top = *spec.TopFrac * Size
 	}
 
 	for i, line := range lines {

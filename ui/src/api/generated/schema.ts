@@ -3530,13 +3530,15 @@ export interface paths {
         };
         /**
          * Cover art
-         * @description Returns the cover image for a track or album id, optionally resized.
+         * @description Returns the cover image for a track or album id, optionally resized. For a chart-playlist cover (dynamically generated), locale picks the label text's language.
          */
         get: {
             parameters: {
                 query?: {
                     /** @description Square size in pixels */
                     size?: number;
+                    /** @description Label language for a chart-playlist cover (e.g. \ */
+                    locale?: string;
                 };
                 header?: never;
                 path: {

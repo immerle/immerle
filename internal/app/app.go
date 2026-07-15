@@ -382,7 +382,7 @@ func New(cfg config.Config) (*App, error) {
 	// weekly from kworb-net-api. Materializes as public, federated-style
 	// playlists (same mechanism as hub imports), owned by the first admin —
 	// resolved lazily the same way federation's owner is.
-	chartsSvc := charts.New(store.Playlists, "", coversDir, nil, logger)
+	chartsSvc := charts.New(store.Playlists, "", nil, logger)
 	chartsSvc.SetOwnerResolver(func(ctx context.Context) (string, error) { return firstAdmin(ctx, store.Users) })
 
 	// Daily retention sweep over persisted diagnostic logs. The window is read
