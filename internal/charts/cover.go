@@ -48,12 +48,16 @@ var countryLabels = map[string]map[string]string{
 const emojiInset = 0.32
 const emojiIconFrac = 1 - 2*emojiInset
 
-// labelFontFrac is the label's font size, and groupGapFrac the gap between
-// the icon and the label — both fractions of covergen.Size. The icon+label
-// pair is centered as one group (see GenerateCover), not each centered
-// independently, so the whole composition reads as a single mark.
-const labelFontFrac = 0.085
+// titleFontFrac/countryFontFrac are the "Top 50" / country-label font sizes;
+// groupGapFrac is the gap between the icon and "Top 50", textGapFrac the
+// (tighter) gap between "Top 50" and the country label — all fractions of
+// covergen.Size. The icon+"Top 50"+country trio is centered as one group
+// (see GenerateCover), not each line centered independently, so the whole
+// composition reads as a single mark.
+const titleFontFrac = 0.13
+const countryFontFrac = 0.07
 const groupGapFrac = 0.045
+const textGapFrac = 0.02
 
 // NormalizeLocale reduces a BCP47-ish tag ("en-US", "FR") to the bare
 // lowercase language code ("en", "fr") this package's tables key on.
@@ -79,10 +83,10 @@ func chartLabel(slug, locale string) string {
 }
 
 // GenerateCover renders a gradient cover for slug with its flag/globe icon
-// (country flags clipped to a circle) and a "Top 50 <label>" caption in the
-// given locale, PNG-encoded. Falls back to a plain gradient (no error) if the
-// slug has no matching emoji asset; falls back to French text for an unknown
-// locale.
+// (country flags clipped to a circle), a large "Top 50" line, and the
+// (smaller) country label below it in the given locale, PNG-encoded. Falls
+// back to a plain gradient (no error) if the slug has no matching emoji
+// asset; falls back to French text for an unknown locale.
 func GenerateCover(slug, locale string) ([]byte, error) {
 	img := covergen.NewCanvas()
 
@@ -92,14 +96,14 @@ func GenerateCover(slug, locale string) ([]byte, error) {
 	}
 	covergen.FillGradient(img, covergen.ParseHex(g.from, color.Black), covergen.ParseHex(g.to, color.Black), 45)
 
-	// The icon and its label are centered as one group, not each centered
-	// independently — otherwise the pair reads as "a centered icon with text
-	// tacked on after it" rather than a single composed mark.
+	// The icon, "Top 50" and the country label are centered as one group, not
+	// each centered independently — otherwise they'd read as "a centered icon
+	// with text tacked on after it" rather than a single composed mark.
 	label := chartLabel(slug, locale)
-	lineHFrac := labelFontFrac * 1.25
-	groupHeightFrac := emojiIconFrac
+	titleLineHFrac := titleFontFrac * 1.25
+	groupHeightFrac := emojiIconFrac + groupGapFrac + titleLineHFrac
 	if label != "" {
-		groupHeightFrac += groupGapFrac + lineHFrac
+		groupHeightFrac += textGapFrac + countryFontFrac*1.25
 	}
 	groupTopFrac := (1 - groupHeightFrac) / 2
 
@@ -116,11 +120,17 @@ func GenerateCover(slug, locale string) ([]byte, error) {
 		}
 	}
 
+	titleTop := groupTopFrac + emojiIconFrac + groupGapFrac
+	_ = covergen.DrawText(img, covergen.TextSpec{
+		Text: "Top 50", Color: color.White,
+		FontFrac: titleFontFrac, Align: "center", TopFrac: &titleTop,
+	})
+
 	if label != "" {
-		top := groupTopFrac + emojiIconFrac + groupGapFrac
+		countryTop := titleTop + titleLineHFrac + textGapFrac
 		_ = covergen.DrawText(img, covergen.TextSpec{
-			Text: "Top 50 " + label, Color: color.White,
-			FontFrac: labelFontFrac, Align: "center", TopFrac: &top,
+			Text: label, Color: color.White,
+			FontFrac: countryFontFrac, Align: "center", TopFrac: &countryTop,
 		})
 	}
 
