@@ -65,3 +65,54 @@ func TestWrappedAggregatesByYear(t *testing.T) {
 		t.Fatalf("TopGenres = %+v, want House with 4 plays", w.TopGenres)
 	}
 }
+
+// TestWrappedRepoTopTracksWithCustomWindowAndLimit covers TopTracks used
+// directly (not through Wrapped's fixed year+chartLimit) — the query a
+// personal "top tracks this month"/"on repeat" list is built on.
+func TestWrappedRepoTopTracksWithCustomWindowAndLimit(t *testing.T) {
+	store := testutil.NewStore(t)
+	ctx := context.Background()
+	now := time.Now()
+
+	user := models.User{ID: uuid.NewString(), Username: "u2", PasswordHash: "x", CreatedAt: now}
+	if err := store.Users.Create(ctx, user); err != nil {
+		t.Fatal(err)
+	}
+	artistID, _ := store.Catalog.UpsertArtist(ctx, models.Artist{ID: uuid.NewString(), Name: "A", CreatedAt: now})
+	albumID, _ := store.Catalog.UpsertAlbum(ctx, models.Album{ID: uuid.NewString(), Name: "Al", ArtistID: artistID, CreatedAt: now})
+	newTrack := func(title string) string {
+		id, _ := store.Catalog.UpsertTrack(ctx, models.Track{ID: uuid.NewString(), Title: title, AlbumID: albumID, ArtistID: artistID, Path: uuid.NewString(), CreatedAt: now, UpdatedAt: now})
+		return id
+	}
+	a, b, c := newTrack("A"), newTrack("B"), newTrack("C")
+
+	scrobble := func(trackID string, at time.Time) {
+		if err := store.Scrobbles.Insert(ctx, models.Scrobble{ID: uuid.NewString(), UserID: user.ID, TrackID: trackID, PlayedAt: at, Submitted: true}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	within := time.Date(2024, 6, 10, 0, 0, 0, 0, time.UTC)
+	scrobble(a, within)
+	scrobble(a, within)
+	scrobble(b, within)
+	scrobble(c, time.Date(2024, 5, 1, 0, 0, 0, 0, time.UTC)) // outside the window below
+
+	start := time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC).UnixMilli()
+	end := time.Date(2024, 7, 1, 0, 0, 0, 0, time.UTC).UnixMilli()
+
+	top, err := store.Wrapped.TopTracks(ctx, user.ID, start, end, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(top) != 1 || top[0].ID != a || top[0].Plays != 2 {
+		t.Fatalf("TopTracks(limit=1) = %+v, want just track a with 2 plays", top)
+	}
+
+	top, err = store.Wrapped.TopTracks(ctx, user.ID, start, end, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(top) != 2 {
+		t.Fatalf("TopTracks(limit=10) = %+v, want 2 tracks (c is outside the window)", top)
+	}
+}

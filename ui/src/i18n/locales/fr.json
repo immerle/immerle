@@ -763,6 +763,33 @@
       "empty": "Aucun titre liké",
       "emptySubtitle": "Appuyez sur ♥ pour en ajouter."
     },
+    "topMonth": {
+      "title": "Top du mois",
+      "trackCount": "{{count}} titres",
+      "shuffle": "Aléatoire",
+      "play": "Lire le top du mois",
+      "loadError": "Impossible de charger le top du mois.",
+      "empty": "Rien à afficher pour l'instant",
+      "emptySubtitle": "Écoutez des titres ce mois-ci pour voir apparaître votre top."
+    },
+    "onRepeat": {
+      "title": "On Repeat",
+      "trackCount": "{{count}} titres",
+      "shuffle": "Aléatoire",
+      "play": "Lire On Repeat",
+      "loadError": "Impossible de charger On Repeat.",
+      "empty": "Rien à afficher pour l'instant",
+      "emptySubtitle": "Les titres que vous rejouez souvent apparaîtront ici."
+    },
+    "forgottenFavorites": {
+      "title": "Favoris oubliés",
+      "trackCount": "{{count}} titres",
+      "shuffle": "Aléatoire",
+      "play": "Lire les favoris oubliés",
+      "loadError": "Impossible de charger les favoris oubliés.",
+      "empty": "Aucun favori oublié",
+      "emptySubtitle": "Vos titres likés non réécoutés depuis longtemps apparaîtront ici."
+    },
     "queue": {
       "empty": "File vide",
       "emptySubtitle": "Lancez un titre pour commencer."

@@ -1830,6 +1830,46 @@ paths:
       summary: Activity feed
       tags:
       - activity
+  /admin/autoplaylists/sync:
+    post:
+      description: Admin only. Rebuilds every genre and decade auto-playlist from
+        the local catalog immediately, returning how many synced successfully.
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.ChartsSyncDTO'
+          description: Created
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Forbidden
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Internal Server Error
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Service Unavailable
+      security:
+      - BearerAuth: []
+      summary: Sync genre/decade auto-playlists now
+      tags:
+      - admin
   /admin/charts/sync:
     post:
       description: Admin only. Fetches and upserts every curated chart playlist immediately,
@@ -5086,6 +5126,45 @@ paths:
       summary: List favorites
       tags:
       - catalog
+  /me/forgotten-favorites:
+    get:
+      description: Returns the caller's starred tracks that haven't been played in
+        at least minDays (default 90), or never played at all.
+      parameters:
+      - description: Minimum days since last play
+        in: query
+        name: minDays
+        schema:
+          default: 90
+          type: integer
+      - description: Max tracks
+        in: query
+        name: limit
+        schema:
+          default: 20
+          type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  items:
+                    $ref: '#/components/schemas/immerle.songView'
+                  type: array
+                type: object
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Forgotten favorites
+      tags:
+      - catalog
   /me/password:
     put:
       requestBody:
@@ -5119,6 +5198,44 @@ paths:
       summary: Change own password
       tags:
       - account
+  /me/top-tracks:
+    get:
+      description: 'Returns the caller''s most-played tracks in a time window: the
+        current calendar month (default) or a rolling last 30 days (?window=30d).'
+      parameters:
+      - description: month (default) or 30d
+        in: query
+        name: window
+        schema:
+          type: string
+      - description: Max tracks
+        in: query
+        name: limit
+        schema:
+          default: 20
+          type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  items:
+                    $ref: '#/components/schemas/immerle.songView'
+                  type: array
+                type: object
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Personal top tracks
+      tags:
+      - catalog
   /now-playing:
     get:
       description: Returns the tracks every user is currently playing, newest first.

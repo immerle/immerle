@@ -47,7 +47,7 @@ func (r *WrappedRepo) Wrapped(ctx context.Context, userID string, year int) (mod
 		return out, err
 	}
 
-	if out.TopTracks, err = r.topTracks(ctx, userID, start, end); err != nil {
+	if out.TopTracks, err = r.TopTracks(ctx, userID, start, end, chartLimit); err != nil {
 		return out, err
 	}
 	if out.TopArtists, err = r.topArtists(ctx, userID, start, end); err != nil {
@@ -59,7 +59,11 @@ func (r *WrappedRepo) Wrapped(ctx context.Context, userID string, year int) (mod
 	return out, nil
 }
 
-func (r *WrappedRepo) topTracks(ctx context.Context, userID string, start, end int64) ([]models.WrappedTrack, error) {
+// TopTracks returns a user's most-played tracks in [start, end) (unix millis),
+// capped at limit. Exported so callers beyond Wrapped (e.g. a "top tracks this
+// month" or "on repeat" personal list, sharing this same query with their own
+// window/limit) can reuse it instead of a fixed year+chartLimit.
+func (r *WrappedRepo) TopTracks(ctx context.Context, userID string, start, end int64, limit int) ([]models.WrappedTrack, error) {
 	rows, err := r.query(ctx, `SELECT t.id, t.title, ar.name, COUNT(*) AS plays
 		FROM scrobbles s
 		JOIN tracks t ON t.id = s.track_id
@@ -67,7 +71,7 @@ func (r *WrappedRepo) topTracks(ctx context.Context, userID string, start, end i
 		WHERE s.user_id=? AND s.submitted=1 AND s.played_at>=? AND s.played_at<?
 		GROUP BY t.id, t.title, ar.name
 		ORDER BY plays DESC, t.title ASC
-		LIMIT ?`, userID, start, end, chartLimit)
+		LIMIT ?`, userID, start, end, limit)
 	if err != nil {
 		return nil, err
 	}

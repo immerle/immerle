@@ -48,3 +48,23 @@ export function useStarred() {
     queryFn: () => client!.getStarred(),
   });
 }
+
+/** "Top of your month" (window='month', default) or "On Repeat" (window='30d'). */
+export function useTopTracks(window: 'month' | '30d' = 'month') {
+  const client = useAuth((s) => s.client);
+  return useQuery({
+    queryKey: qk.topTracks(window),
+    enabled: !!client,
+    queryFn: () => client!.getTopTracks(window),
+  });
+}
+
+/** Starred tracks not played in a while (or never) — "Forgotten Favorites". */
+export function useForgottenFavorites() {
+  const client = useAuth((s) => s.client);
+  return useQuery({
+    queryKey: qk.forgottenFavorites,
+    enabled: !!client,
+    queryFn: () => client!.getForgottenFavorites(),
+  });
+}

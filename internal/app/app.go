@@ -19,6 +19,7 @@ import (
 	"github.com/immerle/immerle/internal/api/docs"
 	"github.com/immerle/immerle/internal/api/immerle"
 	"github.com/immerle/immerle/internal/api/subsonic"
+	"github.com/immerle/immerle/internal/autoplaylists"
 	"github.com/immerle/immerle/internal/charts"
 	"github.com/immerle/immerle/internal/config"
 	"github.com/immerle/immerle/internal/core"
@@ -39,22 +40,23 @@ import (
 
 // App holds the assembled application.
 type App struct {
-	cfg        config.Config
-	logger     *slog.Logger
-	database   *db.DB
-	store      *persistence.Store
-	scanner    *scanner.Scanner
-	watcher    *scanner.Watcher
-	onDemand   *core.CatalogService
-	federation *federation.Service
-	outbox     *outbox.Worker
-	enricher   *core.ArtistImageEnricher
-	evictor    *core.Evictor
-	charts     *charts.Service
-	logPruner  *core.LogPruner
-	settings   *core.SettingsService
-	imports    *importer.Service
-	handler    http.Handler
+	cfg           config.Config
+	logger        *slog.Logger
+	database      *db.DB
+	store         *persistence.Store
+	scanner       *scanner.Scanner
+	watcher       *scanner.Watcher
+	onDemand      *core.CatalogService
+	federation    *federation.Service
+	outbox        *outbox.Worker
+	enricher      *core.ArtistImageEnricher
+	evictor       *core.Evictor
+	charts        *charts.Service
+	autoplaylists *autoplaylists.Service
+	logPruner     *core.LogPruner
+	settings      *core.SettingsService
+	imports       *importer.Service
+	handler       http.Handler
 
 	scanPaths []string
 	// watch is the runtime "watch" setting captured at boot (changing it needs a
@@ -385,6 +387,12 @@ func New(cfg config.Config) (*App, error) {
 	chartsSvc := charts.New(store.Playlists, "", nil, logger)
 	chartsSvc.SetOwnerResolver(func(ctx context.Context) (string, error) { return firstAdmin(ctx, store.Users) })
 
+	// Genre and decade playlists ("Rock", "Rap", "1990s"...), auto-generated
+	// from the local catalog and refreshed daily. Same materializer mechanism
+	// and owner resolution as chartsSvc above.
+	autoplaylistsSvc := autoplaylists.New(store.Catalog, store.Genres, store.Playlists, logger)
+	autoplaylistsSvc.SetOwnerResolver(func(ctx context.Context) (string, error) { return firstAdmin(ctx, store.Users) })
+
 	// Daily retention sweep over persisted diagnostic logs. The window is read
 	// live from the runtime settings; register any future log table here.
 	logPruner := core.NewLogPruner(settingsSvc.LogRetention, 24*time.Hour, logger, store.ProviderLogs)
@@ -426,6 +434,7 @@ func New(cfg config.Config) (*App, error) {
 		Federation:     fed,
 		Cleanup:        evictor,
 		Charts:         chartsSvc,
+		AutoPlaylists:  autoplaylistsSvc,
 		Providers:      providerMgr,
 		Settings:       settingsSvc,
 		SmartPlaylists: store.SmartPlaylists,
@@ -481,21 +490,22 @@ func New(cfg config.Config) (*App, error) {
 	mux.NotFound(webui.Handler().ServeHTTP)
 
 	return &App{
-		cfg:        cfg,
-		logger:     logger,
-		database:   database,
-		store:      store,
-		scanner:    scan,
-		watcher:    scanner.NewWatcher(scan, scanPaths, settingsSvc.ScanInterval, logger),
-		onDemand:   onDemand,
-		federation: fed,
-		outbox:     outboxWorker,
-		enricher:   enricher,
-		evictor:    evictor,
-		charts:     chartsSvc,
-		logPruner:  logPruner,
-		settings:   settingsSvc,
-		imports:    importSvc,
+		cfg:           cfg,
+		logger:        logger,
+		database:      database,
+		store:         store,
+		scanner:       scan,
+		watcher:       scanner.NewWatcher(scan, scanPaths, settingsSvc.ScanInterval, logger),
+		onDemand:      onDemand,
+		federation:    fed,
+		outbox:        outboxWorker,
+		enricher:      enricher,
+		evictor:       evictor,
+		charts:        chartsSvc,
+		autoplaylists: autoplaylistsSvc,
+		logPruner:     logPruner,
+		settings:      settingsSvc,
+		imports:       importSvc,
 		// Panic recovery outermost (so it catches every downstream handler), then
 		// security headers (apply to every response), then CORS (answers preflight
 		// before routing), then logging. Origins are read live from the runtime
@@ -555,6 +565,9 @@ func (a *App) Run(ctx context.Context) error {
 	}
 	if a.charts != nil {
 		a.spawn(func() { a.charts.Run(ctx) })
+	}
+	if a.autoplaylists != nil {
+		a.spawn(func() { a.autoplaylists.Run(ctx) })
 	}
 	if a.logPruner != nil {
 		a.spawn(func() { a.logPruner.Run(ctx) })

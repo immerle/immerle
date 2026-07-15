@@ -70,6 +70,8 @@ type Deps struct {
 	Cleanup CleanupController
 	// Charts controls the curated chart-playlist sync (admin API).
 	Charts ChartsController
+	// AutoPlaylists controls the genre/decade auto-playlist sync (admin API).
+	AutoPlaylists AutoPlaylistsController
 	// Providers manages runtime-configurable on-demand providers (admin API).
 	// nil when on-demand is disabled; handlers guard with a nil check.
 	Providers *core.ProviderManager
@@ -109,6 +111,12 @@ type CleanupController interface {
 // ChartsController runs an immediate curated chart-playlist sync, regardless
 // of the weekly schedule. Implemented by *charts.Service.
 type ChartsController interface {
+	SyncNow(ctx context.Context) (int, error)
+}
+
+// AutoPlaylistsController runs an immediate genre/decade auto-playlist sync,
+// regardless of the daily schedule. Implemented by *autoplaylists.Service.
+type AutoPlaylistsController interface {
 	SyncNow(ctx context.Context) (int, error)
 }
 
@@ -185,6 +193,8 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Get("/me", h.handleAccount)
 			r.Patch("/me", h.handleAccountUpdate)
 			r.Get("/me/favorites", h.handleFavorites)
+			r.Get("/me/top-tracks", h.handleTopTracks)
+			r.Get("/me/forgotten-favorites", h.handleForgottenFavorites)
 			r.Put("/me/password", h.handleChangePassword)
 			r.Get("/users/{username}", h.handleProfile)
 
@@ -360,6 +370,7 @@ func (h *Handler) Register(mux chi.Router) {
 
 			// Admin: curated chart-playlist sync (force-run, otherwise weekly).
 			r.Post("/admin/charts/sync", h.handleChartsSync)
+			r.Post("/admin/autoplaylists/sync", h.handleAutoPlaylistsSync)
 
 			// Admin: runtime-configurable on-demand providers.
 			r.Get("/admin/providers", h.handleProviders)

@@ -314,6 +314,27 @@ export class ImmerleClient {
   }
 
   /**
+   * The caller's most-played tracks in a window: "month" (the current
+   * calendar month, default — "Top of your month") or "30d" (a rolling last
+   * 30 days — "On Repeat").
+   */
+  async getTopTracks(window?: 'month' | '30d', signal?: AbortSignal): Promise<Song[]> {
+    const { data, error } = await this.api.GET('/me/top-tracks', { params: { query: { window } }, signal });
+    if (error) throw apiErr(error, 'discovery.topTracks');
+    return (data.songs ?? []).map(toSong);
+  }
+
+  /**
+   * The caller's starred tracks not played in at least 90 days, or never
+   * played — favorites worth resurfacing.
+   */
+  async getForgottenFavorites(signal?: AbortSignal): Promise<Song[]> {
+    const { data, error } = await this.api.GET('/me/forgotten-favorites', { signal });
+    if (error) throw apiErr(error, 'discovery.forgottenFavorites');
+    return (data.songs ?? []).map(toSong);
+  }
+
+  /**
    * Search artists, albums, songs and public playlists (merging
    * remote-provider results), as one list ranked by relevance to the query.
    * `type` scopes the search server-side to just that result type (omit for all).

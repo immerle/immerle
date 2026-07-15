@@ -1,0 +1,80 @@
+import { View, Text } from 'react-native';
+import { Stack } from 'expo-router';
+import { useTopTracks } from '../src/query/library';
+import { TrackList } from '../src/components/TrackList';
+import { OnRepeatCover } from '../src/components/OnRepeatCover';
+import { PlayButton } from '../src/components/PlayButton';
+import { EmptyState, ErrorState, IconButton, Loading } from '../src/components/ui';
+import { usePlayer } from '../src/audio/store';
+import { Song } from '../src/api/subsonic/types';
+import { formatDuration } from '../src/utils/format';
+import { useColors } from '../src/theme/colors';
+import { useT } from '../src/i18n/store';
+
+function shuffleArray(songs: Song[]): Song[] {
+  const a = [...songs];
+  for (let i = a.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/**
+ * "On Repeat" — a virtual playlist of the caller's most-played tracks over a
+ * rolling last 30 days, computed live from scrobbles. Read-only: play /
+ * shuffle, no CRUD.
+ */
+export default function OnRepeat() {
+  const t = useT();
+  const colors = useColors();
+  const q = useTopTracks('30d');
+  const playSongs = usePlayer((s) => s.playSongs);
+
+  const songs = q.data ?? [];
+  const totalDuration = songs.reduce((n, s) => n + (s.duration ?? 0), 0);
+
+  const Header = (
+    <View className="w-full max-w-2xl items-center gap-3 self-center px-4 pb-2 pt-2">
+      <OnRepeatCover size={200} rounded={16} />
+      <Text className="text-2xl font-bold tracking-tight text-foreground">{t('media.onRepeat.title')}</Text>
+      <Text className="text-xs text-muted">
+        {t('media.onRepeat.trackCount', { count: songs.length })} · {formatDuration(totalDuration)}
+      </Text>
+      <View className="w-full flex-row items-center justify-between py-2">
+        <IconButton
+          name="shuffle"
+          size={26}
+          color={colors.muted}
+          onPress={() => songs.length && playSongs(shuffleArray(songs), 0)}
+          accessibilityLabel={t('media.onRepeat.shuffle')}
+        />
+        <PlayButton
+          onPress={() => songs.length && playSongs(songs, 0)}
+          size={56}
+          accessibilityLabel={t('media.onRepeat.play')}
+        />
+      </View>
+    </View>
+  );
+
+  return (
+    <>
+      <Stack.Screen options={{ title: t('media.onRepeat.title') }} />
+      <View className="flex-1 bg-background">
+        {q.isLoading ? (
+          <Loading />
+        ) : q.isError ? (
+          <ErrorState message={t('media.onRepeat.loadError')} onRetry={q.refetch} />
+        ) : songs.length === 0 ? (
+          <View className="flex-1">
+            {Header}
+            <EmptyState icon="repeat-outline" title={t('media.onRepeat.empty')} subtitle={t('media.onRepeat.emptySubtitle')} />
+          </View>
+        ) : (
+          <TrackList songs={songs} header={Header} refreshing={q.isRefetching} onRefresh={q.refetch} />
+        )}
+      </View>
+    </>
+  );
+}

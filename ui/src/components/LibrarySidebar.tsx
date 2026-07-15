@@ -7,6 +7,9 @@ import { PlaylistCover } from './PlaylistCover';
 import { LikedCover } from './LikedCover';
 import { LocalCover } from './LocalCover';
 import { HallOfFameCover } from './HallOfFameCover';
+import { TopMonthCover } from './TopMonthCover';
+import { OnRepeatCover } from './OnRepeatCover';
+import { ForgottenFavoritesCover } from './ForgottenFavoritesCover';
 import { Ionicon } from './Ionicon';
 import { IconButton, Field, Button } from './ui';
 import { useUI } from '../stores/ui';
@@ -72,6 +75,9 @@ export function LibrarySidebar() {
   const localMatches = 'musiques locales'.includes(q);
   const radioMatches = canRadio && (t('radio.title').toLowerCase().includes(q) || 'radio'.includes(q));
   const hallOfFameMatches = canHallOfFame && t('components.sidebar.hallOfFame').toLowerCase().includes(q);
+  const topMonthMatches = t('media.topMonth.title').toLowerCase().includes(q);
+  const onRepeatMatches = t('media.onRepeat.title').toLowerCase().includes(q);
+  const forgottenFavoritesMatches = t('media.forgottenFavorites.title').toLowerCase().includes(q);
 
   return (
     <View style={{ width }} className="border-r border-border bg-surface">
@@ -205,6 +211,36 @@ export function LibrarySidebar() {
             title={t('components.sidebar.hallOfFame')}
             subtitle={t('components.sidebar.playlist')}
             onPress={() => router.push('/halloffame' as never)}
+          />
+        ) : null}
+        {topMonthMatches ? (
+          <Row
+            active={pathname === '/top-month'}
+            collapsed={collapsed}
+            cover={<TopMonthCover size={48} rounded={6} />}
+            title={t('media.topMonth.title')}
+            subtitle={t('components.sidebar.playlist')}
+            onPress={() => router.push('/top-month' as never)}
+          />
+        ) : null}
+        {onRepeatMatches ? (
+          <Row
+            active={pathname === '/on-repeat'}
+            collapsed={collapsed}
+            cover={<OnRepeatCover size={48} rounded={6} />}
+            title={t('media.onRepeat.title')}
+            subtitle={t('components.sidebar.playlist')}
+            onPress={() => router.push('/on-repeat' as never)}
+          />
+        ) : null}
+        {forgottenFavoritesMatches ? (
+          <Row
+            active={pathname === '/forgotten-favorites'}
+            collapsed={collapsed}
+            cover={<ForgottenFavoritesCover size={48} rounded={6} />}
+            title={t('media.forgottenFavorites.title')}
+            subtitle={t('components.sidebar.playlist')}
+            onPress={() => router.push('/forgotten-favorites' as never)}
           />
         ) : null}
         {filtered.map((p: Playlist) => (
