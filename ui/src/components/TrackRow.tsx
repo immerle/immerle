@@ -22,6 +22,8 @@ interface TrackRowProps {
   /** 1-based rank shown as a colored badge to the left of the cover (used by
    * Hall of Fame) — independent of showArtwork/number, so both can render. */
   rank?: number;
+  /** Prefixed to the artist subtitle (e.g. "Song" in a mixed-type search result list). */
+  typeLabel?: string;
   onPress: () => void;
   onMore?: () => void;
 }
@@ -36,6 +38,7 @@ export const TrackRow = memo(function TrackRow({
   showArtwork = true,
   number,
   rank,
+  typeLabel,
   onPress,
   onMore,
 }: TrackRowProps) {
@@ -71,6 +74,7 @@ export const TrackRow = memo(function TrackRow({
           {song.title}
         </Text>
         <Text numberOfLines={1} className="text-sm text-muted">
+          {typeLabel ? `${typeLabel} · ` : ''}
           {song.artist ?? 'Artiste inconnu'}
         </Text>
         {song.comment ? <CommentQuote comment={song.comment} className="text-xs italic text-muted" /> : null}
