@@ -13,10 +13,10 @@ func TestPlayQueueAndNowPlaying(t *testing.T) {
 
 	// Locate a track id.
 	var search searchView
-	if st := getJSON(t, srv, token, "/search?q=So+What", &search); st != http.StatusOK || len(search.Songs) == 0 {
-		t.Fatalf("search: status %d, songs %d", st, len(search.Songs))
+	if st := getJSON(t, srv, token, "/search?q=So+What", &search); st != http.StatusOK || len(search.Songs()) == 0 {
+		t.Fatalf("search: status %d, songs %d", st, len(search.Songs()))
 	}
-	id := search.Songs[0].ID
+	id := search.Songs()[0].ID
 
 	// No queue saved yet → empty queue.
 	var empty playQueueView
@@ -124,10 +124,10 @@ func TestPlayQueueSSEKeepsClientsSynced(t *testing.T) {
 	srv, token, _ := newBrowseEnv(t)
 
 	var search searchView
-	if st := getJSON(t, srv, token, "/search?q=So+What", &search); st != http.StatusOK || len(search.Songs) == 0 {
-		t.Fatalf("search: status %d, songs %d", st, len(search.Songs))
+	if st := getJSON(t, srv, token, "/search?q=So+What", &search); st != http.StatusOK || len(search.Songs()) == 0 {
+		t.Fatalf("search: status %d, songs %d", st, len(search.Songs()))
 	}
-	id := search.Songs[0].ID
+	id := search.Songs()[0].ID
 
 	resp := do(t, srv, http.MethodGet, "/play-queue/events", token, nil)
 	defer resp.Body.Close()
@@ -165,10 +165,10 @@ func TestPlayQueueCommandDoesNotMutateSavedState(t *testing.T) {
 	srv, token, _ := newBrowseEnv(t)
 
 	var search searchView
-	if st := getJSON(t, srv, token, "/search?q=So+What", &search); st != http.StatusOK || len(search.Songs) == 0 {
-		t.Fatalf("search: status %d, songs %d", st, len(search.Songs))
+	if st := getJSON(t, srv, token, "/search?q=So+What", &search); st != http.StatusOK || len(search.Songs()) == 0 {
+		t.Fatalf("search: status %d, songs %d", st, len(search.Songs()))
 	}
-	id := search.Songs[0].ID
+	id := search.Songs()[0].ID
 
 	if st := doStatus(t, srv, http.MethodPut, "/play-queue", token, map[string]any{
 		"ids": []string{id}, "current": id, "position": 4200, "playing": true,
@@ -258,10 +258,10 @@ func TestPlayQueueRemoteTrackFallsBackToSentMetadata(t *testing.T) {
 	srv, token, _ := newBrowseEnv(t)
 
 	var search searchView
-	if st := getJSON(t, srv, token, "/search?q=So+What", &search); st != http.StatusOK || len(search.Songs) == 0 {
-		t.Fatalf("search: status %d, songs %d", st, len(search.Songs))
+	if st := getJSON(t, srv, token, "/search?q=So+What", &search); st != http.StatusOK || len(search.Songs()) == 0 {
+		t.Fatalf("search: status %d, songs %d", st, len(search.Songs()))
 	}
-	localID := search.Songs[0].ID
+	localID := search.Songs()[0].ID
 	remoteID := "remote:deezer:62847142"
 
 	if st := doStatus(t, srv, http.MethodPut, "/play-queue", token, map[string]any{

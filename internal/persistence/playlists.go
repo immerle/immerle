@@ -218,6 +218,32 @@ func (r *PlaylistRepo) ListPublic(ctx context.Context, excludeUserID string) ([]
 	return out, r.attachCoverArts(ctx, out)
 }
 
+// SearchPublic returns public playlists (same visibility rule as ListPublic)
+// whose name matches q, for the global search — capped at limit, ordered by
+// name (callers re-rank by relevance over the fetched candidates).
+func (r *PlaylistRepo) SearchPublic(ctx context.Context, excludeUserID, q string, limit int) ([]models.Playlist, error) {
+	like := "%" + strings.ToLower(q) + "%"
+	rows, err := r.query(ctx, playlistSelect+`
+		WHERE p.public=1 AND (p.federated=1 OR p.owner_id<>?) AND LOWER(p.name) LIKE ?
+		ORDER BY p.name LIMIT ?`, excludeUserID, like, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []models.Playlist
+	for rows.Next() {
+		p, err := scanPlaylist(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, p)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return out, r.attachCoverArts(ctx, out)
+}
+
 // ListPublicByOwner returns the public, non-federated playlists owned by a given
 // user (for their public profile).
 func (r *PlaylistRepo) ListPublicByOwner(ctx context.Context, ownerID string) ([]models.Playlist, error) {

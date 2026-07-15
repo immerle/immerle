@@ -19,10 +19,10 @@ func TestFavoriteRatingScrobble(t *testing.T) {
 
 	// Locate a track id via search.
 	var search searchView
-	if st := getJSON(t, srv, token, "/search?q=So+What", &search); st != http.StatusOK || len(search.Songs) == 0 {
-		t.Fatalf("search: status %d, songs %d", st, len(search.Songs))
+	if st := getJSON(t, srv, token, "/search?q=So+What", &search); st != http.StatusOK || len(search.Songs()) == 0 {
+		t.Fatalf("search: status %d, songs %d", st, len(search.Songs()))
 	}
-	id := search.Songs[0].ID
+	id := search.Songs()[0].ID
 
 	ann := func() models.Annotation {
 		a, _ := store.Annotations.Get(ctx, admin.ID, models.ItemTrack, id)

@@ -10,10 +10,10 @@ func TestFavorites(t *testing.T) {
 
 	// Find a song and its album, star both, plus an artist.
 	var search searchView
-	if st := getJSON(t, srv, token, "/search?q=So+What", &search); st != http.StatusOK || len(search.Songs) == 0 {
+	if st := getJSON(t, srv, token, "/search?q=So+What", &search); st != http.StatusOK || len(search.Songs()) == 0 {
 		t.Fatalf("search: status %d", st)
 	}
-	song := search.Songs[0]
+	song := search.Songs()[0]
 
 	if st := doStatus(t, srv, http.MethodPut, "/songs/"+song.ID+"/star", token, nil); st != http.StatusNoContent {
 		t.Fatalf("star song: status %d", st)

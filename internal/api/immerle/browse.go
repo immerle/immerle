@@ -3,6 +3,7 @@ package immerle
 import (
 	"errors"
 	"net/http"
+	"sort"
 	"strconv"
 	"time"
 
@@ -379,17 +380,40 @@ func (h *Handler) handleGetGenres(w http.ResponseWriter, r *http.Request) {
 	writeResource(w, http.StatusOK, map[string]any{"genres": out})
 }
 
-// searchView is the result of a catalog search.
-type searchView struct {
-	Artists []artistView `json:"artists"`
-	Albums  []albumView  `json:"albums"`
-	Songs   []songView   `json:"songs"`
+// searchHitView is one entry in a search result: exactly one of Artist/Album/
+// Song/Playlist is set, per Type.
+type searchHitView struct {
+	Type     string        `json:"type"` // artist|album|song|playlist
+	Artist   *artistView   `json:"artist,omitempty"`
+	Album    *albumView    `json:"album,omitempty"`
+	Song     *songView     `json:"song,omitempty"`
+	Playlist *playlistView `json:"playlist,omitempty"`
 }
 
-// handleSearch searches the catalog (merging remote-provider results).
+// searchView is the result of a catalog search: every match — artists,
+// albums, songs and public playlists alike — in one list, ranked by
+// relevance to the query rather than grouped by type.
+type searchView struct {
+	Results []searchHitView `json:"results"`
+}
+
+// Songs extracts just the song hits, in ranked order — a convenience for
+// callers (mainly tests) that only want the flat song list.
+func (v searchView) Songs() []songView {
+	var out []songView
+	for _, h := range v.Results {
+		if h.Song != nil {
+			out = append(out, *h.Song)
+		}
+	}
+	return out
+}
+
+// handleSearch searches the catalog and public playlists (merging
+// remote-provider results), ranked together by relevance to the query.
 //
 // @Summary      Search the catalog
-// @Description  Searches artists, albums and songs (merging remote-provider results when enabled).
+// @Description  Searches artists, albums, songs and public playlists (merging remote-provider results when enabled), returned as one list ranked by relevance to the query.
 // @Tags         catalog
 // @Security     BearerAuth
 // @Produce      json
@@ -401,25 +425,45 @@ type searchView struct {
 // @Failure      401  {object}  errorResponse
 // @Router       /search [get]
 func (h *Handler) handleSearch(w http.ResponseWriter, r *http.Request) {
-	res, err := h.library.Search(r.Context(), userFrom(r.Context()).ID, r.URL.Query().Get("q"),
+	q := r.URL.Query().Get("q")
+	res, err := h.library.Search(r.Context(), userFrom(r.Context()).ID, q,
 		intQuery(r, "artistCount", 20), intQuery(r, "albumCount", 20), intQuery(r, "songCount", 20))
 	if err != nil {
 		writeServiceError(w, err)
 		return
 	}
-	out := searchView{
-		Artists: make([]artistView, 0, len(res.Artists)),
-		Albums:  make([]albumView, 0, len(res.Albums)),
-		Songs:   make([]songView, 0, len(res.Tracks)),
+
+	// name is kept alongside each hit purely to rank the merged list; it's not
+	// part of the response (the view already carries the display name).
+	type rankedHit struct {
+		name string
+		view searchHitView
 	}
+	hits := make([]rankedHit, 0, len(res.Artists)+len(res.Albums)+len(res.Tracks)+len(res.Playlists))
 	for _, a := range res.Artists {
-		out.Artists = append(out.Artists, toArtistView(a, nil, nil))
+		v := toArtistView(a, nil, nil)
+		hits = append(hits, rankedHit{a.Name, searchHitView{Type: "artist", Artist: &v}})
 	}
 	for _, a := range res.Albums {
-		out.Albums = append(out.Albums, toAlbumView(a, annPtr(res.AlbumAnnotations, a.ID), nil))
+		v := toAlbumView(a, annPtr(res.AlbumAnnotations, a.ID), nil)
+		hits = append(hits, rankedHit{a.Name, searchHitView{Type: "album", Album: &v}})
 	}
 	for _, t := range res.Tracks {
-		out.Songs = append(out.Songs, toSongViewAnnotated(t, annPtr(res.TrackAnnotations, t.ID)))
+		v := toSongViewAnnotated(t, annPtr(res.TrackAnnotations, t.ID))
+		hits = append(hits, rankedHit{t.Title, searchHitView{Type: "song", Song: &v}})
+	}
+	for _, p := range res.Playlists {
+		v := toPlaylistView(p, nil)
+		hits = append(hits, rankedHit{p.Name, searchHitView{Type: "playlist", Playlist: &v}})
+	}
+
+	sort.SliceStable(hits, func(i, j int) bool {
+		return core.Relevance(q, hits[i].name) < core.Relevance(q, hits[j].name)
+	})
+
+	out := searchView{Results: make([]searchHitView, len(hits))}
+	for i, hit := range hits {
+		out.Results[i] = hit.view
 	}
 	writeResource(w, http.StatusOK, out)
 }

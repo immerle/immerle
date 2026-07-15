@@ -8,11 +8,11 @@ import {
   PlaylistWithSongs,
   PlayQueueCommand,
   PlayQueueSnapshot,
-  SearchResult3,
   Song,
   SubsonicUser,
 } from '../subsonic/types';
 import {
+  SearchHit,
   Starred,
   toAlbum,
   toAlbumWithSongs,
@@ -313,8 +313,11 @@ export class ImmerleClient {
     return toStarred(data);
   }
 
-  /** Search artists, albums and songs (merging remote-provider results). */
-  async search(query: string, signal?: AbortSignal): Promise<SearchResult3> {
+  /**
+   * Search artists, albums, songs and public playlists (merging
+   * remote-provider results), as one list ranked by relevance to the query.
+   */
+  async search(query: string, signal?: AbortSignal): Promise<SearchHit[]> {
     const { data, error } = await this.api.GET('/search', { params: { query: { q: query } }, signal });
     if (error) throw apiErr(error, 'search');
     return toSearchResult(data);

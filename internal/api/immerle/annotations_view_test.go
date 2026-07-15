@@ -9,10 +9,10 @@ func TestTrackAnnotationsSurfaced(t *testing.T) {
 	srv, token, _ := newBrowseEnv(t)
 
 	var search searchView
-	if st := getJSON(t, srv, token, "/search?q=So+What", &search); st != http.StatusOK || len(search.Songs) == 0 {
-		t.Fatalf("search: status %d, songs %d", st, len(search.Songs))
+	if st := getJSON(t, srv, token, "/search?q=So+What", &search); st != http.StatusOK || len(search.Songs()) == 0 {
+		t.Fatalf("search: status %d, songs %d", st, len(search.Songs()))
 	}
-	song := search.Songs[0]
+	song := search.Songs()[0]
 
 	// Star, rate and scrobble the track.
 	if st := doStatus(t, srv, http.MethodPut, "/songs/"+song.ID+"/star", token, nil); st != http.StatusNoContent {

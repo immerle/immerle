@@ -22,31 +22,36 @@ const remoteFetchTimeout = 12 * time.Second
 type LibraryService struct {
 	catalog     *persistence.CatalogRepo
 	annotations *persistence.AnnotationRepo
+	playlists   *persistence.PlaylistRepo
 	// onDemand is optional (remote provider integration); may be nil when disabled.
 	onDemand *CatalogService
 }
 
 // NewLibraryService wires the library application service. onDemand may be nil.
-func NewLibraryService(catalog *persistence.CatalogRepo, annotations *persistence.AnnotationRepo, onDemand *CatalogService) *LibraryService {
-	return &LibraryService{catalog: catalog, annotations: annotations, onDemand: onDemand}
+func NewLibraryService(catalog *persistence.CatalogRepo, annotations *persistence.AnnotationRepo, playlists *persistence.PlaylistRepo, onDemand *CatalogService) *LibraryService {
+	return &LibraryService{catalog: catalog, annotations: annotations, playlists: playlists, onDemand: onDemand}
 }
 
 // Final search result caps applied to the merged local+remote lists after
 // re-sorting by relevance.
 const (
-	maxSearchArtists = 4
-	maxSearchAlbums  = 10
-	maxSearchSongs   = 10
+	maxSearchArtists   = 4
+	maxSearchAlbums    = 10
+	maxSearchSongs     = 10
+	maxSearchPlaylists = 10
 )
 
 // SearchResults is a presentation-neutral search result. The annotation maps
 // carry per-user state (star/rating/play count) keyed by item id; presentation
 // layers attach them when serializing. Remote-provider results have no
-// annotations, so a missing key simply means "no per-user state".
+// annotations, so a missing key simply means "no per-user state". Playlists
+// are always public ones (private playlists aren't searchable) and have no
+// annotations of their own.
 type SearchResults struct {
-	Artists []models.Artist
-	Albums  []models.Album
-	Tracks  []models.Track
+	Artists   []models.Artist
+	Albums    []models.Album
+	Tracks    []models.Track
+	Playlists []models.Playlist
 
 	AlbumAnnotations map[string]models.Annotation
 	TrackAnnotations map[string]models.Annotation
@@ -60,6 +65,10 @@ func (s *LibraryService) Search(ctx context.Context, userID, query string, artis
 	query = strings.Trim(strings.TrimSpace(query), "\"")
 
 	artists, albums, tracks, err := s.catalog.Search(ctx, query, artistCount, albumCount, songCount)
+	if err != nil {
+		return SearchResults{}, err
+	}
+	playlists, err := s.playlists.SearchPublic(ctx, userID, query, maxSearchPlaylists)
 	if err != nil {
 		return SearchResults{}, err
 	}
@@ -110,28 +119,32 @@ func (s *LibraryService) Search(ctx context.Context, userID, query string, artis
 	}
 
 	sort.SliceStable(artists, func(i, j int) bool {
-		return relevance(query, artists[i].Name) < relevance(query, artists[j].Name)
+		return Relevance(query, artists[i].Name) < Relevance(query, artists[j].Name)
 	})
 	sort.SliceStable(albums, func(i, j int) bool {
-		return relevance(query, albums[i].Name) < relevance(query, albums[j].Name)
+		return Relevance(query, albums[i].Name) < Relevance(query, albums[j].Name)
 	})
 	sort.SliceStable(tracks, func(i, j int) bool {
-		return relevance(query, tracks[i].Title) < relevance(query, tracks[j].Title)
+		return Relevance(query, tracks[i].Title) < Relevance(query, tracks[j].Title)
+	})
+	sort.SliceStable(playlists, func(i, j int) bool {
+		return Relevance(query, playlists[i].Name) < Relevance(query, playlists[j].Name)
 	})
 
 	return SearchResults{
 		Artists:          capSlice(artists, maxSearchArtists),
 		Albums:           capSlice(albums, maxSearchAlbums),
 		Tracks:           capSlice(tracks, maxSearchSongs),
+		Playlists:        capSlice(playlists, maxSearchPlaylists),
 		AlbumAnnotations: albumAnn,
 		TrackAnnotations: trackAnn,
 	}, nil
 }
 
-// relevance scores how well s matches the query for search ordering: exact (0),
+// Relevance scores how well s matches the query for search ordering: exact (0),
 // prefix (1), substring (2), otherwise (3). Lower is better; ties keep input
 // order (stable sort).
-func relevance(query, s string) int {
+func Relevance(query, s string) int {
 	q, x := strings.ToLower(strings.TrimSpace(query)), strings.ToLower(s)
 	switch {
 	case q == "" || x == q:
