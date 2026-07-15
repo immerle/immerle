@@ -13,6 +13,16 @@ export function usePlaylists() {
   });
 }
 
+/** "Made to measure" playlists (Top du mois/On Repeat/Favoris oubliés) for Home. */
+export function useCustomPlaylists() {
+  const client = useAuth((s) => s.client);
+  return useQuery({
+    queryKey: qk.customPlaylists,
+    enabled: !!client,
+    queryFn: () => client!.getCustomPlaylists(),
+  });
+}
+
 export function usePlaylist(id: string) {
   const client = useAuth((s) => s.client);
   return useQuery({

@@ -118,12 +118,11 @@ func TestSyncNowMaterializesGenreAndDecadePlaylists(t *testing.T) {
 	}
 }
 
-// TestSyncNowMaterializesPersonalListsAsPrivateSubscribedPlaylists covers the
-// personal lists: real playlists (not a live-computed view), owned by and
-// auto-subscribed for their user (so they show up in that user's own
-// library — see PlaylistRepo.ListVisible), and private (not searchable/visible
-// to anyone else).
-func TestSyncNowMaterializesPersonalListsAsPrivateSubscribedPlaylists(t *testing.T) {
+// TestSyncNowMaterializesPersonalListsAsPrivatePlaylists covers the personal
+// lists: real playlists (not a live-computed view), owned by their user,
+// private (not searchable/visible to anyone else), and deliberately not
+// subscribed — found via GET /me/custom-playlists, not the owner's library.
+func TestSyncNowMaterializesPersonalListsAsPrivatePlaylists(t *testing.T) {
 	store := testutil.NewStore(t)
 	ctx := context.Background()
 	now := time.Now()
@@ -164,7 +163,7 @@ func TestSyncNowMaterializesPersonalListsAsPrivateSubscribedPlaylists(t *testing
 		t.Fatalf("SyncNow: %v", err)
 	}
 
-	topMonth, err := store.Playlists.FindFederated(ctx, sourceTopMonth, listener.ID)
+	topMonth, err := store.Playlists.FindFederated(ctx, SourceTopMonth, listener.ID)
 	if err != nil {
 		t.Fatalf("top-month playlist not created for listener: %v", err)
 	}
@@ -185,23 +184,21 @@ func TestSyncNowMaterializesPersonalListsAsPrivateSubscribedPlaylists(t *testing
 		t.Fatalf("expected just the track played this month, got %+v", tracks)
 	}
 
-	// Auto-subscribed: shows up in the listener's own library.
+	// Deliberately NOT subscribed: it must not depend on the subscribe/"like"
+	// mechanism (unsubscribing must never lose access to your own personal
+	// list — see GET /me/custom-playlists, which looks it up directly instead).
 	visible, err := store.Playlists.ListVisible(ctx, listener.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
-	found := false
 	for _, v := range visible {
 		if v.ID == topMonth.ID {
-			found = true
+			t.Fatalf("personal list must not rely on a subscription to be found, got it in ListVisible: %+v", v)
 		}
-	}
-	if !found {
-		t.Fatalf("expected the personal list to appear in the listener's own library, got %+v", visible)
 	}
 
 	// Forgotten favorites: the never-played starred track.
-	forgottenList, err := store.Playlists.FindFederated(ctx, sourceForgotten, listener.ID)
+	forgottenList, err := store.Playlists.FindFederated(ctx, SourceForgotten, listener.ID)
 	if err != nil {
 		t.Fatalf("forgotten-favorites playlist not created: %v", err)
 	}
@@ -214,7 +211,7 @@ func TestSyncNowMaterializesPersonalListsAsPrivateSubscribedPlaylists(t *testing
 	}
 
 	// The idle user has no listening history at all: no personal lists.
-	if _, err := store.Playlists.FindFederated(ctx, sourceTopMonth, idle.ID); err == nil {
+	if _, err := store.Playlists.FindFederated(ctx, SourceTopMonth, idle.ID); err == nil {
 		t.Fatal("an inactive user must not get a top-month playlist")
 	}
 }

@@ -2,6 +2,8 @@ package immerle
 
 import (
 	"net/http"
+
+	"github.com/immerle/immerle/internal/autoplaylists"
 )
 
 // handlePublicPlaylists lists public playlists the caller can subscribe to.
@@ -38,6 +40,38 @@ func (h *Handler) handlePublicPlaylists(w http.ResponseWriter, r *http.Request) 
 		})
 	}
 	writeResource(w, http.StatusOK, out)
+}
+
+// customPlaylistSources are looked up directly by (kind, callerID), in
+// display order.
+var customPlaylistSources = []string{autoplaylists.SourceTopMonth, autoplaylists.SourceOnRepeat, autoplaylists.SourceForgotten}
+
+// handleCustomPlaylists returns the caller's auto-generated personal
+// playlists ("Top du mois", "On Repeat", "Favoris oubliés") that currently
+// have at least one track. Looked up directly by (kind, callerID) — not
+// through ListVisible/subscriptions — so unsubscribing/unliking one (easy to
+// do by mistake, since a federated playlist hides normal owner controls)
+// never loses access to it.
+//
+// @Summary      Custom auto-generated playlists
+// @Description  Returns the caller's personal auto-generated playlists (top of the month, on repeat, forgotten favorites) that currently have at least one track.
+// @Tags         playlists
+// @Security     BearerAuth
+// @Produce      json
+// @Success      200  {object}  map[string][]playlistView
+// @Failure      401  {object}  errorResponse
+// @Router       /me/custom-playlists [get]
+func (h *Handler) handleCustomPlaylists(w http.ResponseWriter, r *http.Request) {
+	userID := userFrom(r.Context()).ID
+	out := make([]playlistView, 0, len(customPlaylistSources))
+	for _, source := range customPlaylistSources {
+		p, err := h.Playlists.FindFederated(r.Context(), source, userID)
+		if err != nil || p.SongCount == 0 {
+			continue
+		}
+		out = append(out, toPlaylistView(p, nil))
+	}
+	writeResource(w, http.StatusOK, map[string]any{"playlists": out})
 }
 
 // handleSubscribePlaylist subscribes the caller to a public playlist.

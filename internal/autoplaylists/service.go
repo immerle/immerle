@@ -6,9 +6,12 @@
 //   - Genre and decade playlists ("Rock", "Rap", "1990s"...): shared, public,
 //     one per genre/decade with enough tracks.
 //   - Personal listening lists ("Top du mois", "On Repeat", "Favoris
-//     oubliés"): one each per user, private, auto-subscribed so they show up
-//     in that user's own library like any other playlist — real, searchable
-//     playlists rather than a bespoke live-computed view.
+//     oubliés"): one each per user, private, real playlist rows rather than a
+//     bespoke live-computed view. They're intentionally not subscribed into
+//     the owner's library (see playlistSpec) — a user unsubscribing/unliking
+//     one (easy to do by mistake, since Federated hides normal owner
+//     controls) must not lose access to it. GET /me/custom-playlists is the
+//     dedicated lookup, independent of subscriptions.
 package autoplaylists
 
 import (
@@ -28,13 +31,16 @@ import (
 // Source instance ids distinguish each kind in the dedupe key (FindFederated),
 // so e.g. a genre and a decade never collide even if a genre happened to be
 // named "1990s". Personal lists key their per-user row by (kind, userID)
-// instead of (kind, name).
+// instead of (kind, name); the personal ones are exported so
+// GET /me/custom-playlists (internal/api/immerle) can look each one up
+// directly by (kind, callerID) without going through ListVisible/subscriptions.
 const (
-	sourceGenre     = "genre-mix"
-	sourceDecade    = "decade-mix"
-	sourceTopMonth  = "top-month-mix"
-	sourceOnRepeat  = "on-repeat-mix"
-	sourceForgotten = "forgotten-mix"
+	sourceGenre  = "genre-mix"
+	sourceDecade = "decade-mix"
+
+	SourceTopMonth  = "top-month-mix"
+	SourceOnRepeat  = "on-repeat-mix"
+	SourceForgotten = "forgotten-mix"
 )
 
 // minTracks is the minimum catalog size for a genre/decade to get its own
@@ -184,8 +190,9 @@ func (s *Service) syncDecades(ctx context.Context, ownerID string) int {
 }
 
 // syncPersonal rebuilds every user's "Top du mois"/"On Repeat"/"Favoris
-// oubliés" — real, private playlists (auto-subscribed so they appear in that
-// user's own library), not a live-computed view.
+// oubliés" — real, private playlists (looked up directly by GET
+// /me/custom-playlists, not via the owner's subscribed library), not a
+// live-computed view.
 func (s *Service) syncPersonal(ctx context.Context) int {
 	users, err := s.users.List(ctx)
 	if err != nil {
@@ -196,17 +203,17 @@ func (s *Service) syncPersonal(ctx context.Context) int {
 	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
 	synced := 0
 	for _, u := range users {
-		if s.syncPersonalOne(ctx, u.ID, sourceTopMonth, topMonthName, trendingUpIcon,
+		if s.syncPersonalOne(ctx, u.ID, SourceTopMonth, topMonthName, trendingUpIcon,
 			func() ([]string, error) { return s.topTrackIDs(ctx, u.ID, monthStart.UnixMilli(), now.UnixMilli()) }) {
 			synced++
 		}
-		if s.syncPersonalOne(ctx, u.ID, sourceOnRepeat, onRepeatName, repeatIcon,
+		if s.syncPersonalOne(ctx, u.ID, SourceOnRepeat, onRepeatName, repeatIcon,
 			func() ([]string, error) {
 				return s.topTrackIDs(ctx, u.ID, now.AddDate(0, 0, -30).UnixMilli(), now.UnixMilli())
 			}) {
 			synced++
 		}
-		if s.syncPersonalOne(ctx, u.ID, sourceForgotten, forgottenName, hourglassIcon,
+		if s.syncPersonalOne(ctx, u.ID, SourceForgotten, forgottenName, hourglassIcon,
 			func() ([]string, error) {
 				return s.annotations.ForgottenFavorites(ctx, u.ID, models.ItemTrack, now.AddDate(0, 0, -forgottenMinDays), maxPersonalTracks)
 			}) {
@@ -230,7 +237,7 @@ func (s *Service) syncPersonalOne(ctx context.Context, userID, sourceInstanceID,
 	}
 	if err := s.upsert(ctx, playlistSpec{
 		ownerID: userID, sourceInstanceID: sourceInstanceID, sourceExternalID: userID,
-		name: name, icon: icon, public: false, subscribeOwner: true, ids: ids,
+		name: name, icon: icon, public: false, ids: ids,
 	}); err != nil {
 		s.logger.Warn("autoplaylists: personal list sync failed", "kind", sourceInstanceID, "user", userID, "error", err)
 		return false
@@ -302,14 +309,7 @@ type playlistSpec struct {
 	name             string
 	icon             string
 	public           bool
-	// subscribeOwner auto-subscribes ownerID so the playlist appears in their
-	// own library (ListVisible only surfaces a federated row via subscription
-	// — see PlaylistRepo.ListVisible — since Federated's owner is normally
-	// just a nominal attribution). Shared genre/decade playlists leave this
-	// false: their nominal admin owner isn't meant to have every one of them
-	// pinned to their library.
-	subscribeOwner bool
-	ids            []string
+	ids              []string
 }
 
 // upsert creates or refreshes the auto-playlist for (sourceInstanceID,
@@ -331,11 +331,6 @@ func (s *Service) upsert(ctx context.Context, spec playlistSpec) error {
 				s.logger.Warn("autoplaylists: cover update failed", "name", spec.name, "error", err)
 			}
 		}
-		if spec.subscribeOwner {
-			if err := s.playlists.Subscribe(ctx, existing.ID, spec.ownerID); err != nil {
-				s.logger.Warn("autoplaylists: owner subscribe failed", "name", spec.name, "error", err)
-			}
-		}
 		return s.playlists.ReplaceTracks(ctx, existing.ID, spec.ids, spec.ownerID)
 	case errors.Is(err, persistence.ErrNotFound):
 		now := time.Now()
@@ -349,11 +344,6 @@ func (s *Service) upsert(ctx context.Context, spec playlistSpec) error {
 		}
 		if err := s.playlists.SetCover(ctx, p.ID, cover); err != nil {
 			s.logger.Warn("autoplaylists: cover save failed", "name", spec.name, "error", err)
-		}
-		if spec.subscribeOwner {
-			if err := s.playlists.Subscribe(ctx, p.ID, spec.ownerID); err != nil {
-				s.logger.Warn("autoplaylists: owner subscribe failed", "name", spec.name, "error", err)
-			}
 		}
 		return s.playlists.ReplaceTracks(ctx, p.ID, spec.ids, spec.ownerID)
 	default:

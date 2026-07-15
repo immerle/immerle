@@ -5105,6 +5105,33 @@ paths:
       summary: Update your account
       tags:
       - users
+  /me/custom-playlists:
+    get:
+      description: Returns the caller's personal auto-generated playlists (top of
+        the month, on repeat, forgotten favorites) that currently have at least one
+        track.
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  items:
+                    $ref: '#/components/schemas/immerle.playlistView'
+                  type: array
+                type: object
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Custom auto-generated playlists
+      tags:
+      - playlists
   /me/favorites:
     get:
       description: Returns the artists, albums and songs the caller has starred.

@@ -3,6 +3,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useAlbumList, useStarred } from '../../src/query/library';
+import { useCustomPlaylists } from '../../src/query/playlists';
 import { useAuth } from '../../src/auth/store';
 import { usePlayer } from '../../src/audio/store';
 import { useDownloads, OfflineEntry } from '../../src/offline/store';
@@ -13,7 +14,7 @@ import { PlaylistCover } from '../../src/components/PlaylistCover';
 import { Ionicon } from '../../src/components/Ionicon';
 import { Button, Card, Loading, SectionHeader } from '../../src/components/ui';
 import { useColors } from '../../src/theme/colors';
-import { Album, Song } from '../../src/api/subsonic/types';
+import { Album, Playlist, Song } from '../../src/api/subsonic/types';
 import { useT } from '../../src/i18n/store';
 
 const TILE = 150;
@@ -155,6 +156,35 @@ function OfflinePlaylistsRow() {
   );
 }
 
+/**
+ * "Made to measure" playlists (Top du mois/On Repeat/Favoris oubliés) — the
+ * server already omits any with 0 tracks; filtered again here defensively
+ * since a playlist can go stale between a sync and the next one.
+ */
+function CustomPlaylistsRow({ title, playlists }: { title: string; playlists: Playlist[] | undefined }) {
+  const t = useT();
+  const nonEmpty = (playlists ?? []).filter((p) => (p.songCount ?? 0) > 0);
+  if (nonEmpty.length === 0) return null;
+  return (
+    <View>
+      <SectionHeader title={title} />
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
+        {nonEmpty.map((p) => (
+          <Pressable key={p.id} onPress={() => router.push(`/playlist/${p.id}` as never)} style={{ width: TILE }} className="mr-3 active:opacity-70">
+            <PlaylistCover coverArt={p.coverArt} covers={p.coverArts ?? []} size={TILE} rounded="rounded-xl" fallbackIcon="list" />
+            <Text numberOfLines={1} className="mt-2 text-sm font-semibold text-foreground">
+              {p.name}
+            </Text>
+            <Text numberOfLines={1} className="text-xs text-muted">
+              {t('media.playlist.trackCount', { count: p.songCount ?? 0 })}
+            </Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+    </View>
+  );
+}
+
 /** Horizontal album carousel. */
 function AlbumRow({ title, albums }: { title: string; albums: Album[] | undefined }) {
   if (!albums || albums.length === 0) return null;
@@ -181,6 +211,7 @@ export default function Home() {
   const frequent = useAlbumList('frequent');
   const random = useAlbumList('random');
   const starred = useStarred();
+  const customPlaylists = useCustomPlaylists();
 
   const loading = recentlyPlayed.isLoading && frequent.isLoading && random.isLoading;
   // All three failing (rather than just one) is a reasonable proxy for "the
@@ -204,6 +235,8 @@ export default function Home() {
         <View className="pb-2 pt-1">
           <QuickAccessRow />
         </View>
+
+        {!offline ? <CustomPlaylistsRow title={t('home.home.customPlaylists')} playlists={customPlaylists.data} /> : null}
 
         {offline ? (
           <>
