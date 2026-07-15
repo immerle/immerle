@@ -42,13 +42,18 @@ var countryLabels = map[string]map[string]string{
 	"es":     {"fr": "Espagne", "en": "Spanish"},
 }
 
-// emojiInset is how far the flag/globe icon is inset from each edge, as a
-// fraction of covergen.Size — it ends up centered at roughly 46% of the cover,
-// leaving clear room below it for the label.
-const emojiInset = 0.27
+// emojiInset is how far the flag/globe icon is inset from each edge
+// horizontally, as a fraction of covergen.Size — the icon is emojiIconFrac
+// wide/tall (36% of the cover).
+const emojiInset = 0.32
+const emojiIconFrac = 1 - 2*emojiInset
 
-// labelTopFrac positions the label text just below the icon.
-const labelTopFrac = 0.8
+// labelFontFrac is the label's font size, and groupGapFrac the gap between
+// the icon and the label — both fractions of covergen.Size. The icon+label
+// pair is centered as one group (see GenerateCover), not each centered
+// independently, so the whole composition reads as a single mark.
+const labelFontFrac = 0.085
+const groupGapFrac = 0.045
 
 // NormalizeLocale reduces a BCP47-ish tag ("en-US", "FR") to the bare
 // lowercase language code ("en", "fr") this package's tables key on.
@@ -87,10 +92,22 @@ func GenerateCover(slug, locale string) ([]byte, error) {
 	}
 	covergen.FillGradient(img, covergen.ParseHex(g.from, color.Black), covergen.ParseHex(g.to, color.Black), 45)
 
+	// The icon and its label are centered as one group, not each centered
+	// independently — otherwise the pair reads as "a centered icon with text
+	// tacked on after it" rather than a single composed mark.
+	label := chartLabel(slug, locale)
+	lineHFrac := labelFontFrac * 1.25
+	groupHeightFrac := emojiIconFrac
+	if label != "" {
+		groupHeightFrac += groupGapFrac + lineHFrac
+	}
+	groupTopFrac := (1 - groupHeightFrac) / 2
+
 	if data, err := emojiAssets.ReadFile("assets/" + slug + ".png"); err == nil {
 		if icon, _, err := image.Decode(bytes.NewReader(data)); err == nil {
-			inset := int(emojiInset * covergen.Size)
-			r := image.Rect(inset, inset, covergen.Size-inset, covergen.Size-inset)
+			hInset := int(emojiInset * covergen.Size)
+			top := int(groupTopFrac * covergen.Size)
+			r := image.Rect(hInset, top, covergen.Size-hInset, top+int(emojiIconFrac*covergen.Size))
 			if slug == "global" {
 				covergen.DrawImage(img, icon, r) // globe is already round
 			} else {
@@ -99,11 +116,11 @@ func GenerateCover(slug, locale string) ([]byte, error) {
 		}
 	}
 
-	if label := chartLabel(slug, locale); label != "" {
-		top := labelTopFrac
+	if label != "" {
+		top := groupTopFrac + emojiIconFrac + groupGapFrac
 		_ = covergen.DrawText(img, covergen.TextSpec{
 			Text: "Top 50 " + label, Color: color.White,
-			FontFrac: 0.06, Align: "center", TopFrac: &top,
+			FontFrac: labelFontFrac, Align: "center", TopFrac: &top,
 		})
 	}
 
