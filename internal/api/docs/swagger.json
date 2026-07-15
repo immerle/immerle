@@ -2572,6 +2572,72 @@
                 ]
             }
         },
+        "/admin/autoplaylists/sync": {
+            "post": {
+                "description": "Admin only. Rebuilds every genre and decade auto-playlist from the local catalog immediately, returning how many synced successfully.",
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.ChartsSyncDTO"
+                                }
+                            }
+                        },
+                        "description": "Created"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    },
+                    "503": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Service Unavailable"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Sync genre/decade auto-playlists now",
+                "tags": [
+                    "admin"
+                ]
+            }
+        },
         "/admin/charts/sync": {
             "post": {
                 "description": "Admin only. Fetches and upserts every curated chart playlist immediately, returning how many synced successfully.",
@@ -7957,6 +8023,48 @@
                 "summary": "Update your account",
                 "tags": [
                     "users"
+                ]
+            }
+        },
+        "/me/custom-playlists": {
+            "get": {
+                "description": "Returns the caller's personal auto-generated playlists (top of the month, on repeat, forgotten favorites, random) that currently have at least one track.",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": {
+                                        "items": {
+                                            "$ref": "#/components/schemas/immerle.playlistView"
+                                        },
+                                        "type": "array"
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Custom auto-generated playlists",
+                "tags": [
+                    "playlists"
                 ]
             }
         },

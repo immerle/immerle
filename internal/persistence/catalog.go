@@ -520,6 +520,25 @@ func (r *CatalogRepo) ListTracksByGenre(ctx context.Context, genre string, count
 	return r.listTracks(ctx, trackSelect+` WHERE t.genre=? ORDER BY ar.name, al.name, t.disc_no, t.track_no LIMIT ? OFFSET ?`, genre, count, offset)
 }
 
+// ListTracksByYearRange returns tracks released in [fromYear, toYear) — powers
+// the decade auto-playlists (internal/autoplaylists).
+func (r *CatalogRepo) ListTracksByYearRange(ctx context.Context, fromYear, toYear, count, offset int) ([]models.Track, error) {
+	if count <= 0 {
+		count = 10
+	}
+	return r.listTracks(ctx, trackSelect+` WHERE t.year>=? AND t.year<? ORDER BY t.year, ar.name, al.name, t.disc_no, t.track_no LIMIT ? OFFSET ?`,
+		fromYear, toYear, count, offset)
+}
+
+// TracksByIDs batch-fetches tracks by id, keyed by id (order not preserved —
+// callers re-order by looking each id up). Public wrapper around the
+// package-private tracksByIDs (see PlaylistRepo.Tracks/HallOfFameRepo.Entries),
+// for callers outside persistence that already have an ordered id list (e.g. a
+// "top tracks" or "forgotten favorites" personal list).
+func (r *CatalogRepo) TracksByIDs(ctx context.Context, ids []string) (map[string]models.Track, error) {
+	return tracksByIDs(ctx, r.base, ids)
+}
+
 // TrackListOptions controls the admin "all tracks" listing.
 type TrackListOptions struct {
 	Query  string // case-insensitive LIKE over title/artist/album

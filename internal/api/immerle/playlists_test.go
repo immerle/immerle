@@ -120,6 +120,37 @@ func TestFederatedPlaylistSubscribableByNominalOwner(t *testing.T) {
 	}
 }
 
+// TestPrivatePersonalAutoPlaylistIsSubscribableByItsOwner covers a private
+// (Public=false), Federated, genuinely-owned personal auto-playlist (Top du
+// mois, etc. — see internal/autoplaylists): its owner must still be able to
+// subscribe/"like" it (to pin it into their regular library alongside GET
+// /me/custom-playlists), even though it isn't public.
+func TestPrivatePersonalAutoPlaylistIsSubscribableByItsOwner(t *testing.T) {
+	srv, store := newEnv(t)
+	ctx := context.Background()
+
+	alice, _ := store.Users.GetByUsername(ctx, "alice")
+	now := time.Now()
+	personal := models.Playlist{
+		ID: uuid.NewString(), Name: "Top du mois", OwnerID: alice.ID, Public: false, Federated: true,
+		SourceInstanceID: "top-month-mix", SourceExternalID: alice.ID, CreatedAt: now, UpdatedAt: now,
+	}
+	if err := store.Playlists.Create(ctx, personal); err != nil {
+		t.Fatal(err)
+	}
+
+	aliceToken := login(t, srv, "alice")
+	if code := doStatus(t, srv, http.MethodPut, "/playlists/"+personal.ID+"/subscription", aliceToken, nil); code != http.StatusNoContent {
+		t.Fatalf("owner subscribing to their own private personal playlist: %d", code)
+	}
+
+	// Someone else must still be refused — it's private.
+	bobToken := login(t, srv, "bob")
+	if code := doStatus(t, srv, http.MethodPut, "/playlists/"+personal.ID+"/subscription", bobToken, nil); code != http.StatusForbidden {
+		t.Fatalf("a non-owner subscribing to a private playlist: got %d, want %d", code, http.StatusForbidden)
+	}
+}
+
 func containsPlaylist(pls []models.Playlist, id string) bool {
 	for _, p := range pls {
 		if p.ID == id {

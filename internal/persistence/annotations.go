@@ -97,6 +97,32 @@ func (r *AnnotationRepo) ListStarred(ctx context.Context, userID string, it mode
 	return ids, rows.Err()
 }
 
+// ForgottenFavorites returns starred item ids of type it whose last play was
+// before cutoff, or never played at all — most-recently-starred first. Powers
+// a "forgotten favorites" personal list surfacing neglected likes. The
+// (last_played IS NULL OR last_played < ?) grouping isn't expressible via
+// melody, so this one is hand-written like the other multi-condition queries.
+func (r *AnnotationRepo) ForgottenFavorites(ctx context.Context, userID string, it models.ItemType, cutoff time.Time, limit int) ([]string, error) {
+	rows, err := r.query(ctx, `
+		SELECT item_id FROM annotations
+		WHERE user_id=? AND item_type=? AND starred_at IS NOT NULL
+		  AND (last_played IS NULL OR last_played < ?)
+		ORDER BY starred_at DESC LIMIT ?`, userID, string(it), db.Millis(cutoff), limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var ids []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	return ids, rows.Err()
+}
+
 // AnnotationMap returns starred/rating for a set of item ids for one user.
 func (r *AnnotationRepo) AnnotationMap(ctx context.Context, userID string, it models.ItemType) (map[string]models.Annotation, error) {
 	rows, err := r.bquery(ctx, r.mel.New("annotations").

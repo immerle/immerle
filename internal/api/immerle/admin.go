@@ -154,3 +154,34 @@ func (h *Handler) handleChartsSync(w http.ResponseWriter, r *http.Request) {
 	h.Logger.Info("chart playlists synced on demand", "synced", synced, "by", userFrom(r.Context()).Username)
 	writeResource(w, http.StatusCreated, map[string]any{"synced": synced})
 }
+
+// handleAutoPlaylistsSync triggers an immediate genre/decade auto-playlist
+// sync, regardless of the daily schedule.
+//
+// @Summary      Sync genre/decade auto-playlists now
+// @Description  Admin only. Rebuilds every genre and decade auto-playlist from the local catalog immediately, returning how many synced successfully.
+// @Tags         admin
+// @Security     BearerAuth
+// @Produce      json
+// @Success      201  {object}  ChartsSyncDTO
+// @Failure      401  {object}  errorResponse
+// @Failure      403  {object}  errorResponse
+// @Failure      500  {object}  errorResponse
+// @Failure      503  {object}  errorResponse
+// @Router       /admin/autoplaylists/sync [post]
+func (h *Handler) handleAutoPlaylistsSync(w http.ResponseWriter, r *http.Request) {
+	if !h.requireAdmin(w, r) {
+		return
+	}
+	if h.AutoPlaylists == nil {
+		writeError(w, http.StatusServiceUnavailable, "unavailable", "auto-playlist sync not available")
+		return
+	}
+	synced, err := h.AutoPlaylists.SyncNow(r.Context())
+	if err != nil {
+		writeInternal(w, err)
+		return
+	}
+	h.Logger.Info("auto-playlists synced on demand", "synced", synced, "by", userFrom(r.Context()).Username)
+	writeResource(w, http.StatusCreated, map[string]any{"synced": synced})
+}

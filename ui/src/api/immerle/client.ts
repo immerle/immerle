@@ -339,6 +339,17 @@ export class ImmerleClient {
     return (data.playlists ?? []).map(toPlaylist);
   }
 
+  /**
+   * The caller's auto-generated personal playlists ("Top du mois", "On
+   * Repeat", "Favoris oubliés") that currently have at least one track —
+   * looked up directly, independent of subscriptions.
+   */
+  async getCustomPlaylists(signal?: AbortSignal): Promise<Playlist[]> {
+    const { data, error } = await this.api.GET('/me/custom-playlists', { signal });
+    if (error) throw apiErr(error, 'playlist.custom');
+    return (data.playlists ?? []).map(toPlaylist);
+  }
+
   async getPlaylist(id: string, signal?: AbortSignal): Promise<PlaylistWithSongs> {
     const { data, error } = await this.api.GET('/playlists/{id}', { params: { path: { id } }, signal });
     if (error) throw apiErr(error, 'playlist.get');

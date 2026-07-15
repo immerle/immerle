@@ -2,6 +2,8 @@ package immerle
 
 import (
 	"net/http"
+
+	"github.com/immerle/immerle/internal/autoplaylists"
 )
 
 // handlePublicPlaylists lists public playlists the caller can subscribe to.
@@ -40,6 +42,40 @@ func (h *Handler) handlePublicPlaylists(w http.ResponseWriter, r *http.Request) 
 	writeResource(w, http.StatusOK, out)
 }
 
+// customPlaylistSources are looked up directly by (kind, callerID), in
+// display order.
+var customPlaylistSources = []string{
+	autoplaylists.SourceTopMonth, autoplaylists.SourceOnRepeat, autoplaylists.SourceForgotten, autoplaylists.SourceRandom,
+}
+
+// handleCustomPlaylists returns the caller's auto-generated personal
+// playlists ("Top du mois", "On Repeat", "Favoris oubliés", "Aléatoire") that
+// currently have at least one track. Looked up directly by (kind, callerID) —
+// not through ListVisible/subscriptions — so unsubscribing/unliking one (easy
+// to do by mistake, since a federated playlist hides normal owner controls)
+// never loses access to it.
+//
+// @Summary      Custom auto-generated playlists
+// @Description  Returns the caller's personal auto-generated playlists (top of the month, on repeat, forgotten favorites, random) that currently have at least one track.
+// @Tags         playlists
+// @Security     BearerAuth
+// @Produce      json
+// @Success      200  {object}  map[string][]playlistView
+// @Failure      401  {object}  errorResponse
+// @Router       /me/custom-playlists [get]
+func (h *Handler) handleCustomPlaylists(w http.ResponseWriter, r *http.Request) {
+	userID := userFrom(r.Context()).ID
+	out := make([]playlistView, 0, len(customPlaylistSources))
+	for _, source := range customPlaylistSources {
+		p, err := h.Playlists.FindFederated(r.Context(), source, userID)
+		if err != nil || p.SongCount == 0 {
+			continue
+		}
+		out = append(out, toPlaylistView(p, nil))
+	}
+	writeResource(w, http.StatusOK, map[string]any{"playlists": out})
+}
+
 // handleSubscribePlaylist subscribes the caller to a public playlist.
 //
 // @Summary      Subscribe to a public playlist
@@ -61,10 +97,17 @@ func (h *Handler) handleSubscribePlaylist(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusNotFound, "not_found", "playlist not found")
 		return
 	}
-	// Only public playlists are subscribable; the real owner needn't subscribe —
-	// but a federated playlist's "owner" is only an internal attribution (see
-	// ListVisible), so it must stay subscribable even for that account.
-	if !p.Public || (p.OwnerID == user.ID && !p.Federated) {
+	// Subscribable when it's public (and you don't already own it outright —
+	// no point subscribing to your own regular playlist), or it's your own
+	// private personal auto-playlist (Top du mois, etc.): Federated marks it
+	// read-only, but the owner genuinely is you there, and subscribing just
+	// pins it to your library like liking any playlist — unsubscribing later
+	// still won't lose it, since GET /me/custom-playlists finds it either way.
+	own := p.OwnerID == user.ID
+	switch {
+	case own && p.Federated:
+	case p.Public && !own:
+	default:
 		writeError(w, http.StatusForbidden, "forbidden", "playlist is not public")
 		return
 	}
