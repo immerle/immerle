@@ -11,6 +11,7 @@ import { usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { searchNav, useSearchUI } from '../search/store';
 import { SearchResults } from './SearchResults';
+import { SearchTypeFilterButton } from './SearchTypeFilter';
 import { Field } from './ui';
 import { WIDE_BREAKPOINT } from '../theme/layout';
 import { useT } from '../i18n/store';
@@ -79,6 +80,7 @@ export function SearchOverlay() {
             captured from the provider-scoped hook instead. */}
         <View className="flex-1 bg-background" style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}>
           <View className="flex-row items-center gap-2 px-4 py-2">
+            <SearchTypeFilterButton />
             <View className="flex-1">
               <Field
                 icon="search"

@@ -150,7 +150,7 @@ func (h *Handler) handleGetStarred(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handleSearch2(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
 	res, err := h.library.Search(r.Context(), user.ID, param(r, "query"),
-		intParam(r, "artistCount", 20), intParam(r, "albumCount", 20), intParam(r, "songCount", 20))
+		intParam(r, "artistCount", 20), intParam(r, "albumCount", 20), intParam(r, "songCount", 20), 0)
 	if err != nil {
 		h.failInternal(w, r, err)
 		return

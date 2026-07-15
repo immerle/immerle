@@ -22,7 +22,6 @@ import type {
   PlaylistWithSongs,
   PlayQueueCommand,
   PlayQueueSnapshot,
-  SearchResult3,
   Song,
   SubsonicUser,
 } from '../subsonic/types';
@@ -139,12 +138,26 @@ export function toStarred(v: FavoritesView): Starred {
   };
 }
 
-export function toSearchResult(v: SearchView): SearchResult3 {
-  return {
-    artist: v.artists?.map(toArtist),
-    album: v.albums?.map(toAlbum),
-    song: v.songs?.map(toSong),
-  };
+/**
+ * One global-search match: exactly one of artist/album/song/playlist is set,
+ * per `type`. Unlike the Subsonic-style SearchResult3 (grouped by type),
+ * this is a single list already ranked by relevance to the query.
+ */
+export type SearchHit =
+  | { type: 'artist'; artist: Artist }
+  | { type: 'album'; album: Album }
+  | { type: 'song'; song: Song }
+  | { type: 'playlist'; playlist: Playlist };
+
+export function toSearchResult(v: SearchView): SearchHit[] {
+  const hits: SearchHit[] = [];
+  for (const r of v.results ?? []) {
+    if (r.type === 'artist' && r.artist) hits.push({ type: 'artist', artist: toArtist(r.artist) });
+    else if (r.type === 'album' && r.album) hits.push({ type: 'album', album: toAlbum(r.album) });
+    else if (r.type === 'song' && r.song) hits.push({ type: 'song', song: toSong(r.song) });
+    else if (r.type === 'playlist' && r.playlist) hits.push({ type: 'playlist', playlist: toPlaylist(r.playlist) });
+  }
+  return hits;
 }
 
 export function toPlaylist(v: PlaylistView): Playlist {

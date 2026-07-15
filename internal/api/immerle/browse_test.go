@@ -178,16 +178,107 @@ func TestBrowseListsSearchAndSong(t *testing.T) {
 	if st := getJSON(t, srv, token, "/search?q=So+What", &search); st != http.StatusOK {
 		t.Fatalf("search: status %d", st)
 	}
-	if len(search.Songs) != 1 || search.Songs[0].Title != "So What" {
-		t.Fatalf("search songs: %+v", search.Songs)
+	if len(search.Songs()) != 1 || search.Songs()[0].Title != "So What" {
+		t.Fatalf("search songs: %+v", search.Songs())
 	}
 
 	var song songView
-	if st := getJSON(t, srv, token, "/songs/"+search.Songs[0].ID, &song); st != http.StatusOK {
+	if st := getJSON(t, srv, token, "/songs/"+search.Songs()[0].ID, &song); st != http.StatusOK {
 		t.Fatalf("get song: status %d", st)
 	}
 	if song.Title != "So What" {
 		t.Fatalf("song title = %q", song.Title)
+	}
+}
+
+// TestSearchIsOneRelevanceRankedListIncludingPublicPlaylists covers the
+// unified search: public playlists are searchable alongside artists/albums/
+// songs, and the response is one list ranked by relevance to the query
+// (exact match first) rather than grouped by type.
+func TestSearchIsOneRelevanceRankedListIncludingPublicPlaylists(t *testing.T) {
+	srv, token, store := newBrowseEnv(t)
+	ctx := context.Background()
+
+	// A public playlist owned by someone else than the searching admin (a
+	// self-owned public playlist is excluded from search, same as /playlists/public).
+	other := models.User{ID: uuid.NewString(), Username: "other", PasswordHash: "x", CreatedAt: time.Now()}
+	if err := store.Users.Create(ctx, other); err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now()
+	pub := models.Playlist{ID: uuid.NewString(), Name: "Discovery Deep Cuts", OwnerID: other.ID, Public: true, CreatedAt: now, UpdatedAt: now}
+	if err := store.Playlists.Create(ctx, pub); err != nil {
+		t.Fatal(err)
+	}
+	priv := models.Playlist{ID: uuid.NewString(), Name: "Discovery Private Mix", OwnerID: other.ID, Public: false, CreatedAt: now, UpdatedAt: now}
+	if err := store.Playlists.Create(ctx, priv); err != nil {
+		t.Fatal(err)
+	}
+
+	// "Discovery" matches: the Daft Punk album (exact name match) and the
+	// public playlist (substring match) — but not the private one.
+	var search searchView
+	if st := getJSON(t, srv, token, "/search?q=Discovery", &search); st != http.StatusOK {
+		t.Fatalf("search: status %d", st)
+	}
+	if len(search.Results) < 2 {
+		t.Fatalf("expected at least an album and a playlist hit, got %+v", search.Results)
+	}
+	if search.Results[0].Type != "album" || search.Results[0].Album == nil || search.Results[0].Album.Name != "Discovery" {
+		t.Fatalf("expected the exact-match album to rank first, got %+v", search.Results[0])
+	}
+	foundPlaylist, foundPrivate := false, false
+	for _, r := range search.Results {
+		if r.Type == "playlist" && r.Playlist != nil {
+			if r.Playlist.Name == pub.Name {
+				foundPlaylist = true
+			}
+			if r.Playlist.Name == priv.Name {
+				foundPrivate = true
+			}
+		}
+	}
+	if !foundPlaylist {
+		t.Fatalf("expected the public playlist in results, got %+v", search.Results)
+	}
+	if foundPrivate {
+		t.Fatalf("private playlist must not be searchable, got %+v", search.Results)
+	}
+}
+
+// TestSearchTypeParamScopesServerSide covers the `type` query param: it must
+// filter server-side (the other types are never fetched at all — see
+// searchCounts), not just hide them from an already-mixed response.
+func TestSearchTypeParamScopesServerSide(t *testing.T) {
+	srv, token, _ := newBrowseEnv(t)
+
+	var albumOnly searchView
+	if st := getJSON(t, srv, token, "/search?q=Discovery&type=album", &albumOnly); st != http.StatusOK {
+		t.Fatalf("search: status %d", st)
+	}
+	if len(albumOnly.Results) == 0 {
+		t.Fatal("expected at least the Discovery album")
+	}
+	for _, r := range albumOnly.Results {
+		if r.Type != "album" {
+			t.Fatalf("type=album must only return albums, got a %q hit: %+v", r.Type, r)
+		}
+	}
+
+	var songOnly searchView
+	if st := getJSON(t, srv, token, "/search?q=So+What&type=song", &songOnly); st != http.StatusOK {
+		t.Fatalf("search: status %d", st)
+	}
+	if len(songOnly.Results) != 1 || songOnly.Results[0].Type != "song" {
+		t.Fatalf("type=song must only return songs, got %+v", songOnly.Results)
+	}
+
+	var artistOnly searchView
+	if st := getJSON(t, srv, token, "/search?q=So+What&type=artist", &artistOnly); st != http.StatusOK {
+		t.Fatalf("search: status %d", st)
+	}
+	if len(artistOnly.Results) != 0 {
+		t.Fatalf("type=artist for a song-only query must return nothing, got %+v", artistOnly.Results)
 	}
 }
 
@@ -237,10 +328,10 @@ func TestSongLocalStatus(t *testing.T) {
 
 	// A real local track from the fixture library, to resolve the remote id to.
 	var search searchView
-	if st := getJSON(t, srv, token, "/search?q=So+What", &search); st != http.StatusOK || len(search.Songs) != 1 {
-		t.Fatalf("search: status %d songs=%+v", st, search.Songs)
+	if st := getJSON(t, srv, token, "/search?q=So+What", &search); st != http.StatusOK || len(search.Songs()) != 1 {
+		t.Fatalf("search: status %d songs=%+v", st, search.Songs())
 	}
-	localTrackID := search.Songs[0].ID
+	localTrackID := search.Songs()[0].ID
 
 	// Simulate a completed background download without a real provider/ffmpeg
 	// download run.

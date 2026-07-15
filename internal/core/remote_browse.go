@@ -138,7 +138,7 @@ func (s *CatalogService) ResolveBestRemoteMatch(ctx context.Context, artist, tit
 		if titleScore >= 3 {
 			continue // shares nothing with the wanted title: never an acceptable match
 		}
-		score := titleScore*10 + relevance(artist, t.ArtistName) + matching.VersionMarkerPenalty(title, t.Title, t.AlbumName)*100
+		score := titleScore*10 + Relevance(artist, t.ArtistName) + matching.VersionMarkerPenalty(title, t.Title, t.AlbumName)*100
 		if bestScore == -1 || score < bestScore {
 			best, bestScore = t, score
 		}
@@ -153,8 +153,8 @@ func (s *CatalogService) ResolveBestRemoteMatch(ctx context.Context, artist, tit
 // contain the candidate, or the reverse) misses the common case where one is
 // simply a longer superstring of the other.
 func titleOverlap(wanted, candidate string) int {
-	score := relevance(wanted, candidate)
-	if r := relevance(candidate, wanted); r < score {
+	score := Relevance(wanted, candidate)
+	if r := Relevance(candidate, wanted); r < score {
 		score = r
 	}
 	return score

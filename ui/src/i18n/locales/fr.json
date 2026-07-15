@@ -994,6 +994,12 @@
       "artists": "Artistes",
       "songs": "Titres",
       "albums": "Albums",
+      "playlists": "Playlists",
+      "filterAll": "Tout",
+      "typeArtist": "Artiste",
+      "typeAlbum": "Album",
+      "typeSong": "Titre",
+      "typePlaylist": "Playlist",
       "cancel": "Annuler"
     },
     "admin": {

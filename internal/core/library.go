@@ -22,31 +22,36 @@ const remoteFetchTimeout = 12 * time.Second
 type LibraryService struct {
 	catalog     *persistence.CatalogRepo
 	annotations *persistence.AnnotationRepo
+	playlists   *persistence.PlaylistRepo
 	// onDemand is optional (remote provider integration); may be nil when disabled.
 	onDemand *CatalogService
 }
 
 // NewLibraryService wires the library application service. onDemand may be nil.
-func NewLibraryService(catalog *persistence.CatalogRepo, annotations *persistence.AnnotationRepo, onDemand *CatalogService) *LibraryService {
-	return &LibraryService{catalog: catalog, annotations: annotations, onDemand: onDemand}
+func NewLibraryService(catalog *persistence.CatalogRepo, annotations *persistence.AnnotationRepo, playlists *persistence.PlaylistRepo, onDemand *CatalogService) *LibraryService {
+	return &LibraryService{catalog: catalog, annotations: annotations, playlists: playlists, onDemand: onDemand}
 }
 
 // Final search result caps applied to the merged local+remote lists after
 // re-sorting by relevance.
 const (
-	maxSearchArtists = 4
-	maxSearchAlbums  = 10
-	maxSearchSongs   = 10
+	maxSearchArtists   = 4
+	maxSearchAlbums    = 10
+	maxSearchSongs     = 10
+	maxSearchPlaylists = 10
 )
 
 // SearchResults is a presentation-neutral search result. The annotation maps
 // carry per-user state (star/rating/play count) keyed by item id; presentation
 // layers attach them when serializing. Remote-provider results have no
-// annotations, so a missing key simply means "no per-user state".
+// annotations, so a missing key simply means "no per-user state". Playlists
+// are always public ones (private playlists aren't searchable) and have no
+// annotations of their own.
 type SearchResults struct {
-	Artists []models.Artist
-	Albums  []models.Album
-	Tracks  []models.Track
+	Artists   []models.Artist
+	Albums    []models.Album
+	Tracks    []models.Track
+	Playlists []models.Playlist
 
 	AlbumAnnotations map[string]models.Annotation
 	TrackAnnotations map[string]models.Annotation
@@ -54,8 +59,11 @@ type SearchResults struct {
 
 // Search runs a catalog search, merges in remote-provider results (when on-demand
 // is enabled and the query is non-empty), re-sorts the merged lists by relevance
-// and caps them. Counts bound the local query; the final caps are fixed.
-func (s *LibraryService) Search(ctx context.Context, userID, query string, artistCount, albumCount, songCount int) (SearchResults, error) {
+// and caps them. Counts bound the local query, and — since a count of 0 skips
+// that type's query entirely — also let a caller scope the search to one
+// result type (see internal/api/immerle/browse.go's handleSearch). The final
+// caps are fixed.
+func (s *LibraryService) Search(ctx context.Context, userID, query string, artistCount, albumCount, songCount, playlistCount int) (SearchResults, error) {
 	// Subsonic clients sometimes quote queries or use "" to mean "everything".
 	query = strings.Trim(strings.TrimSpace(query), "\"")
 
@@ -63,75 +71,93 @@ func (s *LibraryService) Search(ctx context.Context, userID, query string, artis
 	if err != nil {
 		return SearchResults{}, err
 	}
+	var playlists []models.Playlist
+	if playlistCount > 0 {
+		playlists, err = s.playlists.SearchPublic(ctx, userID, query, playlistCount)
+		if err != nil {
+			return SearchResults{}, err
+		}
+	}
 
 	albumAnn, _ := s.annotations.AnnotationMap(ctx, userID, models.ItemAlbum)
 	trackAnn, _ := s.annotations.AnnotationMap(ctx, userID, models.ItemTrack)
 
 	// Merge remote results from every active provider, deduplicated by name for
-	// artists/albums and by id for songs.
-	if s.onDemand != nil && query != "" {
+	// artists/albums and by id for songs. Skipped entirely when every local
+	// type was itself skipped (a playlist-only search has no remote results anyway).
+	if s.onDemand != nil && query != "" && (artistCount > 0 || albumCount > 0 || songCount > 0) {
 		rArtists, rAlbums, rSongs := s.onDemand.RemoteSearch3(ctx, query, maxSearchArtists, maxSearchAlbums, maxSearchSongs)
 
-		seenA := make(map[string]bool, len(artists))
-		for _, a := range artists {
-			seenA[strings.ToLower(a.Name)] = true
-		}
-		for _, a := range rArtists {
-			if seenA[strings.ToLower(a.Name)] {
-				continue
+		if artistCount > 0 {
+			seenA := make(map[string]bool, len(artists))
+			for _, a := range artists {
+				seenA[strings.ToLower(a.Name)] = true
 			}
-			seenA[strings.ToLower(a.Name)] = true
-			artists = append(artists, a)
+			for _, a := range rArtists {
+				if seenA[strings.ToLower(a.Name)] {
+					continue
+				}
+				seenA[strings.ToLower(a.Name)] = true
+				artists = append(artists, a)
+			}
 		}
 
-		seenAl := make(map[string]bool, len(albums))
-		for _, a := range albums {
-			seenAl[strings.ToLower(a.ArtistName+"|"+a.Name)] = true
-		}
-		for _, a := range rAlbums {
-			if seenAl[strings.ToLower(a.ArtistName+"|"+a.Name)] {
-				continue
+		if albumCount > 0 {
+			seenAl := make(map[string]bool, len(albums))
+			for _, a := range albums {
+				seenAl[strings.ToLower(a.ArtistName+"|"+a.Name)] = true
 			}
-			seenAl[strings.ToLower(a.ArtistName+"|"+a.Name)] = true
-			albums = append(albums, a)
+			for _, a := range rAlbums {
+				if seenAl[strings.ToLower(a.ArtistName+"|"+a.Name)] {
+					continue
+				}
+				seenAl[strings.ToLower(a.ArtistName+"|"+a.Name)] = true
+				albums = append(albums, a)
+			}
 		}
 
-		seenS := make(map[string]bool, len(tracks))
-		for _, t := range tracks {
-			seenS[t.ID] = true
-		}
-		for _, t := range rSongs {
-			if seenS[t.ID] {
-				continue
+		if songCount > 0 {
+			seenS := make(map[string]bool, len(tracks))
+			for _, t := range tracks {
+				seenS[t.ID] = true
 			}
-			seenS[t.ID] = true
-			tracks = append(tracks, t)
+			for _, t := range rSongs {
+				if seenS[t.ID] {
+					continue
+				}
+				seenS[t.ID] = true
+				tracks = append(tracks, t)
+			}
 		}
 	}
 
 	sort.SliceStable(artists, func(i, j int) bool {
-		return relevance(query, artists[i].Name) < relevance(query, artists[j].Name)
+		return Relevance(query, artists[i].Name) < Relevance(query, artists[j].Name)
 	})
 	sort.SliceStable(albums, func(i, j int) bool {
-		return relevance(query, albums[i].Name) < relevance(query, albums[j].Name)
+		return Relevance(query, albums[i].Name) < Relevance(query, albums[j].Name)
 	})
 	sort.SliceStable(tracks, func(i, j int) bool {
-		return relevance(query, tracks[i].Title) < relevance(query, tracks[j].Title)
+		return Relevance(query, tracks[i].Title) < Relevance(query, tracks[j].Title)
+	})
+	sort.SliceStable(playlists, func(i, j int) bool {
+		return Relevance(query, playlists[i].Name) < Relevance(query, playlists[j].Name)
 	})
 
 	return SearchResults{
 		Artists:          capSlice(artists, maxSearchArtists),
 		Albums:           capSlice(albums, maxSearchAlbums),
 		Tracks:           capSlice(tracks, maxSearchSongs),
+		Playlists:        capSlice(playlists, maxSearchPlaylists),
 		AlbumAnnotations: albumAnn,
 		TrackAnnotations: trackAnn,
 	}, nil
 }
 
-// relevance scores how well s matches the query for search ordering: exact (0),
+// Relevance scores how well s matches the query for search ordering: exact (0),
 // prefix (1), substring (2), otherwise (3). Lower is better; ties keep input
 // order (stable sort).
-func relevance(query, s string) int {
+func Relevance(query, s string) int {
 	q, x := strings.ToLower(strings.TrimSpace(query)), strings.ToLower(s)
 	switch {
 	case q == "" || x == q:

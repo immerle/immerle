@@ -3530,19 +3530,31 @@ export interface paths {
         };
         /**
          * Cover art
-         * @description Returns the cover image for a track or album id, optionally resized. For a chart-playlist cover (dynamically generated), locale picks the label text's language.
+         * @description Returns the cover image for a track or album id, optionally resized. The id "generator" instead builds a cover on the fly from its own query params (icon, title, subTitle, color, color2, angle); title/subTitle may be a known i18n key (e.g. "charts.top50") resolved via locale, or literal text.
          */
         get: {
             parameters: {
                 query?: {
                     /** @description Square size in pixels */
                     size?: number;
-                    /** @description Label language for a chart-playlist cover (e.g. \ */
+                    /** @description Label language for a generator cover's title/subTitle i18n keys (e.g. \ */
                     locale?: string;
+                    /** @description Generator: Twemoji codepoint, e.g. \ */
+                    icon?: string;
+                    /** @description Generator: title text or i18n key */
+                    title?: string;
+                    /** @description Generator: subtitle text or i18n key */
+                    subTitle?: string;
+                    /** @description Generator: background color, hex */
+                    color?: string;
+                    /** @description Generator: gradient end color, hex (empty = solid) */
+                    color2?: string;
+                    /** @description Generator: gradient angle, degrees */
+                    angle?: number;
                 };
                 header?: never;
                 path: {
-                    /** @description Track or album id */
+                    /** @description Track/album id, or \ */
                     id: string;
                 };
                 cookie?: never;
@@ -6772,13 +6784,15 @@ export interface paths {
         };
         /**
          * Search the catalog
-         * @description Searches artists, albums and songs (merging remote-provider results when enabled).
+         * @description Searches artists, albums, songs and public playlists (merging remote-provider results when enabled), returned as one list ranked by relevance to the query. `type` scopes the search server-side to just that result type.
          */
         get: {
             parameters: {
                 query: {
                     /** @description Search query */
                     q: string;
+                    /** @description Scope to one result type: artist, album, song or playlist (default: all) */
+                    type?: string;
                     /** @description Max artists */
                     artistCount?: number;
                     /** @description Max albums */
@@ -9243,10 +9257,16 @@ export interface components {
             playedAt?: number;
             submission?: boolean;
         };
+        "immerle.searchHitView": {
+            album?: components["schemas"]["immerle.albumView"];
+            artist?: components["schemas"]["immerle.artistView"];
+            playlist?: components["schemas"]["immerle.playlistView"];
+            song?: components["schemas"]["immerle.songView"];
+            /** @description artist|album|song|playlist */
+            type?: string;
+        };
         "immerle.searchView": {
-            albums?: components["schemas"]["immerle.albumView"][];
-            artists?: components["schemas"]["immerle.artistView"][];
-            songs?: components["schemas"]["immerle.songView"][];
+            results?: components["schemas"]["immerle.searchHitView"][];
         };
         "immerle.setEnabledRequest": {
             enabled?: boolean;

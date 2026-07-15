@@ -10,10 +10,10 @@ func TestSignedStreamURLs(t *testing.T) {
 	srv, token, _ := newBrowseEnv(t)
 
 	var search searchView
-	if st := getJSON(t, srv, token, "/search?q=So+What", &search); st != http.StatusOK || len(search.Songs) == 0 {
-		t.Fatalf("search: status %d, songs %d", st, len(search.Songs))
+	if st := getJSON(t, srv, token, "/search?q=So+What", &search); st != http.StatusOK || len(search.Songs()) == 0 {
+		t.Fatalf("search: status %d, songs %d", st, len(search.Songs()))
 	}
-	id := search.Songs[0].ID
+	id := search.Songs()[0].ID
 
 	// Mint signed URLs (Bearer).
 	var urls streamURLs
@@ -49,10 +49,10 @@ func TestCoverIsPublic(t *testing.T) {
 	srv, token, _ := newBrowseEnv(t)
 
 	var search searchView
-	if st := getJSON(t, srv, token, "/search?q=So+What", &search); st != http.StatusOK || len(search.Songs) == 0 {
+	if st := getJSON(t, srv, token, "/search?q=So+What", &search); st != http.StatusOK || len(search.Songs()) == 0 {
 		t.Fatalf("search: status %d", st)
 	}
-	albumID := search.Songs[0].AlbumID
+	albumID := search.Songs()[0].AlbumID
 
 	// No Authorization header: a public route returns 404 for missing cover, NOT
 	// 401 (which an authenticated route would return).

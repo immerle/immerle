@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { useDebounced, useSearch } from '../query/search';
 import { searchNav, useSearchUI } from '../search/store';
 import { CoverArt } from './CoverArt';
-import { AlbumTile } from './AlbumCard';
+import { PlaylistCover } from './PlaylistCover';
 import { TrackRow } from './TrackRow';
 import { EmptyState, Loading } from './ui';
 import { Ionicon } from './Ionicon';
@@ -12,13 +12,25 @@ import { usePlayer } from '../audio/store';
 import { useTrackMenu } from './trackMenu';
 import { useColors } from '../theme/colors';
 import { useT } from '../i18n/store';
+import { SearchHit } from '../api/immerle/catalog';
+
+/** i18n key for a hit's type label, shown in its row's subtitle. */
+const TYPE_LABEL_KEY: Record<SearchHit['type'], string> = {
+  artist: 'components.search.typeArtist',
+  album: 'components.search.typeAlbum',
+  song: 'components.search.typeSong',
+  playlist: 'components.search.typePlaylist',
+};
 
 /**
  * Live search results, shared by the web header popover and the mobile
  * full-screen overlay. When the query is empty it shows recent searches.
  *
- * Artists and songs form a single vertical, keyboard-navigable list (↑/↓/Enter,
- * driven by `SearchOverlay`); albums are a mouse/touch carousel at the bottom.
+ * Artists, albums, songs and public playlists render as one vertical,
+ * keyboard-navigable list (↑/↓/Enter, driven by `SearchOverlay`), in the
+ * relevance order the backend already ranked them in — no per-type
+ * grouping. The result-type filter (see SearchTypeFilterButton, in the
+ * search bar itself) is applied server-side, so `data` is already scoped.
  * Selecting anything records the query as recent and dismisses the search.
  */
 export function SearchResults({ onClose }: { onClose: () => void }) {
@@ -29,15 +41,15 @@ export function SearchResults({ onClose }: { onClose: () => void }) {
   const setQuery = useSearchUI((s) => s.setQuery);
   const addRecent = useSearchUI((s) => s.addRecent);
   const activeIndex = useSearchUI((s) => s.activeIndex);
+  const typeFilter = useSearchUI((s) => s.typeFilter);
   const debounced = useDebounced(query, 250);
-  const { data, isLoading, isFetching } = useSearch(debounced);
+  const { data, isLoading, isFetching } = useSearch(debounced, typeFilter);
   const playSongs = usePlayer((s) => s.playSongs);
   const openMenu = useTrackMenu((s) => s.open);
 
   const trimmed = debounced.trim();
-  const songs = data?.song ?? [];
-  const albums = data?.album ?? [];
-  const artists = (data?.artist ?? []).slice(0, 5);
+  const hits = data ?? [];
+  const songs = hits.filter((h) => h.type === 'song').map((h) => h.song);
 
   const select = (action: () => void) => {
     addRecent(trimmed);
@@ -45,14 +57,22 @@ export function SearchResults({ onClose }: { onClose: () => void }) {
     onClose();
   };
 
-  // Flat keyboard list = artists then songs (both vertical rows).
-  const flat = [
-    ...artists.map((a) => () => select(() => router.push(`/artist/${a.id}` as never))),
-    ...songs.map((s, i) => () => select(() => playSongs(songs, i))),
-  ];
+  const actionFor = (hit: SearchHit): (() => void) => {
+    switch (hit.type) {
+      case 'artist':
+        return () => select(() => router.push(`/artist/${hit.artist.id}` as never));
+      case 'album':
+        return () => select(() => router.push(`/album/${hit.album.id}` as never));
+      case 'playlist':
+        return () => select(() => router.push(`/playlist/${hit.playlist.id}` as never));
+      case 'song':
+        return () => select(() => playSongs(songs, songs.indexOf(hit.song)));
+    }
+  };
 
   // Publish the flat list for SearchOverlay's keyboard handler.
   useEffect(() => {
+    const flat = hits.map(actionFor);
     searchNav.count = flat.length;
     searchNav.selectAt = (i) => flat[i]?.();
     return () => {
@@ -85,65 +105,68 @@ export function SearchResults({ onClose }: { onClose: () => void }) {
   }
 
   if (isLoading) return <Loading />;
-  const empty = !isFetching && !songs.length && !albums.length && !artists.length;
-  if (empty) {
+  if (!isFetching && hits.length === 0) {
     return <EmptyState icon="sad-outline" title={t('components.search.noResults')} subtitle={t('components.search.nothingFor', { query: trimmed })} />;
   }
 
   return (
     <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 16 }}>
-      {artists.length > 0 ? (
-        <Section title={t('components.search.artists')}>
-          {artists.map((a, i) => (
-            <Pressable
-              key={a.id}
-              onPress={() => select(() => router.push(`/artist/${a.id}` as never))}
-              className={`flex-row items-center gap-3 px-4 py-2 ${activeIndex === i ? 'bg-surface-alt' : ''} active:bg-surface-alt`}
-            >
-              <CoverArt coverArt={a.coverArt} url={a.artistImageUrl} size={44} rounded="rounded-full" fallbackIcon="person" />
-              <Text numberOfLines={1} className="flex-1 text-base font-medium text-foreground">
-                {a.name}
-              </Text>
-            </Pressable>
-          ))}
-        </Section>
-      ) : null}
-
-      {songs.length > 0 ? (
-        <Section title={t('components.search.songs')}>
-          {songs.map((s, i) => {
-            const flatIndex = artists.length + i;
-            return (
-              <View key={`${s.id}:${i}`} className={activeIndex === flatIndex ? 'bg-surface-alt' : ''}>
-                <TrackRow
-                  song={s}
-                  onPress={() => select(() => playSongs(songs, i))}
-                  onMore={() => openMenu(s)}
-                />
-              </View>
-            );
-          })}
-        </Section>
-      ) : null}
-
-      {albums.length > 0 ? (
-        <Section title={t('components.search.albums')}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
-            {albums.map((a) => (
-              <AlbumTile key={a.id} album={a} size={120} />
-            ))}
-          </ScrollView>
-        </Section>
-      ) : null}
+      {hits.map((hit, i) => (
+        <View key={`${hit.type}:${i}`} className={activeIndex === i ? 'bg-surface-alt' : ''}>
+          <SearchHitRow hit={hit} onPress={actionFor(hit)} onMore={hit.type === 'song' ? () => openMenu(hit.song) : undefined} />
+        </View>
+      ))}
     </ScrollView>
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <View className="pb-1">
-      <Text className="px-4 pb-1 pt-3 text-base font-bold text-foreground">{title}</Text>
-      {children}
-    </View>
-  );
+function SearchHitRow({ hit, onPress, onMore }: { hit: SearchHit; onPress: () => void; onMore?: () => void }) {
+  const t = useT();
+  const typeLabel = t(TYPE_LABEL_KEY[hit.type]);
+  switch (hit.type) {
+    case 'song':
+      return <TrackRow song={hit.song} typeLabel={typeLabel} onPress={onPress} onMore={onMore} />;
+    case 'artist':
+      return (
+        <Pressable onPress={onPress} className="flex-row items-center gap-3 px-4 py-2 active:bg-surface-alt">
+          <CoverArt coverArt={hit.artist.coverArt} url={hit.artist.artistImageUrl} size={44} rounded="rounded-full" fallbackIcon="person" />
+          <View className="flex-1">
+            <Text numberOfLines={1} className="text-base font-medium text-foreground">
+              {hit.artist.name}
+            </Text>
+            <Text numberOfLines={1} className="text-sm text-muted">
+              {typeLabel}
+            </Text>
+          </View>
+        </Pressable>
+      );
+    case 'album':
+      return (
+        <Pressable onPress={onPress} className="flex-row items-center gap-3 px-4 py-2 active:bg-surface-alt">
+          <CoverArt coverArt={hit.album.coverArt} size={44} />
+          <View className="flex-1">
+            <Text numberOfLines={1} className="text-base font-medium text-foreground">
+              {hit.album.name}
+            </Text>
+            <Text numberOfLines={1} className="text-sm text-muted">
+              {hit.album.artist ? `${typeLabel} · ${hit.album.artist}` : typeLabel}
+            </Text>
+          </View>
+        </Pressable>
+      );
+    case 'playlist':
+      return (
+        <Pressable onPress={onPress} className="flex-row items-center gap-3 px-4 py-2 active:bg-surface-alt">
+          <PlaylistCover coverArt={hit.playlist.coverArt} covers={hit.playlist.coverArts ?? []} size={44} fallbackIcon="list" />
+          <View className="flex-1">
+            <Text numberOfLines={1} className="text-base font-medium text-foreground">
+              {hit.playlist.name}
+            </Text>
+            <Text numberOfLines={1} className="text-sm text-muted">
+              {typeLabel}
+            </Text>
+          </View>
+        </Pressable>
+      );
+  }
 }

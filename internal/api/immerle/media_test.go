@@ -9,10 +9,10 @@ func TestStreamAndDownload(t *testing.T) {
 	srv, token, _ := newBrowseEnv(t)
 
 	var search searchView
-	if st := getJSON(t, srv, token, "/search?q=So+What", &search); st != http.StatusOK || len(search.Songs) == 0 {
-		t.Fatalf("search: status %d, songs %d", st, len(search.Songs))
+	if st := getJSON(t, srv, token, "/search?q=So+What", &search); st != http.StatusOK || len(search.Songs()) == 0 {
+		t.Fatalf("search: status %d, songs %d", st, len(search.Songs()))
 	}
-	id := search.Songs[0].ID
+	id := search.Songs()[0].ID
 
 	// A range request yields 206 Partial Content.
 	req, _ := http.NewRequest(http.MethodGet, srv.URL+apiBase+"/songs/"+id+"/stream", nil)
