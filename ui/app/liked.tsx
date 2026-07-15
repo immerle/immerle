@@ -6,19 +6,9 @@ import { LikedCover } from '../src/components/LikedCover';
 import { PlayButton } from '../src/components/PlayButton';
 import { EmptyState, ErrorState, IconButton, Loading } from '../src/components/ui';
 import { usePlayer } from '../src/audio/store';
-import { Song } from '../src/api/subsonic/types';
 import { formatDuration } from '../src/utils/format';
 import { useColors } from '../src/theme/colors';
 import { useT } from '../src/i18n/store';
-
-function shuffleArray(songs: Song[]): Song[] {
-  const a = [...songs];
-  for (let i = a.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
 
 /**
  * "Titres likés" — a virtual playlist backed by the Subsonic `getStarred2`
@@ -29,6 +19,8 @@ export default function Liked() {
   const colors = useColors();
   const q = useStarred();
   const playSongs = usePlayer((s) => s.playSongs);
+  const playShuffled = usePlayer((s) => s.playShuffled);
+  const shuffleOn = usePlayer((s) => s.shuffle);
 
   const songs = q.data?.song ?? [];
   const totalDuration = songs.reduce((n, s) => n + (s.duration ?? 0), 0);
@@ -44,8 +36,8 @@ export default function Liked() {
         <IconButton
           name="shuffle"
           size={26}
-          color={colors.muted}
-          onPress={() => songs.length && playSongs(shuffleArray(songs), 0)}
+          color={shuffleOn ? colors.primary : colors.muted}
+          onPress={() => playShuffled(songs)}
           accessibilityLabel={t('media.liked.shuffle')}
         />
         <PlayButton

@@ -454,7 +454,14 @@ export class ImmerleClient {
    * which has no real catalog row the server could otherwise resolve it
    * from when this queue is mirrored on another device.
    */
-  async savePlayQueue(songs: Song[], current?: string, positionMs?: number, playing?: boolean): Promise<void> {
+  async savePlayQueue(
+    songs: Song[],
+    current?: string,
+    positionMs?: number,
+    playing?: boolean,
+    shuffle?: boolean,
+    repeat?: string,
+  ): Promise<void> {
     const { error } = await this.api.PUT('/play-queue', {
       body: {
         ids: songs.map((s) => s.id),
@@ -471,6 +478,8 @@ export class ImmerleClient {
         position: positionMs,
         playing: !!playing,
         client: this.session?.deviceId || 'immerle',
+        shuffle: !!shuffle,
+        repeat: repeat ?? 'off',
       },
     });
     if (error) throw apiErr(error, 'playqueue.save');

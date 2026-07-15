@@ -110,6 +110,15 @@ interface AudioState {
   hydrateSettings: () => Promise<void>;
 
   playSongs: (songs: Song[], startIndex?: number) => Promise<void>;
+  /**
+   * Plays songs with shuffle mode turned on, instead of each screen
+   * (liked/album/artist) hand-rolling its own one-off shuffled array — that
+   * left the shuffle toggle in the player bar/full player out of sync with
+   * what was actually playing. Loads in original order (so orderBackup
+   * captures the true original for turning shuffle back off later), then
+   * enables shuffle through the normal toggle if it wasn't already on.
+   */
+  playShuffled: (songs: Song[]) => Promise<void>;
   /** Play an internet radio station by its raw stream URL (single live track). */
   playRadio: (station: { id: string; name: string; streamUrl: string; hasCover?: boolean }) => Promise<void>;
   playNext: (songs: Song[]) => Promise<void>;
@@ -364,12 +373,18 @@ async function applyRemoteQueue(
       position: remote.positionMs / 1000,
       duration: remote.songs[idx]?.duration ?? 0,
       playingDeviceId: client()?.getSession()?.deviceId ?? '',
+      // Adopt the saved shuffle/repeat mode — this device is becoming (or
+      // remains) the one actually driving playback, so its own transport
+      // mode should match what was last saved, not its prior local value.
+      shuffle: remote.shuffle,
+      repeat: remote.repeat,
     });
     const tracks = await Promise.all(remote.songs.map((s) => songToTrack(c, s, get().qualityId)));
     // setQueue only loads (paused) — seek before playing, so a fresh source
     // never briefly plays from 0 and races the seek (see engine.web.ts).
     await engine.setQueue(tracks, idx);
     await engine.seekTo(remote.positionMs / 1000);
+    await engine.setRepeatMode(remote.repeat);
     if (autoplay) await engine.play();
   } finally {
     // Keep suppressing engine-driven writes for a short grace period past
@@ -415,6 +430,11 @@ function applyDisplaySnapshot(set: (partial: Partial<AudioState>) => void, remot
     // changedBy (who last wrote) — the target stays authoritative even for
     // one poll/event cycle where a fresh write hasn't landed from them yet.
     playingDeviceId: remote.targetDeviceId || remote.changedBy || '',
+    // Mirror the actual active device's shuffle/repeat mode rather than
+    // leaving this device's own (possibly stale) local value shown — see
+    // models.PlayQueue.Shuffle/Repeat.
+    shuffle: remote.shuffle,
+    repeat: remote.repeat,
   });
 }
 
@@ -825,6 +845,12 @@ export const usePlayer = create<AudioState>((set, get) => ({
     flushSaveQueue(get, true, 'playSongs');
   },
 
+  playShuffled: async (songs) => {
+    if (songs.length === 0) return;
+    await get().playSongs(songs, 0);
+    if (!get().shuffle) await get().toggleShuffle();
+  },
+
   playRadio: async (station) => {
     const { stale, release } = await acquireEngineReloadLock();
     try {
@@ -1024,6 +1050,10 @@ export const usePlayer = create<AudioState>((set, get) => ({
     const next = order[(order.indexOf(get().repeat) + 1) % order.length];
     set({ repeat: next });
     await get().engine?.setRepeatMode(next);
+    // Immediately, not throttled — like seekTo/pause, a deliberate discrete
+    // change another device mirroring this queue should reflect right away
+    // (see applyDisplaySnapshot/applyRemoteQueue).
+    flushSaveQueue(get, false, 'cycleRepeat');
   },
 
   toggleShuffle: async () => {
@@ -1063,6 +1093,8 @@ export const usePlayer = create<AudioState>((set, get) => ({
     await engine.setQueue(tracks, nextIndex);
     await engine.seekTo(position);
     if (wasPlaying) await engine.play();
+    // Immediately, not throttled — see cycleRepeat.
+    flushSaveQueue(get, false, 'toggleShuffle');
   },
 
   setVolume: (volume) => {
@@ -1177,11 +1209,11 @@ function flushSaveQueue(get: () => AudioState, force = false, reason = 'unknown'
   if (!force && isSpectating(get)) return;
   lastQueueSaveAt = Date.now();
   const c = client();
-  const { songs, index, position, status } = get();
+  const { songs, index, position, status, shuffle, repeat } = get();
   if (!c || songs.length === 0 || index < 0) return;
   // eslint-disable-next-line no-console
-  console.log('[playqueue] flush', { reason, force, current: songs[index]?.id, position, status, suppressEngineEvents });
-  void c.savePlayQueue(songs, songs[index]?.id, Math.floor(position * 1000), status === 'playing').catch(() => undefined);
+  console.log('[playqueue] flush', { reason, force, current: songs[index]?.id, position, status, shuffle, repeat, suppressEngineEvents });
+  void c.savePlayQueue(songs, songs[index]?.id, Math.floor(position * 1000), status === 'playing', shuffle, repeat).catch(() => undefined);
 }
 
 /**

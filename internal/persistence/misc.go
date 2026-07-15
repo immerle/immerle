@@ -35,6 +35,8 @@ func (r *PlayQueueRepo) Save(ctx context.Context, q models.PlayQueue) error {
 		Set("playing", db.Bool(q.Playing)).UpdateDuplicateKey().
 		Set("changed_by", q.ChangedBy).UpdateDuplicateKey().
 		Set("changed_at", db.Millis(q.ChangedAt)).UpdateDuplicateKey().
+		Set("shuffle", db.Bool(q.Shuffle)).UpdateDuplicateKey().
+		Set("repeat_mode", q.Repeat).UpdateDuplicateKey().
 		OnConflict("user_id"))
 	return err
 }
@@ -44,11 +46,11 @@ func (r *PlayQueueRepo) Get(ctx context.Context, userID string) (models.PlayQueu
 	var q models.PlayQueue
 	var ids, entriesJSON, commandJSON string
 	var changedAt int64
-	var playing int
+	var playing, shuffle int
 	var targetChangedAt sql.NullInt64
 	err := r.bqueryRow(ctx, r.mel.New("play_queues").
-		Select("user_id", "track_ids", "entries_json", "current", "position_ms", "playing", "changed_by", "changed_at", "target_device_id", "target_changed_at", "command_json", "command_seq").
-		Where("user_id", "=", userID)).Scan(&q.UserID, &ids, &entriesJSON, &q.Current, &q.PositionMs, &playing, &q.ChangedBy, &changedAt, &q.TargetDeviceID, &targetChangedAt, &commandJSON, &q.CommandSeq)
+		Select("user_id", "track_ids", "entries_json", "current", "position_ms", "playing", "changed_by", "changed_at", "target_device_id", "target_changed_at", "command_json", "command_seq", "shuffle", "repeat_mode").
+		Where("user_id", "=", userID)).Scan(&q.UserID, &ids, &entriesJSON, &q.Current, &q.PositionMs, &playing, &q.ChangedBy, &changedAt, &q.TargetDeviceID, &targetChangedAt, &commandJSON, &q.CommandSeq, &shuffle, &q.Repeat)
 	if errors.Is(err, sql.ErrNoRows) {
 		return q, ErrNotFound
 	}
@@ -68,6 +70,7 @@ func (r *PlayQueueRepo) Get(ctx context.Context, userID string) (models.PlayQueu
 		}
 	}
 	q.Playing = playing != 0
+	q.Shuffle = shuffle != 0
 	q.ChangedAt = db.FromMillis(changedAt)
 	q.TargetChangedAt = db.TimePtr(targetChangedAt)
 	return q, nil

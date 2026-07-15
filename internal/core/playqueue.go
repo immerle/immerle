@@ -133,8 +133,11 @@ func (s *PlayQueueService) Get(ctx context.Context, userID string) (PlayQueueRes
 // Save persists the user's play queue, stamped with the current time, and
 // notifies subscribers (see Subscribe). entries is a display-metadata
 // snapshot for each of trackIDs (see models.PlayQueue.Entries) — may be nil
-// (e.g. from a Subsonic client, which has no rich metadata to offer).
-func (s *PlayQueueService) Save(ctx context.Context, userID, current string, positionMs int64, playing bool, changedBy string, trackIDs []string, entries []models.QueueEntry) error {
+// (e.g. from a Subsonic client, which has no rich metadata to offer). shuffle
+// and repeat mirror the saving device's transport mode (see
+// models.PlayQueue.Shuffle/Repeat) — a Subsonic client passes shuffle=false,
+// repeat="" since it has no such concept.
+func (s *PlayQueueService) Save(ctx context.Context, userID, current string, positionMs int64, playing bool, changedBy string, trackIDs []string, entries []models.QueueEntry, shuffle bool, repeat string) error {
 	if err := s.playQueues.Save(ctx, models.PlayQueue{
 		UserID:     userID,
 		Current:    current,
@@ -144,6 +147,8 @@ func (s *PlayQueueService) Save(ctx context.Context, userID, current string, pos
 		ChangedAt:  time.Now(),
 		TrackIDs:   trackIDs,
 		Entries:    entries,
+		Shuffle:    shuffle,
+		Repeat:     repeat,
 	}); err != nil {
 		return err
 	}

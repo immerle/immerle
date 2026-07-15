@@ -58,6 +58,49 @@ func TestPlayQueueAndNowPlaying(t *testing.T) {
 	}
 }
 
+// TestPlayQueueShuffleAndRepeatRoundTrip covers a real bug report: shuffle/
+// repeat weren't part of the saved queue at all, so a device that mirrors or
+// takes over another device's session (see ui/src/audio/store.ts's
+// applyDisplaySnapshot/applyRemoteQueue) showed its own stale local value
+// instead of the actual playing device's mode.
+func TestPlayQueueShuffleAndRepeatRoundTrip(t *testing.T) {
+	srv, token, _ := newBrowseEnv(t)
+
+	var search searchView
+	if st := getJSON(t, srv, token, "/search?q=So+What", &search); st != http.StatusOK || len(search.Songs()) == 0 {
+		t.Fatalf("search: status %d, songs %d", st, len(search.Songs()))
+	}
+	id := search.Songs()[0].ID
+
+	if st := doStatus(t, srv, http.MethodPut, "/play-queue", token, map[string]any{
+		"ids": []string{id}, "current": id, "position": 0, "playing": true,
+		"shuffle": true, "repeat": "track",
+	}); st != http.StatusNoContent {
+		t.Fatalf("save queue: status %d", st)
+	}
+	var q playQueueView
+	if st := getJSON(t, srv, token, "/play-queue", &q); st != http.StatusOK {
+		t.Fatalf("get queue: status %d", st)
+	}
+	if !q.Shuffle || q.Repeat != "track" {
+		t.Fatalf("shuffle/repeat not persisted: %+v", q)
+	}
+
+	// A later save with different values overwrites, not merges.
+	if st := doStatus(t, srv, http.MethodPut, "/play-queue", token, map[string]any{
+		"ids": []string{id}, "current": id, "position": 0, "playing": true,
+		"shuffle": false, "repeat": "off",
+	}); st != http.StatusNoContent {
+		t.Fatalf("save queue: status %d", st)
+	}
+	if st := getJSON(t, srv, token, "/play-queue", &q); st != http.StatusOK {
+		t.Fatalf("get queue: status %d", st)
+	}
+	if q.Shuffle || q.Repeat != "off" {
+		t.Fatalf("shuffle/repeat not overwritten: %+v", q)
+	}
+}
+
 // TestPlaybackTargets covers the "cast to device" feature: setting/clearing
 // the active-playback device on the saved queue, and listing candidate
 // targets — which must include only device-kind tokens (app logins) that

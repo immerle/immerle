@@ -540,6 +540,13 @@ type PlayQueue struct {
 	ChangedBy string    `json:"changedBy,omitempty"`
 	ChangedAt time.Time `json:"changed"`
 	TrackIDs  []string  `json:"trackIds"`
+	// Shuffle/Repeat mirror the saving device's transport mode — so a device
+	// that mirrors (spectates) or takes over this queue shows/resumes the
+	// same mode instead of its own possibly-stale local one. Repeat is one of
+	// "off", "queue", "track" (see the UI's RepeatMode); not validated
+	// server-side, just carried through as an opaque string.
+	Shuffle bool   `json:"shuffle"`
+	Repeat  string `json:"repeat,omitempty"`
 	// Entries is a snapshot of each queued track's display metadata, as
 	// reported by the saving client — used as a fallback when resolving a
 	// TrackID via the local catalog fails, most commonly a not-yet-downloaded

@@ -83,6 +83,8 @@ export function toPlayQueueSnapshot(v: PlayQueueView): PlayQueueSnapshot {
         }
       : undefined,
     commandSeq: v.commandSeq ?? 0,
+    shuffle: !!v.shuffle,
+    repeat: (v.repeat as PlayQueueSnapshot['repeat']) || 'off',
   };
 }
 

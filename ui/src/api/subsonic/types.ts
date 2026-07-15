@@ -151,6 +151,9 @@ export interface PlayQueueSnapshot {
   pendingCommand?: PlayQueueCommand;
   /** Increases on every new command — lets a device tell a new one from one it already applied. */
   commandSeq: number;
+  /** The saving device's shuffle/repeat mode — mirrored so another device that spectates or takes over this queue shows/resumes the same mode instead of its own possibly-stale local one. */
+  shuffle: boolean;
+  repeat: 'off' | 'track' | 'queue';
 }
 
 export interface Playlist {

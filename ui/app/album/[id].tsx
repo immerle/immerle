@@ -12,7 +12,6 @@ import { PlayButton } from '../../src/components/PlayButton';
 import { DownloadButton } from '../../src/components/DownloadButton';
 import { usePlayer } from '../../src/audio/store';
 import { useColors } from '../../src/theme/colors';
-import { Song } from '../../src/api/subsonic/types';
 import { formatDuration } from '../../src/utils/format';
 import { useT } from '../../src/i18n/store';
 import { useWebTitle } from '../../src/utils/documentTitle';
@@ -29,6 +28,8 @@ export default function AlbumDetail() {
   const q = useAlbum(id);
   const cached = useOfflineCatalog((s) => s.albums[id]);
   const playSongs = usePlayer((s) => s.playSongs);
+  const playShuffled = usePlayer((s) => s.playShuffled);
+  const shuffleOn = usePlayer((s) => s.shuffle);
   useWebTitle(q.data?.name);
 
   if (q.isLoading && !cached) {
@@ -82,7 +83,7 @@ export default function AlbumDetail() {
   const coverUrl = client?.coverArtUrl(album.coverArt, 700);
 
   const playAll = () => songs.length && playSongs(songs, 0);
-  const shuffle = () => songs.length && playSongs(shuffleArray(songs), 0);
+  const shuffle = () => playShuffled(songs);
 
   const Header = (
     <View>
@@ -125,7 +126,7 @@ export default function AlbumDetail() {
       {/* Action bar over the page background. */}
       <View className="flex-row items-center gap-5 px-4 py-4">
         <PlayButton onPress={playAll} size={56} accessibilityLabel={t('media.album.play')} />
-        <IconButton name="shuffle" size={26} color={colors.muted} onPress={shuffle} accessibilityLabel={t('media.album.shuffle')} />
+        <IconButton name="shuffle" size={26} color={shuffleOn ? colors.primary : colors.muted} onPress={shuffle} accessibilityLabel={t('media.album.shuffle')} />
         <DownloadButton
           songs={songs}
           size={26}
@@ -143,13 +144,4 @@ export default function AlbumDetail() {
       </View>
     </>
   );
-}
-
-function shuffleArray(songs: Song[]): Song[] {
-  const arr = [...songs];
-  for (let i = arr.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
 }

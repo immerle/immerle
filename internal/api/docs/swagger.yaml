@@ -1303,6 +1303,14 @@ components:
           type: boolean
         position:
           type: integer
+        repeat:
+          type: string
+        shuffle:
+          description: |-
+            Shuffle/Repeat mirror this device's transport mode (see
+            models.PlayQueue.Shuffle/Repeat) — carried through so another device
+            that mirrors or takes over this queue shows/resumes the same mode.
+          type: boolean
       type: object
     immerle.playQueueView:
       properties:
@@ -1328,6 +1336,13 @@ components:
           type: boolean
         position:
           type: integer
+        repeat:
+          type: string
+        shuffle:
+          description: |-
+            Shuffle/Repeat mirror the saving device's transport mode, so any device
+            that mirrors or takes over this queue shows/resumes the same mode.
+          type: boolean
         targetDeviceId:
           description: |-
             TargetDeviceID, when set, is the id of the sole device that should be
