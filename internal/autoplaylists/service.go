@@ -6,12 +6,13 @@
 //   - Genre and decade playlists ("Rock", "Rap", "1990s"...): shared, public,
 //     one per genre/decade with enough tracks.
 //   - Personal listening lists ("Top du mois", "On Repeat", "Favoris
-//     oubliés"): one each per user, private, real playlist rows rather than a
-//     bespoke live-computed view. They're intentionally not subscribed into
-//     the owner's library (see playlistSpec) — a user unsubscribing/unliking
-//     one (easy to do by mistake, since Federated hides normal owner
-//     controls) must not lose access to it. GET /me/custom-playlists is the
-//     dedicated lookup, independent of subscriptions.
+//     oubliés", "Aléatoire"): one each per user, private, real playlist rows
+//     rather than a bespoke live-computed view. They're intentionally not
+//     subscribed into the owner's library (see playlistSpec) — a user
+//     unsubscribing/unliking one (easy to do by mistake, since Federated
+//     hides normal owner controls) must not lose access to it. GET
+//     /me/custom-playlists is the dedicated lookup, independent of
+//     subscriptions.
 package autoplaylists
 
 import (
@@ -41,6 +42,7 @@ const (
 	SourceTopMonth  = "top-month-mix"
 	SourceOnRepeat  = "on-repeat-mix"
 	SourceForgotten = "forgotten-mix"
+	SourceRandom    = "random-mix"
 )
 
 // minTracks is the minimum catalog size for a genre/decade to get its own
@@ -53,6 +55,10 @@ const minTracks = 15
 // maxPersonalTracks bounds a personal list.
 const maxTracks = 100
 const maxPersonalTracks = 20
+
+// randomTrackCount is how many tracks the "Aléatoire" personal list holds —
+// its own size, distinct from maxPersonalTracks.
+const randomTrackCount = 30
 
 // forgottenMinDays is how long a starred track must go unplayed (or never
 // played at all) to count as "forgotten."
@@ -190,7 +196,7 @@ func (s *Service) syncDecades(ctx context.Context, ownerID string) int {
 }
 
 // syncPersonal rebuilds every user's "Top du mois"/"On Repeat"/"Favoris
-// oubliés" — real, private playlists (looked up directly by GET
+// oubliés"/"Aléatoire" — real, private playlists (looked up directly by GET
 // /me/custom-playlists, not via the owner's subscribed library), not a
 // live-computed view.
 func (s *Service) syncPersonal(ctx context.Context) int {
@@ -217,6 +223,10 @@ func (s *Service) syncPersonal(ctx context.Context) int {
 			func() ([]string, error) {
 				return s.annotations.ForgottenFavorites(ctx, u.ID, models.ItemTrack, now.AddDate(0, 0, -forgottenMinDays), maxPersonalTracks)
 			}) {
+			synced++
+		}
+		if s.syncPersonalOne(ctx, u.ID, SourceRandom, randomName, diceIcon,
+			func() ([]string, error) { return s.randomTrackIDs(ctx) }) {
 			synced++
 		}
 	}
@@ -258,6 +268,17 @@ func (s *Service) topTrackIDs(ctx context.Context, userID string, start, end int
 	return ids, nil
 }
 
+// randomTrackIDs picks randomTrackCount random tracks from the whole catalog
+// (not scoped to the user — unlike the other personal lists, "Aléatoire"
+// doesn't depend on listening history, just a fresh shuffle each sync).
+func (s *Service) randomTrackIDs(ctx context.Context) ([]string, error) {
+	tracks, err := s.catalog.RandomTracks(ctx, randomTrackCount, "", 0, 0)
+	if err != nil {
+		return nil, err
+	}
+	return trackIDs(tracks), nil
+}
+
 // Personal-list display names. Plain strings (like genre/decade names, and
 // like internal/charts' chart names) — a playlist's stored Name isn't
 // per-viewer-locale, same limitation every server-generated playlist name has.
@@ -265,6 +286,7 @@ const (
 	topMonthName  = "Top du mois"
 	onRepeatName  = "On Repeat"
 	forgottenName = "Favoris oubliés"
+	randomName    = "Aléatoire"
 )
 
 // Twemoji codepoints (see covergen.FetchEmoji) for each auto-playlist kind.
@@ -272,6 +294,7 @@ const (
 	musicNoteIcon  = "1f3b5" // 🎵 — genre/decade playlists (free-text tags, no fixed per-genre icon)
 	trendingUpIcon = "1f4c8" // 📈 — Top du mois
 	repeatIcon     = "1f501" // 🔁 — On Repeat
+	diceIcon       = "1f3b2" // 🎲 — Aléatoire
 	hourglassIcon  = "23f3"  // ⏳ — Favoris oubliés
 )
 

@@ -62,8 +62,8 @@ func TestSyncNowMaterializesGenreAndDecadePlaylists(t *testing.T) {
 	if err != nil {
 		t.Fatalf("SyncNow: %v", err)
 	}
-	if n != 2 {
-		t.Fatalf("expected 2 auto-playlists synced (Rock + 1990s), got %d", n)
+	if n != 3 { // Rock + 1990s + the owner's own "Aléatoire" random mix
+		t.Fatalf("expected 3 auto-playlists synced, got %d", n)
 	}
 
 	rock, err := store.Playlists.FindFederated(ctx, sourceGenre, "Rock")
@@ -119,7 +119,8 @@ func TestSyncNowMaterializesGenreAndDecadePlaylists(t *testing.T) {
 }
 
 // TestSyncNowMaterializesPersonalListsAsPrivatePlaylists covers the personal
-// lists: real playlists (not a live-computed view), owned by their user,
+// lists (top-month, forgotten favorites, and the activity-independent random
+// mix): real playlists (not a live-computed view), owned by their user,
 // private (not searchable/visible to anyone else), and deliberately not
 // subscribed — found via GET /me/custom-playlists, not the owner's library.
 func TestSyncNowMaterializesPersonalListsAsPrivatePlaylists(t *testing.T) {
@@ -210,9 +211,25 @@ func TestSyncNowMaterializesPersonalListsAsPrivatePlaylists(t *testing.T) {
 		t.Fatalf("expected just the forgotten favorite, got %+v", forgottenTracks)
 	}
 
-	// The idle user has no listening history at all: no personal lists.
+	// The idle user has no listening history at all: no top-month/forgotten
+	// lists (those depend on activity) — but still gets a random mix, since
+	// "Aléatoire" only depends on the catalog having tracks, not on the user.
 	if _, err := store.Playlists.FindFederated(ctx, SourceTopMonth, idle.ID); err == nil {
 		t.Fatal("an inactive user must not get a top-month playlist")
+	}
+	idleRandom, err := store.Playlists.FindFederated(ctx, SourceRandom, idle.ID)
+	if err != nil {
+		t.Fatalf("random playlist not created for the idle user: %v", err)
+	}
+	if idleRandom.Public || !idleRandom.Federated || idleRandom.OwnerID != idle.ID {
+		t.Fatalf("expected a private, federated, idle-owned random playlist, got %+v", idleRandom)
+	}
+	randomTracks, err := store.Playlists.Tracks(ctx, idleRandom.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(randomTracks) != 2 { // only 2 tracks exist in the whole catalog
+		t.Fatalf("expected all 2 catalog tracks in the random mix, got %d", len(randomTracks))
 	}
 }
 

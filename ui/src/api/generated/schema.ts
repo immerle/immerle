@@ -5239,7 +5239,7 @@ export interface paths {
         };
         /**
          * Custom auto-generated playlists
-         * @description Returns the caller's personal auto-generated playlists (top of the month, on repeat, forgotten favorites) that currently have at least one track.
+         * @description Returns the caller's personal auto-generated playlists (top of the month, on repeat, forgotten favorites, random) that currently have at least one track.
          */
         get: {
             parameters: {
