@@ -11,8 +11,6 @@ export const qk = {
   search: (query: string, type: string) => ['search', query, type] as const,
   starred: ['starred'] as const,
   local: ['local'] as const,
-  topTracks: (window: 'month' | '30d') => ['topTracks', window] as const,
-  forgottenFavorites: ['forgottenFavorites'] as const,
 
   smartPlaylists: ['smartPlaylists'] as const,
   smartPlaylist: (id: string) => ['smartPlaylists', id] as const,

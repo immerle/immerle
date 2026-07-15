@@ -387,10 +387,11 @@ func New(cfg config.Config) (*App, error) {
 	chartsSvc := charts.New(store.Playlists, "", nil, logger)
 	chartsSvc.SetOwnerResolver(func(ctx context.Context) (string, error) { return firstAdmin(ctx, store.Users) })
 
-	// Genre and decade playlists ("Rock", "Rap", "1990s"...), auto-generated
-	// from the local catalog and refreshed daily. Same materializer mechanism
-	// and owner resolution as chartsSvc above.
-	autoplaylistsSvc := autoplaylists.New(store.Catalog, store.Genres, store.Playlists, logger)
+	// Genre/decade playlists ("Rock", "Rap", "1990s"...) and personal listening
+	// lists ("Top du mois", "On Repeat", "Favoris oubliés"), auto-generated and
+	// refreshed daily as real playlists. Same materializer mechanism and owner
+	// resolution (for the shared genre/decade ones) as chartsSvc above.
+	autoplaylistsSvc := autoplaylists.New(store.Catalog, store.Genres, store.Wrapped, store.Annotations, store.Users, store.Playlists, logger)
 	autoplaylistsSvc.SetOwnerResolver(func(ctx context.Context) (string, error) { return firstAdmin(ctx, store.Users) })
 
 	// Daily retention sweep over persisted diagnostic logs. The window is read

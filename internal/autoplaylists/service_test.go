@@ -55,7 +55,7 @@ func TestSyncNowMaterializesGenreAndDecadePlaylists(t *testing.T) {
 	seedTracks(t, store, minTracks, "Rock", 1995)   // enough for both a genre and a decade playlist
 	seedTracks(t, store, minTracks-1, "Jazz", 1960) // below threshold for either
 
-	svc := New(store.Catalog, store.Genres, store.Playlists, testutil.NewLogger())
+	svc := New(store.Catalog, store.Genres, store.Wrapped, store.Annotations, store.Users, store.Playlists, testutil.NewLogger())
 	svc.SetOwner(owner.ID)
 
 	n, err := svc.SyncNow(ctx)
@@ -73,7 +73,7 @@ func TestSyncNowMaterializesGenreAndDecadePlaylists(t *testing.T) {
 	if !rock.Public || !rock.Federated {
 		t.Fatalf("expected a public, federated playlist, got %+v", rock)
 	}
-	if want := models.GeneratorCoverID(coverParams("Rock")); rock.CoverArt != want {
+	if want := models.GeneratorCoverID(coverParams("Rock", musicNoteIcon)); rock.CoverArt != want {
 		t.Fatalf("coverArt = %q, want %q", rock.CoverArt, want)
 	}
 	tracks, err := store.Playlists.Tracks(ctx, rock.ID)
@@ -115,6 +115,107 @@ func TestSyncNowMaterializesGenreAndDecadePlaylists(t *testing.T) {
 	}
 	if count != 1 {
 		t.Fatalf("expected 1 Rock playlist after re-sync, got %d", count)
+	}
+}
+
+// TestSyncNowMaterializesPersonalListsAsPrivateSubscribedPlaylists covers the
+// personal lists: real playlists (not a live-computed view), owned by and
+// auto-subscribed for their user (so they show up in that user's own
+// library — see PlaylistRepo.ListVisible), and private (not searchable/visible
+// to anyone else).
+func TestSyncNowMaterializesPersonalListsAsPrivateSubscribedPlaylists(t *testing.T) {
+	store := testutil.NewStore(t)
+	ctx := context.Background()
+	now := time.Now()
+
+	admin := models.User{ID: uuid.NewString(), Username: "admin", PasswordHash: "x", IsAdmin: true}
+	if err := store.Users.Create(ctx, admin); err != nil {
+		t.Fatal(err)
+	}
+	listener := models.User{ID: uuid.NewString(), Username: "listener", PasswordHash: "x"}
+	if err := store.Users.Create(ctx, listener); err != nil {
+		t.Fatal(err)
+	}
+	idle := models.User{ID: uuid.NewString(), Username: "idle", PasswordHash: "x"}
+	if err := store.Users.Create(ctx, idle); err != nil {
+		t.Fatal(err)
+	}
+
+	artistID, _ := store.Catalog.UpsertArtist(ctx, models.Artist{ID: uuid.NewString(), Name: "A", CreatedAt: now})
+	albumID, _ := store.Catalog.UpsertAlbum(ctx, models.Album{ID: uuid.NewString(), Name: "Al", ArtistID: artistID, CreatedAt: now})
+	newTrack := func(title string) string {
+		id, _ := store.Catalog.UpsertTrack(ctx, models.Track{ID: uuid.NewString(), Title: title, AlbumID: albumID, ArtistID: artistID, Path: uuid.NewString(), CreatedAt: now, UpdatedAt: now})
+		return id
+	}
+	playedThisMonth := newTrack("Played This Month")
+	forgotten := newTrack("Forgotten Favorite")
+
+	if err := store.Scrobbles.Insert(ctx, models.Scrobble{ID: uuid.NewString(), UserID: listener.ID, TrackID: playedThisMonth, PlayedAt: now, Submitted: true}); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Annotations.SetStarred(ctx, listener.ID, models.ItemTrack, forgotten, true); err != nil {
+		t.Fatal(err)
+	}
+
+	svc := New(store.Catalog, store.Genres, store.Wrapped, store.Annotations, store.Users, store.Playlists, testutil.NewLogger())
+	svc.SetOwner(admin.ID)
+
+	if _, err := svc.SyncNow(ctx); err != nil {
+		t.Fatalf("SyncNow: %v", err)
+	}
+
+	topMonth, err := store.Playlists.FindFederated(ctx, sourceTopMonth, listener.ID)
+	if err != nil {
+		t.Fatalf("top-month playlist not created for listener: %v", err)
+	}
+	if topMonth.Public {
+		t.Fatalf("personal list must be private, got %+v", topMonth)
+	}
+	if !topMonth.Federated {
+		t.Fatalf("personal list must be federated (read-only), got %+v", topMonth)
+	}
+	if topMonth.OwnerID != listener.ID {
+		t.Fatalf("owner = %q, want the listener", topMonth.OwnerID)
+	}
+	tracks, err := store.Playlists.Tracks(ctx, topMonth.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(tracks) != 1 || tracks[0].ID != playedThisMonth {
+		t.Fatalf("expected just the track played this month, got %+v", tracks)
+	}
+
+	// Auto-subscribed: shows up in the listener's own library.
+	visible, err := store.Playlists.ListVisible(ctx, listener.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, v := range visible {
+		if v.ID == topMonth.ID {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected the personal list to appear in the listener's own library, got %+v", visible)
+	}
+
+	// Forgotten favorites: the never-played starred track.
+	forgottenList, err := store.Playlists.FindFederated(ctx, sourceForgotten, listener.ID)
+	if err != nil {
+		t.Fatalf("forgotten-favorites playlist not created: %v", err)
+	}
+	forgottenTracks, err := store.Playlists.Tracks(ctx, forgottenList.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(forgottenTracks) != 1 || forgottenTracks[0].ID != forgotten {
+		t.Fatalf("expected just the forgotten favorite, got %+v", forgottenTracks)
+	}
+
+	// The idle user has no listening history at all: no personal lists.
+	if _, err := store.Playlists.FindFederated(ctx, sourceTopMonth, idle.ID); err == nil {
+		t.Fatal("an inactive user must not get a top-month playlist")
 	}
 }
 

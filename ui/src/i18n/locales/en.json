@@ -763,33 +763,6 @@
       "empty": "No liked tracks",
       "emptySubtitle": "Tap ♥ to add some."
     },
-    "topMonth": {
-      "title": "Top of your month",
-      "trackCount": "{{count}} tracks",
-      "shuffle": "Shuffle",
-      "play": "Play your top of the month",
-      "loadError": "Unable to load your top of the month.",
-      "empty": "Nothing to show yet",
-      "emptySubtitle": "Listen to tracks this month to see your top appear here."
-    },
-    "onRepeat": {
-      "title": "On Repeat",
-      "trackCount": "{{count}} tracks",
-      "shuffle": "Shuffle",
-      "play": "Play On Repeat",
-      "loadError": "Unable to load On Repeat.",
-      "empty": "Nothing to show yet",
-      "emptySubtitle": "Tracks you replay often will show up here."
-    },
-    "forgottenFavorites": {
-      "title": "Forgotten favorites",
-      "trackCount": "{{count}} tracks",
-      "shuffle": "Shuffle",
-      "play": "Play forgotten favorites",
-      "loadError": "Unable to load forgotten favorites.",
-      "empty": "No forgotten favorites",
-      "emptySubtitle": "Liked tracks you haven't replayed in a while will show up here."
-    },
     "queue": {
       "empty": "Queue empty",
       "emptySubtitle": "Play a track to get started."

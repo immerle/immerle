@@ -193,8 +193,6 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Get("/me", h.handleAccount)
 			r.Patch("/me", h.handleAccountUpdate)
 			r.Get("/me/favorites", h.handleFavorites)
-			r.Get("/me/top-tracks", h.handleTopTracks)
-			r.Get("/me/forgotten-favorites", h.handleForgottenFavorites)
 			r.Put("/me/password", h.handleChangePassword)
 			r.Get("/users/{username}", h.handleProfile)
 
