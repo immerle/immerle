@@ -6909,14 +6909,14 @@ export interface paths {
         };
         /**
          * Search the catalog
-         * @description Searches artists, albums, songs and public playlists (merging remote-provider results when enabled), returned as one list ranked by relevance to the query. `type` scopes the search server-side to just that result type.
+         * @description Searches artists, albums, songs, public playlists and radio stations (merging remote-provider results when enabled), returned as one list ranked by relevance to the query. `type` scopes the search server-side to just that result type.
          */
         get: {
             parameters: {
                 query: {
                     /** @description Search query */
                     q: string;
-                    /** @description Scope to one result type: artist, album, song or playlist (default: all) */
+                    /** @description Scope to one result type: artist, album, song, playlist or radio (default: all) */
                     type?: string;
                     /** @description Max artists */
                     artistCount?: number;
@@ -9402,8 +9402,9 @@ export interface components {
             album?: components["schemas"]["immerle.albumView"];
             artist?: components["schemas"]["immerle.artistView"];
             playlist?: components["schemas"]["immerle.playlistView"];
+            radio?: components["schemas"]["immerle.stationView"];
             song?: components["schemas"]["immerle.songView"];
-            /** @description artist|album|song|playlist */
+            /** @description artist|album|song|playlist|radio */
             type?: string;
         };
         "immerle.searchView": {

@@ -320,7 +320,7 @@ export class ImmerleClient {
    */
   async search(
     query: string,
-    type?: 'artist' | 'album' | 'song' | 'playlist',
+    type?: 'artist' | 'album' | 'song' | 'playlist' | 'radio',
     signal?: AbortSignal,
   ): Promise<SearchHit[]> {
     const { data, error } = await this.api.GET('/search', { params: { query: { q: query, type } }, signal });

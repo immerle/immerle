@@ -1532,10 +1532,12 @@ components:
           $ref: '#/components/schemas/immerle.artistView'
         playlist:
           $ref: '#/components/schemas/immerle.playlistView'
+        radio:
+          $ref: '#/components/schemas/immerle.stationView'
         song:
           $ref: '#/components/schemas/immerle.songView'
         type:
-          description: artist|album|song|playlist
+          description: artist|album|song|playlist|radio
           type: string
       type: object
     immerle.searchView:
@@ -6102,9 +6104,10 @@ paths:
       - plays
   /search:
     get:
-      description: Searches artists, albums, songs and public playlists (merging remote-provider
-        results when enabled), returned as one list ranked by relevance to the query.
-        `type` scopes the search server-side to just that result type.
+      description: Searches artists, albums, songs, public playlists and radio stations
+        (merging remote-provider results when enabled), returned as one list ranked
+        by relevance to the query. `type` scopes the search server-side to just that
+        result type.
       parameters:
       - description: Search query
         in: query
@@ -6112,8 +6115,8 @@ paths:
         required: true
         schema:
           type: string
-      - description: 'Scope to one result type: artist, album, song or playlist (default:
-          all)'
+      - description: 'Scope to one result type: artist, album, song, playlist or radio
+          (default: all)'
         in: query
         name: type
         schema:
