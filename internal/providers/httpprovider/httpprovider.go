@@ -68,6 +68,7 @@ const (
 	artistTracksPath  = "/artist/tracks"
 	albumTracksPath   = "/album/tracks"
 	artistImagePath   = "/artist/image"
+	playlistsPath     = "/playlists"
 )
 
 // slugRe constrains the name a remote declares for itself.

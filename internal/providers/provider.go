@@ -104,6 +104,21 @@ type AlbumBrowser interface {
 	AlbumTracks(ctx context.Context, providerAlbumID string, limit int) ([]Result, error)
 }
 
+// ProviderPlaylist is a playlist curated by a provider (e.g. an editorial or
+// user playlist hosted on the remote service).
+type ProviderPlaylist struct {
+	ProviderPlaylistID string
+	Name               string
+	CoverImageURL      string
+	Tracks             []Result
+}
+
+// PlaylistBrowser is an optional capability: list the playlists a provider
+// makes available for browsing, each with its full tracklist.
+type PlaylistBrowser interface {
+	Playlists(ctx context.Context, limit int) ([]ProviderPlaylist, error)
+}
+
 // Verifier is an optional capability: validate at registration time that the
 // remote is reachable and correctly configured, so bad config is rejected
 // early instead of failing silently later. HTTP providers verify against the
