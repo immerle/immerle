@@ -70,6 +70,7 @@ func newBrowseEnv(t *testing.T) (*httptest.Server, string, *persistence.Store) {
 		Streamer:    stream.NewStreamer(config.TranscodeConfig{FFmpegPath: "ffmpeg", CacheDir: filepath.Join(t.TempDir(), "tc")}, testutil.NewLogger()),
 		Cover:       stream.NewCoverService(store.Catalog, coversDir),
 		Shares:      store.Shares,
+		Radio:       store.Radio,
 		BaseURL:     "https://music.example",
 		SigningKey:  "test-media-secret",
 		Logger:      testutil.NewLogger(),
@@ -279,6 +280,42 @@ func TestSearchTypeParamScopesServerSide(t *testing.T) {
 	}
 	if len(artistOnly.Results) != 0 {
 		t.Fatalf("type=artist for a song-only query must return nothing, got %+v", artistOnly.Results)
+	}
+}
+
+// TestSearchIncludesRadioStations covers adding radio stations to the unified
+// global search: a matching station shows up as a "radio" hit alongside the
+// catalog/playlist ones, and `type=radio` scopes the search to stations only.
+func TestSearchIncludesRadioStations(t *testing.T) {
+	srv, token, store := newBrowseEnv(t)
+	ctx := context.Background()
+
+	now := time.Now()
+	if err := store.Radio.Create(ctx, models.RadioStation{
+		ID: "station-1", Name: "Radio Nova", StreamURL: "https://example.com/nova.mp3", CreatedAt: now, UpdatedAt: now,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Radio.Create(ctx, models.RadioStation{
+		ID: "station-2", Name: "Jazz FM", StreamURL: "https://example.com/jazz.mp3", CreatedAt: now, UpdatedAt: now,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	var search searchView
+	if st := getJSON(t, srv, token, "/search?q=Nova", &search); st != http.StatusOK {
+		t.Fatalf("search: status %d", st)
+	}
+	if len(search.Results) != 1 || search.Results[0].Type != "radio" || search.Results[0].Radio == nil || search.Results[0].Radio.Name != "Radio Nova" {
+		t.Fatalf("expected the Radio Nova station hit, got %+v", search.Results)
+	}
+
+	var radioOnly searchView
+	if st := getJSON(t, srv, token, "/search?q=So+What&type=radio", &radioOnly); st != http.StatusOK {
+		t.Fatalf("search: status %d", st)
+	}
+	if len(radioOnly.Results) != 0 {
+		t.Fatalf("type=radio for a song-only query must return nothing, got %+v", radioOnly.Results)
 	}
 }
 

@@ -1001,6 +1001,7 @@
       "typeAlbum": "Album",
       "typeSong": "Song",
       "typePlaylist": "Playlist",
+      "typeRadio": "Radio",
       "cancel": "Cancel"
     },
     "admin": {

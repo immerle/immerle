@@ -51,7 +51,6 @@ export function LibrarySidebar() {
   const collapsed = wide && sidebarCollapsed;
   const toggle = wide ? toggleSidebar : () => {};
   const canDiscover = useAuth((s) => s.client?.has('publicPlaylists') ?? false);
-  const canRadio = useAuth((s) => s.client?.isFeatureEnabled('internetRadio') ?? false);
   const canHallOfFame = useAuth((s) => s.client?.isFeatureEnabled('hallOfFame') ?? false);
   const { data: playlists } = usePlaylists();
   const [creating, setCreating] = useState(false);
@@ -70,7 +69,6 @@ export function LibrarySidebar() {
   );
   const likedMatches = 'titres likés'.includes(q);
   const localMatches = 'musiques locales'.includes(q);
-  const radioMatches = canRadio && (t('radio.title').toLowerCase().includes(q) || 'radio'.includes(q));
   const hallOfFameMatches = canHallOfFame && t('components.sidebar.hallOfFame').toLowerCase().includes(q);
 
   return (
@@ -183,20 +181,6 @@ export function LibrarySidebar() {
             onPress={() => router.push('/local' as never)}
           />
         ) : null}
-        {radioMatches ? (
-          <Row
-            active={pathname === '/radios'}
-            collapsed={collapsed}
-            cover={
-              <View className="h-12 w-12 items-center justify-center rounded-md bg-primary/15">
-                <Ionicon name="radio" size={24} color={colors.primary} />
-              </View>
-            }
-            title={t('radio.title')}
-            subtitle={t('radio.tabSubtitle')}
-            onPress={() => router.push('/radios' as never)}
-          />
-        ) : null}
         {hallOfFameMatches ? (
           <Row
             active={pathname === '/halloffame'}
@@ -218,7 +202,7 @@ export function LibrarySidebar() {
             onPress={() => router.push(`/playlist/${p.id}` as never)}
           />
         ))}
-        {!collapsed && filtered.length === 0 && !likedMatches && !localMatches && !radioMatches && !hallOfFameMatches ? (
+        {!collapsed && filtered.length === 0 && !likedMatches && !localMatches && !hallOfFameMatches ? (
           <Text className="px-3 py-4 text-sm text-muted">{t('components.sidebar.noResults')}</Text>
         ) : null}
       </ScrollView>

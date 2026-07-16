@@ -1,15 +1,17 @@
 import { useRef, useState } from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
 import { SearchTypeFilter, useSearchUI } from '../search/store';
+import { useAuth } from '../auth/store';
 import { useT } from '../i18n/store';
 
-const FILTERS: { key: SearchTypeFilter; labelKey: string }[] = [
+const BASE_FILTERS: { key: SearchTypeFilter; labelKey: string }[] = [
   { key: 'all', labelKey: 'components.search.filterAll' },
   { key: 'artist', labelKey: 'components.search.typeArtist' },
   { key: 'album', labelKey: 'components.search.typeAlbum' },
   { key: 'song', labelKey: 'components.search.typeSong' },
   { key: 'playlist', labelKey: 'components.search.typePlaylist' },
 ];
+const RADIO_FILTER: { key: SearchTypeFilter; labelKey: string } = { key: 'radio', labelKey: 'components.search.typeRadio' };
 
 /**
  * Leftmost control in the search bar: a compact dropdown scoping the search
@@ -22,9 +24,11 @@ export function SearchTypeFilterButton() {
   const t = useT();
   const typeFilter = useSearchUI((s) => s.typeFilter);
   const setTypeFilter = useSearchUI((s) => s.setTypeFilter);
+  const canRadio = useAuth((s) => s.client?.isFeatureEnabled('internetRadio') ?? false);
   const anchorRef = useRef<View>(null);
   const [anchor, setAnchor] = useState<{ x: number; y: number; height: number } | null>(null);
 
+  const FILTERS = canRadio ? [...BASE_FILTERS, RADIO_FILTER] : BASE_FILTERS;
   const current = FILTERS.find((f) => f.key === typeFilter) ?? FILTERS[0];
   const open = () => anchorRef.current?.measureInWindow((x, y, _w, height) => setAnchor({ x, y, height }));
   const close = () => setAnchor(null);

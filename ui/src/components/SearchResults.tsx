@@ -5,10 +5,12 @@ import { useDebounced, useSearch } from '../query/search';
 import { searchNav, useSearchUI } from '../search/store';
 import { CoverArt } from './CoverArt';
 import { PlaylistCover } from './PlaylistCover';
+import { StationCover } from './StationCover';
 import { TrackRow } from './TrackRow';
 import { EmptyState, Loading } from './ui';
 import { Ionicon } from './Ionicon';
 import { usePlayer } from '../audio/store';
+import { useAuth } from '../auth/store';
 import { useTrackMenu } from './trackMenu';
 import { useColors } from '../theme/colors';
 import { useT } from '../i18n/store';
@@ -20,6 +22,7 @@ const TYPE_LABEL_KEY: Record<SearchHit['type'], string> = {
   album: 'components.search.typeAlbum',
   song: 'components.search.typeSong',
   playlist: 'components.search.typePlaylist',
+  radio: 'components.search.typeRadio',
 };
 
 /**
@@ -45,6 +48,7 @@ export function SearchResults({ onClose }: { onClose: () => void }) {
   const debounced = useDebounced(query, 250);
   const { data, isLoading, isFetching } = useSearch(debounced, typeFilter);
   const playSongs = usePlayer((s) => s.playSongs);
+  const playRadio = usePlayer((s) => s.playRadio);
   const openMenu = useTrackMenu((s) => s.open);
 
   const trimmed = debounced.trim();
@@ -67,6 +71,8 @@ export function SearchResults({ onClose }: { onClose: () => void }) {
         return () => select(() => router.push(`/playlist/${hit.playlist.id}` as never));
       case 'song':
         return () => select(() => playSongs(songs, songs.indexOf(hit.song)));
+      case 'radio':
+        return () => select(() => playRadio({ id: hit.radio.id, name: hit.radio.name, streamUrl: hit.radio.streamUrl, hasCover: hit.radio.hasCover }));
     }
   };
 
@@ -122,6 +128,7 @@ export function SearchResults({ onClose }: { onClose: () => void }) {
 
 function SearchHitRow({ hit, onPress, onMore }: { hit: SearchHit; onPress: () => void; onMore?: () => void }) {
   const t = useT();
+  const client = useAuth((s) => s.client);
   const typeLabel = t(TYPE_LABEL_KEY[hit.type]);
   switch (hit.type) {
     case 'song':
@@ -161,6 +168,20 @@ function SearchHitRow({ hit, onPress, onMore }: { hit: SearchHit; onPress: () =>
           <View className="flex-1">
             <Text numberOfLines={1} className="text-base font-medium text-foreground">
               {hit.playlist.name}
+            </Text>
+            <Text numberOfLines={1} className="text-sm text-muted">
+              {typeLabel}
+            </Text>
+          </View>
+        </Pressable>
+      );
+    case 'radio':
+      return (
+        <Pressable onPress={onPress} className="flex-row items-center gap-3 px-4 py-2 active:bg-surface-alt">
+          <StationCover uri={hit.radio.hasCover && client ? client.radioCoverUrl(hit.radio.id) : undefined} size={44} rounded={44 / 2} />
+          <View className="flex-1">
+            <Text numberOfLines={1} className="text-base font-medium text-foreground">
+              {hit.radio.name}
             </Text>
             <Text numberOfLines={1} className="text-sm text-muted">
               {typeLabel}

@@ -5,7 +5,7 @@ const RECENTS_KEY = 'immerle.searchRecents.v1';
 const MAX_RECENTS = 8;
 
 /** Result-type filter for the search results list; 'all' shows every type. */
-export type SearchTypeFilter = 'all' | 'artist' | 'album' | 'song' | 'playlist';
+export type SearchTypeFilter = 'all' | 'artist' | 'album' | 'song' | 'playlist' | 'radio';
 
 /**
  * Shared search UI state. Drives the inline header search (web popover) and the

@@ -10,6 +10,7 @@ import type {
   PlayQueueView,
   SearchView,
   SongView,
+  StationView,
 } from '../immerleApi';
 import type {
   Album,
@@ -25,7 +26,7 @@ import type {
   Song,
   SubsonicUser,
 } from '../subsonic/types';
-import type { HallOfFame } from './types';
+import type { HallOfFame, RadioStation } from './types';
 
 /**
  * Map the native catalog DTOs (generated from the OpenAPI spec, where every
@@ -141,15 +142,16 @@ export function toStarred(v: FavoritesView): Starred {
 }
 
 /**
- * One global-search match: exactly one of artist/album/song/playlist is set,
- * per `type`. Unlike the Subsonic-style SearchResult3 (grouped by type),
+ * One global-search match: exactly one of artist/album/song/playlist/radio is
+ * set, per `type`. Unlike the Subsonic-style SearchResult3 (grouped by type),
  * this is a single list already ranked by relevance to the query.
  */
 export type SearchHit =
   | { type: 'artist'; artist: Artist }
   | { type: 'album'; album: Album }
   | { type: 'song'; song: Song }
-  | { type: 'playlist'; playlist: Playlist };
+  | { type: 'playlist'; playlist: Playlist }
+  | { type: 'radio'; radio: RadioStation };
 
 export function toSearchResult(v: SearchView): SearchHit[] {
   const hits: SearchHit[] = [];
@@ -158,8 +160,24 @@ export function toSearchResult(v: SearchView): SearchHit[] {
     else if (r.type === 'album' && r.album) hits.push({ type: 'album', album: toAlbum(r.album) });
     else if (r.type === 'song' && r.song) hits.push({ type: 'song', song: toSong(r.song) });
     else if (r.type === 'playlist' && r.playlist) hits.push({ type: 'playlist', playlist: toPlaylist(r.playlist) });
+    else if (r.type === 'radio' && r.radio) hits.push({ type: 'radio', radio: toStation(r.radio) });
   }
   return hits;
+}
+
+export function toStation(v: StationView): RadioStation {
+  return {
+    id: v.id ?? '',
+    name: v.name ?? '',
+    streamUrl: v.streamUrl ?? '',
+    homepageUrl: v.homepageUrl ?? '',
+    builtin: v.builtin ?? false,
+    deletable: v.deletable ?? false,
+    hasCover: v.hasCover,
+    coverUrl: v.coverUrl,
+    country: v.country,
+    liked: v.liked,
+  };
 }
 
 export function toPlaylist(v: PlaylistView): Playlist {
