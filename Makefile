@@ -1,12 +1,14 @@
 BINARY      := immerle
 PKG         := ./cmd/immerle
+CLI_BINARY  := iml
+CLI_PKG     := ./cmd/iml
 BIN_DIR     := bin
 VERSION     ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 LDFLAGS     := -s -w -X main.version=$(VERSION)
 
 SWAG := go run github.com/swaggo/swag/v2/cmd/swag@v2.0.0-rc5
 
-.PHONY: all build build-web ui run test test-race lint fmt vet tidy clean docker docker-up docker-down ci openapi openapi-check
+.PHONY: all build build-cli install-cli build-web ui run test test-race lint fmt vet tidy clean docker docker-up docker-down ci openapi openapi-check
 
 all: build
 
@@ -14,6 +16,15 @@ all: build
 build:
 	@mkdir -p $(BIN_DIR)
 	CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o $(BIN_DIR)/$(BINARY) $(PKG)
+
+## build-cli: compile the terminal music client
+build-cli:
+	@mkdir -p $(BIN_DIR)
+	CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o $(BIN_DIR)/$(CLI_BINARY) $(CLI_PKG)
+
+## install-cli: install the terminal music client to $GOBIN (or $GOPATH/bin), on your PATH
+install-cli:
+	CGO_ENABLED=0 go install -ldflags "$(LDFLAGS)" $(CLI_PKG)
 
 ## ui: export the web app into ui/dist for embedding
 ui:
