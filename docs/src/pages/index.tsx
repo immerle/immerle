@@ -25,7 +25,7 @@ const FEATURES = [
   {
     glyph: '👯',
     title: 'Social',
-    body: 'Friends, an activity feed with per-event privacy, and collaborative or public playlists.',
+    body: 'An activity feed with per-event privacy, and collaborative or public playlists.',
   },
   {
     glyph: '🔊',

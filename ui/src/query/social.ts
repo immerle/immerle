@@ -10,8 +10,6 @@ import { qk } from './keys';
 /** Social + Jam hooks, all gated by the relevant capability at the call site. */
 
 const KEYS = {
-  friends: ['social', 'friends'] as const,
-  pending: ['social', 'pending'] as const,
   activity: ['social', 'activity'] as const,
   profile: (username: string) => ['social', 'profile', username] as const,
   jam: (id: string) => ['jam', id] as const,
@@ -29,25 +27,6 @@ export function useProfile(username: string) {
   });
 }
 
-export function useFriends() {
-  const client = useAuth((s) => s.client);
-  return useQuery({
-    queryKey: KEYS.friends,
-    enabled: !!client && !!client.has('social'),
-    queryFn: ({ signal }) => client!.getFriends(signal),
-  });
-}
-
-export function usePendingFriends() {
-  const client = useAuth((s) => s.client);
-  return useQuery({
-    queryKey: KEYS.pending,
-    enabled: !!client && !!client.has('social'),
-    queryFn: ({ signal }) => client!.getPendingFriends(signal),
-    refetchInterval: 15000,
-  });
-}
-
 export function useActivity() {
   const client = useAuth((s) => s.client);
   return useQuery({
@@ -55,28 +34,6 @@ export function useActivity() {
     enabled: !!client && !!client.has('social'),
     queryFn: ({ signal }) => client!.getActivity(signal),
   });
-}
-
-export function useFriendMutations() {
-  const client = useAuth((s) => s.client);
-  const qc = useQueryClient();
-  // Also refresh that user's profile (its `isFriend` flag) — not just the
-  // friends/pending lists — since a profile page may already be cached from
-  // before the request/accept.
-  const invalidate = (username: string) => {
-    qc.invalidateQueries({ queryKey: KEYS.friends });
-    qc.invalidateQueries({ queryKey: KEYS.pending });
-    qc.invalidateQueries({ queryKey: KEYS.profile(username) });
-  };
-  const request = useMutation({
-    mutationFn: (username: string) => client!.requestFriend(username),
-    onSuccess: (_d, username) => invalidate(username),
-  });
-  const accept = useMutation({
-    mutationFn: (username: string) => client!.acceptFriend(username),
-    onSuccess: (_d, username) => invalidate(username),
-  });
-  return { request, accept };
 }
 
 // --- Jam -------------------------------------------------------------------

@@ -3797,241 +3797,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/friends": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List friends */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.FriendDTO"][];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.errorResponse"];
-                    };
-                };
-                /** @description Internal Server Error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.errorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/friends/requests": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List pending friend requests */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.PendingFriendDTO"][];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.errorResponse"];
-                    };
-                };
-                /** @description Internal Server Error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.errorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        /** Send a friend request */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description Target username */
-            requestBody: {
-                content: {
-                    "application/json": Record<string, never> | components["schemas"]["immerle.friendRequestBody"];
-                };
-            };
-            responses: {
-                /** @description created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.apiError"];
-                    };
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.errorResponse"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.errorResponse"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.errorResponse"];
-                    };
-                };
-                /** @description Internal Server Error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.errorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/friends/requests/{username}/accept": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Accept a friend request */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Username of the requester to accept */
-                    username: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.FriendDTO"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.errorResponse"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.errorResponse"];
-                    };
-                };
-                /** @description Internal Server Error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["immerle.errorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/genres": {
         parameters: {
             query?: never;
@@ -8840,7 +8605,7 @@ export interface components {
             itemId?: string;
             /** @example track */
             itemType?: string;
-            /** @example friends */
+            /** @example public */
             privacy?: string;
             /** @example listen */
             type?: string;
@@ -8924,13 +8689,6 @@ export interface components {
             name?: string;
             /** @example my-node */
             sqid?: string;
-        };
-        "immerle.FriendDTO": {
-            /** @example Bob Marley */
-            displayName?: string;
-            id?: string;
-            /** @example bob */
-            username?: string;
         };
         "immerle.ImportDTO": {
             /** @example 2 */
@@ -9055,20 +8813,9 @@ export interface components {
             /** @example true */
             ok?: boolean;
         };
-        "immerle.PendingFriendDTO": {
-            /** @example Alice Coltrane */
-            displayName?: string;
-            id?: string;
-            /** @example 2026-06-15T09:00:00Z */
-            since?: string;
-            /** @example alice */
-            username?: string;
-        };
         "immerle.ProfileDTO": {
             activity?: components["schemas"]["immerle.ActivityEventDTO"][];
             hallOfFame?: components["schemas"]["immerle.ProfileHallOfFameDTO"];
-            /** @example true */
-            isFriend?: boolean;
             /** @example false */
             isSelf?: boolean;
             playlists?: components["schemas"]["immerle.ProfilePlaylistDTO"][];
@@ -9511,9 +9258,6 @@ export interface components {
         "immerle.fieldError": {
             field?: string;
             message?: string;
-        };
-        "immerle.friendRequestBody": {
-            username?: string;
         };
         "immerle.genreView": {
             albumCount?: number;

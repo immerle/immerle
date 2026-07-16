@@ -22,8 +22,8 @@ you outgrow it). Drop in your music, hit play.
 - 🌍 **On-demand catalog** — pluggable providers (Jamendo, Internet Archive, and
   your own HTTP providers) stream tracks you don't own yet, progressively on
   first play.
-- 👯 **Social** — friends, an activity feed with per-event privacy, and
-  collaborative or public playlists.
+- 👯 **Social** — an activity feed with per-event privacy, and collaborative
+  or public playlists.
 - 🔊 **Jam sessions** — listen together, in sync, streamed live.
 - 📥 **Playlist import** — bring your playlists over (Spotify ships first).
 - 🔗 **Federation (opt-in)** — sync editorial & recommendation playlists via an
@@ -36,7 +36,7 @@ you outgrow it). Drop in your music, hit play.
 - [Configuration](./configuration.md) — bootstrap settings vs. runtime settings.
 - [Connecting clients](./clients.md) — point any Subsonic app at your server.
 - [On-demand catalog](./on-demand-providers.md) — enable built-in providers, add your own, cleanup.
-- [Social features](./social.md) — friends, activity, sharing, Jam sessions.
+- [Social features](./social.md) — activity, sharing, Jam sessions.
 - [Playlist import](./playlist-import.md) — bring playlists over from Spotify or Deezer.
 - [Federation](./federation.md) — sync playlists via an `immerle-hub`.
 - [Developers](./developers/architecture.md) — architecture, the native &

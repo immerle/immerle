@@ -3,7 +3,7 @@
 // @title           immerle extension API
 // @version         1.0.0
 // @description     Native immerle REST API (first-run setup, capability
-// @description     discovery, friends, activity feed, collaborative playlists and
+// @description     discovery, activity feed, collaborative playlists and
 // @description     synchronized Jam sessions) that complements the Subsonic /
 // @description     OpenSubsonic API served under /rest/.
 // @description
@@ -22,8 +22,6 @@
 // @tag.description First-run provisioning of the initial administrator.
 // @tag.name        discovery
 // @tag.description Capability discovery for client apps.
-// @tag.name        friends
-// @tag.description Friend requests and listing.
 // @tag.name        activity
 // @tag.description Social activity feed (privacy-aware).
 // @tag.name        playlists

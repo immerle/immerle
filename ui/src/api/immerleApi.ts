@@ -65,8 +65,6 @@ export type PlayQueueView = components['schemas']['immerle.playQueueView'];
 export type LoginResponse = components['schemas']['immerle.LoginDTO'];
 
 // Social / Jam DTOs.
-export type FriendDTO = components['schemas']['immerle.FriendDTO'];
-export type PendingFriendDTO = components['schemas']['immerle.PendingFriendDTO'];
 export type ActivityEventDTO = components['schemas']['immerle.ActivityEventDTO'];
 export type JamSessionDTO = components['schemas']['immerle.JamSessionDTO'];
 export type JamParticipantDTO = components['schemas']['immerle.JamParticipantDTO'];

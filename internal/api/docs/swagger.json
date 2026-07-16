@@ -87,7 +87,7 @@
                         "type": "string"
                     },
                     "privacy": {
-                        "example": "friends",
+                        "example": "public",
                         "type": "string"
                     },
                     "type": {
@@ -284,22 +284,6 @@
                     },
                     "sqid": {
                         "example": "my-node",
-                        "type": "string"
-                    }
-                },
-                "type": "object"
-            },
-            "immerle.FriendDTO": {
-                "properties": {
-                    "displayName": {
-                        "example": "Bob Marley",
-                        "type": "string"
-                    },
-                    "id": {
-                        "type": "string"
-                    },
-                    "username": {
-                        "example": "bob",
                         "type": "string"
                     }
                 },
@@ -596,26 +580,6 @@
                 },
                 "type": "object"
             },
-            "immerle.PendingFriendDTO": {
-                "properties": {
-                    "displayName": {
-                        "example": "Alice Coltrane",
-                        "type": "string"
-                    },
-                    "id": {
-                        "type": "string"
-                    },
-                    "since": {
-                        "example": "2026-06-15T09:00:00Z",
-                        "type": "string"
-                    },
-                    "username": {
-                        "example": "alice",
-                        "type": "string"
-                    }
-                },
-                "type": "object"
-            },
             "immerle.ProfileDTO": {
                 "properties": {
                     "activity": {
@@ -627,10 +591,6 @@
                     },
                     "hallOfFame": {
                         "$ref": "#/components/schemas/immerle.ProfileHallOfFameDTO"
-                    },
-                    "isFriend": {
-                        "example": true,
-                        "type": "boolean"
                     },
                     "isSelf": {
                         "example": false,
@@ -1693,14 +1653,6 @@
                 },
                 "type": "object"
             },
-            "immerle.friendRequestBody": {
-                "properties": {
-                    "username": {
-                        "type": "string"
-                    }
-                },
-                "type": "object"
-            },
             "immerle.genreView": {
                 "properties": {
                     "albumCount": {
@@ -2609,7 +2561,7 @@
         "contact": {
             "name": "immerle"
         },
-        "description": "Native immerle REST API (first-run setup, capability\ndiscovery, friends, activity feed, collaborative playlists and\nsynchronized Jam sessions) that complements the Subsonic /\nOpenSubsonic API served under /rest/.\n\nServed under /api/v1. Authenticated endpoints require a Bearer\ntoken in the Authorization header — a device JWT (obtained from\nPOST /auth/sessions) or a personal API token. Setup, capability\ndiscovery and session creation are unauthenticated.",
+        "description": "Native immerle REST API (first-run setup, capability\ndiscovery, activity feed, collaborative playlists and\nsynchronized Jam sessions) that complements the Subsonic /\nOpenSubsonic API served under /rest/.\n\nServed under /api/v1. Authenticated endpoints require a Bearer\ntoken in the Authorization header — a device JWT (obtained from\nPOST /auth/sessions) or a personal API token. Setup, capability\ndiscovery and session creation are unauthenticated.",
         "license": {
             "name": "See repository"
         },
@@ -6612,251 +6564,6 @@
                 "summary": "Revoke a device",
                 "tags": [
                     "devices"
-                ]
-            }
-        },
-        "/friends": {
-            "get": {
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "items": {
-                                        "$ref": "#/components/schemas/immerle.FriendDTO"
-                                    },
-                                    "type": "array"
-                                }
-                            }
-                        },
-                        "description": "OK"
-                    },
-                    "401": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/immerle.errorResponse"
-                                }
-                            }
-                        },
-                        "description": "Unauthorized"
-                    },
-                    "500": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/immerle.errorResponse"
-                                }
-                            }
-                        },
-                        "description": "Internal Server Error"
-                    }
-                },
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "summary": "List friends",
-                "tags": [
-                    "friends"
-                ]
-            }
-        },
-        "/friends/requests": {
-            "get": {
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "items": {
-                                        "$ref": "#/components/schemas/immerle.PendingFriendDTO"
-                                    },
-                                    "type": "array"
-                                }
-                            }
-                        },
-                        "description": "OK"
-                    },
-                    "401": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/immerle.errorResponse"
-                                }
-                            }
-                        },
-                        "description": "Unauthorized"
-                    },
-                    "500": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/immerle.errorResponse"
-                                }
-                            }
-                        },
-                        "description": "Internal Server Error"
-                    }
-                },
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "summary": "List pending friend requests",
-                "tags": [
-                    "friends"
-                ]
-            },
-            "post": {
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "oneOf": [
-                                    {
-                                        "type": "object"
-                                    },
-                                    {
-                                        "$ref": "#/components/schemas/immerle.friendRequestBody",
-                                        "summary": "body",
-                                        "description": "Target username"
-                                    }
-                                ]
-                            }
-                        }
-                    },
-                    "description": "Target username",
-                    "required": true
-                },
-                "responses": {
-                    "201": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/immerle.apiError"
-                                }
-                            }
-                        },
-                        "description": "created"
-                    },
-                    "400": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/immerle.errorResponse"
-                                }
-                            }
-                        },
-                        "description": "Bad Request"
-                    },
-                    "401": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/immerle.errorResponse"
-                                }
-                            }
-                        },
-                        "description": "Unauthorized"
-                    },
-                    "404": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/immerle.errorResponse"
-                                }
-                            }
-                        },
-                        "description": "Not Found"
-                    },
-                    "500": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/immerle.errorResponse"
-                                }
-                            }
-                        },
-                        "description": "Internal Server Error"
-                    }
-                },
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "summary": "Send a friend request",
-                "tags": [
-                    "friends"
-                ]
-            }
-        },
-        "/friends/requests/{username}/accept": {
-            "post": {
-                "parameters": [
-                    {
-                        "description": "Username of the requester to accept",
-                        "in": "path",
-                        "name": "username",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/immerle.FriendDTO"
-                                }
-                            }
-                        },
-                        "description": "OK"
-                    },
-                    "401": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/immerle.errorResponse"
-                                }
-                            }
-                        },
-                        "description": "Unauthorized"
-                    },
-                    "404": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/immerle.errorResponse"
-                                }
-                            }
-                        },
-                        "description": "Not Found"
-                    },
-                    "500": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/immerle.errorResponse"
-                                }
-                            }
-                        },
-                        "description": "Internal Server Error"
-                    }
-                },
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "summary": "Accept a friend request",
-                "tags": [
-                    "friends"
                 ]
             }
         },

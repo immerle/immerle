@@ -159,10 +159,6 @@
     "cleanup_failed": "Impossible de charger l'état du nettoyage.",
     "cleanup_toggle_failed": "Impossible de basculer le nettoyage.",
     "cleanup_run_failed": "Le nettoyage a échoué.",
-    "friends_failed": "Impossible de charger les amis.",
-    "pending_failed": "Impossible de charger les demandes d'ami.",
-    "friend_request_failed": "Impossible d'envoyer la demande d'ami.",
-    "friend_accept_failed": "Impossible d'accepter la demande d'ami.",
     "activity_failed": "Impossible de charger l'activité.",
     "account_failed": "Impossible de charger votre compte.",
     "account_update_failed": "Impossible de mettre à jour votre compte.",
@@ -358,32 +354,12 @@
     "feed": {
       "title": "Activité",
       "emptyTitle": "Aucune activité",
-      "emptySubtitle": "L'activité de vos amis apparaîtra ici.",
+      "emptySubtitle": "L'activité de ce serveur apparaîtra ici.",
       "someone": "Quelqu'un",
       "verbListened": "a écouté un titre",
       "verbPlaylist": "a mis à jour une playlist",
-      "verbFriend": "s'est fait un nouvel ami",
       "verbLiked": "a aimé un titre",
       "verbDefault": "a fait quelque chose"
-    },
-    "pending": {
-      "title": "Demandes en attente",
-      "invitedYou": "vous a invité",
-      "ago": "il y a {{time}}",
-      "accept": "Accepter"
-    },
-    "friends": {
-      "title": "Amis",
-      "add": "Ajouter un ami",
-      "emptyTitle": "Aucun ami pour l'instant",
-      "emptySubtitle": "Ajoutez des amis pour partager vos écoutes.",
-      "friendTag": "Ami"
-    },
-    "addModal": {
-      "title": "Ajouter un ami",
-      "subtitle": "Saisissez un nom d'utilisateur pour envoyer une demande d'ami.",
-      "placeholder": "Nom d'utilisateur",
-      "invite": "Inviter"
     },
     "joinModal": {
       "title": "Rejoindre un Jam",
@@ -429,7 +405,6 @@
       "fallbackName": "Utilisateur",
       "admin": "Admin",
       "you": "Vous",
-      "friend": "Ami",
       "statPlays": "Écoutes",
       "statHours": "Heures",
       "statPlaylists": "Playlists",

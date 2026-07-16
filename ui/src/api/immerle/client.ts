@@ -34,7 +34,6 @@ import {
   ErrorResponse,
   createAuthedImmerleApi,
   CreateTokenResponse,
-  FriendDTO,
   HallOfFameView,
   ImmerleApi,
   JamInviteDTO,
@@ -43,7 +42,6 @@ import {
   ImportItemDTO,
   ImportSourceDTO,
   JamSessionDTO,
-  PendingFriendDTO,
   ProfileHallOfFameDTO,
   ProfileStatsDTO,
   ProfilePlaylistDTO,
@@ -1139,31 +1137,7 @@ export class ImmerleClient {
     await this.request<{ ok: boolean }>('DELETE', `admin/federation/subscriptions/${encodeURIComponent(id)}`);
   }
 
-  // --- Social: friends & activity (typed via OpenAPI) ----------------------
-
-  async getFriends(signal?: AbortSignal): Promise<FriendDTO[]> {
-    const { data, error } = await this.api.GET('/friends', { signal });
-    if (error || !data) throw apiErr(error, 'friends_failed');
-    return data;
-  }
-
-  async getPendingFriends(signal?: AbortSignal): Promise<PendingFriendDTO[]> {
-    const { data, error } = await this.api.GET('/friends/requests', { signal });
-    if (error || !data) throw apiErr(error, 'pending_failed');
-    return data;
-  }
-
-  async requestFriend(username: string): Promise<void> {
-    const { error } = await this.api.POST('/friends/requests', { body: { username } });
-    if (error) throw apiErr(error, 'friend_request_failed');
-  }
-
-  async acceptFriend(username: string): Promise<void> {
-    const { error } = await this.api.POST('/friends/requests/{username}/accept', {
-      params: { path: { username } },
-    });
-    if (error) throw apiErr(error, 'friend_accept_failed');
-  }
+  // --- Social: activity (typed via OpenAPI) ---------------------------------
 
   async getActivity(signal?: AbortSignal): Promise<ActivityEventDTO[]> {
     const { data, error } = await this.api.GET('/activity', { signal });
@@ -1211,7 +1185,6 @@ export class ImmerleClient {
     return {
       user: data.user ?? {},
       isSelf: data.isSelf ?? false,
-      isFriend: data.isFriend ?? false,
       activity: data.activity ?? [],
       playlists: data.playlists ?? [],
       stats: toProfileStats(data.stats),
@@ -1597,7 +1570,6 @@ export interface Account {
 export interface ProfileResult {
   user: NonNullable<ProfileResponse['user']>;
   isSelf: boolean;
-  isFriend: boolean;
   activity: ActivityEventDTO[];
   playlists: ProfilePlaylistDTO[];
   /** All-time listening stats + public playlist count. */

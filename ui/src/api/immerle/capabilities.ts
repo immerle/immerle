@@ -90,7 +90,7 @@ export function adaptCapabilities(payload: CapabilitiesResponse): Capabilities {
       collaborativePlaylists: has('collaborativePlaylists'),
       publicPlaylists: has('publicPlaylists'),
       playlistImport: has('playlistImport'),
-      social: has('friendships') || has('activityFeed') || has('shares'),
+      social: has('activityFeed') || has('shares'),
       libraryAdmin: has('libraryAdmin'),
       adminExtended: has('admin') || has('adminExtended'),
       offlineDownloads: has('offlineDownloads'),
