@@ -108,8 +108,16 @@ func (h *Handler) handleGetPlayQueue(w http.ResponseWriter, r *http.Request) {
 // remote control (see ui/src/audio/store.ts, web only: native falls back to
 // polling since React Native has no EventSource).
 //
+// Also carries the caller's pending Jam invites (a separate "invites" SSE
+// event on the same connection) rather than opening a second stream for it:
+// this is the one SSE connection every logged-in web client keeps open at
+// all times, and the browser's ~6-connections-per-origin cap under HTTP/1.1
+// (this server doesn't do TLS/h2) makes each extra always-on stream a real
+// cost — a dedicated /jam/invites/events made loading noticeably worse while
+// hosting a Jam (that adds its own session-scoped stream on top).
+//
 // @Summary      Stream play-queue events (SSE)
-// @Description  Server-Sent Events stream. Emits the current queue immediately, then again on every change (save, target change).
+// @Description  Server-Sent Events stream. Emits the current queue immediately, then again on every change (save, target change); also emits the caller's pending Jam invites (event "invites") on connect and whenever they change.
 // @Tags         playback
 // @Security     BearerAuth
 // @Produce      text/event-stream
@@ -132,6 +140,13 @@ func (h *Handler) handleStreamPlayQueue(w http.ResponseWriter, r *http.Request) 
 	ch, unsubscribe := h.playQueue.Subscribe(user.ID)
 	defer unsubscribe()
 
+	var inviteCh <-chan []models.JamInvite
+	if h.Jam != nil {
+		var unsubscribeInvites func()
+		inviteCh, unsubscribeInvites = h.Jam.SubscribeInvites(user.ID)
+		defer unsubscribeInvites()
+	}
+
 	h.Logger.Info("play-queue SSE connected", "user", user.Username, "remote", r.RemoteAddr)
 	defer h.Logger.Info("play-queue SSE disconnected", "user", user.Username, "remote", r.RemoteAddr)
 
@@ -149,6 +164,12 @@ func (h *Handler) handleStreamPlayQueue(w http.ResponseWriter, r *http.Request) 
 	}
 	setDeadline()
 	h.writePlayQueueEvent(w, flusher, user.Username, "snapshot", toPlayQueueView(res))
+
+	if h.Jam != nil {
+		invites, _ := h.Jam.MyInvites(r.Context(), user.ID)
+		setDeadline()
+		writeInvitesEvent(w, flusher, invites)
+	}
 
 	// Keep-alive so idle connections (and dead peers behind a proxy) are detected.
 	heartbeat := time.NewTicker(20 * time.Second)
@@ -170,6 +191,12 @@ func (h *Handler) handleStreamPlayQueue(w http.ResponseWriter, r *http.Request) 
 			}
 			setDeadline()
 			h.writePlayQueueEvent(w, flusher, user.Username, "update", toPlayQueueView(ev.Queue))
+		case invites, ok := <-inviteCh:
+			if !ok {
+				return
+			}
+			setDeadline()
+			writeInvitesEvent(w, flusher, invites)
 		}
 	}
 }

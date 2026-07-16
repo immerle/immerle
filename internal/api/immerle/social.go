@@ -310,12 +310,25 @@ func (h *Handler) activityItem(ctx context.Context, e models.ActivityEvent) map[
 	return nil
 }
 
+// resolveProfileUser resolves the {username} path param used by profile and
+// profile-adjacent routes (its Hall of Fame) to the target user — "me" or the
+// caller's own username resolve without a lookup.
+func (h *Handler) resolveProfileUser(r *http.Request) (models.User, error) {
+	caller := userFrom(r.Context())
+	username := pathParam(r, "username")
+	if username == "me" || username == caller.Username {
+		return caller, nil
+	}
+	return h.Users.GetByUsername(r.Context(), username)
+}
+
 // handleProfile returns a user's public profile: identity, the activity visible
-// to the caller, and the user's public playlists. The path segment "me" resolves
-// to the caller.
+// to the caller, the user's public playlists, all-time listening stats, and
+// (when non-empty) the top of their Hall of Fame. The path segment "me"
+// resolves to the caller.
 //
 // @Summary      User profile
-// @Description  Returns a user's profile — identity, recent activity visible to the caller (honoring privacy), and their public playlists. Use "me" for the caller.
+// @Description  Returns a user's profile — identity, recent activity visible to the caller (honoring privacy), their public playlists, all-time listening stats, and the top of their Hall of Fame (omitted when empty). Use "me" for the caller.
 // @Tags         users
 // @Security     BearerAuth
 // @Produce      json
@@ -327,15 +340,10 @@ func (h *Handler) activityItem(ctx context.Context, e models.ActivityEvent) map[
 // @Router       /users/{username} [get]
 func (h *Handler) handleProfile(w http.ResponseWriter, r *http.Request) {
 	caller := userFrom(r.Context())
-	username := pathParam(r, "username")
-	target := caller
-	if username != "me" && username != caller.Username {
-		u, err := h.Users.GetByUsername(r.Context(), username)
-		if err != nil {
-			writeErrorParams(w, http.StatusNotFound, "not_found", "user not found", map[string]any{"username": username})
-			return
-		}
-		target = u
+	target, err := h.resolveProfileUser(r)
+	if err != nil {
+		writeErrorParams(w, http.StatusNotFound, "not_found", "user not found", map[string]any{"username": pathParam(r, "username")})
+		return
 	}
 
 	events, err := h.Activity.UserFeed(r.Context(), caller.ID, target.ID, 50)
@@ -372,7 +380,15 @@ func (h *Handler) handleProfile(w http.ResponseWriter, r *http.Request) {
 		isFriend, _ = h.Friends.AreFriends(r.Context(), caller.ID, target.ID)
 	}
 
-	writeResource(w, http.StatusOK, map[string]any{
+	stats := ProfileStatsDTO{Playlists: len(playlists)}
+	if h.Wrapped != nil {
+		if plays, seconds, err := h.Wrapped.Totals(r.Context(), target.ID); err == nil {
+			stats.Plays = plays
+			stats.ListenSeconds = seconds
+		}
+	}
+
+	resp := map[string]any{
 		"user": map[string]any{
 			"id":          target.ID,
 			"username":    target.Username,
@@ -383,7 +399,25 @@ func (h *Handler) handleProfile(w http.ResponseWriter, r *http.Request) {
 		"isFriend":  isFriend,
 		"activity":  activity,
 		"playlists": playlists,
-	})
+		"stats":     stats,
+	}
+
+	// The top of the target's Hall of Fame, omitted entirely when it's empty
+	// (rather than shipping an empty section the profile page would hide anyway).
+	if h.HallOfFame != nil && h.hallOfFameEnabled() {
+		if d, err := h.hallOfFameSvc.Get(r.Context(), target.ID); err == nil && len(d.Entries) > 0 {
+			top := d.Entries
+			if len(top) > 3 {
+				top = top[:3]
+			}
+			resp["hallOfFame"] = map[string]any{
+				"top":   hallOfFameEntriesToSongViews(top),
+				"total": len(d.Entries),
+			}
+		}
+	}
+
+	writeResource(w, http.StatusOK, resp)
 }
 
 // addCollaboratorBody is the body for POST /playlists/{id}/collaborators.

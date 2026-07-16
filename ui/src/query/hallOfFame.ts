@@ -12,6 +12,17 @@ export function useHallOfFame() {
   });
 }
 
+/** A user's full Hall of Fame (read-only unless it's the caller's own — see
+ * profile's "see all" link). */
+export function useUserHallOfFame(username: string) {
+  const client = useAuth((s) => s.client);
+  return useQuery({
+    queryKey: qk.hallOfFameByUser(username),
+    enabled: !!client && !!username && client.isFeatureEnabled('hallOfFame'),
+    queryFn: ({ signal }) => client!.getUserHallOfFame(username, signal),
+  });
+}
+
 /** Replace the full ranked track list (reorder, add and remove all go through this). */
 export function useSetHallOfFameOrder() {
   const client = useAuth((s) => s.client);

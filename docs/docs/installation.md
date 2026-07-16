@@ -83,3 +83,13 @@ cp .env.example .env   # edit as needed
 
 Once it's running, point any Subsonic client at `http://<host>:4533` with the
 credentials you just created — see [Connecting clients](./clients.md).
+
+:::tip[Deploying beyond localhost]
+
+For anything past local testing, put a TLS-terminating reverse proxy (Traefik,
+Caddy, nginx…) in front of Immerle rather than exposing port 4533 directly —
+it also gets you HTTP/2 for free, which matters once you use live features
+like Jam. See [Troubleshooting](./troubleshooting.md#pages-feel-slow--stall-while-a-jam-is-running)
+for why that's worth doing and how it works.
+
+:::

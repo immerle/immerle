@@ -2,9 +2,9 @@ import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../auth/store';
 import { queryClient } from '../query/queryClient';
-import { ImmerleClient } from '../api/immerle/client';
+import { ImmerleClient, toJamInvite } from '../api/immerle/client';
 import { toPlayQueueSnapshot } from '../api/immerle/catalog';
-import { PlayQueueView } from '../api/immerleApi';
+import { JamInviteDTO, PlayQueueView } from '../api/immerleApi';
 import { PlayQueueCommand, PlayQueueSnapshot, Song } from '../api/subsonic/types';
 import { offlinePlayableUrl } from '../offline/store';
 import { AudioEngine, PlayableTrack, RepeatMode } from './types';
@@ -575,6 +575,19 @@ function connectPlayQueueLive(get: () => AudioState, set: (partial: Partial<Audi
       } catch (err) {
         // eslint-disable-next-line no-console
         console.warn('[playqueue] failed to parse SSE event', err);
+      }
+    });
+    // Jam invites ride this same connection instead of a dedicated stream —
+    // see internal/api/immerle/playqueue.go's handleStreamPlayQueue for why.
+    // useJamInvites (query/social.ts) reads this cache entry; on native (no
+    // EventSource) it falls back to its own polling instead.
+    es.addEventListener('invites', (e: { data?: string }) => {
+      if (!e.data) return;
+      try {
+        const parsed = JSON.parse(e.data) as { invites?: JamInviteDTO[] };
+        queryClient.setQueryData(['jam', 'invites', 'mine'], (parsed.invites ?? []).map(toJamInvite));
+      } catch {
+        /* ignore malformed events */
       }
     });
     resetSilenceTimer();

@@ -22,6 +22,7 @@ export const qk = {
   wrappedAdmin: ['admin', 'wrapped'] as const,
   offlineAdmin: ['admin', 'offline'] as const,
   hallOfFame: ['hallOfFame'] as const,
+  hallOfFameByUser: (username: string) => ['hallOfFame', username] as const,
   hallOfFameAdmin: ['admin', 'hallOfFame'] as const,
 
   playlists: ['playlists'] as const,

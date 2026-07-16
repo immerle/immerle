@@ -342,6 +342,10 @@
       }
     }
   },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications."
+  },
   "social": {
     "common": {
       "close": "Close",
@@ -391,13 +395,19 @@
       "label": "Jam",
       "heroTitle": "Listen together",
       "heroSubtitle": "Start a Jam session and listen to music in sync with your friends.",
+      "activeHint": "You're already hosting this Jam — playback stays in sync while you browse.",
+      "openMine": "Open my Jam",
       "start": "Start a Jam",
       "join": "Join",
-      "defaultName": "{{name}}'s Jam"
+      "defaultName": "{{name}}'s Jam",
+      "createButton": "Create a Jam",
+      "inviteButton": "Invite to Jam",
+      "invited": "Invited",
+      "invitedBy": "{{name}} invited you to \"{{session}}\"",
+      "dismiss": "Dismiss"
     },
     "jamScreen": {
       "title": "Jam",
-      "leave": "Leave the Jam",
       "youAreHost": "You are the host",
       "synced": "Synced",
       "hostStartHint": "Start playback to share it with everyone.",
@@ -420,7 +430,12 @@
       "admin": "Admin",
       "you": "You",
       "friend": "Friend",
-      "addFriend": "Add as friend",
+      "statPlays": "Plays",
+      "statHours": "Hours",
+      "statPlaylists": "Playlists",
+      "hallOfFame": "Hall of Fame",
+      "seeAll": "See all ({{count}})",
+      "recentPlays": "Recent plays",
       "recentActivity": "Recent activity",
       "emptyTitle": "No activity",
       "emptySubtitle": "This user has no public activity.",
@@ -964,6 +979,7 @@
       "clear": "Clear",
       "social": "Social",
       "accountMenu": "Account menu",
+      "myProfile": "My profile",
       "settings": "Settings",
       "administration": "Administration",
       "logout": "Log out"

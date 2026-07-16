@@ -696,6 +696,22 @@ type JamParticipant struct {
 	JoinedAt  time.Time `json:"joinedAt"`
 }
 
+// JamInvite is a host's invite of a specific user to their Jam session — one
+// pending invite per (session, invitee). The session name and inviter's
+// identity are resolved via JOIN at read time (see persistence.JamRepo.
+// ListInvitesForInvitee) so the invitee's pending-invites list needs no
+// further lookups.
+type JamInvite struct {
+	ID                 string    `json:"id"`
+	SessionID          string    `json:"sessionId"`
+	SessionName        string    `json:"sessionName"`
+	InviterID          string    `json:"inviterId"`
+	InviterUsername    string    `json:"inviterUsername"`
+	InviterDisplayName string    `json:"inviterDisplayName,omitempty"`
+	InviteeID          string    `json:"inviteeId"`
+	CreatedAt          time.Time `json:"createdAt"`
+}
+
 // DownloadStatus enumerates download job states.
 type DownloadStatus string
 

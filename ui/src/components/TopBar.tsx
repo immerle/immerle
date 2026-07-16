@@ -4,6 +4,7 @@ import { router, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicon } from './Ionicon';
 import { IconButton } from './ui';
+import { NotificationsBell } from './NotificationsBell';
 import { SearchTypeFilterButton } from './SearchTypeFilter';
 import { useAuth } from '../auth/store';
 import { useSearchUI } from '../search/store';
@@ -105,8 +106,9 @@ export function TopBar({ wide }: { wide: boolean }) {
         <CircleButton icon="chevron-forward" onPress={goForward} label={t('components.topbar.forward')} />
       </View>
 
-      {/* Right — social + avatar */}
+      {/* Right — jam + social + avatar */}
       <View className="flex-row items-center gap-3">
+        <NotificationsBell />
         {hasSocial ? (
           <CircleButton icon="people" onPress={() => go('/social')} active={pathname === '/social'} label={t('components.topbar.social')} />
         ) : null}
@@ -135,6 +137,9 @@ export function TopBar({ wide }: { wide: boolean }) {
                 {client?.serverUrl}
               </Text>
             </View>
+            {hasSocial ? (
+              <MenuItem icon="person-circle-outline" label={t('components.topbar.myProfile')} onPress={() => go('/profile/me')} />
+            ) : null}
             <MenuItem icon="settings-outline" label={t('components.topbar.settings')} onPress={() => go('/settings')} />
             {isAdmin ? (
               <MenuItem icon="shield-checkmark-outline" label={t('components.topbar.administration')} onPress={() => go('/admin')} />
