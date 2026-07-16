@@ -25,6 +25,12 @@ jobs:
           go-version: "1.26.5"
           cache: true
 
+      # cmd/iml pulls in oto/v3, whose Linux audio backend uses cgo + ALSA --
+      # needed just to typecheck/vet the module, even though the server build
+      # below doesn't touch it.
+      - name: Install ALSA dev headers
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev
+
       - name: Verify go.mod is tidy
         run: |
           go mod tidy
@@ -92,6 +98,8 @@ jobs:
         with:
           go-version: "1.26.5"
           cache: true
+      - name: Install ALSA dev headers
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
@@ -127,6 +135,8 @@ jobs:
         with:
           go-version: "1.26.5"
           cache: true
+      - name: Install ALSA dev headers
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev
       - name: govulncheck (Go)
         run: go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
       - name: Trivy (deps + secrets)
