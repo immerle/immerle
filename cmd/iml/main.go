@@ -15,6 +15,7 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"golang.org/x/term"
 )
 
@@ -31,6 +32,31 @@ func (s scope) String() string {
 }
 
 var scopePrefixes = map[string]scope{"song": scopeSong, "album": scopeAlbum, "playlist": scopePlaylist}
+
+var (
+	headerStyle   = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#FAFAFA")).Background(lipgloss.Color("#7D56F4")).Padding(0, 1)
+	selectedStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#FAFAFA")).Background(lipgloss.Color("#3A3A3A"))
+	dimStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
+	statusStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#FAFAFA")).Background(lipgloss.Color("#333333")).Padding(0, 1)
+)
+
+// defaultWidth/defaultHeight are used for the first frame or two, before
+// bubbletea's initial tea.WindowSizeMsg arrives.
+const defaultWidth, defaultHeight = 80, 24
+
+// truncate cuts s to at most max runes, replacing the last one with an
+// ellipsis when it had to cut -- keeps result rows from wrapping past the
+// terminal width.
+func truncate(s string, max int) string {
+	r := []rune(s)
+	if max <= 0 || len(r) <= max {
+		return s
+	}
+	if max == 1 {
+		return string(r[:1])
+	}
+	return string(r[:max-1]) + "…"
+}
 
 // parseQueryPrefix splits a leading "/song", "/album" or "/playlist" off the
 // query text and returns the scope it selects. Typing "/playlist" switches
@@ -71,6 +97,8 @@ type model struct {
 	queue    []Song
 	queuePos int
 	playing  bool
+
+	width, height int
 }
 
 func initialModel(c *Client, p *Player) model {
@@ -191,6 +219,10 @@ func (m *model) advance() tea.Cmd {
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.width, m.height = msg.Width, msg.Height
+		return m, nil
+
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyCtrlC:
@@ -300,18 +332,44 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	var b strings.Builder
-	fmt.Fprintf(&b, "search [%s]> %s\n\n", m.scope, m.query)
-	for i, r := range m.results {
-		cursor := "  "
-		if i == m.cursor {
-			cursor = "> "
-		}
-		fmt.Fprintf(&b, "%s[%-8s] %s  (%s)\n", cursor, r.kind, r.title, r.subtitle)
+	width, height := m.width, m.height
+	if width <= 0 {
+		width = defaultWidth
 	}
-	b.WriteString("\n" + m.status + "\n")
-	b.WriteString("\ntab or /song /album /playlist: scope  enter: play  space: pause  n: next  +/-: volume  q: quit\n")
-	return b.String()
+	if height <= 0 {
+		height = defaultHeight
+	}
+
+	header := headerStyle.Width(width - 2).Render(fmt.Sprintf("iml  [%s]  %s", m.scope, m.query))
+	status := statusStyle.Width(width - 2).Render(truncate(m.status, width-2))
+	help := dimStyle.Render("tab or /song /album /playlist: scope  enter: play  space: pause  n: next  +/-: volume  q: quit")
+
+	// Results get whatever rows are left once the header, status and help
+	// bars (plus their blank-line spacers) are accounted for.
+	maxRows := height - 6
+	if maxRows < 1 {
+		maxRows = 1
+	}
+	shown := m.results
+	var more string
+	if len(shown) > maxRows {
+		shown = shown[:maxRows]
+		more = dimStyle.Render(fmt.Sprintf("  … %d more", len(m.results)-maxRows)) + "\n"
+	}
+
+	var list strings.Builder
+	for i, r := range shown {
+		line := truncate(fmt.Sprintf("[%-8s] %s  (%s)", r.kind, r.title, r.subtitle), width-4)
+		if i == m.cursor {
+			list.WriteString(selectedStyle.Width(width - 2).Render("> " + line))
+		} else {
+			list.WriteString("  " + line)
+		}
+		list.WriteString("\n")
+	}
+	list.WriteString(more)
+
+	return lipgloss.JoinVertical(lipgloss.Left, header, "", list.String(), status, help)
 }
 
 // session is what's persisted to ~/.immerle/config.json: the server and the
@@ -487,7 +545,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	program = tea.NewProgram(initialModel(client, player))
+	program = tea.NewProgram(initialModel(client, player), tea.WithAltScreen())
 	if _, err := program.Run(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
