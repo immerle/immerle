@@ -249,6 +249,39 @@ func TestPlayQueueCommandDoesNotMutateSavedState(t *testing.T) {
 	}
 }
 
+// TestPlayQueueShuffleAndRepeatCommandsAccepted covers a real bug report: a
+// spectating device could see the active device's shuffle/repeat mode (see
+// TestPlayQueueShuffleAndRepeatRoundTrip) but had no way to actually change
+// it remotely — toggleShuffle/cycleRepeat weren't recognized commands.
+func TestPlayQueueShuffleAndRepeatCommandsAccepted(t *testing.T) {
+	srv, token, _ := newBrowseEnv(t)
+
+	if st := doStatus(t, srv, http.MethodPost, "/play-queue/commands", token, map[string]any{
+		"type": "toggleShuffle", "forTarget": "device-a", "issuedBy": "device-b",
+	}); st != http.StatusNoContent {
+		t.Fatalf("toggleShuffle command: status %d", st)
+	}
+	var q playQueueView
+	if st := getJSON(t, srv, token, "/play-queue", &q); st != http.StatusOK {
+		t.Fatalf("get queue: status %d", st)
+	}
+	if q.PendingCommand == nil || q.PendingCommand.Type != "toggleShuffle" {
+		t.Fatalf("toggleShuffle command not recorded: %+v", q.PendingCommand)
+	}
+
+	if st := doStatus(t, srv, http.MethodPost, "/play-queue/commands", token, map[string]any{
+		"type": "cycleRepeat", "forTarget": "device-a", "issuedBy": "device-b",
+	}); st != http.StatusNoContent {
+		t.Fatalf("cycleRepeat command: status %d", st)
+	}
+	if st := getJSON(t, srv, token, "/play-queue", &q); st != http.StatusOK {
+		t.Fatalf("get queue: status %d", st)
+	}
+	if q.PendingCommand == nil || q.PendingCommand.Type != "cycleRepeat" {
+		t.Fatalf("cycleRepeat command not recorded: %+v", q.PendingCommand)
+	}
+}
+
 // TestPlayQueueCommandDeliveredOverPollAndSSE covers both delivery paths a
 // command must reach: a plain GET (what native's poll fallback uses — it
 // never opens the SSE stream at all, see ui/src/audio/store.ts's
