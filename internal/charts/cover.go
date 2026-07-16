@@ -34,11 +34,9 @@ var flagEmoji = map[string]string{
 }
 
 // labelKeys is the i18n dictionary behind the generator cover's `title`/
-// `subTitle` params — GET /cover/generator resolves a param through this
-// table (via ResolveLabel) when it matches a known key, e.g.
-// "charts.country.fr" -> "France" (fr) / "French" (en); an unrecognized
-// param is used as literal text instead. ResolveLabel falls back to French
-// for an unknown locale.
+// `subTitle` params, resolved via ResolveLabel (e.g. "charts.country.fr" ->
+// "France"/"French"); an unrecognized param is used as literal text, and an
+// unknown locale falls back to French.
 var labelKeys = map[string]map[string]string{
 	"charts.top50":          {"fr": "Top 50", "en": "Top 50"},
 	"charts.country.global": {"fr": "Mondial", "en": "Global"},
@@ -74,11 +72,9 @@ func ResolveLabel(key, locale string) string {
 }
 
 // GeneratorParams builds the GET /cover/generator query params for a chart
-// slug's cover: its flag/globe icon, "charts.top50"/"charts.country.<slug>"
-// title keys, and gradient. Stored as the chart playlist's CoverArt (see
-// service.go), it's resolved into a rendered PNG on demand, in the
-// requesting client's locale — an unknown slug still yields a plain
-// gradient with no icon/subtitle.
+// slug's cover (icon, title/subtitle keys, gradient). Stored as the chart
+// playlist's CoverArt (see service.go) and rendered to a PNG on demand in
+// the client's locale; an unknown slug yields a plain gradient.
 func GeneratorParams(slug string) url.Values {
 	g, ok := coverGradients[slug]
 	if !ok {

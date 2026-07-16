@@ -16,7 +16,6 @@ func TestShareCRUD(t *testing.T) {
 	}
 	songID := search.Songs()[0].ID
 
-	// Create.
 	var created shareView
 	resp := do(t, srv, http.MethodPost, "/shares", token, map[string]any{"itemId": songID, "description": "listen!"})
 	if resp.StatusCode != http.StatusCreated {
@@ -29,7 +28,6 @@ func TestShareCRUD(t *testing.T) {
 	}
 	id := created.ID
 
-	// List shows it.
 	var list struct {
 		Shares []shareView `json:"shares"`
 	}
@@ -37,7 +35,6 @@ func TestShareCRUD(t *testing.T) {
 		t.Fatalf("list: status %d, count %d", st, len(list.Shares))
 	}
 
-	// Update the description.
 	if st := doStatus(t, srv, http.MethodPatch, "/shares/"+id, token, map[string]any{"description": "updated"}); st != http.StatusNoContent {
 		t.Fatalf("update: status %d", st)
 	}
@@ -45,7 +42,6 @@ func TestShareCRUD(t *testing.T) {
 		t.Fatalf("update not applied: %+v", list.Shares)
 	}
 
-	// Delete.
 	if st := doStatus(t, srv, http.MethodDelete, "/shares/"+id, token, nil); st != http.StatusNoContent {
 		t.Fatalf("delete: status %d", st)
 	}

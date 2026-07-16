@@ -15,10 +15,8 @@ export function useAdminTracks(query: string, limit = 50, offset = 0) {
 
 /**
  * Admin: edit metadata, replace cover, delete. All three invalidate the admin
- * track list AND the wider catalog (album/artist/browse/search/playlists/
- * Wrapped) — the same track is independently cached anywhere it's shown, not
- * just here; deleting one is the worst case, since it'd otherwise stay
- * visible/playable everywhere else until those caches separately expire.
+ * track list plus the wider catalog — a track is cached independently
+ * everywhere it's shown, so e.g. delete would otherwise leave it playable elsewhere.
  */
 export function useTrackMutations() {
   const client = useAuth((s) => s.client);

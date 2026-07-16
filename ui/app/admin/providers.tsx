@@ -297,7 +297,6 @@ function ProviderCard({
 
         <View className="flex-1 gap-1.5">
           <Text className="text-base font-semibold text-foreground">{provider.name}</Text>
-          {/* Status pills, right under the title */}
           <View className="flex-row flex-wrap items-center gap-1.5">
             <Badge label={provider.enabled ? t('admin.providers.enabled') : t('admin.providers.disabled')} tone={provider.enabled ? 'success' : 'default'} />
             {provider.active ? (
@@ -459,12 +458,10 @@ function JsonConfigField({ value, onChangeText }: { value: string; onChangeText:
           autoCapitalize="none"
           autoCorrect={false}
           spellCheck={false}
-          // Height tracks the content so the box grows instead of scrolling inside.
-          // Glyphs invisible (the overlay shows them in color) but the caret stays visible.
           style={[
             textStyle,
             { height: Math.max(140, contentH), textAlignVertical: 'top', color: colors.foreground },
-            // Web-only props (transparent glyphs, visible caret) — not in RN's TextStyle.
+            // Web-only: transparent glyphs (overlay shows color) with a visible caret; not in RN's TextStyle.
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (Platform.OS === 'web'
               ? { WebkitTextFillColor: 'transparent', caretColor: colors.foreground }
@@ -555,7 +552,7 @@ function ProviderModal({ initial, onClose }: { initial: Provider; onClose: () =>
       <Pressable className="flex-1 flex-row justify-end" onPress={close}>
         {/* Dimmed backdrop fades in/out with the panel. */}
         <Animated.View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', opacity: fade }} />
-        {/* Side panel slides in from the right — room for the config editor + logs. */}
+        {/* Wide enough for the config editor + logs. */}
         <Animated.View style={{ height: '100%', width: '100%', maxWidth: PANEL_W, transform: [{ translateX: slide }] }}>
           <Pressable className="h-full bg-surface" onPress={(e) => e.stopPropagation()}>
           <View className="flex-row items-center justify-between border-b border-border px-5 py-4">

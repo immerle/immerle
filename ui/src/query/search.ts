@@ -15,11 +15,9 @@ export function useDebounced<T>(value: T, delayMs = 250): T {
 }
 
 /**
- * Live search, scoped server-side to `typeFilter` (see SearchTypeFilterButton).
- * The query string is expected to be already debounced by the caller via
- * {@link useDebounced}. Results are not cached and the prior result is not
- * kept on screen, so retyping (or switching the filter) shows the loading
- * state every time.
+ * Live search, scoped server-side to `typeFilter`. Caller must debounce the
+ * query (see {@link useDebounced}). Not cached (staleTime/gcTime 0), so
+ * retyping or switching the filter always shows the loading state.
  */
 export function useSearch(query: string, typeFilter: SearchTypeFilter) {
   const client = useAuth((s) => s.client);

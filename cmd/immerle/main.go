@@ -14,12 +14,10 @@ import (
 	"github.com/immerle/immerle/internal/config"
 )
 
-// awaitShutdownSignal cancels ctx on the first SIGINT/SIGTERM (starting a
-// graceful shutdown) and calls forceExit on the second, so an operator who
-// doesn't want to wait out the shutdown grace period can press Ctrl+C again
-// to quit immediately instead of it being silently swallowed — signal.Notify
-// keeps relaying every signal, unlike signal.NotifyContext, which stops
-// reacting after the first (see internal/server/server.go's shutdownGrace).
+// awaitShutdownSignal cancels ctx on the first SIGINT/SIGTERM and calls
+// forceExit on the second, so a second Ctrl+C forces an immediate exit.
+// Uses signal.Notify (not signal.NotifyContext) since it keeps relaying
+// signals instead of stopping after the first.
 func awaitShutdownSignal(cancel context.CancelFunc, forceExit func()) {
 	sigCh := make(chan os.Signal, 2)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)

@@ -29,10 +29,8 @@ import { useT } from '../../src/i18n/store';
 import { useToast } from '../../src/stores/toast';
 import { useWebTitle } from '../../src/utils/documentTitle';
 
-// Editing needs a key that stays with a track as it moves (DraggableFlatList
-// relies on stable keys to track the dragged cell), unlike its position in the
-// list — and a playlist can contain the same track twice, so the track id
-// alone isn't unique. Assigned once when a playlist is loaded into edit state.
+// DraggableFlatList needs a stable per-track key that isn't just position — and a
+// track id alone isn't unique if it appears twice. Assigned once on load into edit state.
 type EditableSong = Song & { _key: string };
 
 /**
@@ -79,19 +77,15 @@ export default function PlaylistDetail() {
   if (q.isLoading && !cached) return <Loading />;
   if ((q.isError || !q.data) && !cached) return <ErrorState message={t('media.playlist.notFound')} onRetry={q.refetch} />;
 
-  // Prefer live data; fall back to the offline snapshot (from downloading the
-  // whole playlist) when the server can't be reached. The fallback is
-  // read-only — no edit/subscribe/collaborator controls, since none of those
-  // mutations can work offline anyway.
+  // Falls back to the offline snapshot when the server is unreachable; that path is
+  // read-only since edit/subscribe/collaborator mutations can't work offline.
   const offline = !q.data && !!cached;
   const playlist = q.data ?? { id, name: cached!.name, coverArt: cached!.coverArt, entry: cached!.songs };
   const songs = playlist.entry ?? [];
   const totalDuration = songs.reduce((n, s) => n + (s.duration ?? 0), 0);
-  // Subsonic omits `owner` for one's own playlists on some servers; treat a
-  // missing owner as owned. A non-owner here is a subscriber → read-only. A
-  // federated playlist is never "owned" — its owner field is just an internal
-  // attribution the server had to pick — so it's always read-only/subscribable,
-  // even for the account that field happens to name.
+  // Some servers omit `owner` for one's own playlists, so a missing owner counts as
+  // owned. Federated playlists are never "owned" — `owner` is just internal
+  // attribution — so they stay read-only/subscribable regardless of that field.
   const isOwner = !offline && !playlist.federated && (playlist.owner ? playlist.owner === username : true);
 
   const togglePublic = (next: boolean) => {
@@ -99,9 +93,8 @@ export default function PlaylistDetail() {
     setPublic.mutate({ id, isPublic: next }, { onError: () => setIsPublic(!next) });
   };
 
-  // A federated-playlist track with no local match yet: resolve it now (local
-  // catalog, then providers) and play the result in place, keeping the rest of
-  // the queue intact.
+  // Unresolved federated track: resolve now (local catalog, then providers) and
+  // play in place, keeping the rest of the queue intact.
   // ponytail: only covers tapping a row or "play all" from track 0 — skipping
   // to a later unresolved track mid-queue during playback still won't
   // resolve; add if that turns out to matter in practice.

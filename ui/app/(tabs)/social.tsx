@@ -149,7 +149,6 @@ export default function Social() {
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
         <Text className="px-4 pb-2 pt-3 text-3xl font-bold tracking-tight text-foreground">Social</Text>
 
-        {/* Jam hero */}
         {client.has('jam') ? (
           <View className="px-4 pt-1">
             <LinearGradient
@@ -159,7 +158,6 @@ export default function Social() {
               style={{ borderRadius: 20, overflow: 'hidden' }}
             >
               <View className="p-5">
-                {/* Faint watermark icon */}
                 <View style={{ position: 'absolute', right: -8, top: -8, opacity: 0.18 }}>
                   <Ionicon name="radio" size={120} color="#ffffff" />
                 </View>
@@ -193,7 +191,6 @@ export default function Social() {
           </View>
         ) : null}
 
-        {/* Pending requests */}
         {pendingCount > 0 ? (
           <>
             <SectionHeader
@@ -223,7 +220,6 @@ export default function Social() {
           </>
         ) : null}
 
-        {/* Friends */}
         <SectionHeader
           title={t('social.friends.title')}
           action={
@@ -270,7 +266,6 @@ export default function Social() {
           )}
         </View>
 
-        {/* Activity */}
         <SectionHeader title={t('social.feed.title')} />
         <View className="px-4">
           {activity.isLoading ? (
@@ -293,7 +288,6 @@ export default function Social() {
         </View>
       </ScrollView>
 
-      {/* Add-a-friend popin */}
       <Modal transparent animationType="fade" visible={addOpen} onRequestClose={() => setAddOpen(false)}>
         <Pressable
           className="flex-1 items-center justify-center bg-black/60 px-6"
@@ -338,7 +332,6 @@ export default function Social() {
         </Pressable>
       </Modal>
 
-      {/* Join-a-Jam popin */}
       <Modal transparent animationType="fade" visible={joinOpen} onRequestClose={() => setJoinOpen(false)}>
         <Pressable
           className="flex-1 items-center justify-center bg-black/60 px-6"
@@ -416,7 +409,6 @@ function ActivityRow({ event, first }: { event: ActivityEventDTO; first: boolean
       disabled={!item?.albumId}
       className={`flex-row items-center gap-3 px-4 py-2 ${first ? '' : 'border-t border-border'} ${item?.albumId ? 'active:bg-surface-alt' : ''}`}
     >
-      {/* Artwork with a small action-type badge */}
       <View>
         {item?.coverArt ? (
           <CoverArt coverArt={item.coverArt} size={40} rounded="rounded-md" />

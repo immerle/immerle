@@ -133,7 +133,6 @@ export default function AdminSettings() {
       <AdminScroll
         header={<AdminHeader color="#0ea5e9" title={t('admin.settings.title')} subtitle={t('admin.settings.headerSubtitle')} />}
       >
-        {/* Restart-pending banner */}
         {pending.length ? (
           <View className="gap-1.5 rounded-2xl border border-danger/40 bg-danger/10 p-4">
             <View className="flex-row items-center gap-2">
@@ -152,7 +151,6 @@ export default function AdminSettings() {
         ))}
       </AdminScroll>
 
-      {/* Bottom sheet for the active section */}
       <Modal transparent visible={!!sheet} animationType="slide" onRequestClose={() => setSheet(null)}>
         <Pressable className="flex-1 justify-end bg-black/50" onPress={() => setSheet(null)}>
           <Pressable className="max-h-[85%] rounded-t-3xl bg-surface pb-6 pt-2" onPress={(e) => e.stopPropagation()}>

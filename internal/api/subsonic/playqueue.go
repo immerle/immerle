@@ -30,13 +30,11 @@ func (h *Handler) handleGetPlayQueue(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) handleSavePlayQueue(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
-	// The Subsonic API has no concept of a playing/paused flag, shuffle/repeat
-	// mode, or rich per-track metadata, on this endpoint (see the spec's
-	// savePlayQueue) — a Subsonic client's queue save can't drive the native
-	// app's cross-device remote-control feature, any not-yet-downloaded
-	// remote track it references won't survive being mirrored elsewhere, and
-	// it resets shuffle/repeat to their defaults (an accepted degradation for
-	// interop with third-party clients, same as the other two).
+	// Subsonic's savePlayQueue lacks a playing/paused flag, shuffle/repeat mode, and
+	// rich per-track metadata, so a Subsonic client's save can't drive cross-device
+	// remote control, doesn't preserve not-yet-downloaded remote tracks when mirrored,
+	// and resets shuffle/repeat to their defaults (accepted interop degradation, same
+	// as the other two).
 	err := h.playQueueSvc.Save(r.Context(), user.ID, param(r, "current"),
 		int64(intParam(r, "position", 0)), false, param(r, "c"), r.Form["id"], nil, false, "")
 	if err != nil {

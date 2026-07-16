@@ -28,13 +28,12 @@ func TestAccountSelfEdit(t *testing.T) {
 
 	bob := login(t, srv, "bob")
 
-	// GET own account exposes the (empty) email.
 	status, u := doMap(t, srv, http.MethodGet, "/me", bob, nil)
 	if status != http.StatusOK || u["username"] != "bob" || u["displayName"] != "Bob M" {
 		t.Fatalf("account GET wrong: status %d %+v", status, u)
 	}
 
-	// PATCH updates display name + email (display name is trimmed).
+	// Display name is trimmed.
 	status, u = doMap(t, srv, http.MethodPatch, "/me", bob, map[string]any{
 		"displayName": "  New Bob  ",
 		"email":       "bob@example.com",
@@ -43,18 +42,16 @@ func TestAccountSelfEdit(t *testing.T) {
 		t.Fatalf("account update wrong: status %d %+v", status, u)
 	}
 
-	// Persisted across requests.
 	stored, _ := store.Users.GetByUsername(ctx, "bob")
 	if stored.DisplayName != "New Bob" || stored.Email != "bob@example.com" {
 		t.Fatalf("account not persisted: %+v", stored)
 	}
 
-	// Invalid email is rejected.
 	if code := doStatus(t, srv, http.MethodPatch, "/me", bob, map[string]any{"email": "not-an-email"}); code != http.StatusBadRequest {
 		t.Fatalf("expected 400 for invalid email, got %d", code)
 	}
 
-	// A partial update touches only the field provided (email unchanged here).
+	// Partial update leaves other fields untouched.
 	status, u = doMap(t, srv, http.MethodPatch, "/me", bob, map[string]any{"displayName": "Bobby"})
 	if status != http.StatusOK || u["displayName"] != "Bobby" || u["email"] != "bob@example.com" {
 		t.Fatalf("partial update clobbered email: status %d %+v", status, u)

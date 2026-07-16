@@ -320,17 +320,11 @@ func TestSearchIncludesRadioStations(t *testing.T) {
 }
 
 // TestToAlbumViewFallsBackToAlbumIDForCoverArt covers a real bug: an album
-// whose tracks only carry embedded (never cached) art has an empty
-// models.Album.CoverArt, and without a fallback the API returned an empty
-// coverArt — CoverArt.tsx's client-side guard then never even requests an
-// image, so the album showed no cover anywhere (home screen, artist page,
-// search…), while the same track played fine because toSongView already
-// falls back a track's cover to its AlbumID. The cover service resolves an
-// album id by extracting embedded/sidecar art live from one of its tracks
-// (stream.CoverService.resolveOriginal), so falling back to the album's own
-// id here recovers the same art — matching the Subsonic API's
-// coverIDForAlbum in internal/api/subsonic/convert.go, which already does
-// this.
+// with only embedded (never cached) art had an empty CoverArt, so
+// CoverArt.tsx's client guard never requested an image and the album showed
+// no cover anywhere. Falling back to the album's own id lets the cover
+// service resolve embedded art live (stream.CoverService.resolveOriginal),
+// matching Subsonic's coverIDForAlbum.
 func TestToAlbumViewFallsBackToAlbumIDForCoverArt(t *testing.T) {
 	withCover := models.Album{ID: "album-1", Name: "Al", CoverArt: "cached-cover"}
 	if got := toAlbumView(withCover, nil, nil).CoverArt; got != "cached-cover" {
@@ -344,12 +338,11 @@ func TestToAlbumViewFallsBackToAlbumIDForCoverArt(t *testing.T) {
 }
 
 // TestSongLocalStatus covers the polling endpoint the player uses to upgrade
-// a still-progressive-streaming track to the seekable local one once ready
-// (see ui/src/audio/store.ts's seekTo, which no-ops seeks on a remote track
-// otherwise). A remote id with no completed download reports local=false;
-// once a download job completes — the same bookkeeping
-// internal/core/ondemand_stream.go's finalizeStreamed performs — it reports
-// the resolved local song.
+// a still-progressive track to the seekable local one once ready (see
+// ui/src/audio/store.ts's seekTo, which no-ops on a remote track). No
+// completed download reports local=false; once one completes (see
+// internal/core/ondemand_stream.go's finalizeStreamed) it reports the
+// resolved local song.
 func TestSongLocalStatus(t *testing.T) {
 	srv, token, store := newBrowseEnv(t)
 	ctx := context.Background()
@@ -391,12 +384,11 @@ func TestSongLocalStatus(t *testing.T) {
 	}
 }
 
-// TestToSongViewExposesRemote covers the client-visible signal for a real
-// bug: a not-yet-downloaded (on-demand provider) track streams progressively,
-// which can't serve byte ranges — seeking it silently resets playback to
-// 0:00. The client needs to know a song is still remote to disable seeking
-// instead, so toSongView must expose models.Track.Remote (it's otherwise
-// `json:"-"` and invisible to the API).
+// TestToSongViewExposesRemote covers a real bug: a not-yet-downloaded
+// (on-demand) track streams progressively and can't serve byte ranges, so
+// seeking it silently resets playback to 0:00. The client needs Remote to
+// know to disable seeking, so toSongView must expose models.Track.Remote
+// (otherwise `json:"-"` and invisible to the API).
 func TestToSongViewExposesRemote(t *testing.T) {
 	if got := toSongView(models.Track{ID: "t1", Remote: true}).Remote; !got {
 		t.Fatal("expected Remote to carry through to the song view")

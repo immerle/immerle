@@ -24,7 +24,6 @@ func TestActivityFeedEnrichesItems(t *testing.T) {
 	}
 	user, _ := store.Users.GetByUsername(ctx, "alice")
 
-	// Seed a track.
 	artistID, _ := store.Catalog.UpsertArtist(ctx, models.Artist{ID: uuid.NewString(), Name: "Daft Punk", CreatedAt: time.Now()})
 	albumID, _ := store.Catalog.UpsertAlbum(ctx, models.Album{ID: uuid.NewString(), Name: "Discovery", ArtistID: artistID, CreatedAt: time.Now()})
 	trackID, _ := store.Catalog.UpsertTrack(ctx, models.Track{
@@ -32,7 +31,6 @@ func TestActivityFeedEnrichesItems(t *testing.T) {
 		Path: "/x.mp3", Duration: 320, CreatedAt: time.Now(), UpdatedAt: time.Now(),
 	})
 
-	// Record an activity event referencing it.
 	activitySvc := core.NewActivityService(store.Activity, store.Friends, store.Users)
 	if err := activitySvc.Record(ctx, user, "favorite", models.ItemTrack, trackID); err != nil {
 		t.Fatal(err)
@@ -101,7 +99,6 @@ func TestProfileEndpoint(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Alice records a public activity event.
 	activitySvc := core.NewActivityService(store.Activity, store.Friends, store.Users)
 	alicePublic := alice
 	alicePublic.ActivityPrivacy = "public"
@@ -118,7 +115,6 @@ func TestProfileEndpoint(t *testing.T) {
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
 
-	// Bob views Alice's profile.
 	bobToken := login(t, srv, "bob")
 	status, body := doMap(t, srv, http.MethodGet, "/users/alice", bobToken, nil)
 	if status != http.StatusOK {

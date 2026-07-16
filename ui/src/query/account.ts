@@ -47,13 +47,10 @@ export function useNowPlaying() {
 }
 
 /**
- * Recently-active app installs on this account, for the "cast to device"
- * picker. Fetched fresh every time it's enabled — this key is also read
- * opportunistically by usePlayingElsewhere (PlayerBar.tsx) whenever something
- * plays elsewhere, so without staleTime:0 + refetchOnMount:'always' the
- * picker could show whatever snapshot that left behind (stale for up to the
- * global 5min staleTime) instead of the live list — most visible on native,
- * where the app/QueryClient can stay alive far longer than a web page load.
+ * Recently-active app installs, for the "cast to device" picker. Also read
+ * opportunistically by usePlayingElsewhere (PlayerBar.tsx); staleTime:0 +
+ * refetchOnMount:'always' avoids showing that stale snapshot instead of the
+ * live list (most visible on native, where QueryClient outlives a page load).
  */
 export function usePlaybackTargets(enabled: boolean) {
   const client = useAuth((s) => s.client);

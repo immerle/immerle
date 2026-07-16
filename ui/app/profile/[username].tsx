@@ -82,7 +82,6 @@ export default function Profile() {
     <View className="flex-1 bg-background">
       <Stack.Screen options={{ title: name }} />
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
-        {/* Hero */}
         <View className="overflow-hidden">
                 <LinearGradient
                   colors={[accent + '66', accent + '1f', 'transparent']}
@@ -114,7 +113,6 @@ export default function Profile() {
                 </View>
               </View>
 
-              {/* Activity */}
               <SectionHeader title={t('social.profile.recentActivity')} />
               <View className="px-4">
                 {!p.activity.length ? (
@@ -128,7 +126,6 @@ export default function Profile() {
                 )}
               </View>
 
-        {/* Public playlists */}
         {p.playlists.length ? (
           <>
             <SectionHeader title={t('social.profile.publicPlaylists')} />

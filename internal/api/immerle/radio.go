@@ -287,11 +287,9 @@ func radioCoverPath(coversDir, id string) string {
 	return filepath.Join(coversDir, "radio", safe)
 }
 
-// handleRadioCover serves a station's logo. On the first request it fetches the
-// station's source URL and caches the bytes locally; later requests serve the
-// cached file. Public (logos aren't sensitive) so clients load it as a plain
-// image without auth headers, and the server fetches http-only logos for clients
-// on https (no mixed-content).
+// handleRadioCover serves a station's logo, fetching and caching it locally on
+// first request. Public (logos aren't sensitive) so clients load it as a plain
+// <img>; fetching server-side also avoids mixed-content for http-only logos on https.
 //
 // @Summary      Station logo
 // @Tags         radio

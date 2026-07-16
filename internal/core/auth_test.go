@@ -46,7 +46,6 @@ func TestAuthenticateTokenAndPassword(t *testing.T) {
 		t.Fatalf("display name not stored, got %q", alice.DisplayName)
 	}
 
-	// Password auth.
 	if _, err := auth.Authenticate(ctx, Credentials{Username: "alice", Password: "s3cret"}); err != nil {
 		t.Fatalf("password auth failed: %v", err)
 	}
@@ -59,7 +58,6 @@ func TestAuthenticateTokenAndPassword(t *testing.T) {
 		t.Fatalf("token auth failed: %v", err)
 	}
 
-	// Wrong password rejected.
 	if _, err := auth.Authenticate(ctx, Credentials{Username: "alice", Password: "wrong"}); err == nil {
 		t.Fatal("expected wrong-password rejection")
 	}

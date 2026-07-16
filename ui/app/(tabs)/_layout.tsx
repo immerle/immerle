@@ -74,8 +74,8 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => <Ionicon name="search" size={size} color={color} />,
         }}
         listeners={{
-          // The "Recherche" tab opens the full-screen search overlay instead of
-          // navigating to a page — there is no dedicated search screen anymore.
+          // The Search tab opens the full-screen search overlay instead of navigating —
+          // there is no dedicated search screen.
           tabPress: (e) => {
             e.preventDefault();
             openSearch();
@@ -127,12 +127,10 @@ export default function TabsLayout() {
 
   if (wide) return tabs;
 
-  // Mobile: a global header above the tabs. The header owns the top safe-area;
-  // a fresh SafeAreaProvider below it re-measures the frame starting under the
-  // notch, so the screens' own <SafeAreaView edges={['top']}> adds no extra top
-  // inset — no fixed gap, content clips right at the header. The native
-  // SafeAreaView ignores a JS context override, so the nested provider (which it
-  // does respect) is what makes this work. Bottom inset stays correct.
+  // Mobile: header owns the top safe-area; a fresh SafeAreaProvider below it
+  // re-measures starting under the notch, so screens' <SafeAreaView edges={['top']}>
+  // adds no extra inset. Native SafeAreaView ignores a JS override, only a nested
+  // provider works.
   return (
     <View className="flex-1 bg-background">
       <MobileHeader />

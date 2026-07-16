@@ -19,7 +19,6 @@ func TestAdminUserManagement(t *testing.T) {
 		t.Fatalf("expected 1 user, got %d", len(list.Users))
 	}
 
-	// Create a non-admin user.
 	var created adminUserView
 	resp := do(t, srv, http.MethodPost, "/admin/users", adminToken, map[string]any{
 		"username": "bob", "password": "bobpw", "email": "bob@x.dev",
@@ -39,7 +38,6 @@ func TestAdminUserManagement(t *testing.T) {
 		t.Fatalf("non-admin list: expected 403, got %d", st)
 	}
 
-	// Update: rename and promote to admin.
 	if st := doStatus(t, srv, http.MethodPatch, "/admin/users/bob", adminToken, map[string]any{
 		"displayName": "Bob M", "admin": true,
 	}); st != http.StatusNoContent {
@@ -61,7 +59,6 @@ func TestAdminUserManagement(t *testing.T) {
 		t.Fatalf("get deleted: expected 404, got %d", st)
 	}
 
-	// Self password change.
 	if st := doStatus(t, srv, http.MethodPut, "/me/password", adminToken, map[string]any{"password": "newpw"}); st != http.StatusNoContent {
 		t.Fatalf("change password: status %d", st)
 	}

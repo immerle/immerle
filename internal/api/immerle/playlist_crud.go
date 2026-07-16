@@ -24,13 +24,13 @@ type playlistView struct {
 	Owner         string `json:"owner"`
 	Public        bool   `json:"public"`
 	Collaborative bool   `json:"collaborative"`
-	// Federated marks a read-only playlist synced from the hub: its `owner` is
-	// only an internal attribution, never real ownership — clients must not
-	// offer edit/delete/cover controls for it, only subscribe/unsubscribe.
+	// Federated marks a read-only playlist synced from the hub: `owner` is
+	// attribution only, not real ownership — clients must offer
+	// subscribe/unsubscribe, not edit/delete/cover.
 	Federated bool `json:"federated"`
-	// Subscribed reports whether the caller has favorited this playlist (see
-	// PUT/DELETE .../subscription). Only computed on the single-playlist
-	// resource (handleGetPlaylist) — false elsewhere.
+	// Subscribed reports whether the caller has favorited this playlist.
+	// Only set on the single-playlist resource (handleGetPlaylist), false
+	// elsewhere.
 	Subscribed bool       `json:"subscribed"`
 	SongCount  int        `json:"songCount"`
 	Duration   int        `json:"duration"`
@@ -222,11 +222,9 @@ func (h *Handler) handleReplacePlaylistTracks(w http.ResponseWriter, r *http.Req
 	writeResource(w, http.StatusOK, detailToView(d))
 }
 
-// handleResolvePlaylistTrack resolves one federated-playlist entry (identified
-// by its position) to a playable track, lazily, at the moment the caller wants
-// to play it: a local catalog lookup first, then — if portable-id resolution
-// is enabled — a provider search. The result may be a remote (not-yet-
-// downloaded) track, streamed progressively like any other on-demand result.
+// handleResolvePlaylistTrack lazily resolves a federated-playlist entry (by
+// position) to a playable track, local catalog first. The result may be a
+// remote, not-yet-downloaded track, streamed progressively like any other.
 //
 // @Summary      Resolve a federated playlist track for playback
 // @Description  Resolves an unresolved federated-playlist entry (checks the local catalog first, then the on-demand providers if enabled). 404 if it can't be resolved.

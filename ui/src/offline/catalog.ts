@@ -5,9 +5,8 @@ import { Song } from '../api/subsonic/types';
 const ALBUMS_KEY = 'immerle.offlineAlbums.v1';
 const PLAYLISTS_KEY = 'immerle.offlinePlaylists.v1';
 
-/** Full snapshot saved when the user downloads an entire album for offline —
- * unlike a lone track download, this keeps enough metadata to render the
- * album screen itself (not just play the songs) with no network. */
+/** Snapshot for a full album download — unlike a lone track, keeps enough
+ * metadata to render the album screen offline (not just play the songs). */
 export interface OfflineAlbum {
   id: string;
   name: string;

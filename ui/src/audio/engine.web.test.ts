@@ -45,10 +45,8 @@ describe('web engine setQueue', () => {
     await engine.setQueue([track('a'), track('b')], 0);
 
     // Regression: setQueue used to call play() unconditionally, racing a
-    // caller's subsequent seekTo — a fresh source could start audibly
-    // playing from 0 before the seek landed, and on a real browser that
-    // early seek could silently not stick (see engine.web.ts). Loading
-    // paused means a caller's seekTo below is never in that race.
+    // caller's subsequent seekTo — the seek could silently not stick on a
+    // real browser (see engine.web.ts). Loading paused avoids that race.
     expect(lastAudio.playCalls).toBe(0);
     expect(engine.getState().status).not.toBe('playing');
 

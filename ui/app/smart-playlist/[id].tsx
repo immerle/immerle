@@ -120,7 +120,6 @@ export default function SmartPlaylistEditor() {
           <Field label={t('smart.name')} placeholder={t('smart.namePlaceholder')} value={name} onChangeText={setName} />
         </Card>
 
-        {/* Conditions */}
         <Card className="gap-3">
           <CardTitle icon="funnel" color="#3b82f6" title={t('smart.conditions')} />
           <View className="flex-row items-center gap-2">
@@ -181,7 +180,6 @@ export default function SmartPlaylistEditor() {
           <Button title={t('smart.addCondition')} variant="secondary" icon="add" onPress={addCond} />
         </Card>
 
-        {/* Sort & limit */}
         <Card className="gap-3">
           <CardTitle icon="swap-vertical" color="#a855f7" title={t('smart.sortTitle')} />
           <Select<string> value={sort} options={SORTS.map((s) => ({ value: s, label: t(`smart.sort.${s}`) }))} onChange={setSort} />
@@ -198,7 +196,6 @@ export default function SmartPlaylistEditor() {
           <Field label={t('smart.limit')} keyboardType="number-pad" value={limit} onChangeText={setLimit} />
         </Card>
 
-        {/* Preview + actions */}
         <Card className="gap-3">
           <View className="flex-row items-center gap-2">
             <Button title={t('smart.preview')} variant="secondary" icon="eye-outline" loading={previewing} onPress={runPreview} />

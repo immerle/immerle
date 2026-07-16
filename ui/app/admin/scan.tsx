@@ -35,7 +35,6 @@ export default function AdminScan() {
       <AdminScroll
         header={<AdminHeader color="#f59e0b" title={t('admin.scan.title')} subtitle={t('admin.scan.headerSubtitle')} />}
       >
-        {/* Stats grid */}
         <View className="flex-row flex-wrap gap-2.5">
           <StatTile icon="people" color="#3b82f6" label={t('admin.scan.artists')} value={formatCount(stats.data?.artistCount)} />
           <StatTile icon="albums" color="#8b5cf6" label={t('admin.scan.albums')} value={formatCount(stats.data?.albumCount)} />
@@ -46,7 +45,6 @@ export default function AdminScan() {
           <Text className="px-1 text-xs text-muted">{t('admin.scan.lastScan', { date: stats.data.lastScan })}</Text>
         ) : null}
 
-        {/* Scan control */}
         <Card className="gap-3">
           <CardTitle
             icon={scanning ? 'sync' : 'checkmark-circle'}

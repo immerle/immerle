@@ -5,20 +5,14 @@ import { useColors } from '../theme/colors';
 
 /**
  * Grip icon that arms a DraggableFlatList row for reordering. Built on the
- * Gesture API rather than a Touchable* component: GenericTouchable (what
- * TouchableOpacity wraps) tracks press state in a persistent `this.STATE`
- * machine driven by its own internal LongPressGestureHandler — when the
- * list's outer pan gesture takes over the touch mid-press, that handler gets
- * cancelled rather than cleanly ended, leaving STATE stuck in BEGAN. The next
- * press then silently no-ops (the state-transition guard sees "already
- * BEGAN") until an extra throwaway tap resets it. Gesture.Tap() has no such
- * carried-over state, so every press activates the drag reliably.
+ * Gesture API rather than a Touchable*: TouchableOpacity's internal press
+ * state machine can get stuck in BEGAN when the list's outer pan gesture
+ * takes over mid-press, silently no-oping the next tap. Gesture.Tap() has no
+ * such carried-over state.
  *
- * Uses `onBegin`, not `onStart`: for a tap gesture, `onStart` only fires once
- * the tap is *recognized* — which for a discrete tap resolves near release —
- * so the drag would never arm in time to track the same touch's movement.
- * `onBegin` fires immediately on touch-down, before recognition, which is
- * the actual "arm the drag now" moment we need.
+ * Uses `onBegin` (fires on touch-down) not `onStart` (fires only once the
+ * tap is recognized, near release) — the drag needs to arm immediately to
+ * track the same touch's movement.
  */
 export function DragHandle({
   drag,

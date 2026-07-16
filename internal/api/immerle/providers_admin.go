@@ -82,11 +82,9 @@ type upsertProviderRequest struct {
 	Enabled  *bool  `json:"enabled"`
 }
 
-// handleProviderUpsert creates or updates an on-demand provider. A request with
-// no name and an endpoint creates a dynamic HTTP provider from its URL: the
-// server probes /capabilities, takes the declared name and seeds the config
-// skeleton (created disabled). A request with a name updates that provider; for
-// HTTP providers the config is then validated against /capabilities.
+// handleProviderUpsert creates or updates an on-demand provider. No name + an
+// endpoint creates a dynamic HTTP provider from its URL (probes /capabilities,
+// seeds config disabled); a name updates that provider (HTTP config revalidated).
 //
 // @Summary      Create or update an on-demand provider
 // @Description  Admin only. With only an endpoint (no name), creates an HTTP provider from its URL by probing /capabilities. With a name, updates it (HTTP config is validated against /capabilities).

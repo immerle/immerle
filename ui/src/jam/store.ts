@@ -6,17 +6,11 @@ import { JamParticipantDTO, JamSessionDTO } from '../api/immerleApi';
 type Session = JamSessionDTO & { updatedAt?: string };
 
 /**
- * Real-time Jam synchronization.
- *
- * The host's playback is the source of truth: whenever the host changes track,
- * plays/pauses, or every few seconds, it pushes `{currentTrackId, position(ms),
- * state, trackIds}` to the server (`jamUpdate`). Followers receive the session
- * (live via SSE on web, polling on native) and drive their own audio engine to
- * match — loading the track and seeking to the drift-corrected position
- * (`position + (now - updatedAt)` while playing).
- *
- * The engine runs globally (started on create/join, stopped on leave) so a Jam
- * keeps everyone in sync even while browsing other screens.
+ * Real-time Jam sync. Host is the source of truth: pushes `{currentTrackId,
+ * position(ms), state, trackIds}` on change or every few seconds (`jamUpdate`).
+ * Followers get the session (SSE on web, polling on native) and drive their
+ * audio engine to the drift-corrected position. Runs globally (create/join to
+ * leave) so sync continues while browsing other screens.
  */
 interface JamStore {
   sessionId: string | null;

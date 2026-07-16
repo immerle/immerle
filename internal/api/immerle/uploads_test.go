@@ -128,7 +128,6 @@ func TestRenameTrackOwnerOnly(t *testing.T) {
 	aliceID, _ := store.Users.GetByUsername(context.Background(), "alice")
 	id := seedTrack(t, store, "old", aliceID.ID)
 
-	// Owner renames.
 	status, body := doMap(t, srv, http.MethodPatch, "/library/tracks/"+id, alice, map[string]any{"title": "new name"})
 	if status != http.StatusOK || body["title"] != "new name" {
 		t.Fatalf("rename failed: status %d %+v", status, body)

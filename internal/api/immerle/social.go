@@ -338,7 +338,6 @@ func (h *Handler) handleProfile(w http.ResponseWriter, r *http.Request) {
 		target = u
 	}
 
-	// Activity visible to the caller, enriched with item details.
 	events, err := h.Activity.UserFeed(r.Context(), caller.ID, target.ID, 50)
 	if err != nil {
 		writeInternal(w, err)
@@ -349,7 +348,6 @@ func (h *Handler) handleProfile(w http.ResponseWriter, r *http.Request) {
 		activity = append(activity, activityEventView{ActivityEvent: e, Item: h.activityItem(r.Context(), e)})
 	}
 
-	// The target's public playlists.
 	lists, err := h.Playlists.ListPublicByOwner(r.Context(), target.ID)
 	if err != nil {
 		writeInternal(w, err)
@@ -432,7 +430,6 @@ func (h *Handler) handleAddCollaborator(w http.ResponseWriter, r *http.Request) 
 		writeErrorParams(w, http.StatusNotFound, "not_found", "user not found", map[string]any{"username": req.Username})
 		return
 	}
-	// Ensure the playlist is marked collaborative.
 	if !p.Collaborative {
 		p.Collaborative = true
 		_ = h.Playlists.UpdateMeta(r.Context(), p)

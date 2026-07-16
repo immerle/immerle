@@ -47,14 +47,10 @@ type AuthConfig struct {
 	// and persisted under the data dir (data/secret).
 	Secret string
 	// RequireSetupToken gates first-run admin creation behind a printed token.
-	// Defaults to false (see Default) on purpose: keeping first-run setup
-	// token-free is a deliberate UX trade-off so non-technical, self-hosting
-	// users can complete onboarding from the web UI without copying a token
-	// out of the server logs. The setup endpoint self-locks the instant any
-	// user exists, so the only exposure window is between first network
-	// reachability and the operator finishing setup — set this to true (or
-	// keep the instance off the public network until initialized) if that
-	// window matters for your deployment.
+	// Defaults to false (deliberate UX trade-off for non-technical self-hosters).
+	// The setup endpoint self-locks once any user exists, so the exposure window
+	// is only between first reachability and setup completing — set true (or
+	// keep the instance offline until initialized) if that window matters.
 	RequireSetupToken bool
 	// AdminUsername and AdminPassword, when both set, bootstrap the first admin
 	// account at startup instead of waiting for the setup API/UI. Like

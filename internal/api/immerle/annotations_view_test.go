@@ -14,7 +14,6 @@ func TestTrackAnnotationsSurfaced(t *testing.T) {
 	}
 	song := search.Songs()[0]
 
-	// Star, rate and scrobble the track.
 	if st := doStatus(t, srv, http.MethodPut, "/songs/"+song.ID+"/star", token, nil); st != http.StatusNoContent {
 		t.Fatalf("star: status %d", st)
 	}

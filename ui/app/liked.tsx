@@ -10,10 +10,7 @@ import { formatDuration } from '../src/utils/format';
 import { useColors } from '../src/theme/colors';
 import { useT } from '../src/i18n/store';
 
-/**
- * "Titres likés" — a virtual playlist backed by the Subsonic `getStarred2`
- * endpoint (starred songs). Read-only: play / shuffle, no CRUD.
- */
+/** Liked-songs virtual playlist backed by Subsonic `getStarred2`. Read-only: play / shuffle, no CRUD. */
 export default function Liked() {
   const t = useT();
   const colors = useColors();

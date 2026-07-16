@@ -98,7 +98,6 @@ func TestRemoteAlbumsForArtistDiscography(t *testing.T) {
 		t.Fatalf("album tracks should be remote: %+v", tracks[0])
 	}
 
-	// Unknown artist → no albums.
 	if a, _ := svc.RemoteAlbumsForArtist(ctx, "Nobody"); len(a) != 0 {
 		t.Fatalf("unknown artist should yield no albums, got %d", len(a))
 	}
@@ -122,7 +121,7 @@ func TestRemoteTracksForAlbum(t *testing.T) {
 		}
 	}
 
-	// Unknown artist or album → nothing (caller falls back to local-only).
+	// Caller falls back to local-only when nothing matches.
 	if got, _ := svc.RemoteTracksForAlbum(ctx, "Nobody", "Discovery"); len(got) != 0 {
 		t.Fatalf("unknown artist should yield no tracks, got %d", len(got))
 	}
@@ -131,13 +130,10 @@ func TestRemoteTracksForAlbum(t *testing.T) {
 	}
 }
 
-// TestRemoteTracksForAlbumFallsBackToSearch covers a real bug: a provider that
-// only implements the mandatory Search capability (no ArtistSearcher/
-// ArtistAlbumLister/AlbumBrowser — true of most on-demand HTTP providers, and
-// all three shipped built-ins) made RemoteTracksForAlbum silently return
-// nothing, forever, no matter how many times a partially-downloaded album was
-// reopened. It must fall back to a plain search, filtered to the requested
-// album (and artist, when known).
+// TestRemoteTracksForAlbumFallsBackToSearch: a provider with only the
+// mandatory Search capability (true of most on-demand providers) used to make
+// RemoteTracksForAlbum silently return nothing forever. It must fall back to a
+// plain search filtered to the requested album/artist.
 func TestRemoteTracksForAlbumFallsBackToSearch(t *testing.T) {
 	store := testutil.NewStore(t)
 	reg := NewProviderRegistry()

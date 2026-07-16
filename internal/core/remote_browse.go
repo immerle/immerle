@@ -103,23 +103,17 @@ func toRemoteTrack(provider string, res providers.Result) models.Track {
 	}
 }
 
-// ResolveBestRemoteMatch searches every active provider for the track that
-// best matches artist/title and returns it, re-ranked the same way normal
-// search results are (see relevance in library.go). Unlike RemoteSearch —
-// which intentionally queries a single provider for a single top result (see
-// searchProvider) — this is for callers with no specific provider in mind,
-// e.g. resolving a hub-federated playlist entry that could be catalogued
-// under any of them, and for whom a single provider's #1 guess isn't good
-// enough to declare the track unresolvable.
+// ResolveBestRemoteMatch searches every active provider (unlike RemoteSearch,
+// which queries only one) for the track best matching artist/title — for
+// callers with no specific provider in mind, e.g. resolving a hub-federated
+// playlist entry that could be catalogued under any of them.
 //
-// A candidate whose title shares nothing with the wanted title is rejected
-// outright (ok=false), even if it's the only/best-ranked result a provider's
-// free-text search returned: providers like Internet Archive or Free Music
-// Archive always return *something* for a query, and silently playing an
-// unrelated track is worse than reporting the entry unresolvable. Artist is
-// used only to break ties among candidates that already pass the title gate,
-// since hub/provider artist metadata (aliases, "feat." credits, ...) is less
-// reliable than title.
+// A candidate sharing nothing with the wanted title is rejected outright
+// (ok=false), even if it's a provider's top free-text result: providers like
+// Internet Archive or Free Music Archive always return *something*, and
+// playing an unrelated track is worse than reporting it unresolvable. Artist
+// only breaks ties among title-matching candidates, since hub/provider artist
+// metadata (aliases, "feat." credits, ...) is less reliable than title.
 func (s *CatalogService) ResolveBestRemoteMatch(ctx context.Context, artist, title string) (models.Track, bool) {
 	if s == nil || s.state == nil {
 		return models.Track{}, false
@@ -527,14 +521,11 @@ func (s *CatalogService) RemoteAlbumsForArtist(ctx context.Context, artistName s
 }
 
 // RemoteTracksForAlbum returns an album's full tracklist from the provider,
-// matched by artist + album name — used to enrich a partially-owned local album
-// (one that only has the tracks the user has actually downloaded so far) with
-// the remaining tracks, as remote, play-on-demand ones. Prefers the precise
-// artist/album-browse capabilities when the provider has them, but always
-// falls back to a plain search+filter (remoteTracksForAlbumBySearch) — most
-// on-demand HTTP providers only implement the three mandatory endpoints
-// (search/resolve/download), and without this fallback such a provider would
-// silently enrich nothing, forever, however many times the album is reopened.
+// matched by artist + album name — used to enrich a partially-owned local
+// album with the remaining tracks as remote, play-on-demand ones. Prefers
+// artist/album-browse capabilities when available, but always falls back to a
+// plain search+filter (remoteTracksForAlbumBySearch), since most on-demand
+// HTTP providers only implement the three mandatory endpoints.
 func (s *CatalogService) RemoteTracksForAlbum(ctx context.Context, artistName, albumName string) ([]models.Track, error) {
 	if s == nil || s.state == nil || strings.TrimSpace(albumName) == "" {
 		return nil, nil

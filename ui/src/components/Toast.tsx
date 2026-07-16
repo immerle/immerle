@@ -12,13 +12,10 @@ const STYLES: Record<ToastType, { bg: string; icon: string }> = {
 
 /** Global toast overlay. Render once at the app root, above PlayerBar/TrackMenu/
  * SearchOverlay/MobileDrawer so it paints over them. Touches should fall
- * through everywhere except the toast itself (box-none) — on native, a plain
- * Modal + box-none does that correctly. On web, react-native-web's Modal always
- * renders a full-viewport wrapper div with `pointer-events: auto` that a box-none
- * child can't override, so any tap anywhere is swallowed while a toast is up;
- * there we skip Modal entirely and use a plain absolutely-positioned View
- * instead (already mounted last in the layout, so it paints on top with no
- * portal needed). Tap a toast to dismiss it. */
+ * through everywhere except the toast itself (box-none) — a plain Modal does
+ * that correctly on native, but react-native-web's Modal wrapper always has
+ * `pointer-events: auto` and swallows taps regardless, so on web we skip
+ * Modal and use a plain absolutely-positioned View instead. Tap to dismiss. */
 export function ToastHost() {
   const toasts = useToast((s) => s.toasts);
   const dismiss = useToast((s) => s.dismiss);

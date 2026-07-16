@@ -61,24 +61,20 @@ func TestAdminTracksListEditCoverDelete(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// List returns the track.
 	status, body := doMap(t, srv, http.MethodGet, "/admin/tracks", admin, nil)
 	if status != http.StatusOK || body["total"].(float64) != 1 {
 		t.Fatalf("list failed: %d %+v", status, body)
 	}
 
-	// Search miss returns nothing.
 	if _, miss := doMap(t, srv, http.MethodGet, "/admin/tracks?query=zzz", admin, nil); miss["total"].(float64) != 0 {
 		t.Fatalf("expected no search hits, got %v", miss["total"])
 	}
 
-	// Edit metadata.
 	status, body = doMap(t, srv, http.MethodPatch, "/admin/tracks/"+id, admin, map[string]any{"title": "Aerodynamic", "year": 2001})
 	if status != http.StatusOK || body["title"] != "Aerodynamic" {
 		t.Fatalf("edit failed: %d %+v", status, body)
 	}
 
-	// Replace cover via upload (multipart field "file").
 	png := []byte("\x89PNG\r\n\x1a\n" + "rest-of-image-bytes")
 	resp := doMultipart(t, srv, http.MethodPut, "/admin/tracks/"+id+"/cover", admin, "cover.png", png)
 	var view map[string]any

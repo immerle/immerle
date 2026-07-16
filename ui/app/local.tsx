@@ -14,9 +14,8 @@ import { formatDuration } from '../src/utils/format';
 import { useT } from '../src/i18n/store';
 
 /**
- * "Musiques locales" — a virtual playlist of the tracks the user uploaded from
- * the web (drag-and-drop). Tracks can be played, added to playlists (via the
- * row menu), and edited (rename / cover) by their owner.
+ * Local tracks: a virtual playlist of files the user uploaded from the web
+ * (drag-and-drop). Owner can play, add to playlists, and edit (rename / cover).
  */
 export default function Local() {
   const t = useT();

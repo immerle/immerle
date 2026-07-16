@@ -88,7 +88,6 @@ export default function ImportDetail() {
           />
         ) : null}
 
-        {/* Status filter */}
         <View className="flex-row flex-wrap gap-2">
           {FILTERS.map((f) => {
             const active = filter === f.key;
@@ -194,7 +193,6 @@ function ItemRow({ importId, item, first }: { importId: string; item: ImportItem
         </View>
       </View>
 
-      {/* Validate / correct flagged items */}
       {!isMatched && item.id ? (
         editing ? (
           <View className="gap-2 pt-1">

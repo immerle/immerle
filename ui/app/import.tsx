@@ -17,7 +17,7 @@ const statusTone = (s?: string): 'success' | 'danger' | 'primary' =>
   s === 'completed' ? 'success' : s === 'failed' || s === 'error' ? 'danger' : 'primary';
 
 /** Import playlists from external platforms (e.g. Spotify) — gated by the
- * `playlistImport` capability. Reached from Réglages → Importer une playlist. */
+ * `playlistImport` capability. Reached from Settings → Import a playlist. */
 export default function ImportScreen() {
   const t = useT();
   const sources = useImportSources();

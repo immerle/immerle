@@ -10,10 +10,8 @@ import { formatCount } from '../src/utils/format';
 import { useT } from '../src/i18n/store';
 
 /**
- * Discover public playlists. Subscriptions are opt-in: a public playlist only
- * joins your library once you subscribe — then it shows up like a normal
- * (read-only) playlist. Unsubscribing removes it from your library; the owner's
- * playlist is untouched.
+ * Discover public playlists. Subscribing adds a read-only copy to your library;
+ * unsubscribing removes it without touching the owner's playlist.
  */
 export default function Discover() {
   const t = useT();

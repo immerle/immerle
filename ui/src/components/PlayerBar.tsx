@@ -541,17 +541,13 @@ function PlaylistCheckRow({ playlistId, name, songId }: { playlistId: string; na
  * "This device" to take over playback here, or "Everywhere" to go back to
  * independent mode (today's default — every device manages its own playback).
  *
- * Opens the cast-target picker as its own route (/cast-target), presented
- * modally by the navigator — the same proven mechanism as the queue button
- * right next to it (`router.push('/queue')`). A custom anchored <Modal>
- * popover was tried here first (both nested in CastButton's own screen and
- * root-mounted like TrackMenu) but proved unreliable on native: nested inside
- * app/player.tsx (itself `presentation: 'modal'`) it silently never
- * appeared, and root-mounting it left an invisible full-screen Modal
- * lingering after leaving /player — since /player's own native modal window
- * sits on top of the app while showing, the newly-opened root Modal rendered
- * behind it, undismissed, and resurfaced (blocking all touches) once /player
- * closed. A real navigator route sidesteps all of that.
+ * Opens the picker as its own route (/cast-target, modally presented by the
+ * navigator), same as the queue button next to it. A custom anchored <Modal>
+ * popover was tried first but proved unreliable on native: nested inside
+ * app/player.tsx (itself a native modal) it silently never appeared; root-
+ * mounted, it rendered behind /player's own modal window and resurfaced
+ * blocking all touches after /player closed. A real navigator route avoids
+ * both failure modes.
  */
 export function CastButton({ active, disabled }: { active?: boolean; disabled?: boolean }) {
   const t = useT();

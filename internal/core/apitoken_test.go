@@ -38,12 +38,10 @@ func TestAPITokenCreateAuthenticateRevoke(t *testing.T) {
 		t.Fatalf("token auth failed: user=%s err=%v", got.ID, err)
 	}
 
-	// Wrong token rejected.
 	if _, err := auth.Authenticate(ctx, Credentials{APIToken: "gsk_bogus"}); err == nil {
 		t.Fatal("bogus token must be rejected")
 	}
 
-	// Revoke → token no longer authenticates.
 	ok, err := auth.RevokeAPIToken(ctx, tok.ID, user.ID)
 	if err != nil || !ok {
 		t.Fatalf("revoke failed: ok=%v err=%v", ok, err)
@@ -82,11 +80,9 @@ func TestAPITokenScopedToCreator(t *testing.T) {
 	}
 }
 
-// TestListDeviceSessions covers the pool of playback-transfer targets: only
-// device-kind tokens (minted by the app's own login flow, see
-// AuthService.CreateAPIToken's isDevice param) that were used recently enough
-// to still count as "connected" should show up — not manually-created
-// personal/CLI tokens, and not devices that have gone stale.
+// TestListDeviceSessions: only device-kind tokens (isDevice param on
+// CreateAPIToken) used recently enough count as "connected" playback-transfer
+// targets — not CLI tokens, not stale devices.
 func TestListDeviceSessions(t *testing.T) {
 	store := testutil.NewStore(t)
 	auth, _ := NewAuthService(store.Users, store.APITokens, store.Devices, "secret")

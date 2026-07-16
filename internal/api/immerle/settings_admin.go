@@ -70,11 +70,10 @@ func (h *Handler) handleSettingsUpdate(w http.ResponseWriter, r *http.Request) {
 		writeErrorParams(w, http.StatusBadRequest, "invalid_body", "invalid settings JSON: "+err.Error(), map[string]any{"detail": err.Error()})
 		return
 	}
-	// Guard against mass assignment: only the sections exposed by RuntimeSettingsDTO
-	// are settable here. Start from the current settings and copy over exactly the
-	// admin-settable sections; every other field (Import credentials, the
-	// Radio/Wrapped/Offline/SmartPlaylists feature toggles — each with its own
-	// endpoint — and the hub-managed federation identity) keeps its current value.
+	// Mass-assignment guard: copy over only the sections RuntimeSettingsDTO
+	// exposes. Everything else (Import credentials, feature toggles with
+	// their own endpoint, the hub-managed federation identity) keeps its
+	// current value.
 	next := current
 	next.Server = merged.Server
 	next.Auth = merged.Auth

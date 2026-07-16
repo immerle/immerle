@@ -109,13 +109,10 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <AccentScope>
           <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-          {/* Column: a global top bar (desktop), the navigator in the middle,
-              and the player bar docked at the very bottom — foreground on every
-              screen. */}
+          {/* Top bar, navigator, then the player bar docked at the bottom — on every screen. */}
           <View style={{ flex: 1 }}>
             <TopBar wide={wide} />
-            {/* On desktop, the library sidebar sits beside the navigator content
-                and persists across screens; on mobile the navigator is full width. */}
+            {/* Desktop: sidebar persists beside the content. Mobile: full width. */}
             <View style={{ flex: 1, flexDirection: 'row' }}>
               {showSidebar ? inAdmin ? <AdminSidebar /> : <LibrarySidebar /> : null}
               <View style={{ flex: 1 }}>

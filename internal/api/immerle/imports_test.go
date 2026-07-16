@@ -21,8 +21,7 @@ func TestImportEndpointsFlow(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// No content resolver or hub: we only exercise the API surface (sources
-	// listing, validation, list), not an actual playlist fetch/resolve.
+	// No content resolver or hub: only exercises the API surface, not an actual fetch/resolve.
 	cfg := func() map[string]map[string]string { return map[string]map[string]string{} }
 	svc := importer.NewService(store.Imports, store.Playlists, nil, nil, cfg, testutil.NewLogger())
 
@@ -34,8 +33,7 @@ func TestImportEndpointsFlow(t *testing.T) {
 
 	token := login(t, srv, "alice")
 
-	// Sources lists spotify, reported as configured (it needs no credentials —
-	// it fetches public playlists directly, see internal/spotifyweb).
+	// Spotify needs no credentials (fetches public playlists directly, see internal/spotifyweb).
 	status, sources := doArr(t, srv, http.MethodGet, "/imports/sources", token, nil)
 	if status != http.StatusOK {
 		t.Fatalf("sources status %d", status)
@@ -57,12 +55,10 @@ func TestImportEndpointsFlow(t *testing.T) {
 		t.Fatalf("spotify source missing: %+v", sources)
 	}
 
-	// Starting an import for an unregistered source fails with 400.
 	if code := doStatus(t, srv, http.MethodPost, "/imports", token, map[string]any{"source": "not-a-real-source", "ref": "PL"}); code != http.StatusBadRequest {
 		t.Fatalf("expected 400 for unknown source, got %d", code)
 	}
 
-	// Empty imports list for the caller.
 	status, imports := doArr(t, srv, http.MethodGet, "/imports", token, nil)
 	if status != http.StatusOK {
 		t.Fatalf("imports status %d", status)

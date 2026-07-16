@@ -42,7 +42,6 @@ func TestSetupStatusThenInitThenLock(t *testing.T) {
 		t.Fatalf("unexpected status: %+v", st)
 	}
 
-	// Create the first admin.
 	code, body := doMap(t, srv, http.MethodPost, "/setup", "", map[string]any{
 		"username": "kilian", "password": "password123", "email": "k@example.com",
 	})

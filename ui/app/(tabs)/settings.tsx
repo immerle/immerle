@@ -51,8 +51,7 @@ export default function Settings() {
     if (account.data) {
       setEditName(account.data.displayName);
       setEditEmail(account.data.email);
-      // Server is the cross-device source of truth: seed the picker from it
-      // ("" → follow device). Local AsyncStorage stays the offline fallback.
+      // Server is the cross-device source of truth ("" → follow device); AsyncStorage is just the offline fallback.
       setLocale(account.data.language || 'system');
     }
   }, [account.data, setLocale]);
@@ -83,7 +82,6 @@ export default function Settings() {
     <AdminScroll
       header={<AdminHeader color={colors.primary} title={t('settings.title')} subtitle={t('settings.subtitle')} showBack={false} />}
     >
-      {/* Account */}
       <Card>
         <View className="flex-row items-center gap-3">
           <View className="h-12 w-12 items-center justify-center rounded-full" style={{ backgroundColor: colorFor(username) }}>
@@ -104,7 +102,7 @@ export default function Settings() {
         </View>
       </Card>
 
-      {/* Profile (self-service display name + email) */}
+      {/* Self-service: display name + email only, not admin user management. */}
       <Card className="gap-3">
         <CardTitle icon="person" color="#14b8a6" title={t('settings.profile')} />
         <Field label={t('settings.displayName')} placeholder={username} value={editName} onChangeText={setEditName} />
@@ -132,7 +130,6 @@ export default function Settings() {
         </View>
       </Card>
 
-      {/* Appearance */}
       <Card className="gap-3">
         <CardTitle icon="contrast" color="#3b82f6" title={t('settings.appearance')} />
         <View className="flex-row gap-2">
@@ -154,7 +151,6 @@ export default function Settings() {
         </View>
       </Card>
 
-      {/* Accent color */}
       <Card className="gap-3">
         <CardTitle icon="color-palette" color={currentAccent} title={t('settings.accent')} />
         <View className="flex-row flex-wrap gap-3">
@@ -191,7 +187,6 @@ export default function Settings() {
         {accent ? <Button title={t('settings.resetAccent')} variant="ghost" onPress={() => setAccent(null)} /> : null}
       </Card>
 
-      {/* Quality */}
       <Card className="gap-3">
         <CardTitle icon="musical-notes" color="#ec4899" title={t('settings.quality')} />
         <View className="overflow-hidden rounded-xl border border-border">
@@ -211,7 +206,6 @@ export default function Settings() {
         </View>
       </Card>
 
-      {/* Account & access */}
       <Card className="gap-2">
         <CardTitle icon="key" color="#14b8a6" title={t('settings.access')} />
         {client?.isFeatureEnabled('wrapped') ? (

@@ -1,9 +1,8 @@
 import { ScrollViewStyleReset } from 'expo-router/html';
 import { type PropsWithChildren } from 'react';
 
-// +html.tsx wraps the root HTML document for the static web export only (it never
-// runs on native). We use it to turn the web build into an installable PWA:
-// manifest, theme color, Apple home-screen meta, and service-worker registration.
+// Wraps the root HTML document for the static web export only (never runs on native).
+// Turns the web build into an installable PWA: manifest, theme color, SW registration.
 export default function Root({ children }: PropsWithChildren) {
   return (
     <html lang="en">

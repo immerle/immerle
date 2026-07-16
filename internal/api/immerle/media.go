@@ -55,10 +55,8 @@ type streamURLs struct {
 // @Failure  401  {object}  errorResponse
 // @Router   /songs/{id}/stream-url [get]
 func (h *Handler) handleStreamURL(w http.ResponseWriter, r *http.Request) {
-	// Sign and embed the raw (still percent-encoded) path segment, exactly what
-	// mediaAuthMiddleware reads back via chi.URLParam when verifying. Signing the
-	// decoded id while embedding it unescaped breaks verification for any id that
-	// needs URL escaping.
+	// Sign the raw (still percent-encoded) id, since that's what mediaAuthMiddleware
+	// reads back via chi.URLParam — signing the decoded id breaks verification for ids needing escaping.
 	id := chi.URLParam(r, "id")
 	exp, sig := h.media.SignToken(id)
 	q := "?exp=" + exp + "&sig=" + sig
@@ -111,9 +109,8 @@ func (h *Handler) handleDownload(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleCover serves cover art for a track or album id at an optional size.
-// The literal id "generator" is the generic cover builder instead: it
-// renders a cover on the fly from the icon/title/subTitle/color/color2/angle
-// query params, e.g. /cover/generator?icon=1f30d&title=charts.top50&color=%231db954&color2=%230b3d20&angle=45.
+// The id "generator" instead renders a cover on the fly from query params,
+// e.g. /cover/generator?icon=1f30d&title=charts.top50&color=%231db954&angle=45.
 //
 // @Summary  Cover art
 // @Description  Returns the cover image for a track or album id, optionally resized. The id "generator" instead builds a cover on the fly from its own query params (icon, title, subTitle, color, color2, angle); title/subTitle may be a known i18n key (e.g. "charts.top50") resolved via locale, or literal text.
