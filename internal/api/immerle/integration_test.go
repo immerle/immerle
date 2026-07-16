@@ -34,8 +34,7 @@ func newEnv(t *testing.T) (*httptest.Server, *persistence.Store) {
 	h := NewHandler(Deps{
 		Auth:        auth,
 		Users:       store.Users,
-		Friends:     store.Friends,
-		Activity:    core.NewActivityService(store.Activity, store.Friends, store.Users),
+		Activity:    core.NewActivityService(store.Activity),
 		Playlists:   store.Playlists,
 		Annotations: store.Annotations,
 		PlayQueues:  store.PlayQueues,
@@ -138,33 +137,6 @@ func TestCapabilitiesUnauthenticated(t *testing.T) {
 	caps, _ := body["capabilities"].(map[string]any)
 	if _, ok := caps["jam"]; !ok {
 		t.Fatal("jam capability missing")
-	}
-}
-
-func TestFriendRequestAcceptFlow(t *testing.T) {
-	srv, _ := newEnv(t)
-	alice := login(t, srv, "alice")
-	bob := login(t, srv, "bob")
-
-	if s, b := doMap(t, srv, http.MethodPost, "/friends/requests", alice, map[string]any{"username": "bob"}); s != http.StatusCreated {
-		t.Fatalf("request failed: %d %+v", s, b)
-	}
-
-	if s, list := doArr(t, srv, http.MethodGet, "/friends/requests", bob, nil); s != http.StatusOK || len(list) != 1 {
-		t.Fatalf("bob should have 1 pending request, got status %d len %d", s, len(list))
-	}
-
-	if s := doStatus(t, srv, http.MethodPost, "/friends/requests/alice/accept", bob, nil); s != http.StatusOK {
-		t.Fatalf("accept failed: %d", s)
-	}
-
-	for _, tok := range []struct {
-		name, token string
-	}{{"alice", alice}, {"bob", bob}} {
-		s, friends := doArr(t, srv, http.MethodGet, "/friends", tok.token, nil)
-		if s != http.StatusOK || len(friends) != 1 {
-			t.Fatalf("%s should have 1 friend, got status %d len %d", tok.name, s, len(friends))
-		}
 	}
 }
 

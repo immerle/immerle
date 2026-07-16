@@ -32,7 +32,7 @@ export interface Capabilities {
     publicPlaylists: boolean;
     /** Import playlists from external platforms (e.g. Spotify). */
     playlistImport: boolean;
-    /** Friends / activity feed. */
+    /** Activity feed / share links. */
     social: boolean;
     /** Admin track management: list/edit metadata/edit cover/delete. */
     libraryAdmin: boolean;

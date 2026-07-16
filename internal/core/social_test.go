@@ -18,11 +18,9 @@ func TestActivityFeedRespectsPrivacy(t *testing.T) {
 
 	users := map[string]models.User{}
 	for _, spec := range []struct{ name, privacy string }{
-		{"viewer", "friends"},
-		{"friend", "friends"},
+		{"viewer", "public"},
 		{"public_user", "public"},
 		{"private_user", "private"},
-		{"stranger", "friends"},
 	} {
 		u := models.User{ID: uuid.NewString(), Username: spec.name, PasswordHash: "x", ActivityPrivacy: spec.privacy, CreatedAt: now}
 		if err := store.Users.Create(ctx, u); err != nil {
@@ -31,14 +29,10 @@ func TestActivityFeedRespectsPrivacy(t *testing.T) {
 		users[spec.name] = u
 	}
 
-	// viewer <-> friend are accepted friends.
-	_ = store.Friends.Request(ctx, models.Friendship{ID: uuid.NewString(), UserID: users["viewer"].ID, FriendID: users["friend"].ID, Status: models.FriendPending, CreatedAt: now, UpdatedAt: now})
-	_ = store.Friends.Accept(ctx, users["viewer"].ID, users["friend"].ID, uuid.NewString())
-
-	svc := NewActivityService(store.Activity, store.Friends, store.Users)
+	svc := NewActivityService(store.Activity)
 
 	// Each user records a "listen" event.
-	for _, name := range []string{"friend", "public_user", "private_user", "stranger"} {
+	for _, name := range []string{"public_user", "private_user"} {
 		if err := svc.Record(ctx, users[name], "listen", models.ItemTrack, "track-"+name); err != nil {
 			t.Fatal(err)
 		}
@@ -53,10 +47,6 @@ func TestActivityFeedRespectsPrivacy(t *testing.T) {
 		seen[e.Username] = true
 	}
 
-	// Friend's friends-only event: visible.
-	if !seen["friend"] {
-		t.Error("friend's event should be visible to viewer")
-	}
 	// Public user's event: visible to everyone.
 	if !seen["public_user"] {
 		t.Error("public event should be visible")
@@ -64,10 +54,6 @@ func TestActivityFeedRespectsPrivacy(t *testing.T) {
 	// Private user's event: never recorded, never visible.
 	if seen["private_user"] {
 		t.Error("private user's event must not be visible")
-	}
-	// Stranger's friends-only event: not a friend, so hidden.
-	if seen["stranger"] {
-		t.Error("stranger's friends-only event must not be visible")
 	}
 }
 

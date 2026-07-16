@@ -1,6 +1,6 @@
 // Package immerle implements the native immerle extension API: the social
-// features Subsonic lacks (capability discovery, friends, activity feed,
-// collaborative playlists, shares and synchronized Jam sessions).
+// features Subsonic lacks (capability discovery, activity feed, collaborative
+// playlists, shares and synchronized Jam sessions).
 package immerle
 
 import (
@@ -30,7 +30,6 @@ const ProtocolVersion = "1.0.0"
 type Deps struct {
 	Auth         *core.AuthService
 	Users        *persistence.UserRepo
-	Friends      *persistence.FriendRepo
 	Activity     *core.ActivityService
 	Playlists    *persistence.PlaylistRepo
 	PlaylistSync core.PlaylistSyncEnqueuer // optional: enqueue public-playlist hub sync
@@ -199,12 +198,6 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Get("/admin/users/{username}", h.handleGetUser)
 			r.Patch("/admin/users/{username}", h.handleUpdateUser)
 			r.Delete("/admin/users/{username}", h.handleDeleteUser)
-
-			// Friendships.
-			r.Get("/friends", h.handleFriends)
-			r.Get("/friends/requests", h.handleFriendPending)
-			r.Post("/friends/requests", h.handleFriendRequest)
-			r.Post("/friends/requests/{username}/accept", h.handleFriendAccept)
 
 			r.Get("/activity", h.handleActivity)
 			r.Get("/library/stats", h.handleLibraryStats)

@@ -13,103 +13,6 @@ import (
 	"github.com/immerle/immerle/internal/models"
 )
 
-// ---- Friendships ----
-
-// FriendRepo persists friend relationships.
-type FriendRepo struct{ *base }
-
-// Request creates or refreshes a pending friend request. The conflict guard
-// (status <> 'accepted') keeps a re-sent request from silently reverting an
-// already-accepted friendship back to pending. Hand-written because the WHERE
-// on the conflict clause is not expressible by melody.
-func (r *FriendRepo) Request(ctx context.Context, f models.Friendship) error {
-	_, err := r.exec(ctx,
-		`INSERT INTO friendships (id, user_id, friend_id, status, created_at, updated_at)
-		 VALUES (?, ?, ?, ?, ?, ?)
-		 ON CONFLICT(user_id, friend_id) DO UPDATE SET status=excluded.status, updated_at=excluded.updated_at
-		 WHERE friendships.status <> 'accepted'`,
-		f.ID, f.UserID, f.FriendID, string(f.Status), db.Millis(f.CreatedAt), db.Millis(f.UpdatedAt))
-	return err
-}
-
-// Accept marks a pending request accepted and creates the reciprocal accepted
-// edge. Returns ErrNotFound if no pending inbound request from requesterID to
-// accepterID exists, so a friendship cannot be forged without a real request.
-// Stays hand-written: it runs inside a transaction (the builder helpers use the
-// pool, not the tx).
-func (r *FriendRepo) Accept(ctx context.Context, requesterID, accepterID, newID string) error {
-	return r.withTx(ctx, func(tx *sql.Tx) error {
-		now := db.Millis(time.Now())
-		res, err := tx.ExecContext(ctx, r.rebind(`UPDATE friendships SET status='accepted', updated_at=? WHERE user_id=? AND friend_id=? AND status='pending'`),
-			now, requesterID, accepterID)
-		if err != nil {
-			return err
-		}
-		if n, err := res.RowsAffected(); err != nil {
-			return err
-		} else if n == 0 {
-			return ErrNotFound
-		}
-		_, err = tx.ExecContext(ctx, r.rebind(`INSERT INTO friendships (id, user_id, friend_id, status, created_at, updated_at)
-			VALUES (?, ?, ?, 'accepted', ?, ?)
-			ON CONFLICT(user_id, friend_id) DO UPDATE SET status='accepted', updated_at=excluded.updated_at`),
-			newID, accepterID, requesterID, now, now)
-		return err
-	})
-}
-
-// AreFriends reports whether two users have an accepted friendship.
-func (r *FriendRepo) AreFriends(ctx context.Context, a, b string) (bool, error) {
-	var n int
-	err := r.bqueryRow(ctx, r.mel.New("friendships").Select("COUNT(*)").
-		Where("user_id", "=", a).Where("friend_id", "=", b).Where("status", "=", "accepted")).Scan(&n)
-	return n > 0, err
-}
-
-// ListFriends returns accepted friend ids for a user.
-func (r *FriendRepo) ListFriends(ctx context.Context, userID string) ([]string, error) {
-	rows, err := r.bquery(ctx, r.mel.New("friendships").Select("friend_id").
-		Where("user_id", "=", userID).Where("status", "=", "accepted"))
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var ids []string
-	for rows.Next() {
-		var id string
-		if err := rows.Scan(&id); err != nil {
-			return nil, err
-		}
-		ids = append(ids, id)
-	}
-	return ids, rows.Err()
-}
-
-// ListPending returns incoming pending requests for a user.
-func (r *FriendRepo) ListPending(ctx context.Context, userID string) ([]models.Friendship, error) {
-	rows, err := r.bquery(ctx, r.mel.New("friendships").
-		Select("id", "user_id", "friend_id", "status", "created_at", "updated_at").
-		Where("friend_id", "=", userID).Where("status", "=", "pending"))
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var out []models.Friendship
-	for rows.Next() {
-		var f models.Friendship
-		var status string
-		var created, updated int64
-		if err := rows.Scan(&f.ID, &f.UserID, &f.FriendID, &status, &created, &updated); err != nil {
-			return nil, err
-		}
-		f.Status = models.FriendshipStatus(status)
-		f.CreatedAt = db.FromMillis(created)
-		f.UpdatedAt = db.FromMillis(updated)
-		out = append(out, f)
-	}
-	return out, rows.Err()
-}
-
 // ---- Activity events ----
 
 // ActivityRepo persists the social activity feed.
@@ -123,28 +26,14 @@ func (r *ActivityRepo) Insert(ctx context.Context, e models.ActivityEvent) error
 	return err
 }
 
-// Feed returns activity events visible to viewerID from the given author ids,
-// honoring per-event privacy. friendIDs are the viewer's accepted friends.
-// Stays hand-written: a JOIN plus a grouped OR/IN predicate tree melody can't
-// express.
-func (r *ActivityRepo) Feed(ctx context.Context, viewerID string, friendIDs []string, limit int) ([]models.ActivityEvent, error) {
-	// Visible: own events; friends' events with privacy public/friends; anyone's public events.
-	ids := append([]string{viewerID}, friendIDs...)
-	placeholders := make([]string, len(ids))
-	args := make([]any, 0, len(ids)+2)
-	for i, id := range ids {
-		placeholders[i] = "?"
-		args = append(args, id)
-	}
+// Feed returns activity events visible to viewerID: their own events plus
+// everyone's public events. Stays hand-written: a JOIN melody can't express.
+func (r *ActivityRepo) Feed(ctx context.Context, viewerID string, limit int) ([]models.ActivityEvent, error) {
 	q := `SELECT e.id, e.user_id, u.username, u.display_name, e.type, e.item_type, e.item_id, e.privacy, e.created_at
 		FROM activity_events e JOIN users u ON u.id = e.user_id
-		WHERE (e.privacy='public')
-		   OR (e.user_id=?)
-		   OR (e.privacy='friends' AND e.user_id IN (` + strings.Join(placeholders, ",") + `))
+		WHERE e.privacy='public' OR e.user_id=?
 		ORDER BY e.created_at DESC LIMIT ?`
-	finalArgs := append([]any{viewerID}, args...)
-	finalArgs = append(finalArgs, limit)
-	rows, err := r.query(ctx, q, finalArgs...)
+	rows, err := r.query(ctx, q, viewerID, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -152,28 +41,15 @@ func (r *ActivityRepo) Feed(ctx context.Context, viewerID string, friendIDs []st
 	return scanActivityRows(rows)
 }
 
-// ByAuthor returns a single author's activity events whose privacy is in the
-// allowed set, newest first. Used to render a user profile from a viewer's
-// vantage point (the caller computes which privacy levels are visible).
-// Stays hand-written: a JOIN plus an IN over a runtime-sized list melody can't
+// ByAuthor returns a single author's public activity events, newest first.
+// Used to render a user's profile. Stays hand-written: a JOIN melody can't
 // express.
-func (r *ActivityRepo) ByAuthor(ctx context.Context, authorID string, privacies []string, limit int) ([]models.ActivityEvent, error) {
-	if len(privacies) == 0 {
-		return nil, nil
-	}
-	placeholders := make([]string, len(privacies))
-	args := make([]any, 0, len(privacies)+2)
-	args = append(args, authorID)
-	for i, p := range privacies {
-		placeholders[i] = "?"
-		args = append(args, p)
-	}
-	args = append(args, limit)
+func (r *ActivityRepo) ByAuthor(ctx context.Context, authorID string, limit int) ([]models.ActivityEvent, error) {
 	q := `SELECT e.id, e.user_id, u.username, u.display_name, e.type, e.item_type, e.item_id, e.privacy, e.created_at
 		FROM activity_events e JOIN users u ON u.id = e.user_id
-		WHERE e.user_id=? AND e.privacy IN (` + strings.Join(placeholders, ",") + `)
+		WHERE e.user_id=? AND e.privacy='public'
 		ORDER BY e.created_at DESC LIMIT ?`
-	rows, err := r.query(ctx, q, args...)
+	rows, err := r.query(ctx, q, authorID, limit)
 	if err != nil {
 		return nil, err
 	}

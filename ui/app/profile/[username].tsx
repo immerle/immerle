@@ -82,7 +82,7 @@ function activityVerb(type: string | undefined, t: (key: string) => string): str
 }
 
 /** Public profile of a user: identity, recent activity (privacy-honoured) and
- * their public playlists. Reached from the friends list / activity feed. */
+ * their public playlists. Reached from the activity feed. */
 export default function Profile() {
   const t = useT();
   const { username } = useLocalSearchParams<{ username: string }>();
@@ -137,7 +137,7 @@ export default function Profile() {
                       {handle && handle !== name ? <Text className="text-sm text-muted">@{handle}</Text> : null}
                       <View className="flex-row flex-wrap items-center gap-2 pt-0.5">
                         {p.user.isAdmin ? <Badge label={t('social.profile.admin')} tone="success" /> : null}
-                        {p.isSelf ? <Badge label={t('social.profile.you')} tone="primary" /> : p.isFriend ? <Badge label={t('social.profile.friend')} tone="default" /> : null}
+                        {p.isSelf ? <Badge label={t('social.profile.you')} tone="primary" /> : null}
                       </View>
                     </View>
                     {!p.isSelf && handle ? <InviteToJamButton username={handle} /> : null}

@@ -32,13 +32,13 @@ func TestActivityFeedEnrichesItems(t *testing.T) {
 		Path: "/x.mp3", Duration: 320, CreatedAt: time.Now(), UpdatedAt: time.Now(),
 	})
 
-	activitySvc := core.NewActivityService(store.Activity, store.Friends, store.Users)
+	activitySvc := core.NewActivityService(store.Activity)
 	if err := activitySvc.Record(ctx, user, "favorite", models.ItemTrack, trackID); err != nil {
 		t.Fatal(err)
 	}
 
 	h := NewHandler(Deps{
-		Auth: auth, Users: store.Users, Friends: store.Friends,
+		Auth: auth, Users: store.Users,
 		Activity: activitySvc, Catalog: store.Catalog, Logger: testutil.NewLogger(),
 	})
 	mux := chi.NewRouter()
@@ -100,7 +100,7 @@ func TestProfileEndpoint(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	activitySvc := core.NewActivityService(store.Activity, store.Friends, store.Users)
+	activitySvc := core.NewActivityService(store.Activity)
 	alicePublic := alice
 	alicePublic.ActivityPrivacy = "public"
 	if err := activitySvc.Record(ctx, alicePublic, "favorite", models.ItemArtist, uuid.NewString()); err != nil {
@@ -108,7 +108,7 @@ func TestProfileEndpoint(t *testing.T) {
 	}
 
 	h := NewHandler(Deps{
-		Auth: auth, Users: store.Users, Friends: store.Friends,
+		Auth: auth, Users: store.Users,
 		Activity: activitySvc, Playlists: store.Playlists, Catalog: store.Catalog, Logger: testutil.NewLogger(),
 	})
 	mux := chi.NewRouter()
@@ -185,8 +185,8 @@ func TestProfileIncludesHallOfFameTop3(t *testing.T) {
 	}
 
 	h := NewHandler(Deps{
-		Auth: auth, Users: store.Users, Friends: store.Friends,
-		Activity:   core.NewActivityService(store.Activity, store.Friends, store.Users),
+		Auth: auth, Users: store.Users,
+		Activity:   core.NewActivityService(store.Activity),
 		Playlists:  store.Playlists,
 		Catalog:    store.Catalog,
 		HallOfFame: store.HallOfFame,

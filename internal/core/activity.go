@@ -14,23 +14,17 @@ import (
 // user's default privacy setting.
 type ActivityService struct {
 	activity *persistence.ActivityRepo
-	friends  *persistence.FriendRepo
-	users    *persistence.UserRepo
 }
 
 // NewActivityService builds an ActivityService.
-func NewActivityService(activity *persistence.ActivityRepo, friends *persistence.FriendRepo, users *persistence.UserRepo) *ActivityService {
-	return &ActivityService{activity: activity, friends: friends, users: users}
+func NewActivityService(activity *persistence.ActivityRepo) *ActivityService {
+	return &ActivityService{activity: activity}
 }
 
-// Record stores an activity event. The privacy defaults to the user's configured
-// activity privacy when empty. A "private" setting suppresses the event entirely.
+// Record stores an activity event. A "private" setting suppresses the event
+// entirely; everything else is recorded as public.
 func (s *ActivityService) Record(ctx context.Context, user models.User, eventType string, itemType models.ItemType, itemID string) error {
-	privacy := user.ActivityPrivacy
-	if privacy == "" {
-		privacy = "friends"
-	}
-	if privacy == "private" {
+	if user.ActivityPrivacy == "private" {
 		return nil
 	}
 	return s.activity.Insert(ctx, models.ActivityEvent{
@@ -39,7 +33,7 @@ func (s *ActivityService) Record(ctx context.Context, user models.User, eventTyp
 		Type:      eventType,
 		ItemType:  itemType,
 		ItemID:    itemID,
-		Privacy:   privacy,
+		Privacy:   "public",
 		CreatedAt: time.Now(),
 	})
 }
@@ -49,27 +43,13 @@ func (s *ActivityService) Feed(ctx context.Context, viewerID string, limit int) 
 	if limit <= 0 {
 		limit = 50
 	}
-	friends, err := s.friends.ListFriends(ctx, viewerID)
-	if err != nil {
-		return nil, err
-	}
-	return s.activity.Feed(ctx, viewerID, friends, limit)
+	return s.activity.Feed(ctx, viewerID, limit)
 }
 
-// UserFeed returns a single author's activity as visible to viewerID. The viewer
-// sees "public" events from anyone; the author themselves and their accepted
-// friends additionally see "friends" events. "private" events are never stored.
-func (s *ActivityService) UserFeed(ctx context.Context, viewerID, authorID string, limit int) ([]models.ActivityEvent, error) {
+// UserFeed returns an author's public activity.
+func (s *ActivityService) UserFeed(ctx context.Context, authorID string, limit int) ([]models.ActivityEvent, error) {
 	if limit <= 0 {
 		limit = 50
 	}
-	privacies := []string{"public"}
-	if viewerID == authorID {
-		privacies = append(privacies, "friends")
-	} else if ok, err := s.friends.AreFriends(ctx, viewerID, authorID); err != nil {
-		return nil, err
-	} else if ok {
-		privacies = append(privacies, "friends")
-	}
-	return s.activity.ByAuthor(ctx, authorID, privacies, limit)
+	return s.activity.ByAuthor(ctx, authorID, limit)
 }

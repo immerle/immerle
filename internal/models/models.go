@@ -16,7 +16,7 @@ type User struct {
 	CreatedAt   time.Time `json:"createdAt"`
 	// ScrobbleEnabled and SharePublicActivity are privacy/feature toggles.
 	ScrobbleEnabled bool `json:"scrobbleEnabled"`
-	// ActivityPrivacy is "public", "friends", or "private".
+	// ActivityPrivacy is "public" or "private".
 	ActivityPrivacy string `json:"activityPrivacy"`
 	// Language is the user's preferred UI language (e.g. "en", "fr"). Empty means
 	// the client should fall back to the device locale.
@@ -637,26 +637,6 @@ type Share struct {
 	ViewCount   int        `json:"viewCount"`
 }
 
-// FriendshipStatus enumerates the state of a friendship request.
-type FriendshipStatus string
-
-// Friendship status values.
-const (
-	FriendPending  FriendshipStatus = "pending"
-	FriendAccepted FriendshipStatus = "accepted"
-	FriendBlocked  FriendshipStatus = "blocked"
-)
-
-// Friendship is a directed friend relationship/request.
-type Friendship struct {
-	ID        string           `json:"id"`
-	UserID    string           `json:"userId"`
-	FriendID  string           `json:"friendId"`
-	Status    FriendshipStatus `json:"status"`
-	CreatedAt time.Time        `json:"createdAt"`
-	UpdatedAt time.Time        `json:"updatedAt"`
-}
-
 // ActivityEvent records a user action for the social activity feed.
 type ActivityEvent struct {
 	ID       string `json:"id"`
@@ -669,7 +649,7 @@ type ActivityEvent struct {
 	Type     string   `json:"type"`
 	ItemType ItemType `json:"itemType"`
 	ItemID   string   `json:"itemId"`
-	// Privacy is "public", "friends", or "private".
+	// Privacy is "public" or "private".
 	Privacy   string    `json:"privacy"`
 	CreatedAt time.Time `json:"createdAt"`
 }

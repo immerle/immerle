@@ -159,10 +159,6 @@
     "cleanup_failed": "Could not load cleanup status.",
     "cleanup_toggle_failed": "Could not toggle cleanup.",
     "cleanup_run_failed": "Cleanup run failed.",
-    "friends_failed": "Could not load friends.",
-    "pending_failed": "Could not load friend requests.",
-    "friend_request_failed": "Could not send the friend request.",
-    "friend_accept_failed": "Could not accept the friend request.",
     "activity_failed": "Could not load activity.",
     "account_failed": "Could not load your account.",
     "account_update_failed": "Could not update your account.",
@@ -358,32 +354,12 @@
     "feed": {
       "title": "Activity",
       "emptyTitle": "No activity",
-      "emptySubtitle": "Your friends' activity will appear here.",
+      "emptySubtitle": "Activity from this server will appear here.",
       "someone": "Someone",
       "verbListened": "listened to a track",
       "verbPlaylist": "updated a playlist",
-      "verbFriend": "made a new friend",
       "verbLiked": "liked a track",
       "verbDefault": "did something"
-    },
-    "pending": {
-      "title": "Pending requests",
-      "invitedYou": "invited you",
-      "ago": "{{time}}",
-      "accept": "Accept"
-    },
-    "friends": {
-      "title": "Friends",
-      "add": "Add a friend",
-      "emptyTitle": "No friends yet",
-      "emptySubtitle": "Add friends to share your listening.",
-      "friendTag": "Friend"
-    },
-    "addModal": {
-      "title": "Add a friend",
-      "subtitle": "Enter a username to send a friend request.",
-      "placeholder": "Username",
-      "invite": "Invite"
     },
     "joinModal": {
       "title": "Join a Jam",
@@ -429,7 +405,6 @@
       "fallbackName": "User",
       "admin": "Admin",
       "you": "You",
-      "friend": "Friend",
       "statPlays": "Plays",
       "statHours": "Hours",
       "statPlaylists": "Playlists",

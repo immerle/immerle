@@ -2,16 +2,11 @@ package immerle
 
 import (
 	"context"
-	"errors"
 	"net/http"
-	"time"
-
-	"github.com/google/uuid"
 
 	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/importer"
 	"github.com/immerle/immerle/internal/models"
-	"github.com/immerle/immerle/internal/persistence"
 )
 
 // handleCapabilities reports the immerle features this instance supports so
@@ -44,11 +39,10 @@ func (h *Handler) handleCapabilities(w http.ResponseWriter, r *http.Request) {
 		"protocolVersion": ProtocolVersion,
 		"capabilities": map[string]any{
 			"setup":                  map[string]any{"version": 1, "needed": needsSetup},
-			"friendships":            map[string]any{"version": 1},
 			"profiles":               map[string]any{"version": 1, "selfEditable": []string{"displayName", "email"}},
 			"libraryStats":           map[string]any{"version": 1, "fields": []string{"artists", "albums", "tracks", "totalSize", "totalDuration"}},
 			"libraryAdmin":           map[string]any{"version": 1, "admin": true, "actions": []string{"list", "editMetadata", "editCover", "delete"}},
-			"activityFeed":           map[string]any{"version": 1, "privacy": []string{"public", "friends", "private"}},
+			"activityFeed":           map[string]any{"version": 1, "privacy": []string{"public", "private"}},
 			"collaborativePlaylists": map[string]any{"version": 1},
 			"publicPlaylists":        map[string]any{"version": 1, "subscribe": true},
 			"playlistImport":         map[string]any{"version": 1, "sources": importer.Available()},
@@ -67,150 +61,6 @@ func (h *Handler) handleCapabilities(w http.ResponseWriter, r *http.Request) {
 			"hallOfFame":             map[string]any{"version": 1, "admin": true, "enabled": hallOfFame},
 		},
 	})
-}
-
-// handleFriends returns the caller's accepted friends.
-//
-// @Summary      List friends
-// @Tags         friends
-// @Security     BearerAuth
-// @Produce      json
-// @Success      200  {array}  FriendDTO
-// @Failure      401  {object}  errorResponse
-// @Failure      500  {object}  errorResponse
-// @Router       /friends [get]
-func (h *Handler) handleFriends(w http.ResponseWriter, r *http.Request) {
-	user := userFrom(r.Context())
-	ids, err := h.Friends.ListFriends(r.Context(), user.ID)
-	if err != nil {
-		writeInternal(w, err)
-		return
-	}
-	friends := make([]map[string]any, 0, len(ids))
-	for _, id := range ids {
-		u, err := h.Users.GetByID(r.Context(), id)
-		if err != nil {
-			continue
-		}
-		friends = append(friends, map[string]any{"id": u.ID, "username": u.Username, "displayName": u.DisplayName})
-	}
-	writeResource(w, http.StatusOK, friends)
-}
-
-// friendRequestBody is the body for POST /friends/requests.
-type friendRequestBody struct {
-	Username string `json:"username"`
-}
-
-// handleFriendRequest sends a friend request to another user.
-//
-// @Summary      Send a friend request
-// @Tags         friends
-// @Security     BearerAuth
-// @Accept       json
-// @Produce      json
-// @Param        body  body  friendRequestBody  true  "Target username"
-// @Success      201  {object}  apiError  "created"
-// @Failure      400  {object}  errorResponse
-// @Failure      401  {object}  errorResponse
-// @Failure      404  {object}  errorResponse
-// @Failure      500  {object}  errorResponse
-// @Router       /friends/requests [post]
-func (h *Handler) handleFriendRequest(w http.ResponseWriter, r *http.Request) {
-	user := userFrom(r.Context())
-	var req friendRequestBody
-	if !decodeJSON(w, r, &req) {
-		return
-	}
-	if req.Username == "" {
-		writeError(w, http.StatusBadRequest, "validation", "username required")
-		return
-	}
-	friend, err := h.Users.GetByUsername(r.Context(), req.Username)
-	if err != nil {
-		writeErrorParams(w, http.StatusNotFound, "not_found", "user not found", map[string]any{"username": req.Username})
-		return
-	}
-	if friend.ID == user.ID {
-		writeError(w, http.StatusBadRequest, "validation", "cannot befriend yourself")
-		return
-	}
-	now := time.Now()
-	err = h.Friends.Request(r.Context(), models.Friendship{
-		ID:        uuid.NewString(),
-		UserID:    user.ID,
-		FriendID:  friend.ID,
-		Status:    models.FriendPending,
-		CreatedAt: now,
-		UpdatedAt: now,
-	})
-	if err != nil {
-		writeInternal(w, err)
-		return
-	}
-	writeResource(w, http.StatusCreated, map[string]any{"requested": friend.Username})
-}
-
-// handleFriendAccept accepts an incoming friend request from {username}.
-//
-// @Summary      Accept a friend request
-// @Tags         friends
-// @Security     BearerAuth
-// @Produce      json
-// @Param        username  path  string  true  "Username of the requester to accept"
-// @Success      200  {object}  FriendDTO
-// @Failure      401  {object}  errorResponse
-// @Failure      404  {object}  errorResponse
-// @Failure      500  {object}  errorResponse
-// @Router       /friends/requests/{username}/accept [post]
-func (h *Handler) handleFriendAccept(w http.ResponseWriter, r *http.Request) {
-	user := userFrom(r.Context())
-	requesterUser, err := h.Users.GetByUsername(r.Context(), pathParam(r, "username"))
-	if err != nil {
-		writeErrorParams(w, http.StatusNotFound, "not_found", "user not found", map[string]any{"username": pathParam(r, "username")})
-		return
-	}
-	if err := h.Friends.Accept(r.Context(), requesterUser.ID, user.ID, uuid.NewString()); err != nil {
-		if errors.Is(err, persistence.ErrNotFound) {
-			writeErrorParams(w, http.StatusNotFound, "not_found", "no pending request from this user", map[string]any{"username": requesterUser.Username})
-			return
-		}
-		writeInternal(w, err)
-		return
-	}
-	writeResource(w, http.StatusOK, map[string]any{
-		"id":          requesterUser.ID,
-		"username":    requesterUser.Username,
-		"displayName": requesterUser.DisplayName,
-	})
-}
-
-// handleFriendPending lists the caller's incoming friend requests.
-//
-// @Summary      List pending friend requests
-// @Tags         friends
-// @Security     BearerAuth
-// @Produce      json
-// @Success      200  {array}  PendingFriendDTO
-// @Failure      401  {object}  errorResponse
-// @Failure      500  {object}  errorResponse
-// @Router       /friends/requests [get]
-func (h *Handler) handleFriendPending(w http.ResponseWriter, r *http.Request) {
-	user := userFrom(r.Context())
-	pending, err := h.Friends.ListPending(r.Context(), user.ID)
-	if err != nil {
-		writeInternal(w, err)
-		return
-	}
-	out := make([]map[string]any, 0, len(pending))
-	for _, f := range pending {
-		u, err := h.Users.GetByID(r.Context(), f.UserID)
-		if err != nil {
-			continue
-		}
-		out = append(out, map[string]any{"id": u.ID, "username": u.Username, "displayName": u.DisplayName, "since": f.CreatedAt})
-	}
-	writeResource(w, http.StatusOK, out)
 }
 
 // handleActivity returns activity events visible to the caller, honoring each
@@ -346,7 +196,7 @@ func (h *Handler) handleProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	events, err := h.Activity.UserFeed(r.Context(), caller.ID, target.ID, 50)
+	events, err := h.Activity.UserFeed(r.Context(), target.ID, 50)
 	if err != nil {
 		writeInternal(w, err)
 		return
@@ -375,10 +225,6 @@ func (h *Handler) handleProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	isSelf := target.ID == caller.ID
-	isFriend := false
-	if !isSelf {
-		isFriend, _ = h.Friends.AreFriends(r.Context(), caller.ID, target.ID)
-	}
 
 	stats := ProfileStatsDTO{Playlists: len(playlists)}
 	if h.Wrapped != nil {
@@ -396,7 +242,6 @@ func (h *Handler) handleProfile(w http.ResponseWriter, r *http.Request) {
 			"isAdmin":     target.IsAdmin,
 		},
 		"isSelf":    isSelf,
-		"isFriend":  isFriend,
 		"activity":  activity,
 		"playlists": playlists,
 		"stats":     stats,

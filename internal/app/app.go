@@ -256,7 +256,7 @@ func New(cfg config.Config) (*App, error) {
 	coverSvc := stream.NewCoverService(store.Catalog, coversDir, hubHost(cfg.HubURL))
 	streamer := stream.NewStreamer(transcodeCfg, logger)
 	nowPlaying := core.NewNowPlayingTracker(10 * time.Minute)
-	activitySvc := core.NewActivityService(store.Activity, store.Friends, store.Users)
+	activitySvc := core.NewActivityService(store.Activity)
 	jamSvc := core.NewJamService(store.Jam)
 	podcastSvc := core.NewPodcastService(store.Podcasts, podcastsDir, logger)
 
@@ -420,7 +420,6 @@ func New(cfg config.Config) (*App, error) {
 	gosHandler := immerle.NewHandler(immerle.Deps{
 		Auth:           authSvc,
 		Users:          store.Users,
-		Friends:        store.Friends,
 		Activity:       activitySvc,
 		Playlists:      store.Playlists,
 		PlaylistSync:   playlistSyncer,

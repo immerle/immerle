@@ -5,16 +5,12 @@ title: Social features
 
 # Social features
 
-Beyond streaming your own library, Immerle has a small social layer: friends,
-an activity feed, playlists you can share or collaborate on, and synchronized
+Beyond streaming your own library, Immerle has a small social layer: an
+activity feed, playlists you can share or collaborate on, and synchronized
 listening sessions. All of it is opt-in per action — nothing is public by
 default.
 
-## Friends & activity
-
-A friend relationship is a simple request/accept pair — you send a request
-by username, the other person accepts it, and you're friends. Nothing else
-changes about your account; it's purely a visibility gate for activity.
+## Activity
 
 Plays, likes, playlist creations and similar actions feed an **activity
 feed**, each event tagged with a privacy level:
@@ -22,13 +18,12 @@ feed**, each event tagged with a privacy level:
 | Privacy | Visible to |
 | ------- | ---------- |
 | Public | anyone |
-| Friends | accepted friends only |
 | Private | the author only |
 
-A user's profile shows their identity, the activity they've chosen to expose
-to *you* specifically, and their public playlists. Your own account page is
-separate and always fully visible to you — it holds things a public profile
-never exposes, like your email address.
+A user's profile shows their identity, their public activity, and their
+public playlists. Your own account page is separate and always fully visible
+to you — it holds things a public profile never exposes, like your email
+address.
 
 ## Collaborative & public playlists
 

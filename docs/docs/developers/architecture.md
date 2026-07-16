@@ -38,7 +38,7 @@ internal/
 | S3 | Streaming & transcoding: `stream` (Range/seek) + `download`, ffmpeg profiles by `maxBitRate`/`format`, transcode cache, no leaked ffmpeg processes |
 | S4 | Multi-user: accounts (admin/non-admin), per-user star/rating/playcount, `scrobble`, `getNowPlaying`, playlists CRUD, server `get/savePlayQueue` |
 | S5 | On-demand catalog: pluggable `Provider` interface, async `download_jobs` queue with resume, download→tag→file layout→scan ingest, hooks in `search3` and streaming, strict MBID/hash dedup |
-| S6 | Immerle social: capability discovery, collaborative playlists, friends, activity feed with privacy, shares, Jam sessions (SSE) |
+| S6 | Immerle social: capability discovery, collaborative playlists, activity feed with privacy, shares, Jam sessions (SSE) |
 | S7 | Hub federation: opt-in registration, editorial/reco playlist sync, portable-id resolution (+ optional on-demand download), anonymized scrobble export, federated read-only playlists |
 
 ## The native Immerle API

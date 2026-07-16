@@ -287,21 +287,6 @@ type AccountDTO struct {
 	Language    string `json:"language,omitempty" example:"fr"`
 }
 
-// FriendDTO is a friend reference.
-type FriendDTO struct {
-	ID          string `json:"id"`
-	Username    string `json:"username" example:"bob"`
-	DisplayName string `json:"displayName,omitempty" example:"Bob Marley"`
-}
-
-// PendingFriendDTO is an incoming friend request.
-type PendingFriendDTO struct {
-	ID          string `json:"id"`
-	Username    string `json:"username" example:"alice"`
-	DisplayName string `json:"displayName,omitempty" example:"Alice Coltrane"`
-	Since       string `json:"since" example:"2026-06-15T09:00:00Z"`
-}
-
 // ActivityItemDTO carries resolved, human-readable details about the item an
 // activity event references (fields depend on itemType; empty when unresolved).
 type ActivityItemDTO struct {
@@ -324,7 +309,7 @@ type ActivityEventDTO struct {
 	Type        string          `json:"type" example:"listen"`
 	ItemType    string          `json:"itemType" example:"track"`
 	ItemID      string          `json:"itemId"`
-	Privacy     string          `json:"privacy" example:"friends"`
+	Privacy     string          `json:"privacy" example:"public"`
 	CreatedAt   string          `json:"createdAt" example:"2026-06-15T09:00:00Z"`
 	Item        ActivityItemDTO `json:"item,omitempty"`
 }
@@ -418,7 +403,6 @@ type ProfileDTO struct {
 		IsAdmin     bool   `json:"isAdmin" example:"false"`
 	} `json:"user"`
 	IsSelf     bool                  `json:"isSelf" example:"false"`
-	IsFriend   bool                  `json:"isFriend" example:"true"`
 	Activity   []ActivityEventDTO    `json:"activity"`
 	Playlists  []ProfilePlaylistDTO  `json:"playlists"`
 	Stats      ProfileStatsDTO       `json:"stats"`

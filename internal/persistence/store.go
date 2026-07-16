@@ -29,7 +29,6 @@ type Store struct {
 	PlayQueues      *PlayQueueRepo
 	Scrobbles       *ScrobbleRepo
 	Shares          *ShareRepo
-	Friends         *FriendRepo
 	Activity        *ActivityRepo
 	Jam             *JamRepo
 	Downloads       *DownloadRepo
@@ -61,7 +60,6 @@ func New(database *db.DB) *Store {
 		PlayQueues:      &PlayQueueRepo{base},
 		Scrobbles:       &ScrobbleRepo{base},
 		Shares:          &ShareRepo{base},
-		Friends:         &FriendRepo{base},
 		Activity:        &ActivityRepo{base},
 		Jam:             &JamRepo{base},
 		Downloads:       &DownloadRepo{base},

@@ -95,7 +95,7 @@ func (a *AuthService) CreateUser(ctx context.Context, username, password, email,
 		DisplayName:     NormalizeDisplayName(displayName),
 		IsAdmin:         admin,
 		ScrobbleEnabled: true,
-		ActivityPrivacy: "friends",
+		ActivityPrivacy: "public",
 		CreatedAt:       time.Now(),
 	}
 	if err := a.users.Create(ctx, u); err != nil {
@@ -209,7 +209,7 @@ func (a *AuthService) CreateFirstAdmin(ctx context.Context, username, password, 
 		DisplayName:     NormalizeDisplayName(displayName),
 		IsAdmin:         true,
 		ScrobbleEnabled: true,
-		ActivityPrivacy: "friends",
+		ActivityPrivacy: "public",
 		CreatedAt:       time.Now(),
 	}
 	created, err := a.users.CreateIfEmpty(ctx, u)

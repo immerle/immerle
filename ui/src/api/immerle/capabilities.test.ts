@@ -15,7 +15,7 @@ describe('adaptCapabilities', () => {
       capabilities: {
         federation: { version: 1 },
         jam: { version: 1 },
-        friendships: { version: 1 },
+        activityFeed: { version: 1 },
         collaborativePlaylists: { version: 1 },
       },
     } as CapabilitiesResponse);
@@ -24,7 +24,7 @@ describe('adaptCapabilities', () => {
     expect(caps.features.federation).toBe(true);
     expect(caps.features.jam).toBe(true);
     expect(caps.features.collaborativePlaylists).toBe(true);
-    // friendships ⇒ social
+    // activityFeed ⇒ social
     expect(caps.features.social).toBe(true);
     // Unadvertised features stay off.
     expect(caps.features.onDemandCatalog).toBe(false);

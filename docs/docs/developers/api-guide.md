@@ -93,16 +93,10 @@ See [Building a custom content provider](./custom-provider.md) for the exact
 `/capabilities`/`/search`/`/resolve`/`/download` contract a dynamic provider
 must implement.
 
-## Friends & activity
+## Activity & profiles
 
 ```bash
-curl -X POST "http://host:4533/api/v1/friends/requests" -H 'Authorization: Bearer <token>' \
-  -H 'Content-Type: application/json' -d '{"username":"alex"}'
-curl -X POST "http://host:4533/api/v1/friends/requests/kilian/accept" -H 'Authorization: Bearer <alex-token>'
-curl "http://host:4533/api/v1/friends" -H 'Authorization: Bearer <token>'
-curl "http://host:4533/api/v1/friends/requests" -H 'Authorization: Bearer <token>'
-
-# someone's profile (activity, public playlists, isFriend/isSelf) — omit username for your own
+# someone's profile (activity, public playlists, isSelf) — omit username for your own
 curl "http://host:4533/api/v1/profile?username=alex" -H 'Authorization: Bearer <token>'
 
 # your own editable account (email, display name) — never exposed on public profiles
