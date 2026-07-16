@@ -59,6 +59,17 @@ func (r *WrappedRepo) Wrapped(ctx context.Context, userID string, year int) (mod
 	return out, nil
 }
 
+// Totals returns a user's all-time play count and total listening seconds
+// (submitted scrobbles only) — the profile page's stat row, as opposed to
+// Wrapped's calendar-year totals.
+func (r *WrappedRepo) Totals(ctx context.Context, userID string) (plays int, seconds int64, err error) {
+	row := r.queryRow(ctx, `SELECT COUNT(*), COALESCE(SUM(t.duration), 0)
+		FROM scrobbles s JOIN tracks t ON t.id = s.track_id
+		WHERE s.user_id=? AND s.submitted=1`, userID)
+	err = row.Scan(&plays, &seconds)
+	return plays, seconds, err
+}
+
 // TopTracks returns a user's most-played tracks in [start, end) (unix millis),
 // capped at limit. Exported so callers beyond Wrapped (e.g. a "top tracks this
 // month" or "on repeat" personal list, sharing this same query with their own

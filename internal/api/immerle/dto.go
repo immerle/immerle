@@ -392,6 +392,22 @@ type ProfilePlaylistDTO struct {
 	CoverArts []string `json:"coverArts,omitempty"`
 }
 
+// ProfileHallOfFameDTO is the top of a user's Hall of Fame, shown on their
+// profile — omitted entirely when the user's Hall of Fame is empty.
+type ProfileHallOfFameDTO struct {
+	Top   []songView `json:"top"`
+	Total int        `json:"total" example:"12"`
+}
+
+// ProfileStatsDTO is the profile page's stat row: all-time listening totals
+// (from submitted scrobbles) plus the public playlist count already returned
+// alongside it.
+type ProfileStatsDTO struct {
+	Plays         int   `json:"plays" example:"1234"`
+	ListenSeconds int64 `json:"listenSeconds" example:"432000"`
+	Playlists     int   `json:"playlists" example:"5"`
+}
+
 // ProfileDTO is a user's public profile: identity, visible activity and public
 // playlists.
 type ProfileDTO struct {
@@ -401,10 +417,12 @@ type ProfileDTO struct {
 		DisplayName string `json:"displayName,omitempty" example:"Bob Marley"`
 		IsAdmin     bool   `json:"isAdmin" example:"false"`
 	} `json:"user"`
-	IsSelf    bool                 `json:"isSelf" example:"false"`
-	IsFriend  bool                 `json:"isFriend" example:"true"`
-	Activity  []ActivityEventDTO   `json:"activity"`
-	Playlists []ProfilePlaylistDTO `json:"playlists"`
+	IsSelf     bool                  `json:"isSelf" example:"false"`
+	IsFriend   bool                  `json:"isFriend" example:"true"`
+	Activity   []ActivityEventDTO    `json:"activity"`
+	Playlists  []ProfilePlaylistDTO  `json:"playlists"`
+	Stats      ProfileStatsDTO       `json:"stats"`
+	HallOfFame *ProfileHallOfFameDTO `json:"hallOfFame,omitempty"`
 }
 
 // JamSessionDTO is the shared state of a synchronized listening session.
@@ -430,6 +448,18 @@ type JamParticipantDTO struct {
 type JamDTO struct {
 	Session      JamSessionDTO       `json:"session"`
 	Participants []JamParticipantDTO `json:"participants"`
+}
+
+// JamInviteDTO is a pending invite to a Jam session, addressed to the caller.
+type JamInviteDTO struct {
+	ID                 string `json:"id"`
+	SessionID          string `json:"sessionId"`
+	SessionName        string `json:"sessionName" example:"Friday Night"`
+	InviterID          string `json:"inviterId"`
+	InviterUsername    string `json:"inviterUsername" example:"bob"`
+	InviterDisplayName string `json:"inviterDisplayName,omitempty" example:"Bob Marley"`
+	InviteeID          string `json:"inviteeId"`
+	CreatedAt          string `json:"createdAt" example:"2026-06-15T09:00:00Z"`
 }
 
 // PublicPlaylistDTO is a public playlist available to subscribe to.

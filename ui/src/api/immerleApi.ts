@@ -70,6 +70,7 @@ export type PendingFriendDTO = components['schemas']['immerle.PendingFriendDTO']
 export type ActivityEventDTO = components['schemas']['immerle.ActivityEventDTO'];
 export type JamSessionDTO = components['schemas']['immerle.JamSessionDTO'];
 export type JamParticipantDTO = components['schemas']['immerle.JamParticipantDTO'];
+export type JamInviteDTO = components['schemas']['immerle.JamInviteDTO'];
 
 // API tokens (personal access tokens). Device-flagged ones (isDevice) back
 // the "Connected devices" screen — see APITokenRepo.ListDeviceSessions.
@@ -79,9 +80,11 @@ export type CreateTokenResponse = components['schemas']['immerle.CreateTokenDTO'
 // Public playlists (discovery + opt-in subscription).
 export type PublicPlaylistDTO = components['schemas']['immerle.PublicPlaylistDTO'];
 
-// User profile (identity + recent activity + public playlists).
+// User profile (identity + recent activity + public playlists + Hall of Fame top 3).
 export type ProfileResponse = components['schemas']['immerle.ProfileDTO'];
 export type ProfilePlaylistDTO = components['schemas']['immerle.ProfilePlaylistDTO'];
+export type ProfileHallOfFameDTO = components['schemas']['immerle.ProfileHallOfFameDTO'];
+export type ProfileStatsDTO = components['schemas']['immerle.ProfileStatsDTO'];
 
 // Playlist imports from external platforms.
 export type ImportDTO = components['schemas']['immerle.ImportDTO'];

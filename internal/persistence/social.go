@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	melody "github.com/ermos/melody/v2"
+
 	"github.com/immerle/immerle/internal/db"
 	"github.com/immerle/immerle/internal/models"
 )
@@ -291,4 +293,72 @@ func (r *JamRepo) Participants(ctx context.Context, sessionID string) ([]models.
 		out = append(out, p)
 	}
 	return out, rows.Err()
+}
+
+// GetByHost returns the caller's most recently created jam session, or
+// ErrNotFound if they aren't hosting one — the header button's "create a Jam
+// vs. invite to my Jam" check (the client can't reliably remember this across
+// a reload; the in-memory jam store isn't persisted).
+func (r *JamRepo) GetByHost(ctx context.Context, hostID string) (models.JamSession, error) {
+	row := r.bqueryRow(ctx, r.mel.New("jam_sessions").
+		Select("id", "host_id", "name", "current_track_id", "position_ms", "state", "track_ids", "created_at", "updated_at").
+		Where("host_id", "=", hostID).OrderBy("created_at", melody.Desc).Limit(1))
+	j, err := scanJam(row)
+	if errors.Is(err, sql.ErrNoRows) {
+		return j, ErrNotFound
+	}
+	return j, err
+}
+
+// CreateInvite invites a user to a session. Re-inviting the same (session,
+// invitee) pair just refreshes created_at, so a dismissed invite resurfaces.
+func (r *JamRepo) CreateInvite(ctx context.Context, inv models.JamInvite) error {
+	_, err := r.bexec(ctx, r.mel.NewInsert("jam_invites").
+		Set("id", inv.ID).Set("session_id", inv.SessionID).Set("inviter_id", inv.InviterID).
+		Set("invitee_id", inv.InviteeID).Set("created_at", db.Millis(inv.CreatedAt)).UpdateDuplicateKey().
+		OnConflict("session_id", "invitee_id"))
+	return err
+}
+
+// ListInvitesForInvitee returns pending invites addressed to a user, newest
+// first, with the session name and inviter's identity resolved via JOIN
+// (avoids N+1 lookups from the client). Stays hand-written: a JOIN melody
+// can't express.
+func (r *JamRepo) ListInvitesForInvitee(ctx context.Context, userID string) ([]models.JamInvite, error) {
+	rows, err := r.query(ctx, `SELECT ji.id, ji.session_id, s.name, ji.inviter_id, u.username, u.display_name, ji.created_at
+		FROM jam_invites ji
+		JOIN jam_sessions s ON s.id = ji.session_id
+		JOIN users u ON u.id = ji.inviter_id
+		WHERE ji.invitee_id=?
+		ORDER BY ji.created_at DESC`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []models.JamInvite
+	for rows.Next() {
+		var inv models.JamInvite
+		var created int64
+		if err := rows.Scan(&inv.ID, &inv.SessionID, &inv.SessionName, &inv.InviterID, &inv.InviterUsername, &inv.InviterDisplayName, &created); err != nil {
+			return nil, err
+		}
+		inv.CreatedAt = db.FromMillis(created)
+		out = append(out, inv)
+	}
+	return out, rows.Err()
+}
+
+// DeleteInviteForInvitee removes one pending invite — scoped to the invitee so
+// a caller can only dismiss their own invites.
+func (r *JamRepo) DeleteInviteForInvitee(ctx context.Context, id, inviteeID string) error {
+	_, err := r.bexec(ctx, r.mel.NewDelete("jam_invites").Where("id", "=", id).Where("invitee_id", "=", inviteeID))
+	return err
+}
+
+// DeleteInvitesForSession removes a user's pending invite to one session —
+// called after they join, so an accepted invite stops showing as pending.
+func (r *JamRepo) DeleteInvitesForSession(ctx context.Context, sessionID, inviteeID string) error {
+	_, err := r.bexec(ctx, r.mel.NewDelete("jam_invites").
+		Where("session_id", "=", sessionID).Where("invitee_id", "=", inviteeID))
+	return err
 }

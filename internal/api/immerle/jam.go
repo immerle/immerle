@@ -65,6 +65,28 @@ func (h *Handler) handleJamCreate(w http.ResponseWriter, r *http.Request) {
 	writeResource(w, http.StatusCreated, h.jamView(r.Context(), session))
 }
 
+// handleJamMine returns the session the caller is currently hosting, if any —
+// 404 when they aren't hosting one. Backs the header button's create-vs-invite
+// state (the in-memory client-side jam store isn't persisted, so it can't
+// answer this reliably after a reload).
+//
+// @Summary      Get the caller's hosted Jam session
+// @Tags         jam
+// @Security     BearerAuth
+// @Produce      json
+// @Success      200  {object}  JamDTO
+// @Failure      401  {object}  errorResponse
+// @Failure      404  {object}  errorResponse
+// @Router       /jam/mine [get]
+func (h *Handler) handleJamMine(w http.ResponseWriter, r *http.Request) {
+	session, err := h.Jam.GetByHost(r.Context(), userFrom(r.Context()).ID)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "not_found", "not hosting a session")
+		return
+	}
+	writeResource(w, http.StatusOK, h.jamView(r.Context(), session))
+}
+
 // handleJamJoin adds the caller as a participant of a session.
 //
 // @Summary      Join a Jam session
@@ -90,6 +112,102 @@ func (h *Handler) handleJamJoin(w http.ResponseWriter, r *http.Request) {
 	}
 	session, _ := h.Jam.Get(r.Context(), id)
 	writeResource(w, http.StatusCreated, h.jamView(r.Context(), session))
+}
+
+// jamInviteRequest is the body for POST /jam/{id}/invites.
+type jamInviteRequest struct {
+	Username string `json:"username"`
+}
+
+// handleJamInvite invites a user to the caller's session. Host only.
+//
+// @Summary      Invite a user to a Jam session
+// @Description  Invites a user to the session. Host only; re-inviting just refreshes the invite.
+// @Tags         jam
+// @Security     BearerAuth
+// @Accept       json
+// @Param        id    path  string             true  "Jam session id"
+// @Param        body  body  jamInviteRequest  true  "Invitee username"
+// @Success      204  "invited"
+// @Failure      400  {object}  errorResponse
+// @Failure      401  {object}  errorResponse
+// @Failure      403  {object}  errorResponse
+// @Failure      404  {object}  errorResponse
+// @Router       /jam/{id}/invites [post]
+func (h *Handler) handleJamInvite(w http.ResponseWriter, r *http.Request) {
+	user := userFrom(r.Context())
+	id := pathParam(r, "id")
+	session, err := h.Jam.Get(r.Context(), id)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "not_found", "session not found")
+		return
+	}
+	if session.HostID != user.ID {
+		writeError(w, http.StatusForbidden, "forbidden", "only the host can invite")
+		return
+	}
+	var req jamInviteRequest
+	if !decodeJSON(w, r, &req) {
+		return
+	}
+	invitee, err := h.Users.GetByUsername(r.Context(), req.Username)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "not_found", "user not found")
+		return
+	}
+	if err := h.Jam.Invite(r.Context(), id, user.ID, invitee.ID); err != nil {
+		writeInternal(w, err)
+		return
+	}
+	writeResource(w, http.StatusNoContent, nil)
+}
+
+// handleJamInvitesMine lists the pending Jam invites addressed to the caller.
+//
+// @Summary      List the caller's pending Jam invites
+// @Tags         jam
+// @Security     BearerAuth
+// @Produce      json
+// @Success      200  {object}  map[string][]JamInviteDTO
+// @Failure      401  {object}  errorResponse
+// @Failure      500  {object}  errorResponse
+// @Router       /jam/invites/mine [get]
+func (h *Handler) handleJamInvitesMine(w http.ResponseWriter, r *http.Request) {
+	invites, err := h.Jam.MyInvites(r.Context(), userFrom(r.Context()).ID)
+	if err != nil {
+		writeInternal(w, err)
+		return
+	}
+	writeResource(w, http.StatusOK, map[string]any{"invites": invites})
+}
+
+// handleJamInviteDismiss removes one pending invite — the invitee declining
+// it (accepting is just joining the session normally, which also clears it).
+//
+// @Summary      Dismiss a pending Jam invite
+// @Tags         jam
+// @Security     BearerAuth
+// @Param        id  path  string  true  "Invite id"
+// @Success      204  "dismissed"
+// @Failure      401  {object}  errorResponse
+// @Failure      500  {object}  errorResponse
+// @Router       /jam/invites/{id} [delete]
+func (h *Handler) handleJamInviteDismiss(w http.ResponseWriter, r *http.Request) {
+	if err := h.Jam.DismissInvite(r.Context(), pathParam(r, "id"), userFrom(r.Context()).ID); err != nil {
+		writeInternal(w, err)
+		return
+	}
+	writeResource(w, http.StatusNoContent, nil)
+}
+
+// writeInvitesEvent writes the caller's pending Jam invites as an "invites"
+// SSE event. Shared by handleStreamPlayQueue, which carries this alongside
+// play-queue events on the caller's one always-open connection rather than a
+// dedicated stream — see its doc comment for why.
+func writeInvitesEvent(w http.ResponseWriter, flusher http.Flusher, invites []models.JamInvite) {
+	payload, _ := json.Marshal(map[string]any{"invites": invites})
+	fmt.Fprintf(w, "event: invites\ndata: %s\n\n", payload)
+	flusher.Flush()
 }
 
 // handleJamLeave removes the caller from a session.

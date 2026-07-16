@@ -4696,6 +4696,171 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/jam/invites/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the caller's pending Jam invites */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            [key: string]: components["schemas"]["immerle.JamInviteDTO"][];
+                        };
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/jam/invites/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Dismiss a pending Jam invite */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Invite id */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description dismissed */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/jam/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the caller's hosted Jam session */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.JamDTO"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/jam/{id}": {
         parameters: {
             query?: never;
@@ -4943,6 +5108,87 @@ export interface paths {
         };
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/jam/{id}/invites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Invite a user to a Jam session
+         * @description Invites a user to the session. Host only; re-inviting just refreshes the invite.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Jam session id */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description Invitee username */
+            requestBody: {
+                content: {
+                    "application/json": Record<string, never> | components["schemas"]["immerle.jamInviteRequest"];
+                };
+            };
+            responses: {
+                /** @description invited */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -5596,7 +5842,7 @@ export interface paths {
         };
         /**
          * Stream play-queue events (SSE)
-         * @description Server-Sent Events stream. Emits the current queue immediately, then again on every change (save, target change).
+         * @description Server-Sent Events stream. Emits the current queue immediately, then again on every change (save, target change); also emits the caller's pending Jam invites (event "invites") on connect and whenever they change.
          */
         get: {
             parameters: {
@@ -8369,7 +8615,7 @@ export interface paths {
         };
         /**
          * User profile
-         * @description Returns a user's profile — identity, recent activity visible to the caller (honoring privacy), and their public playlists. Use "me" for the caller.
+         * @description Returns a user's profile — identity, recent activity visible to the caller (honoring privacy), their public playlists, all-time listening stats, and the top of their Hall of Fame (omitted when empty). Use "me" for the caller.
          */
         get: {
             parameters: {
@@ -8412,6 +8658,63 @@ export interface paths {
                 };
                 /** @description Internal Server Error */
                 500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/{username}/hall-of-fame": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a user's Hall of Fame */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Target username, or 'me' for the caller */
+                    username: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.hallOfFameView"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -8695,6 +8998,20 @@ export interface components {
             participants?: components["schemas"]["immerle.JamParticipantDTO"][];
             session?: components["schemas"]["immerle.JamSessionDTO"];
         };
+        "immerle.JamInviteDTO": {
+            /** @example 2026-06-15T09:00:00Z */
+            createdAt?: string;
+            id?: string;
+            inviteeId?: string;
+            /** @example Bob Marley */
+            inviterDisplayName?: string;
+            inviterId?: string;
+            /** @example bob */
+            inviterUsername?: string;
+            sessionId?: string;
+            /** @example Friday Night */
+            sessionName?: string;
+        };
         "immerle.JamParticipantDTO": {
             /** @example 2026-06-15T09:00:00Z */
             joinedAt?: string;
@@ -8749,11 +9066,13 @@ export interface components {
         };
         "immerle.ProfileDTO": {
             activity?: components["schemas"]["immerle.ActivityEventDTO"][];
+            hallOfFame?: components["schemas"]["immerle.ProfileHallOfFameDTO"];
             /** @example true */
             isFriend?: boolean;
             /** @example false */
             isSelf?: boolean;
             playlists?: components["schemas"]["immerle.ProfilePlaylistDTO"][];
+            stats?: components["schemas"]["immerle.ProfileStatsDTO"];
             user?: {
                 /** @example Bob Marley */
                 displayName?: string;
@@ -8763,6 +9082,11 @@ export interface components {
                 /** @example bob */
                 username?: string;
             };
+        };
+        "immerle.ProfileHallOfFameDTO": {
+            top?: components["schemas"]["immerle.songView"][];
+            /** @example 12 */
+            total?: number;
         };
         "immerle.ProfilePlaylistDTO": {
             comment?: string;
@@ -8775,6 +9099,14 @@ export interface components {
             name?: string;
             /** @example 24 */
             songCount?: number;
+        };
+        "immerle.ProfileStatsDTO": {
+            /** @example 432000 */
+            listenSeconds?: number;
+            /** @example 5 */
+            playlists?: number;
+            /** @example 1234 */
+            plays?: number;
         };
         "immerle.ProviderDTO": {
             /** @example true */
@@ -9202,6 +9534,9 @@ export interface components {
             createdAt?: string;
             tracks?: components["schemas"]["immerle.songView"][];
         };
+        "immerle.jamInviteRequest": {
+            username?: string;
+        };
         "immerle.loginRequest": {
             /** @description Device is an optional human label for the session (defaults to the username). */
             device?: string;
@@ -9258,12 +9593,10 @@ export interface components {
             client?: string;
             current?: string;
             /**
-             * @description Entries carries display metadata (title/artist/cover/duration/remote)
-             *     for each of IDs — used as a fallback when a track can't be resolved
-             *     via the local catalog (most commonly a not-yet-downloaded on-demand
-             *     remote track), so it still shows up correctly when this queue is
-             *     mirrored on another device. Optional; entries without a match here
-             *     just rely on the catalog lookup succeeding, as before.
+             * @description Entries carries display metadata per id as a fallback when a track
+             *     can't be resolved via the local catalog (typically a not-yet-
+             *     downloaded remote track), so it still shows correctly when this
+             *     queue is mirrored on another device. Optional.
              */
             entries?: components["schemas"]["immerle.queueEntryRequest"][];
             ids?: string[];
@@ -9303,10 +9636,9 @@ export interface components {
              */
             shuffle?: boolean;
             /**
-             * @description TargetDeviceID, when set, is the id of the sole device that should be
-             *     actively playing this queue right now — every other device should
-             *     pause instead of doubling the audio. Empty means unrestricted: each
-             *     device manages its own playback independently (the default).
+             * @description TargetDeviceID, when set, is the sole device that should be actively
+             *     playing this queue — every other device should pause. Empty means
+             *     unrestricted (default): each device plays independently.
              */
             targetDeviceId?: string;
         };
@@ -9338,9 +9670,9 @@ export interface components {
             createdAt?: string;
             duration?: number;
             /**
-             * @description Federated marks a read-only playlist synced from the hub: its `owner` is
-             *     only an internal attribution, never real ownership — clients must not
-             *     offer edit/delete/cover controls for it, only subscribe/unsubscribe.
+             * @description Federated marks a read-only playlist synced from the hub: `owner` is
+             *     attribution only, not real ownership — clients must offer
+             *     subscribe/unsubscribe, not edit/delete/cover.
              */
             federated?: boolean;
             id?: string;
@@ -9349,9 +9681,9 @@ export interface components {
             public?: boolean;
             songCount?: number;
             /**
-             * @description Subscribed reports whether the caller has favorited this playlist (see
-             *     PUT/DELETE .../subscription). Only computed on the single-playlist
-             *     resource (handleGetPlaylist) — false elsewhere.
+             * @description Subscribed reports whether the caller has favorited this playlist.
+             *     Only set on the single-playlist resource (handleGetPlaylist), false
+             *     elsewhere.
              */
             subscribed?: boolean;
             tracks?: components["schemas"]["immerle.songView"][];

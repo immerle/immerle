@@ -38,6 +38,7 @@ func newEnv(t *testing.T) (*httptest.Server, *persistence.Store) {
 		Activity:    core.NewActivityService(store.Activity, store.Friends, store.Users),
 		Playlists:   store.Playlists,
 		Annotations: store.Annotations,
+		PlayQueues:  store.PlayQueues,
 		Jam:         core.NewJamService(store.Jam),
 		Logger:      testutil.NewLogger(),
 	})

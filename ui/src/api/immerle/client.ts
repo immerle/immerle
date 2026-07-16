@@ -37,12 +37,15 @@ import {
   FriendDTO,
   HallOfFameView,
   ImmerleApi,
+  JamInviteDTO,
   JamParticipantDTO,
   ImportDTO,
   ImportItemDTO,
   ImportSourceDTO,
   JamSessionDTO,
   PendingFriendDTO,
+  ProfileHallOfFameDTO,
+  ProfileStatsDTO,
   ProfilePlaylistDTO,
   ProfileResponse,
   ProviderDTO,
@@ -78,6 +81,18 @@ import { i18n } from '../../i18n';
 function apiErr(error: ErrorResponse | undefined, fallbackCode: string): ImmerleApiError {
   const e = error?.error;
   return new ImmerleApiError(0, e?.message ?? fallbackCode, e?.code ?? fallbackCode, e?.params);
+}
+
+/** Maps a profile's embedded Hall-of-Fame-top-3 DTO, `undefined` when the
+ * user's Hall of Fame is empty (the field is omitted server-side). */
+function toProfileHallOfFame(dto?: ProfileHallOfFameDTO): { top: Song[]; total: number } | undefined {
+  if (!dto) return undefined;
+  return { top: (dto.top ?? []).map(toSong), total: dto.total ?? 0 };
+}
+
+/** Maps the profile page's all-time stat row (plays, listening time, playlist count). */
+function toProfileStats(dto?: ProfileStatsDTO): { plays: number; listenSeconds: number; playlists: number } {
+  return { plays: dto?.plays ?? 0, listenSeconds: dto?.listenSeconds ?? 0, playlists: dto?.playlists ?? 0 };
 }
 
 /** Normalize a provider DTO (all fields optional) into a complete {@link Provider}. */
@@ -1184,8 +1199,9 @@ export class ImmerleClient {
     };
   }
 
-  /** A user's profile: identity, recent activity and public playlists. Defaults
-   * to the caller when `username` is omitted. */
+  /** A user's profile: identity, recent activity, public playlists and (when
+   * non-empty) their Hall of Fame top 3. Defaults to the caller when
+   * `username` is omitted. */
   async getProfile(username?: string, signal?: AbortSignal): Promise<ProfileResult> {
     const { data, error } = await this.api.GET('/users/{username}', {
       params: { path: { username: username ?? 'me' } },
@@ -1198,7 +1214,17 @@ export class ImmerleClient {
       isFriend: data.isFriend ?? false,
       activity: data.activity ?? [],
       playlists: data.playlists ?? [],
+      stats: toProfileStats(data.stats),
+      hallOfFame: toProfileHallOfFame(data.hallOfFame),
     };
+  }
+
+  /** A user's full Hall of Fame (read-only unless it's the caller's own — see
+   * `getHallOfFame`/`setHallOfFameOrder` for editing). Backs the profile
+   * page's "see all" link. */
+  async getUserHallOfFame(username: string, signal?: AbortSignal): Promise<HallOfFame> {
+    const data = await this.request<HallOfFameView>('GET', `users/${username}/hall-of-fame`, undefined, signal);
+    return toHallOfFame(data);
   }
 
   // --- Jam (real-time listening sessions) ---------------------------------
@@ -1244,6 +1270,39 @@ export class ImmerleClient {
       params: { path: { id: sessionId } },
     });
     if (error) throw apiErr(error, 'jam_leave_failed');
+  }
+
+  /** The session the caller is currently hosting, or `null` if none — the
+   * header button's create-vs-invite state. */
+  async jamMine(signal?: AbortSignal): Promise<JamResult | null> {
+    const { data, error, response } = await this.api.GET('/jam/mine', { signal });
+    if (response.status === 404) return null;
+    if (error || !data) throw apiErr(error, 'jam_mine_failed');
+    return { session: data.session, participants: data.participants ?? [] };
+  }
+
+  /** Host-only. Re-inviting the same user just refreshes the invite. */
+  async jamInvite(sessionId: string, username: string): Promise<void> {
+    const { error } = await this.api.POST('/jam/{id}/invites', {
+      params: { path: { id: sessionId } },
+      body: { username },
+    });
+    if (error) throw apiErr(error, 'jam_invite_failed');
+  }
+
+  /** Pending Jam invites addressed to the caller. */
+  async jamInvitesMine(signal?: AbortSignal): Promise<JamInvite[]> {
+    const { data, error } = await this.api.GET('/jam/invites/mine', { signal });
+    if (error || !data) throw apiErr(error, 'jam_invites_failed');
+    return (data.invites ?? []).map(toJamInvite);
+  }
+
+  /** Declines a pending invite (accepting is just joining the session normally). */
+  async jamInviteDismiss(id: string): Promise<void> {
+    const { error } = await this.api.DELETE('/jam/invites/{id}', {
+      params: { path: { id } },
+    });
+    if (error) throw apiErr(error, 'jam_invite_dismiss_failed');
   }
 
   /** Host-only. Ends the session and removes all participants. */
@@ -1479,6 +1538,27 @@ export interface JamResult {
   participants: JamParticipantDTO[];
 }
 
+/** A pending invite to a Jam session, addressed to the caller. */
+export interface JamInvite {
+  id: string;
+  sessionId: string;
+  sessionName: string;
+  inviterUsername: string;
+  inviterDisplayName?: string;
+  createdAt?: string;
+}
+
+export function toJamInvite(dto: JamInviteDTO): JamInvite {
+  return {
+    id: dto.id ?? '',
+    sessionId: dto.sessionId ?? '',
+    sessionName: dto.sessionName ?? '',
+    inviterUsername: dto.inviterUsername ?? '',
+    inviterDisplayName: dto.inviterDisplayName,
+    createdAt: dto.createdAt,
+  };
+}
+
 /** Raw `/admin/settings` response body. */
 interface SettingsResponseRaw {
   settings?: RuntimeSettingsDTO;
@@ -1520,4 +1600,8 @@ export interface ProfileResult {
   isFriend: boolean;
   activity: ActivityEventDTO[];
   playlists: ProfilePlaylistDTO[];
+  /** All-time listening stats + public playlist count. */
+  stats: { plays: number; listenSeconds: number; playlists: number };
+  /** Top 3 tracks + total count, omitted when the user's Hall of Fame is empty. */
+  hallOfFame?: { top: Song[]; total: number };
 }

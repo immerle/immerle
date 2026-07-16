@@ -116,3 +116,43 @@ func TestWrappedRepoTopTracksWithCustomWindowAndLimit(t *testing.T) {
 		t.Fatalf("TopTracks(limit=10) = %+v, want 2 tracks (c is outside the window)", top)
 	}
 }
+
+// TestWrappedRepoTotalsIsAllTime covers Totals used by the profile page's stat
+// row: unlike Wrapped/TopTracks it has no year/window bound, and it must
+// ignore unsubmitted scrobbles the same way Wrapped does.
+func TestWrappedRepoTotalsIsAllTime(t *testing.T) {
+	store := testutil.NewStore(t)
+	ctx := context.Background()
+	now := time.Now()
+
+	user := models.User{ID: uuid.NewString(), Username: "u3", PasswordHash: "x", CreatedAt: now}
+	if err := store.Users.Create(ctx, user); err != nil {
+		t.Fatal(err)
+	}
+	artistID, _ := store.Catalog.UpsertArtist(ctx, models.Artist{ID: uuid.NewString(), Name: "A", CreatedAt: now})
+	albumID, _ := store.Catalog.UpsertAlbum(ctx, models.Album{ID: uuid.NewString(), Name: "Al", ArtistID: artistID, CreatedAt: now})
+	track, _ := store.Catalog.UpsertTrack(ctx, models.Track{ID: uuid.NewString(), Title: "T", AlbumID: albumID, ArtistID: artistID, Duration: 200, Path: uuid.NewString(), CreatedAt: now, UpdatedAt: now})
+
+	// Two submitted plays years apart (Totals must span both, unlike Wrapped's
+	// single-year window) plus one unsubmitted play that must not count.
+	if err := store.Scrobbles.Insert(ctx, models.Scrobble{ID: uuid.NewString(), UserID: user.ID, TrackID: track, PlayedAt: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC), Submitted: true}); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Scrobbles.Insert(ctx, models.Scrobble{ID: uuid.NewString(), UserID: user.ID, TrackID: track, PlayedAt: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), Submitted: true}); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Scrobbles.Insert(ctx, models.Scrobble{ID: uuid.NewString(), UserID: user.ID, TrackID: track, PlayedAt: now, Submitted: false}); err != nil {
+		t.Fatal(err)
+	}
+
+	plays, seconds, err := store.Wrapped.Totals(ctx, user.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plays != 2 {
+		t.Fatalf("plays = %d, want 2 (unsubmitted scrobble must not count)", plays)
+	}
+	if seconds != 400 {
+		t.Fatalf("seconds = %d, want 400 (2 plays x 200s)", seconds)
+	}
+}

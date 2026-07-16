@@ -342,6 +342,10 @@
       }
     }
   },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "Aucune notification."
+  },
   "social": {
     "common": {
       "close": "Fermer",
@@ -391,13 +395,19 @@
       "label": "Jam",
       "heroTitle": "Écoutez ensemble",
       "heroSubtitle": "Lancez une session Jam et écoutez de la musique en synchronisation avec vos amis.",
+      "activeHint": "Vous hébergez déjà ce Jam — la lecture reste synchronisée pendant que vous naviguez.",
+      "openMine": "Ouvrir mon Jam",
       "start": "Lancer un Jam",
       "join": "Rejoindre",
-      "defaultName": "Jam de {{name}}"
+      "defaultName": "Jam de {{name}}",
+      "createButton": "Créer un jam",
+      "inviteButton": "Inviter au jam",
+      "invited": "Invité",
+      "invitedBy": "{{name}} vous invite à \"{{session}}\"",
+      "dismiss": "Ignorer"
     },
     "jamScreen": {
       "title": "Jam",
-      "leave": "Quitter le Jam",
       "youAreHost": "Vous êtes l'hôte",
       "synced": "Synchronisé",
       "hostStartHint": "Lancez la lecture pour la partager avec tout le monde.",
@@ -420,7 +430,12 @@
       "admin": "Admin",
       "you": "Vous",
       "friend": "Ami",
-      "addFriend": "Ajouter en ami",
+      "statPlays": "Écoutes",
+      "statHours": "Heures",
+      "statPlaylists": "Playlists",
+      "hallOfFame": "Hall of Fame",
+      "seeAll": "Tout voir ({{count}})",
+      "recentPlays": "Écoutes récentes",
       "recentActivity": "Activité récente",
       "emptyTitle": "Aucune activité",
       "emptySubtitle": "Cet utilisateur n'a aucune activité publique.",
@@ -964,6 +979,7 @@
       "clear": "Effacer",
       "social": "Social",
       "accountMenu": "Menu du compte",
+      "myProfile": "Mon profil",
       "settings": "Réglages",
       "administration": "Administration",
       "logout": "Se déconnecter"

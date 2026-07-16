@@ -120,6 +120,38 @@ func (h *Handler) handleGetHallOfFame(w http.ResponseWriter, r *http.Request) {
 	writeResource(w, http.StatusOK, detailToHallOfFameView(d))
 }
 
+// handleUserHallOfFame returns a user's full Hall of Fame — read-only for
+// everyone but the owner (editing stays on GET/PUT/POST /hall-of-fame). Backs
+// the profile page's "see all" link. The path segment "me" resolves to the
+// caller.
+//
+// @Summary  Get a user's Hall of Fame
+// @Tags     users
+// @Security BearerAuth
+// @Produce  json
+// @Param    username  path  string  true  "Target username, or 'me' for the caller"
+// @Success  200  {object}  hallOfFameView
+// @Failure  401  {object}  errorResponse
+// @Failure  404  {object}  errorResponse
+// @Router   /users/{username}/hall-of-fame [get]
+func (h *Handler) handleUserHallOfFame(w http.ResponseWriter, r *http.Request) {
+	if h.HallOfFame == nil || !h.hallOfFameEnabled() {
+		writeError(w, http.StatusNotFound, "disabled", "hall of fame is disabled")
+		return
+	}
+	target, err := h.resolveProfileUser(r)
+	if err != nil {
+		writeErrorParams(w, http.StatusNotFound, "not_found", "user not found", map[string]any{"username": pathParam(r, "username")})
+		return
+	}
+	d, err := h.hallOfFameSvc.Get(r.Context(), target.ID)
+	if err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	writeResource(w, http.StatusOK, detailToHallOfFameView(d))
+}
+
 // hallOfFameOrderRequest is the body for PUT /hall-of-fame/tracks.
 type hallOfFameOrderRequest struct {
 	IDs []string `json:"ids"`

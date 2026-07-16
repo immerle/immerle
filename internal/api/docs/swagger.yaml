@@ -327,6 +327,29 @@ components:
         session:
           $ref: '#/components/schemas/immerle.JamSessionDTO'
       type: object
+    immerle.JamInviteDTO:
+      properties:
+        createdAt:
+          example: "2026-06-15T09:00:00Z"
+          type: string
+        id:
+          type: string
+        inviteeId:
+          type: string
+        inviterDisplayName:
+          example: Bob Marley
+          type: string
+        inviterId:
+          type: string
+        inviterUsername:
+          example: bob
+          type: string
+        sessionId:
+          type: string
+        sessionName:
+          example: Friday Night
+          type: string
+      type: object
     immerle.JamParticipantDTO:
       properties:
         joinedAt:
@@ -419,6 +442,8 @@ components:
             $ref: '#/components/schemas/immerle.ActivityEventDTO'
           type: array
           uniqueItems: false
+        hallOfFame:
+          $ref: '#/components/schemas/immerle.ProfileHallOfFameDTO'
         isFriend:
           example: true
           type: boolean
@@ -430,6 +455,8 @@ components:
             $ref: '#/components/schemas/immerle.ProfilePlaylistDTO'
           type: array
           uniqueItems: false
+        stats:
+          $ref: '#/components/schemas/immerle.ProfileStatsDTO'
         user:
           properties:
             displayName:
@@ -444,6 +471,17 @@ components:
               example: bob
               type: string
           type: object
+      type: object
+    immerle.ProfileHallOfFameDTO:
+      properties:
+        top:
+          items:
+            $ref: '#/components/schemas/immerle.songView'
+          type: array
+          uniqueItems: false
+        total:
+          example: 12
+          type: integer
       type: object
     immerle.ProfilePlaylistDTO:
       properties:
@@ -466,6 +504,18 @@ components:
           type: string
         songCount:
           example: 24
+          type: integer
+      type: object
+    immerle.ProfileStatsDTO:
+      properties:
+        listenSeconds:
+          example: 432000
+          type: integer
+        playlists:
+          example: 5
+          type: integer
+        plays:
+          example: 1234
           type: integer
       type: object
     immerle.ProviderDTO:
@@ -1190,6 +1240,11 @@ components:
             $ref: '#/components/schemas/immerle.songView'
           type: array
           uniqueItems: false
+      type: object
+    immerle.jamInviteRequest:
+      properties:
+        username:
+          type: string
       type: object
     immerle.loginRequest:
       properties:
@@ -4958,6 +5013,60 @@ paths:
       summary: Stream Jam events (SSE)
       tags:
       - jam
+  /jam/{id}/invites:
+    post:
+      description: Invites a user to the session. Host only; re-inviting just refreshes
+        the invite.
+      parameters:
+      - description: Jam session id
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/immerle.jamInviteRequest'
+                description: Invitee username
+                summary: body
+        description: Invitee username
+        required: true
+      responses:
+        "204":
+          description: invited
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Forbidden
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Not Found
+      security:
+      - BearerAuth: []
+      summary: Invite a user to a Jam session
+      tags:
+      - jam
   /jam/{id}/participants:
     post:
       parameters:
@@ -5024,6 +5133,91 @@ paths:
       security:
       - BearerAuth: []
       summary: Leave a Jam session
+      tags:
+      - jam
+  /jam/invites/{id}:
+    delete:
+      parameters:
+      - description: Invite id
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      responses:
+        "204":
+          description: dismissed
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Internal Server Error
+      security:
+      - BearerAuth: []
+      summary: Dismiss a pending Jam invite
+      tags:
+      - jam
+  /jam/invites/mine:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  items:
+                    $ref: '#/components/schemas/immerle.JamInviteDTO'
+                  type: array
+                type: object
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Internal Server Error
+      security:
+      - BearerAuth: []
+      summary: List the caller's pending Jam invites
+      tags:
+      - jam
+  /jam/mine:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.JamDTO'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Not Found
+      security:
+      - BearerAuth: []
+      summary: Get the caller's hosted Jam session
       tags:
       - jam
   /library/stats:
@@ -5321,7 +5515,8 @@ paths:
   /play-queue/events:
     get:
       description: Server-Sent Events stream. Emits the current queue immediately,
-        then again on every change (save, target change).
+        then again on every change (save, target change); also emits the caller's
+        pending Jam invites (event "invites") on connect and whenever they change.
       responses:
         "200":
           content:
@@ -7037,8 +7232,9 @@ paths:
   /users/{username}:
     get:
       description: Returns a user's profile — identity, recent activity visible to
-        the caller (honoring privacy), and their public playlists. Use "me" for the
-        caller.
+        the caller (honoring privacy), their public playlists, all-time listening
+        stats, and the top of their Hall of Fame (omitted when empty). Use "me" for
+        the caller.
       parameters:
       - description: Target username, or 'me' for the caller
         in: path
@@ -7074,6 +7270,39 @@ paths:
       security:
       - BearerAuth: []
       summary: User profile
+      tags:
+      - users
+  /users/{username}/hall-of-fame:
+    get:
+      parameters:
+      - description: Target username, or 'me' for the caller
+        in: path
+        name: username
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.hallOfFameView'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Not Found
+      security:
+      - BearerAuth: []
+      summary: Get a user's Hall of Fame
       tags:
       - users
   /wrapped:

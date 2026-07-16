@@ -191,6 +191,7 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Get("/me/custom-playlists", h.handleCustomPlaylists)
 			r.Put("/me/password", h.handleChangePassword)
 			r.Get("/users/{username}", h.handleProfile)
+			r.Get("/users/{username}/hall-of-fame", h.handleUserHallOfFame)
 
 			// Admin: user management.
 			r.Get("/admin/users", h.handleListUsers)
@@ -330,12 +331,16 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Post("/playlists/{id}/collaborators", h.handleAddCollaborator)
 
 			// Synchronized Jam sessions.
+			r.Get("/jam/mine", h.handleJamMine)
+			r.Get("/jam/invites/mine", h.handleJamInvitesMine)
+			r.Delete("/jam/invites/{id}", h.handleJamInviteDismiss)
 			r.Post("/jam", h.handleJamCreate)
 			r.Get("/jam/{id}", h.handleJamState)
 			r.Patch("/jam/{id}", h.handleJamUpdate)
 			r.Get("/jam/{id}/events", h.handleJamEvents)
 			r.Post("/jam/{id}/participants", h.handleJamJoin)
 			r.Delete("/jam/{id}/participants/me", h.handleJamLeave)
+			r.Post("/jam/{id}/invites", h.handleJamInvite)
 			r.Delete("/jam/{id}", h.handleJamDelete)
 
 			// Personal API tokens (scoped to the authenticated user).

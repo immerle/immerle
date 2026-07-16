@@ -3,6 +3,7 @@ import { Image, Modal, Pressable, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicon } from './Ionicon';
+import { NotificationsBell } from './NotificationsBell';
 import { useAuth } from '../auth/store';
 import { useColors } from '../theme/colors';
 import { useT } from '../i18n/store';
@@ -25,6 +26,7 @@ export function MobileHeader() {
 
   const displayName = displayNameState ?? client?.username ?? '?';
   const initial = displayName.charAt(0).toUpperCase();
+  const hasSocial = client?.has('social') ?? false;
 
   const go = (href: string) => {
     setMenu(false);
@@ -46,7 +48,8 @@ export function MobileHeader() {
         <Text className="text-lg font-bold text-[#333333] dark:text-white">Immerle</Text>
       </Pressable>
 
-      <View className="flex-row items-center gap-1">
+      <View className="flex-row items-center gap-2">
+        <NotificationsBell />
         <Pressable
           onPress={() => setMenu(true)}
           accessibilityRole="button"
@@ -69,6 +72,9 @@ export function MobileHeader() {
                 {client?.serverUrl}
               </Text>
             </View>
+            {hasSocial ? (
+              <MenuItem icon="person-circle-outline" label={t('components.topbar.myProfile')} onPress={() => go('/profile/me')} />
+            ) : null}
             <MenuItem icon="settings-outline" label={t('components.topbar.settings')} onPress={() => go('/settings')} />
             {/* Administration is web/desktop-only — kept out of the mobile menu. */}
             <MenuItem icon="log-out-outline" label={t('components.topbar.logout')} tone="danger" onPress={onLogout} />

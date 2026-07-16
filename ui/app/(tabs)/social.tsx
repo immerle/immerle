@@ -9,6 +9,7 @@ import {
   useFriendMutations,
   useFriends,
   useJamMutations,
+  useMyJam,
   usePendingFriends,
 } from '../../src/query/social';
 import { useJam } from '../../src/jam/store';
@@ -90,6 +91,7 @@ export default function Social() {
   const activity = useActivity();
   const { request, accept } = useFriendMutations();
   const jam = useJamMutations();
+  const myJam = useMyJam();
 
   const [addName, setAddName] = useState('');
   const [addOpen, setAddOpen] = useState(false);
@@ -141,6 +143,18 @@ export default function Social() {
     });
   };
 
+  // The caller may already be hosting a session created elsewhere (e.g. from
+  // a profile page) — the local sync store isn't persisted, so a reload can
+  // lose it even though the server still has them as host.
+  const activeSession = myJam.data?.session;
+  const openMyJam = () => {
+    if (!activeSession?.id) return;
+    if (useJam.getState().sessionId !== activeSession.id) {
+      useJam.getState().start(activeSession.id, true);
+    }
+    router.push(`/jam/${activeSession.id}` as never);
+  };
+
   const friendCount = friends.data?.length ?? 0;
   const pendingCount = pending.data?.length ?? 0;
 
@@ -165,27 +179,47 @@ export default function Social() {
                   <Ionicon name="radio" size={18} color="#ffffff" />
                   <Text className="text-xs font-bold uppercase tracking-widest text-white/90">{t('social.jam.label')}</Text>
                 </View>
-                <Text className="pt-3 text-2xl font-bold tracking-tight text-white">{t('social.jam.heroTitle')}</Text>
-                <Text className="max-w-[80%] pt-1 text-sm text-white/80">
-                  {t('social.jam.heroSubtitle')}
-                </Text>
-                <View className="mt-4 flex-row flex-wrap items-center gap-2">
-                  <Pressable
-                    onPress={startJam}
-                    disabled={jam.create.isPending}
-                    className={`flex-row items-center gap-2 self-start rounded-full bg-white px-5 py-2.5 ${jam.create.isPending ? 'opacity-60' : 'active:opacity-80'}`}
-                  >
-                    <Ionicon name="add" size={18} color="#000000" />
-                    <Text className="font-bold tracking-tight text-black">{t('social.jam.start')}</Text>
-                  </Pressable>
-                  <Pressable
-                    onPress={() => setJoinOpen(true)}
-                    className="flex-row items-center gap-2 self-start rounded-full border border-white/70 px-5 py-2.5 active:bg-white/10"
-                  >
-                    <Ionicon name="enter-outline" size={18} color="#ffffff" />
-                    <Text className="font-bold tracking-tight text-white">{t('social.jam.join')}</Text>
-                  </Pressable>
-                </View>
+                {activeSession ? (
+                  <>
+                    <Text className="pt-3 text-2xl font-bold tracking-tight text-white">
+                      {activeSession.name || t('social.jam.heroTitle')}
+                    </Text>
+                    <Text className="max-w-[80%] pt-1 text-sm text-white/80">{t('social.jam.activeHint')}</Text>
+                    <View className="mt-4 flex-row flex-wrap items-center gap-2">
+                      <Pressable
+                        onPress={openMyJam}
+                        className="flex-row items-center gap-2 self-start rounded-full bg-white px-5 py-2.5 active:opacity-80"
+                      >
+                        <Ionicon name="radio" size={18} color="#000000" />
+                        <Text className="font-bold tracking-tight text-black">{t('social.jam.openMine')}</Text>
+                      </Pressable>
+                    </View>
+                  </>
+                ) : (
+                  <>
+                    <Text className="pt-3 text-2xl font-bold tracking-tight text-white">{t('social.jam.heroTitle')}</Text>
+                    <Text className="max-w-[80%] pt-1 text-sm text-white/80">
+                      {t('social.jam.heroSubtitle')}
+                    </Text>
+                    <View className="mt-4 flex-row flex-wrap items-center gap-2">
+                      <Pressable
+                        onPress={startJam}
+                        disabled={jam.create.isPending}
+                        className={`flex-row items-center gap-2 self-start rounded-full bg-white px-5 py-2.5 ${jam.create.isPending ? 'opacity-60' : 'active:opacity-80'}`}
+                      >
+                        <Ionicon name="add" size={18} color="#000000" />
+                        <Text className="font-bold tracking-tight text-black">{t('social.jam.start')}</Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() => setJoinOpen(true)}
+                        className="flex-row items-center gap-2 self-start rounded-full border border-white/70 px-5 py-2.5 active:bg-white/10"
+                      >
+                        <Ionicon name="enter-outline" size={18} color="#ffffff" />
+                        <Text className="font-bold tracking-tight text-white">{t('social.jam.join')}</Text>
+                      </Pressable>
+                    </View>
+                  </>
+                )}
               </View>
             </LinearGradient>
           </View>

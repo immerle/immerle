@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { useJam } from '../../src/jam/store';
 import { usePlayer } from '../../src/audio/store';
 import { useAuth } from '../../src/auth/store';
@@ -24,6 +25,7 @@ export default function Jam() {
   const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const client = useAuth((s) => s.client);
+  const qc = useQueryClient();
 
   const session = useJam((s) => s.session);
   const participants = useJam((s) => s.participants);
@@ -52,6 +54,13 @@ export default function Jam() {
 
   const isPlaying = status === 'playing';
 
+  // Navigating away from this screen must NOT disconnect anyone — the sync
+  // engine (SSE/polling + the host's playback push) lives in the global
+  // useJam store precisely so a Jam keeps running in the background while
+  // browsing the rest of the app. Only the explicit "Leave"/"End" actions
+  // below actually stop it.
+  const onClose = () => router.back();
+
   const onLeave = async () => {
     await stop();
     router.back();
@@ -62,6 +71,7 @@ export default function Jam() {
       t('social.jamScreen.endJamConfirm'),
       async () => {
         await end();
+        void qc.invalidateQueries({ queryKey: ['jam', 'mine'] });
         router.back();
       },
       { cancel: t('social.common.cancel'), ok: t('social.jamScreen.endJam') },
@@ -73,7 +83,7 @@ export default function Jam() {
         options={{
           title: session?.name || t('social.jamScreen.title'),
           headerRight: () => (
-            <IconButton name="exit-outline" color={colors.danger} onPress={onLeave} accessibilityLabel={t('social.jamScreen.leave')} />
+            <IconButton name="close" color={colors.foreground} onPress={onClose} accessibilityLabel={t('social.common.close')} />
           ),
         }}
       />
