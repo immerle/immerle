@@ -44,6 +44,9 @@ type Result struct {
 	Duration        int
 	Genre           string
 	MBID            string
+	// ISRC is the track's International Standard Recording Code, when the
+	// provider knows one.
+	ISRC string
 	// ProviderArtistID is the artist's id within the provider (optional; enables
 	// browsing the artist's catalog).
 	ProviderArtistID string

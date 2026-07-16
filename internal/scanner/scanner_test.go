@@ -49,6 +49,7 @@ func TestExtractEnrichedMetadata(t *testing.T) {
 		Composer: "Claude Debussy", BPM: 132, ReplayGain: "-6.50 dB",
 		Work: "Suite Bergamasque", Movement: 3,
 		Performer: "Pascal Rogé", Producer: "Anne Faulkner; Bob Lyric",
+		ISRC: "FRZ039800212",
 	})
 	// A .lrc sidecar should win over embedded lyrics.
 	if err := os.WriteFile(filepath.Join(dir, "track.lrc"), []byte("[00:12.50]Hello\nworld"), 0o644); err != nil {
@@ -75,6 +76,9 @@ func TestExtractEnrichedMetadata(t *testing.T) {
 	}
 	if md.Lyrics != "[00:12.50]Hello\nworld" {
 		t.Errorf("lyrics = %q, want the .lrc sidecar content", md.Lyrics)
+	}
+	if md.ISRC != "FRZ039800212" {
+		t.Errorf("isrc = %q, want FRZ039800212", md.ISRC)
 	}
 	// performer + 2 producers = 3 participants (order-independent).
 	roles := map[string][]string{}

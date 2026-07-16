@@ -14,6 +14,10 @@ type Capabilities struct {
 	Version int                    `json:"version"`
 	Name    string                 `json:"name"`
 	Config  map[string]ConfigField `json:"config"`
+	// Playlists declares whether the remote implements the optional /playlists
+	// endpoint (PlaylistBrowser). false/omitted means it doesn't, so callers can
+	// skip probing it.
+	Playlists bool `json:"playlists,omitempty"`
 }
 
 // ConfigField declares one config value the remote accepts: its value type

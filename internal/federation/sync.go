@@ -244,7 +244,7 @@ type syncPayload struct {
 
 type syncTrack struct {
 	MBID    string `json:"mbid,omitempty"`
-	ISRC    string `json:"isrc,omitempty"` // not stored locally yet; always empty for now
+	ISRC    string `json:"isrc,omitempty"`
 	Artist  string `json:"artist,omitempty"`
 	Title   string `json:"title,omitempty"`
 	Album   string `json:"album,omitempty"`
@@ -267,6 +267,7 @@ func buildPayload(p models.Playlist, tracks []models.Track) syncPayload {
 	for _, t := range tracks {
 		out.Tracks = append(out.Tracks, syncTrack{
 			MBID:    t.MBID,
+			ISRC:    t.ISRC,
 			Artist:  t.ArtistName,
 			Title:   t.Title,
 			Album:   t.AlbumName,

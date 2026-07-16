@@ -22,7 +22,7 @@
 //	{
 //	  "providerTrackId": "abc", "title": "...", "artist": "...", "album": "...",
 //	  "albumArtist": "...", "trackNo": 1, "discNo": 1, "year": 2020,
-//	  "duration": 210, "genre": "...", "mbid": "...",
+//	  "duration": 210, "genre": "...", "mbid": "...", "isrc": "...",
 //	  "providerArtistId": "...", "coverImageUrl": "...", "artistImageUrl": "...",
 //	  "suffix": "mp3"
 //	}
@@ -194,6 +194,7 @@ type track struct {
 	Duration         int    `json:"duration"`
 	Genre            string `json:"genre"`
 	MBID             string `json:"mbid"`
+	ISRC             string `json:"isrc"`
 	ProviderArtistID string `json:"providerArtistId"`
 	CoverImageURL    string `json:"coverImageUrl"`
 	ArtistImageURL   string `json:"artistImageUrl"`
@@ -217,6 +218,7 @@ func (t track) toResult() providers.Result {
 		Duration:         t.Duration,
 		Genre:            t.Genre,
 		MBID:             t.MBID,
+		ISRC:             t.ISRC,
 		ProviderArtistID: t.ProviderArtistID,
 		CoverImageURL:    t.CoverImageURL,
 		ArtistImageURL:   t.ArtistImageURL,
