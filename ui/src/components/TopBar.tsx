@@ -18,7 +18,7 @@ const HIDDEN_ROUTES = ['/login', '/setup', '/player', '/queue'];
 /**
  * Global desktop header: a back/home cluster on the left, a search affordance in
  * the middle, and the current user's avatar on the right. The avatar opens a
- * menu with Settings, Admin (admins only) and logout — mirroring the Spotify web
+ * menu with Settings and Admin (admins only) — mirroring the Spotify web
  * top bar. Rendered app-wide from the root layout; self-hides on mobile, on
  * pre-auth screens, and on detail pages.
  */
@@ -30,7 +30,6 @@ export function TopBar({ wide }: { wide: boolean }) {
   const client = useAuth((s) => s.client);
   const status = useAuth((s) => s.status);
   const displayNameState = useAuth((s) => s.displayName);
-  const logout = useAuth((s) => s.logout);
   const query = useSearchUI((s) => s.query);
   const setQuery = useSearchUI((s) => s.setQuery);
   const openSearch = useSearchUI((s) => s.openSearch);
@@ -53,12 +52,6 @@ export function TopBar({ wide }: { wide: boolean }) {
   const goForward = () => {
     if (typeof window !== 'undefined' && window.history) window.history.forward();
   };
-  const onLogout = async () => {
-    setMenu(false);
-    await logout();
-    router.replace('/login');
-  };
-
   return (
     <View
       className="flex-row items-center gap-3 border-b border-border bg-background px-4"
@@ -144,7 +137,6 @@ export function TopBar({ wide }: { wide: boolean }) {
             {isAdmin ? (
               <MenuItem icon="shield-checkmark-outline" label={t('components.topbar.administration')} onPress={() => go('/admin')} />
             ) : null}
-            <MenuItem icon="log-out-outline" label={t('components.topbar.logout')} tone="danger" onPress={onLogout} />
           </View>
         </Pressable>
       </Modal>
