@@ -1828,6 +1828,13 @@
                     },
                     "position": {
                         "type": "integer"
+                    },
+                    "repeat": {
+                        "type": "string"
+                    },
+                    "shuffle": {
+                        "description": "Shuffle/Repeat mirror this device's transport mode (see\nmodels.PlayQueue.Shuffle/Repeat) — carried through so another device\nthat mirrors or takes over this queue shows/resumes the same mode.",
+                        "type": "boolean"
                     }
                 },
                 "type": "object"
@@ -1862,6 +1869,13 @@
                     },
                     "position": {
                         "type": "integer"
+                    },
+                    "repeat": {
+                        "type": "string"
+                    },
+                    "shuffle": {
+                        "description": "Shuffle/Repeat mirror the saving device's transport mode, so any device\nthat mirrors or takes over this queue shows/resumes the same mode.",
+                        "type": "boolean"
                     },
                     "targetDeviceId": {
                         "description": "TargetDeviceID, when set, is the id of the sole device that should be\nactively playing this queue right now — every other device should\npause instead of doubling the audio. Empty means unrestricted: each\ndevice manages its own playback independently (the default).",

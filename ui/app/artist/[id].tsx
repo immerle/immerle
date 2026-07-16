@@ -24,6 +24,8 @@ export default function ArtistDetail() {
   const client = useAuth((s) => s.client);
   const q = useArtist(id);
   const playSongs = usePlayer((s) => s.playSongs);
+  const playShuffled = usePlayer((s) => s.playShuffled);
+  const shuffleOn = usePlayer((s) => s.shuffle);
   const [busy, setBusy] = useState(false);
   useWebTitle(q.data?.name);
 
@@ -72,7 +74,9 @@ export default function ArtistDetail() {
     setBusy(true);
     try {
       const songs = await gather();
-      if (songs.length) playSongs(shuffle ? shuffleArray(songs) : songs, 0);
+      if (!songs.length) return;
+      if (shuffle) await playShuffled(songs);
+      else await playSongs(songs, 0);
     } finally {
       setBusy(false);
     }
@@ -104,7 +108,7 @@ export default function ArtistDetail() {
 
         <View className="flex-row items-center gap-5 px-4 pb-2 pt-3">
           <PlayButton onPress={() => run(false)} size={56} accessibilityLabel={t('media.artist.play')} />
-          <IconButton name="shuffle" size={26} color={busy ? colors.primary : colors.muted} onPress={() => run(true)} accessibilityLabel={t('media.artist.shuffle')} />
+          <IconButton name="shuffle" size={26} color={shuffleOn ? colors.primary : colors.muted} onPress={() => run(true)} accessibilityLabel={t('media.artist.shuffle')} />
         </View>
 
         <Text className="px-4 pb-2 text-xl font-bold tracking-tight text-foreground">{t('media.artist.discography')}</Text>
@@ -118,13 +122,4 @@ export default function ArtistDetail() {
       </ScrollView>
     </>
   );
-}
-
-function shuffleArray(songs: Song[]): Song[] {
-  const arr = [...songs];
-  for (let i = arr.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
 }

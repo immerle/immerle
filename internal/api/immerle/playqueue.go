@@ -37,6 +37,10 @@ type playQueueView struct {
 	// already applied.
 	PendingCommand *commandView `json:"pendingCommand,omitempty"`
 	CommandSeq     int64        `json:"commandSeq,omitempty"`
+	// Shuffle/Repeat mirror the saving device's transport mode, so any device
+	// that mirrors or takes over this queue shows/resumes the same mode.
+	Shuffle bool   `json:"shuffle"`
+	Repeat  string `json:"repeat,omitempty"`
 }
 
 // commandView mirrors models.CommandEnvelope for the wire.
@@ -58,6 +62,8 @@ func toPlayQueueView(res core.PlayQueueResult) playQueueView {
 		Entries:        make([]songView, 0, len(res.Entries)),
 		TargetDeviceID: res.Queue.TargetDeviceID,
 		CommandSeq:     res.Queue.CommandSeq,
+		Shuffle:        res.Queue.Shuffle,
+		Repeat:         res.Queue.Repeat,
 	}
 	if !res.Queue.ChangedAt.IsZero() {
 		v.ChangedAt = &res.Queue.ChangedAt
@@ -206,6 +212,11 @@ type playQueueRequest struct {
 	// mirrored on another device. Optional; entries without a match here
 	// just rely on the catalog lookup succeeding, as before.
 	Entries []queueEntryRequest `json:"entries,omitempty"`
+	// Shuffle/Repeat mirror this device's transport mode (see
+	// models.PlayQueue.Shuffle/Repeat) — carried through so another device
+	// that mirrors or takes over this queue shows/resumes the same mode.
+	Shuffle bool   `json:"shuffle"`
+	Repeat  string `json:"repeat"`
 }
 
 // handleSavePlayQueue persists the caller's play queue.
@@ -235,7 +246,7 @@ func (h *Handler) handleSavePlayQueue(w http.ResponseWriter, r *http.Request) {
 			CoverArt: e.CoverArt, Duration: e.Duration, Remote: e.Remote,
 		})
 	}
-	if err := h.playQueue.Save(r.Context(), user.ID, req.Current, req.Position, req.Playing, req.Client, req.IDs, entries); err != nil {
+	if err := h.playQueue.Save(r.Context(), user.ID, req.Current, req.Position, req.Playing, req.Client, req.IDs, entries, req.Shuffle, req.Repeat); err != nil {
 		writeServiceError(w, err)
 		return
 	}

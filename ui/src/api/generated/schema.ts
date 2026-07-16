@@ -9272,6 +9272,13 @@ export interface components {
              */
             playing?: boolean;
             position?: number;
+            repeat?: string;
+            /**
+             * @description Shuffle/Repeat mirror this device's transport mode (see
+             *     models.PlayQueue.Shuffle/Repeat) — carried through so another device
+             *     that mirrors or takes over this queue shows/resumes the same mode.
+             */
+            shuffle?: boolean;
         };
         "immerle.playQueueView": {
             changedAt?: string;
@@ -9286,6 +9293,12 @@ export interface components {
              */
             playing?: boolean;
             position?: number;
+            repeat?: string;
+            /**
+             * @description Shuffle/Repeat mirror the saving device's transport mode, so any device
+             *     that mirrors or takes over this queue shows/resumes the same mode.
+             */
+            shuffle?: boolean;
             /**
              * @description TargetDeviceID, when set, is the id of the sole device that should be
              *     actively playing this queue right now — every other device should

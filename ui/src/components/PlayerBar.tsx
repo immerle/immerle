@@ -179,7 +179,10 @@ function WideBar({ song, status, position, duration }: BarProps) {
   // Another device has claimed active playback (see CastButton): play/pause,
   // seek and skip still work — the store turns them into remote commands the
   // active device picks up (usePlayer.isSpectating) — but shuffle/repeat
-  // aren't remote-controllable, so those stay disabled here.
+  // aren't remote-controllable, so those stay disabled here. Their displayed
+  // state (shuffle/toggleShuffle above) is still the real one, mirrored from
+  // the active device via the saved queue (see applyDisplaySnapshot) — just
+  // not something this device can change.
   const myId = useAuth((s) => s.client?.getSession()?.deviceId);
   const castTargetId = usePlayer((s) => s.castTargetId);
   const remoteControlled = !!castTargetId && castTargetId !== myId;
