@@ -956,8 +956,7 @@
       "accountMenu": "Menu du compte",
       "myProfile": "Mon profil",
       "settings": "Réglages",
-      "administration": "Administration",
-      "logout": "Se déconnecter"
+      "administration": "Administration"
     },
     "trackMenu": {
       "playNow": "Lire maintenant",

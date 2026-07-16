@@ -12,7 +12,7 @@ import { useT } from '../i18n/store';
  * Compact global header for narrow (mobile) layouts: the logo + wordmark on
  * the left, the account avatar on the right (search and library nav already
  * live in the bottom tab bar, so they aren't duplicated here). The avatar
- * opens the same Settings / Logout menu as the desktop top bar. Rendered
+ * opens the same Settings menu as the desktop top bar. Rendered
  * by the tabs layout so it sits above every main screen; per-screen titles
  * live underneath.
  */
@@ -21,7 +21,6 @@ export function MobileHeader() {
   const insets = useSafeAreaInsets();
   const client = useAuth((s) => s.client);
   const displayNameState = useAuth((s) => s.displayName);
-  const logout = useAuth((s) => s.logout);
   const [menu, setMenu] = useState(false);
 
   const displayName = displayNameState ?? client?.username ?? '?';
@@ -32,12 +31,6 @@ export function MobileHeader() {
     setMenu(false);
     router.navigate(href as never);
   };
-  const onLogout = async () => {
-    setMenu(false);
-    await logout();
-    router.replace('/login');
-  };
-
   return (
     <View
       className="flex-row items-center justify-between border-b border-border bg-background px-4"
@@ -77,7 +70,6 @@ export function MobileHeader() {
             ) : null}
             <MenuItem icon="settings-outline" label={t('components.topbar.settings')} onPress={() => go('/settings')} />
             {/* Administration is web/desktop-only — kept out of the mobile menu. */}
-            <MenuItem icon="log-out-outline" label={t('components.topbar.logout')} tone="danger" onPress={onLogout} />
           </View>
         </Pressable>
       </Modal>
