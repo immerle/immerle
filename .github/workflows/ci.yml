@@ -46,6 +46,44 @@ jobs:
       - name: Build
         run: CGO_ENABLED=0 go build -o bin/immerle ./cmd/immerle
 
+  build-cli:
+    # Cross-compiles the iml terminal client for every release target. macOS
+    # and Windows are pure Go (oto/v3 uses purego there) and cross-compile
+    # fine from ubuntu-latest; Linux's audio backend uses cgo + ALSA, so that
+    # leg needs a real C toolchain -- linux/arm64 runs on a native arm64
+    # runner rather than fighting a cross-toolchain for one job.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { goos: linux, goarch: amd64, runner: ubuntu-latest, cgo: "1" }
+          - { goos: linux, goarch: arm64, runner: ubuntu-24.04-arm, cgo: "1" }
+          - { goos: darwin, goarch: amd64, runner: ubuntu-latest, cgo: "0" }
+          - { goos: darwin, goarch: arm64, runner: ubuntu-latest, cgo: "0" }
+          - { goos: windows, goarch: amd64, runner: ubuntu-latest, cgo: "0" }
+          - { goos: windows, goarch: arm64, runner: ubuntu-latest, cgo: "0" }
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.5"
+          cache: true
+
+      - name: Install ALSA dev headers
+        if: matrix.goos == 'linux'
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev
+
+      - name: Build iml (${{ matrix.goos }}/${{ matrix.goarch }})
+        env:
+          CGO_ENABLED: ${{ matrix.cgo }}
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          ext=""
+          [ "${{ matrix.goos }}" = "windows" ] && ext=".exe"
+          go build -ldflags "-s -w" -o "bin/iml-${{ matrix.goos }}-${{ matrix.goarch }}${ext}" ./cmd/iml
+
   lint:
     runs-on: ubuntu-latest
     steps:
