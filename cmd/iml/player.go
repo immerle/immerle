@@ -167,7 +167,7 @@ func (p *Player) stopLocked() {
 		p.current = nil
 	}
 	if p.closer != nil {
-		p.closer()
+		_ = p.closer()
 		p.closer = nil
 	}
 }
