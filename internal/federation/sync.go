@@ -288,11 +288,10 @@ func trackCoverID(t models.Track) string {
 }
 
 // playlistImageRef is the pre-resolution Image value for the sync payload:
-// the owner-chosen cover id when set, else a "mosaic:id1,id2,..." marker
-// listing up to the first 4 tracks' covers — resolveCovers composes and
-// uploads an actual mosaic image for it, the same one the client would render
-// locally for a playlist with no custom cover. Empty when there's nothing to
-// show a cover for at all.
+// the owner-chosen cover id when set, else a "mosaic:id1,id2,..." marker for
+// up to the first 4 tracks' covers (resolveCovers renders and uploads the
+// actual mosaic, matching what the client renders locally). Empty when
+// there's nothing to show a cover for.
 func playlistImageRef(p models.Playlist, tracks []models.Track) string {
 	if p.CoverArt != "" {
 		return p.CoverArt
@@ -364,11 +363,10 @@ func (s *PlaylistSyncer) resolveCovers(ctx context.Context, p *syncPayload) erro
 		ctypes[h] = ct
 	}
 
-	// Compose the mosaic from the tile covers just fetched above, and register
-	// it under the marker itself (in the same idHash/blobs/ctypes maps the
-	// upload pass below walks) so the coverURL lookup for p.Image at the end
-	// resolves it exactly like any other cover. Silently skipped (p.Image ends
-	// up unresolved → "") if none of the tile covers could be read/decoded.
+	// Compose the mosaic from the tiles just fetched, and register it under the
+	// marker itself in the same idHash/blobs/ctypes maps so the coverURL lookup
+	// for p.Image resolves it like any other cover. Skipped (p.Image stays
+	// unresolved) if none of the tiles could be read/decoded.
 	if len(mosaicIDs) > 0 {
 		tiles := make([][]byte, 0, len(mosaicIDs))
 		for _, id := range mosaicIDs {

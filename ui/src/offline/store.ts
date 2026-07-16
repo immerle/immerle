@@ -126,8 +126,7 @@ export const useDownloads = create<DownloadsState>((set, get) => ({
         return { entries, progress };
       });
     } catch (e) {
-      // Drop the progress marker; leave no partial entry behind. Surface a full
-      // storage so the user understands why the download didn't stick.
+      // Drop the progress marker, leave no partial entry; surface a quota error if that's why it failed.
       set((s) => {
         const progress = { ...s.progress };
         delete progress[id];

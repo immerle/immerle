@@ -57,7 +57,6 @@ func TestCleanupToggleAndStatus(t *testing.T) {
 	srv, _ := newAdminEnv(t)
 	admin := login(t, srv, "admin")
 
-	// Status: admin reads the current sweep state directly.
 	status, body := doMap(t, srv, http.MethodGet, "/admin/cleanup", admin, nil)
 	if status != http.StatusOK {
 		t.Fatalf("status read failed: %d %+v", status, body)
@@ -85,13 +84,11 @@ func TestOfflineToggleReflectsInCapability(t *testing.T) {
 	srv, _ := newAdminEnv(t)
 	admin := login(t, srv, "admin")
 
-	// Non-admin is forbidden.
 	bob := login(t, srv, "bob")
 	if status, _ := doMap(t, srv, http.MethodGet, "/admin/offline", bob, nil); status != http.StatusForbidden {
 		t.Fatalf("non-admin should get 403, got %d", status)
 	}
 
-	// Defaults on, and the capability advertises enabled=true.
 	if status, body := doMap(t, srv, http.MethodGet, "/admin/offline", admin, nil); status != http.StatusOK || body["enabled"] != true {
 		t.Fatalf("default status: %d %+v", status, body)
 	}
@@ -99,7 +96,6 @@ func TestOfflineToggleReflectsInCapability(t *testing.T) {
 		t.Fatal("capability should advertise offlineDownloads enabled=true by default")
 	}
 
-	// Disabling persists and flips the advertised capability.
 	if status, body := doMap(t, srv, http.MethodPut, "/admin/offline", admin, map[string]any{"enabled": false}); status != http.StatusOK || body["enabled"] != false {
 		t.Fatalf("disable failed: %d %+v", status, body)
 	}

@@ -540,19 +540,15 @@ type PlayQueue struct {
 	ChangedBy string    `json:"changedBy,omitempty"`
 	ChangedAt time.Time `json:"changed"`
 	TrackIDs  []string  `json:"trackIds"`
-	// Shuffle/Repeat mirror the saving device's transport mode — so a device
-	// that mirrors (spectates) or takes over this queue shows/resumes the
-	// same mode instead of its own possibly-stale local one. Repeat is one of
-	// "off", "queue", "track" (see the UI's RepeatMode); not validated
-	// server-side, just carried through as an opaque string.
+	// Shuffle/Repeat mirror the saving device's transport mode, so a device that
+	// mirrors or takes over this queue resumes the same mode. Repeat is one of
+	// "off", "queue", "track" (see the UI's RepeatMode); not validated server-side.
 	Shuffle bool   `json:"shuffle"`
 	Repeat  string `json:"repeat,omitempty"`
-	// Entries is a snapshot of each queued track's display metadata, as
-	// reported by the saving client — used as a fallback when resolving a
-	// TrackID via the local catalog fails, most commonly a not-yet-downloaded
-	// on-demand remote track (its id was never inserted as a real catalog
-	// row). Without this, such a track would silently disappear from another
-	// device's mirrored queue the moment it became current.
+	// Entries is a snapshot of each queued track's display metadata, used as a
+	// fallback when TrackID can't be resolved locally (e.g. a not-yet-downloaded
+	// on-demand track) — without it, such a track would vanish from another
+	// device's mirrored queue.
 	Entries []QueueEntry `json:"entries,omitempty"`
 	// TargetDeviceID, when set, is the sole device that should be actively
 	// playing this queue — other devices pause instead of doubling the audio.
@@ -582,15 +578,11 @@ type QueueEntry struct {
 }
 
 // CommandEnvelope is a spectator device's remote-control command (next,
-// previous, seek, toggle, skip to a track, toggle shuffle, cycle repeat) —
-// sent as an intent instead of a computed snapshot, so the active device
-// applies it against its own true state instead of adopting the spectator's
-// (possibly stale) guess of what the resulting state should be. This is a
-// "latest command wins" model, not a real queue: a second command overwrites
-// the first before either is necessarily applied. That's a deliberate,
-// accepted trade-off (matches the old guessed-snapshot mechanism's same
-// characteristic) — not something to "fix" into a real queue without
-// discussing it first.
+// previous, seek, toggle, skip to a track, toggle shuffle, cycle repeat),
+// sent as an intent rather than a computed snapshot so the active device
+// applies it against its own true state. "Latest command wins" (not a real
+// queue) is a deliberate trade-off — don't "fix" it into a real queue
+// without discussing it first.
 type CommandEnvelope struct {
 	// Type is one of "toggle", "next", "previous", "seekTo", "skipTo",
 	// "toggleShuffle", "cycleRepeat".
@@ -605,10 +597,9 @@ type CommandEnvelope struct {
 	// in the queue (nearest match to this index) — never the primary lookup.
 	QueueIndex int `json:"queueIndex,omitempty"`
 	// ForTarget is the device id this command was addressed to (the sender's
-	// view of TargetDeviceID at send time). The receiver ignores a command
-	// where ForTarget doesn't match its own id, even if it is now the
-	// target — a command is scoped to one specific active-device tenure, so
-	// a stale command from before a handoff can never fire late.
+	// view of TargetDeviceID at send time). The receiver ignores it if
+	// ForTarget doesn't match its own id — scoped to one active-device tenure
+	// so a stale command from before a handoff can't fire late.
 	ForTarget string `json:"forTarget,omitempty"`
 	// IssuedBy is the sending device's id.
 	IssuedBy string `json:"issuedBy,omitempty"`

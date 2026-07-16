@@ -48,8 +48,7 @@ export default function AdminRadio() {
       <Stack.Screen options={{ headerShown: false }} />
       <AdminScroll header={<AdminHeader color={colors.primary} title={t('radio.manageTitle')} subtitle={t('radio.manageSubtitle')} />}>
         <Button title={t('radio.add')} icon="add" onPress={() => setDraft({ ...EMPTY })} />
-        {/* Built-in stations are server-managed (from the embedded list) and not
-            editable; the admin only manages custom stations here. */}
+        {/* Built-in stations are server-managed and not editable here. */}
         {custom.length === 0 ? (
           <Text className="px-1 pt-2 text-sm text-muted">{t('radio.noCustom')}</Text>
         ) : (

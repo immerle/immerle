@@ -42,7 +42,6 @@ func TestSetupHappyPathAndLock(t *testing.T) {
 	if init, _ := svc.IsInitialized(ctx); !init {
 		t.Fatal("should be initialized after setup")
 	}
-	// Locked: a second attempt is rejected.
 	if _, err := svc.InitFirstAdmin(ctx, "evil", "password123", "", "", ""); !errors.Is(err, ErrAlreadyInitialized) {
 		t.Fatalf("expected ErrAlreadyInitialized, got %v", err)
 	}
@@ -72,14 +71,12 @@ func TestSetupTokenRequired(t *testing.T) {
 	if svc.Token() == "" {
 		t.Fatal("token should be generated when required")
 	}
-	// Wrong/missing token rejected.
 	if _, err := svc.InitFirstAdmin(ctx, "kilian", "password123", "", "", ""); !errors.Is(err, ErrInvalidSetupToken) {
 		t.Fatalf("expected ErrInvalidSetupToken for missing token, got %v", err)
 	}
 	if _, err := svc.InitFirstAdmin(ctx, "kilian", "password123", "", "", "wrong"); !errors.Is(err, ErrInvalidSetupToken) {
 		t.Fatalf("expected ErrInvalidSetupToken for wrong token, got %v", err)
 	}
-	// Correct token succeeds.
 	if _, err := svc.InitFirstAdmin(ctx, "kilian", "password123", "", "", svc.Token()); err != nil {
 		t.Fatalf("correct token should succeed: %v", err)
 	}

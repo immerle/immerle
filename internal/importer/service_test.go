@@ -166,8 +166,7 @@ func TestResolveItemValidateAndModify(t *testing.T) {
 		t.Fatalf("expected a doubtful item with a stored candidate: %+v", doubtful)
 	}
 
-	// Resolve out of source order — modify the later (position 2) missing item
-	// before validating the earlier (position 1) doubtful one — to prove final
+	// Resolve out of source order (position 2 before position 1) to prove final
 	// playlist order follows source position, not resolution order.
 	resolved, err := svc.ResolveItem(ctx, owner.ID, missing.ID, "Daft Punk Da Funk")
 	if err != nil {
@@ -196,10 +195,7 @@ func TestResolveItemValidateAndModify(t *testing.T) {
 		t.Fatalf("expected 3 tracks after validate+modify, got %d", len(tracks))
 	}
 
-	// Order matches the source playlist (by Position), not resolution order:
-	// the doubtful item (position 1) was validated before the missing one
-	// (position 2), yet both must land after the originally-matched track
-	// (position 0) in their source order.
+	// Order matches the source playlist (by Position), not resolution order.
 	byID := map[string]models.ImportItem{}
 	for _, it := range after.Items {
 		byID[it.MatchedTrackID] = it

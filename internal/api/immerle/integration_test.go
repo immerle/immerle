@@ -145,22 +145,18 @@ func TestFriendRequestAcceptFlow(t *testing.T) {
 	alice := login(t, srv, "alice")
 	bob := login(t, srv, "bob")
 
-	// alice requests bob.
 	if s, b := doMap(t, srv, http.MethodPost, "/friends/requests", alice, map[string]any{"username": "bob"}); s != http.StatusCreated {
 		t.Fatalf("request failed: %d %+v", s, b)
 	}
 
-	// bob sees the pending request.
 	if s, list := doArr(t, srv, http.MethodGet, "/friends/requests", bob, nil); s != http.StatusOK || len(list) != 1 {
 		t.Fatalf("bob should have 1 pending request, got status %d len %d", s, len(list))
 	}
 
-	// bob accepts.
 	if s := doStatus(t, srv, http.MethodPost, "/friends/requests/alice/accept", bob, nil); s != http.StatusOK {
 		t.Fatalf("accept failed: %d", s)
 	}
 
-	// Both now list each other as friends.
 	for _, tok := range []struct {
 		name, token string
 	}{{"alice", alice}, {"bob", bob}} {
@@ -176,7 +172,6 @@ func TestJamSSEKeepsClientsSynced(t *testing.T) {
 	alice := login(t, srv, "alice")
 	bob := login(t, srv, "bob")
 
-	// alice creates a jam.
 	_, created := doMap(t, srv, http.MethodPost, "/jam", alice, map[string]any{"name": "test"})
 	session, _ := created["session"].(map[string]any)
 	sessionID, _ := session["id"].(string)
@@ -184,10 +179,8 @@ func TestJamSSEKeepsClientsSynced(t *testing.T) {
 		t.Fatalf("no session id: %+v", created)
 	}
 
-	// bob joins.
 	doStatus(t, srv, http.MethodPost, "/jam/"+sessionID+"/participants", bob, nil)
 
-	// bob opens the SSE stream.
 	resp := do(t, srv, http.MethodGet, "/jam/"+sessionID+"/events", bob, nil)
 	defer resp.Body.Close()
 	if ct := resp.Header.Get("Content-Type"); !strings.HasPrefix(ct, "text/event-stream") {
@@ -197,14 +190,13 @@ func TestJamSSEKeepsClientsSynced(t *testing.T) {
 	// Drain the initial snapshot event.
 	readSSEData(t, reader)
 
-	// alice (host) updates playback.
+	// alice, the host, updates playback.
 	doStatus(t, srv, http.MethodPatch, "/jam/"+sessionID, alice, map[string]any{
 		"currentTrackId": "track-2",
 		"position":       42000,
 		"state":          "playing",
 	})
 
-	// bob receives the synchronized state via SSE.
 	done := make(chan map[string]any, 1)
 	go func() { done <- readSSEData(t, reader) }()
 	select {

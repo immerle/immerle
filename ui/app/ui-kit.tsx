@@ -20,7 +20,7 @@ import { useColors } from '../src/theme/colors';
 /**
  * Living design system / UI kit. A single screen that showcases the Spotify-
  * flavored tokens and every shared component, so the design language stays
- * consistent and reviewable. Reachable from Réglages › Design.
+ * consistent and reviewable. Reachable from Settings › Design.
  */
 export default function UIKit() {
   const colors = useColors();
@@ -33,7 +33,6 @@ export default function UIKit() {
           <Text className="pt-1 text-sm text-muted">Direction Spotify · minimaliste · vert #1ED760</Text>
         </View>
 
-        {/* Colors */}
         <SectionHeader title="Couleurs" />
         <View className="flex-row flex-wrap gap-3 px-4">
           <Swatch name="background" value={colors.background} border />
@@ -46,7 +45,6 @@ export default function UIKit() {
           <Swatch name="border" value={colors.border} />
         </View>
 
-        {/* Typography */}
         <SectionHeader title="Typographie" />
         <Card className="mx-4 gap-1">
           <Text className="text-3xl font-bold tracking-tight text-foreground">Display · 30</Text>
@@ -58,7 +56,6 @@ export default function UIKit() {
           <Text className="text-xs text-muted">Légende · 12</Text>
         </Card>
 
-        {/* Buttons */}
         <SectionHeader title="Boutons" />
         <View className="gap-3 px-4">
           <Row>
@@ -79,7 +76,6 @@ export default function UIKit() {
           </Row>
         </View>
 
-        {/* Play button + icon buttons */}
         <SectionHeader title="Lecture & icônes" />
         <Card className="mx-4 flex-row items-center justify-around">
           <PlayButton size={48} onPress={() => {}} />
@@ -89,7 +85,6 @@ export default function UIKit() {
           <IconButton name="repeat" size={26} color={colors.primary} />
         </Card>
 
-        {/* Chips */}
         <SectionHeader title="Chips" />
         <View className="flex-row flex-wrap gap-2 px-4">
           <Chip label="Albums" active />
@@ -98,7 +93,6 @@ export default function UIKit() {
           <Chip label="Téléchargés" icon="arrow-down-circle" />
         </View>
 
-        {/* Badges */}
         <SectionHeader title="Badges" />
         <View className="flex-row flex-wrap gap-2 px-4">
           <Badge label="Défaut" />
@@ -107,14 +101,12 @@ export default function UIKit() {
           <Badge label="Échec" tone="danger" />
         </View>
 
-        {/* Fields */}
         <SectionHeader title="Champs" />
         <View className="gap-3 px-4">
           <Field label="Avec icône" icon="search" placeholder="Rechercher…" />
           <Field label="Mot de passe" icon="lock-closed-outline" placeholder="••••••" secureTextEntry />
         </View>
 
-        {/* States */}
         <SectionHeader title="États" />
         <View className="gap-3 px-4">
           <Card className="h-40"><Loading label="Chargement…" /></Card>

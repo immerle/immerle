@@ -10,12 +10,10 @@ import (
 	"github.com/immerle/immerle/internal/models"
 )
 
-// TestHallOfFameAddResolvesRemoteTrack covers a real bug: a track fetched
-// on-the-fly from an on-demand provider (a "remote:" id, not yet a row in
-// `tracks`) couldn't be added to a Hall of Fame — hall_of_fame_entries has a
-// foreign key on track_id, so the insert failed deep in the persistence layer
-// with an opaque "FOREIGN KEY constraint failed". Add/SetOrder must resolve
-// (download) such ids first, the same way PlaylistService already does.
+// TestHallOfFameAddResolvesRemoteTrack: a "remote:" track id (no row in
+// `tracks` yet) used to fail with an opaque FK constraint error, since
+// hall_of_fame_entries has a foreign key on track_id. Add/SetOrder must
+// resolve such ids first, like PlaylistService already does.
 func TestHallOfFameAddResolvesRemoteTrack(t *testing.T) {
 	onDemand, store, _ := newOnDemand(t)
 	ctx := context.Background()

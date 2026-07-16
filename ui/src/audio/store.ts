@@ -27,22 +27,16 @@ function shuffled<T>(arr: T[]): T[] {
 }
 
 /**
- * Build a player track from a song at the chosen quality. Async because the
- * stream URL is a short-lived signed URL minted from the server (no credential
- * in the URL). The player mints one per track when (re)building the queue.
- *
- * A downloaded track plays from its local file instead — so it works offline and
- * is unaffected by the quality setting (the file is whatever was downloaded;
- * that's also why setQuality's re-mint leaves offline tracks as-is). Artwork
- * still points at the server: covers aren't downloaded, and a broken image is
- * harmless.
+ * Build a player track from a song at the chosen quality. Async: the stream
+ * URL is a short-lived signed URL minted per track when (re)building the queue.
+ * A downloaded track plays from its local file instead (offline, quality-setting
+ * doesn't apply); artwork always points at the server since covers aren't downloaded.
  */
 async function songToTrack(client: ImmerleClient, song: Song, qualityId: string): Promise<PlayableTrack> {
   // Unresolved (federated-playlist) entries have no playable id yet — resolve
-  // them via TrackList's tap flow first. Building the queue must not throw
-  // just because one entry, anywhere in the list, isn't resolved: return an
-  // empty-url placeholder instead (skipped over on landing — see the
-  // `trackChange` handler below).
+  // via TrackList's tap flow first. Return an empty-url placeholder instead of
+  // throwing, so one bad entry doesn't break building the whole queue (skipped
+  // over on landing — see the trackChange handler below).
   if (song.unresolved || !song.id) {
     return { id: '', url: '', title: song.title, artist: song.artist, album: song.album, duration: song.duration };
   }
@@ -148,29 +142,24 @@ let scrobble: ScrobbleFlags = { nowPlayingSent: false, submitted: false };
 // See scheduleSaveQueue/flushSaveQueue.
 let lastQueueSaveAt = 0;
 const QUEUE_SAVE_THROTTLE_MS = 5000;
-// The highest remote.commandSeq this device has already considered while
-// active (see reconcilePlayQueue) — lets it tell a new spectator command from
-// one it already applied (or correctly ignored, e.g. addressed to a
-// different tenure). Reseeded whenever this device (re)becomes the active
-// device (restoreQueue, or the takeover branch of reconcilePlayQueue) so a
-// command left over from before that point is never (re)applied.
+// Highest remote.commandSeq this device has already considered while active
+// (see reconcilePlayQueue) — distinguishes a new spectator command from one
+// already applied/ignored. Reseeded whenever this device (re)becomes active
+// (restoreQueue, or reconcilePlayQueue's takeover branch) so stale commands
+// from before that point are never (re)applied.
 let lastAppliedCommandSeq = 0;
 // Original queue order, kept so shuffle can be turned off again.
 let orderBackup: Song[] | null = null;
-// True while any action that reloads the engine (engine.setQueue) is
-// mid-flight — a fresh load momentarily reports the *previous* track's
-// position/status (its own progress/state events haven't caught up to the
-// new source yet) before the explicit reset that follows takes effect. A
-// stray event landing in that gap must not be treated as this device's real
-// playback position — that's what made a brand-new track start playback
-// from wherever the old one had gotten to.
+// True while an engine reload (setQueue) is mid-flight — a fresh load
+// momentarily reports the *previous* track's position/status before the
+// explicit reset takes effect. Without this, a stray event in that gap gets
+// mistaken for this device's real position, starting a new track from
+// wherever the old one had gotten to.
 let suppressEngineEvents = false;
-// How long to keep suppressing past the awaited engine calls settling. A
-// remote/on-demand track's old audio source can take a while to actually
-// abort over a real network, longer than a fixed short window might assume —
-// generous on purpose, since the cost of a false positive here (briefly not
-// reflecting a genuine late position change) is much lower than the cost of
-// a false negative (a stray event silently corrupting the saved position).
+// How long to keep suppressing past the reload settling. Generous on
+// purpose: a remote/on-demand track's old source can take a while to abort
+// over a real network, and missing a genuine late update briefly is far
+// cheaper than a stray event silently corrupting the saved position.
 const ENGINE_RELOAD_GRACE_MS = 3000;
 
 // Chained promise backing acquireEngineReloadLock — always the completion
@@ -185,37 +174,21 @@ let reloadSeq = 0;
 /**
  * Exclusive lock for reloading the engine (setQueue + friends), serialized
  * against any other in-flight reload. Call as the very first statement,
- * before any other `await` — capturing and replacing `engineReloadChain`
- * happens synchronously, with no `await` in between, so two concurrent
- * callers can never both slip through: whichever calls this second always
- * ends up chained behind the first, deterministically. An earlier version
- * of this guard instead polled a `while (suppressEngineEvents) await
- * sleep()` loop — but there's a real gap between that check passing and
- * suppressEngineEvents actually being set true (network calls like
- * Promise.all(songToTrack) run in between), and two reloads (an incoming
- * "you're now the active device, apply this session" reconciliation and a
- * simultaneous local play action) could both pass the check before either
- * set the flag, run concurrently, and each write their own final
- * position/status — mixing the *track* from one with the *position/status*
- * from the other. This version has no such gap: the lock is claimed
- * up-front, not after doing the async prep work.
+ * before any `await` — capturing/replacing `engineReloadChain` happens
+ * synchronously, so two concurrent callers deterministically chain rather
+ * than both slipping through (an earlier `while (suppressEngineEvents) await
+ * sleep()` version had a gap that let two reloads run concurrently and mix
+ * one's track with another's position/status).
  *
- * Serializing isn't enough on its own though: once a reload is queued
- * behind another one, it should only still run if it's still the *latest*
- * request — otherwise it's replaying a decision that's since been
- * superseded. E.g. an incoming "apply the session you're taking over"
- * reconciliation queued behind the user's own more recent play action would,
- * once its turn came, blindly reload the old session on top of what the
- * user just started (a few seconds later, once the winner's grace period
- * lifted — this is exactly what was reported: the new track played
- * correctly for a moment, then reverted). Callers must check `stale()`
- * right after acquiring and bail out if it's true.
+ * Serializing isn't enough alone: a reload queued behind another must only
+ * still run if it's still the *latest* request, or it replays a decision
+ * that's since been superseded (e.g. a takeover reconciliation queued behind
+ * the user's own more recent play action would otherwise steamroll it once
+ * its turn came). Callers must check `stale()` right after acquiring and
+ * bail out if true.
  *
- * Sets suppressEngineEvents so the engine event handlers ignore stray
- * events during the reload. The returned release() must be called once the
- * reload (or the stale bail-out) is done; it keeps suppressing (and the
- * lock held) for one more grace period after that — see
- * ENGINE_RELOAD_GRACE_MS.
+ * Sets suppressEngineEvents for the reload's duration; release() keeps it
+ * suppressed for one more grace period after — see ENGINE_RELOAD_GRACE_MS.
  */
 function acquireEngineReloadLock(): Promise<{ stale: () => boolean; release: () => void }> {
   const mySeq = ++reloadSeq;
@@ -285,18 +258,13 @@ function isSpectating(get: () => AudioState): boolean {
 }
 
 /**
- * If this device is spectating, claim the active-device role before driving
- * the local engine directly — every action that touches `engine` (playSongs,
- * enqueue, ...) must call this first. Without it, while spectating: the
- * local engine is idle/empty (applyDisplaySnapshot never loads anything
- * into it — see its docstring), so any of those actions would either play
- * on top of whatever the actual active device is doing (double audio) or
- * desync from the mirrored queue the store otherwise shows. Matches how
- * Spotify Connect behaves: pressing play on a new thing here takes over
- * from wherever it was playing, rather than just adding a second source.
- * Best-effort/fire-and-forget — the local playback about to start is the
- * real source of truth from this point on regardless of whether the claim
- * itself has landed on the server yet.
+ * If spectating, claim the active-device role before driving the local
+ * engine — every action touching `engine` (playSongs, enqueue, ...) must
+ * call this first, or it plays on top of the real active device (double
+ * audio) or desyncs from the mirrored queue. Matches Spotify Connect: a play
+ * here takes over rather than adding a second source. Fire-and-forget — the
+ * local playback about to start is the real source of truth regardless of
+ * whether the claim has landed on the server yet.
  */
 function claimActiveDevice(get: () => AudioState, set: (partial: Partial<AudioState>) => void): void {
   if (!isSpectating(get)) return;
@@ -308,13 +276,10 @@ function claimActiveDevice(get: () => AudioState, set: (partial: Partial<AudioSt
 }
 
 /**
- * Send a remote-control command to the server — how a spectator device (see
- * isSpectating) controls the actual active device, which applies it (via its
- * own next()/toggle()/seekTo()/etc., see reconcilePlayQueue) rather than
- * having a computed snapshot adopted wholesale. forTarget/issuedBy are filled
- * in here so call sites only need to say *what* they want done. Fire-and-
- * forget: if the active device is unreachable, this silently does nothing —
- * no ack/timeout, matching how this has always behaved.
+ * Send a remote-control command to the server — how a spectator (see
+ * isSpectating) controls the active device, which applies it via its own
+ * next()/toggle()/seekTo()/etc. (see reconcilePlayQueue) rather than
+ * adopting a computed snapshot wholesale. Fire-and-forget: no ack/timeout.
  */
 function sendRemoteCommand(get: () => AudioState, cmd: Omit<PlayQueueCommand, 'forTarget' | 'issuedBy'>): void {
   const c = client();
@@ -329,23 +294,15 @@ function sendRemoteCommand(get: () => AudioState, cmd: Omit<PlayQueueCommand, 'f
 /**
  * Load a saved server-side queue into local state and the engine, at its
  * saved position — shared by the launch restore and by "this device is (or
- * just became) the active player". Always lands paused unless `autoplay`,
- * matching playTrackById's pattern for a single-track load.
+ * just became) the active player". Lands paused unless `autoplay`.
  *
- * `verifyStillCurrent`: re-fetch the queue right after acquiring the reload
- * lock and bail if its changedBy has moved on from `remote.changedBy` —
- * for reconcilePlayQueue's "taking over" path only. `remote` there comes
- * from an SSE event that can describe an already-superseded moment: the
- * reload-order mutex above only orders reloads by when each one *called*
- * acquireEngineReloadLock, not by how current the data it's about to apply
- * actually is — a "you're now the target, apply the outgoing device's
- * session" reconciliation can queue up *after* the user's own local play
- * action (so it isn't stale by call order) while still carrying data from
- * before that local action happened, and would silently steamroll it a few
- * seconds later once its turn came (confirmed via logs: the local track
- * played correctly, then reverted to the outgoing session exactly one grace
- * period later). Checking the server's current authoritative state right
- * before committing catches this regardless of call order.
+ * `verifyStillCurrent` (reconcilePlayQueue's takeover path only): re-fetch
+ * the queue after acquiring the reload lock and bail if changedBy has moved
+ * on from `remote.changedBy`. The reload-lock only orders by *call* order,
+ * not data freshness — an SSE-sourced takeover can queue up after the
+ * user's own more recent play action (so it isn't stale by call order) while
+ * still carrying older data, and would silently steamroll it. Re-checking
+ * server state right before committing catches this regardless of order.
  */
 async function applyRemoteQueue(
   get: () => AudioState,
@@ -387,26 +344,19 @@ async function applyRemoteQueue(
     await engine.setRepeatMode(remote.repeat);
     if (autoplay) await engine.play();
   } finally {
-    // Keep suppressing engine-driven writes for a short grace period past
-    // the awaited calls above settling: a browser audio element's own
-    // pause/playing/waiting events (from the reload inside setQueue) don't
-    // necessarily fire in lockstep with those promises resolving — a
-    // trailing one landing right as the guard lifts would otherwise
-    // override the reassertion below with a stale mid-transition value
-    // (this is what made a spectator's seek/remote command flip the play
-    // button back to "paused" even though playback carried on correctly).
+    // Grace period past settling: a browser audio element's pause/playing/
+    // waiting events don't fire in lockstep with the promises above resolving,
+    // so a trailing one landing as the guard lifts would otherwise override
+    // the reassertion below with a stale mid-transition value.
     release();
   }
-  // Re-assert: the engine's own state/progress events were dropped, not
-  // corrected, during the guarded window above (status would otherwise stay
-  // whatever it was before this call — engine.setQueue/pause's own events
-  // never landed).
+  // Re-assert: the engine's own events were dropped (not corrected) during
+  // the guarded window, so status would otherwise stay whatever it was before.
   set({ position: remote.positionMs / 1000, status: autoplay ? 'playing' : 'paused' });
   sendNowPlaying(get);
-  // Immediately, not throttled, and forced past isSpectating: this is the
-  // moment this device reclaims the shared queue (changedBy becomes this
-  // device's id), so a stale write from whoever it took over from doesn't
-  // keep getting re-applied on every poll.
+  // Forced past isSpectating: this device is reclaiming the shared queue, so
+  // a stale write from whoever it took over from doesn't keep getting
+  // re-applied on every poll.
   flushSaveQueue(get, true, 'applyRemoteQueue');
 }
 
@@ -463,14 +413,11 @@ async function restoreQueue(get: () => AudioState, set: (partial: Partial<AudioS
 }
 
 /**
- * Applies a spectator's command by calling this device's own existing action
- * method for it — exactly as if the user had tapped that control locally.
- * This is deliberate: the active device is the source of truth for its own
- * state, so a command is an instruction to *do something*, never a snapshot
- * to adopt. skipTo resolves trackId against this device's own queue (not the
- * sender's, which can momentarily differ) — queueIndex only disambiguates a
- * duplicate trackId, nudging toward the sender's own position, never used as
- * the primary lookup.
+ * Applies a spectator's command via this device's own action methods, as if
+ * tapped locally — a command is an instruction to *do something*, never a
+ * snapshot to adopt. skipTo resolves trackId against this device's own queue
+ * (not the sender's, which can momentarily differ); queueIndex only
+ * disambiguates a duplicate trackId, never used as the primary lookup.
  */
 async function applyCommand(get: () => AudioState, cmd: PlayQueueCommand): Promise<void> {
   switch (cmd.type) {
@@ -510,22 +457,20 @@ async function applyCommand(get: () => AudioState, cmd: PlayQueueCommand): Promi
 }
 
 /**
- * Reconciles this device against a freshly-received queue snapshot (from the
- * SSE stream, or a poll on platforms without it).
+ * Reconciles this device against a freshly-received queue snapshot (SSE
+ * stream, or a poll where there's no SSE).
  *
- * The device explicitly targeted as active (target === my id) is the source
- * of truth for its own playback: once it's already been the target across
- * the previous reconcile too (wasTarget), it never adopts an ordinary
- * broadcast — including one that happens to carry someone else's changedBy —
- * it only reacts to an explicit command addressed to its current tenure (see
- * applyCommand). The one exception is the moment it *becomes* the target
- * (!wasTarget): that's a legitimate one-time takeover of the outgoing
- * device's in-progress session (see applyRemoteQueue).
+ * The device explicitly targeted as active is the source of truth for its
+ * own playback: once it's already been the target (wasTarget), it never
+ * adopts an ordinary broadcast, only an explicit command addressed to its
+ * tenure (see applyCommand). The exception is the moment it *becomes* the
+ * target: a one-time takeover of the outgoing device's session (see
+ * applyRemoteQueue).
  *
- * Every other device only ever mirrors state for display (applyDisplaySnapshot);
- * it never starts local audio on its own say-so. A device with no target that
- * is itself already playing is also left alone — it's self-authoritative for
- * its own independent session regardless of there being no formal target.
+ * Every other device only mirrors state for display (applyDisplaySnapshot)
+ * and never starts local audio on its own. A device with no target that's
+ * already playing is left alone too — self-authoritative for its own
+ * independent session.
  */
 async function reconcilePlayQueue(
   get: () => AudioState,
@@ -579,21 +524,17 @@ async function reconcilePlayQueue(
 
   // Unrestricted mode: a device already playing its own independent session
   // is self-authoritative too — an unrelated device's broadcast must not
-  // silently overwrite what's actually showing here (audio itself was never
-  // at risk; applyDisplaySnapshot never touches the engine, but the
-  // *displayed* track/position would otherwise flip to whatever someone else
-  // last saved).
+  // overwrite what's showing here (applyDisplaySnapshot never touches the
+  // engine, but the displayed track/position would flip otherwise).
   if (get().status === 'playing') return;
   applyDisplaySnapshot(set, remote);
 }
 
 /**
- * Live-updates this device on every play-queue change: Server-Sent Events on
- * platforms that have them (web), a short poll everywhere else (native —
- * React Native has no EventSource, and adding an SSE polyfill for one
- * feature isn't worth the dependency). Same reconciliation either way — see
- * reconcilePlayQueue. EventSource reconnects on its own, so no retry logic
- * is needed for the SSE path.
+ * Live-updates this device on every play-queue change: SSE where available
+ * (web), a short poll elsewhere (native has no EventSource, and an SSE
+ * polyfill isn't worth it for one feature). Same reconciliation either way —
+ * see reconcilePlayQueue. EventSource reconnects on its own.
  */
 function connectPlayQueueLive(get: () => AudioState, set: (partial: Partial<AudioState>) => void): void {
   const c = client();
@@ -651,13 +592,10 @@ function connectPlayQueueLive(get: () => AudioState, set: (partial: Partial<Audi
 }
 
 /**
- * While spectating and the mirrored session is playing, position only moves
- * in jumps — once per update (SSE push, or the native poll interval), which
- * can be several seconds apart, reading as the progress bar visibly
- * skipping. Tick it forward locally once a second in between so it moves
- * smoothly instead; every real update (applyDisplaySnapshot) still
- * overwrites it with the authoritative value regardless, so this can never
- * drift for more than a second or two.
+ * While spectating, position only moves in jumps (once per SSE push / poll
+ * interval), reading as the progress bar visibly skipping. Tick it forward
+ * locally once a second between updates; every real update
+ * (applyDisplaySnapshot) still overwrites it, so drift stays under ~2s.
  */
 function startFakeProgressTicker(get: () => AudioState, set: (partial: Partial<AudioState>) => void): void {
   setInterval(() => {
@@ -729,26 +667,18 @@ export const usePlayer = create<AudioState>((set, get) => ({
     const engine = createEngine();
     await engine.setup();
 
-    // While spectating (isSpectating), the local engine sits idle — it's
-    // never given anything to play (applyDisplaySnapshot deliberately never
-    // touches it, see its docstring). But it can still fire a stray
-    // state/progress event on the way to idle (e.g. right after the poll's
-    // own engine.pause() call above resolves), and without this guard that
-    // event would win the race and stomp the mirrored remote status/position
-    // right back to this device's own (idle) values — the player bar and
-    // progress bar would then show the wrong thing until the next update.
+    // While spectating, the local engine sits idle (applyDisplaySnapshot
+    // never touches it) but can still fire a stray state/progress event on
+    // the way to idle — without this guard it would win the race and stomp
+    // the mirrored remote status/position with this device's own idle values.
     engine.on('state', (s) => {
       if (isSpectating(get) || suppressEngineEvents) return;
       const wasPlaying = get().status === 'playing';
       set({ status: s.status, index: s.index, duration: s.duration || get().duration });
-      // Capture a play/pause transition immediately (not throttled) in either
-      // direction: a pause that just waited for the throttle could sit
-      // unsaved indefinitely (progress ticks — the other trigger for a save —
-      // stop the moment it pauses); a resume that just waited for the
-      // throttle left a spectator's UI showing "paused" for up to
-      // QUEUE_SAVE_THROTTLE_MS after the active device actually started
-      // playing again (its own last save, from before pausing, could still
-      // be within the throttle window).
+      // Not throttled: a pause could sit unsaved indefinitely otherwise
+      // (progress ticks, the other save trigger, stop once paused); a resume
+      // would leave a spectator's UI stuck on "paused" for up to
+      // QUEUE_SAVE_THROTTLE_MS.
       if (wasPlaying !== (s.status === 'playing')) flushSaveQueue(get, false, 'engine:state-change');
     });
     engine.on('progress', (position, duration) => {
@@ -763,11 +693,9 @@ export const usePlayer = create<AudioState>((set, get) => ({
       set({ index, position: 0 });
       sendNowPlaying(get);
       flushSaveQueue(get, false, 'engine:trackChange');
-      // Landed on a federated-playlist track that hasn't been resolved yet
-      // (empty-url placeholder — see songToTrack): warn instead of silently
-      // sitting on dead air, and move on. ponytail: if the whole queue is
-      // unresolved this cascades toast-after-toast to the end (or forever,
-      // with repeat on) — fine for the size of federated playlists today.
+      // Unresolved federated-playlist track (empty-url placeholder — see
+      // songToTrack): warn instead of sitting on dead air, and move on.
+      // ponytail: if the whole queue is unresolved this cascades toast-after-toast to the end (or forever, with repeat on) — fine for the size of federated playlists today.
       const song = get().songs[index];
       if (song?.unresolved) {
         useToast.getState().warning(t('media.player.unresolvedSkipped', { title: song.title }));
@@ -779,16 +707,12 @@ export const usePlayer = create<AudioState>((set, get) => ({
     set({ engine });
     startFakeProgressTicker(get, set);
 
-    // Cross-device state: show what's already playing (paused) on launch,
-    // then stay live-updated on every change from any device (see
-    // connectPlayQueueLive) — someone else starting/pausing/skipping, or
-    // handing playback to/from this one. init() runs in the same effect as
-    // useAuth's restore(), racing it — client() is still null the vast
-    // majority of the time at this exact point, since restoring a session
-    // is async (secure storage read, capability probe, account fetch).
-    // Both restoreQueue and connectPlayQueueLive silently no-op without a
-    // client and, unlike a user-triggered action, nothing would otherwise
-    // call them again — so wait for the client to actually exist first.
+    // Cross-device state: show what's playing on launch, then stay
+    // live-updated on any device's changes (see connectPlayQueueLive).
+    // init() races useAuth's restore() — client() is usually still null here
+    // since session restore is async. restoreQueue/connectPlayQueueLive
+    // silently no-op without a client and nothing else would retry them, so
+    // wait for the client to actually exist first.
     const startLiveSync = () => {
       // eslint-disable-next-line no-console
       console.log('[playqueue] starting live sync', { deviceId: client()?.getSession()?.deviceId });
@@ -811,9 +735,8 @@ export const usePlayer = create<AudioState>((set, get) => ({
     }
 
     // Best-effort final save when the tab is backgrounded/closed (web only —
-    // document is undefined on native, where the app-background lifecycle
-    // doesn't give the same "about to lose this" moment). Catches state that
-    // hasn't hit the 5s throttle yet.
+    // native's app-background lifecycle has no equivalent moment). Catches
+    // state that hasn't hit the 5s throttle yet.
     if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'hidden') flushSaveQueue(get, false, 'visibilitychange');
@@ -840,14 +763,10 @@ export const usePlayer = create<AudioState>((set, get) => ({
     }
     set({ position: 0, status: 'playing' });
     sendNowPlaying(get);
-    // Forced: claimActiveDevice's server write is still in flight, and the
-    // device this took over from can still land an ambient broadcast of its
-    // own in the meantime — one carrying the *old* target, which would
-    // reset castTargetId and make isSpectating look true again right as
-    // this save runs. Without force, that silently drops the very save that
-    // was supposed to hand this device the session (the local engine had
-    // already started the new track, so the UI looked right while nothing
-    // had actually synced out).
+    // Forced: claimActiveDevice's server write may still be in flight, and
+    // the device being taken over from can land an ambient broadcast
+    // carrying the *old* target in the meantime, making isSpectating look
+    // true again right as this save runs — force bypasses that.
     flushSaveQueue(get, true, 'playSongs');
   },
 
@@ -952,13 +871,10 @@ export const usePlayer = create<AudioState>((set, get) => ({
     const engine = get().engine;
     if (!engine) return;
     const wasPlaying = get().status === 'playing';
-    // Optimistic, like the spectating branch above: the user's own click is
-    // truth for local playback intent. Needed because right after a reload
-    // (e.g. the launch restore) the engine's real 'playing'/'pause' events are
-    // still swallowed by the reload grace window (suppressEngineEvents) — see
-    // acquireEngineReloadLock — which otherwise left the button stuck on
-    // "play" while audio was actually playing. A later engine 'state' event
-    // still corrects this if the actual outcome differs (e.g. play() failed).
+    // Optimistic: right after a reload, the engine's real events are still
+    // swallowed by the grace window (suppressEngineEvents), which would
+    // otherwise leave the button stuck on "play" while audio plays. A later
+    // 'state' event corrects this if the actual outcome differs.
     set({ status: wasPlaying ? 'paused' : 'playing' });
     if (wasPlaying) await engine.pause();
     else await engine.play();
@@ -1000,13 +916,10 @@ export const usePlayer = create<AudioState>((set, get) => ({
     }
     const engine = get().engine;
     if (!engine) return;
-    // A not-yet-downloaded track streams progressively (see songToTrack): the
-    // server can't serve byte ranges for it yet, so a seek would silently
-    // restart playback from 0. If the background download has since
-    // finished, swap in the now-local (seekable) track first — otherwise
-    // bail out with a toast, same as before this check existed. Guarded here
-    // (not just in the UI) so an OS media-session seek control (lock screen /
-    // headset) can't trigger a raw seek either.
+    // A not-yet-downloaded track streams progressively — no byte ranges, so a
+    // seek would silently restart from 0. Swap in the now-local track if the
+    // download finished, else bail with a toast. Guarded here (not just the
+    // UI) so an OS media-session seek control can't trigger a raw seek.
     const index = get().index;
     const song = get().songs[index];
     if (song?.remote && !(await upgradeIfDownloaded(get, set, index, song))) {
@@ -1200,27 +1113,19 @@ function maybeScrobble(get: () => AudioState, position: number, duration: number
 
 /**
  * Immediately persists the current queue/track/position/playing state. Never
- * writes while spectating (mirroring another device — see isSpectating):
- * its local songs/index/status are a copy of what that device already told
- * the server, so writing them back here would just churn `changedBy` to this
- * device's id for no real change, tricking the active device's poll into
- * thinking a genuine command arrived and needlessly re-applying (restarting)
- * its own playback. Deliberate remote commands (sendRemoteCommand) bypass
- * this and always write — they're the one case a spectator legitimately
- * changes the shared session.
+ * writes while spectating: local songs/index/status are just a copy of what
+ * the active device already told the server, so writing it back would churn
+ * `changedBy` and trick the active device's poll into re-applying its own
+ * command. sendRemoteCommand bypasses this — the one case a spectator
+ * legitimately changes the shared session.
  *
- * `force` skips the isSpectating check entirely — for playSongs/playRadio/
- * playTrackById's own final save, right after claimActiveDevice. That claim
- * is a fire-and-forget write to the server; until it actually lands, the
- * previously-active device can still be broadcasting its own ambient
- * progress saves carrying the *old* target, and if one of those is
- * processed in between, it resets castTargetId back and isSpectating would
- * wrongly look true again — silently dropping the very save that was
- * supposed to hand this device the session (the local engine had already
- * started the new track, so the UI looked right while nothing had actually
- * synced — "had to click twice, the second time reset it and started
- * correctly"). Once claimActiveDevice has run, this device's intent to be
- * active is already decided locally; the save must land regardless.
+ * `force` skips the isSpectating check — for playSongs/playRadio/
+ * playTrackById's final save right after claimActiveDevice. That claim is a
+ * fire-and-forget write; until it lands, an ambient broadcast from the
+ * previously-active device can still reset castTargetId and make
+ * isSpectating look true again, silently dropping the save meant to hand
+ * this device the session. Once claimActiveDevice has run, this device's
+ * intent is already decided locally, so the save must land regardless.
  */
 function flushSaveQueue(get: () => AudioState, force = false, reason = 'unknown'): void {
   if (!force && isSpectating(get)) return;
@@ -1234,14 +1139,11 @@ function flushSaveQueue(get: () => AudioState, force = false, reason = 'unknown'
 }
 
 /**
- * Throttled savePlayQueue for the high-frequency progress tick (fires every
- * ~250ms-1s during playback). A plain debounce here — reset on every call —
- * would never actually land during continuous playback, since each tick
- * cancels the pending one before it fires: the server-side queue would stay
- * stale until playback stops, losing state entirely if the tab/app closes
- * mid-song. Save at most once every 5s instead; discrete transitions (pause,
- * track change, taking over a cast) call flushSaveQueue directly so those
- * moments are captured immediately rather than waiting out the throttle.
+ * Throttled savePlayQueue for the high-frequency progress tick. A plain
+ * debounce would never land during continuous playback (each tick cancels
+ * the pending one), losing state entirely if the app closes mid-song. Save
+ * at most once every 5s instead; discrete transitions call flushSaveQueue
+ * directly so those are captured immediately.
  */
 function scheduleSaveQueue(get: () => AudioState): void {
   if (Date.now() - lastQueueSaveAt < QUEUE_SAVE_THROTTLE_MS) return;

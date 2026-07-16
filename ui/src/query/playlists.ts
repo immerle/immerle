@@ -84,12 +84,6 @@ export function useRemoveFromPlaylist() {
   });
 }
 
-/**
- * Reorder a playlist by rewriting its full entry list. Subsonic has no atomic
- * "set order" call, so we clear all entries then re-add them in the desired
- * order. The current and target lists are passed in to compute the removal
- * indices precisely.
- */
 // --- Public playlists: discovery + subscription ---------------------------
 
 export function usePublicPlaylists() {
@@ -166,6 +160,7 @@ export function useGeneratePlaylistCover() {
   });
 }
 
+/** Subsonic has no atomic "set order" call, so reordering clears all entries then re-adds them in the desired order. */
 export function useReorderPlaylist() {
   const client = useAuth((s) => s.client);
   const qc = useQueryClient();

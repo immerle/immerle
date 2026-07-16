@@ -246,9 +246,7 @@ func (p *Provider) newRequest(ctx context.Context, path string, q url.Values) (*
 }
 
 // statusError builds the error for a non-2xx response, appending the response
-// body — it carries the upstream's real reason and is shown in full in the admin
-// provider logs, so "deezer: search status 502" becomes
-// "deezer: search status 502: <body>".
+// body so admin logs show the upstream's real reason.
 // ponytail: body capped at 8 KiB — the whole body for any real error response
 // while bounding a pathological one; raise the cap if a provider needs more.
 func (p *Provider) statusError(op string, resp *http.Response) error {

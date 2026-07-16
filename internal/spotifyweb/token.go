@@ -18,13 +18,10 @@ import (
 )
 
 // secretsURL is a community-maintained tracker of Spotify's current TOTP
-// cipher (reverse-engineered from the web player's JS bundle, which Spotify
-// rotates periodically). It's fetched fresh on every access-token refresh
-// (roughly hourly — see accessToken.valid), so a rotation heals itself
-// without a code change. Deliberately no hardcoded fallback secret: shipping
-// Spotify's cipher bytes in source is exactly what got a similar tracker repo
-// a cease-and-desist — if secretsURL is unreachable or its format changes,
-// this fails loudly instead.
+// cipher, fetched fresh on every access-token refresh so a rotation heals
+// itself without a code change. Deliberately no hardcoded fallback secret:
+// shipping Spotify's cipher bytes in source got a similar tracker repo a
+// cease-and-desist, so an unreachable/changed secretsURL fails loudly instead.
 const secretsURL = "https://raw.githubusercontent.com/xyloflake/spot-secrets-go/main/secrets/secretDict.json"
 
 // currentSecret fetches the freshest (version, cipher) pair from secretsURL.

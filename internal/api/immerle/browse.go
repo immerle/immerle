@@ -39,9 +39,8 @@ func intQuery(r *http.Request, name string, def int) int {
 		return def
 	}
 	if n < 0 {
-		// Negative sizes/offsets are meaningless for pagination; clamp to 0 so
-		// they never reach the query layer (atoiDefault in tracks.go rejects them
-		// the same way).
+		// Negative sizes/offsets are meaningless for pagination; clamp to 0
+		// (atoiDefault in tracks.go rejects them the same way).
 		return 0
 	}
 	return n
@@ -98,16 +97,11 @@ func toAlbumView(a models.Album, ann *models.Annotation, tracks []songView) albu
 	return v
 }
 
-// coverIDForAlbum falls back to the album's own id when it has no cached
-// cover (its own, or any track's): the cover service resolves an album id by
-// extracting embedded/sidecar art live from one of its tracks (see
-// stream.CoverService.resolveOriginal), the same fallback toSongView already
-// applies for a track with no cached cover — and the Subsonic API's
-// coverIDForAlbum in internal/api/subsonic/convert.go already relies on.
-// Without it, an album whose tracks only have embedded (never cached) art
-// shows no cover at all in any album grid, while the same track plays fine
-// with a visible cover once resolved via its own (equivalently-falling-back)
-// song cover id.
+// coverIDForAlbum falls back to the album's own id when there's no cached
+// cover, so the cover service can resolve embedded/sidecar art live from one
+// of its tracks (stream.CoverService.resolveOriginal) — same fallback as
+// toSongView and Subsonic's coverIDForAlbum (internal/api/subsonic/convert.go).
+// Without it, albums with only embedded art show no cover anywhere.
 func coverIDForAlbum(a models.Album) string {
 	if a.CoverArt != "" {
 		return a.CoverArt
@@ -263,11 +257,10 @@ type songLocalStatusView struct {
 	Song  *songView `json:"song,omitempty"`
 }
 
-// handleGetSongLocalStatus reports whether a remote track id has finished
-// downloading, without ever triggering a download itself — used by the player
-// to upgrade a still-progressive-streaming track to the seekable local one
-// once it's ready, instead of requiring the user to replay it. A non-remote
-// id (already local, or unknown) just reports local=false; it's not an error.
+// handleGetSongLocalStatus reports whether a remote track has finished
+// downloading, without triggering one — lets the player upgrade a still-
+// progressive-streaming track to the seekable local one once ready, instead
+// of requiring a replay. A non-remote id just reports local=false, not an error.
 //
 // @Summary      Check whether a remote track has finished downloading
 // @Description  Read-only, never downloads. Poll this while playing a remote (not-yet-local) track to know when it's safe to seek.

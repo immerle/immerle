@@ -8,9 +8,8 @@ import (
 	"time"
 )
 
-// TestAwaitShutdownSignalCancelsThenForceExits covers the fix: a first SIGINT
-// starts graceful shutdown (cancels ctx), a second one — sent while still
-// waiting — forces an immediate exit instead of being silently swallowed.
+// TestAwaitShutdownSignalCancelsThenForceExits verifies the first SIGINT
+// cancels ctx and a second one forces an immediate exit.
 func TestAwaitShutdownSignalCancelsThenForceExits(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	forced := make(chan struct{})

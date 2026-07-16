@@ -19,11 +19,9 @@ import { useT } from '../src/i18n/store';
 import { useWebTitle } from '../src/utils/documentTitle';
 
 /**
- * Hall of Fame: a user's personal top-tracks ranking — its own dedicated
- * entity (not a playlist). Top-3 podium in the header, the full ranked list
- * (with colored #1/#2/#3 badges) below, drag-reorder + per-track nostalgia
- * notes in edit mode. Tracks are added from any track's context menu ("Add to
- * Hall of Fame"), not from this screen.
+ * Hall of Fame: a user's personal top-tracks ranking, its own entity (not a
+ * playlist). Top-3 podium + ranked list, drag-reorder and per-track notes in
+ * edit mode. Tracks are added from a track's context menu, not from here.
  */
 export default function HallOfFameScreen() {
   const t = useT();
@@ -124,7 +122,6 @@ export default function HallOfFameScreen() {
         </View>
       </HeroBackdrop>
 
-      {/* Action bar over the page background. */}
       <View className="flex-row items-center justify-between gap-5 px-4 py-4">
         <PlayButton
           onPress={() => songs.length && playSongs(songs, 0)}

@@ -54,8 +54,8 @@ func TestCoverIsPublic(t *testing.T) {
 	}
 	albumID := search.Songs()[0].AlbumID
 
-	// No Authorization header: a public route returns 404 for missing cover, NOT
-	// 401 (which an authenticated route would return).
+	// No Authorization header: public route returns 404 for a missing cover,
+	// not 401 like an authenticated route would.
 	resp, err := http.Get(srv.URL + apiBase + "/cover/" + albumID)
 	if err != nil {
 		t.Fatal(err)

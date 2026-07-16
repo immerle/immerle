@@ -17,7 +17,7 @@ const HIDDEN_ROUTES = ['/login', '/setup', '/player', '/queue'];
 /**
  * Global desktop header: a back/home cluster on the left, a search affordance in
  * the middle, and the current user's avatar on the right. The avatar opens a
- * menu with Réglages, Admin (admins only) and logout — mirroring the Spotify web
+ * menu with Settings, Admin (admins only) and logout — mirroring the Spotify web
  * top bar. Rendered app-wide from the root layout; self-hides on mobile, on
  * pre-auth screens, and on detail pages.
  */

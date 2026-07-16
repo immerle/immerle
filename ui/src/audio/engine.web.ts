@@ -7,8 +7,8 @@ import { AudioEngine, EngineState, PlayableTrack, RepeatMode } from './types';
  * the lockscreen / media keys / notification shade).
  *
  * The queue is managed in JS; the element only ever holds the current track.
- * Gapless playback is not attempted here — a single element cannot preload the
- * next source — which matches the "au mieux selon plateforme" requirement.
+ * Gapless playback is not attempted here — a single element cannot preload
+ * the next source — matching the "best-effort per platform" requirement.
  */
 class WebAudioEngine implements AudioEngine {
   private audio: HTMLAudioElement | null = null;
@@ -126,9 +126,7 @@ class WebAudioEngine implements AudioEngine {
     return this.resetToStart();
   }
 
-  // End of queue: instead of tearing down, rewind to the first track and pause.
-  // The cursor sits at the start with the play button ready to replay — for a
-  // playlist this means track 1.
+  // End of queue: rewind to track 1 and pause instead of tearing down.
   private async resetToStart(): Promise<void> {
     if (!this.queue.length) return this.stop();
     this.index = 0;

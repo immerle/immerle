@@ -44,11 +44,9 @@ export const qk = {
 
 /**
  * Invalidates every cache that can independently render a track's identity
- * (title, cover, favorite status, or existence) — album/artist detail, browse
- * lists, search, favorites, playlists, Wrapped. A Song is embedded
- * independently in each of these, so a mutation that changes one (an admin
- * track edit/delete, a favorite toggle, a completed library scan) needs to
- * refresh all of them, not just the screen it was triggered from.
+ * (album/artist detail, browse lists, search, favorites, playlists, Wrapped) —
+ * a Song is embedded separately in each, so one mutation (track edit/delete,
+ * favorite toggle, scan) must refresh them all, not just the triggering screen.
  */
 export function invalidateCatalog(qc: QueryClient): void {
   qc.invalidateQueries({ queryKey: ['artist'] });

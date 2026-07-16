@@ -50,10 +50,9 @@ var customPlaylistSources = []string{
 
 // handleCustomPlaylists returns the caller's auto-generated personal
 // playlists ("Top du mois", "On Repeat", "Favoris oubliés", "Aléatoire") that
-// currently have at least one track. Looked up directly by (kind, callerID) —
-// not through ListVisible/subscriptions — so unsubscribing/unliking one (easy
-// to do by mistake, since a federated playlist hides normal owner controls)
-// never loses access to it.
+// currently have at least one track. Looked up directly by (kind, callerID),
+// not via ListVisible/subscriptions, so unsubscribing (easy to do by mistake,
+// since federated playlists hide normal owner controls) never loses access.
 //
 // @Summary      Custom auto-generated playlists
 // @Description  Returns the caller's personal auto-generated playlists (top of the month, on repeat, forgotten favorites, random) that currently have at least one track.
@@ -97,12 +96,9 @@ func (h *Handler) handleSubscribePlaylist(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusNotFound, "not_found", "playlist not found")
 		return
 	}
-	// Subscribable when it's public (and you don't already own it outright —
-	// no point subscribing to your own regular playlist), or it's your own
-	// private personal auto-playlist (Top du mois, etc.): Federated marks it
-	// read-only, but the owner genuinely is you there, and subscribing just
-	// pins it to your library like liking any playlist — unsubscribing later
-	// still won't lose it, since GET /me/custom-playlists finds it either way.
+	// Subscribable when public and not already owned, or when it's the
+	// caller's own auto-playlist (Federated but genuinely theirs): unsubscribing
+	// later is safe since GET /me/custom-playlists finds it regardless.
 	own := p.OwnerID == user.ID
 	switch {
 	case own && p.Federated:

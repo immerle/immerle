@@ -75,7 +75,6 @@ func TestProvidersCrudFlow(t *testing.T) {
 	srv := newProvidersEnv(t)
 	admin := login(t, srv, "admin")
 
-	// Create.
 	status, prov := doMap(t, srv, http.MethodPost, "/admin/providers", admin, map[string]any{
 		"name":     "manual",
 		"endpoint": "https://svc.internal",
@@ -88,7 +87,6 @@ func TestProvidersCrudFlow(t *testing.T) {
 		t.Fatalf("create failed: %+v", prov)
 	}
 
-	// List shows it.
 	st, provs := doArr(t, srv, http.MethodGet, "/admin/providers", admin, nil)
 	if st != http.StatusOK || len(provs) != 1 {
 		t.Fatalf("expected 1 provider, got status %d len %d", st, len(provs))
@@ -103,7 +101,6 @@ func TestProvidersCrudFlow(t *testing.T) {
 		t.Fatalf("disable failed: %+v", prov)
 	}
 
-	// Delete.
 	if st := doStatus(t, srv, http.MethodDelete, "/admin/providers/manual", admin, nil); st != http.StatusNoContent {
 		t.Fatalf("delete failed: %d", st)
 	}

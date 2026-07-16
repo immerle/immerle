@@ -16,7 +16,6 @@ func TestLibraryStatsCachesTotals(t *testing.T) {
 	ctx := context.Background()
 	svc := NewLibraryStatsService(store.Catalog, testutil.NewLogger())
 
-	// Empty library → zero snapshot.
 	if got := svc.Get(); got.Tracks != 0 || got.TotalSize != 0 {
 		t.Fatalf("expected empty snapshot, got %+v", got)
 	}

@@ -11,12 +11,10 @@ import (
 	"github.com/immerle/immerle/internal/testutil"
 )
 
-// TestFederatedPlaylistNotMutableByNominalOwner covers a real bug: a federated
-// playlist is attributed to a nominal local owner (whichever admin the sync
-// process picked) purely so the row satisfies the owner_id FK — that
-// attribution must never grant real ownership. The nominal owner must not be
-// able to delete, re-cover or add collaborators to it; they can only
-// unsubscribe, like anyone else.
+// TestFederatedPlaylistNotMutableByNominalOwner: a federated playlist's
+// owner_id is just whichever admin the sync process picked to satisfy the FK
+// — it must never grant real ownership. The nominal owner can only
+// unsubscribe, like anyone else; not delete, re-cover, or add collaborators.
 func TestFederatedPlaylistNotMutableByNominalOwner(t *testing.T) {
 	store := testutil.NewStore(t)
 	ctx := context.Background()
@@ -64,11 +62,9 @@ func TestFederatedPlaylistNotMutableByNominalOwner(t *testing.T) {
 	}
 }
 
-// TestPlaylistAddResolvesRemoteTrack covers a real bug: a track fetched
-// on-the-fly from an on-demand provider (a "remote:" id, not yet a row in
-// `tracks`) couldn't be added to a playlist — playlist_tracks has a foreign
-// key on track_id, so the insert failed deep in the persistence layer.
-// Create/Replace/Update must resolve (download) such ids first, the same way
+// TestPlaylistAddResolvesRemoteTrack: a "remote:" track id (no row in
+// `tracks` yet) used to fail inserting into playlist_tracks (FK on track_id).
+// Create/Replace/Update must resolve (download) such ids first, like
 // favoriting already does.
 func TestPlaylistAddResolvesRemoteTrack(t *testing.T) {
 	onDemand, store, _ := newOnDemand(t)
@@ -117,11 +113,9 @@ func TestPlaylistAddResolvesRemoteTrack(t *testing.T) {
 	}
 }
 
-// TestPlaylistCreateSurfacesUnresolvableTrackError covers the other half of
-// the same bug: Create used to swallow ReplaceTracks' error
-// (`_ = s.playlists.ReplaceTracks(...)`), so seeding a playlist with an
-// unresolvable track silently returned a playlist that looked created but was
-// empty. It must now error.
+// TestPlaylistCreateSurfacesUnresolvableTrackError: Create used to swallow
+// ReplaceTracks' error, so seeding with an unresolvable track silently
+// returned an empty playlist that looked created. It must now error.
 func TestPlaylistCreateSurfacesUnresolvableTrackError(t *testing.T) {
 	store := testutil.NewStore(t)
 	ctx := context.Background()

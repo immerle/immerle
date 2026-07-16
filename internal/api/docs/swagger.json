@@ -1808,7 +1808,7 @@
                         "type": "string"
                     },
                     "entries": {
-                        "description": "Entries carries display metadata (title/artist/cover/duration/remote)\nfor each of IDs — used as a fallback when a track can't be resolved\nvia the local catalog (most commonly a not-yet-downloaded on-demand\nremote track), so it still shows up correctly when this queue is\nmirrored on another device. Optional; entries without a match here\njust rely on the catalog lookup succeeding, as before.",
+                        "description": "Entries carries display metadata per id as a fallback when a track\ncan't be resolved via the local catalog (typically a not-yet-\ndownloaded remote track), so it still shows correctly when this\nqueue is mirrored on another device. Optional.",
                         "items": {
                             "$ref": "#/components/schemas/immerle.queueEntryRequest"
                         },
@@ -1878,7 +1878,7 @@
                         "type": "boolean"
                     },
                     "targetDeviceId": {
-                        "description": "TargetDeviceID, when set, is the id of the sole device that should be\nactively playing this queue right now — every other device should\npause instead of doubling the audio. Empty means unrestricted: each\ndevice manages its own playback independently (the default).",
+                        "description": "TargetDeviceID, when set, is the sole device that should be actively\nplaying this queue — every other device should pause. Empty means\nunrestricted (default): each device plays independently.",
                         "type": "string"
                     }
                 },
@@ -1981,7 +1981,7 @@
                         "type": "integer"
                     },
                     "federated": {
-                        "description": "Federated marks a read-only playlist synced from the hub: its `owner` is\nonly an internal attribution, never real ownership — clients must not\noffer edit/delete/cover controls for it, only subscribe/unsubscribe.",
+                        "description": "Federated marks a read-only playlist synced from the hub: `owner` is\nattribution only, not real ownership — clients must offer\nsubscribe/unsubscribe, not edit/delete/cover.",
                         "type": "boolean"
                     },
                     "id": {
@@ -2000,7 +2000,7 @@
                         "type": "integer"
                     },
                     "subscribed": {
-                        "description": "Subscribed reports whether the caller has favorited this playlist (see\nPUT/DELETE .../subscription). Only computed on the single-playlist\nresource (handleGetPlaylist) — false elsewhere.",
+                        "description": "Subscribed reports whether the caller has favorited this playlist.\nOnly set on the single-playlist resource (handleGetPlaylist), false\nelsewhere.",
                         "type": "boolean"
                     },
                     "tracks": {

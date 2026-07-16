@@ -35,11 +35,9 @@ func TestRunShutsDownOnContextCancel(t *testing.T) {
 	}
 }
 
-// TestRunSurvivesShutdownGraceTimeout covers the fix: http.Server.Shutdown
-// never force-closes a still-open connection (e.g. a live SSE stream), it only
-// waits — so if one outlasts shutdownGrace, Shutdown returns
-// context.DeadlineExceeded. That's an expected outcome of an intentional
-// shutdown, not an app failure, and must not surface as an error from Run.
+// TestRunSurvivesShutdownGraceTimeout: http.Server.Shutdown never force-closes
+// a still-open connection, it only waits — so outlasting shutdownGrace returns
+// context.DeadlineExceeded, which Run must treat as success, not an error.
 func TestRunSurvivesShutdownGraceTimeout(t *testing.T) {
 	old := shutdownGrace
 	shutdownGrace = 20 * time.Millisecond

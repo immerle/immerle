@@ -51,8 +51,7 @@ type createTokenRequest struct {
 	Device bool `json:"device"`
 }
 
-// handleCreateToken mints a new personal access token for the caller. The secret
-// is returned exactly once.
+// handleCreateToken mints a personal access token; the secret is shown once.
 //
 // @Summary      Create an API token
 // @Description  Creates a personal access token scoped to the caller. The secret is returned ONCE — store it now. Use it as "Authorization: Bearer <token>".

@@ -33,7 +33,6 @@ func TestDeviceJWTLoginAuthRevoke(t *testing.T) {
 		t.Fatalf("unexpected device: %+v", dev)
 	}
 
-	// The JWT authenticates as the user.
 	u, err := auth.Authenticate(ctx, Credentials{APIToken: token, RemoteIP: "5.6.7.8"})
 	if err != nil || u.Username != "alice" {
 		t.Fatalf("jwt auth failed: %v", err)
@@ -81,15 +80,13 @@ func TestDeviceJWTBadSignatureAndExpiry(t *testing.T) {
 	auth, username := newDeviceAuth(t)
 	ctx := context.Background()
 
-	// Tampered signature.
 	token, _, _ := auth.IssueDeviceToken(ctx, Credentials{Username: username, Password: "pw"}, "x", time.Hour)
 	tampered := token[:len(token)-2] + "xy"
 	if _, err := auth.Authenticate(ctx, Credentials{APIToken: tampered}); err == nil {
 		t.Fatal("tampered JWT must be rejected")
 	}
 
-	// Expired token: sign a JWT whose exp is in the past (ttl<=0 means "never
-	// expires", so we craft the expiry directly).
+	// ttl<=0 means "never expires", so craft an already-expired exp directly.
 	expired, err := signJWT(auth.jwtKey, jwtClaims{Sub: "x", JTI: "y", IAT: time.Now().Add(-2 * time.Hour).Unix(), EXP: time.Now().Add(-time.Hour).Unix()})
 	if err != nil {
 		t.Fatal(err)

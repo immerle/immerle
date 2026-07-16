@@ -3,11 +3,8 @@ import * as SecureStore from 'expo-secure-store';
 
 /**
  * Cross-platform secure key/value storage.
- *
- * Native: backed by the iOS Keychain / Android Keystore via expo-secure-store.
- * Web: SecureStore is unavailable, so we fall back to `localStorage`. This is
- * documented as a softer guarantee — on web the token lives in the browser's
- * origin storage, not hardware-backed storage.
+ * Native: iOS Keychain / Android Keystore via expo-secure-store.
+ * Web: falls back to `localStorage` — a softer guarantee, not hardware-backed.
  */
 
 const isWeb = Platform.OS === 'web';

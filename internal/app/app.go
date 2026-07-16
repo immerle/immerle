@@ -59,8 +59,7 @@ type App struct {
 	handler       http.Handler
 
 	scanPaths []string
-	// watch is the runtime "watch" setting captured at boot (changing it needs a
-	// restart, so the running process uses the boot value).
+	// watch is captured at boot; changing it requires a restart.
 	watch bool
 	// wg tracks background workers so Run can wait for them to drain before
 	// returning (and the caller closing the DB), avoiding "database is closed".
@@ -195,7 +194,6 @@ func New(cfg config.Config) (*App, error) {
 
 	store := persistence.New(database)
 
-	// Derived data directories.
 	dataDir := cfg.Library.DataDir
 	coversDir := filepath.Join(dataDir, "covers")
 	downloadDir := filepath.Join(dataDir, "library")
@@ -264,10 +262,9 @@ func New(cfg config.Config) (*App, error) {
 
 	scanPaths := append([]string{}, cfg.Library.Paths...)
 
-	// On-demand catalog (S5). It is always running; with no enabled provider it
-	// simply has nothing to search/download (equivalent to "off"). Provider config
-	// changes (add/edit/enable/reorder) are applied to this live registry and the
-	// DB together by the manager — hot, no restart.
+	// On-demand catalog (S5): always running, idles with no provider enabled.
+	// Provider config changes are applied to this live registry and the DB
+	// together by the manager — hot, no restart.
 	registry := core.NewProviderRegistry()
 	// Both kinds are configured via the admin API (JSON config). A built-in is a
 	// compiled-in factory whose credentials come from its config JSON; a dynamic
@@ -301,9 +298,8 @@ func New(cfg config.Config) (*App, error) {
 	// Downloaded tracks live under downloadDir; scan it too.
 	scanPaths = append(scanPaths, downloadDir)
 
-	// Artist avatars come from the on-demand provider (where artists come from).
-	// Always on: if a provider exposes the artist-image capability, avatars are
-	// fetched through it; otherwise this finds none and idles.
+	// Artist avatars come from the on-demand provider; always on, idles if no
+	// provider exposes the artist-image capability.
 	enricher := core.NewArtistImageEnricher(store.Catalog, core.NewProviderImageLookup(onDemand), coversDir, time.Second, logger)
 
 	// Library analytics (counts + total size/duration), cached and recomputed at
@@ -317,10 +313,9 @@ func New(cfg config.Config) (*App, error) {
 		enricher.Wake()
 	})
 
-	// Federation client (S7). Always built and reads its config live — enabling/
-	// disabling, the hub URL/keys, the sync interval and the feature flags are all
-	// hot-reloadable (no restart). Run() idles while disabled. The owner of
-	// federated playlists is resolved lazily so enabling it later still works.
+	// Federation client (S7): always built, config is read live (hot-reloadable,
+	// no restart), Run() idles while disabled. Playlist owner is resolved lazily
+	// so enabling federation later still works.
 	var fedResolver federation.Resolver
 	if onDemand != nil {
 		fedResolver = onDemand
@@ -382,8 +377,7 @@ func New(cfg config.Config) (*App, error) {
 
 	// Curated chart playlists (global + a handful of major markets), synced
 	// weekly from kworb-net-api. Materializes as public, federated-style
-	// playlists (same mechanism as hub imports), owned by the first admin —
-	// resolved lazily the same way federation's owner is.
+	// playlists (same mechanism as hub imports), owned by the first admin.
 	chartsSvc := charts.New(store.Playlists, "", nil, logger)
 	chartsSvc.SetOwnerResolver(func(ctx context.Context) (string, error) { return firstAdmin(ctx, store.Users) })
 
@@ -486,8 +480,8 @@ func New(cfg config.Config) (*App, error) {
 	subHandler.Register(mux)
 	gosHandler.Register(mux)
 	docs.Register(mux) // /openapi.json, /openapi.yaml, /swagger/
-	// Embedded web app: every defined API route wins; anything unmatched falls
-	// through here. No-op (404) until the UI is built into the binary.
+	// Embedded web app: every API route wins; unmatched falls through here
+	// (404 until the UI is built into the binary).
 	mux.NotFound(webui.Handler().ServeHTTP)
 
 	return &App{

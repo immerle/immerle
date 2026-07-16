@@ -1281,12 +1281,10 @@ components:
           type: string
         entries:
           description: |-
-            Entries carries display metadata (title/artist/cover/duration/remote)
-            for each of IDs — used as a fallback when a track can't be resolved
-            via the local catalog (most commonly a not-yet-downloaded on-demand
-            remote track), so it still shows up correctly when this queue is
-            mirrored on another device. Optional; entries without a match here
-            just rely on the catalog lookup succeeding, as before.
+            Entries carries display metadata per id as a fallback when a track
+            can't be resolved via the local catalog (typically a not-yet-
+            downloaded remote track), so it still shows correctly when this
+            queue is mirrored on another device. Optional.
           items:
             $ref: '#/components/schemas/immerle.queueEntryRequest'
           type: array
@@ -1347,10 +1345,9 @@ components:
           type: boolean
         targetDeviceId:
           description: |-
-            TargetDeviceID, when set, is the id of the sole device that should be
-            actively playing this queue right now — every other device should
-            pause instead of doubling the audio. Empty means unrestricted: each
-            device manages its own playback independently (the default).
+            TargetDeviceID, when set, is the sole device that should be actively
+            playing this queue — every other device should pause. Empty means
+            unrestricted (default): each device plays independently.
           type: string
       type: object
     immerle.playbackTargetView:
@@ -1420,9 +1417,9 @@ components:
           type: integer
         federated:
           description: |-
-            Federated marks a read-only playlist synced from the hub: its `owner` is
-            only an internal attribution, never real ownership — clients must not
-            offer edit/delete/cover controls for it, only subscribe/unsubscribe.
+            Federated marks a read-only playlist synced from the hub: `owner` is
+            attribution only, not real ownership — clients must offer
+            subscribe/unsubscribe, not edit/delete/cover.
           type: boolean
         id:
           type: string
@@ -1436,9 +1433,9 @@ components:
           type: integer
         subscribed:
           description: |-
-            Subscribed reports whether the caller has favorited this playlist (see
-            PUT/DELETE .../subscription). Only computed on the single-playlist
-            resource (handleGetPlaylist) — false elsewhere.
+            Subscribed reports whether the caller has favorited this playlist.
+            Only set on the single-playlist resource (handleGetPlaylist), false
+            elsewhere.
           type: boolean
         tracks:
           items:

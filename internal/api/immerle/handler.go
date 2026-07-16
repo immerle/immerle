@@ -37,10 +37,8 @@ type Deps struct {
 	Jam          *core.JamService
 	Setup        *core.SetupService
 	Federation   *federation.Service
-	// Catalog and OnDemand enrich activity feed items with titles/cover/etc.
-	// (OnDemand maps a remote favorite to its downloaded local track). Catalog,
-	// Annotations and OnDemand also back the catalog browse resources via the
-	// shared LibraryService.
+	// Catalog and OnDemand enrich activity feed items (titles/cover; OnDemand maps a
+	// remote favorite to its downloaded local track). Both also back catalog browse via LibraryService.
 	Catalog     *persistence.CatalogRepo
 	Annotations *persistence.AnnotationRepo
 	Genres      *persistence.GenreRepo
@@ -123,9 +121,8 @@ type AutoPlaylistsController interface {
 // Handler implements the immerle native API.
 type Handler struct {
 	Deps
-	// library and playback back the catalog browse resources and the
-	// favorite/rating/scrobble mutations with the same application services the
-	// Subsonic handler uses.
+	// library and playback back catalog browse and favorite/rating/scrobble
+	// mutations, sharing the same application services as the Subsonic handler.
 	library       *core.LibraryService
 	playback      *core.PlaybackService
 	playQueue     *core.PlayQueueService
@@ -169,16 +166,14 @@ func (h *Handler) Register(mux chi.Router) {
 		r.Get("/setup", h.handleSetupStatus)
 		r.Post("/setup", h.handleSetupInit)
 		r.Post("/auth/sessions", h.handleLogin)
-		// Station logos and cover art are cached public images (loadable as a plain
-		// <img> with no Authorization header). Cover art is album/track artwork —
-		// low sensitivity, served like the radio logos.
+		// Station logos and cover art are cached public images (plain <img>, no
+		// Authorization header) — low sensitivity, like the radio logos.
 		r.Get("/radio/stations/{id}/cover", h.handleRadioCover)
 		r.Get("/cover/{id}", h.handleCover)
 
-		// Audio stream/download accept EITHER a short-lived signed URL (for an
-		// <audio>/<video> src that can't send headers) OR a Bearer token (direct
-		// API use). The signed URL carries a one-track, time-limited capability —
-		// no reusable credential ends up in logs/history.
+		// Audio stream/download accept either a short-lived signed URL (for an
+		// <audio>/<video> src that can't send headers) or a Bearer token. The signed
+		// URL is a one-track, time-limited capability — no reusable credential in logs/history.
 		r.Group(func(r chi.Router) {
 			r.Use(h.mediaAuthMiddleware)
 			r.Get("/songs/{id}/stream", h.handleStream)

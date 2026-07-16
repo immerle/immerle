@@ -25,10 +25,8 @@ interface StoredAuth {
 }
 
 /**
- * Best-effort friendly label for this install, shown in the "cast to device"
- * picker — e.g. "iPhone/iPad", "Chrome (Mac)". Language-neutral (no i18n
- * string) since it's a generated device name, not fixed UI copy. Falls back
- * to the bare platform name where a user agent isn't available (native).
+ * Friendly device label for the "cast to device" picker, e.g. "iPhone/iPad",
+ * "Chrome (Mac)". Language-neutral on purpose — it's a generated name, not UI copy.
  */
 function deviceLabel(): string {
   if (Platform.OS === 'ios') return 'iPhone/iPad';
@@ -60,11 +58,9 @@ interface AuthState {
 }
 
 /**
- * Native login: exchange the password for a device JWT (POST /auth/sessions),
- * then mint a long-lived personal API token (POST /tokens) with that JWT. Only
- * the API token is persisted — the password is never stored, and the token is
- * the durable Bearer credential (no re-mint needed on restore). Throws on bad
- * credentials or a server without the native API.
+ * Native login: trade the password for a device JWT (POST /auth/sessions), then
+ * mint a long-lived personal API token (POST /tokens). Only the token is
+ * persisted — the password never is, and no re-mint is needed on restore.
  */
 async function nativeLogin(serverUrl: string, username: string, password: string): Promise<StoredAuth> {
   const pub = createImmerleApi(serverUrl);

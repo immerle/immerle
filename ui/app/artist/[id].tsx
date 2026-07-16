@@ -50,8 +50,7 @@ export default function ArtistDetail() {
   const albums = artist.album ?? [];
   const wide = width >= 640;
   const gap = 16;
-  // Fixed, compact card size that wraps to fill the content area (window width
-  // overestimates it on desktop because of the sidebar). Two columns on mobile.
+  // Window width overestimates content area on desktop (sidebar); two columns on mobile.
   const cardWidth = wide ? 150 : Math.floor((width - gap * 3) / 2);
   // Prefer the artist photo; fall back to the first album's cover when the
   // artist has no image of its own.

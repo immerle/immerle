@@ -32,8 +32,7 @@ const PALETTE = [
   '#e8115b', '#bc5900', '#509bf5', '#ff6437', '#000000', '#ffffff',
 ];
 
-// Convert a degrees angle into LinearGradient start/end (matches the server's
-// dx=cos, dy=sin convention closely enough for a preview).
+// Degrees to LinearGradient start/end; approximates the server's dx=cos, dy=sin convention.
 function angleToPoints(deg: number) {
   const r = (deg * Math.PI) / 180;
   const dx = Math.cos(r) / 2;
@@ -117,7 +116,6 @@ export default function PlaylistCoverEditor() {
         }}
       />
       <ScrollView className="flex-1 bg-background" contentContainerStyle={{ padding: 16, gap: 16, alignItems: 'center' }}>
-        {/* Preview */}
         <View style={{ width: P, height: P }} className="overflow-hidden rounded-2xl">
           {mode === 'image' && bgUri ? (
             <Image source={{ uri: bgUri }} style={{ width: P, height: P }} resizeMode="cover" />
@@ -147,7 +145,6 @@ export default function PlaylistCoverEditor() {
         </View>
 
         <View className="w-full max-w-md gap-4">
-          {/* Background mode */}
           <View className="flex-row gap-2">
             {(['solid', 'gradient', 'image'] as Mode[]).map((m) => (
               <Pressable
@@ -160,7 +157,7 @@ export default function PlaylistCoverEditor() {
             ))}
           </View>
 
-          {/* Colour slot selector (hidden when using an image background) */}
+          {/* No bg colour to pick in image mode. */}
           {mode !== 'image' ? (
             <View className="flex-row gap-2">
               <SlotChip label={t('media.playlist.cover.bgColor')} active={slot === 'color'} swatch={color} onPress={() => setSlot('color')} />
@@ -173,7 +170,6 @@ export default function PlaylistCoverEditor() {
             <SlotChip label={t('media.playlist.cover.textColor')} active swatch={textColor} onPress={() => setSlot('text')} />
           )}
 
-          {/* Palette */}
           <View className="flex-row flex-wrap gap-2">
             {PALETTE.map((c) => (
               <Pressable
@@ -185,7 +181,6 @@ export default function PlaylistCoverEditor() {
             ))}
           </View>
 
-          {/* Gradient angle */}
           {mode === 'gradient' ? (
             <View>
               <Text className="text-sm text-muted">{t('media.playlist.cover.angle')}: {Math.round(angle)}°</Text>
@@ -193,10 +188,9 @@ export default function PlaylistCoverEditor() {
             </View>
           ) : null}
 
-          {/* Text */}
           <Field label={t('media.playlist.cover.text')} placeholder={t('media.playlist.cover.textPlaceholder')} value={text} onChangeText={setText} multiline />
 
-          {/* Text position (9-cell grid) */}
+          {/* 9-cell grid */}
           <View>
             <Text className="mb-1 text-sm text-muted">{t('media.playlist.cover.position')}</Text>
             <View style={{ width: 108 }} className="gap-1">
@@ -223,7 +217,6 @@ export default function PlaylistCoverEditor() {
             </View>
           </View>
 
-          {/* Font size */}
           <View>
             <Text className="text-sm text-muted">{t('media.playlist.cover.size')}</Text>
             <Slider minimumValue={0.06} maximumValue={0.3} value={fontSize} onValueChange={setFontSize} minimumTrackTintColor={colors.primary} />

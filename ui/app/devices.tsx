@@ -9,12 +9,8 @@ import { useColors } from '../src/theme/colors';
 import { useT } from '../src/i18n/store';
 
 /**
- * Connected devices: the caller's app-login sessions (API tokens minted by
- * the app's own login flow, `isDevice`, from `GET /tokens` — see
- * useDevices), each flagged online/offline based on whether it's made an
- * authenticated request in the last few minutes (server-computed
- * `connected`). Distinct from manually-created personal/CLI tokens, which
- * are managed on the API tokens screen.
+ * App-login sessions (`isDevice` tokens from GET /tokens, see useDevices), with
+ * server-computed `connected` status. Distinct from personal/CLI tokens (API tokens screen).
  */
 export default function Devices() {
   const t = useT();

@@ -53,7 +53,7 @@ function applyAccentWeb(hex: string | null) {
  * the user's accent color. Both persist across restarts.
  */
 export const useTheme = create<ThemeState>((set) => ({
-  // Dark by default — the Spotify-style look; users can switch in Réglages.
+  // Dark by default — the Spotify-style look; users can switch in Settings.
   preference: 'dark',
   accent: null,
   hydrated: false,

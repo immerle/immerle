@@ -101,7 +101,6 @@ export default function ApiTokens() {
           </Card>
         ) : null}
 
-        {/* Create */}
         <Card className="gap-3">
           <CardTitle icon="add-circle" color="#6366f1" title={t('tools.tokens.newToken')} />
           <Field label={t('tools.tokens.nameLabel')} placeholder="mon-cli" value={name} onChangeText={setName} autoCapitalize="none" />
@@ -114,7 +113,6 @@ export default function ApiTokens() {
           <Button title={t('tools.tokens.createButton')} icon="add" loading={create.isPending} onPress={submit} />
         </Card>
 
-        {/* List */}
         <Text className="px-1 pt-1 text-xs font-medium uppercase tracking-wider text-muted">{t('tools.tokens.activeTokens')}</Text>
         {q.isLoading ? (
           <Loading />

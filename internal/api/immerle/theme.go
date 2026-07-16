@@ -49,8 +49,7 @@ type updateThemeRequest struct {
 	AccentColor *string `json:"accentColor"`
 }
 
-// handleThemeUpdate applies a partial update to the caller's UI theme. Only the
-// accent colour is supported; pass an empty accentColor to clear it.
+// handleThemeUpdate partially updates the caller's UI theme (accent colour only).
 //
 // @Summary      Update the UI theme
 // @Description  Partial update — omitted fields keep their stored value; pass an empty accentColor to clear it.

@@ -11,7 +11,7 @@ import { useT } from '../i18n/store';
  * Compact global header for narrow (mobile) layouts: the logo + wordmark on
  * the left, the account avatar on the right (search and library nav already
  * live in the bottom tab bar, so they aren't duplicated here). The avatar
- * opens the same Réglages / Déconnexion menu as the desktop top bar. Rendered
+ * opens the same Settings / Logout menu as the desktop top bar. Rendered
  * by the tabs layout so it sits above every main screen; per-screen titles
  * live underneath.
  */

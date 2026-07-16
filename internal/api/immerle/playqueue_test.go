@@ -11,7 +11,6 @@ import (
 func TestPlayQueueAndNowPlaying(t *testing.T) {
 	srv, token, _ := newBrowseEnv(t)
 
-	// Locate a track id.
 	var search searchView
 	if st := getJSON(t, srv, token, "/search?q=So+What", &search); st != http.StatusOK || len(search.Songs()) == 0 {
 		t.Fatalf("search: status %d, songs %d", st, len(search.Songs()))
@@ -122,9 +121,8 @@ func TestPlaybackTargets(t *testing.T) {
 	if st := doStatus(t, srv, http.MethodPut, "/play-queue/target", token, map[string]any{"deviceId": ""}); st != http.StatusNoContent {
 		t.Fatalf("clear target: status %d", st)
 	}
-	// Fresh struct: TargetDeviceID has `omitempty`, so a cleared value is
-	// absent from the response JSON and decoding into the same `q` from
-	// above would just leave its stale non-empty value in place.
+	// Fresh struct: `omitempty` drops a cleared value from the JSON, so
+	// decoding into the same `q` would leave its stale value in place.
 	var cleared playQueueView
 	if st := getJSON(t, srv, token, "/play-queue", &cleared); st != http.StatusOK {
 		t.Fatalf("get queue: status %d", st)

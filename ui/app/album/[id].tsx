@@ -123,7 +123,6 @@ export default function AlbumDetail() {
         </View>
       </HeroBackdrop>
 
-      {/* Action bar over the page background. */}
       <View className="flex-row items-center gap-5 px-4 py-4">
         <PlayButton onPress={playAll} size={56} accessibilityLabel={t('media.album.play')} />
         <IconButton name="shuffle" size={26} color={shuffleOn ? colors.primary : colors.muted} onPress={shuffle} accessibilityLabel={t('media.album.shuffle')} />

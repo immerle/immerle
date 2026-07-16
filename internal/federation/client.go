@@ -75,10 +75,8 @@ type Service struct {
 	replayHandler func(context.Context, stream.Frame) error
 
 	// resolveCacheMu/resolveCache short-circuit repeat taps on the same
-	// unresolved playlist entry: a provider-search hit is remembered for a
-	// while so it isn't re-searched on every play until either it downloads
-	// locally (picked up by the MBID branch in ResolvePlaylistTrack) or the
-	// entry is re-synced from the hub.
+	// unresolved playlist entry: a provider-search hit is cached until it
+	// either downloads locally or the entry is re-synced from the hub.
 	resolveCacheMu sync.Mutex
 	resolveCache   map[string]resolveCacheEntry
 }
@@ -110,9 +108,9 @@ func (s *Service) SetCredentialsSaver(fn func(context.Context, Credentials) erro
 func (s *Service) SetCredentialsClearer(fn func(context.Context) error) { s.clearCreds = fn }
 
 // SetReplayHandler registers the callback that answers a replay.request from a
-// reconnected subscriber (registered by PlaylistSyncer, the owner of published
-// state). Until set (or on a subscribe-only instance), replay requests are
-// just logged — see handleReplayRequest.
+// reconnected subscriber (owned by PlaylistSyncer). Until set (or on a
+// subscribe-only instance), replay requests are just logged — see
+// handleReplayRequest.
 func (s *Service) SetReplayHandler(fn func(context.Context, stream.Frame) error) {
 	s.replayHandler = fn
 }
@@ -441,12 +439,10 @@ func (s *Service) Subscribe(ctx context.Context, instanceID, sqid string) error 
 	return nil
 }
 
-// Unsubscribe stops following the instance with the given hub id (UUID), then
-// drops its materialized playlists locally — except any a user subscribed to
-// (kept in their library), which survive the unfollow. Also forgets the feed
-// cursor for that instance, so a later resubscribe does a full catch-up
-// instead of resuming from the stale pre-unfollow version (which would skip
-// re-sending the playlists just dropped).
+// Unsubscribe stops following instanceID, then drops its materialized
+// playlists locally (except any a user subscribed to, which survive). Also
+// forgets the feed cursor, so a later resubscribe does a full catch-up
+// instead of resuming from the stale pre-unfollow version.
 func (s *Service) Unsubscribe(ctx context.Context, instanceID string) error {
 	if !s.HubConfigured() {
 		return fmt.Errorf("federation: instance not linked to the hub")
@@ -701,16 +697,13 @@ func (s *Service) upsertFederated(ctx context.Context, ownerID, sourceInstanceID
 var ErrUnresolvable = fmt.Errorf("federation: track not resolvable")
 
 // ResolvePlaylistTrack resolves one playlist entry to a playable track,
-// lazily, at the moment the caller wants to play it: a local catalog lookup
-// first (persisted back so future plays skip it), then a provider search
-// returning an on-demand track (played progressively; the caller doesn't wait
-// for a download). The entry's track_id column is a real foreign key into the
-// local catalog, so a synthetic remote id can never be written there — a
-// provider-search hit is kept in cachedResolve/cacheResolve for a while so
-// repeat taps skip the search while a real local copy is pending. When the
-// admin's auto-download-on-play setting is on (same policy as any other
-// remote search result), a background download is kicked off so the entry
-// gets a real, permanent track_id once it lands — see persistResolvedTrack.
+// lazily: a local catalog lookup first (persisted for future plays), else a
+// provider search returning an on-demand track played progressively. The
+// entry's track_id is a real foreign key, so a synthetic remote id can never
+// be written there — a hit is cached (see cachedResolve/cacheResolve) so
+// repeat taps skip the search while a real download is pending. If
+// auto-download-on-play is on, a background download gets the entry a
+// permanent track_id once it lands — see persistResolvedTrack.
 func (s *Service) ResolvePlaylistTrack(ctx context.Context, playlistID string, position int) (models.Track, error) {
 	ref, err := s.playlists.TrackRef(ctx, playlistID, position)
 	if err != nil {
@@ -791,12 +784,11 @@ func (s *Service) cacheResolve(key string, t models.Track) {
 	s.resolveCache[key] = resolveCacheEntry{track: t, at: time.Now()}
 }
 
-// federatedCoverArt turns a hub-sourced cover reference into a local remote-
-// cover id (fetched and cached on demand by the cover service, subject to its
-// host allowlist). The hub returns cover URLs relative to itself (e.g.
-// "/api/v1/covers/<hash>"), so a relative value is resolved against the
-// configured hub URL; an already-absolute URL (the editorial catalog may send
-// one) is used as-is.
+// federatedCoverArt turns a hub-sourced cover reference into a local
+// remote-cover id (fetched/cached on demand, subject to the host allowlist).
+// The hub returns cover URLs relative to itself (e.g. "/api/v1/covers/<hash>");
+// a relative value is resolved against the hub URL, an already-absolute one
+// (the editorial catalog may send one) is used as-is.
 func (s *Service) federatedCoverArt(image string) string {
 	if image == "" {
 		return ""

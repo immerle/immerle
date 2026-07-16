@@ -26,10 +26,9 @@ type playQueueView struct {
 	ChangedBy string     `json:"changedBy,omitempty"`
 	ChangedAt *time.Time `json:"changedAt,omitempty"`
 	Entries   []songView `json:"entries"`
-	// TargetDeviceID, when set, is the id of the sole device that should be
-	// actively playing this queue right now — every other device should
-	// pause instead of doubling the audio. Empty means unrestricted: each
-	// device manages its own playback independently (the default).
+	// TargetDeviceID, when set, is the sole device that should be actively
+	// playing this queue — every other device should pause. Empty means
+	// unrestricted (default): each device plays independently.
 	TargetDeviceID string `json:"targetDeviceId,omitempty"`
 	// PendingCommand is a spectator's remote-control command for the active
 	// device to apply (see POST /play-queue/commands). CommandSeq increases
@@ -205,12 +204,10 @@ type playQueueRequest struct {
 	// notices Current/Playing changed on its next poll.
 	Playing bool   `json:"playing"`
 	Client  string `json:"client"`
-	// Entries carries display metadata (title/artist/cover/duration/remote)
-	// for each of IDs — used as a fallback when a track can't be resolved
-	// via the local catalog (most commonly a not-yet-downloaded on-demand
-	// remote track), so it still shows up correctly when this queue is
-	// mirrored on another device. Optional; entries without a match here
-	// just rely on the catalog lookup succeeding, as before.
+	// Entries carries display metadata per id as a fallback when a track
+	// can't be resolved via the local catalog (typically a not-yet-
+	// downloaded remote track), so it still shows correctly when this
+	// queue is mirrored on another device. Optional.
 	Entries []queueEntryRequest `json:"entries,omitempty"`
 	// Shuffle/Repeat mirror this device's transport mode (see
 	// models.PlayQueue.Shuffle/Repeat) — carried through so another device

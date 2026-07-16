@@ -9,13 +9,9 @@ import { useColors } from '../src/theme/colors';
 import { useT } from '../src/i18n/store';
 
 /**
- * Cast-target picker as its own route (pushed by CastButton), presented
- * modally by the navigator — the same mechanism as /queue, chosen after a
- * custom anchored <Modal> popover proved unreliable on native (see
- * CastButton in src/components/PlayerBar.tsx for the story). Pick a device
- * to make it the sole active player, "This device" to take over playback
- * here, or "Everywhere" to go back to independent mode (every device plays
- * on its own — today's default).
+ * Cast-target picker as its own route (pushed by CastButton, modal like /queue) —
+ * a custom anchored <Modal> popover proved unreliable on native (see CastButton
+ * in src/components/PlayerBar.tsx). "Everywhere" means independent playback per device.
  */
 export default function CastTarget() {
   const t = useT();

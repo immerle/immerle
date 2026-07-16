@@ -25,8 +25,7 @@ export default function Login() {
   // Pre-fill with the origin when this app is served by its own Immerle binary.
   const selfUrl = useSelfServer((s) => s.url);
   const [serverUrl, setServerUrl] = useState(() => useSelfServer.getState().url ?? '');
-  // Landing straight on /login can beat the async self-probe; fill it in when it
-  // resolves, but never clobber what the user has already typed.
+  // Self-probe resolves async, after landing on /login; fill in without clobbering user input.
   useEffect(() => {
     if (selfUrl) setServerUrl((cur) => cur || selfUrl);
   }, [selfUrl]);

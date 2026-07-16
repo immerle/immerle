@@ -39,7 +39,6 @@ func TestSaveSidecarCover(t *testing.T) {
 }
 
 func TestSaveSidecarCoverSkipsNonImageAndExisting(t *testing.T) {
-	// Non-image response must not be saved.
 	html := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte("<html>nope</html>"))
 	}))
@@ -53,7 +52,6 @@ func TestSaveSidecarCoverSkipsNonImageAndExisting(t *testing.T) {
 		t.Fatal("non-image must not be saved as cover")
 	}
 
-	// An existing cover is left untouched (no overwrite).
 	cover := filepath.Join(dir, "cover.jpg")
 	if err := os.WriteFile(cover, []byte("KEEP"), 0o644); err != nil {
 		t.Fatal(err)

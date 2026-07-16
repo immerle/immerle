@@ -50,7 +50,6 @@ func newTestEnv(t *testing.T) *testEnv {
 		t.Fatal(err)
 	}
 
-	// Build a fixture library and scan it.
 	lib := t.TempDir()
 	gen := func(rel string, tags testutil.AudioTags) {
 		p := filepath.Join(lib, rel)
@@ -120,7 +119,6 @@ func (e *testEnv) get(t *testing.T, user, pass, endpoint string, params map[stri
 func TestBrowsingAndSearch(t *testing.T) {
 	e := newTestEnv(t)
 
-	// getArtists returns both artists.
 	r := e.get(t, "admin", "admin", "getArtists", nil)
 	count := 0
 	for _, idx := range r.Artists.Index {
@@ -130,19 +128,16 @@ func TestBrowsingAndSearch(t *testing.T) {
 		t.Fatalf("expected 2 artists, got %d", count)
 	}
 
-	// getAlbumList2 returns 2 albums.
 	r = e.get(t, "admin", "admin", "getAlbumList2", map[string]string{"type": "alphabeticalByName", "size": "10"})
 	if len(r.AlbumList2.Album) != 2 {
 		t.Fatalf("expected 2 albums, got %d", len(r.AlbumList2.Album))
 	}
 
-	// search3 finds the track.
 	r = e.get(t, "admin", "admin", "search3", map[string]string{"query": "So What"})
 	if len(r.SearchResult3.Song) != 1 || r.SearchResult3.Song[0].Title != "So What" {
 		t.Fatalf("search3 failed: %+v", r.SearchResult3.Song)
 	}
 
-	// getGenres returns the genres.
 	r = e.get(t, "admin", "admin", "getGenres", nil)
 	if len(r.Genres.Genre) < 2 {
 		t.Fatalf("expected >=2 genres, got %d", len(r.Genres.Genre))
@@ -151,14 +146,13 @@ func TestBrowsingAndSearch(t *testing.T) {
 
 func TestPerUserAnnotationsAreIsolated(t *testing.T) {
 	e := newTestEnv(t)
-	// find a song id via search
 	r := e.get(t, "admin", "admin", "search3", map[string]string{"query": "One More Time"})
 	if len(r.SearchResult3.Song) == 0 {
 		t.Fatal("song not found")
 	}
 	songID := r.SearchResult3.Song[0].ID
 
-	// admin stars it; bob does not.
+	// admin stars it; bob doesn't.
 	e.get(t, "admin", "admin", "star", map[string]string{"id": songID})
 
 	adminStarred := e.get(t, "admin", "admin", "getStarred2", nil)
@@ -190,7 +184,6 @@ func TestPlaylistsAndPlayQueueSync(t *testing.T) {
 	r := e.get(t, "bob", "bobpass", "search3", map[string]string{"query": "So What"})
 	songID := r.SearchResult3.Song[0].ID
 
-	// create playlist
 	created := e.get(t, "bob", "bobpass", "createPlaylist", map[string]string{"name": "Mine", "songId": songID})
 	if created.Playlist == nil || created.Playlist.SongCount != 1 {
 		t.Fatalf("playlist not created: %+v", created.Playlist)
@@ -213,7 +206,6 @@ func TestPlaylistsAndPlayQueueSync(t *testing.T) {
 func TestGetArtistIncludeSongs(t *testing.T) {
 	e := newTestEnv(t)
 
-	// Locate Daft Punk's id.
 	artists := e.get(t, "admin", "admin", "getArtists", nil)
 	var daftID string
 	for _, idx := range artists.Artists.Index {
@@ -305,13 +297,11 @@ func TestAdditionalBrowsingEndpoints(t *testing.T) {
 func TestPlayStatsDriveAlbumLists(t *testing.T) {
 	e := newTestEnv(t)
 
-	// Find a song in "Kind of Blue" and scrobble it 3 times as bob.
 	r := e.get(t, "bob", "bobpass", "search3", map[string]string{"query": "So What"})
 	songID := r.SearchResult3.Song[0].ID
 	for i := 0; i < 3; i++ {
 		e.get(t, "bob", "bobpass", "scrobble", map[string]string{"id": songID, "submission": "true"})
 	}
-	// And one Daft Punk song once.
 	r = e.get(t, "bob", "bobpass", "search3", map[string]string{"query": "Aerodynamic"})
 	e.get(t, "bob", "bobpass", "scrobble", map[string]string{"id": r.SearchResult3.Song[0].ID, "submission": "true"})
 
@@ -352,7 +342,6 @@ func TestAPITokenAuthenticatesRequests(t *testing.T) {
 	e := newTestEnv(t)
 	ctx := context.Background()
 
-	// Mint a token for bob directly via the auth service.
 	auth, _ := core.NewAuthService(e.store.Users, e.store.APITokens, e.store.Devices, "secret")
 	bob, _ := e.store.Users.GetByUsername(ctx, "bob")
 	secret, _, err := auth.CreateAPIToken(ctx, bob.ID, "test", nil, false)
@@ -360,7 +349,7 @@ func TestAPITokenAuthenticatesRequests(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Use the token (Authorization: Bearer) instead of u/p — should authenticate.
+	// Authorization: Bearer instead of u/p.
 	req, _ := http.NewRequest(http.MethodGet, e.server.URL+"/rest/getArtists?c=test&v=1.16.1&f=json", nil)
 	req.Header.Set("Authorization", "Bearer "+secret)
 	resp, err := http.DefaultClient.Do(req)
@@ -386,7 +375,6 @@ func TestAPITokenAuthenticatesRequests(t *testing.T) {
 		t.Fatalf("apiKey auth failed: %+v", jr.Response)
 	}
 
-	// A bogus token is rejected.
 	req3, _ := http.NewRequest(http.MethodGet, e.server.URL+"/rest/getArtists?c=test&f=json", nil)
 	req3.Header.Set("Authorization", "Bearer gsk_bogus")
 	resp3, err := http.DefaultClient.Do(req3)
@@ -406,7 +394,6 @@ func TestStreamServesAudioWithRange(t *testing.T) {
 	r := e.get(t, "admin", "admin", "search3", map[string]string{"query": "So What"})
 	songID := r.SearchResult3.Song[0].ID
 
-	// Range request should yield 206 Partial Content.
 	req, _ := http.NewRequest(http.MethodGet, e.server.URL+"/rest/stream", nil)
 	q := req.URL.Query()
 	q.Set("u", "admin")
