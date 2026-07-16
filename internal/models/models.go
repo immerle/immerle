@@ -582,16 +582,18 @@ type QueueEntry struct {
 }
 
 // CommandEnvelope is a spectator device's remote-control command (next,
-// previous, seek, toggle, skip to a track) — sent as an intent instead of a
-// computed snapshot, so the active device applies it against its own true
-// state instead of adopting the spectator's (possibly stale) guess of what
-// the resulting state should be. This is a "latest command wins" model, not
-// a real queue: a second command overwrites the first before either is
-// necessarily applied. That's a deliberate, accepted trade-off (matches the
-// old guessed-snapshot mechanism's same characteristic) — not something to
-// "fix" into a real queue without discussing it first.
+// previous, seek, toggle, skip to a track, toggle shuffle, cycle repeat) —
+// sent as an intent instead of a computed snapshot, so the active device
+// applies it against its own true state instead of adopting the spectator's
+// (possibly stale) guess of what the resulting state should be. This is a
+// "latest command wins" model, not a real queue: a second command overwrites
+// the first before either is necessarily applied. That's a deliberate,
+// accepted trade-off (matches the old guessed-snapshot mechanism's same
+// characteristic) — not something to "fix" into a real queue without
+// discussing it first.
 type CommandEnvelope struct {
-	// Type is one of "toggle", "next", "previous", "seekTo", "skipTo".
+	// Type is one of "toggle", "next", "previous", "seekTo", "skipTo",
+	// "toggleShuffle", "cycleRepeat".
 	Type string `json:"type"`
 	// PositionMs is the target position for a "seekTo" command.
 	PositionMs int64 `json:"positionMs,omitempty"`

@@ -500,6 +500,12 @@ async function applyCommand(get: () => AudioState, cmd: PlayQueueCommand): Promi
       await get().skipTo(idx);
       return;
     }
+    case 'toggleShuffle':
+      await get().toggleShuffle();
+      return;
+    case 'cycleRepeat':
+      await get().cycleRepeat();
+      return;
   }
 }
 
@@ -1046,6 +1052,12 @@ export const usePlayer = create<AudioState>((set, get) => ({
   },
 
   cycleRepeat: async () => {
+    if (isSpectating(get)) {
+      const order: RepeatMode[] = ['off', 'queue', 'track'];
+      set({ repeat: order[(order.indexOf(get().repeat) + 1) % order.length] }); // optimistic
+      sendRemoteCommand(get, { type: 'cycleRepeat' });
+      return;
+    }
     const order: RepeatMode[] = ['off', 'queue', 'track'];
     const next = order[(order.indexOf(get().repeat) + 1) % order.length];
     set({ repeat: next });
@@ -1057,6 +1069,11 @@ export const usePlayer = create<AudioState>((set, get) => ({
   },
 
   toggleShuffle: async () => {
+    if (isSpectating(get)) {
+      set({ shuffle: !get().shuffle }); // optimistic
+      sendRemoteCommand(get, { type: 'toggleShuffle' });
+      return;
+    }
     const c = client();
     const engine = get().engine;
     if (!c || !engine) {

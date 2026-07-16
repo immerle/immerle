@@ -123,7 +123,7 @@ export interface PlaybackTarget {
  * an intent for the active device to apply itself, not a computed snapshot.
  */
 export interface PlayQueueCommand {
-  type: 'toggle' | 'next' | 'previous' | 'seekTo' | 'skipTo';
+  type: 'toggle' | 'next' | 'previous' | 'seekTo' | 'skipTo' | 'toggleShuffle' | 'cycleRepeat';
   /** Target position for a "seekTo" command. */
   positionMs?: number;
   /** Track to jump to for a "skipTo" command — resolved against the receiver's own queue. */

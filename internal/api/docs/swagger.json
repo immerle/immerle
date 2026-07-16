@@ -1793,7 +1793,7 @@
                         "type": "string"
                     },
                     "type": {
-                        "description": "Type is one of \"toggle\", \"next\", \"previous\", \"seekTo\", \"skipTo\".",
+                        "description": "Type is one of \"toggle\", \"next\", \"previous\", \"seekTo\", \"skipTo\",\n\"toggleShuffle\", \"cycleRepeat\".",
                         "type": "string"
                     }
                 },
@@ -8313,7 +8313,7 @@
         },
         "/play-queue/commands": {
             "post": {
-                "description": "Sends a remote-control command (toggle, next, previous, seekTo, skipTo) for the active device (see targetDeviceId) to apply. Does not modify the saved queue state directly.",
+                "description": "Sends a remote-control command (toggle, next, previous, seekTo, skipTo, toggleShuffle, cycleRepeat) for the active device (see targetDeviceId) to apply. Does not modify the saved queue state directly.",
                 "requestBody": {
                     "content": {
                         "application/json": {

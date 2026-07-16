@@ -319,11 +319,15 @@ func (h *Handler) handleSetPlaybackTarget(w http.ResponseWriter, r *http.Request
 }
 
 // commandTypes are the allowed playQueueCommandRequest.Type values.
-var commandTypes = map[string]bool{"toggle": true, "next": true, "previous": true, "seekTo": true, "skipTo": true}
+var commandTypes = map[string]bool{
+	"toggle": true, "next": true, "previous": true, "seekTo": true, "skipTo": true,
+	"toggleShuffle": true, "cycleRepeat": true,
+}
 
 // playQueueCommandRequest is the body for POST /play-queue/commands.
 type playQueueCommandRequest struct {
-	// Type is one of "toggle", "next", "previous", "seekTo", "skipTo".
+	// Type is one of "toggle", "next", "previous", "seekTo", "skipTo",
+	// "toggleShuffle", "cycleRepeat".
 	Type string `json:"type"`
 	// PositionMs is the target position for a "seekTo" command.
 	PositionMs int64 `json:"positionMs"`
@@ -340,12 +344,13 @@ type playQueueCommandRequest struct {
 }
 
 // handleSendPlayQueueCommand records a spectator's remote-control command
-// (next/previous/seek/toggle/skip) for the active device to apply itself —
-// it does not change the caller's saved queue state (current/position/
-// playing/tracks), only the side-channel pendingCommand/commandSeq fields.
+// (next/previous/seek/toggle/skip/shuffle/repeat) for the active device to
+// apply itself — it does not change the caller's saved queue state (current/
+// position/playing/tracks), only the side-channel pendingCommand/commandSeq
+// fields.
 //
 // @Summary  Send a play-queue command
-// @Description  Sends a remote-control command (toggle, next, previous, seekTo, skipTo) for the active device (see targetDeviceId) to apply. Does not modify the saved queue state directly.
+// @Description  Sends a remote-control command (toggle, next, previous, seekTo, skipTo, toggleShuffle, cycleRepeat) for the active device (see targetDeviceId) to apply. Does not modify the saved queue state directly.
 // @Tags     playback
 // @Security BearerAuth
 // @Accept   json

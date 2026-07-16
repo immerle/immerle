@@ -5538,7 +5538,7 @@ export interface paths {
         put?: never;
         /**
          * Send a play-queue command
-         * @description Sends a remote-control command (toggle, next, previous, seekTo, skipTo) for the active device (see targetDeviceId) to apply. Does not modify the saved queue state directly.
+         * @description Sends a remote-control command (toggle, next, previous, seekTo, skipTo, toggleShuffle, cycleRepeat) for the active device (see targetDeviceId) to apply. Does not modify the saved queue state directly.
          */
         post: {
             parameters: {
@@ -9248,7 +9248,10 @@ export interface components {
             queueIndex?: number;
             /** @description TrackID is the track to jump to for a "skipTo" command. */
             trackId?: string;
-            /** @description Type is one of "toggle", "next", "previous", "seekTo", "skipTo". */
+            /**
+             * @description Type is one of "toggle", "next", "previous", "seekTo", "skipTo",
+             *     "toggleShuffle", "cycleRepeat".
+             */
             type?: string;
         };
         "immerle.playQueueRequest": {

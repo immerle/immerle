@@ -177,17 +177,14 @@ function WideBar({ song, status, position, duration }: BarProps) {
   // A live radio has no queue, no seeking and no prev/next: grey those out.
   const isRadio = useIsRadio(song.id);
   // Another device has claimed active playback (see CastButton): play/pause,
-  // seek and skip still work — the store turns them into remote commands the
-  // active device picks up (usePlayer.isSpectating) — but shuffle/repeat
-  // aren't remote-controllable, so those stay disabled here. Their displayed
-  // state (shuffle/toggleShuffle above) is still the real one, mirrored from
-  // the active device via the saved queue (see applyDisplaySnapshot) — just
-  // not something this device can change.
+  // seek, skip, shuffle and repeat all still work — the store turns them into
+  // remote commands the active device picks up and applies to itself
+  // (usePlayer.isSpectating), so this device's own idle engine is never
+  // touched directly.
   const myId = useAuth((s) => s.client?.getSession()?.deviceId);
   const castTargetId = usePlayer((s) => s.castTargetId);
   const remoteControlled = !!castTargetId && castTargetId !== myId;
   const transportDisabled = isRadio;
-  const queueEditDisabled = isRadio || remoteControlled;
   const playingElsewhere = usePlayingElsewhere();
   // A not-yet-downloaded track streams progressively — the server can't serve
   // byte ranges for it yet. The bar stays interactive though: dragging it
@@ -226,7 +223,7 @@ function WideBar({ song, status, position, duration }: BarProps) {
             size={20}
             color={shuffle ? colors.primary : colors.muted}
             onPress={toggleShuffle}
-            disabled={queueEditDisabled}
+            disabled={transportDisabled}
             accessibilityLabel={t('components.player.shuffle')}
           />
           <IconButton name="play-skip-back" size={22} onPress={previous} disabled={transportDisabled} accessibilityLabel={t('components.player.previous')} />
@@ -238,7 +235,7 @@ function WideBar({ song, status, position, duration }: BarProps) {
               size={20}
               color={repeat !== 'off' ? colors.primary : colors.muted}
               onPress={cycleRepeat}
-              disabled={queueEditDisabled}
+              disabled={transportDisabled}
               accessibilityLabel={t('components.player.repeat')}
             />
             {repeat === 'track' ? (

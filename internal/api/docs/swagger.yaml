@@ -1268,7 +1268,9 @@ components:
           description: TrackID is the track to jump to for a "skipTo" command.
           type: string
         type:
-          description: Type is one of "toggle", "next", "previous", "seekTo", "skipTo".
+          description: |-
+            Type is one of "toggle", "next", "previous", "seekTo", "skipTo",
+            "toggleShuffle", "cycleRepeat".
           type: string
       type: object
     immerle.playQueueRequest:
@@ -5284,8 +5286,8 @@ paths:
   /play-queue/commands:
     post:
       description: Sends a remote-control command (toggle, next, previous, seekTo,
-        skipTo) for the active device (see targetDeviceId) to apply. Does not modify
-        the saved queue state directly.
+        skipTo, toggleShuffle, cycleRepeat) for the active device (see targetDeviceId)
+        to apply. Does not modify the saved queue state directly.
       requestBody:
         content:
           application/json:
