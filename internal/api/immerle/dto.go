@@ -285,6 +285,9 @@ type AccountDTO struct {
 	Email       string `json:"email,omitempty" example:"bob@example.com"`
 	IsAdmin     bool   `json:"isAdmin" example:"false"`
 	Language    string `json:"language,omitempty" example:"fr"`
+	// ListenBrainzToken is the caller's personal ListenBrainz API token, when
+	// set (empty means ListenBrainz scrobbling is off).
+	ListenBrainzToken string `json:"listenBrainzToken,omitempty" example:"00000000-0000-0000-0000-000000000000"`
 }
 
 // ActivityItemDTO carries resolved, human-readable details about the item an

@@ -42,6 +42,7 @@ type Deps struct {
 	OnDemand     *core.CatalogService
 	Activity     *core.ActivityService
 	PlaylistSync core.PlaylistSyncEnqueuer // optional: enqueue public-playlist hub sync
+	ScrobbleSync core.ScrobbleEnqueuer     // optional: enqueue ListenBrainz scrobbles
 	// MusicFolderPaths are the configured library roots, exposed as music folders.
 	MusicFolderPaths []string
 	// BaseURL is used to build absolute share links.
@@ -69,7 +70,7 @@ func NewHandler(d Deps) *Handler {
 	return &Handler{
 		Deps:         d,
 		library:      core.NewLibraryService(d.Catalog, d.Annotations, d.Playlists, d.OnDemand),
-		playback:     core.NewPlaybackService(d.Catalog, d.Annotations, d.Scrobbles, d.OnDemand, d.Activity, d.NowPlaying),
+		playback:     core.NewPlaybackService(d.Catalog, d.Annotations, d.Scrobbles, d.OnDemand, d.Activity, d.NowPlaying, d.ScrobbleSync),
 		playlistSvc:  core.NewPlaylistService(d.Playlists, d.Annotations, d.Activity, d.PlaylistSync, d.OnDemand),
 		userSvc:      core.NewUserService(d.Users, d.Auth),
 		shareSvc:     core.NewShareService(d.Shares, d.Catalog, d.Playlists),
