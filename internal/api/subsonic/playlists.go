@@ -40,7 +40,11 @@ func (h *Handler) handleGetPlaylists(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleGetPlaylist(w http.ResponseWriter, r *http.Request) {
-	d, err := h.playlistSvc.Get(r.Context(), userFrom(r.Context()), param(r, "id"))
+	id := param(r, "id")
+	if h.OnDemand != nil && h.remotePlaylist(w, r, id) {
+		return
+	}
+	d, err := h.playlistSvc.Get(r.Context(), userFrom(r.Context()), id)
 	if err != nil {
 		h.writeServiceError(w, r, err, "Playlist not found")
 		return

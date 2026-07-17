@@ -77,6 +77,19 @@ func (s *LibraryService) Search(ctx context.Context, userID, query string, artis
 		if err != nil {
 			return SearchResults{}, err
 		}
+		if s.onDemand != nil && query != "" {
+			seenP := make(map[string]bool, len(playlists))
+			for _, p := range playlists {
+				seenP[strings.ToLower(p.Name)] = true
+			}
+			for _, p := range s.onDemand.RemoteSearchPlaylists(ctx, query, maxSearchPlaylists) {
+				if seenP[strings.ToLower(p.Name)] {
+					continue
+				}
+				seenP[strings.ToLower(p.Name)] = true
+				playlists = append(playlists, p)
+			}
+		}
 	}
 
 	albumAnn, _ := s.annotations.AnnotationMap(ctx, userID, models.ItemAlbum)
@@ -84,7 +97,7 @@ func (s *LibraryService) Search(ctx context.Context, userID, query string, artis
 
 	// Merge remote results from every active provider, deduplicated by name for
 	// artists/albums and by id for songs. Skipped entirely when every local
-	// type was itself skipped (a playlist-only search has no remote results anyway).
+	// type was itself skipped.
 	if s.onDemand != nil && query != "" && (artistCount > 0 || albumCount > 0 || songCount > 0) {
 		rArtists, rAlbums, rSongs := s.onDemand.RemoteSearch3(ctx, query, maxSearchArtists, maxSearchAlbums, maxSearchSongs)
 

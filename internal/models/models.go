@@ -435,6 +435,9 @@ type Track struct {
 	BPM             int           `json:"bpm,omitempty"`
 	ReplayGainTrack float64       `json:"-"`
 	ReplayGainAlbum float64       `json:"-"`
+	// ISRC is the track's International Standard Recording Code, when known
+	// (from tags, or supplied by a remote provider).
+	ISRC string `json:"isrc,omitempty"`
 	// Remote marks a track that is not yet downloaded but available via a provider.
 	Remote   bool   `json:"-"`
 	Provider string `json:"-"`
@@ -508,6 +511,10 @@ type Playlist struct {
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 	Tracks    []Track   `json:"-"`
+	// Remote marks a playlist that lives on a provider rather than the local
+	// library (surfaced by search, not yet a persisted row).
+	Remote   bool   `json:"-"`
+	Provider string `json:"-"`
 }
 
 // HallOfFame is a user's personal top-tracks ranking — exactly one per user,

@@ -67,3 +67,24 @@ func (h *Handler) remoteMusicDirectory(w http.ResponseWriter, r *http.Request, i
 	}
 	return false
 }
+
+// remotePlaylist serves getPlaylist for a remote (provider) playlist id
+// surfaced in search; it does not exist as a local playlist row.
+func (h *Handler) remotePlaylist(w http.ResponseWriter, r *http.Request, id string) bool {
+	if !core.IsRemotePlaylistID(id) {
+		return false
+	}
+	pl, err := h.OnDemand.RemotePlaylist(r.Context(), id)
+	if err != nil || pl.Name == "" {
+		writeError(w, r, ErrDataNotFound, "Playlist not found")
+		return true
+	}
+	ctx := r.Context()
+	trackAnn, _ := h.Annotations.AnnotationMap(ctx, userFrom(ctx).ID, models.ItemTrack)
+	tracks := make([]core.TrackEntry, 0, len(pl.Tracks))
+	for _, t := range pl.Tracks {
+		tracks = append(tracks, core.TrackEntry{Track: t, Annotation: h.localAnn(ctx, trackAnn, t.ID)})
+	}
+	h.writePlaylist(w, r, core.PlaylistDetail{Playlist: pl, Tracks: tracks})
+	return true
+}

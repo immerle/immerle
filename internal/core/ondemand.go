@@ -516,6 +516,9 @@ func (s *CatalogService) embedTags(ctx context.Context, src, dest string, meta p
 	if meta.MBID != "" {
 		args = append(args, "-metadata", "MUSICBRAINZ_TRACKID="+meta.MBID)
 	}
+	if meta.ISRC != "" {
+		args = append(args, "-metadata", "ISRC="+meta.ISRC)
+	}
 	args = append(args, dest)
 
 	cmd := exec.CommandContext(ctx, s.state.ffmpegPath, args...)

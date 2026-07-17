@@ -297,7 +297,7 @@ const trackSelect = `
 	SELECT t.id, t.title, t.album_id, al.name, t.artist_id, ar.name, t.track_no, t.disc_no,
 	       t.composer, t.genre, t.year, t.duration, t.bitrate, t.path, t.suffix, t.content_type, t.size,
 	       t.title_sort, t.work, t.movement_name, t.movement_no, t.lyrics, t.participants,
-	       t.mbid, t.file_hash, t.cover_art, t.bpm, t.replaygain_track, t.replaygain_album,
+	       t.mbid, t.isrc, t.file_hash, t.cover_art, t.bpm, t.replaygain_track, t.replaygain_album,
 	       t.remote, t.provider, t.uploaded_by, t.created_at, t.updated_at
 	FROM tracks t JOIN albums al ON al.id = t.album_id JOIN artists ar ON ar.id = t.artist_id`
 
@@ -309,7 +309,7 @@ func scanTrack(s rowScanner) (models.Track, error) {
 	if err := s.Scan(&t.ID, &t.Title, &t.AlbumID, &t.AlbumName, &t.ArtistID, &t.ArtistName, &t.TrackNo, &t.DiscNo,
 		&t.Composer, &t.Genre, &t.Year, &t.Duration, &t.BitRate, &t.Path, &t.Suffix, &t.ContentType, &t.Size,
 		&t.TitleSort, &t.Work, &t.MovementName, &t.MovementNo, &t.Lyrics, &participants,
-		&t.MBID, &t.FileHash, &t.CoverArt, &t.BPM, &t.ReplayGainTrack, &t.ReplayGainAlbum,
+		&t.MBID, &t.ISRC, &t.FileHash, &t.CoverArt, &t.BPM, &t.ReplayGainTrack, &t.ReplayGainAlbum,
 		&remote, &t.Provider, &t.UploadedBy, &createdAt, &updatedAt); err != nil {
 		return t, err
 	}
@@ -349,7 +349,7 @@ func (r *CatalogRepo) UpsertTrack(ctx context.Context, t models.Track) (string, 
 			Set("title_sort", t.TitleSort).Set("work", t.Work).Set("movement_name", t.MovementName).
 			Set("movement_no", t.MovementNo).Set("lyrics", t.Lyrics).Set("participants", marshalParticipants(t.Participants)).
 			Set("bitrate", t.BitRate).Set("path", t.Path).Set("suffix", t.Suffix).Set("content_type", t.ContentType).
-			Set("size", t.Size).Set("mbid", t.MBID).Set("file_hash", t.FileHash).Set("cover_art", t.CoverArt).
+			Set("size", t.Size).Set("mbid", t.MBID).Set("isrc", t.ISRC).Set("file_hash", t.FileHash).Set("cover_art", t.CoverArt).
 			Set("bpm", t.BPM).Set("replaygain_track", t.ReplayGainTrack).Set("replaygain_album", t.ReplayGainAlbum).
 			Set("remote", db.Bool(t.Remote)).Set("provider", t.Provider).Set("updated_at", db.Millis(t.UpdatedAt)).
 			Where("id", "=", existing))
@@ -361,7 +361,7 @@ func (r *CatalogRepo) UpsertTrack(ctx context.Context, t models.Track) (string, 
 		Set("title_sort", t.TitleSort).Set("work", t.Work).Set("movement_name", t.MovementName).
 		Set("movement_no", t.MovementNo).Set("lyrics", t.Lyrics).Set("participants", marshalParticipants(t.Participants)).
 		Set("duration", t.Duration).Set("bitrate", t.BitRate).Set("path", t.Path).Set("suffix", t.Suffix).
-		Set("content_type", t.ContentType).Set("size", t.Size).Set("mbid", t.MBID).Set("file_hash", t.FileHash).
+		Set("content_type", t.ContentType).Set("size", t.Size).Set("mbid", t.MBID).Set("isrc", t.ISRC).Set("file_hash", t.FileHash).
 		Set("cover_art", t.CoverArt).Set("bpm", t.BPM).Set("replaygain_track", t.ReplayGainTrack).
 		Set("replaygain_album", t.ReplayGainAlbum).Set("remote", db.Bool(t.Remote)).Set("provider", t.Provider).
 		Set("created_at", db.Millis(t.CreatedAt)).Set("updated_at", db.Millis(t.UpdatedAt)))

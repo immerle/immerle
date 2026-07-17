@@ -17,6 +17,7 @@ var (
 	_ providers.ArtistBrowser       = (*Provider)(nil)
 	_ providers.AlbumBrowser        = (*Provider)(nil)
 	_ providers.ArtistImageSearcher = (*Provider)(nil)
+	_ providers.PlaylistBrowser     = (*Provider)(nil)
 )
 
 func browseService(t *testing.T) *httptest.Server {
@@ -41,6 +42,10 @@ func browseService(t *testing.T) *httptest.Server {
 			return
 		}
 		_, _ = w.Write([]byte(`{"imageUrl":"http://img/avatar.jpg"}`))
+	})
+	mux.HandleFunc("/playlists", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"playlists":[{"providerPlaylistId":"p1","name":"Chill","coverImageUrl":"http://img/p",
+			"tracks":[{"providerTrackId":"t1","title":"Song","artist":"Artist","suffix":"mp3"},{"providerTrackId":"","title":"skip me"}]}]}`))
 	})
 	// Note: /artist/tracks intentionally NOT implemented → 404 → graceful empty.
 	srv := httptest.NewServer(mux)
@@ -92,5 +97,35 @@ func TestHTTPProviderBrowse(t *testing.T) {
 	}
 	if len(top) != 0 {
 		t.Fatalf("expected empty top tracks, got %d", len(top))
+	}
+
+	playlists, err := p.Playlists(ctx, 10)
+	if err != nil || len(playlists) != 1 {
+		t.Fatalf("Playlists: %+v err=%v", playlists, err)
+	}
+	pl := playlists[0]
+	if pl.ProviderPlaylistID != "p1" || pl.Name != "Chill" || pl.CoverImageURL != "http://img/p" {
+		t.Fatalf("unexpected playlist: %+v", pl)
+	}
+	if len(pl.Tracks) != 1 || pl.Tracks[0].ProviderTrackID != "t1" { // the empty-id row is dropped
+		t.Fatalf("unexpected playlist tracks: %+v", pl.Tracks)
+	}
+}
+
+// TestHTTPProviderPlaylistsUnsupported exercises the graceful-404 path: a
+// remote that doesn't implement /playlists degrades to an empty result.
+func TestHTTPProviderPlaylistsUnsupported(t *testing.T) {
+	bare := httptest.NewServer(http.NewServeMux())
+	t.Cleanup(bare.Close)
+	p, err := New("deezer", bare.URL, "{}")
+	if err != nil {
+		t.Fatal(err)
+	}
+	playlists, err := p.Playlists(context.Background(), 10)
+	if err != nil {
+		t.Fatalf("Playlists on a 404 endpoint should not error: %v", err)
+	}
+	if len(playlists) != 0 {
+		t.Fatalf("expected empty playlists, got %d", len(playlists))
 	}
 }
