@@ -8,7 +8,7 @@ import { useAuth } from '../../src/auth/store';
 import { usePlayer } from '../../src/audio/store';
 import { useDownloads, OfflineEntry } from '../../src/offline/store';
 import { useOfflineCatalog } from '../../src/offline/catalog';
-import { useDragScroll } from '../../src/utils/dragScroll';
+import { DragScrollRow } from '../../src/components/DragScrollRow';
 import { AlbumTile } from '../../src/components/AlbumCard';
 import { CoverArt } from '../../src/components/CoverArt';
 import { PlaylistCover } from '../../src/components/PlaylistCover';
@@ -39,10 +39,9 @@ function QuickAccessRow() {
   const canSmart = useAuth((s) => s.client?.isFeatureEnabled('smartPlaylists') ?? false);
   const canRadio = useAuth((s) => s.client?.isFeatureEnabled('internetRadio') ?? false);
   const canHallOfFame = useAuth((s) => s.client?.isFeatureEnabled('hallOfFame') ?? false);
-  const drag = useDragScroll();
 
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingLeft: 12, paddingRight: 16 }} {...drag}>
+    <DragScrollRow showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingLeft: 12, paddingRight: 16 }}>
       <ShortcutChip icon="heart" label={t('home.playlists.likedTracks')} onPress={() => router.push('/liked' as never)} />
       <ShortcutChip icon="cloud-upload" label={t('components.sidebar.localSongs')} onPress={() => router.push('/local' as never)} />
       {canHallOfFame ? (
@@ -52,7 +51,7 @@ function QuickAccessRow() {
         <ShortcutChip icon="sparkles" label={t('smart.title')} onPress={() => router.push('/smart-playlists' as never)} />
       ) : null}
       {canRadio ? <ShortcutChip icon="radio" label={t('radio.title')} onPress={() => router.push('/radios' as never)} /> : null}
-    </ScrollView>
+    </DragScrollRow>
   );
 }
 
@@ -83,7 +82,6 @@ function OfflineTracksRow() {
   const t = useT();
   const entries = useDownloads((s) => s.entries);
   const list = useMemo(() => Object.values(entries).sort((a, b) => b.downloadedAt - a.downloadedAt), [entries]);
-  const drag = useDragScroll();
   if (!list.length) return null;
 
   const play = (index: number) => void usePlayer.getState().playSongs(list.map(toSong), index);
@@ -91,7 +89,7 @@ function OfflineTracksRow() {
   return (
     <View>
       <SectionHeader title={t('home.home.availableOffline')} />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }} {...drag}>
+      <DragScrollRow showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
         {list.map((e, i) => (
           <Pressable key={e.id} onPress={() => play(i)} style={{ width: TILE }} className="mr-3 active:opacity-70">
             <CoverArt coverArt={e.coverArt} size={TILE} rounded="rounded-xl" />
@@ -103,7 +101,7 @@ function OfflineTracksRow() {
             </Text>
           </Pressable>
         ))}
-      </ScrollView>
+      </DragScrollRow>
     </View>
   );
 }
@@ -113,12 +111,11 @@ function OfflineTracksRow() {
 function OfflineAlbumsRow() {
   const t = useT();
   const albums = Object.values(useOfflineCatalog((s) => s.albums));
-  const drag = useDragScroll();
   if (!albums.length) return null;
   return (
     <View>
       <SectionHeader title={t('home.home.offlineAlbums')} />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }} {...drag}>
+      <DragScrollRow showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
         {albums.map((a) => (
           <Pressable key={a.id} onPress={() => router.push(`/album/${a.id}` as never)} style={{ width: TILE }} className="mr-3 active:opacity-70">
             <CoverArt coverArt={a.coverArt} size={TILE} rounded="rounded-xl" />
@@ -130,7 +127,7 @@ function OfflineAlbumsRow() {
             </Text>
           </Pressable>
         ))}
-      </ScrollView>
+      </DragScrollRow>
     </View>
   );
 }
@@ -139,12 +136,11 @@ function OfflineAlbumsRow() {
 function OfflinePlaylistsRow() {
   const t = useT();
   const playlists = Object.values(useOfflineCatalog((s) => s.playlists));
-  const drag = useDragScroll();
   if (!playlists.length) return null;
   return (
     <View>
       <SectionHeader title={t('home.home.offlinePlaylists')} />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }} {...drag}>
+      <DragScrollRow showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
         {playlists.map((p) => (
           <Pressable key={p.id} onPress={() => router.push(`/playlist/${p.id}` as never)} style={{ width: TILE }} className="mr-3 active:opacity-70">
             <PlaylistCover coverArt={p.coverArt} covers={[]} size={TILE} rounded="rounded-xl" fallbackIcon="list" />
@@ -156,7 +152,7 @@ function OfflinePlaylistsRow() {
             </Text>
           </Pressable>
         ))}
-      </ScrollView>
+      </DragScrollRow>
     </View>
   );
 }
@@ -169,12 +165,11 @@ function OfflinePlaylistsRow() {
 function CustomPlaylistsRow({ title, playlists }: { title: string; playlists: Playlist[] | undefined }) {
   const t = useT();
   const nonEmpty = (playlists ?? []).filter((p) => (p.songCount ?? 0) > 0);
-  const drag = useDragScroll();
   if (nonEmpty.length === 0) return null;
   return (
     <View>
       <SectionHeader title={title} />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }} {...drag}>
+      <DragScrollRow showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
         {nonEmpty.map((p) => (
           <Pressable key={p.id} onPress={() => router.push(`/playlist/${p.id}` as never)} style={{ width: TILE }} className="mr-3 active:opacity-70">
             <PlaylistCover coverArt={p.coverArt} covers={p.coverArts ?? []} size={TILE} rounded="rounded-xl" fallbackIcon="list" />
@@ -186,23 +181,22 @@ function CustomPlaylistsRow({ title, playlists }: { title: string; playlists: Pl
             </Text>
           </Pressable>
         ))}
-      </ScrollView>
+      </DragScrollRow>
     </View>
   );
 }
 
 /** Horizontal album carousel. */
 function AlbumRow({ title, albums }: { title: string; albums: Album[] | undefined }) {
-  const drag = useDragScroll();
   if (!albums || albums.length === 0) return null;
   return (
     <View>
       <SectionHeader title={title} />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }} {...drag}>
+      <DragScrollRow showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
         {albums.map((a) => (
           <AlbumTile key={a.id} album={a} size={TILE} />
         ))}
-      </ScrollView>
+      </DragScrollRow>
     </View>
   );
 }
