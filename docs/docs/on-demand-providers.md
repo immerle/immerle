@@ -59,6 +59,12 @@ provider's results, deduplicated. A local artist's page is also enriched with
 the rest of their discography from that provider — browsable and streamable
 on demand, even for albums you don't own.
 
+Seeking is disabled (with an explanatory hint in the app) for as long as a
+track is still streaming progressively — every play of an undownloaded track
+starts a fresh download from byte 0, so jumping ahead would just restart it.
+Once the background download finishes, replaying the track serves it locally
+and seeking works normally.
+
 ## Artist avatars
 
 Artist pictures come from the same providers as everything else on demand —

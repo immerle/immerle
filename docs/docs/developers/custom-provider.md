@@ -62,7 +62,8 @@ live version in the admin. The response:
   "config": {
     "apikey":        { "type": "string", "where": "params", "required": true },
     "Authorization": { "type": "string", "where": "headers", "required": false }
-  }
+  },
+  "playlists": true
 }
 ```
 
@@ -74,6 +75,9 @@ live version in the admin. The response:
   `type` (free-form, e.g. `"string"`), `where` the value travels (`"headers"` or
   `"params"`), and whether it's `required`. Immerle generates the admin's config
   form from this and, on save, rejects a config that's missing any required field.
+- `playlists` — optional, defaults to `false`. Set it to `true` if you implement
+  [`/playlists`](#optional-endpoints-richer-browsing) — that's what tells Immerle
+  it's worth surfacing your playlists in search results at all.
 
 ### Other required endpoints
 
@@ -105,6 +109,7 @@ These three make a usable provider.
   "duration": 213,                // seconds
   "genre": "Electronic",
   "mbid": "",                     // MusicBrainz id, optional
+  "isrc": "",                     // International Standard Recording Code, optional
   "providerArtistId": "art-42",   // optional, enables artist browsing
   "coverImageUrl": "https://cdn.example.com/cover/abc.jpg",
   "artistImageUrl": "https://cdn.example.com/artist/42.jpg",
@@ -149,8 +154,9 @@ Their base URL is compiled in and is **not** configurable.
 
 ### Optional endpoints (richer browsing)
 
-Implement these to enrich artist/album pages. **Return `404` on any you don't
-support** — that's how an `http` provider opts out of a capability.
+Implement these to enrich artist/album pages and surface your own playlists.
+**Return `404` on any you don't support** — that's how an `http` provider opts
+out of a capability.
 
 | Capability   | Method & path          | Params       | Response |
 | ------------ | ---------------------- | ------------ | -------- |
@@ -159,13 +165,23 @@ support** — that's how an `http` provider opts out of a capability.
 | Artist tracks  | `GET /artist/tracks` | `id`, `limit`| `{"results": [<Track>]}` |
 | Album tracks   | `GET /album/tracks`  | `id`, `limit`| `{"results": [<Track>]}` |
 | Artist image   | `GET /artist/image`  | `name`       | `{"imageUrl": "…"}` |
+| Playlists      | `GET /playlists`     | `limit`      | `{"playlists": [<Playlist>]}` |
 
 ```json
 // <Artist>
 { "providerArtistId": "art-42", "name": "Artist", "albumCount": 3, "imageUrl": "…" }
 // <Album>
 { "providerAlbumId": "alb-7", "title": "Album", "year": 2024, "coverImageUrl": "…" }
+// <Playlist>
+{ "providerPlaylistId": "pl-1", "name": "Editorial mix", "coverImageUrl": "…", "tracks": [<Track>, …] }
 ```
+
+`/playlists` is what lets a provider's own playlists (editorial, curated,
+whatever it hosts) show up in Immerle's search results alongside local ones —
+but only if you also set `"playlists": true` in
+[`/capabilities`](#the-capabilities-endpoint-mandatory); otherwise it's never
+probed. Rows without a `providerPlaylistId`, and tracks within them without a
+`providerTrackId`, are dropped.
 
 ## A minimal provider service
 
@@ -221,7 +237,7 @@ app.get('/download', async (req, res) => {
 });
 
 // Opt out of browsing capabilities:
-app.get(['/artists', '/artist/albums', '/artist/tracks', '/album/tracks', '/artist/image'],
+app.get(['/artists', '/artist/albums', '/artist/tracks', '/album/tracks', '/artist/image', '/playlists'],
   (_req, res) => res.sendStatus(404));
 
 app.listen(8080);

@@ -1,5 +1,5 @@
 ---
-sidebar_position: 7
+sidebar_position: 8
 title: Playlist import
 ---
 
@@ -17,7 +17,7 @@ can show live progress instead of waiting for the whole playlist.
 
 | Source | How it works | Requirements |
 | ------ | ------------- | ------------ |
-| Spotify | Delegated to the [federation](./federation.md) hub — the hub holds Spotify credentials, not your instance | A configured hub connection |
+| Spotify | Fetched directly by your instance — it replays the same anonymous-access calls Spotify's own web player makes to read a public playlist | None — always available, no [federation](./federation.md) hub or Spotify credentials needed |
 | Deezer | Fetched directly from Deezer's public API (no auth needed for public playlists) | None — always available |
 
 You can point an import at either a bare playlist id or a full playlist URL
