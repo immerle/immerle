@@ -127,6 +127,9 @@ export interface PlaylistCoverSpec {
   valign?: 'top' | 'middle' | 'bottom';
 }
 
+// ponytail: UI kill switch for smart playlists, independent of server capabilities/admin toggle. Flip to true to bring it back.
+const SMART_PLAYLISTS_UI_ENABLED = false;
+
 export class ImmerleClient {
   /** Admin status derived from the Subsonic user's adminRole (set post-construction). */
   private adminFlag = false;
@@ -203,6 +206,7 @@ export class ImmerleClient {
    * to gate an entry point into the feature.
    */
   isFeatureEnabled(feature: CapabilityFeature): boolean {
+    if (feature === 'smartPlaylists' && !SMART_PLAYLISTS_UI_ENABLED) return false;
     return this.capabilities.toggles[feature] ?? this.capabilities.features[feature];
   }
 
