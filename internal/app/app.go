@@ -21,6 +21,7 @@ import (
 	"github.com/immerle/immerle/internal/api/subsonic"
 	"github.com/immerle/immerle/internal/autoplaylists"
 	"github.com/immerle/immerle/internal/charts"
+	"github.com/immerle/immerle/internal/concerts"
 	"github.com/immerle/immerle/internal/config"
 	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/db"
@@ -53,6 +54,7 @@ type App struct {
 	evictor       *core.Evictor
 	charts        *charts.Service
 	autoplaylists *autoplaylists.Service
+	concerts      *concerts.Service
 	logPruner     *core.LogPruner
 	settings      *core.SettingsService
 	imports       *importer.Service
@@ -388,6 +390,11 @@ func New(cfg config.Config) (*App, error) {
 	autoplaylistsSvc := autoplaylists.New(store.Catalog, store.Genres, store.Wrapped, store.Annotations, store.Users, store.Playlists, logger)
 	autoplaylistsSvc.SetOwnerResolver(func(ctx context.Context) (string, error) { return firstAdmin(ctx, store.Users) })
 
+	// Concert discovery: matches each user-with-a-city's top-listened artists
+	// against Ticketmaster/Skiddle, once daily. Disabled by default (needs at
+	// least one API key, set from the admin settings).
+	concertsSvc := concerts.New(store.Users, store.Wrapped, store.Concerts, settingsSvc.ConcertsConfig, logger)
+
 	// Daily retention sweep over persisted diagnostic logs. The window is read
 	// live from the runtime settings; register any future log table here.
 	logPruner := core.NewLogPruner(settingsSvc.LogRetention, 24*time.Hour, logger, store.ProviderLogs)
@@ -429,6 +436,8 @@ func New(cfg config.Config) (*App, error) {
 		Cleanup:        evictor,
 		Charts:         chartsSvc,
 		AutoPlaylists:  autoplaylistsSvc,
+		Concerts:       store.Concerts,
+		ConcertsSync:   concertsSvc,
 		Providers:      providerMgr,
 		Settings:       settingsSvc,
 		SmartPlaylists: store.SmartPlaylists,
@@ -497,6 +506,7 @@ func New(cfg config.Config) (*App, error) {
 		evictor:       evictor,
 		charts:        chartsSvc,
 		autoplaylists: autoplaylistsSvc,
+		concerts:      concertsSvc,
 		logPruner:     logPruner,
 		settings:      settingsSvc,
 		imports:       importSvc,
@@ -562,6 +572,11 @@ func (a *App) Run(ctx context.Context) error {
 	}
 	if a.autoplaylists != nil {
 		a.spawn(func() { a.autoplaylists.Run(ctx) })
+	}
+	if a.concerts != nil {
+		// Always started; SyncNow self-gates on the runtime enabled flag, same
+		// as the evictor.
+		a.spawn(func() { a.concerts.Run(ctx) })
 	}
 	if a.logPruner != nil {
 		a.spawn(func() { a.logPruner.Run(ctx) })

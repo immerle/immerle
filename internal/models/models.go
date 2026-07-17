@@ -21,6 +21,10 @@ type User struct {
 	// Language is the user's preferred UI language (e.g. "en", "fr"). Empty means
 	// the client should fall back to the device locale.
 	Language string `json:"language,omitempty"`
+	// City is a free-text location ("Paris", "Austin, TX"...) used to search
+	// for nearby concerts of the artists this user listens to. Empty means
+	// concert discovery finds nothing for this user (see internal/concerts).
+	City string `json:"city,omitempty"`
 }
 
 // ThemeSettings holds a user's per-account UI theme, applied client-side. It is
@@ -89,6 +93,7 @@ type RuntimeSettings struct {
 	Wrapped        WrappedRuntime        `json:"wrapped"`
 	Offline        OfflineRuntime        `json:"offline"`
 	HallOfFame     HallOfFameRuntime     `json:"hallOfFame"`
+	Concerts       ConcertsRuntime       `json:"concerts"`
 }
 
 // SmartPlaylistsRuntime toggles rule-based "smart" playlists (hot-reloadable).
@@ -120,6 +125,20 @@ type OfflineRuntime struct {
 // When disabled, GET /hall-of-fame 404s and clients hide its sidebar entry.
 type HallOfFameRuntime struct {
 	Enabled bool `json:"enabled"`
+}
+
+// ConcertsRuntime configures concert discovery (hot-reloadable): matches each
+// user's top-listened artists against their city via Ticketmaster (primary)
+// and Skiddle (fallback when Ticketmaster has no key or no results), once
+// daily. Disabled by default — unlike the other toggleable features it needs
+// at least one API key to be useful, same reasoning as Jamendo shipping
+// disabled until configured.
+type ConcertsRuntime struct {
+	Enabled bool `json:"enabled"`
+	// TicketmasterAPIKey and SkiddleAPIKey are write-only: never returned by the
+	// admin settings API (see redactSettings), only ever set.
+	TicketmasterAPIKey string `json:"ticketmasterApiKey,omitempty"`
+	SkiddleAPIKey      string `json:"skiddleApiKey,omitempty"`
 }
 
 // LogsRuntime configures retention of persisted diagnostic logs (provider logs
@@ -257,7 +276,26 @@ func DefaultRuntimeSettings() RuntimeSettings {
 		Wrapped:        WrappedRuntime{Enabled: true},
 		Offline:        OfflineRuntime{Enabled: true},
 		HallOfFame:     HallOfFameRuntime{Enabled: true},
+		Concerts:       ConcertsRuntime{Enabled: false},
 	}
+}
+
+// Concert is one upcoming show found by matching a user's top-listened
+// artists against Ticketmaster/Skiddle near their city (internal/concerts).
+// One row per (user, source event) — see migration 00044.
+type Concert struct {
+	ID            string     `json:"id"`
+	UserID        string     `json:"-"`
+	Source        string     `json:"source"` // "ticketmaster" | "skiddle"
+	SourceEventID string     `json:"-"`
+	ArtistName    string     `json:"artistName"`
+	EventName     string     `json:"eventName"`
+	Venue         string     `json:"venue,omitempty"`
+	City          string     `json:"city,omitempty"`
+	StartTime     time.Time  `json:"startTime"`
+	URL           string     `json:"url,omitempty"`
+	DismissedAt   *time.Time `json:"-"`
+	CreatedAt     time.Time  `json:"-"`
 }
 
 // SmartPlaylist is a saved set of rules that materializes to tracks on read

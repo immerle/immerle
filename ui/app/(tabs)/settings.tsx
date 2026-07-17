@@ -47,10 +47,12 @@ export default function Settings() {
   const updateAccount = useUpdateAccount();
   const [editName, setEditName] = useState('');
   const [editEmail, setEditEmail] = useState('');
+  const [editCity, setEditCity] = useState('');
   useEffect(() => {
     if (account.data) {
       setEditName(account.data.displayName);
       setEditEmail(account.data.email);
+      setEditCity(account.data.city);
       // Server is the cross-device source of truth ("" → follow device); AsyncStorage is just the offline fallback.
       setLocale(account.data.language || 'system');
     }
@@ -115,6 +117,13 @@ export default function Settings() {
           value={editEmail}
           onChangeText={setEditEmail}
         />
+        <Field
+          label={t('settings.city')}
+          placeholder={t('settings.cityPlaceholder')}
+          help={t('settings.cityHelp')}
+          value={editCity}
+          onChangeText={setEditCity}
+        />
         <View className="gap-1.5">
           <Text className="text-sm font-medium text-muted">{t('settings.language')}</Text>
           <Select value={localePref} options={langOptions} onChange={onChangeLocale} />
@@ -125,7 +134,7 @@ export default function Settings() {
             size="sm"
             icon="save-outline"
             loading={updateAccount.isPending}
-            onPress={() => updateAccount.mutate({ displayName: editName.trim(), email: editEmail.trim() })}
+            onPress={() => updateAccount.mutate({ displayName: editName.trim(), email: editEmail.trim(), city: editCity.trim() })}
           />
         </View>
       </Card>

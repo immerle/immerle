@@ -29,6 +29,7 @@ func accountView(u models.User) map[string]any {
 		"email":       u.Email,
 		"isAdmin":     u.IsAdmin,
 		"language":    u.Language,
+		"city":        u.City,
 	}
 }
 
@@ -60,6 +61,10 @@ type updateAccountRequest struct {
 	DisplayName *string `json:"displayName"`
 	Email       *string `json:"email"`
 	Language    *string `json:"language"`
+	// City is free text ("Paris", "Austin, TX"...) used by concert discovery
+	// (internal/concerts) to search for nearby shows. Clearing it (empty
+	// string) simply stops that user from being matched.
+	City *string `json:"city"`
 }
 
 // handleAccountUpdate applies a partial update to the caller's own account.
@@ -106,6 +111,9 @@ func (h *Handler) handleAccountUpdate(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		user.Language = lang
+	}
+	if req.City != nil {
+		user.City = strings.TrimSpace(*req.City)
 	}
 	if err := h.Users.Update(r.Context(), user); err != nil {
 		writeInternal(w, err)

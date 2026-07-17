@@ -1,9 +1,10 @@
 import { useMemo } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useAlbumList, useStarred } from '../../src/query/library';
 import { useCustomPlaylists } from '../../src/query/playlists';
+import { useConcerts, useDismissConcert } from '../../src/query/concerts';
 import { useAuth } from '../../src/auth/store';
 import { usePlayer } from '../../src/audio/store';
 import { useDownloads, OfflineEntry } from '../../src/offline/store';
@@ -13,7 +14,7 @@ import { AlbumTile } from '../../src/components/AlbumCard';
 import { CoverArt } from '../../src/components/CoverArt';
 import { PlaylistCover } from '../../src/components/PlaylistCover';
 import { Ionicon } from '../../src/components/Ionicon';
-import { Button, Card, Loading, SectionHeader } from '../../src/components/ui';
+import { Button, Card, IconButton, Loading, SectionHeader } from '../../src/components/ui';
 import { useColors } from '../../src/theme/colors';
 import { Album, Playlist, Song } from '../../src/api/subsonic/types';
 import { useT } from '../../src/i18n/store';
@@ -66,6 +67,50 @@ function OfflineBanner({ onRetry, retrying }: { onRetry: () => void; retrying: b
         <Ionicon name="cloud-offline-outline" size={22} color={colors.muted} />
         <Text className="flex-1 text-base font-semibold text-foreground">{t('home.home.offlineTitle')}</Text>
         <Button title={t('home.home.retry')} variant="secondary" size="sm" loading={retrying} onPress={onRetry} />
+      </Card>
+    </View>
+  );
+}
+
+/** Closable banner for the single nearest upcoming concert match (concert
+ * discovery searches Ticketmaster/Skiddle for your top-listened artists near
+ * your account's city). Dismissing it just moves on to the next-soonest
+ * match, if any — dismissal is permanent per concert, persisted server-side. */
+function ConcertBanner() {
+  const t = useT();
+  const colors = useColors();
+  const concerts = useConcerts();
+  const dismiss = useDismissConcert();
+  const next = concerts.data?.[0];
+  if (!next) return null;
+
+  const date = new Date(next.startTime).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+  const place = [next.venue, next.city].filter(Boolean).join(', ');
+
+  return (
+    <View className="px-4 pb-2">
+      <Card className="flex-row items-center gap-3">
+        <View className="h-10 w-10 items-center justify-center rounded-full bg-primary/15">
+          <Ionicon name="megaphone" size={20} color={colors.primary} />
+        </View>
+        <View className="flex-1">
+          <Text numberOfLines={1} className="text-sm font-semibold text-foreground">
+            {t('home.concerts.bannerTitle', { artist: next.artistName })}
+          </Text>
+          <Text numberOfLines={1} className="text-xs text-muted">
+            {place ? `${place} · ${date}` : date}
+          </Text>
+        </View>
+        {next.url ? (
+          <Button title={t('home.concerts.tickets')} variant="secondary" size="sm" onPress={() => Linking.openURL(next.url!)} />
+        ) : null}
+        <IconButton
+          name="close"
+          size={18}
+          color={colors.muted}
+          accessibilityLabel={t('home.concerts.dismiss')}
+          onPress={() => dismiss.mutate(next.id)}
+        />
       </Card>
     </View>
   );
@@ -236,6 +281,8 @@ export default function Home() {
         <View className="pb-2 pt-1">
           <QuickAccessRow />
         </View>
+
+        {!offline ? <ConcertBanner /> : null}
 
         {!offline ? <CustomPlaylistsRow title={t('home.home.customPlaylists')} playlists={customPlaylists.data} /> : null}
 

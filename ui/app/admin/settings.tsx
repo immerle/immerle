@@ -13,6 +13,7 @@ import { useRadioAdmin, useSetRadio } from '../../src/query/radio';
 import { useWrappedAdmin, useSetWrapped } from '../../src/query/wrapped';
 import { useOfflineAdmin, useSetOffline } from '../../src/query/offline';
 import { useHallOfFameAdmin, useSetHallOfFame } from '../../src/query/hallOfFame';
+import { useConcertsAdmin, useUpdateConcertsConfig, useConcertsSyncMutation } from '../../src/query/concerts';
 import { useAuth } from '../../src/auth/store';
 import { RuntimeSettingsDTO } from '../../src/api/immerleApi';
 import { Badge, Button, Card, ErrorState, Field, IconButton, Loading } from '../../src/components/ui';
@@ -31,7 +32,7 @@ const RESTART_LABEL_KEYS: Record<string, string> = {
   'scan.watch': 'admin.settings.restartScanWatch',
 };
 
-type SectionKey = 'auth' | 'ldap' | 'server' | 'transcode' | 'cleanup' | 'charts' | 'logs' | 'features';
+type SectionKey = 'auth' | 'ldap' | 'server' | 'transcode' | 'cleanup' | 'charts' | 'concerts' | 'logs' | 'features';
 
 interface Section {
   key: SectionKey;
@@ -77,6 +78,7 @@ export default function AdminSettings() {
     { key: 'transcode', icon: 'film', color: '#a855f7', title: t('admin.settings.transcodeTitle'), subtitle: t('admin.settings.transcodeSubtitle') },
     { key: 'cleanup', icon: 'trash-bin', color: '#ef4444', title: t('admin.settings.cleanupTitle'), subtitle: t('admin.settings.cleanupSubtitle') },
     { key: 'charts', icon: 'trending-up', color: '#1db954', title: t('admin.settings.chartsTitle'), subtitle: t('admin.settings.chartsSubtitle') },
+    { key: 'concerts', icon: 'megaphone', color: '#ec4899', title: t('admin.settings.concertsTitle'), subtitle: t('admin.settings.concertsSubtitle') },
     { key: 'logs', icon: 'document-text', color: '#f59e0b', title: t('admin.settings.logsTitle'), subtitle: t('admin.settings.logsSubtitle') },
     { key: 'features', icon: 'sparkles', color: '#8b5cf6', title: t('admin.settings.featuresTitle'), subtitle: t('admin.settings.featuresSubtitle') },
   ];
@@ -96,14 +98,25 @@ export default function AdminSettings() {
   const setOffline = useSetOffline();
   const hallOfFame = useHallOfFameAdmin();
   const setHallOfFame = useSetHallOfFame();
+  const concerts = useConcertsAdmin();
+  const updateConcerts = useUpdateConcertsConfig();
+  const concertsSync = useConcertsSyncMutation();
   const [form, setForm] = useState<Form | null>(null);
   const [sheet, setSheet] = useState<SectionKey | null>(null);
   const [removed, setRemoved] = useState<number | null>(null);
   const [synced, setSynced] = useState<number | null>(null);
+  const [concertsSynced, setConcertsSynced] = useState<number | null>(null);
+  const [concertsEnabled, setConcertsEnabled] = useState(false);
+  const [tmKey, setTmKey] = useState('');
+  const [skKey, setSkKey] = useState('');
 
   useEffect(() => {
     if (q.data?.settings) setForm(toForm(q.data.settings));
   }, [q.data?.settings]);
+
+  useEffect(() => {
+    if (concerts.data) setConcertsEnabled(concerts.data.enabled);
+  }, [concerts.data]);
 
   if (q.isLoading || !form) return <Loading />;
   if (q.isError) return <ErrorState message={t('admin.settings.loadError')} onRetry={q.refetch} />;
@@ -115,6 +128,7 @@ export default function AdminSettings() {
   const profiles = q.data?.settings.transcode?.profiles ?? [];
   const rows = SECTIONS.filter((s) => {
     if (s.key === 'cleanup') return !!cleanup.data;
+    if (s.key === 'concerts') return !!client?.has('concertDiscovery');
     if (s.key === 'features')
       return (
         !!client?.has('smartPlaylists') ||
@@ -298,6 +312,55 @@ export default function AdminSettings() {
                     variant="secondary"
                     loading={chartsSync.isPending}
                     onPress={() => chartsSync.mutate(undefined, { onSuccess: (n) => setSynced(n) })}
+                  />
+                </>
+              ) : null}
+
+              {sheet === 'concerts' ? (
+                <>
+                  <Text className="text-xs text-muted">{t('admin.settings.concertsDescription')}</Text>
+                  <ToggleRow label={t('admin.settings.concertsEnabled')} value={concertsEnabled} onChange={setConcertsEnabled} />
+                  <Field
+                    label={t('admin.settings.ticketmasterKey')}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    placeholder={concerts.data?.ticketmasterConfigured ? t('admin.settings.keyConfigured') : t('admin.settings.keyNotConfigured')}
+                    value={tmKey}
+                    onChangeText={setTmKey}
+                  />
+                  <Field
+                    label={t('admin.settings.skiddleKey')}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    placeholder={concerts.data?.skiddleConfigured ? t('admin.settings.keyConfigured') : t('admin.settings.keyNotConfigured')}
+                    value={skKey}
+                    onChangeText={setSkKey}
+                    help={t('admin.settings.concertsKeysHelp')}
+                  />
+                  <SaveButton
+                    loading={updateConcerts.isPending}
+                    onPress={() =>
+                      updateConcerts.mutate(
+                        {
+                          enabled: concertsEnabled,
+                          ...(tmKey ? { ticketmasterApiKey: tmKey } : {}),
+                          ...(skKey ? { skiddleApiKey: skKey } : {}),
+                        },
+                        {
+                          onSuccess: () => {
+                            setTmKey('');
+                            setSkKey('');
+                          },
+                        },
+                      )
+                    }
+                  />
+                  <Button
+                    title={concertsSynced != null ? t('admin.settings.concertsSyncedCount', { count: concertsSynced }) : t('admin.settings.runConcertsSync')}
+                    icon="megaphone-outline"
+                    variant="secondary"
+                    loading={concertsSync.isPending}
+                    onPress={() => concertsSync.mutate(undefined, { onSuccess: (n) => setConcertsSynced(n) })}
                   />
                 </>
               ) : null}

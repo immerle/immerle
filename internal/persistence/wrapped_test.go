@@ -117,6 +117,57 @@ func TestWrappedRepoTopTracksWithCustomWindowAndLimit(t *testing.T) {
 	}
 }
 
+// TestWrappedRepoTopArtistsWithCustomWindowAndLimit covers TopArtists (used by
+// internal/concerts to pick which artists to search for nearby shows) — same
+// window/limit shape as TopTracks above, but grouped by artist.
+func TestWrappedRepoTopArtistsWithCustomWindowAndLimit(t *testing.T) {
+	store := testutil.NewStore(t)
+	ctx := context.Background()
+	now := time.Now()
+
+	user := models.User{ID: uuid.NewString(), Username: "u3", PasswordHash: "x", CreatedAt: now}
+	if err := store.Users.Create(ctx, user); err != nil {
+		t.Fatal(err)
+	}
+	newArtistTrack := func(artistName string) string {
+		artistID, _ := store.Catalog.UpsertArtist(ctx, models.Artist{ID: uuid.NewString(), Name: artistName, CreatedAt: now})
+		albumID, _ := store.Catalog.UpsertAlbum(ctx, models.Album{ID: uuid.NewString(), Name: "Al", ArtistID: artistID, CreatedAt: now})
+		id, _ := store.Catalog.UpsertTrack(ctx, models.Track{ID: uuid.NewString(), Title: "T", AlbumID: albumID, ArtistID: artistID, Path: uuid.NewString(), CreatedAt: now, UpdatedAt: now})
+		return id
+	}
+	trackA, trackB, trackC := newArtistTrack("Artist A"), newArtistTrack("Artist B"), newArtistTrack("Artist C")
+
+	scrobble := func(trackID string, at time.Time) {
+		if err := store.Scrobbles.Insert(ctx, models.Scrobble{ID: uuid.NewString(), UserID: user.ID, TrackID: trackID, PlayedAt: at, Submitted: true}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	within := time.Date(2024, 6, 10, 0, 0, 0, 0, time.UTC)
+	scrobble(trackA, within)
+	scrobble(trackA, within)
+	scrobble(trackB, within)
+	scrobble(trackC, time.Date(2024, 5, 1, 0, 0, 0, 0, time.UTC)) // outside the window below
+
+	start := time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC).UnixMilli()
+	end := time.Date(2024, 7, 1, 0, 0, 0, 0, time.UTC).UnixMilli()
+
+	top, err := store.Wrapped.TopArtists(ctx, user.ID, start, end, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(top) != 1 || top[0].Name != "Artist A" || top[0].Plays != 2 {
+		t.Fatalf("TopArtists(limit=1) = %+v, want just Artist A with 2 plays", top)
+	}
+
+	top, err = store.Wrapped.TopArtists(ctx, user.ID, start, end, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(top) != 2 {
+		t.Fatalf("TopArtists(limit=10) = %+v, want 2 artists (C is outside the window)", top)
+	}
+}
+
 // TestWrappedRepoTotalsIsAllTime covers Totals used by the profile page's stat
 // row: unlike Wrapped/TopTracks it has no year/window bound, and it must
 // ignore unsubmitted scrobbles the same way Wrapped does.

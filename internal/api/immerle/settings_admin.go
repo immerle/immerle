@@ -31,9 +31,12 @@ func (h *Handler) handleSettings(w http.ResponseWriter, r *http.Request) {
 }
 
 // redactSettings clears secrets that must never leave the server (the hub
-// private key) before serializing settings to an admin client.
+// private key, the concert-discovery API keys) before serializing settings to
+// an admin client.
 func redactSettings(rs models.RuntimeSettings) models.RuntimeSettings {
 	rs.Federation.PrivateKey = ""
+	rs.Concerts.TicketmasterAPIKey = ""
+	rs.Concerts.SkiddleAPIKey = ""
 	return rs
 }
 

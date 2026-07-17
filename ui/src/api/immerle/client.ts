@@ -54,6 +54,8 @@ import {
 import {
   CapabilityFeature,
   Capabilities,
+  Concert,
+  ConcertsAdminStatus,
   DownloadJob,
   HallOfFame,
   ImmerleApiError,
@@ -1048,6 +1050,13 @@ export class ImmerleClient {
     return data.synced ?? 0;
   }
 
+  /** Admin: run concert discovery now; returns how many new matches were found. */
+  async runConcertsSync(): Promise<number> {
+    const { data, error } = await this.api.POST('/admin/concerts/sync', {});
+    if (error || !data) throw apiErr(error, 'concerts_sync_failed');
+    return data.synced ?? 0;
+  }
+
   // --- Admin: on-demand catalog (download jobs, legacy) -------------------
 
   async getDownloadJobs(signal?: AbortSignal): Promise<DownloadJob[]> {
@@ -1160,11 +1169,12 @@ export class ImmerleClient {
       email: data.email ?? '',
       isAdmin: data.isAdmin ?? false,
       language: (data.language ?? '') as AccountLanguage,
+      city: data.city ?? '',
     };
   }
 
-  /** Update the caller's own display name / email / language (partial). */
-  async updateAccount(patch: { displayName?: string; email?: string; language?: AccountLanguage }): Promise<Account> {
+  /** Update the caller's own display name / email / language / city (partial). */
+  async updateAccount(patch: { displayName?: string; email?: string; language?: AccountLanguage; city?: string }): Promise<Account> {
     const { data, error } = await this.api.PATCH('/me', { body: patch });
     if (error || !data) throw apiErr(error, 'account_update_failed');
     this.setDisplayName(data.displayName);
@@ -1174,7 +1184,31 @@ export class ImmerleClient {
       email: data.email ?? '',
       isAdmin: data.isAdmin ?? false,
       language: (data.language ?? '') as AccountLanguage,
+      city: data.city ?? '',
     };
+  }
+
+  // --- Concert discovery ---------------------------------------------------
+
+  /** Your upcoming, non-dismissed concert matches, soonest first. */
+  async getConcerts(signal?: AbortSignal): Promise<Concert[]> {
+    const r = await this.request<{ concerts?: Concert[] }>('GET', 'me/concerts', undefined, signal);
+    return r.concerts ?? [];
+  }
+
+  /** Closes a concert match — stays dismissed even after the next daily sync. */
+  async dismissConcert(id: string): Promise<void> {
+    await this.request<void>('PUT', `me/concerts/${encodeURIComponent(id)}/dismiss`);
+  }
+
+  /** Admin: concert-discovery config state (API keys are write-only). */
+  async getConcertsStatus(signal?: AbortSignal): Promise<ConcertsAdminStatus> {
+    return this.request<ConcertsAdminStatus>('GET', 'admin/concerts', undefined, signal);
+  }
+
+  /** Admin: enable/disable concert discovery and/or set the Ticketmaster/Skiddle API keys (partial). */
+  async updateConcertsConfig(patch: { enabled?: boolean; ticketmasterApiKey?: string; skiddleApiKey?: string }): Promise<ConcertsAdminStatus> {
+    return this.request<ConcertsAdminStatus>('PUT', 'admin/concerts', patch);
   }
 
   /** A user's profile: identity, recent activity, public playlists and (when
@@ -1568,6 +1602,9 @@ export interface Account {
   email: string;
   isAdmin: boolean;
   language: AccountLanguage;
+  /** Free-text location ("Paris", "Austin, TX"...) used by concert discovery
+   * to search for nearby shows. Empty means not set. */
+  city: string;
 }
 
 /** A user's profile: identity, recent activity and public playlists. */

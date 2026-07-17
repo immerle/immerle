@@ -1,0 +1,132 @@
+// Package ticketmaster searches the Ticketmaster Discovery API for upcoming
+// music events by artist and city. Requires an API key (admin-configured,
+// see models.ConcertsRuntime) — the free tier is plenty for a self-hosted
+// instance's own concert-discovery sync.
+package ticketmaster
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/url"
+	"time"
+)
+
+const baseURL = "https://app.ticketmaster.com/discovery/v2/events.json"
+
+// Event is a single upcoming show, trimmed to what internal/concerts needs.
+type Event struct {
+	ID        string
+	Name      string
+	URL       string
+	Venue     string
+	City      string
+	StartTime time.Time
+}
+
+// Client searches Ticketmaster's Discovery API. The zero value is not usable;
+// build one with NewClient.
+type Client struct {
+	http   *http.Client
+	apiKey string
+}
+
+// NewClient builds a Client. An empty apiKey makes every search a no-op
+// (returns no events, no error) — callers don't need to check IsConfigured
+// before calling Search.
+func NewClient(apiKey string) *Client {
+	return &Client{http: &http.Client{Timeout: 15 * time.Second}, apiKey: apiKey}
+}
+
+// IsConfigured reports whether an API key is set.
+func (c *Client) IsConfigured() bool { return c.apiKey != "" }
+
+type discoveryResponse struct {
+	Embedded struct {
+		Events []struct {
+			ID    string `json:"id"`
+			Name  string `json:"name"`
+			URL   string `json:"url"`
+			Dates struct {
+				Start struct {
+					DateTime  string `json:"dateTime"`
+					LocalDate string `json:"localDate"`
+				} `json:"start"`
+			} `json:"dates"`
+			Embedded struct {
+				Venues []struct {
+					Name string `json:"name"`
+					City struct {
+						Name string `json:"name"`
+					} `json:"city"`
+				} `json:"venues"`
+			} `json:"_embedded"`
+		} `json:"events"`
+	} `json:"_embedded"`
+}
+
+// Search finds upcoming music events matching artist near city, soonest
+// first, capped at limit. Returns no events (not an error) when the client
+// has no API key, the artist has nothing upcoming, or Ticketmaster has no
+// presence in that city.
+func (c *Client) Search(ctx context.Context, artist, city string, limit int) ([]Event, error) {
+	if !c.IsConfigured() {
+		return nil, nil
+	}
+	q := url.Values{
+		"apikey":             {c.apiKey},
+		"keyword":            {artist},
+		"classificationName": {"music"},
+		"sort":               {"date,asc"},
+		"size":               {fmt.Sprintf("%d", limit)},
+	}
+	if city != "" {
+		q.Set("city", city)
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+"?"+q.Encode(), nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	// A city with zero matching events is a 200 with no "_embedded" key, not an
+	// error — only treat non-2xx as a real failure.
+	if resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("ticketmaster: unexpected status %d", resp.StatusCode)
+	}
+	var body discoveryResponse
+	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+		return nil, err
+	}
+	out := make([]Event, 0, len(body.Embedded.Events))
+	for _, e := range body.Embedded.Events {
+		start, err := parseStart(e.Dates.Start.DateTime, e.Dates.Start.LocalDate)
+		if err != nil || e.ID == "" {
+			continue
+		}
+		ev := Event{ID: e.ID, Name: e.Name, URL: e.URL, StartTime: start}
+		if len(e.Embedded.Venues) > 0 {
+			ev.Venue = e.Embedded.Venues[0].Name
+			ev.City = e.Embedded.Venues[0].City.Name
+		}
+		out = append(out, ev)
+	}
+	return out, nil
+}
+
+// parseStart prefers the precise dateTime (UTC, has a time-of-day);
+// Ticketmaster omits it for a handful of events with only a date announced,
+// in which case localDate (midnight) is the best available fallback.
+func parseStart(dateTime, localDate string) (time.Time, error) {
+	if dateTime != "" {
+		return time.Parse(time.RFC3339, dateTime)
+	}
+	if localDate != "" {
+		return time.Parse("2006-01-02", localDate)
+	}
+	return time.Time{}, fmt.Errorf("ticketmaster: event has no date")
+}

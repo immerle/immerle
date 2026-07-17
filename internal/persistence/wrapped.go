@@ -154,6 +154,34 @@ func (r *WrappedRepo) topArtists(ctx context.Context, userID string, start, end 
 		LIMIT ?`, userID, start, end)
 }
 
+// TopArtists returns a user's most-scrobbled artists by name in [start, end)
+// (unix millis), most-played first. Unlike the Wrapped year-in-review chart
+// this takes an explicit limit — used by internal/concerts to pick which
+// artists to search for nearby shows.
+func (r *WrappedRepo) TopArtists(ctx context.Context, userID string, start, end int64, limit int) ([]models.WrappedCount, error) {
+	rows, err := r.query(ctx, `SELECT ar.name, COUNT(*) AS plays
+		FROM scrobbles s
+		JOIN tracks t ON t.id = s.track_id
+		JOIN artists ar ON ar.id = t.artist_id
+		WHERE s.user_id=? AND s.submitted=1 AND s.played_at>=? AND s.played_at<?
+		GROUP BY ar.name
+		ORDER BY plays DESC, ar.name ASC
+		LIMIT ?`, userID, start, end, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []models.WrappedCount
+	for rows.Next() {
+		var c models.WrappedCount
+		if err := rows.Scan(&c.Name, &c.Plays); err != nil {
+			return nil, err
+		}
+		out = append(out, c)
+	}
+	return out, rows.Err()
+}
+
 func (r *WrappedRepo) topGenres(ctx context.Context, userID string, start, end int64) ([]models.WrappedCount, error) {
 	return r.topByLabel(ctx, `SELECT t.genre, COUNT(*) AS plays
 		FROM scrobbles s

@@ -85,7 +85,11 @@ type Deps struct {
 	Wrapped *persistence.WrappedRepo
 	// HallOfFame persists each user's personal top-tracks ranking.
 	HallOfFame *persistence.HallOfFameRepo
-	Logger     *slog.Logger
+	// Concerts persists per-user concert-discovery matches. ConcertsSync
+	// controls the daily sync (admin API). Implemented by *concerts.Service.
+	Concerts     *persistence.ConcertRepo
+	ConcertsSync ConcertsController
+	Logger       *slog.Logger
 	// LogHub streams live server log lines to the admin log viewer (SSE).
 	LogHub *logging.Hub
 }
@@ -114,6 +118,12 @@ type ChartsController interface {
 // AutoPlaylistsController runs an immediate genre/decade auto-playlist sync,
 // regardless of the daily schedule. Implemented by *autoplaylists.Service.
 type AutoPlaylistsController interface {
+	SyncNow(ctx context.Context) (int, error)
+}
+
+// ConcertsController runs an immediate concert-discovery sync, regardless of
+// the daily schedule. Implemented by *concerts.Service.
+type ConcertsController interface {
 	SyncNow(ctx context.Context) (int, error)
 }
 
@@ -188,6 +198,8 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Patch("/me", h.handleAccountUpdate)
 			r.Get("/me/favorites", h.handleFavorites)
 			r.Get("/me/custom-playlists", h.handleCustomPlaylists)
+			r.Get("/me/concerts", h.handleMyConcerts)
+			r.Put("/me/concerts/{id}/dismiss", h.handleDismissConcert)
 			r.Put("/me/password", h.handleChangePassword)
 			r.Get("/users/{username}", h.handleProfile)
 			r.Get("/users/{username}/hall-of-fame", h.handleUserHallOfFame)
@@ -363,6 +375,7 @@ func (h *Handler) Register(mux chi.Router) {
 			// Admin: curated chart-playlist sync (force-run, otherwise weekly).
 			r.Post("/admin/charts/sync", h.handleChartsSync)
 			r.Post("/admin/autoplaylists/sync", h.handleAutoPlaylistsSync)
+			r.Post("/admin/concerts/sync", h.handleConcertsSync)
 
 			// Admin: runtime-configurable on-demand providers.
 			r.Get("/admin/providers", h.handleProviders)
@@ -407,6 +420,10 @@ func (h *Handler) Register(mux chi.Router) {
 			// Admin: Hall of Fame feature toggle.
 			r.Get("/admin/hall-of-fame", h.handleHallOfFameAdmin)
 			r.Put("/admin/hall-of-fame", h.handleHallOfFameToggle)
+
+			// Admin: concert-discovery settings (enable + API keys).
+			r.Get("/admin/concerts", h.handleConcertsAdmin)
+			r.Put("/admin/concerts", h.handleConcertsUpdate)
 		})
 	})
 }

@@ -422,6 +422,154 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/concerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the concert-discovery feature state */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.ConcertsStatusDTO"];
+                    };
+                };
+            };
+        };
+        /**
+         * Update concert-discovery settings
+         * @description Admin only. Partial update — only fields present are changed. API keys are write-only: the response never echoes them back.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Fields to change */
+            requestBody: {
+                content: {
+                    "application/json": Record<string, never> | components["schemas"]["immerle.concertsUpdateRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.ConcertsStatusDTO"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/concerts/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sync concert discovery now
+         * @description Admin only. Searches every user-with-a-city's top-listened artists for nearby upcoming shows immediately, returning how many new matches were found.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.ChartsSyncDTO"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/federation": {
         parameters: {
             query?: never;
@@ -5241,6 +5389,127 @@ export interface paths {
         };
         trace?: never;
     };
+    "/me/concerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Your upcoming concert matches
+         * @description Concert discovery matches your top-listened artists (see your account's city) against Ticketmaster/Skiddle, refreshed daily. Returns upcoming, non-dismissed matches, soonest first. Empty (not an error) when the feature is disabled, no city is set, or nothing matched yet.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.ConcertsDTO"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/concerts/{id}/dismiss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Dismiss a concert match */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Concert id */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description dismissed */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/custom-playlists": {
         parameters: {
             query?: never;
@@ -8583,6 +8852,8 @@ export interface components {
             prefix?: string;
         };
         "immerle.AccountDTO": {
+            /** @example Paris */
+            city?: string;
             /** @example Bob Marley */
             displayName?: string;
             /** @example bob@example.com */
@@ -8656,6 +8927,34 @@ export interface components {
             intervalSeconds?: number;
             /** @example 2592000 */
             maxAgeSeconds?: number;
+        };
+        "immerle.ConcertDTO": {
+            /** @example Daft Punk */
+            artistName?: string;
+            /** @example Paris */
+            city?: string;
+            /** @example Daft Punk World Tour */
+            eventName?: string;
+            id?: string;
+            /** @example ticketmaster */
+            source?: string;
+            /** @example 2026-09-12T19:00:00Z */
+            startTime?: string;
+            /** @example https://www.ticketmaster.com/event/... */
+            url?: string;
+            /** @example Accor Arena */
+            venue?: string;
+        };
+        "immerle.ConcertsDTO": {
+            concerts?: components["schemas"]["immerle.ConcertDTO"][];
+        };
+        "immerle.ConcertsStatusDTO": {
+            /** @example false */
+            enabled?: boolean;
+            /** @example false */
+            skiddleConfigured?: boolean;
+            /** @example false */
+            ticketmasterConfigured?: boolean;
         };
         "immerle.CreateTokenDTO": {
             id?: string;
@@ -9215,6 +9514,11 @@ export interface components {
             trackId?: string;
             type?: string;
         };
+        "immerle.concertsUpdateRequest": {
+            enabled?: boolean;
+            skiddleApiKey?: string;
+            ticketmasterApiKey?: string;
+        };
         "immerle.createJamRequest": {
             name?: string;
             trackIds?: string[];
@@ -9610,6 +9914,12 @@ export interface components {
             year?: number;
         };
         "immerle.updateAccountRequest": {
+            /**
+             * @description City is free text ("Paris", "Austin, TX"...) used by concert discovery
+             *     (internal/concerts) to search for nearby shows. Clearing it (empty
+             *     string) simply stops that user from being matched.
+             */
+            city?: string;
             displayName?: string;
             email?: string;
             language?: string;
