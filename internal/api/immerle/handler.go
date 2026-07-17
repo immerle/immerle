@@ -16,6 +16,7 @@ import (
 	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/federation"
 	"github.com/immerle/immerle/internal/importer"
+	"github.com/immerle/immerle/internal/listenbrainz"
 	"github.com/immerle/immerle/internal/logging"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
@@ -33,6 +34,10 @@ type Deps struct {
 	Activity     *core.ActivityService
 	Playlists    *persistence.PlaylistRepo
 	PlaylistSync core.PlaylistSyncEnqueuer // optional: enqueue public-playlist hub sync
+	ScrobbleSync core.ScrobbleEnqueuer     // optional: enqueue ListenBrainz scrobbles
+	// ListenBrainz validates a token live when a user sets one on their
+	// account (PATCH /me). Optional; nil skips live validation.
+	ListenBrainz *listenbrainz.Client
 	Jam          *core.JamService
 	Setup        *core.SetupService
 	Federation   *federation.Service
@@ -137,7 +142,7 @@ func NewHandler(d Deps) *Handler {
 	return &Handler{
 		Deps:          d,
 		library:       core.NewLibraryService(d.Catalog, d.Annotations, d.Playlists, d.OnDemand),
-		playback:      core.NewPlaybackService(d.Catalog, d.Annotations, d.Scrobbles, d.OnDemand, d.Activity, d.NowPlaying),
+		playback:      core.NewPlaybackService(d.Catalog, d.Annotations, d.Scrobbles, d.OnDemand, d.Activity, d.NowPlaying, d.ScrobbleSync),
 		playQueue:     core.NewPlayQueueService(d.PlayQueues, d.Catalog, d.Annotations, d.Logger),
 		playlistSvc:   core.NewPlaylistService(d.Playlists, d.Annotations, d.Activity, d.PlaylistSync, d.OnDemand),
 		hallOfFameSvc: core.NewHallOfFameService(d.HallOfFame, d.OnDemand),

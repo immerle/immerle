@@ -44,6 +44,12 @@ components:
         language:
           example: fr
           type: string
+        listenBrainzToken:
+          description: |-
+            ListenBrainzToken is the caller's personal ListenBrainz API token, when
+            set (empty means ListenBrainz scrobbling is off).
+          example: 00000000-0000-0000-0000-000000000000
+          type: string
         username:
           example: bob
           type: string
@@ -1778,6 +1784,8 @@ components:
         email:
           type: string
         language:
+          type: string
+        listenBrainzToken:
           type: string
       type: object
     immerle.updateJamRequest:
@@ -5097,7 +5105,7 @@ paths:
       - users
     patch:
       description: Partial update — only fields present are changed. Lets a user set
-        their display name and email themselves.
+        their display name, email and ListenBrainz token themselves.
       requestBody:
         content:
           application/json:

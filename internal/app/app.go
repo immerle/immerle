@@ -26,6 +26,7 @@ import (
 	"github.com/immerle/immerle/internal/db"
 	"github.com/immerle/immerle/internal/federation"
 	"github.com/immerle/immerle/internal/importer"
+	"github.com/immerle/immerle/internal/listenbrainz"
 	"github.com/immerle/immerle/internal/logging"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/outbox"
@@ -364,6 +365,12 @@ func New(cfg config.Config) (*App, error) {
 	// addressed cover de-dup. PlaylistService enqueues on every mutation.
 	playlistSyncer := federation.NewPlaylistSyncer(fed, outboxWorker, store.PlaylistSync, store.CoverUploads, store.Playlists, coverSvc, logger)
 
+	// ListenBrainz scrobbling: opt-in per user (a personal API token set on
+	// their account via PATCH /me). Registers on the same outbox worker, so
+	// no extra background goroutine is needed.
+	lbClient := listenbrainz.NewClient(nil)
+	lbScrobbler := listenbrainz.NewScrobbler(lbClient, outboxWorker, logger)
+
 	// Playlist import (e.g. Spotify): the source playlist is fetched through the
 	// hub (which holds the third-party credentials), then each track is resolved
 	// against the on-demand content providers and downloaded into a new playlist.
@@ -399,6 +406,7 @@ func New(cfg config.Config) (*App, error) {
 		Annotations:      store.Annotations,
 		Playlists:        store.Playlists,
 		PlaylistSync:     playlistSyncer,
+		ScrobbleSync:     lbScrobbler,
 		PlayQueues:       store.PlayQueues,
 		Scrobbles:        store.Scrobbles,
 		Shares:           store.Shares,
@@ -423,6 +431,8 @@ func New(cfg config.Config) (*App, error) {
 		Activity:       activitySvc,
 		Playlists:      store.Playlists,
 		PlaylistSync:   playlistSyncer,
+		ScrobbleSync:   lbScrobbler,
+		ListenBrainz:   lbClient,
 		Jam:            jamSvc,
 		Setup:          setupSvc,
 		Federation:     fed,
