@@ -20,7 +20,11 @@ export function useDragScroll() {
   };
 
   return {
-    onMouseDown: (e: { currentTarget: { scrollLeft: number }; clientX: number }) => {
+    onMouseDown: (e: { currentTarget: { scrollLeft: number }; clientX: number; preventDefault: () => void }) => {
+      // Without this, mousedown starting on an <img> (album/playlist covers)
+      // triggers the browser's native "drag this image out" ghost instead of
+      // our scroll-drag.
+      e.preventDefault();
       drag.current = { startX: e.clientX, startScrollLeft: e.currentTarget.scrollLeft };
     },
     onMouseMove: (e: { currentTarget: { scrollLeft: number }; clientX: number }) => {
