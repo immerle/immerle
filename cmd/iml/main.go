@@ -107,11 +107,12 @@ type model struct {
 	cursor  int
 	status  string
 
-	queue    []Song
-	queuePos int
-	playing  bool
-	repeat   repeatMode
-	shuffle  bool
+	queue           []Song
+	queuePlaylistID string // set only when queue came from a playlist -- needed to resolve unresolved (federated) entries
+	queuePos        int
+	playing         bool
+	repeat          repeatMode
+	shuffle         bool
 
 	width, height int
 }
@@ -128,8 +129,9 @@ type searchDoneMsg struct {
 }
 
 type tracksLoadedMsg struct {
-	tracks []Song
-	err    error
+	tracks     []Song
+	playlistID string // set only when tracks came from a playlist
+	err        error
 }
 
 func (m model) searchCmd() tea.Cmd {
@@ -175,13 +177,15 @@ func (m model) loadTracksCmd(r result) tea.Cmd {
 		}
 		var tracks []Song
 		var err error
+		var playlistID string
 		switch r.kind {
 		case scopeAlbum:
 			tracks, err = m.client.AlbumTracks(ctx, r.id)
 		case scopePlaylist:
 			tracks, err = m.client.PlaylistTracks(ctx, r.id)
+			playlistID = r.id
 		}
-		return tracksLoadedMsg{tracks: tracks, err: err}
+		return tracksLoadedMsg{tracks: tracks, playlistID: playlistID, err: err}
 	}
 }
 
@@ -196,16 +200,26 @@ type streamReadyMsg struct {
 
 // playCurrentCmd resolves the stream URL for the track at queuePos, or nil
 // (nothing to play) once the queue is exhausted -- the caller sets the
-// "queue finished" status in that case.
+// "queue finished" status in that case. A federated-playlist entry that
+// hasn't been matched to a real track yet (Unresolved, empty id) is resolved
+// first -- the server checks the local catalog, then on-demand providers.
 func (m model) playCurrentCmd() tea.Cmd {
 	if m.queuePos >= len(m.queue) {
 		return nil
 	}
 	t := m.queue[m.queuePos]
 	client := m.client
+	playlistID := m.queuePlaylistID
 	return func() tea.Msg {
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		defer cancel()
+		if t.Unresolved {
+			resolved, err := client.ResolvePlaylistTrack(ctx, playlistID, t.Position)
+			if err != nil {
+				return streamReadyMsg{track: t, err: fmt.Errorf("resolve: %w", err)}
+			}
+			t = resolved
+		}
 		url, err := client.StreamURL(ctx, t.ID)
 		return streamReadyMsg{track: t, url: url, err: err}
 	}
@@ -365,6 +379,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		m.queue = msg.tracks
+		m.queuePlaylistID = msg.playlistID
 		if m.shuffle {
 			shuffleFrom(m.queue, 0)
 		}
@@ -375,6 +390,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.err != nil {
 			m.status = "stream error: " + msg.err.Error()
 			return m, nil
+		}
+		if m.queuePos < len(m.queue) {
+			m.queue[m.queuePos] = msg.track // cache the resolved track so repeat/replay skips re-resolving
 		}
 		m.player.Play(msg.url)
 		m.playing = true

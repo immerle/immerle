@@ -115,6 +115,15 @@ type Song struct {
 	Title  string `json:"title"`
 	Artist string `json:"artist"`
 	Album  string `json:"album"`
+	// Unresolved marks a federated-playlist entry not yet matched to a
+	// playable track (id is empty): resolve it via ResolvePlaylistTrack
+	// before streaming.
+	Unresolved bool `json:"unresolved"`
+	// Position is this track's index in its source playlist, set locally
+	// (not from JSON) by PlaylistTracks -- ResolvePlaylistTrack addresses
+	// entries by playlist position, which must stay stable even if the
+	// local queue gets shuffled.
+	Position int `json:"-"`
 }
 
 type Album struct {
@@ -166,7 +175,7 @@ func (c *Client) AlbumTracks(ctx context.Context, id string) ([]Song, error) {
 	var out struct {
 		Tracks []Song `json:"tracks"`
 	}
-	if err := c.do(ctx, http.MethodGet, "/albums/"+id, nil, &out); err != nil {
+	if err := c.do(ctx, http.MethodGet, "/albums/"+url.PathEscape(id), nil, &out); err != nil {
 		return nil, err
 	}
 	return out.Tracks, nil
@@ -176,20 +185,42 @@ func (c *Client) PlaylistTracks(ctx context.Context, id string) ([]Song, error) 
 	var out struct {
 		Tracks []Song `json:"tracks"`
 	}
-	if err := c.do(ctx, http.MethodGet, "/playlists/"+id, nil, &out); err != nil {
+	if err := c.do(ctx, http.MethodGet, "/playlists/"+url.PathEscape(id), nil, &out); err != nil {
 		return nil, err
 	}
+	for i := range out.Tracks {
+		out.Tracks[i].Position = i
+	}
 	return out.Tracks, nil
+}
+
+// ResolvePlaylistTrack matches an unresolved federated-playlist entry (by its
+// position in the playlist) to a playable track -- local catalog first, then
+// on-demand providers. The result may itself be a remote id, streamed
+// progressively like any other on-demand track.
+func (c *Client) ResolvePlaylistTrack(ctx context.Context, playlistID string, position int) (Song, error) {
+	var out Song
+	path := fmt.Sprintf("/playlists/%s/tracks/%d/resolve", url.PathEscape(playlistID), position)
+	if err := c.do(ctx, http.MethodPost, path, nil, &out); err != nil {
+		return Song{}, err
+	}
+	return out, nil
 }
 
 // StreamURL mints a short-lived signed stream URL for a track: no
 // Authorization header needed, so it can be handed straight to a plain
 // http.Get (the player doesn't carry the Bearer token).
+//
+// The id must be percent-encoded in the request path (matching what the web
+// UI's fetch client does): an on-demand/remote track id is
+// "remote:<provider>:<base64 provider id>", and that base64 payload can
+// contain "/" or "+" -- passed raw, those get read back as extra path
+// segments (or otherwise break routing) and the server 404s.
 func (c *Client) StreamURL(ctx context.Context, id string) (string, error) {
 	var out struct {
 		Stream string `json:"stream"`
 	}
-	if err := c.do(ctx, http.MethodGet, "/songs/"+id+"/stream-url", nil, &out); err != nil {
+	if err := c.do(ctx, http.MethodGet, "/songs/"+url.PathEscape(id)+"/stream-url", nil, &out); err != nil {
 		return "", err
 	}
 	return c.baseURL + out.Stream, nil
