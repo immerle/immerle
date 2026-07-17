@@ -166,7 +166,7 @@ func (c *Client) AlbumTracks(ctx context.Context, id string) ([]Song, error) {
 	var out struct {
 		Tracks []Song `json:"tracks"`
 	}
-	if err := c.do(ctx, http.MethodGet, "/albums/"+id, nil, &out); err != nil {
+	if err := c.do(ctx, http.MethodGet, "/albums/"+url.PathEscape(id), nil, &out); err != nil {
 		return nil, err
 	}
 	return out.Tracks, nil
@@ -176,7 +176,7 @@ func (c *Client) PlaylistTracks(ctx context.Context, id string) ([]Song, error) 
 	var out struct {
 		Tracks []Song `json:"tracks"`
 	}
-	if err := c.do(ctx, http.MethodGet, "/playlists/"+id, nil, &out); err != nil {
+	if err := c.do(ctx, http.MethodGet, "/playlists/"+url.PathEscape(id), nil, &out); err != nil {
 		return nil, err
 	}
 	return out.Tracks, nil
@@ -185,11 +185,17 @@ func (c *Client) PlaylistTracks(ctx context.Context, id string) ([]Song, error) 
 // StreamURL mints a short-lived signed stream URL for a track: no
 // Authorization header needed, so it can be handed straight to a plain
 // http.Get (the player doesn't carry the Bearer token).
+//
+// The id must be percent-encoded in the request path (matching what the web
+// UI's fetch client does): an on-demand/remote track id is
+// "remote:<provider>:<base64 provider id>", and that base64 payload can
+// contain "/" or "+" -- passed raw, those get read back as extra path
+// segments (or otherwise break routing) and the server 404s.
 func (c *Client) StreamURL(ctx context.Context, id string) (string, error) {
 	var out struct {
 		Stream string `json:"stream"`
 	}
-	if err := c.do(ctx, http.MethodGet, "/songs/"+id+"/stream-url", nil, &out); err != nil {
+	if err := c.do(ctx, http.MethodGet, "/songs/"+url.PathEscape(id)+"/stream-url", nil, &out); err != nil {
 		return "", err
 	}
 	return c.baseURL + out.Stream, nil
