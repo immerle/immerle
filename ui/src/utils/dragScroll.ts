@@ -6,9 +6,12 @@ export function dragScrollLeft(startScrollLeft: number, startX: number, currentX
   return startScrollLeft - (currentX - startX);
 }
 
-// Past this many px of movement, mouseup no longer counts as a plain click on
-// whatever's underneath (e.g. an album cover) — it was a scroll-drag.
+// Past this many px of movement, releasing no longer counts as a plain click
+// on whatever's underneath (e.g. an album cover) — it was a scroll-drag, even
+// if the release lands back on the same cover it started on.
 const CLICK_THRESHOLD = 5;
+
+type ReleaseEvent = { stopPropagation: () => void };
 
 /**
  * ponytail: click-and-drag horizontal scrolling, web only — React Native
@@ -16,13 +19,20 @@ const CLICK_THRESHOLD = 5;
  * native touch scrolling which already works. Spread the returned handlers
  * onto a horizontal ScrollView; native platforms never fire mouse events, so
  * this is a no-op there.
+ *
+ * A real drag also needs to stop the release from acting as a press on
+ * whatever's under the cursor: Pressable can fire onPress straight off
+ * pointerup, not just a browser click, so both are stopped in capture phase
+ * — before the Pressable underneath ever sees either.
  */
 export function useDragScroll() {
-  const drag = useRef<{ startX: number; startScrollLeft: number; moved: boolean } | null>(null);
-  const suppressClick = useRef(false);
-  const stop = () => {
-    if (drag.current?.moved) suppressClick.current = true;
-    drag.current = null;
+  const dragging = useRef(false);
+  const start = useRef({ x: 0, scrollLeft: 0 });
+  const wasDrag = useRef(false);
+
+  const onRelease = (e: ReleaseEvent) => {
+    dragging.current = false;
+    if (wasDrag.current) e.stopPropagation();
   };
 
   return {
@@ -31,22 +41,23 @@ export function useDragScroll() {
       // triggers the browser's native "drag this image out" ghost instead of
       // our scroll-drag.
       e.preventDefault();
-      drag.current = { startX: e.clientX, startScrollLeft: e.currentTarget.scrollLeft, moved: false };
+      dragging.current = true;
+      wasDrag.current = false;
+      start.current = { x: e.clientX, scrollLeft: e.currentTarget.scrollLeft };
     },
     onMouseMove: (e: { currentTarget: { scrollLeft: number }; clientX: number }) => {
-      if (!drag.current) return;
-      if (Math.abs(e.clientX - drag.current.startX) > CLICK_THRESHOLD) drag.current.moved = true;
-      e.currentTarget.scrollLeft = dragScrollLeft(drag.current.startScrollLeft, drag.current.startX, e.clientX);
+      if (!dragging.current) return;
+      if (Math.abs(e.clientX - start.current.x) > CLICK_THRESHOLD) wasDrag.current = true;
+      e.currentTarget.scrollLeft = dragScrollLeft(start.current.scrollLeft, start.current.x, e.clientX);
     },
-    onMouseUp: stop,
-    onMouseLeave: stop,
-    // Dragging past the threshold ends in a mouseup on top of whatever's
-    // under the cursor (e.g. an album tile), which the browser follows with
-    // a click there — swallow just that one click so it doesn't open/play
-    // the thing you were only trying to scroll past.
+    onMouseUpCapture: onRelease,
+    onPointerUpCapture: onRelease,
+    onMouseLeave: () => {
+      dragging.current = false;
+    },
     onClickCapture: (e: { preventDefault: () => void; stopPropagation: () => void }) => {
-      if (!suppressClick.current) return;
-      suppressClick.current = false;
+      if (!wasDrag.current) return;
+      wasDrag.current = false;
       e.preventDefault();
       e.stopPropagation();
     },
