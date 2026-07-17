@@ -33,6 +33,16 @@ It's *capability-aware*: it probes the server on connect and only shows the
 features that instance actually has enabled, so it degrades gracefully
 against an older server or one with things turned off — no broken buttons.
 
+### Multi-device playback
+
+Sign in on more than one device and the app keeps them in sync: the
+play queue, current track and position are shared, so picking up your phone
+resumes wherever your laptop left off. From the player, "cast to device"
+picks one device as the sole active player (the others pause instead of
+doubling audio), and the picking device keeps play/pause/skip/seek control
+over it remotely — same idea as Spotify Connect. Pick "Everywhere" to go back
+to every device playing independently.
+
 ## `iml` — terminal client
 
 A UI-less TUI: search songs/albums/playlists and play them without ever

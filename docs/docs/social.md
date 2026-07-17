@@ -1,5 +1,5 @@
 ---
-sidebar_position: 6
+sidebar_position: 7
 title: Social features
 ---
 
@@ -52,7 +52,9 @@ A Jam is a host-controlled, synchronized listening session — everyone
 listening hears the same track at the same position in real time, streamed
 live. The host starts a session with a queue, anyone can join or leave
 freely, but only the host can change what's playing, seek, pause, or end the
-session for everyone.
+session for everyone. The host can also invite a specific user straight from
+their profile — the invitee gets a notification to join with one tap, but an
+invite is just a shortcut, not a requirement to join.
 
 ---
 

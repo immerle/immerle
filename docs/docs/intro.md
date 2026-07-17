@@ -23,9 +23,14 @@ you outgrow it). Drop in your music, hit play.
   without the memory footprint of a GUI app, good for gaming sessions.
 - 🎧 **Also works with your Subsonic clients** — browsing, search, streaming,
   transcoding, playlists, scrobbling, now-playing.
+- 🔁 **Multi-device playback** — pick up where another device left off, or
+  cast to one and control it remotely, Spotify-Connect style.
 - 🌍 **On-demand catalog** — pluggable providers (Jamendo, Internet Archive, and
   your own HTTP providers) stream tracks you don't own yet, progressively on
   first play.
+- ✨ **Discovery & Hall of Fame** — auto-generated genre/decade/trending/chart
+  playlists, personal "made for you" lists, and a hand-curated top-tracks
+  ranking.
 - 👯 **Social** — an activity feed with per-event privacy, and collaborative
   or public playlists.
 - 🔊 **Jam sessions** — listen together, in sync, streamed live.
@@ -40,6 +45,7 @@ you outgrow it). Drop in your music, hit play.
 - [Configuration](./configuration.md) — bootstrap settings vs. runtime settings.
 - [Connecting clients](./clients.md) — the app, `iml`, or any Subsonic client.
 - [On-demand catalog](./on-demand-providers.md) — enable built-in providers, add your own, cleanup.
+- [Discovery & Hall of Fame](./discovery.md) — auto-generated playlists and the top-tracks ranking.
 - [Social features](./social.md) — activity, sharing, Jam sessions.
 - [Playlist import](./playlist-import.md) — bring playlists over from Spotify or Deezer.
 - [Federation](./federation.md) — sync playlists via an `immerle-hub`.
