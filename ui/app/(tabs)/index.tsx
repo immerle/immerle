@@ -8,6 +8,7 @@ import { useAuth } from '../../src/auth/store';
 import { usePlayer } from '../../src/audio/store';
 import { useDownloads, OfflineEntry } from '../../src/offline/store';
 import { useOfflineCatalog } from '../../src/offline/catalog';
+import { ScrollRow } from '../../src/components/ScrollRow';
 import { AlbumTile } from '../../src/components/AlbumCard';
 import { CoverArt } from '../../src/components/CoverArt';
 import { PlaylistCover } from '../../src/components/PlaylistCover';
@@ -40,7 +41,7 @@ function QuickAccessRow() {
   const canHallOfFame = useAuth((s) => s.client?.isFeatureEnabled('hallOfFame') ?? false);
 
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingLeft: 12, paddingRight: 16 }}>
+    <ScrollRow showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingLeft: 12, paddingRight: 16 }}>
       <ShortcutChip icon="heart" label={t('home.playlists.likedTracks')} onPress={() => router.push('/liked' as never)} />
       <ShortcutChip icon="cloud-upload" label={t('components.sidebar.localSongs')} onPress={() => router.push('/local' as never)} />
       {canHallOfFame ? (
@@ -50,7 +51,7 @@ function QuickAccessRow() {
         <ShortcutChip icon="sparkles" label={t('smart.title')} onPress={() => router.push('/smart-playlists' as never)} />
       ) : null}
       {canRadio ? <ShortcutChip icon="radio" label={t('radio.title')} onPress={() => router.push('/radios' as never)} /> : null}
-    </ScrollView>
+    </ScrollRow>
   );
 }
 
@@ -88,7 +89,7 @@ function OfflineTracksRow() {
   return (
     <View>
       <SectionHeader title={t('home.home.availableOffline')} />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
+      <ScrollRow showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
         {list.map((e, i) => (
           <Pressable key={e.id} onPress={() => play(i)} style={{ width: TILE }} className="mr-3 active:opacity-70">
             <CoverArt coverArt={e.coverArt} size={TILE} rounded="rounded-xl" />
@@ -100,7 +101,7 @@ function OfflineTracksRow() {
             </Text>
           </Pressable>
         ))}
-      </ScrollView>
+      </ScrollRow>
     </View>
   );
 }
@@ -114,7 +115,7 @@ function OfflineAlbumsRow() {
   return (
     <View>
       <SectionHeader title={t('home.home.offlineAlbums')} />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
+      <ScrollRow showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
         {albums.map((a) => (
           <Pressable key={a.id} onPress={() => router.push(`/album/${a.id}` as never)} style={{ width: TILE }} className="mr-3 active:opacity-70">
             <CoverArt coverArt={a.coverArt} size={TILE} rounded="rounded-xl" />
@@ -126,7 +127,7 @@ function OfflineAlbumsRow() {
             </Text>
           </Pressable>
         ))}
-      </ScrollView>
+      </ScrollRow>
     </View>
   );
 }
@@ -139,7 +140,7 @@ function OfflinePlaylistsRow() {
   return (
     <View>
       <SectionHeader title={t('home.home.offlinePlaylists')} />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
+      <ScrollRow showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
         {playlists.map((p) => (
           <Pressable key={p.id} onPress={() => router.push(`/playlist/${p.id}` as never)} style={{ width: TILE }} className="mr-3 active:opacity-70">
             <PlaylistCover coverArt={p.coverArt} covers={[]} size={TILE} rounded="rounded-xl" fallbackIcon="list" />
@@ -151,7 +152,7 @@ function OfflinePlaylistsRow() {
             </Text>
           </Pressable>
         ))}
-      </ScrollView>
+      </ScrollRow>
     </View>
   );
 }
@@ -168,7 +169,7 @@ function CustomPlaylistsRow({ title, playlists }: { title: string; playlists: Pl
   return (
     <View>
       <SectionHeader title={title} />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
+      <ScrollRow showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
         {nonEmpty.map((p) => (
           <Pressable key={p.id} onPress={() => router.push(`/playlist/${p.id}` as never)} style={{ width: TILE }} className="mr-3 active:opacity-70">
             <PlaylistCover coverArt={p.coverArt} covers={p.coverArts ?? []} size={TILE} rounded="rounded-xl" fallbackIcon="list" />
@@ -180,7 +181,7 @@ function CustomPlaylistsRow({ title, playlists }: { title: string; playlists: Pl
             </Text>
           </Pressable>
         ))}
-      </ScrollView>
+      </ScrollRow>
     </View>
   );
 }
@@ -191,11 +192,11 @@ function AlbumRow({ title, albums }: { title: string; albums: Album[] | undefine
   return (
     <View>
       <SectionHeader title={title} />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
+      <ScrollRow showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
         {albums.map((a) => (
           <AlbumTile key={a.id} album={a} size={TILE} />
         ))}
-      </ScrollView>
+      </ScrollRow>
     </View>
   );
 }

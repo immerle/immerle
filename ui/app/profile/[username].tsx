@@ -15,6 +15,7 @@ import { useJam } from '../../src/jam/store';
 import { ActivityEventDTO, ProfilePlaylistDTO } from '../../src/api/immerleApi';
 import { Song } from '../../src/api/subsonic/types';
 import { formatRelativeTime, formatDuration } from '../../src/utils/format';
+import { ScrollRow } from '../../src/components/ScrollRow';
 import { useT } from '../../src/i18n/store';
 import { useWebTitle } from '../../src/utils/documentTitle';
 
@@ -156,7 +157,7 @@ export default function Profile() {
         {recentPlays.length ? (
           <View>
             <SectionHeader title={t('social.profile.recentPlays')} />
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingHorizontal: 16 }}>
+            <ScrollRow showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingHorizontal: 16 }}>
               {recentPlays.map((s, i) => (
                 <Pressable key={`${s.id}-${i}`} onPress={() => playSongs(recentPlays, i)} className="w-28 active:opacity-70">
                   <CoverArt coverArt={s.coverArt} size={112} rounded="rounded-lg" />
@@ -168,7 +169,7 @@ export default function Profile() {
                   </Text>
                 </Pressable>
               ))}
-            </ScrollView>
+            </ScrollRow>
           </View>
         ) : null}
 

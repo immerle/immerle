@@ -896,6 +896,10 @@
     }
   },
   "components": {
+    "scrollRow": {
+      "scrollLeft": "Défiler vers la gauche",
+      "scrollRight": "Défiler vers la droite"
+    },
     "sidebar": {
       "library": "Bibliothèque",
       "expandLibrary": "Déplier la bibliothèque",
