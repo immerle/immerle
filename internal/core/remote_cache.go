@@ -69,6 +69,33 @@ func (s *CatalogService) cachedTrackSearch(ctx context.Context, prov providers.P
 	return v.([]providers.Result), nil
 }
 
+// cachedCapabilities fetches a provider's live /capabilities through the same
+// TTL cache, so checking what a provider supports (e.g. playlist browsing)
+// doesn't cost a network round trip on every search. Providers that don't
+// expose capabilities (built-ins) report the zero value.
+func (s *CatalogService) cachedCapabilities(ctx context.Context, prov providers.Provider) providers.Capabilities {
+	cp, ok := prov.(providers.CapabilityProvider)
+	if !ok {
+		return providers.Capabilities{}
+	}
+	key := "caps|" + prov.Name()
+	if v, ok := s.cacheGet(key); ok {
+		return v.(providers.Capabilities)
+	}
+	v, err, _ := s.state.searchSF.Do(key, func() (any, error) {
+		caps, err := cp.Capabilities(ctx)
+		if err != nil {
+			return providers.Capabilities{}, err
+		}
+		s.cachePut(key, caps)
+		return caps, nil
+	})
+	if err != nil {
+		return providers.Capabilities{}
+	}
+	return v.(providers.Capabilities)
+}
+
 // cachedArtistSearch runs an ArtistSearcher through the same cache machinery.
 func (s *CatalogService) cachedArtistSearch(ctx context.Context, prov providers.ArtistSearcher, name, query string, limit int) ([]providers.ArtistResult, error) {
 	key := "a|" + name + "|" + strings.ToLower(query)

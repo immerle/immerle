@@ -43,6 +43,7 @@ type Metadata struct {
 	MBTrackID       string
 	MBAlbumID       string
 	MBArtistID      string
+	ISRC            string
 	Compilation     bool
 	HasPicture      bool
 	Picture         []byte
@@ -166,9 +167,28 @@ func extractMBIDs(raw map[string]interface{}, md *Metadata) {
 	md.MBTrackID = firstNonEmpty(md.MBTrackID, get("musicbrainz_trackid", "musicbrainz track id", "----:com.apple.itunes:musicbrainz track id"))
 	md.MBAlbumID = firstNonEmpty(md.MBAlbumID, get("musicbrainz_albumid", "musicbrainz album id"))
 	md.MBArtistID = firstNonEmpty(md.MBArtistID, get("musicbrainz_artistid", "musicbrainz artist id"))
+	// ISRC usually lives in a native TSRC (ID3) / ISRC (Vorbis/MP4) frame, but
+	// some taggers (e.g. ffmpeg) write it as a generic user text frame (TXXX)
+	// described "ISRC" instead, so that's checked too.
+	md.ISRC = firstNonEmpty(md.ISRC, get("tsrc", "trc", "isrc", "----:com.apple.itunes:isrc"), getTXXX(raw, "isrc"))
 	if comp := get("compilation", "tcmp", "itunescompilation"); comp == "1" || strings.EqualFold(comp, "true") {
 		md.Compilation = true
 	}
+}
+
+// getTXXX scans ID3v2 user-defined text frames (TXXX, possibly suffixed
+// "_0", "_1", ... when several are present) for one whose description matches
+// want, and returns its text.
+func getTXXX(raw map[string]interface{}, want string) string {
+	for k, v := range raw {
+		if !strings.HasPrefix(strings.ToUpper(k), "TXXX") {
+			continue
+		}
+		if c, ok := v.(*tag.Comm); ok && strings.EqualFold(c.Description, want) {
+			return strings.TrimRight(c.Text, "\x00")
+		}
+	}
+	return ""
 }
 
 func firstNonEmpty(vals ...string) string {

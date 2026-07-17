@@ -40,6 +40,22 @@ func (s *searcherProvider) SearchArtists(_ context.Context, _ string, _ int) ([]
 	return s.artists, nil
 }
 
+// playlistProvider implements Provider + CapabilityProvider + PlaylistBrowser,
+// for testing capability-gated playlist browsing.
+type playlistProvider struct {
+	browsableProvider
+	capsPlaylists bool
+	playlists     []providers.ProviderPlaylist
+}
+
+func (p *playlistProvider) Capabilities(_ context.Context) (providers.Capabilities, error) {
+	return providers.Capabilities{Version: providers.ProtocolVersion, Name: p.name, Playlists: p.capsPlaylists}, nil
+}
+
+func (p *playlistProvider) Playlists(_ context.Context, _ int) ([]providers.ProviderPlaylist, error) {
+	return p.playlists, nil
+}
+
 func TestRemoteSearch3ArtistAlbumCount(t *testing.T) {
 	store := testutil.NewStore(t)
 	registry := NewProviderRegistry()
@@ -320,5 +336,83 @@ func TestRemoteArtistAndAlbumBrowse(t *testing.T) {
 		if !tr.Remote || !IsRemoteID(tr.ID) {
 			t.Fatalf("remote album track should have a remote id: %+v", tr)
 		}
+	}
+}
+
+func TestRemoteSearchPlaylistsGatedByCapabilities(t *testing.T) {
+	store := testutil.NewStore(t)
+	registry := NewProviderRegistry()
+	registry.Register(&playlistProvider{
+		browsableProvider: browsableProvider{name: "supports"},
+		capsPlaylists:     true,
+		playlists: []providers.ProviderPlaylist{
+			{ProviderPlaylistID: "p1", Name: "Chill Hits", CoverImageURL: "http://img/c",
+				Tracks: []providers.Result{{ProviderTrackID: "t1", Title: "Song", Artist: "Artist"}}},
+			{ProviderPlaylistID: "p2", Name: "Unrelated"},
+		},
+	})
+	registry.Register(&playlistProvider{
+		// Implements PlaylistBrowser but capabilities say no — must be skipped
+		// without even being asked (Playlists would panic-worthy if called with
+		// a nil slice, but the point is it must not be considered a candidate).
+		browsableProvider: browsableProvider{name: "declines"},
+		capsPlaylists:     false,
+		playlists: []providers.ProviderPlaylist{
+			{ProviderPlaylistID: "p3", Name: "Chill Vibes"},
+		},
+	})
+	svc := NewCatalogService(CatalogServiceConfig{
+		Catalog: store.Catalog, Downloads: store.Downloads, Registry: registry,
+		Settings: StaticProviderSettings{}, Logger: testutil.NewLogger(),
+	})
+
+	playlists := svc.RemoteSearchPlaylists(context.Background(), "chill", 10)
+	if len(playlists) != 1 {
+		t.Fatalf("expected 1 relevant playlist from the capable provider only, got %+v", playlists)
+	}
+	pl := playlists[0]
+	if pl.Name != "Chill Hits" || !pl.Remote || pl.Provider != "supports" {
+		t.Fatalf("unexpected playlist: %+v", pl)
+	}
+	if !IsRemotePlaylistID(pl.ID) {
+		t.Fatalf("playlist id should be a remote playlist id: %q", pl.ID)
+	}
+	if len(pl.Tracks) != 1 || !pl.Tracks[0].Remote {
+		t.Fatalf("expected 1 remote track, got %+v", pl.Tracks)
+	}
+}
+
+func TestRemotePlaylistResolvesByID(t *testing.T) {
+	store := testutil.NewStore(t)
+	registry := NewProviderRegistry()
+	registry.Register(&playlistProvider{
+		browsableProvider: browsableProvider{name: "supports"},
+		capsPlaylists:     true,
+		playlists: []providers.ProviderPlaylist{
+			{ProviderPlaylistID: "p1", Name: "Chill Hits",
+				Tracks: []providers.Result{{ProviderTrackID: "t1", Title: "Song", Artist: "Artist"}}},
+		},
+	})
+	svc := NewCatalogService(CatalogServiceConfig{
+		Catalog: store.Catalog, Downloads: store.Downloads, Registry: registry,
+		Settings: StaticProviderSettings{}, Logger: testutil.NewLogger(),
+	})
+
+	ctx := context.Background()
+	playlists := svc.RemoteSearchPlaylists(ctx, "chill", 10)
+	if len(playlists) != 1 {
+		t.Fatalf("setup: expected 1 playlist, got %+v", playlists)
+	}
+
+	pl, err := svc.RemotePlaylist(ctx, playlists[0].ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if pl.Name != "Chill Hits" || len(pl.Tracks) != 1 {
+		t.Fatalf("unexpected resolved playlist: %+v", pl)
+	}
+
+	if _, err := svc.RemotePlaylist(ctx, "not-a-remote-id"); err != nil {
+		t.Fatalf("an unrecognized id should resolve to a zero value, not an error: %v", err)
 	}
 }

@@ -44,6 +44,9 @@ type Result struct {
 	Duration        int
 	Genre           string
 	MBID            string
+	// ISRC is the track's International Standard Recording Code, when the
+	// provider knows one.
+	ISRC string
 	// ProviderArtistID is the artist's id within the provider (optional; enables
 	// browsing the artist's catalog).
 	ProviderArtistID string
@@ -102,6 +105,21 @@ type ArtistAlbumLister interface {
 // album id (used to browse a remote album).
 type AlbumBrowser interface {
 	AlbumTracks(ctx context.Context, providerAlbumID string, limit int) ([]Result, error)
+}
+
+// ProviderPlaylist is a playlist curated by a provider (e.g. an editorial or
+// user playlist hosted on the remote service).
+type ProviderPlaylist struct {
+	ProviderPlaylistID string
+	Name               string
+	CoverImageURL      string
+	Tracks             []Result
+}
+
+// PlaylistBrowser is an optional capability: list the playlists a provider
+// makes available for browsing, each with its full tracklist.
+type PlaylistBrowser interface {
+	Playlists(ctx context.Context, limit int) ([]ProviderPlaylist, error)
 }
 
 // Verifier is an optional capability: validate at registration time that the

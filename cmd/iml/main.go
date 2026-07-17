@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/rand/v2"
 	"os"
 	"path/filepath"
 	"strings"
@@ -74,6 +75,18 @@ func parseQueryPrefix(raw string) (sc scope, term string, ok bool) {
 	return sc, remainder, true
 }
 
+type repeatMode int
+
+const (
+	repeatOff repeatMode = iota
+	repeatAll
+	repeatOne
+)
+
+func (r repeatMode) String() string {
+	return [...]string{"off", "all", "one"}[r]
+}
+
 // result is a unified, playable search hit: a song plays itself; an album or
 // playlist expands to its track list (fetched lazily on selection).
 type result struct {
@@ -97,6 +110,8 @@ type model struct {
 	queue    []Song
 	queuePos int
 	playing  bool
+	repeat   repeatMode
+	shuffle  bool
 
 	width, height int
 }
@@ -206,15 +221,38 @@ func (m *model) applyPrefix() {
 	}
 }
 
-// advance moves to the next queue slot, either firing a Cmd to play it or,
-// once the queue is exhausted, marking status accordingly.
+// advance moves to the next queue slot after the caller has already
+// incremented queuePos (a manual skip, or trackFinished below): with
+// repeat-all it wraps back to the start instead of stopping. A manual skip
+// always moves forward regardless of repeat-one -- only a track finishing on
+// its own (trackFinished) replays it.
 func (m *model) advance() tea.Cmd {
-	if cmd := m.playCurrentCmd(); cmd != nil {
-		return cmd
+	if m.queuePos >= len(m.queue) {
+		if m.repeat == repeatAll && len(m.queue) > 0 {
+			m.queuePos = 0
+		} else {
+			m.playing = false
+			m.status = "queue finished"
+			return nil
+		}
 	}
-	m.playing = false
-	m.status = "queue finished"
-	return nil
+	return m.playCurrentCmd()
+}
+
+// trackFinished handles the queue advancing after a track completes on its
+// own: repeat-one replays the same slot, everything else defers to advance.
+func (m *model) trackFinished() tea.Cmd {
+	if m.repeat == repeatOne {
+		return m.playCurrentCmd()
+	}
+	m.queuePos++
+	return m.advance()
+}
+
+// shuffleFrom shuffles m.queue[from:] in place.
+func shuffleFrom(queue []Song, from int) {
+	rest := queue[from:]
+	rand.Shuffle(len(rest), func(i, j int) { rest[i], rest[j] = rest[j], rest[i] })
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -285,6 +323,27 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.query += string(msg.Runes)
 				m.applyPrefix()
 				return m, m.searchCmd()
+			case "r":
+				if m.playing || len(m.queue) > 0 {
+					m.repeat = (m.repeat + 1) % 3
+					m.status = "repeat: " + m.repeat.String()
+					return m, nil
+				}
+				m.query += string(msg.Runes)
+				m.applyPrefix()
+				return m, m.searchCmd()
+			case "s":
+				if m.playing || len(m.queue) > 0 {
+					m.shuffle = !m.shuffle
+					if m.shuffle && m.queuePos+1 < len(m.queue) {
+						shuffleFrom(m.queue, m.queuePos+1)
+					}
+					m.status = fmt.Sprintf("shuffle: %v", m.shuffle)
+					return m, nil
+				}
+				m.query += string(msg.Runes)
+				m.applyPrefix()
+				return m, m.searchCmd()
 			default:
 				m.query += string(msg.Runes)
 				m.applyPrefix()
@@ -306,6 +365,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		m.queue = msg.tracks
+		if m.shuffle {
+			shuffleFrom(m.queue, 0)
+		}
 		m.queuePos = 0
 		return m, m.advance()
 
@@ -324,8 +386,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		if msg.finished && len(m.queue) > 0 {
-			m.queuePos++
-			return m, m.advance()
+			return m, m.trackFinished()
 		}
 	}
 	return m, nil
@@ -340,9 +401,9 @@ func (m model) View() string {
 		height = defaultHeight
 	}
 
-	header := headerStyle.Width(width - 2).Render(fmt.Sprintf("iml  [%s]  %s", m.scope, m.query))
+	header := headerStyle.Width(width - 2).Render(fmt.Sprintf("iml  [%s]  %s   repeat:%s shuffle:%v", m.scope, m.query, m.repeat, m.shuffle))
 	status := statusStyle.Width(width - 2).Render(truncate(m.status, width-2))
-	help := dimStyle.Render("tab or /song /album /playlist: scope  enter: play  space: pause  n: next  +/-: volume  q: quit")
+	help := dimStyle.Render("tab or /song /album /playlist: scope  enter: play  space: pause  n: next  +/-: volume  r: repeat  s: shuffle  q: quit")
 
 	// Results get whatever rows are left once the header, status and help
 	// bars (plus their blank-line spacers) are accounted for.

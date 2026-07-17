@@ -329,6 +329,7 @@ func (s *Scanner) indexFile(ctx context.Context, path string, existingPaths map[
 		ContentType:     ct,
 		Size:            info.Size(),
 		MBID:            md.MBTrackID,
+		ISRC:            md.ISRC,
 		FileHash:        hash,
 		CoverArt:        coverArt,
 		CreatedAt:       now,

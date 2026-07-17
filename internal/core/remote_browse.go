@@ -15,10 +15,11 @@ import (
 // the local catalog, so they carry self-describing ids (provider + keys) that the
 // browsing handlers decode to re-query the provider on demand.
 const (
-	remoteArtistPrefix = "rart:"
-	remoteAlbumPrefix  = "ralb:"  // derived album (provider|artistID|name|albumName)
-	remoteAlbumByID    = "ralbp:" // provider-album (provider|providerAlbumID|title)
-	idSep              = "\x1f"
+	remoteArtistPrefix   = "rart:"
+	remoteAlbumPrefix    = "ralb:"  // derived album (provider|artistID|name|albumName)
+	remoteAlbumByID      = "ralbp:" // provider-album (provider|providerAlbumID|title)
+	remotePlaylistPrefix = "rpls:"  // provider playlist (provider|providerPlaylistID|name)
+	idSep                = "\x1f"
 )
 
 // IsRemoteArtistID reports whether id is a remote (provider) artist id.
@@ -27,6 +28,25 @@ func IsRemoteArtistID(id string) bool { return strings.HasPrefix(id, remoteArtis
 // IsRemoteAlbumID reports whether id is a remote (provider) album id (either form).
 func IsRemoteAlbumID(id string) bool {
 	return strings.HasPrefix(id, remoteAlbumByID) || strings.HasPrefix(id, remoteAlbumPrefix)
+}
+
+// IsRemotePlaylistID reports whether id is a remote (provider) playlist id.
+func IsRemotePlaylistID(id string) bool { return strings.HasPrefix(id, remotePlaylistPrefix) }
+
+func encodeRemotePlaylistID(provider, providerPlaylistID, name string) string {
+	return remotePlaylistPrefix + b64(strings.Join([]string{provider, providerPlaylistID, name}, idSep))
+}
+
+func decodeRemotePlaylistID(id string) (provider, providerPlaylistID, name string, ok bool) {
+	raw, err := unb64(strings.TrimPrefix(id, remotePlaylistPrefix))
+	if err != nil {
+		return "", "", "", false
+	}
+	parts := strings.SplitN(raw, idSep, 3)
+	if len(parts) != 3 {
+		return "", "", "", false
+	}
+	return parts[0], parts[1], parts[2], true
 }
 
 func encodeRemoteAlbumByID(provider, providerAlbumID, title string) string {
@@ -96,6 +116,7 @@ func toRemoteTrack(provider string, res providers.Result) models.Track {
 		Genre:      res.Genre,
 		Duration:   res.Duration,
 		MBID:       res.MBID,
+		ISRC:       res.ISRC,
 		CoverArt:   models.RemoteCoverID(res.CoverImageURL),
 		Suffix:     res.Suffix,
 		Remote:     true,
@@ -235,6 +256,130 @@ func (s *CatalogService) RemoteSearch3(ctx context.Context, query string, artist
 		}
 	}
 	return artists, albums, tracks
+}
+
+// RemoteSearchPlaylists gathers provider playlists matching query across every
+// active provider that implements PlaylistBrowser AND advertises playlist
+// support in its (cached) capabilities — most providers implement neither, so
+// this is skipped for them without a network call. A provider's Playlists()
+// endpoint has no query parameter (it just lists what's available), so results
+// are filtered by name relevance here, same as a local playlist search.
+func (s *CatalogService) RemoteSearchPlaylists(ctx context.Context, query string, limit int) []models.Playlist {
+	if s == nil || s.state == nil || strings.TrimSpace(query) == "" || limit <= 0 {
+		return nil
+	}
+	provs := s.state.registry.All()
+	if len(provs) == 0 {
+		return nil
+	}
+	ctx, cancel := s.searchCtx(ctx)
+	defer cancel()
+
+	results := make([][]models.Playlist, len(provs))
+	var wg sync.WaitGroup
+	for i, prov := range provs {
+		wg.Add(1)
+		go func(i int, prov providers.Provider) {
+			defer wg.Done()
+			results[i] = s.remoteProviderPlaylists(ctx, prov, query, limit)
+		}(i, prov)
+	}
+	wg.Wait()
+
+	seen := map[string]bool{}
+	var out []models.Playlist
+	for _, r := range results {
+		for _, pl := range r {
+			k := strings.ToLower(pl.Name)
+			if seen[k] {
+				continue
+			}
+			seen[k] = true
+			out = append(out, pl)
+		}
+	}
+	return out
+}
+
+// remoteProviderPlaylists lists a single provider's playlists (when it
+// implements PlaylistBrowser and its capabilities say so), keeping only those
+// whose name relates to query, up to limit.
+func (s *CatalogService) remoteProviderPlaylists(ctx context.Context, prov providers.Provider, query string, limit int) []models.Playlist {
+	browser, ok := prov.(providers.PlaylistBrowser)
+	if !ok || !s.cachedCapabilities(ctx, prov).Playlists {
+		return nil
+	}
+	all, err := browser.Playlists(ctx, 100)
+	if err != nil {
+		return nil
+	}
+	out := make([]models.Playlist, 0, limit)
+	for _, pl := range all {
+		if pl.Name == "" || Relevance(query, pl.Name) >= 3 {
+			continue // no textual relation to the query at all
+		}
+		out = append(out, toRemotePlaylist(prov.Name(), pl))
+		if len(out) >= limit {
+			break
+		}
+	}
+	return out
+}
+
+// toRemotePlaylist maps a provider's playlist to a remote (not-yet-local)
+// playlist, its tracks converted the same way remote search results are.
+func toRemotePlaylist(provider string, pl providers.ProviderPlaylist) models.Playlist {
+	tracks := make([]models.Track, 0, len(pl.Tracks))
+	for _, res := range pl.Tracks {
+		tracks = append(tracks, toRemoteTrack(provider, res))
+	}
+	return models.Playlist{
+		ID:        encodeRemotePlaylistID(provider, pl.ProviderPlaylistID, pl.Name),
+		Name:      pl.Name,
+		Public:    true,
+		SongCount: len(tracks),
+		CoverArt:  models.RemoteCoverID(pl.CoverImageURL),
+		Remote:    true,
+		Provider:  provider,
+		Tracks:    tracks,
+	}
+}
+
+// RemotePlaylist resolves a remote playlist id into its full track list —
+// used to browse a provider playlist surfaced in search (mirrors RemoteAlbum
+// for provider albums). Re-fetches the provider's playlist list rather than
+// caching per-id, matching/consistent with how remote albums/artists always
+// re-derive from a fresh provider call.
+func (s *CatalogService) RemotePlaylist(ctx context.Context, remotePlaylistID string) (models.Playlist, error) {
+	if s == nil || s.state == nil {
+		return models.Playlist{}, nil
+	}
+	provName, providerPlaylistID, _, ok := decodeRemotePlaylistID(remotePlaylistID)
+	if !ok {
+		return models.Playlist{}, nil
+	}
+	prov, ok := s.state.registry.Get(provName)
+	if !ok {
+		return models.Playlist{}, nil
+	}
+	browser, ok := prov.(providers.PlaylistBrowser)
+	if !ok {
+		return models.Playlist{}, nil
+	}
+	ctx, cancel := s.searchCtx(ctx)
+	defer cancel()
+	all, err := browser.Playlists(ctx, 100)
+	if err != nil {
+		return models.Playlist{}, err
+	}
+	for _, pl := range all {
+		if pl.ProviderPlaylistID == providerPlaylistID {
+			out := toRemotePlaylist(provName, pl)
+			out.ID = remotePlaylistID
+			return out, nil
+		}
+	}
+	return models.Playlist{}, nil
 }
 
 // remoteAlbumsFrom derives remote albums from a single provider's track results,

@@ -71,6 +71,7 @@ type AudioTags struct {
 	Producer    string
 	Lyrics      string
 	MBID        string
+	ISRC        string
 }
 
 // GenerateAudio writes a short MP3 with the given tags to path using ffmpeg.
@@ -128,6 +129,9 @@ func GenerateAudio(t *testing.T, path string, tags AudioTags) {
 	}
 	if tags.MBID != "" {
 		args = append(args, "-metadata", "MUSICBRAINZ_TRACKID="+tags.MBID)
+	}
+	if tags.ISRC != "" {
+		args = append(args, "-metadata", "ISRC="+tags.ISRC)
 	}
 	args = append(args, path)
 	if out, err := exec.Command("ffmpeg", args...).CombinedOutput(); err != nil {

@@ -22,7 +22,7 @@ func testService(t *testing.T) (*httptest.Server, *[]string) {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"results":[
-			{"providerTrackId":"t1","title":"Song One","artist":"A","album":"Al","suffix":"flac"},
+			{"providerTrackId":"t1","title":"Song One","artist":"A","album":"Al","suffix":"flac","isrc":"FRZ039800212"},
 			{"providerTrackId":"","title":"skip me"}
 		]}`))
 	})
@@ -63,7 +63,7 @@ func TestHTTPProviderSearchResolveDownload(t *testing.T) {
 	if len(results) != 1 { // the empty-id row is dropped
 		t.Fatalf("expected 1 result, got %d", len(results))
 	}
-	if results[0].ProviderTrackID != "t1" || results[0].Suffix != "flac" {
+	if results[0].ProviderTrackID != "t1" || results[0].Suffix != "flac" || results[0].ISRC != "FRZ039800212" {
 		t.Fatalf("bad result: %+v", results[0])
 	}
 	if len(*authSeen) == 0 || (*authSeen)[0] != "Bearer xyz" {

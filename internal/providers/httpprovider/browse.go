@@ -54,6 +54,13 @@ type albumWire struct {
 	CoverImageURL   string `json:"coverImageUrl"`
 }
 
+type playlistWire struct {
+	ProviderPlaylistID string  `json:"providerPlaylistId"`
+	Name               string  `json:"name"`
+	CoverImageURL      string  `json:"coverImageUrl"`
+	Tracks             []track `json:"tracks"`
+}
+
 // SearchArtists implements providers.ArtistSearcher.
 //
 //	GET {searchArtistsPath}?q=&limit= → {"artists":[<artist>]}
@@ -136,6 +143,45 @@ func (p *Provider) AlbumTracks(ctx context.Context, providerAlbumID string, limi
 		limit = 200
 	}
 	return p.tracksAt(ctx, albumTracksPath, providerAlbumID, limit)
+}
+
+// Playlists implements providers.PlaylistBrowser.
+//
+//	GET {playlistsPath}?limit= → {"playlists":[<playlist>]}
+func (p *Provider) Playlists(ctx context.Context, limit int) ([]providers.ProviderPlaylist, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	q := url.Values{"limit": {strconv.Itoa(limit)}}
+	var body struct {
+		Playlists []playlistWire `json:"playlists"`
+	}
+	if err := p.getJSON(ctx, playlistsPath, q, &body); err != nil {
+		if errors.Is(err, errUnsupported) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	out := make([]providers.ProviderPlaylist, 0, len(body.Playlists))
+	for _, pl := range body.Playlists {
+		if pl.ProviderPlaylistID == "" {
+			continue
+		}
+		tracks := make([]providers.Result, 0, len(pl.Tracks))
+		for _, t := range pl.Tracks {
+			if t.ProviderTrackID == "" {
+				continue
+			}
+			tracks = append(tracks, t.toResult())
+		}
+		out = append(out, providers.ProviderPlaylist{
+			ProviderPlaylistID: pl.ProviderPlaylistID,
+			Name:               pl.Name,
+			CoverImageURL:      pl.CoverImageURL,
+			Tracks:             tracks,
+		})
+	}
+	return out, nil
 }
 
 // ArtistImage implements providers.ArtistImageSearcher.
