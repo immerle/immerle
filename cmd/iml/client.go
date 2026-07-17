@@ -115,6 +115,15 @@ type Song struct {
 	Title  string `json:"title"`
 	Artist string `json:"artist"`
 	Album  string `json:"album"`
+	// Unresolved marks a federated-playlist entry not yet matched to a
+	// playable track (id is empty): resolve it via ResolvePlaylistTrack
+	// before streaming.
+	Unresolved bool `json:"unresolved"`
+	// Position is this track's index in its source playlist, set locally
+	// (not from JSON) by PlaylistTracks -- ResolvePlaylistTrack addresses
+	// entries by playlist position, which must stay stable even if the
+	// local queue gets shuffled.
+	Position int `json:"-"`
 }
 
 type Album struct {
@@ -179,7 +188,23 @@ func (c *Client) PlaylistTracks(ctx context.Context, id string) ([]Song, error) 
 	if err := c.do(ctx, http.MethodGet, "/playlists/"+url.PathEscape(id), nil, &out); err != nil {
 		return nil, err
 	}
+	for i := range out.Tracks {
+		out.Tracks[i].Position = i
+	}
 	return out.Tracks, nil
+}
+
+// ResolvePlaylistTrack matches an unresolved federated-playlist entry (by its
+// position in the playlist) to a playable track -- local catalog first, then
+// on-demand providers. The result may itself be a remote id, streamed
+// progressively like any other on-demand track.
+func (c *Client) ResolvePlaylistTrack(ctx context.Context, playlistID string, position int) (Song, error) {
+	var out Song
+	path := fmt.Sprintf("/playlists/%s/tracks/%d/resolve", url.PathEscape(playlistID), position)
+	if err := c.do(ctx, http.MethodPost, path, nil, &out); err != nil {
+		return Song{}, err
+	}
+	return out, nil
 }
 
 // StreamURL mints a short-lived signed stream URL for a track: no
