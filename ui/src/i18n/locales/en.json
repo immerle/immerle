@@ -896,6 +896,10 @@
     }
   },
   "components": {
+    "scrollRow": {
+      "scrollLeft": "Scroll left",
+      "scrollRight": "Scroll right"
+    },
     "sidebar": {
       "library": "Library",
       "expandLibrary": "Expand library",
