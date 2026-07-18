@@ -26,6 +26,9 @@ export const qk = {
   hallOfFameAdmin: ['admin', 'hallOfFame'] as const,
   concerts: ['concerts'] as const,
   concertsAdmin: ['admin', 'concerts'] as const,
+  bandcampStatus: ['bandcamp', 'status'] as const,
+  bandcampCollection: ['bandcamp', 'collection'] as const,
+  bandcampJobs: ['bandcamp', 'jobs'] as const,
 
   playlists: ['playlists'] as const,
   playlist: (id: string) => ['playlist', id] as const,
