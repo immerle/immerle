@@ -2,6 +2,7 @@ package concerts
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -13,7 +14,7 @@ import (
 )
 
 // fakeSearcher returns canned events per artist name, and records every call
-// so tests can assert whether Skiddle was even tried.
+// so tests can assert which sources were actually queried.
 type fakeSearcher struct {
 	events map[string][]foundEvent
 	calls  []string
@@ -28,9 +29,11 @@ func newTestService(t *testing.T, cfg models.ConcertsRuntime, tm, sk, ev *fakeSe
 	t.Helper()
 	store := testutil.NewStore(t)
 	svc := New(store.Users, store.Wrapped, store.Concerts, func() models.ConcertsRuntime { return cfg }, testutil.NewLogger())
-	svc.newTicketmaster = func(string) searcher { return tm }
-	svc.newSkiddle = func(string) searcher { return sk }
-	svc.newEventim = func() searcher { return ev }
+	svc.providers = []provider{
+		{name: "ticketmaster", new: func(models.ConcertsRuntime) searcher { return tm }},
+		{name: "skiddle", new: func(models.ConcertsRuntime) searcher { return sk }},
+		{name: "eventim", new: func(models.ConcertsRuntime) searcher { return ev }},
+	}
 	return svc, store
 }
 
@@ -95,67 +98,74 @@ func TestSyncNowNoCountryIsNoOp(t *testing.T) {
 	}
 }
 
-func TestSyncNowPrefersTicketmasterAndSkipsRestWhenItFindsSomething(t *testing.T) {
+// TestSyncNowSearchesEverySource covers that every configured source is
+// queried on every sync — unlike a fallback chain, a global source (say
+// Ticketmaster) finding something must not stop a country-specific source
+// (Eventim) from also being searched and contributing its own match.
+func TestSyncNowSearchesEverySource(t *testing.T) {
 	tm := &fakeSearcher{events: map[string][]foundEvent{
-		"Daft Punk": {{id: "tm-1", name: "TM Show", startTime: time.Now().Add(24 * time.Hour)}},
+		"Jay-Z": {{id: "tm-1", name: "TM Show", startTime: time.Now().Add(24 * time.Hour)}},
 	}}
-	sk, ev := &fakeSearcher{}, &fakeSearcher{}
-	svc, store := newTestService(t, models.ConcertsRuntime{Enabled: true, Country: "FR"}, tm, sk, ev)
-	user := seedListener(t, store, "Daft Punk")
-
-	synced, err := svc.SyncNow(context.Background())
-	if err != nil || synced != 1 {
-		t.Fatalf("SyncNow = %d, %v, want 1, nil", synced, err)
-	}
-	if len(sk.calls) != 0 || len(ev.calls) != 0 {
-		t.Fatal("Skiddle/Eventim were called even though Ticketmaster already found a match")
-	}
-	list, err := store.Concerts.ListActive(context.Background(), user.ID, time.Now(), 10)
-	if err != nil || len(list) != 1 || list[0].Source != "ticketmaster" {
-		t.Fatalf("ListActive = %+v, err=%v, want one ticketmaster match", list, err)
-	}
-}
-
-func TestSyncNowFallsBackToSkiddleWhenTicketmasterFindsNothing(t *testing.T) {
-	tm := &fakeSearcher{events: map[string][]foundEvent{}} // no match for anything
 	sk := &fakeSearcher{events: map[string][]foundEvent{
-		"Daft Punk": {{id: "sk-1", name: "SK Show", startTime: time.Now().Add(24 * time.Hour)}},
+		"Jay-Z": {{id: "sk-1", name: "SK Show", startTime: time.Now().Add(25 * time.Hour)}},
 	}}
-	ev := &fakeSearcher{}
-	svc, store := newTestService(t, models.ConcertsRuntime{Enabled: true, Country: "FR"}, tm, sk, ev)
-	user := seedListener(t, store, "Daft Punk")
-
-	synced, err := svc.SyncNow(context.Background())
-	if err != nil || synced != 1 {
-		t.Fatalf("SyncNow = %d, %v, want 1, nil", synced, err)
-	}
-	if len(ev.calls) != 0 {
-		t.Fatal("Eventim was called even though Skiddle already found a match")
-	}
-	list, err := store.Concerts.ListActive(context.Background(), user.ID, time.Now(), 10)
-	if err != nil || len(list) != 1 || list[0].Source != "skiddle" {
-		t.Fatalf("ListActive = %+v, err=%v, want one skiddle match", list, err)
-	}
-}
-
-// TestSyncNowFallsBackToEventimWhenTicketmasterAndSkiddleFindNothing covers
-// the France-specific third source — needed because both Ticketmaster and
-// Skiddle have thin French coverage (see PR discussion).
-func TestSyncNowFallsBackToEventimWhenTicketmasterAndSkiddleFindNothing(t *testing.T) {
-	tm, sk := &fakeSearcher{}, &fakeSearcher{}
 	ev := &fakeSearcher{events: map[string][]foundEvent{
-		"Jay-Z": {{id: "ev-1", name: "Jaÿ-Z 30", startTime: time.Now().Add(24 * time.Hour)}},
+		"Jay-Z": {{id: "ev-1", name: "Jaÿ-Z 30", startTime: time.Now().Add(26 * time.Hour)}},
 	}}
 	svc, store := newTestService(t, models.ConcertsRuntime{Enabled: true, Country: "FR"}, tm, sk, ev)
 	user := seedListener(t, store, "Jay-Z")
 
 	synced, err := svc.SyncNow(context.Background())
-	if err != nil || synced != 1 {
-		t.Fatalf("SyncNow = %d, %v, want 1, nil", synced, err)
+	if err != nil || synced != 3 {
+		t.Fatalf("SyncNow = %d, %v, want 3, nil (all three sources)", synced, err)
+	}
+	if len(tm.calls) != 1 || len(sk.calls) != 1 || len(ev.calls) != 1 {
+		t.Fatal("every source must be queried, not just the first one that finds something")
 	}
 	list, err := store.Concerts.ListActive(context.Background(), user.ID, time.Now(), 10)
-	if err != nil || len(list) != 1 || list[0].Source != "eventim" {
-		t.Fatalf("ListActive = %+v, err=%v, want one eventim match", list, err)
+	if err != nil || len(list) != 3 {
+		t.Fatalf("ListActive = %+v, err=%v, want 3 matches (one per source)", list, err)
+	}
+	sources := map[string]bool{}
+	for _, c := range list {
+		sources[c.Source] = true
+	}
+	if !sources["ticketmaster"] || !sources["skiddle"] || !sources["eventim"] {
+		t.Fatalf("ListActive sources = %+v, want one match from each source", sources)
+	}
+}
+
+// erroringSearcher always fails, for TestSyncNowOneSourceFailingDoesntBlockOthers.
+type erroringSearcher struct{}
+
+func (erroringSearcher) Search(context.Context, string, string, int) ([]foundEvent, error) {
+	return nil, fmt.Errorf("boom")
+}
+
+// TestSyncNowOneSourceFailingDoesntBlockOthers covers that a search error
+// from one source is logged and skipped, not fatal to the sync or to other
+// sources.
+func TestSyncNowOneSourceFailingDoesntBlockOthers(t *testing.T) {
+	sk := &fakeSearcher{events: map[string][]foundEvent{
+		"Daft Punk": {{id: "sk-1", name: "SK Show", startTime: time.Now().Add(24 * time.Hour)}},
+	}}
+	store := testutil.NewStore(t)
+	svc := New(store.Users, store.Wrapped, store.Concerts, func() models.ConcertsRuntime {
+		return models.ConcertsRuntime{Enabled: true, Country: "FR"}
+	}, testutil.NewLogger())
+	svc.providers = []provider{
+		{name: "ticketmaster", new: func(models.ConcertsRuntime) searcher { return erroringSearcher{} }},
+		{name: "skiddle", new: func(models.ConcertsRuntime) searcher { return sk }},
+	}
+	user := seedListener(t, store, "Daft Punk")
+
+	synced, err := svc.SyncNow(context.Background())
+	if err != nil || synced != 1 {
+		t.Fatalf("SyncNow = %d, %v, want 1, nil (skiddle still contributes)", synced, err)
+	}
+	list, err := store.Concerts.ListActive(context.Background(), user.ID, time.Now(), 10)
+	if err != nil || len(list) != 1 || list[0].Source != "skiddle" {
+		t.Fatalf("ListActive = %+v, err=%v, want one skiddle match", list, err)
 	}
 }
 

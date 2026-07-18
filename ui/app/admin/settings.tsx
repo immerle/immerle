@@ -22,6 +22,7 @@ import { Ionicon } from '../../src/components/Ionicon';
 import { useColors } from '../../src/theme/colors';
 import { useT } from '../../src/i18n/store';
 import { COUNTRIES } from '../../src/utils/countries';
+import { concertProviderNames } from '../../src/utils/concertProviders';
 
 const num = (s: string) => {
   const n = Number(s);
@@ -333,7 +334,7 @@ export default function AdminSettings() {
                     <Text className="text-sm font-medium text-muted">{t('admin.settings.concertsCountry')}</Text>
                     <Select value={concertsCountry} options={COUNTRY_OPTIONS} onChange={setConcertsCountry} />
                     <Text className="text-xs text-muted">
-                      {concertsCountry === 'FR' ? t('admin.settings.concertsProvidersFR') : t('admin.settings.concertsProviders')}
+                      {t('admin.settings.concertsSources', { list: concertProviderNames(concertsCountry) })}
                     </Text>
                   </View>
                   <Field

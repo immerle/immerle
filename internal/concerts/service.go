@@ -1,9 +1,8 @@
 // Package concerts finds upcoming shows for each user's top-listened artists
 // near the single, admin-chosen country for the instance, refreshed daily.
-// Ticketmaster is searched first; Skiddle (a rougher, keyword-only match) is
-// only tried when Ticketmaster has no key configured or found nothing for
-// that artist. For France specifically, Eventim is then tried too (needs no
-// key, but Ticketmaster/Skiddle both have thin French coverage).
+// Every configured source is searched on every sync (not stopped at the
+// first match) — a global source finding something unrelated must not
+// starve a country-specific one. See providers below for the source list.
 package concerts
 
 import (
@@ -27,20 +26,22 @@ const defaultInterval = 24 * time.Hour
 const topArtistsWindow = 180 * 24 * time.Hour
 const topArtistsLimit = 10
 
-// maxEventsPerArtist caps how many upcoming shows are kept per artist match.
+// maxEventsPerArtist caps how many upcoming shows are kept per artist match,
+// per source.
 const maxEventsPerArtist = 3
 
-// foundEvent unifies ticketmaster.Event and skiddle.Event (same shape, two
-// packages) so the matching loop below doesn't care which source found it.
+// foundEvent unifies ticketmaster.Event, skiddle.Event, and eventim.Event
+// (same shape, three packages) so the matching loop below doesn't care which
+// source found it.
 type foundEvent struct {
 	id, name, url, venue, city string
 	startTime                  time.Time
 }
 
-// searcher is implemented by *ticketmaster.Client and *skiddle.Client (via
-// small adapters below). Returning no events for an unconfigured/unmatched
-// search is not an error — see both clients' Search doc. country is an ISO
-// 3166-1 alpha-2 code (e.g. "FR").
+// searcher is implemented by *ticketmaster.Client, *skiddle.Client, and
+// *eventim.Client (via small adapters below). Returning no events for an
+// unconfigured/unmatched/out-of-coverage search is not an error — see each
+// client's Search doc. country is an ISO 3166-1 alpha-2 code (e.g. "FR").
 type searcher interface {
 	Search(ctx context.Context, artist, country string, limit int) ([]foundEvent, error)
 }
@@ -87,23 +88,42 @@ func (s eventimSearcher) Search(ctx context.Context, artist, country string, lim
 	return out, nil
 }
 
+// provider names one concert-discovery source. new builds a fresh searcher
+// from the live config on every sync (settings are hot-reloadable, and these
+// clients are cheap stateless wrappers).
+type provider struct {
+	name string
+	new  func(cfg models.ConcertsRuntime) searcher
+}
+
+// defaultProviders lists every concert-discovery source. Adding a new one
+// (global or country-specific — a source decides its own coverage inside
+// Search, same as Eventim's France-only check) is a single entry here; no
+// other code needs to change.
+func defaultProviders() []provider {
+	return []provider{
+		{name: "ticketmaster", new: func(cfg models.ConcertsRuntime) searcher {
+			return ticketmasterSearcher{ticketmaster.NewClient(cfg.TicketmasterAPIKey)}
+		}},
+		{name: "skiddle", new: func(cfg models.ConcertsRuntime) searcher {
+			return skiddleSearcher{skiddle.NewClient(cfg.SkiddleAPIKey)}
+		}},
+		{name: "eventim", new: func(cfg models.ConcertsRuntime) searcher {
+			return eventimSearcher{eventim.NewClient()}
+		}},
+	}
+}
+
 // Service syncs concert matches for every user, near the single instance-wide
 // country configured by an admin.
 type Service struct {
-	users    *persistence.UserRepo
-	wrapped  *persistence.WrappedRepo
-	concerts *persistence.ConcertRepo
-	settings func() models.ConcertsRuntime
-	interval time.Duration
-	logger   *slog.Logger
-
-	// newTicketmaster/newSkiddle build a fresh searcher from the live API key on
-	// every sync (settings are hot-reloadable, and these clients are cheap
-	// stateless wrappers) — overridden with fakes in tests. newEventim needs no
-	// key but follows the same shape for consistency.
-	newTicketmaster func(apiKey string) searcher
-	newSkiddle      func(apiKey string) searcher
-	newEventim      func() searcher
+	users     *persistence.UserRepo
+	wrapped   *persistence.WrappedRepo
+	concerts  *persistence.ConcertRepo
+	settings  func() models.ConcertsRuntime
+	interval  time.Duration
+	logger    *slog.Logger
+	providers []provider
 }
 
 // New builds a Service. settings supplies the live, hot-reloadable
@@ -113,24 +133,28 @@ func New(users *persistence.UserRepo, wrapped *persistence.WrappedRepo, concerts
 	return &Service{
 		users: users, wrapped: wrapped, concerts: concerts, settings: settings,
 		interval: defaultInterval, logger: logger,
-		newTicketmaster: func(apiKey string) searcher { return ticketmasterSearcher{ticketmaster.NewClient(apiKey)} },
-		newSkiddle:      func(apiKey string) searcher { return skiddleSearcher{skiddle.NewClient(apiKey)} },
-		newEventim:      func() searcher { return eventimSearcher{eventim.NewClient()} },
+		providers: defaultProviders(),
 	}
 }
 
 // SyncNow searches every user's top-listened artists for upcoming shows in
-// the configured country and upserts any new matches, returning how many
-// were newly added (one user or artist failing is logged and skipped, not
-// fatal). A no-op (0, nil) when the feature is disabled or no country is set.
+// the configured country, across every source, and upserts any new matches,
+// returning how many were newly added (one user/artist/source failing is
+// logged and skipped, not fatal). A no-op (0, nil) when the feature is
+// disabled or no country is set.
 func (s *Service) SyncNow(ctx context.Context) (int, error) {
 	cfg := s.settings()
 	if !cfg.Enabled || cfg.Country == "" {
 		return 0, nil
 	}
-	tm := s.newTicketmaster(cfg.TicketmasterAPIKey)
-	sk := s.newSkiddle(cfg.SkiddleAPIKey)
-	ev := s.newEventim()
+	searchers := make([]struct {
+		name string
+		s    searcher
+	}, len(s.providers))
+	for i, p := range s.providers {
+		searchers[i].name = p.name
+		searchers[i].s = p.new(cfg)
+	}
 
 	users, err := s.users.List(ctx)
 	if err != nil {
@@ -146,37 +170,21 @@ func (s *Service) SyncNow(ctx context.Context) (int, error) {
 			continue
 		}
 		for _, artist := range artists {
-			synced += s.syncArtist(ctx, tm, sk, ev, u.ID, cfg.Country, artist.Name, now)
+			for _, src := range searchers {
+				synced += s.syncArtistFromSource(ctx, src.s, src.name, u.ID, cfg.Country, artist.Name, now)
+			}
 		}
 	}
 	return synced, nil
 }
 
-// syncArtist searches one artist for one user (Ticketmaster first, then
-// Skiddle, then — for France only — Eventim, stopping at the first source
-// that finds something) and upserts any new, still-upcoming matches.
-func (s *Service) syncArtist(ctx context.Context, tm, sk, ev searcher, userID, country, artist string, now time.Time) int {
-	events, err := tm.Search(ctx, artist, country, maxEventsPerArtist)
-	source := "ticketmaster"
+// syncArtistFromSource searches one artist for one user against a single
+// source and upserts any new, still-upcoming matches.
+func (s *Service) syncArtistFromSource(ctx context.Context, src searcher, sourceName, userID, country, artist string, now time.Time) int {
+	events, err := src.Search(ctx, artist, country, maxEventsPerArtist)
 	if err != nil {
-		s.logger.Warn("concerts: ticketmaster search failed", "artist", artist, "error", err)
-		events = nil
-	}
-	if len(events) == 0 {
-		events, err = sk.Search(ctx, artist, country, maxEventsPerArtist)
-		source = "skiddle"
-		if err != nil {
-			s.logger.Warn("concerts: skiddle search failed", "artist", artist, "error", err)
-			events = nil
-		}
-	}
-	if len(events) == 0 {
-		events, err = ev.Search(ctx, artist, country, maxEventsPerArtist)
-		source = "eventim"
-		if err != nil {
-			s.logger.Warn("concerts: eventim search failed", "artist", artist, "error", err)
-			return 0
-		}
+		s.logger.Warn("concerts: search failed", "source", sourceName, "artist", artist, "error", err)
+		return 0
 	}
 	synced := 0
 	for _, e := range events {
@@ -184,7 +192,7 @@ func (s *Service) syncArtist(ctx context.Context, tm, sk, ev searcher, userID, c
 			continue
 		}
 		created, err := s.concerts.Upsert(ctx, models.Concert{
-			ID: uuid.NewString(), UserID: userID, Source: source, SourceEventID: e.id,
+			ID: uuid.NewString(), UserID: userID, Source: sourceName, SourceEventID: e.id,
 			ArtistName: artist, EventName: e.name, Venue: e.venue, City: e.city,
 			StartTime: e.startTime, URL: e.url,
 		})
