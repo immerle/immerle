@@ -71,3 +71,23 @@ func TestSearchIsFranceOnlyAndFiltersFuzzyMatches(t *testing.T) {
 		t.Fatalf("Search(GB) = %v, %v, want nil, nil (France-only)", events, err)
 	}
 }
+
+// TestMatchesArtistRequiresWholeWord is a regression test: a plain substring
+// check let "Toto" false-match the unrelated attraction "ElGrandeToto".
+func TestMatchesArtistRequiresWholeWord(t *testing.T) {
+	cases := []struct {
+		name, artist string
+		want         bool
+	}{
+		{"ElGrandeToto - Salgoat World Tour", "Toto", false},
+		{"Toto Live", "Toto", true},
+		{"An Evening With Toto", "Toto", true},
+		{"Jaÿ-Z 30", "Jay-Z", false}, // diaeresis: not the same word
+		{"Ninho - Quattro Tour", "Ninho", true},
+	}
+	for _, c := range cases {
+		if got := matchesArtist(c.name, c.artist); got != c.want {
+			t.Errorf("matchesArtist(%q, %q) = %v, want %v", c.name, c.artist, got, c.want)
+		}
+	}
+}

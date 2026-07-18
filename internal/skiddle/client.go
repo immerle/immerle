@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -59,16 +60,29 @@ type searchResponse struct {
 	} `json:"results"`
 }
 
+// supportedCountries are the markets where Skiddle actually has a usable
+// catalog — checked live against every country offered by the admin dropdown
+// (ui/src/utils/countries.ts): a generic search returned close to 100 events
+// or more for each of these, and single/low-double digits for everything
+// else. Countries outside this list are a no-op, same as an unconfigured
+// client.
+var supportedCountries = map[string]bool{
+	"GB": true, "IE": true, "ES": true, "GR": true, "PT": true,
+}
+
 // Search finds upcoming events matching artist in countryCode (an ISO
 // 3166-1 alpha-2 code, e.g. "FR"), soonest first, capped at limit. Returns no
-// events (not an error) when the client has no API key or nothing matches.
+// events (not an error) when the client has no API key, countryCode isn't in
+// supportedCountries, or nothing matches.
 //
 // Skiddle's keyword search is a loose, tokenized match (e.g. "Jay-Z" can
 // match an unrelated event whose description merely contains the word
 // "Jay") — results are filtered to those whose event name actually mentions
-// the artist to avoid false positives.
+// the artist as a whole word, to avoid false positives (a plain substring
+// check would let a short name like "Toto" false-match "ElGrandeToto").
 func (c *Client) Search(ctx context.Context, artist, countryCode string, limit int) ([]Event, error) {
-	if !c.IsConfigured() {
+	countryCode = strings.ToUpper(countryCode)
+	if !c.IsConfigured() || !supportedCountries[countryCode] {
 		return nil, nil
 	}
 	q := url.Values{
@@ -77,9 +91,7 @@ func (c *Client) Search(ctx context.Context, artist, countryCode string, limit i
 		"order":   {"date"},
 		"limit":   {strconv.Itoa(limit)},
 		"minDate": {time.Now().Format("2006-01-02")},
-	}
-	if countryCode != "" {
-		q.Set("country", strings.ToUpper(countryCode))
+		"country": {countryCode},
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+"?"+q.Encode(), nil)
 	if err != nil {
@@ -107,7 +119,7 @@ func (c *Client) Search(ctx context.Context, artist, countryCode string, limit i
 			continue
 		}
 		name := strings.TrimSpace(e.Name)
-		if !strings.Contains(strings.ToLower(name), strings.ToLower(artist)) {
+		if !matchesArtist(name, artist) {
 			continue
 		}
 		out = append(out, Event{
@@ -120,4 +132,15 @@ func (c *Client) Search(ctx context.Context, artist, countryCode string, limit i
 		})
 	}
 	return out, nil
+}
+
+// matchesArtist reports whether artist appears in name as a whole word
+// (case-insensitive) — a plain substring check would let a short/common
+// artist name false-match inside an unrelated longer word.
+func matchesArtist(name, artist string) bool {
+	re, err := regexp.Compile(`(?i)\b` + regexp.QuoteMeta(artist) + `\b`)
+	if err != nil {
+		return false
+	}
+	return re.MatchString(name)
 }

@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -67,12 +68,26 @@ type discoveryResponse struct {
 	} `json:"_embedded"`
 }
 
+// supportedCountries are the markets where Ticketmaster's Discovery API
+// actually has a usable music catalog — checked live against every country
+// offered by the admin dropdown (ui/src/utils/countries.ts): a "music"
+// classification search returned >=100 total events for each of these, and
+// single digits or zero for everything else (e.g. France: 1 total event —
+// see the France-specific Eventim source in internal/eventim for why).
+// Countries outside this list are a no-op, same as an unconfigured client.
+var supportedCountries = map[string]bool{
+	"US": true, "GB": true, "DE": true, "ES": true, "IT": true, "NL": true,
+	"BE": true, "IE": true, "CA": true, "AU": true, "NZ": true, "SE": true,
+	"NO": true, "DK": true, "FI": true, "PL": true, "AT": true, "CH": true,
+	"MX": true, "BR": true, "TR": true, "CZ": true,
+}
+
 // Search finds upcoming music events matching artist in countryCode (an ISO
 // 3166-1 alpha-2 code, e.g. "FR"), soonest first, capped at limit. Returns no
-// events (not an error) when the client has no API key or the artist has
-// nothing upcoming there.
+// events (not an error) when the client has no API key, countryCode isn't in
+// supportedCountries, or the artist has nothing upcoming there.
 func (c *Client) Search(ctx context.Context, artist, countryCode string, limit int) ([]Event, error) {
-	if !c.IsConfigured() {
+	if !c.IsConfigured() || !supportedCountries[strings.ToUpper(countryCode)] {
 		return nil, nil
 	}
 	q := url.Values{

@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -67,7 +68,8 @@ type productGroupsResponse struct {
 // Eventim's search_term is a loose match on the whole product group (e.g.
 // searching "Ninho" also surfaces "Ninon Valder", "Nino Gotfunk"...), so
 // results are filtered to those whose main attraction name actually mentions
-// the artist.
+// the artist as a whole word — a plain substring check would let a short
+// name like "Toto" false-match an unrelated "ElGrandeToto".
 func (c *Client) Search(ctx context.Context, artist, countryCode string, limit int) ([]Event, error) {
 	if !strings.EqualFold(countryCode, "FR") {
 		return nil, nil
@@ -100,7 +102,7 @@ func (c *Client) Search(ctx context.Context, artist, countryCode string, limit i
 	}
 	var out []Event
 	for _, pg := range body.ProductGroups {
-		if !strings.Contains(strings.ToLower(pg.MainAttraction.Name), strings.ToLower(artist)) {
+		if !matchesArtist(pg.MainAttraction.Name, artist) {
 			continue
 		}
 		for _, p := range pg.Products {
@@ -122,4 +124,15 @@ func (c *Client) Search(ctx context.Context, artist, countryCode string, limit i
 		}
 	}
 	return out, nil
+}
+
+// matchesArtist reports whether artist appears in name as a whole word
+// (case-insensitive) — a plain substring check would let a short/common
+// artist name false-match inside an unrelated longer word.
+func matchesArtist(name, artist string) bool {
+	re, err := regexp.Compile(`(?i)\b` + regexp.QuoteMeta(artist) + `\b`)
+	if err != nil {
+		return false
+	}
+	return re.MatchString(name)
 }

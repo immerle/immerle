@@ -1,10 +1,12 @@
 /**
  * Countries offered by the admin "Concert discovery" country dropdown — an
  * ISO 3166-1 alpha-2 code sent to the server (concerts.country), matched
- * against Ticketmaster's countryCode filter and (translated to a name)
- * Skiddle's keyword search. Not exhaustive — just Ticketmaster/Skiddle's main
- * markets. English names only: a technical admin setting, not worth 70+
- * i18n keys for.
+ * against Ticketmaster's countryCode filter, Skiddle's country filter, and
+ * (France only) Eventim. Limited to countries where at least one source has
+ * a real catalog (see CONCERT_PROVIDERS in concertProviders.ts) — offering a
+ * country no source covers would be a dead end: enabled, configured, and
+ * silently zero results forever. English names only: a technical admin
+ * setting, not worth 70+ i18n keys for.
  */
 export const COUNTRIES: { code: string; name: string }[] = [
   { code: 'FR', name: 'France' },
@@ -29,18 +31,7 @@ export const COUNTRIES: { code: string; name: string }[] = [
   { code: 'PT', name: 'Portugal' },
   { code: 'MX', name: 'Mexico' },
   { code: 'BR', name: 'Brazil' },
-  { code: 'AR', name: 'Argentina' },
-  { code: 'CL', name: 'Chile' },
-  { code: 'CO', name: 'Colombia' },
-  { code: 'JP', name: 'Japan' },
-  { code: 'KR', name: 'South Korea' },
-  { code: 'SG', name: 'Singapore' },
-  { code: 'ZA', name: 'South Africa' },
   { code: 'TR', name: 'Turkey' },
-  { code: 'AE', name: 'United Arab Emirates' },
-  { code: 'LU', name: 'Luxembourg' },
   { code: 'CZ', name: 'Czechia' },
   { code: 'GR', name: 'Greece' },
-  { code: 'HU', name: 'Hungary' },
-  { code: 'RO', name: 'Romania' },
 ];
