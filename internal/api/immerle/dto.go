@@ -287,6 +287,34 @@ type AccountDTO struct {
 	Language    string `json:"language,omitempty" example:"fr"`
 }
 
+// ConcertDTO is one upcoming show matched to the caller's listening history.
+type ConcertDTO struct {
+	ID         string `json:"id"`
+	Source     string `json:"source" example:"ticketmaster"`
+	ArtistName string `json:"artistName" example:"Daft Punk"`
+	EventName  string `json:"eventName" example:"Daft Punk World Tour"`
+	Venue      string `json:"venue,omitempty" example:"Accor Arena"`
+	City       string `json:"city,omitempty" example:"Paris"`
+	StartTime  string `json:"startTime" example:"2026-09-12T19:00:00Z"`
+	URL        string `json:"url,omitempty" example:"https://www.ticketmaster.com/event/..."`
+}
+
+// ConcertsDTO wraps the caller's upcoming concert matches.
+type ConcertsDTO struct {
+	Concerts []ConcertDTO `json:"concerts"`
+}
+
+// ConcertsStatusDTO is the admin view of concert-discovery config. The API
+// keys themselves are write-only — this only reports whether one is set.
+type ConcertsStatusDTO struct {
+	Enabled bool `json:"enabled" example:"false"`
+	// Country is an ISO 3166-1 alpha-2 code (e.g. "FR"), picked from a fixed
+	// dropdown in the admin UI — not a secret, returned as-is.
+	Country                string `json:"country,omitempty" example:"FR"`
+	TicketmasterConfigured bool   `json:"ticketmasterConfigured" example:"false"`
+	SkiddleConfigured      bool   `json:"skiddleConfigured" example:"false"`
+}
+
 // ActivityItemDTO carries resolved, human-readable details about the item an
 // activity event references (fields depend on itemType; empty when unresolved).
 type ActivityItemDTO struct {

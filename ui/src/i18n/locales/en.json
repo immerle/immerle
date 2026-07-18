@@ -266,6 +266,12 @@
       "offlineAlbums": "Albums available offline",
       "offlinePlaylists": "Playlists available offline"
     },
+    "concerts": {
+      "bannerTitle": "{{artist}} is playing near you",
+      "tickets": "Tickets",
+      "dismiss": "Dismiss",
+      "toastFound": "New concert match: {{artist}} — {{event}}"
+    },
     "playlists": {
       "title": "Playlists",
       "likedTracks": "Liked tracks",
@@ -555,6 +561,19 @@
       "chartsDescription": "Public playlists synced weekly from worldwide Spotify charts (top tracks by country).",
       "chartsSyncedCount": "{{count}} synced",
       "runChartsSync": "Sync charts now",
+      "concertsTitle": "Concert discovery",
+      "concertsDescription": "Matches each user's top-listened artists against every source below, once daily, in the country below — the same country for the whole instance.",
+      "concertsEnabled": "Concert discovery",
+      "concertsCountry": "Country",
+      "concertsSources": "Sources for this country: {{list}}.",
+      "countryNotSet": "Not set",
+      "ticketmasterKey": "Ticketmaster API key",
+      "skiddleKey": "Skiddle API key",
+      "keyConfigured": "Configured — leave blank to keep it",
+      "keyNotConfigured": "Not set",
+      "concertsKeysHelp": "Keys are write-only: never shown again once saved.",
+      "concertsSyncedCount": "{{count}} new matches",
+      "runConcertsSync": "Sync concerts now",
       "logsTitle": "Logs",
       "logsSubtitle": "Diagnostic log retention",
       "logsDescription": "A daily sweep deletes persisted logs (provider errors and warnings) older than the retention window.",

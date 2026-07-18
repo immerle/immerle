@@ -37,6 +37,9 @@ you outgrow it). Drop in your music, hit play.
 - 📥 **Playlist import** — bring your playlists over (Spotify ships first).
 - 🔗 **Federation (opt-in)** — sync editorial & recommendation playlists via an
   `immerle-hub`.
+- 🎫 **Concert discovery (opt-in)** — matches your top-listened artists
+  against upcoming shows near an admin-configured country, with a Home
+  banner and a notification when something new turns up.
 
 ## Next steps
 

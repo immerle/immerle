@@ -266,6 +266,12 @@
       "offlineAlbums": "Albums disponibles hors ligne",
       "offlinePlaylists": "Playlists disponibles hors ligne"
     },
+    "concerts": {
+      "bannerTitle": "{{artist}} joue près de chez vous",
+      "tickets": "Billets",
+      "dismiss": "Ignorer",
+      "toastFound": "Nouveau concert trouvé : {{artist}} — {{event}}"
+    },
     "playlists": {
       "title": "Playlists",
       "likedTracks": "Titres likés",
@@ -555,6 +561,19 @@
       "chartsDescription": "Playlists publiques synchronisées chaque semaine depuis les classements Spotify mondiaux (top titres par pays).",
       "chartsSyncedCount": "{{count}} synchronisée(s)",
       "runChartsSync": "Synchroniser les charts maintenant",
+      "concertsTitle": "Découverte de concerts",
+      "concertsDescription": "Compare les artistes les plus écoutés de chaque utilisateur à chaque source ci-dessous, une fois par jour, dans le pays ci-dessous — le même pays pour toute l'instance.",
+      "concertsEnabled": "Découverte de concerts",
+      "concertsCountry": "Pays",
+      "concertsSources": "Sources pour ce pays : {{list}}.",
+      "countryNotSet": "Non défini",
+      "ticketmasterKey": "Clé API Ticketmaster",
+      "skiddleKey": "Clé API Skiddle",
+      "keyConfigured": "Configurée — laisser vide pour la conserver",
+      "keyNotConfigured": "Non définie",
+      "concertsKeysHelp": "Les clés sont à écriture seule : plus jamais affichées une fois enregistrées.",
+      "concertsSyncedCount": "{{count}} nouveau(x) concert(s)",
+      "runConcertsSync": "Synchroniser les concerts maintenant",
       "logsTitle": "Journaux",
       "logsSubtitle": "Rétention des journaux de diagnostic",
       "logsDescription": "Un balayage quotidien supprime les journaux persistés (erreurs et avertissements des providers) plus anciens que la fenêtre de rétention.",

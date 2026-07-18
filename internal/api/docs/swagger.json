@@ -201,6 +201,76 @@
                 },
                 "type": "object"
             },
+            "immerle.ConcertDTO": {
+                "properties": {
+                    "artistName": {
+                        "example": "Daft Punk",
+                        "type": "string"
+                    },
+                    "city": {
+                        "example": "Paris",
+                        "type": "string"
+                    },
+                    "eventName": {
+                        "example": "Daft Punk World Tour",
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "source": {
+                        "example": "ticketmaster",
+                        "type": "string"
+                    },
+                    "startTime": {
+                        "example": "2026-09-12T19:00:00Z",
+                        "type": "string"
+                    },
+                    "url": {
+                        "example": "https://www.ticketmaster.com/event/...",
+                        "type": "string"
+                    },
+                    "venue": {
+                        "example": "Accor Arena",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.ConcertsDTO": {
+                "properties": {
+                    "concerts": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.ConcertDTO"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.ConcertsStatusDTO": {
+                "properties": {
+                    "country": {
+                        "description": "Country is an ISO 3166-1 alpha-2 code (e.g. \"FR\"), picked from a fixed\ndropdown in the admin UI — not a secret, returned as-is.",
+                        "example": "FR",
+                        "type": "string"
+                    },
+                    "enabled": {
+                        "example": false,
+                        "type": "boolean"
+                    },
+                    "skiddleConfigured": {
+                        "example": false,
+                        "type": "boolean"
+                    },
+                    "ticketmasterConfigured": {
+                        "example": false,
+                        "type": "boolean"
+                    }
+                },
+                "type": "object"
+            },
             "immerle.CreateTokenDTO": {
                 "properties": {
                     "id": {
@@ -1533,6 +1603,24 @@
                         "type": "string"
                     },
                     "type": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.concertsUpdateRequest": {
+                "properties": {
+                    "country": {
+                        "description": "Country is an ISO 3166-1 alpha-2 code (e.g. \"FR\") from the admin UI's\nfixed dropdown — the single instance-wide location concert discovery\nsearches near (there is no per-user location).",
+                        "type": "string"
+                    },
+                    "enabled": {
+                        "type": "boolean"
+                    },
+                    "skiddleApiKey": {
+                        "type": "string"
+                    },
+                    "ticketmasterApiKey": {
                         "type": "string"
                     }
                 },
@@ -2964,6 +3052,151 @@
                     }
                 ],
                 "summary": "Run the cleanup sweep now",
+                "tags": [
+                    "admin"
+                ]
+            }
+        },
+        "/admin/concerts": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.ConcertsStatusDTO"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Get the concert-discovery feature state",
+                "tags": [
+                    "admin"
+                ]
+            },
+            "put": {
+                "description": "Admin only. Partial update — only fields present are changed. API keys are write-only: the response never echoes them back.",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/immerle.concertsUpdateRequest",
+                                        "summary": "body",
+                                        "description": "Fields to change"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Fields to change",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.ConcertsStatusDTO"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Update concert-discovery settings",
+                "tags": [
+                    "admin"
+                ]
+            }
+        },
+        "/admin/concerts/sync": {
+            "post": {
+                "description": "Admin only. Searches every user's top-listened artists for upcoming shows near the configured country immediately, returning how many new matches were found.",
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.ChartsSyncDTO"
+                                }
+                            }
+                        },
+                        "description": "Created"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    },
+                    "503": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Service Unavailable"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Sync concert discovery now",
                 "tags": [
                     "admin"
                 ]
@@ -8062,6 +8295,111 @@
                 "summary": "Update your account",
                 "tags": [
                     "users"
+                ]
+            }
+        },
+        "/me/concerts": {
+            "get": {
+                "description": "Concert discovery matches your top-listened artists against Ticketmaster/Skiddle/Eventim near the admin-configured country, refreshed daily. Returns upcoming, non-dismissed matches, soonest first. Empty (not an error) when the feature is disabled, no country is configured, or nothing matched yet.",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.ConcertsDTO"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Your upcoming concert matches",
+                "tags": [
+                    "concerts"
+                ]
+            }
+        },
+        "/me/concerts/{id}/dismiss": {
+            "put": {
+                "parameters": [
+                    {
+                        "description": "Concert id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "dismissed"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Dismiss a concert match",
+                "tags": [
+                    "concerts"
                 ]
             }
         },
