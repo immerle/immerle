@@ -40,6 +40,9 @@ you outgrow it). Drop in your music, hit play.
 - 🎫 **Concert discovery (opt-in)** — matches your top-listened artists
   against upcoming shows near an admin-configured country, with a Home
   banner and a notification when something new turns up.
+- 🎤 **Lyrics & karaoke** — reads embedded/sidecar lyrics from your files, and
+  falls back to [lrclib.net](https://lrclib.net/) for synced lyrics when a
+  track has none, highlighting the current line as it plays.
 
 ## Next steps
 
