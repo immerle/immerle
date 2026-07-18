@@ -22,7 +22,7 @@ import { Ionicon } from '../../src/components/Ionicon';
 import { useColors } from '../../src/theme/colors';
 import { useT } from '../../src/i18n/store';
 import { COUNTRIES } from '../../src/utils/countries';
-import { concertProviderNames } from '../../src/utils/concertProviders';
+import { concertProviderNames, concertProviderApplies } from '../../src/utils/concertProviders';
 
 const num = (s: string) => {
   const n = Number(s);
@@ -341,23 +341,28 @@ export default function AdminSettings() {
                       {t('admin.settings.concertsSources', { list: concertProviderNames(concertsCountry) })}
                     </Text>
                   </View>
-                  <Field
-                    label={t('admin.settings.ticketmasterKey')}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    placeholder={concerts.data?.ticketmasterConfigured ? t('admin.settings.keyConfigured') : t('admin.settings.keyNotConfigured')}
-                    value={tmKey}
-                    onChangeText={setTmKey}
-                  />
-                  <Field
-                    label={t('admin.settings.skiddleKey')}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    placeholder={concerts.data?.skiddleConfigured ? t('admin.settings.keyConfigured') : t('admin.settings.keyNotConfigured')}
-                    value={skKey}
-                    onChangeText={setSkKey}
-                    help={t('admin.settings.concertsKeysHelp')}
-                  />
+                  {concertProviderApplies('Ticketmaster', concertsCountry) ? (
+                    <Field
+                      label={t('admin.settings.ticketmasterKey')}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      placeholder={concerts.data?.ticketmasterConfigured ? t('admin.settings.keyConfigured') : t('admin.settings.keyNotConfigured')}
+                      value={tmKey}
+                      onChangeText={setTmKey}
+                      help={!concertProviderApplies('Skiddle', concertsCountry) ? t('admin.settings.concertsKeysHelp') : undefined}
+                    />
+                  ) : null}
+                  {concertProviderApplies('Skiddle', concertsCountry) ? (
+                    <Field
+                      label={t('admin.settings.skiddleKey')}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      placeholder={concerts.data?.skiddleConfigured ? t('admin.settings.keyConfigured') : t('admin.settings.keyNotConfigured')}
+                      value={skKey}
+                      onChangeText={setSkKey}
+                      help={t('admin.settings.concertsKeysHelp')}
+                    />
+                  ) : null}
                   <SaveButton
                     loading={updateConcerts.isPending}
                     onPress={() =>
