@@ -114,23 +114,48 @@ func (s *Service) SyncNow(ctx context.Context) (int, error) {
 		return 0, err
 	}
 	now := time.Now()
-	windowStart := now.Add(-topArtistsWindow)
-
 	synced := 0
 	for _, u := range users {
-		if u.City == "" {
-			continue
-		}
-		artists, err := s.wrapped.TopArtists(ctx, u.ID, windowStart.UnixMilli(), now.UnixMilli(), topArtistsLimit)
-		if err != nil {
-			s.logger.Warn("concerts: top artists failed", "user", u.ID, "error", err)
-			continue
-		}
-		for _, artist := range artists {
-			synced += s.syncArtist(ctx, tm, sk, u.ID, u.City, artist.Name, now)
-		}
+		synced += s.syncUser(ctx, tm, sk, u, now)
 	}
 	return synced, nil
+}
+
+// SyncUser searches just one user's top-listened artists — used to give
+// immediate results the moment they set their city, rather than making them
+// wait for the next daily Run tick. A no-op (0, nil) when the feature is
+// disabled or the user has no city set.
+func (s *Service) SyncUser(ctx context.Context, userID string) (int, error) {
+	cfg := s.settings()
+	if !cfg.Enabled {
+		return 0, nil
+	}
+	u, err := s.users.GetByID(ctx, userID)
+	if err != nil {
+		return 0, err
+	}
+	tm := s.newTicketmaster(cfg.TicketmasterAPIKey)
+	sk := s.newSkiddle(cfg.SkiddleAPIKey)
+	return s.syncUser(ctx, tm, sk, u, time.Now()), nil
+}
+
+// syncUser searches one user's top-listened artists for nearby upcoming
+// shows, skipping users with no city set (nothing to search near).
+func (s *Service) syncUser(ctx context.Context, tm, sk searcher, u models.User, now time.Time) int {
+	if u.City == "" {
+		return 0
+	}
+	windowStart := now.Add(-topArtistsWindow)
+	artists, err := s.wrapped.TopArtists(ctx, u.ID, windowStart.UnixMilli(), now.UnixMilli(), topArtistsLimit)
+	if err != nil {
+		s.logger.Warn("concerts: top artists failed", "user", u.ID, "error", err)
+		return 0
+	}
+	synced := 0
+	for _, artist := range artists {
+		synced += s.syncArtist(ctx, tm, sk, u.ID, u.City, artist.Name, now)
+	}
+	return synced
 }
 
 // syncArtist searches one artist for one user (Ticketmaster first, Skiddle
