@@ -1,12 +1,21 @@
 name: Release
 
 # Tag a release to ship: `git tag v1.2.3 && git push --tags`.
+#
+# What ships:
+#   - a multi-arch Docker image (the server) pushed to GHCR
+#   - "iml" terminal client binaries, cross-compiled, attached to the GitHub release
+#   - Electron desktop app installers (mac/win/linux), attached to the GitHub release
+#   - an Android APK, built on EAS, attached to the GitHub release
+#
+# The Android job needs an EXPO_TOKEN repo secret (an EAS robot/access token
+# with build permission on the project) -- see https://docs.expo.dev/eas/environment-variables/#authentication-with-eas
 on:
   push:
     tags: ["v*"]
 
 permissions:
-  contents: write # create the release + upload desktop artifacts
+  contents: write # create the release + upload artifacts
   packages: write # push the image to GHCR
 
 jobs:
@@ -47,6 +56,59 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+  cli:
+    # Cross-compiles the iml terminal client and attaches it to the release.
+    # macOS and Windows are pure Go (oto/v3 uses purego there) and cross-compile
+    # fine from ubuntu-latest; Linux's audio backend uses cgo + ALSA, so that
+    # leg needs a real C toolchain -- linux/arm64 runs on a native arm64 runner
+    # rather than fighting a cross-toolchain for one job.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { goos: linux, goarch: amd64, runner: ubuntu-latest, cgo: "1" }
+          - { goos: linux, goarch: arm64, runner: ubuntu-24.04-arm, cgo: "1" }
+          - { goos: darwin, goarch: amd64, runner: ubuntu-latest, cgo: "0" }
+          - { goos: darwin, goarch: arm64, runner: ubuntu-latest, cgo: "0" }
+          - { goos: windows, goarch: amd64, runner: ubuntu-latest, cgo: "0" }
+          - { goos: windows, goarch: arm64, runner: ubuntu-latest, cgo: "0" }
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.5"
+          cache: true
+
+      - name: Install ALSA dev headers
+        if: matrix.goos == 'linux'
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev
+
+      - name: Build iml (${{ matrix.goos }}/${{ matrix.goarch }})
+        env:
+          CGO_ENABLED: ${{ matrix.cgo }}
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          ext=""
+          [ "${{ matrix.goos }}" = "windows" ] && ext=".exe"
+          go build -ldflags "-s -w -X main.version=${{ github.ref_name }}" \
+            -o "iml${ext}" ./cmd/iml
+
+      - name: Archive
+        run: |
+          name="iml-${{ github.ref_name }}-${{ matrix.goos }}-${{ matrix.goarch }}"
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            zip "$name.zip" iml.exe
+          else
+            tar -czf "$name.tar.gz" iml
+          fi
+
+      - name: Attach to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: iml-*.tar.gz iml-*.zip
+
   desktop:
     strategy:
       fail-fast: false
@@ -66,7 +128,7 @@ jobs:
           node-version: "24"
           cache: npm
           cache-dependency-path: ui/package-lock.json
-      - run: npm ci
+      - run: npm ci --legacy-peer-deps
 
       - name: Build web bundle
         run: npm run export:web
@@ -92,3 +154,34 @@ jobs:
             ui/release/*.exe
             ui/release/*.AppImage
             ui/release/*.deb
+
+  android:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ui
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+      - run: npm ci --legacy-peer-deps
+
+      - name: Build APK on EAS
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          npx eas build --platform android --profile apk --non-interactive --wait \
+            --message "${{ github.ref_name }}" --json > eas-build.json
+
+      - name: Download APK
+        run: |
+          url=$(node -e "console.log(JSON.parse(require('fs').readFileSync('eas-build.json', 'utf8'))[0].artifacts.buildUrl)")
+          curl -fsSL "$url" -o "immerle-${{ github.ref_name }}.apk"
+
+      - name: Attach to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ui/immerle-*.apk

@@ -100,6 +100,23 @@ Grab the installer for your OS from the
 > Or, without the terminal: try to open it once, then go to **System Settings →
 > Privacy & Security → Open Anyway**.
 
+### 📱 Android
+
+Grab the `.apk` from the [latest release](../../releases/latest) and install
+it directly (you'll need to allow installs from your file manager / browser).
+
+### ⌨️ iml — terminal client
+
+A minimal, UI-less terminal client: search songs/albums/playlists and play.
+
+```bash
+# grab the archive for your OS/arch from the latest release, then:
+tar xzf iml-*.tar.gz
+./iml
+```
+
+Or straight from source: `go install github.com/immerle/immerle/cmd/iml@latest`.
+
 ## 📚 Going further
 
 The friendly bit ends here; the full reference lives on the
