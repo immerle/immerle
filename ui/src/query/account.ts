@@ -26,7 +26,7 @@ export function useUpdateAccount() {
   const setDisplayName = useAuth((s) => s.setDisplayName);
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (patch: { displayName?: string; email?: string; language?: AccountLanguage; city?: string }) =>
+    mutationFn: (patch: { displayName?: string; email?: string; language?: AccountLanguage }) =>
       client!.updateAccount(patch),
     onSuccess: (acc) => {
       qc.setQueryData(KEYS.account, acc);

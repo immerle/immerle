@@ -1,5 +1,5 @@
 // Package ticketmaster searches the Ticketmaster Discovery API for upcoming
-// music events by artist and city. Requires an API key (admin-configured,
+// music events by artist and country. Requires an API key (admin-configured,
 // see models.ConcertsRuntime) — the free tier is plenty for a self-hosted
 // instance's own concert-discovery sync.
 package ticketmaster
@@ -10,11 +10,11 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 )
 
-const baseURL = "https://app.ticketmaster.com/discovery/v2/events.json"
+// baseURL is a var, not a const, so tests can point it at an httptest server.
+var baseURL = "https://app.ticketmaster.com/discovery/v2/events.json"
 
 // Event is a single upcoming show, trimmed to what internal/concerts needs.
 type Event struct {
@@ -67,37 +67,14 @@ type discoveryResponse struct {
 	} `json:"_embedded"`
 }
 
-// Search finds upcoming music events matching artist near city, soonest
-// first, capped at limit. Returns no events (not an error) when the client
-// has no API key or the artist has nothing upcoming.
-//
-// Ticketmaster's own `city` filter is tried first (precise, and cheap when it
-// works), but it can miss a real match: we only have a free-text city with no
-// country hint, so "Paris" is ambiguous to their API, and a venue's
-// registered city doesn't always match common usage (an arena that's
-// technically in a suburb). When the city-scoped search comes back empty, we
-// retry without it and filter the broader result ourselves by a loose
-// substring match on the venue's own city — a match we can verify precisely
-// once we can see the actual event data, unlike the opaque server-side filter.
-func (c *Client) Search(ctx context.Context, artist, city string, limit int) ([]Event, error) {
+// Search finds upcoming music events matching artist in countryCode (an ISO
+// 3166-1 alpha-2 code, e.g. "FR"), soonest first, capped at limit. Returns no
+// events (not an error) when the client has no API key or the artist has
+// nothing upcoming there.
+func (c *Client) Search(ctx context.Context, artist, countryCode string, limit int) ([]Event, error) {
 	if !c.IsConfigured() {
 		return nil, nil
 	}
-	events, err := c.search(ctx, artist, city, limit)
-	if err != nil {
-		return nil, err
-	}
-	if len(events) > 0 || city == "" {
-		return events, nil
-	}
-	broader, err := c.search(ctx, artist, "", limit*4)
-	if err != nil {
-		return nil, err
-	}
-	return filterByCity(broader, city, limit), nil
-}
-
-func (c *Client) search(ctx context.Context, artist, city string, limit int) ([]Event, error) {
 	q := url.Values{
 		"apikey":             {c.apiKey},
 		"keyword":            {artist},
@@ -105,8 +82,8 @@ func (c *Client) search(ctx context.Context, artist, city string, limit int) ([]
 		"sort":               {"date,asc"},
 		"size":               {fmt.Sprintf("%d", limit)},
 	}
-	if city != "" {
-		q.Set("city", city)
+	if countryCode != "" {
+		q.Set("countryCode", countryCode)
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+"?"+q.Encode(), nil)
 	if err != nil {
@@ -117,8 +94,8 @@ func (c *Client) search(ctx context.Context, artist, city string, limit int) ([]
 		return nil, err
 	}
 	defer resp.Body.Close()
-	// A city with zero matching events is a 200 with no "_embedded" key, not an
-	// error — only treat non-2xx as a real failure.
+	// A country with zero matching events is a 200 with no "_embedded" key,
+	// not an error — only treat non-2xx as a real failure.
 	if resp.StatusCode >= 300 {
 		return nil, fmt.Errorf("ticketmaster: unexpected status %d", resp.StatusCode)
 	}
@@ -140,30 +117,6 @@ func (c *Client) search(ctx context.Context, artist, city string, limit int) ([]
 		out = append(out, ev)
 	}
 	return out, nil
-}
-
-// filterByCity keeps events whose venue city loosely matches want (either
-// contains the other, case-insensitive) — a substring match survives common
-// variants ("Paris" vs "Paris La Défense") that a strict equality check
-// wouldn't. An event with no venue city at all is dropped: we can't verify
-// it's actually nearby, and showing an unrelated city defeats the feature.
-func filterByCity(events []Event, want string, limit int) []Event {
-	want = strings.ToLower(strings.TrimSpace(want))
-	out := make([]Event, 0, limit)
-	for _, e := range events {
-		got := strings.ToLower(strings.TrimSpace(e.City))
-		if got == "" {
-			continue
-		}
-		if !strings.Contains(got, want) && !strings.Contains(want, got) {
-			continue
-		}
-		out = append(out, e)
-		if len(out) == limit {
-			break
-		}
-	}
-	return out
 }
 
 // parseStart prefers the precise dateTime (UTC, has a time-of-day);

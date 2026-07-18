@@ -66,7 +66,7 @@ export function useUpdateConcertsConfig() {
   const client = useAuth((s) => s.client);
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (patch: { enabled?: boolean; ticketmasterApiKey?: string; skiddleApiKey?: string }) =>
+    mutationFn: (patch: { enabled?: boolean; country?: string; ticketmasterApiKey?: string; skiddleApiKey?: string }) =>
       client!.updateConcertsConfig(patch),
     onSuccess: (status) => qc.setQueryData(qk.concertsAdmin, status),
   });

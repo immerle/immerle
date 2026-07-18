@@ -285,7 +285,6 @@ type AccountDTO struct {
 	Email       string `json:"email,omitempty" example:"bob@example.com"`
 	IsAdmin     bool   `json:"isAdmin" example:"false"`
 	Language    string `json:"language,omitempty" example:"fr"`
-	City        string `json:"city,omitempty" example:"Paris"`
 }
 
 // ConcertDTO is one upcoming show matched to the caller's listening history.
@@ -308,9 +307,12 @@ type ConcertsDTO struct {
 // ConcertsStatusDTO is the admin view of concert-discovery config. The API
 // keys themselves are write-only — this only reports whether one is set.
 type ConcertsStatusDTO struct {
-	Enabled                bool `json:"enabled" example:"false"`
-	TicketmasterConfigured bool `json:"ticketmasterConfigured" example:"false"`
-	SkiddleConfigured      bool `json:"skiddleConfigured" example:"false"`
+	Enabled bool `json:"enabled" example:"false"`
+	// Country is an ISO 3166-1 alpha-2 code (e.g. "FR"), picked from a fixed
+	// dropdown in the admin UI — not a secret, returned as-is.
+	Country                string `json:"country,omitempty" example:"FR"`
+	TicketmasterConfigured bool   `json:"ticketmasterConfigured" example:"false"`
+	SkiddleConfigured      bool   `json:"skiddleConfigured" example:"false"`
 }
 
 // ActivityItemDTO carries resolved, human-readable details about the item an

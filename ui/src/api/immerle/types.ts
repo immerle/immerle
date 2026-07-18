@@ -270,6 +270,9 @@ export interface Concert {
 /** Admin view of concert-discovery config — the API keys are write-only. */
 export interface ConcertsAdminStatus {
   enabled: boolean;
+  /** ISO 3166-1 alpha-2 code (e.g. "FR") — the single instance-wide location
+   * concert discovery searches near. Empty means not configured yet. */
+  country: string;
   ticketmasterConfigured: boolean;
   skiddleConfigured: boolean;
 }

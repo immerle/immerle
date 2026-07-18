@@ -125,10 +125,6 @@ type AutoPlaylistsController interface {
 // the daily schedule. Implemented by *concerts.Service.
 type ConcertsController interface {
 	SyncNow(ctx context.Context) (int, error)
-	// SyncUser searches just one user's top-listened artists — used to give
-	// immediate results the moment they set their city, rather than making
-	// them wait for the next daily sync.
-	SyncUser(ctx context.Context, userID string) (int, error)
 }
 
 // Handler implements the immerle native API.

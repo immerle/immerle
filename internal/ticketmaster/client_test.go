@@ -1,32 +1,59 @@
 package ticketmaster
 
-import "testing"
+import (
+	"context"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"testing"
+)
 
-func TestFilterByCityLooseSubstringMatch(t *testing.T) {
-	events := []Event{
-		{ID: "1", City: "Paris"},
-		{ID: "2", City: "Paris La Défense"}, // suburb venue, still "Paris" enough
-		{ID: "3", City: "London"},
-		{ID: "4", City: ""}, // unknown city, can't verify — must be dropped
+// TestSearchSendsCountryCodeAndParsesEvents covers the actual query Search
+// sends (countryCode, not a free-text city — see the package doc for why)
+// and that a real Discovery API response shape gets parsed correctly.
+func TestSearchSendsCountryCodeAndParsesEvents(t *testing.T) {
+	var gotQuery string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotQuery = r.URL.RawQuery
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"_embedded":{"events":[{
+			"id": "evt-1",
+			"name": "Jay-Z World Tour",
+			"url": "https://example.com/evt-1",
+			"dates": {"start": {"dateTime": "2026-09-12T19:00:00Z"}},
+			"_embedded": {"venues": [{"name": "Accor Arena", "city": {"name": "Paris"}}]}
+		}]}}`))
+	}))
+	defer srv.Close()
+
+	orig := baseURL
+	baseURL = srv.URL
+	defer func() { baseURL = orig }()
+
+	c := NewClient("test-key")
+	events, err := c.Search(context.Background(), "Jay-Z", "FR", 3)
+	if err != nil {
+		t.Fatal(err)
 	}
-	got := filterByCity(events, "Paris", 10)
-	if len(got) != 2 || got[0].ID != "1" || got[1].ID != "2" {
-		t.Fatalf("filterByCity(Paris) = %+v, want events 1 and 2 only", got)
+	if len(events) != 1 || events[0].ID != "evt-1" || events[0].City != "Paris" || events[0].Venue != "Accor Arena" {
+		t.Fatalf("Search = %+v, want one parsed event", events)
+	}
+	q, err := url.ParseQuery(gotQuery)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if q.Get("countryCode") != "FR" {
+		t.Fatalf("query = %q, want countryCode=FR", gotQuery)
+	}
+	if q.Get("keyword") != "Jay-Z" {
+		t.Fatalf("query = %q, want keyword=Jay-Z", gotQuery)
 	}
 }
 
-func TestFilterByCityRespectsLimit(t *testing.T) {
-	events := []Event{{ID: "1", City: "Paris"}, {ID: "2", City: "Paris"}, {ID: "3", City: "Paris"}}
-	got := filterByCity(events, "Paris", 2)
-	if len(got) != 2 {
-		t.Fatalf("filterByCity(limit=2) = %d events, want 2", len(got))
-	}
-}
-
-func TestFilterByCityNoMatch(t *testing.T) {
-	events := []Event{{ID: "1", City: "London"}, {ID: "2", City: "Berlin"}}
-	got := filterByCity(events, "Paris", 10)
-	if len(got) != 0 {
-		t.Fatalf("filterByCity(no match) = %+v, want empty", got)
+func TestSearchNoOpWithoutAPIKey(t *testing.T) {
+	c := NewClient("")
+	events, err := c.Search(context.Background(), "Jay-Z", "FR", 3)
+	if err != nil || events != nil {
+		t.Fatalf("Search(no key) = %v, %v, want nil, nil", events, err)
 	}
 }

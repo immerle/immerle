@@ -21,10 +21,6 @@ type User struct {
 	// Language is the user's preferred UI language (e.g. "en", "fr"). Empty means
 	// the client should fall back to the device locale.
 	Language string `json:"language,omitempty"`
-	// City is a free-text location ("Paris", "Austin, TX"...) used to search
-	// for nearby concerts of the artists this user listens to. Empty means
-	// concert discovery finds nothing for this user (see internal/concerts).
-	City string `json:"city,omitempty"`
 }
 
 // ThemeSettings holds a user's per-account UI theme, applied client-side. It is
@@ -128,13 +124,17 @@ type HallOfFameRuntime struct {
 }
 
 // ConcertsRuntime configures concert discovery (hot-reloadable): matches each
-// user's top-listened artists against their city via Ticketmaster (primary)
-// and Skiddle (fallback when Ticketmaster has no key or no results), once
-// daily. Disabled by default — unlike the other toggleable features it needs
-// at least one API key to be useful, same reasoning as Jamendo shipping
-// disabled until configured.
+// user's top-listened artists against Ticketmaster (primary) and Skiddle
+// (fallback when Ticketmaster has no key or no results), once daily, filtered
+// to the single admin-chosen Country for the whole instance — there is no
+// per-user location. Disabled by default — unlike the other toggleable
+// features it needs at least an API key and a country to be useful, same
+// reasoning as Jamendo shipping disabled until configured.
 type ConcertsRuntime struct {
 	Enabled bool `json:"enabled"`
+	// Country is an ISO 3166-1 alpha-2 code (e.g. "FR", "US"), picked from a
+	// fixed dropdown in the admin UI — see ui/src/utils/countries.ts.
+	Country string `json:"country,omitempty"`
 	// TicketmasterAPIKey and SkiddleAPIKey are write-only: never returned by the
 	// admin settings API (see redactSettings), only ever set.
 	TicketmasterAPIKey string `json:"ticketmasterApiKey,omitempty"`

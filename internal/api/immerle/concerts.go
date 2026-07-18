@@ -1,7 +1,9 @@
 package immerle
 
 import (
+	"context"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/immerle/immerle/internal/models"
@@ -86,6 +88,7 @@ func (h *Handler) concertsStatus() ConcertsStatusDTO {
 	}
 	return ConcertsStatusDTO{
 		Enabled:                cfg.Enabled,
+		Country:                cfg.Country,
 		TicketmasterConfigured: cfg.TicketmasterAPIKey != "",
 		SkiddleConfigured:      cfg.SkiddleAPIKey != "",
 	}
@@ -109,7 +112,11 @@ func (h *Handler) handleConcertsAdmin(w http.ResponseWriter, r *http.Request) {
 // concertsUpdateRequest is a partial update of concert-discovery settings;
 // pointer fields distinguish "omitted" (keep current) from "" (clear).
 type concertsUpdateRequest struct {
-	Enabled            *bool   `json:"enabled"`
+	Enabled *bool `json:"enabled"`
+	// Country is an ISO 3166-1 alpha-2 code (e.g. "FR") from the admin UI's
+	// fixed dropdown — the single instance-wide location concert discovery
+	// searches near (there is no per-user location).
+	Country            *string `json:"country"`
 	TicketmasterAPIKey *string `json:"ticketmasterApiKey"`
 	SkiddleAPIKey      *string `json:"skiddleApiKey"`
 }
@@ -139,9 +146,13 @@ func (h *Handler) handleConcertsUpdate(w http.ResponseWriter, r *http.Request) {
 	if !decodeJSON(w, r, &req) {
 		return
 	}
-	next := h.Settings.Get()
+	current := h.Settings.Get()
+	next := current
 	if req.Enabled != nil {
 		next.Concerts.Enabled = *req.Enabled
+	}
+	if req.Country != nil {
+		next.Concerts.Country = strings.ToUpper(strings.TrimSpace(*req.Country))
 	}
 	if req.TicketmasterAPIKey != nil {
 		next.Concerts.TicketmasterAPIKey = *req.TicketmasterAPIKey
@@ -153,7 +164,19 @@ func (h *Handler) handleConcertsUpdate(w http.ResponseWriter, r *http.Request) {
 		writeInternal(w, err)
 		return
 	}
-	h.Logger.Info("concert discovery settings updated", "enabled", next.Concerts.Enabled, "by", userFrom(r.Context()).Username)
+	h.Logger.Info("concert discovery settings updated", "enabled", next.Concerts.Enabled, "country", next.Concerts.Country, "by", userFrom(r.Context()).Username)
+	// A changed country invalidates every user's previous (unmatched) search —
+	// give an immediate result instead of making everyone wait for the next
+	// daily sync.
+	if h.ConcertsSync != nil && next.Concerts.Enabled && next.Concerts.Country != current.Concerts.Country {
+		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+			defer cancel()
+			if _, err := h.ConcertsSync.SyncNow(ctx); err != nil {
+				h.Logger.Warn("concerts: sync on country change failed", "error", err)
+			}
+		}()
+	}
 	writeResource(w, http.StatusOK, h.concertsStatus())
 }
 

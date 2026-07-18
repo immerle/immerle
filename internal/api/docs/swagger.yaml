@@ -30,9 +30,6 @@ components:
       type: object
     immerle.AccountDTO:
       properties:
-        city:
-          example: Paris
-          type: string
         displayName:
           example: Bob Marley
           type: string
@@ -183,6 +180,12 @@ components:
       type: object
     immerle.ConcertsStatusDTO:
       properties:
+        country:
+          description: |-
+            Country is an ISO 3166-1 alpha-2 code (e.g. "FR"), picked from a fixed
+            dropdown in the admin UI — not a secret, returned as-is.
+          example: FR
+          type: string
         enabled:
           example: false
           type: boolean
@@ -1138,6 +1141,12 @@ components:
       type: object
     immerle.concertsUpdateRequest:
       properties:
+        country:
+          description: |-
+            Country is an ISO 3166-1 alpha-2 code (e.g. "FR") from the admin UI's
+            fixed dropdown — the single instance-wide location concert discovery
+            searches near (there is no per-user location).
+          type: string
         enabled:
           type: boolean
         skiddleApiKey:
@@ -1831,12 +1840,6 @@ components:
       type: object
     immerle.updateAccountRequest:
       properties:
-        city:
-          description: |-
-            City is free text ("Paris", "Austin, TX"...) used by concert discovery
-            (internal/concerts) to search for nearby shows. Clearing it (empty
-            string) simply stops that user from being matched.
-          type: string
         displayName:
           type: string
         email:

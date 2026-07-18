@@ -33,13 +33,13 @@ func newTestService(t *testing.T, cfg models.ConcertsRuntime, tm, sk *fakeSearch
 	return svc, store
 }
 
-// seedListener creates a user with a city and one scrobble for a track by
-// artistName, so WrappedRepo.TopArtists finds them.
-func seedListener(t *testing.T, store *persistence.Store, city, artistName string) models.User {
+// seedListener creates a user with one scrobble for a track by artistName, so
+// WrappedRepo.TopArtists finds them.
+func seedListener(t *testing.T, store *persistence.Store, artistName string) models.User {
 	t.Helper()
 	ctx := context.Background()
 	now := time.Now()
-	u := models.User{ID: uuid.NewString(), Username: uuid.NewString(), PasswordHash: "x", City: city, CreatedAt: now}
+	u := models.User{ID: uuid.NewString(), Username: uuid.NewString(), PasswordHash: "x", CreatedAt: now}
 	if err := store.Users.Create(ctx, u); err != nil {
 		t.Fatal(err)
 	}
@@ -67,8 +67,8 @@ func seedListener(t *testing.T, store *persistence.Store, city, artistName strin
 
 func TestSyncNowDisabledIsNoOp(t *testing.T) {
 	tm, sk := &fakeSearcher{}, &fakeSearcher{}
-	svc, store := newTestService(t, models.ConcertsRuntime{Enabled: false}, tm, sk)
-	seedListener(t, store, "Paris", "Daft Punk")
+	svc, store := newTestService(t, models.ConcertsRuntime{Enabled: false, Country: "FR"}, tm, sk)
+	seedListener(t, store, "Daft Punk")
 
 	synced, err := svc.SyncNow(context.Background())
 	if err != nil || synced != 0 {
@@ -79,14 +79,17 @@ func TestSyncNowDisabledIsNoOp(t *testing.T) {
 	}
 }
 
-func TestSyncNowSkipsUsersWithoutCity(t *testing.T) {
+func TestSyncNowNoCountryIsNoOp(t *testing.T) {
 	tm, sk := &fakeSearcher{events: map[string][]foundEvent{"Daft Punk": {{id: "1", name: "Show", startTime: time.Now().Add(24 * time.Hour)}}}}, &fakeSearcher{}
-	svc, store := newTestService(t, models.ConcertsRuntime{Enabled: true}, tm, sk)
-	seedListener(t, store, "", "Daft Punk") // no city
+	svc, store := newTestService(t, models.ConcertsRuntime{Enabled: true, Country: ""}, tm, sk)
+	seedListener(t, store, "Daft Punk")
 
 	synced, err := svc.SyncNow(context.Background())
 	if err != nil || synced != 0 {
-		t.Fatalf("SyncNow = %d, %v, want 0, nil (no city set)", synced, err)
+		t.Fatalf("SyncNow = %d, %v, want 0, nil (no country configured)", synced, err)
+	}
+	if len(tm.calls) != 0 {
+		t.Fatal("SyncNow(no country) called a search client — it must be a pure no-op")
 	}
 }
 
@@ -95,8 +98,8 @@ func TestSyncNowPrefersTicketmasterAndSkipsSkiddleWhenItFindsSomething(t *testin
 		"Daft Punk": {{id: "tm-1", name: "TM Show", startTime: time.Now().Add(24 * time.Hour)}},
 	}}
 	sk := &fakeSearcher{}
-	svc, store := newTestService(t, models.ConcertsRuntime{Enabled: true}, tm, sk)
-	user := seedListener(t, store, "Paris", "Daft Punk")
+	svc, store := newTestService(t, models.ConcertsRuntime{Enabled: true, Country: "FR"}, tm, sk)
+	user := seedListener(t, store, "Daft Punk")
 
 	synced, err := svc.SyncNow(context.Background())
 	if err != nil || synced != 1 {
@@ -116,8 +119,8 @@ func TestSyncNowFallsBackToSkiddleWhenTicketmasterFindsNothing(t *testing.T) {
 	sk := &fakeSearcher{events: map[string][]foundEvent{
 		"Daft Punk": {{id: "sk-1", name: "SK Show", startTime: time.Now().Add(24 * time.Hour)}},
 	}}
-	svc, store := newTestService(t, models.ConcertsRuntime{Enabled: true}, tm, sk)
-	user := seedListener(t, store, "Paris", "Daft Punk")
+	svc, store := newTestService(t, models.ConcertsRuntime{Enabled: true, Country: "FR"}, tm, sk)
+	user := seedListener(t, store, "Daft Punk")
 
 	synced, err := svc.SyncNow(context.Background())
 	if err != nil || synced != 1 {
@@ -134,8 +137,8 @@ func TestSyncNowSkipsPastEvents(t *testing.T) {
 		"Daft Punk": {{id: "tm-1", name: "Already happened", startTime: time.Now().Add(-24 * time.Hour)}},
 	}}
 	sk := &fakeSearcher{}
-	svc, store := newTestService(t, models.ConcertsRuntime{Enabled: true}, tm, sk)
-	seedListener(t, store, "Paris", "Daft Punk")
+	svc, store := newTestService(t, models.ConcertsRuntime{Enabled: true, Country: "FR"}, tm, sk)
+	seedListener(t, store, "Daft Punk")
 
 	synced, err := svc.SyncNow(context.Background())
 	if err != nil || synced != 0 {
@@ -143,41 +146,29 @@ func TestSyncNowSkipsPastEvents(t *testing.T) {
 	}
 }
 
-// TestSyncUserOnlySearchesThatUser covers the scoped resync triggered when a
-// user sets their city (see handleAccountUpdate) — it must not touch other
-// users' matches or re-search the whole instance.
-func TestSyncUserOnlySearchesThatUser(t *testing.T) {
+// TestSyncNowSearchesEveryUser covers that, unlike the old per-user-city
+// design, a single instance-wide country applies to every user's own
+// top-listened artists.
+func TestSyncNowSearchesEveryUser(t *testing.T) {
 	tm := &fakeSearcher{events: map[string][]foundEvent{
-		"Daft Punk": {{id: "tm-1", name: "Show", startTime: time.Now().Add(24 * time.Hour)}},
+		"Daft Punk": {{id: "tm-1", name: "Show A", startTime: time.Now().Add(24 * time.Hour)}},
+		"Jay-Z":     {{id: "tm-2", name: "Show B", startTime: time.Now().Add(48 * time.Hour)}},
 	}}
 	sk := &fakeSearcher{}
-	svc, store := newTestService(t, models.ConcertsRuntime{Enabled: true}, tm, sk)
-	target := seedListener(t, store, "Paris", "Daft Punk")
-	other := seedListener(t, store, "Berlin", "Daft Punk")
+	svc, store := newTestService(t, models.ConcertsRuntime{Enabled: true, Country: "FR"}, tm, sk)
+	userA := seedListener(t, store, "Daft Punk")
+	userB := seedListener(t, store, "Jay-Z")
 
-	synced, err := svc.SyncUser(context.Background(), target.ID)
-	if err != nil || synced != 1 {
-		t.Fatalf("SyncUser = %d, %v, want 1, nil", synced, err)
+	synced, err := svc.SyncNow(context.Background())
+	if err != nil || synced != 2 {
+		t.Fatalf("SyncNow = %d, %v, want 2, nil", synced, err)
 	}
-	if len(tm.calls) != 1 {
-		t.Fatalf("ticketmaster called %d times, want exactly 1 (only the target user)", len(tm.calls))
+	listA, err := store.Concerts.ListActive(context.Background(), userA.ID, time.Now(), 10)
+	if err != nil || len(listA) != 1 {
+		t.Fatalf("userA ListActive = %+v, err=%v, want 1 match", listA, err)
 	}
-	otherList, err := store.Concerts.ListActive(context.Background(), other.ID, time.Now(), 10)
-	if err != nil || len(otherList) != 0 {
-		t.Fatalf("other user's ListActive = %+v, err=%v, want untouched", otherList, err)
-	}
-}
-
-func TestSyncUserDisabledIsNoOp(t *testing.T) {
-	tm, sk := &fakeSearcher{}, &fakeSearcher{}
-	svc, store := newTestService(t, models.ConcertsRuntime{Enabled: false}, tm, sk)
-	user := seedListener(t, store, "Paris", "Daft Punk")
-
-	synced, err := svc.SyncUser(context.Background(), user.ID)
-	if err != nil || synced != 0 {
-		t.Fatalf("SyncUser(disabled) = %d, %v, want 0, nil", synced, err)
-	}
-	if len(tm.calls) != 0 {
-		t.Fatal("SyncUser(disabled) called a search client — it must be a pure no-op")
+	listB, err := store.Concerts.ListActive(context.Background(), userB.ID, time.Now(), 10)
+	if err != nil || len(listB) != 1 {
+		t.Fatalf("userB ListActive = %+v, err=%v, want 1 match", listB, err)
 	}
 }

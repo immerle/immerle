@@ -1,11 +1,9 @@
 package immerle
 
 import (
-	"context"
 	"net/http"
 	"net/mail"
 	"strings"
-	"time"
 
 	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/models"
@@ -31,7 +29,6 @@ func accountView(u models.User) map[string]any {
 		"email":       u.Email,
 		"isAdmin":     u.IsAdmin,
 		"language":    u.Language,
-		"city":        u.City,
 	}
 }
 
@@ -63,10 +60,6 @@ type updateAccountRequest struct {
 	DisplayName *string `json:"displayName"`
 	Email       *string `json:"email"`
 	Language    *string `json:"language"`
-	// City is free text ("Paris", "Austin, TX"...) used by concert discovery
-	// (internal/concerts) to search for nearby shows. Clearing it (empty
-	// string) simply stops that user from being matched.
-	City *string `json:"city"`
 }
 
 // handleAccountUpdate applies a partial update to the caller's own account.
@@ -114,28 +107,9 @@ func (h *Handler) handleAccountUpdate(w http.ResponseWriter, r *http.Request) {
 		}
 		user.Language = lang
 	}
-	cityChanged := false
-	if req.City != nil {
-		newCity := strings.TrimSpace(*req.City)
-		cityChanged = newCity != "" && newCity != user.City
-		user.City = newCity
-	}
 	if err := h.Users.Update(r.Context(), user); err != nil {
 		writeInternal(w, err)
 		return
-	}
-	// Give the user a result right away instead of making them wait for the
-	// next daily sync — scoped to just this user, so it can't turn a profile
-	// save into a slow request or hammer Ticketmaster/Skiddle for everyone.
-	if cityChanged && h.ConcertsSync != nil {
-		userID := user.ID
-		go func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-			defer cancel()
-			if _, err := h.ConcertsSync.SyncUser(ctx, userID); err != nil {
-				h.Logger.Warn("concerts: sync on city change failed", "user", userID, "error", err)
-			}
-		}()
 	}
 	writeResource(w, http.StatusOK, accountView(user))
 }

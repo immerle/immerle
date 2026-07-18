@@ -1,7 +1,8 @@
 // Package concerts finds upcoming shows for each user's top-listened artists
-// near their city, refreshed daily. Ticketmaster is searched first; Skiddle
-// (a rougher, keyword-only match) is only tried when Ticketmaster has no key
-// configured or found nothing for that artist.
+// near the single, admin-chosen country for the instance, refreshed daily.
+// Ticketmaster is searched first; Skiddle (a rougher, keyword-only match) is
+// only tried when Ticketmaster has no key configured or found nothing for
+// that artist.
 package concerts
 
 import (
@@ -36,15 +37,16 @@ type foundEvent struct {
 
 // searcher is implemented by *ticketmaster.Client and *skiddle.Client (via
 // small adapters below). Returning no events for an unconfigured/unmatched
-// search is not an error — see both clients' Search doc.
+// search is not an error — see both clients' Search doc. country is an ISO
+// 3166-1 alpha-2 code (e.g. "FR").
 type searcher interface {
-	Search(ctx context.Context, artist, city string, limit int) ([]foundEvent, error)
+	Search(ctx context.Context, artist, country string, limit int) ([]foundEvent, error)
 }
 
 type ticketmasterSearcher struct{ c *ticketmaster.Client }
 
-func (s ticketmasterSearcher) Search(ctx context.Context, artist, city string, limit int) ([]foundEvent, error) {
-	events, err := s.c.Search(ctx, artist, city, limit)
+func (s ticketmasterSearcher) Search(ctx context.Context, artist, country string, limit int) ([]foundEvent, error) {
+	events, err := s.c.Search(ctx, artist, country, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -57,8 +59,8 @@ func (s ticketmasterSearcher) Search(ctx context.Context, artist, city string, l
 
 type skiddleSearcher struct{ c *skiddle.Client }
 
-func (s skiddleSearcher) Search(ctx context.Context, artist, city string, limit int) ([]foundEvent, error) {
-	events, err := s.c.Search(ctx, artist, city, limit)
+func (s skiddleSearcher) Search(ctx context.Context, artist, country string, limit int) ([]foundEvent, error) {
+	events, err := s.c.Search(ctx, artist, country, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +71,8 @@ func (s skiddleSearcher) Search(ctx context.Context, artist, city string, limit 
 	return out, nil
 }
 
-// Service syncs concert matches for every user with a city set.
+// Service syncs concert matches for every user, near the single instance-wide
+// country configured by an admin.
 type Service struct {
 	users    *persistence.UserRepo
 	wrapped  *persistence.WrappedRepo
@@ -86,7 +89,7 @@ type Service struct {
 }
 
 // New builds a Service. settings supplies the live, hot-reloadable
-// Enabled/API-key configuration (typically SettingsService.ConcertsConfig).
+// Enabled/Country/API-key configuration (typically SettingsService.ConcertsConfig).
 func New(users *persistence.UserRepo, wrapped *persistence.WrappedRepo, concerts *persistence.ConcertRepo,
 	settings func() models.ConcertsRuntime, logger *slog.Logger) *Service {
 	return &Service{
@@ -97,13 +100,13 @@ func New(users *persistence.UserRepo, wrapped *persistence.WrappedRepo, concerts
 	}
 }
 
-// SyncNow searches every user-with-a-city's top-listened artists for nearby
-// upcoming shows and upserts any new matches, returning how many were newly
-// added (one user or artist failing is logged and skipped, not fatal).
-// A no-op (0, nil) when the feature is disabled.
+// SyncNow searches every user's top-listened artists for upcoming shows in
+// the configured country and upserts any new matches, returning how many
+// were newly added (one user or artist failing is logged and skipped, not
+// fatal). A no-op (0, nil) when the feature is disabled or no country is set.
 func (s *Service) SyncNow(ctx context.Context) (int, error) {
 	cfg := s.settings()
-	if !cfg.Enabled {
+	if !cfg.Enabled || cfg.Country == "" {
 		return 0, nil
 	}
 	tm := s.newTicketmaster(cfg.TicketmasterAPIKey)
@@ -114,61 +117,32 @@ func (s *Service) SyncNow(ctx context.Context) (int, error) {
 		return 0, err
 	}
 	now := time.Now()
+	windowStart := now.Add(-topArtistsWindow)
 	synced := 0
 	for _, u := range users {
-		synced += s.syncUser(ctx, tm, sk, u, now)
+		artists, err := s.wrapped.TopArtists(ctx, u.ID, windowStart.UnixMilli(), now.UnixMilli(), topArtistsLimit)
+		if err != nil {
+			s.logger.Warn("concerts: top artists failed", "user", u.ID, "error", err)
+			continue
+		}
+		for _, artist := range artists {
+			synced += s.syncArtist(ctx, tm, sk, u.ID, cfg.Country, artist.Name, now)
+		}
 	}
 	return synced, nil
 }
 
-// SyncUser searches just one user's top-listened artists — used to give
-// immediate results the moment they set their city, rather than making them
-// wait for the next daily Run tick. A no-op (0, nil) when the feature is
-// disabled or the user has no city set.
-func (s *Service) SyncUser(ctx context.Context, userID string) (int, error) {
-	cfg := s.settings()
-	if !cfg.Enabled {
-		return 0, nil
-	}
-	u, err := s.users.GetByID(ctx, userID)
-	if err != nil {
-		return 0, err
-	}
-	tm := s.newTicketmaster(cfg.TicketmasterAPIKey)
-	sk := s.newSkiddle(cfg.SkiddleAPIKey)
-	return s.syncUser(ctx, tm, sk, u, time.Now()), nil
-}
-
-// syncUser searches one user's top-listened artists for nearby upcoming
-// shows, skipping users with no city set (nothing to search near).
-func (s *Service) syncUser(ctx context.Context, tm, sk searcher, u models.User, now time.Time) int {
-	if u.City == "" {
-		return 0
-	}
-	windowStart := now.Add(-topArtistsWindow)
-	artists, err := s.wrapped.TopArtists(ctx, u.ID, windowStart.UnixMilli(), now.UnixMilli(), topArtistsLimit)
-	if err != nil {
-		s.logger.Warn("concerts: top artists failed", "user", u.ID, "error", err)
-		return 0
-	}
-	synced := 0
-	for _, artist := range artists {
-		synced += s.syncArtist(ctx, tm, sk, u.ID, u.City, artist.Name, now)
-	}
-	return synced
-}
-
 // syncArtist searches one artist for one user (Ticketmaster first, Skiddle
 // only if that found nothing) and upserts any new, still-upcoming matches.
-func (s *Service) syncArtist(ctx context.Context, tm, sk searcher, userID, city, artist string, now time.Time) int {
-	events, err := tm.Search(ctx, artist, city, maxEventsPerArtist)
+func (s *Service) syncArtist(ctx context.Context, tm, sk searcher, userID, country, artist string, now time.Time) int {
+	events, err := tm.Search(ctx, artist, country, maxEventsPerArtist)
 	source := "ticketmaster"
 	if err != nil {
 		s.logger.Warn("concerts: ticketmaster search failed", "artist", artist, "error", err)
 		events = nil
 	}
 	if len(events) == 0 {
-		events, err = sk.Search(ctx, artist, city, maxEventsPerArtist)
+		events, err = sk.Search(ctx, artist, country, maxEventsPerArtist)
 		source = "skiddle"
 		if err != nil {
 			s.logger.Warn("concerts: skiddle search failed", "artist", artist, "error", err)

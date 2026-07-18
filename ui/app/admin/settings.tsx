@@ -16,11 +16,12 @@ import { useHallOfFameAdmin, useSetHallOfFame } from '../../src/query/hallOfFame
 import { useConcertsAdmin, useUpdateConcertsConfig, useConcertsSyncMutation } from '../../src/query/concerts';
 import { useAuth } from '../../src/auth/store';
 import { RuntimeSettingsDTO } from '../../src/api/immerleApi';
-import { Badge, Button, Card, ErrorState, Field, IconButton, Loading } from '../../src/components/ui';
+import { Badge, Button, Card, ErrorState, Field, IconButton, Loading, Select } from '../../src/components/ui';
 import { AdminHeader, AdminScroll } from '../../src/components/AdminUI';
 import { Ionicon } from '../../src/components/Ionicon';
 import { useColors } from '../../src/theme/colors';
 import { useT } from '../../src/i18n/store';
+import { COUNTRIES } from '../../src/utils/countries';
 
 const num = (s: string) => {
   const n = Number(s);
@@ -82,6 +83,10 @@ export default function AdminSettings() {
     { key: 'logs', icon: 'document-text', color: '#f59e0b', title: t('admin.settings.logsTitle'), subtitle: t('admin.settings.logsSubtitle') },
     { key: 'features', icon: 'sparkles', color: '#8b5cf6', title: t('admin.settings.featuresTitle'), subtitle: t('admin.settings.featuresSubtitle') },
   ];
+  const COUNTRY_OPTIONS = [
+    { value: '', label: t('admin.settings.countryNotSet') },
+    ...COUNTRIES.map((c) => ({ value: c.code, label: c.name })),
+  ];
   const client = useAuth((s) => s.client);
   const q = useSettings();
   const update = useUpdateSettings();
@@ -107,6 +112,7 @@ export default function AdminSettings() {
   const [synced, setSynced] = useState<number | null>(null);
   const [concertsSynced, setConcertsSynced] = useState<number | null>(null);
   const [concertsEnabled, setConcertsEnabled] = useState(false);
+  const [concertsCountry, setConcertsCountry] = useState('');
   const [tmKey, setTmKey] = useState('');
   const [skKey, setSkKey] = useState('');
 
@@ -115,7 +121,10 @@ export default function AdminSettings() {
   }, [q.data?.settings]);
 
   useEffect(() => {
-    if (concerts.data) setConcertsEnabled(concerts.data.enabled);
+    if (concerts.data) {
+      setConcertsEnabled(concerts.data.enabled);
+      setConcertsCountry(concerts.data.country);
+    }
   }, [concerts.data]);
 
   if (q.isLoading || !form) return <Loading />;
@@ -320,6 +329,10 @@ export default function AdminSettings() {
                 <>
                   <Text className="text-xs text-muted">{t('admin.settings.concertsDescription')}</Text>
                   <ToggleRow label={t('admin.settings.concertsEnabled')} value={concertsEnabled} onChange={setConcertsEnabled} />
+                  <View className="gap-1.5">
+                    <Text className="text-sm font-medium text-muted">{t('admin.settings.concertsCountry')}</Text>
+                    <Select value={concertsCountry} options={COUNTRY_OPTIONS} onChange={setConcertsCountry} />
+                  </View>
                   <Field
                     label={t('admin.settings.ticketmasterKey')}
                     autoCapitalize="none"
@@ -343,6 +356,7 @@ export default function AdminSettings() {
                       updateConcerts.mutate(
                         {
                           enabled: concertsEnabled,
+                          country: concertsCountry,
                           ...(tmKey ? { ticketmasterApiKey: tmKey } : {}),
                           ...(skKey ? { skiddleApiKey: skKey } : {}),
                         },

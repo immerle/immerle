@@ -1,8 +1,8 @@
 // Package skiddle searches the Skiddle events API for upcoming shows by
-// keyword. Used as the fallback to Ticketmaster (see internal/concerts) —
-// Skiddle's catalog skews UK/Europe, and its search only takes a free-text
-// keyword (no artist-specific field), so matches here are approximate:
-// artist name and city combined into one keyword.
+// keyword and country. Used as the fallback to Ticketmaster (see
+// internal/concerts) — Skiddle's catalog skews UK/Europe. Its keyword search
+// is a loose, tokenized match, so results are filtered to those whose event
+// name actually mentions the artist.
 package skiddle
 
 import (
@@ -16,7 +16,8 @@ import (
 	"time"
 )
 
-const baseURL = "https://www.skiddle.com/api/v1/events/search/"
+// baseURL is a var, not a const, so tests can point it at an httptest server.
+var baseURL = "https://www.skiddle.com/api/v1/events/search/"
 
 // Event is a single upcoming show, trimmed to what internal/concerts needs.
 type Event struct {
@@ -58,23 +59,27 @@ type searchResponse struct {
 	} `json:"results"`
 }
 
-// Search finds upcoming events matching a free-text combination of artist and
-// city, soonest first, capped at limit. Returns no events (not an error) when
-// the client has no API key or nothing matches.
-func (c *Client) Search(ctx context.Context, artist, city string, limit int) ([]Event, error) {
+// Search finds upcoming events matching artist in countryCode (an ISO
+// 3166-1 alpha-2 code, e.g. "FR"), soonest first, capped at limit. Returns no
+// events (not an error) when the client has no API key or nothing matches.
+//
+// Skiddle's keyword search is a loose, tokenized match (e.g. "Jay-Z" can
+// match an unrelated event whose description merely contains the word
+// "Jay") — results are filtered to those whose event name actually mentions
+// the artist to avoid false positives.
+func (c *Client) Search(ctx context.Context, artist, countryCode string, limit int) ([]Event, error) {
 	if !c.IsConfigured() {
 		return nil, nil
 	}
-	keyword := artist
-	if city != "" {
-		keyword = artist + " " + city
-	}
 	q := url.Values{
 		"api_key": {c.apiKey},
-		"keyword": {keyword},
+		"keyword": {artist},
 		"order":   {"date"},
 		"limit":   {strconv.Itoa(limit)},
 		"minDate": {time.Now().Format("2006-01-02")},
+	}
+	if countryCode != "" {
+		q.Set("country", strings.ToUpper(countryCode))
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+"?"+q.Encode(), nil)
 	if err != nil {
@@ -101,9 +106,13 @@ func (c *Client) Search(ctx context.Context, artist, city string, limit int) ([]
 		if err != nil {
 			continue
 		}
+		name := strings.TrimSpace(e.Name)
+		if !strings.Contains(strings.ToLower(name), strings.ToLower(artist)) {
+			continue
+		}
 		out = append(out, Event{
 			ID:        e.ID.String(),
-			Name:      strings.TrimSpace(e.Name),
+			Name:      name,
 			URL:       e.Link,
 			Venue:     e.Venue.Name,
 			City:      e.Venue.Town,

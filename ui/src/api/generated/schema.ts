@@ -8852,8 +8852,6 @@ export interface components {
             prefix?: string;
         };
         "immerle.AccountDTO": {
-            /** @example Paris */
-            city?: string;
             /** @example Bob Marley */
             displayName?: string;
             /** @example bob@example.com */
@@ -8949,6 +8947,12 @@ export interface components {
             concerts?: components["schemas"]["immerle.ConcertDTO"][];
         };
         "immerle.ConcertsStatusDTO": {
+            /**
+             * @description Country is an ISO 3166-1 alpha-2 code (e.g. "FR"), picked from a fixed
+             *     dropdown in the admin UI — not a secret, returned as-is.
+             * @example FR
+             */
+            country?: string;
             /** @example false */
             enabled?: boolean;
             /** @example false */
@@ -9515,6 +9519,12 @@ export interface components {
             type?: string;
         };
         "immerle.concertsUpdateRequest": {
+            /**
+             * @description Country is an ISO 3166-1 alpha-2 code (e.g. "FR") from the admin UI's
+             *     fixed dropdown — the single instance-wide location concert discovery
+             *     searches near (there is no per-user location).
+             */
+            country?: string;
             enabled?: boolean;
             skiddleApiKey?: string;
             ticketmasterApiKey?: string;
@@ -9914,12 +9924,6 @@ export interface components {
             year?: number;
         };
         "immerle.updateAccountRequest": {
-            /**
-             * @description City is free text ("Paris", "Austin, TX"...) used by concert discovery
-             *     (internal/concerts) to search for nearby shows. Clearing it (empty
-             *     string) simply stops that user from being matched.
-             */
-            city?: string;
             displayName?: string;
             email?: string;
             language?: string;

@@ -37,10 +37,6 @@
             },
             "immerle.AccountDTO": {
                 "properties": {
-                    "city": {
-                        "example": "Paris",
-                        "type": "string"
-                    },
                     "displayName": {
                         "example": "Bob Marley",
                         "type": "string"
@@ -255,6 +251,11 @@
             },
             "immerle.ConcertsStatusDTO": {
                 "properties": {
+                    "country": {
+                        "description": "Country is an ISO 3166-1 alpha-2 code (e.g. \"FR\"), picked from a fixed\ndropdown in the admin UI — not a secret, returned as-is.",
+                        "example": "FR",
+                        "type": "string"
+                    },
                     "enabled": {
                         "example": false,
                         "type": "boolean"
@@ -1609,6 +1610,10 @@
             },
             "immerle.concertsUpdateRequest": {
                 "properties": {
+                    "country": {
+                        "description": "Country is an ISO 3166-1 alpha-2 code (e.g. \"FR\") from the admin UI's\nfixed dropdown — the single instance-wide location concert discovery\nsearches near (there is no per-user location).",
+                        "type": "string"
+                    },
                     "enabled": {
                         "type": "boolean"
                     },
@@ -2569,10 +2574,6 @@
             },
             "immerle.updateAccountRequest": {
                 "properties": {
-                    "city": {
-                        "description": "City is free text (\"Paris\", \"Austin, TX\"...) used by concert discovery\n(internal/concerts) to search for nearby shows. Clearing it (empty\nstring) simply stops that user from being matched.",
-                        "type": "string"
-                    },
                     "displayName": {
                         "type": "string"
                     },

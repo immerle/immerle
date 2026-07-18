@@ -1169,12 +1169,11 @@ export class ImmerleClient {
       email: data.email ?? '',
       isAdmin: data.isAdmin ?? false,
       language: (data.language ?? '') as AccountLanguage,
-      city: data.city ?? '',
     };
   }
 
-  /** Update the caller's own display name / email / language / city (partial). */
-  async updateAccount(patch: { displayName?: string; email?: string; language?: AccountLanguage; city?: string }): Promise<Account> {
+  /** Update the caller's own display name / email / language (partial). */
+  async updateAccount(patch: { displayName?: string; email?: string; language?: AccountLanguage }): Promise<Account> {
     const { data, error } = await this.api.PATCH('/me', { body: patch });
     if (error || !data) throw apiErr(error, 'account_update_failed');
     this.setDisplayName(data.displayName);
@@ -1184,7 +1183,6 @@ export class ImmerleClient {
       email: data.email ?? '',
       isAdmin: data.isAdmin ?? false,
       language: (data.language ?? '') as AccountLanguage,
-      city: data.city ?? '',
     };
   }
 
@@ -1206,8 +1204,8 @@ export class ImmerleClient {
     return this.request<ConcertsAdminStatus>('GET', 'admin/concerts', undefined, signal);
   }
 
-  /** Admin: enable/disable concert discovery and/or set the Ticketmaster/Skiddle API keys (partial). */
-  async updateConcertsConfig(patch: { enabled?: boolean; ticketmasterApiKey?: string; skiddleApiKey?: string }): Promise<ConcertsAdminStatus> {
+  /** Admin: enable/disable concert discovery, set the country to search near, and/or set the Ticketmaster/Skiddle API keys (partial). */
+  async updateConcertsConfig(patch: { enabled?: boolean; country?: string; ticketmasterApiKey?: string; skiddleApiKey?: string }): Promise<ConcertsAdminStatus> {
     return this.request<ConcertsAdminStatus>('PUT', 'admin/concerts', patch);
   }
 
@@ -1602,9 +1600,6 @@ export interface Account {
   email: string;
   isAdmin: boolean;
   language: AccountLanguage;
-  /** Free-text location ("Paris", "Austin, TX"...) used by concert discovery
-   * to search for nearby shows. Empty means not set. */
-  city: string;
 }
 
 /** A user's profile: identity, recent activity and public playlists. */
