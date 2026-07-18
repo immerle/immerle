@@ -562,7 +562,6 @@
       "chartsSyncedCount": "{{count}} synchronisée(s)",
       "runChartsSync": "Synchroniser les charts maintenant",
       "concertsTitle": "Découverte de concerts",
-      "concertsSubtitle": "Ticketmaster / Skiddle",
       "concertsDescription": "Compare les artistes les plus écoutés de chaque utilisateur à chaque source ci-dessous, une fois par jour, dans le pays ci-dessous — le même pays pour toute l'instance.",
       "concertsEnabled": "Découverte de concerts",
       "concertsCountry": "Pays",

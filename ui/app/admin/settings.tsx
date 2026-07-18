@@ -73,17 +73,6 @@ function toForm(s: RuntimeSettingsDTO): Form {
 export default function AdminSettings() {
   const t = useT();
   const colors = useColors();
-  const SECTIONS: Section[] = [
-    { key: 'auth', icon: 'key', color: '#3b82f6', title: t('admin.settings.authTitle'), subtitle: t('admin.settings.authSubtitle') },
-    { key: 'ldap', icon: 'people-circle', color: '#22c55e', title: t('admin.settings.ldapTitle'), subtitle: t('admin.settings.ldapSubtitle') },
-    { key: 'server', icon: 'server', color: '#0ea5e9', title: t('admin.settings.serverTitle'), subtitle: t('admin.settings.serverSubtitle') },
-    { key: 'transcode', icon: 'film', color: '#a855f7', title: t('admin.settings.transcodeTitle'), subtitle: t('admin.settings.transcodeSubtitle') },
-    { key: 'cleanup', icon: 'trash-bin', color: '#ef4444', title: t('admin.settings.cleanupTitle'), subtitle: t('admin.settings.cleanupSubtitle') },
-    { key: 'charts', icon: 'trending-up', color: '#1db954', title: t('admin.settings.chartsTitle'), subtitle: t('admin.settings.chartsSubtitle') },
-    { key: 'concerts', icon: 'megaphone', color: '#ec4899', title: t('admin.settings.concertsTitle'), subtitle: t('admin.settings.concertsSubtitle') },
-    { key: 'logs', icon: 'document-text', color: '#f59e0b', title: t('admin.settings.logsTitle'), subtitle: t('admin.settings.logsSubtitle') },
-    { key: 'features', icon: 'sparkles', color: '#8b5cf6', title: t('admin.settings.featuresTitle'), subtitle: t('admin.settings.featuresSubtitle') },
-  ];
   const COUNTRY_OPTIONS = [
     { value: '', label: t('admin.settings.countryNotSet') },
     ...COUNTRIES.map((c) => ({ value: c.code, label: c.name })),
@@ -116,6 +105,21 @@ export default function AdminSettings() {
   const [concertsCountry, setConcertsCountry] = useState('');
   const [tmKey, setTmKey] = useState('');
   const [skKey, setSkKey] = useState('');
+
+  // The concerts subtitle depends on the selected country (Ticketmaster and
+  // Skiddle aren't available everywhere — see CONCERT_PROVIDERS), so this
+  // list is built here, not as a static top-level const.
+  const SECTIONS: Section[] = [
+    { key: 'auth', icon: 'key', color: '#3b82f6', title: t('admin.settings.authTitle'), subtitle: t('admin.settings.authSubtitle') },
+    { key: 'ldap', icon: 'people-circle', color: '#22c55e', title: t('admin.settings.ldapTitle'), subtitle: t('admin.settings.ldapSubtitle') },
+    { key: 'server', icon: 'server', color: '#0ea5e9', title: t('admin.settings.serverTitle'), subtitle: t('admin.settings.serverSubtitle') },
+    { key: 'transcode', icon: 'film', color: '#a855f7', title: t('admin.settings.transcodeTitle'), subtitle: t('admin.settings.transcodeSubtitle') },
+    { key: 'cleanup', icon: 'trash-bin', color: '#ef4444', title: t('admin.settings.cleanupTitle'), subtitle: t('admin.settings.cleanupSubtitle') },
+    { key: 'charts', icon: 'trending-up', color: '#1db954', title: t('admin.settings.chartsTitle'), subtitle: t('admin.settings.chartsSubtitle') },
+    { key: 'concerts', icon: 'megaphone', color: '#ec4899', title: t('admin.settings.concertsTitle'), subtitle: concertProviderNames(concertsCountry) || t('admin.settings.countryNotSet') },
+    { key: 'logs', icon: 'document-text', color: '#f59e0b', title: t('admin.settings.logsTitle'), subtitle: t('admin.settings.logsSubtitle') },
+    { key: 'features', icon: 'sparkles', color: '#8b5cf6', title: t('admin.settings.featuresTitle'), subtitle: t('admin.settings.featuresSubtitle') },
+  ];
 
   useEffect(() => {
     if (q.data?.settings) setForm(toForm(q.data.settings));
