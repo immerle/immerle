@@ -24,12 +24,13 @@ func (f *fakeSearcher) Search(_ context.Context, artist, _ string, _ int) ([]fou
 	return f.events[artist], nil
 }
 
-func newTestService(t *testing.T, cfg models.ConcertsRuntime, tm, sk *fakeSearcher) (*Service, *persistence.Store) {
+func newTestService(t *testing.T, cfg models.ConcertsRuntime, tm, sk, ev *fakeSearcher) (*Service, *persistence.Store) {
 	t.Helper()
 	store := testutil.NewStore(t)
 	svc := New(store.Users, store.Wrapped, store.Concerts, func() models.ConcertsRuntime { return cfg }, testutil.NewLogger())
 	svc.newTicketmaster = func(string) searcher { return tm }
 	svc.newSkiddle = func(string) searcher { return sk }
+	svc.newEventim = func() searcher { return ev }
 	return svc, store
 }
 
@@ -66,22 +67,23 @@ func seedListener(t *testing.T, store *persistence.Store, artistName string) mod
 }
 
 func TestSyncNowDisabledIsNoOp(t *testing.T) {
-	tm, sk := &fakeSearcher{}, &fakeSearcher{}
-	svc, store := newTestService(t, models.ConcertsRuntime{Enabled: false, Country: "FR"}, tm, sk)
+	tm, sk, ev := &fakeSearcher{}, &fakeSearcher{}, &fakeSearcher{}
+	svc, store := newTestService(t, models.ConcertsRuntime{Enabled: false, Country: "FR"}, tm, sk, ev)
 	seedListener(t, store, "Daft Punk")
 
 	synced, err := svc.SyncNow(context.Background())
 	if err != nil || synced != 0 {
 		t.Fatalf("SyncNow(disabled) = %d, %v, want 0, nil", synced, err)
 	}
-	if len(tm.calls) != 0 || len(sk.calls) != 0 {
+	if len(tm.calls) != 0 || len(sk.calls) != 0 || len(ev.calls) != 0 {
 		t.Fatal("SyncNow(disabled) called a search client — it must be a pure no-op")
 	}
 }
 
 func TestSyncNowNoCountryIsNoOp(t *testing.T) {
-	tm, sk := &fakeSearcher{events: map[string][]foundEvent{"Daft Punk": {{id: "1", name: "Show", startTime: time.Now().Add(24 * time.Hour)}}}}, &fakeSearcher{}
-	svc, store := newTestService(t, models.ConcertsRuntime{Enabled: true, Country: ""}, tm, sk)
+	tm := &fakeSearcher{events: map[string][]foundEvent{"Daft Punk": {{id: "1", name: "Show", startTime: time.Now().Add(24 * time.Hour)}}}}
+	sk, ev := &fakeSearcher{}, &fakeSearcher{}
+	svc, store := newTestService(t, models.ConcertsRuntime{Enabled: true, Country: ""}, tm, sk, ev)
 	seedListener(t, store, "Daft Punk")
 
 	synced, err := svc.SyncNow(context.Background())
@@ -93,20 +95,20 @@ func TestSyncNowNoCountryIsNoOp(t *testing.T) {
 	}
 }
 
-func TestSyncNowPrefersTicketmasterAndSkipsSkiddleWhenItFindsSomething(t *testing.T) {
+func TestSyncNowPrefersTicketmasterAndSkipsRestWhenItFindsSomething(t *testing.T) {
 	tm := &fakeSearcher{events: map[string][]foundEvent{
 		"Daft Punk": {{id: "tm-1", name: "TM Show", startTime: time.Now().Add(24 * time.Hour)}},
 	}}
-	sk := &fakeSearcher{}
-	svc, store := newTestService(t, models.ConcertsRuntime{Enabled: true, Country: "FR"}, tm, sk)
+	sk, ev := &fakeSearcher{}, &fakeSearcher{}
+	svc, store := newTestService(t, models.ConcertsRuntime{Enabled: true, Country: "FR"}, tm, sk, ev)
 	user := seedListener(t, store, "Daft Punk")
 
 	synced, err := svc.SyncNow(context.Background())
 	if err != nil || synced != 1 {
 		t.Fatalf("SyncNow = %d, %v, want 1, nil", synced, err)
 	}
-	if len(sk.calls) != 0 {
-		t.Fatal("Skiddle was called even though Ticketmaster already found a match")
+	if len(sk.calls) != 0 || len(ev.calls) != 0 {
+		t.Fatal("Skiddle/Eventim were called even though Ticketmaster already found a match")
 	}
 	list, err := store.Concerts.ListActive(context.Background(), user.ID, time.Now(), 10)
 	if err != nil || len(list) != 1 || list[0].Source != "ticketmaster" {
@@ -119,12 +121,16 @@ func TestSyncNowFallsBackToSkiddleWhenTicketmasterFindsNothing(t *testing.T) {
 	sk := &fakeSearcher{events: map[string][]foundEvent{
 		"Daft Punk": {{id: "sk-1", name: "SK Show", startTime: time.Now().Add(24 * time.Hour)}},
 	}}
-	svc, store := newTestService(t, models.ConcertsRuntime{Enabled: true, Country: "FR"}, tm, sk)
+	ev := &fakeSearcher{}
+	svc, store := newTestService(t, models.ConcertsRuntime{Enabled: true, Country: "FR"}, tm, sk, ev)
 	user := seedListener(t, store, "Daft Punk")
 
 	synced, err := svc.SyncNow(context.Background())
 	if err != nil || synced != 1 {
 		t.Fatalf("SyncNow = %d, %v, want 1, nil", synced, err)
+	}
+	if len(ev.calls) != 0 {
+		t.Fatal("Eventim was called even though Skiddle already found a match")
 	}
 	list, err := store.Concerts.ListActive(context.Background(), user.ID, time.Now(), 10)
 	if err != nil || len(list) != 1 || list[0].Source != "skiddle" {
@@ -132,12 +138,33 @@ func TestSyncNowFallsBackToSkiddleWhenTicketmasterFindsNothing(t *testing.T) {
 	}
 }
 
+// TestSyncNowFallsBackToEventimWhenTicketmasterAndSkiddleFindNothing covers
+// the France-specific third source — needed because both Ticketmaster and
+// Skiddle have thin French coverage (see PR discussion).
+func TestSyncNowFallsBackToEventimWhenTicketmasterAndSkiddleFindNothing(t *testing.T) {
+	tm, sk := &fakeSearcher{}, &fakeSearcher{}
+	ev := &fakeSearcher{events: map[string][]foundEvent{
+		"Jay-Z": {{id: "ev-1", name: "Jaÿ-Z 30", startTime: time.Now().Add(24 * time.Hour)}},
+	}}
+	svc, store := newTestService(t, models.ConcertsRuntime{Enabled: true, Country: "FR"}, tm, sk, ev)
+	user := seedListener(t, store, "Jay-Z")
+
+	synced, err := svc.SyncNow(context.Background())
+	if err != nil || synced != 1 {
+		t.Fatalf("SyncNow = %d, %v, want 1, nil", synced, err)
+	}
+	list, err := store.Concerts.ListActive(context.Background(), user.ID, time.Now(), 10)
+	if err != nil || len(list) != 1 || list[0].Source != "eventim" {
+		t.Fatalf("ListActive = %+v, err=%v, want one eventim match", list, err)
+	}
+}
+
 func TestSyncNowSkipsPastEvents(t *testing.T) {
 	tm := &fakeSearcher{events: map[string][]foundEvent{
 		"Daft Punk": {{id: "tm-1", name: "Already happened", startTime: time.Now().Add(-24 * time.Hour)}},
 	}}
-	sk := &fakeSearcher{}
-	svc, store := newTestService(t, models.ConcertsRuntime{Enabled: true, Country: "FR"}, tm, sk)
+	sk, ev := &fakeSearcher{}, &fakeSearcher{}
+	svc, store := newTestService(t, models.ConcertsRuntime{Enabled: true, Country: "FR"}, tm, sk, ev)
 	seedListener(t, store, "Daft Punk")
 
 	synced, err := svc.SyncNow(context.Background())
@@ -154,8 +181,8 @@ func TestSyncNowSearchesEveryUser(t *testing.T) {
 		"Daft Punk": {{id: "tm-1", name: "Show A", startTime: time.Now().Add(24 * time.Hour)}},
 		"Jay-Z":     {{id: "tm-2", name: "Show B", startTime: time.Now().Add(48 * time.Hour)}},
 	}}
-	sk := &fakeSearcher{}
-	svc, store := newTestService(t, models.ConcertsRuntime{Enabled: true, Country: "FR"}, tm, sk)
+	sk, ev := &fakeSearcher{}, &fakeSearcher{}
+	svc, store := newTestService(t, models.ConcertsRuntime{Enabled: true, Country: "FR"}, tm, sk, ev)
 	userA := seedListener(t, store, "Daft Punk")
 	userB := seedListener(t, store, "Jay-Z")
 

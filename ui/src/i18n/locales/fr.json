@@ -566,6 +566,8 @@
       "concertsDescription": "Compare les artistes les plus écoutés de chaque utilisateur à Ticketmaster, puis Skiddle en repli, une fois par jour, dans le pays ci-dessous — le même pays pour toute l'instance.",
       "concertsEnabled": "Découverte de concerts",
       "concertsCountry": "Pays",
+      "concertsProviders": "Sources : Ticketmaster, puis Skiddle.",
+      "concertsProvidersFR": "Sources : Ticketmaster, puis Skiddle, puis Eventim (France uniquement, sans clé — les deux autres couvrent peu la France).",
       "countryNotSet": "Non défini",
       "ticketmasterKey": "Clé API Ticketmaster",
       "skiddleKey": "Clé API Skiddle",

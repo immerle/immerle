@@ -2,7 +2,8 @@
 // near the single, admin-chosen country for the instance, refreshed daily.
 // Ticketmaster is searched first; Skiddle (a rougher, keyword-only match) is
 // only tried when Ticketmaster has no key configured or found nothing for
-// that artist.
+// that artist. For France specifically, Eventim is then tried too (needs no
+// key, but Ticketmaster/Skiddle both have thin French coverage).
 package concerts
 
 import (
@@ -12,6 +13,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/immerle/immerle/internal/eventim"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 	"github.com/immerle/immerle/internal/skiddle"
@@ -71,6 +73,20 @@ func (s skiddleSearcher) Search(ctx context.Context, artist, country string, lim
 	return out, nil
 }
 
+type eventimSearcher struct{ c *eventim.Client }
+
+func (s eventimSearcher) Search(ctx context.Context, artist, country string, limit int) ([]foundEvent, error) {
+	events, err := s.c.Search(ctx, artist, country, limit)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]foundEvent, len(events))
+	for i, e := range events {
+		out[i] = foundEvent{id: e.ID, name: e.Name, url: e.URL, venue: e.Venue, city: e.City, startTime: e.StartTime}
+	}
+	return out, nil
+}
+
 // Service syncs concert matches for every user, near the single instance-wide
 // country configured by an admin.
 type Service struct {
@@ -83,9 +99,11 @@ type Service struct {
 
 	// newTicketmaster/newSkiddle build a fresh searcher from the live API key on
 	// every sync (settings are hot-reloadable, and these clients are cheap
-	// stateless wrappers) — overridden with fakes in tests.
+	// stateless wrappers) — overridden with fakes in tests. newEventim needs no
+	// key but follows the same shape for consistency.
 	newTicketmaster func(apiKey string) searcher
 	newSkiddle      func(apiKey string) searcher
+	newEventim      func() searcher
 }
 
 // New builds a Service. settings supplies the live, hot-reloadable
@@ -97,6 +115,7 @@ func New(users *persistence.UserRepo, wrapped *persistence.WrappedRepo, concerts
 		interval: defaultInterval, logger: logger,
 		newTicketmaster: func(apiKey string) searcher { return ticketmasterSearcher{ticketmaster.NewClient(apiKey)} },
 		newSkiddle:      func(apiKey string) searcher { return skiddleSearcher{skiddle.NewClient(apiKey)} },
+		newEventim:      func() searcher { return eventimSearcher{eventim.NewClient()} },
 	}
 }
 
@@ -111,6 +130,7 @@ func (s *Service) SyncNow(ctx context.Context) (int, error) {
 	}
 	tm := s.newTicketmaster(cfg.TicketmasterAPIKey)
 	sk := s.newSkiddle(cfg.SkiddleAPIKey)
+	ev := s.newEventim()
 
 	users, err := s.users.List(ctx)
 	if err != nil {
@@ -126,15 +146,16 @@ func (s *Service) SyncNow(ctx context.Context) (int, error) {
 			continue
 		}
 		for _, artist := range artists {
-			synced += s.syncArtist(ctx, tm, sk, u.ID, cfg.Country, artist.Name, now)
+			synced += s.syncArtist(ctx, tm, sk, ev, u.ID, cfg.Country, artist.Name, now)
 		}
 	}
 	return synced, nil
 }
 
-// syncArtist searches one artist for one user (Ticketmaster first, Skiddle
-// only if that found nothing) and upserts any new, still-upcoming matches.
-func (s *Service) syncArtist(ctx context.Context, tm, sk searcher, userID, country, artist string, now time.Time) int {
+// syncArtist searches one artist for one user (Ticketmaster first, then
+// Skiddle, then — for France only — Eventim, stopping at the first source
+// that finds something) and upserts any new, still-upcoming matches.
+func (s *Service) syncArtist(ctx context.Context, tm, sk, ev searcher, userID, country, artist string, now time.Time) int {
 	events, err := tm.Search(ctx, artist, country, maxEventsPerArtist)
 	source := "ticketmaster"
 	if err != nil {
@@ -146,6 +167,14 @@ func (s *Service) syncArtist(ctx context.Context, tm, sk searcher, userID, count
 		source = "skiddle"
 		if err != nil {
 			s.logger.Warn("concerts: skiddle search failed", "artist", artist, "error", err)
+			events = nil
+		}
+	}
+	if len(events) == 0 {
+		events, err = ev.Search(ctx, artist, country, maxEventsPerArtist)
+		source = "eventim"
+		if err != nil {
+			s.logger.Warn("concerts: eventim search failed", "artist", artist, "error", err)
 			return 0
 		}
 	}

@@ -25,7 +25,7 @@ func (h *Handler) concertsEnabled() bool {
 // matches, soonest first.
 //
 // @Summary      Your upcoming concert matches
-// @Description  Concert discovery matches your top-listened artists (see your account's city) against Ticketmaster/Skiddle, refreshed daily. Returns upcoming, non-dismissed matches, soonest first. Empty (not an error) when the feature is disabled, no city is set, or nothing matched yet.
+// @Description  Concert discovery matches your top-listened artists against Ticketmaster/Skiddle/Eventim near the admin-configured country, refreshed daily. Returns upcoming, non-dismissed matches, soonest first. Empty (not an error) when the feature is disabled, no country is configured, or nothing matched yet.
 // @Tags         concerts
 // @Security     BearerAuth
 // @Produce      json
@@ -184,7 +184,7 @@ func (h *Handler) handleConcertsUpdate(w http.ResponseWriter, r *http.Request) {
 // of the daily schedule.
 //
 // @Summary      Sync concert discovery now
-// @Description  Admin only. Searches every user-with-a-city's top-listened artists for nearby upcoming shows immediately, returning how many new matches were found.
+// @Description  Admin only. Searches every user's top-listened artists for upcoming shows near the configured country immediately, returning how many new matches were found.
 // @Tags         admin
 // @Security     BearerAuth
 // @Produce      json

@@ -506,7 +506,7 @@ export interface paths {
         put?: never;
         /**
          * Sync concert discovery now
-         * @description Admin only. Searches every user-with-a-city's top-listened artists for nearby upcoming shows immediately, returning how many new matches were found.
+         * @description Admin only. Searches every user's top-listened artists for upcoming shows near the configured country immediately, returning how many new matches were found.
          */
         post: {
             parameters: {
@@ -5398,7 +5398,7 @@ export interface paths {
         };
         /**
          * Your upcoming concert matches
-         * @description Concert discovery matches your top-listened artists (see your account's city) against Ticketmaster/Skiddle, refreshed daily. Returns upcoming, non-dismissed matches, soonest first. Empty (not an error) when the feature is disabled, no city is set, or nothing matched yet.
+         * @description Concert discovery matches your top-listened artists against Ticketmaster/Skiddle/Eventim near the admin-configured country, refreshed daily. Returns upcoming, non-dismissed matches, soonest first. Empty (not an error) when the feature is disabled, no country is configured, or nothing matched yet.
          */
         get: {
             parameters: {

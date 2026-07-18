@@ -3138,7 +3138,7 @@
         },
         "/admin/concerts/sync": {
             "post": {
-                "description": "Admin only. Searches every user-with-a-city's top-listened artists for nearby upcoming shows immediately, returning how many new matches were found.",
+                "description": "Admin only. Searches every user's top-listened artists for upcoming shows near the configured country immediately, returning how many new matches were found.",
                 "responses": {
                     "201": {
                         "content": {
@@ -8300,7 +8300,7 @@
         },
         "/me/concerts": {
             "get": {
-                "description": "Concert discovery matches your top-listened artists (see your account's city) against Ticketmaster/Skiddle, refreshed daily. Returns upcoming, non-dismissed matches, soonest first. Empty (not an error) when the feature is disabled, no city is set, or nothing matched yet.",
+                "description": "Concert discovery matches your top-listened artists against Ticketmaster/Skiddle/Eventim near the admin-configured country, refreshed daily. Returns upcoming, non-dismissed matches, soonest first. Empty (not an error) when the feature is disabled, no country is configured, or nothing matched yet.",
                 "responses": {
                     "200": {
                         "content": {

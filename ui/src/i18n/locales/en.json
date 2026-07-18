@@ -566,6 +566,8 @@
       "concertsDescription": "Matches each user's top-listened artists against Ticketmaster, falling back to Skiddle, once daily, in the country below — the same country for the whole instance.",
       "concertsEnabled": "Concert discovery",
       "concertsCountry": "Country",
+      "concertsProviders": "Sources: Ticketmaster, then Skiddle.",
+      "concertsProvidersFR": "Sources: Ticketmaster, then Skiddle, then Eventim (France only, no key needed — the other two have thin French coverage).",
       "countryNotSet": "Not set",
       "ticketmasterKey": "Ticketmaster API key",
       "skiddleKey": "Skiddle API key",

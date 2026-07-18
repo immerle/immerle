@@ -332,6 +332,9 @@ export default function AdminSettings() {
                   <View className="gap-1.5">
                     <Text className="text-sm font-medium text-muted">{t('admin.settings.concertsCountry')}</Text>
                     <Select value={concertsCountry} options={COUNTRY_OPTIONS} onChange={setConcertsCountry} />
+                    <Text className="text-xs text-muted">
+                      {concertsCountry === 'FR' ? t('admin.settings.concertsProvidersFR') : t('admin.settings.concertsProviders')}
+                    </Text>
                   </View>
                   <Field
                     label={t('admin.settings.ticketmasterKey')}
