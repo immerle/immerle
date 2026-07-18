@@ -315,6 +315,56 @@ type ConcertsStatusDTO struct {
 	SkiddleConfigured      bool   `json:"skiddleConfigured" example:"false"`
 }
 
+// BandcampStatusDTO is the caller's Bandcamp connection state. The cookie
+// itself is write-only — this never echoes it back.
+type BandcampStatusDTO struct {
+	Connected      bool   `json:"connected"`
+	FanID          string `json:"fanId,omitempty"`
+	LastSyncedAt   string `json:"lastSyncedAt,omitempty" example:"2026-07-18T21:42:00Z"`
+	NeedsReconnect bool   `json:"needsReconnect,omitempty"`
+}
+
+// BandcampCollectionItemDTO is one purchased Bandcamp item, annotated with any
+// existing import job for it.
+type BandcampCollectionItemDTO struct {
+	SaleItemType string `json:"saleItemType" example:"p"`
+	SaleItemID   string `json:"saleItemId" example:"123456789"`
+	ItemType     string `json:"itemType" example:"album"`
+	ArtistName   string `json:"artistName"`
+	ItemTitle    string `json:"itemTitle"`
+	ArtURL       string `json:"artUrl,omitempty"`
+	Purchased    string `json:"purchased" example:"2021-01-01T10:00:00Z"`
+	JobStatus    string `json:"jobStatus,omitempty" example:"completed"`
+	JobID        string `json:"jobId,omitempty"`
+}
+
+// BandcampCollectionDTO wraps the caller's live Bandcamp purchase collection.
+type BandcampCollectionDTO struct {
+	Items []BandcampCollectionItemDTO `json:"items"`
+}
+
+// BandcampJobDTO is one queued/running/completed/failed Bandcamp import.
+type BandcampJobDTO struct {
+	ID           string   `json:"id"`
+	SaleItemType string   `json:"saleItemType"`
+	SaleItemID   string   `json:"saleItemId"`
+	ItemType     string   `json:"itemType" example:"album"`
+	ArtistName   string   `json:"artistName"`
+	ItemTitle    string   `json:"itemTitle"`
+	Format       string   `json:"format,omitempty" example:"flac"`
+	Status       string   `json:"status" example:"completed"`
+	TrackIDs     []string `json:"trackIds,omitempty"`
+	Error        string   `json:"error,omitempty"`
+	Attempts     int      `json:"attempts"`
+	CreatedAt    string   `json:"createdAt" example:"2026-07-18T21:42:00Z"`
+	UpdatedAt    string   `json:"updatedAt" example:"2026-07-18T21:43:00Z"`
+}
+
+// BandcampJobsDTO wraps the caller's Bandcamp import job history.
+type BandcampJobsDTO struct {
+	Jobs []BandcampJobDTO `json:"jobs"`
+}
+
 // ActivityItemDTO carries resolved, human-readable details about the item an
 // activity event references (fields depend on itemType; empty when unresolved).
 type ActivityItemDTO struct {

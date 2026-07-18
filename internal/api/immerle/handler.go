@@ -89,7 +89,10 @@ type Deps struct {
 	// controls the daily sync (admin API). Implemented by *concerts.Service.
 	Concerts     *persistence.ConcertRepo
 	ConcertsSync ConcertsController
-	Logger       *slog.Logger
+	// Purchases imports a user's own purchases from external stores (Bandcamp
+	// first). nil disables the feature. Implemented by *core.PurchasesService.
+	Purchases *core.PurchasesService
+	Logger    *slog.Logger
 	// LogHub streams live server log lines to the admin log viewer (SSE).
 	LogHub *logging.Hub
 }
@@ -200,6 +203,12 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Get("/me/custom-playlists", h.handleCustomPlaylists)
 			r.Get("/me/concerts", h.handleMyConcerts)
 			r.Put("/me/concerts/{id}/dismiss", h.handleDismissConcert)
+			r.Get("/me/purchases/bandcamp", h.handleBandcampStatus)
+			r.Post("/me/purchases/bandcamp/connect", h.handleBandcampConnect)
+			r.Delete("/me/purchases/bandcamp", h.handleBandcampDisconnect)
+			r.Get("/me/purchases/bandcamp/collection", h.handleBandcampCollection)
+			r.Post("/me/purchases/bandcamp/items/{saleItemType}/{saleItemId}/import", h.handleBandcampImport)
+			r.Get("/me/purchases/bandcamp/jobs", h.handleBandcampJobs)
 			r.Put("/me/password", h.handleChangePassword)
 			r.Get("/users/{username}", h.handleProfile)
 			r.Get("/users/{username}/hall-of-fame", h.handleUserHallOfFame)

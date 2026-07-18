@@ -30,6 +30,7 @@ export const SUBSONIC_ONLY_CAPABILITIES: Capabilities = {
     wrapped: false,
     hallOfFame: false,
     concertDiscovery: false,
+    bandcampImport: false,
   },
   toggles: {},
 };
@@ -100,6 +101,7 @@ export function adaptCapabilities(payload: CapabilitiesResponse): Capabilities {
       wrapped: has('wrapped'),
       hallOfFame: has('hallOfFame'),
       concertDiscovery: has('concertDiscovery'),
+      bandcampImport: has('bandcampImport'),
     },
     toggles,
   };

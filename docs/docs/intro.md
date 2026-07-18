@@ -35,6 +35,8 @@ you outgrow it). Drop in your music, hit play.
   or public playlists.
 - 🔊 **Jam sessions** — listen together, in sync, streamed live.
 - 📥 **Playlist import** — bring your playlists over (Spotify ships first).
+- 🛍️ **Purchase import** — bring your own purchases in from Bandcamp (connect
+  your account, import the real files you paid for), with more stores planned.
 - 🔗 **Federation (opt-in)** — sync editorial & recommendation playlists via an
   `immerle-hub`.
 - 🎫 **Concert discovery (opt-in)** — matches your top-listened artists
@@ -54,6 +56,7 @@ you outgrow it). Drop in your music, hit play.
 - [Discovery & Hall of Fame](./discovery.md) — auto-generated playlists and the top-tracks ranking.
 - [Social features](./social.md) — activity, sharing, Jam sessions.
 - [Playlist import](./playlist-import.md) — bring playlists over from Spotify or Deezer.
+- [Purchase import](./purchases-import.md) — connect Bandcamp and import what you bought.
 - [Federation](./federation.md) — sync playlists via an `immerle-hub`.
 - [Developers](./developers/architecture.md) — architecture, the native &
   Subsonic APIs, and building a custom content provider.

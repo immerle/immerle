@@ -47,6 +47,8 @@ type Store struct {
 	FeedCursors     *FeedCursorRepo
 	HallOfFame      *HallOfFameRepo
 	Concerts        *ConcertRepo
+	BandcampConns   *BandcampConnectionRepo
+	BandcampImports *BandcampImportRepo
 }
 
 // New builds a Store over the given database.
@@ -79,6 +81,8 @@ func New(database *db.DB) *Store {
 		FeedCursors:     &FeedCursorRepo{base},
 		HallOfFame:      &HallOfFameRepo{base},
 		Concerts:        &ConcertRepo{base},
+		BandcampConns:   &BandcampConnectionRepo{base},
+		BandcampImports: &BandcampImportRepo{base},
 	}
 }
 

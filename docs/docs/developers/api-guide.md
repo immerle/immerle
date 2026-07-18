@@ -215,6 +215,28 @@ curl "http://host:4533/api/v1/me/concerts" -H 'Authorization: Bearer <token>'
 curl -X PUT "http://host:4533/api/v1/me/concerts/<id>/dismiss" -H 'Authorization: Bearer <token>'
 ```
 
+## Bandcamp purchase import
+
+See [Purchase import](../purchases-import.md) for how a user gets their
+session cookie. The cookie is write-only — nothing ever echoes it back.
+
+```bash
+curl -X POST "http://host:4533/api/v1/me/purchases/bandcamp/connect" -H 'Authorization: Bearer <token>' \
+  -H 'Content-Type: application/json' -d '{"cookie":"<identity cookie value>"}'
+
+curl "http://host:4533/api/v1/me/purchases/bandcamp" -H 'Authorization: Bearer <token>'          # connection status
+curl "http://host:4533/api/v1/me/purchases/bandcamp/collection" -H 'Authorization: Bearer <token>' # live purchase list
+
+curl -X POST "http://host:4533/api/v1/me/purchases/bandcamp/items/p/123456789/import" \
+  -H 'Authorization: Bearer <token>' -H 'Content-Type: application/json' \
+  -d '{"itemType":"album","artistName":"Pinkfong","itemTitle":"Baby Shark"}'
+# → { "id": "<jobId>", "status": "queued", ... }
+
+curl "http://host:4533/api/v1/me/purchases/bandcamp/jobs" -H 'Authorization: Bearer <token>'  # job statuses
+
+curl -X DELETE "http://host:4533/api/v1/me/purchases/bandcamp" -H 'Authorization: Bearer <token>'  # disconnect
+```
+
 ## UI theme
 
 Each account stores its own theme (currently just an accent colour), applied

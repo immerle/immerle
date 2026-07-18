@@ -217,6 +217,9 @@ export default function Settings() {
         {offlineSupported && client?.isFeatureEnabled('offlineDownloads') ? (
           <NavRow icon="cloud-offline-outline" title={t('offline.title')} subtitle={t('offline.subtitle')} onPress={() => router.push('/offline' as never)} />
         ) : null}
+        {client?.isFeatureEnabled('bandcampImport') ? (
+          <NavRow icon="cart-outline" title={t('bandcamp.entryTitle')} subtitle={t('bandcamp.entrySubtitle')} onPress={() => router.push('/bandcamp' as never)} />
+        ) : null}
         <NavRow icon="phone-portrait-outline" title={t('settings.devicesTitle')} subtitle={t('settings.devicesSubtitle')} onPress={() => router.push('/devices' as never)} />
         <NavRow icon="key-outline" title={t('settings.apiTitle')} subtitle={t('settings.apiSubtitle')} onPress={() => router.push('/api-tokens' as never)} />
       </Card>

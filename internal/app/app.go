@@ -20,6 +20,7 @@ import (
 	"github.com/immerle/immerle/internal/api/immerle"
 	"github.com/immerle/immerle/internal/api/subsonic"
 	"github.com/immerle/immerle/internal/autoplaylists"
+	"github.com/immerle/immerle/internal/bandcamp"
 	"github.com/immerle/immerle/internal/charts"
 	"github.com/immerle/immerle/internal/concerts"
 	"github.com/immerle/immerle/internal/config"
@@ -55,6 +56,7 @@ type App struct {
 	charts        *charts.Service
 	autoplaylists *autoplaylists.Service
 	concerts      *concerts.Service
+	purchases     *core.PurchasesService
 	logPruner     *core.LogPruner
 	settings      *core.SettingsService
 	imports       *importer.Service
@@ -395,6 +397,15 @@ func New(cfg config.Config) (*App, error) {
 	// least one API key, set from the admin settings).
 	concertsSvc := concerts.New(store.Users, store.Wrapped, store.Concerts, settingsSvc.ConcertsConfig, logger)
 
+	// Bandcamp purchase import: a user pastes their personal session cookie
+	// (no official OAuth exists) and we download+ingest their purchased
+	// albums/tracks, same uploads tree a manual upload lands in.
+	purchasesSvc, err := core.NewPurchasesService(store.BandcampConns, store.BandcampImports, bandcamp.NewClient(),
+		store.Catalog, scan, filepath.Join(downloadDir, "uploads"), settingsSvc.Secret(), logger)
+	if err != nil {
+		return nil, fmt.Errorf("purchases service: %w", err)
+	}
+
 	// Daily retention sweep over persisted diagnostic logs. The window is read
 	// live from the runtime settings; register any future log table here.
 	logPruner := core.NewLogPruner(settingsSvc.LogRetention, 24*time.Hour, logger, store.ProviderLogs)
@@ -438,6 +449,7 @@ func New(cfg config.Config) (*App, error) {
 		AutoPlaylists:  autoplaylistsSvc,
 		Concerts:       store.Concerts,
 		ConcertsSync:   concertsSvc,
+		Purchases:      purchasesSvc,
 		Providers:      providerMgr,
 		Settings:       settingsSvc,
 		SmartPlaylists: store.SmartPlaylists,
@@ -507,6 +519,7 @@ func New(cfg config.Config) (*App, error) {
 		charts:        chartsSvc,
 		autoplaylists: autoplaylistsSvc,
 		concerts:      concertsSvc,
+		purchases:     purchasesSvc,
 		logPruner:     logPruner,
 		settings:      settingsSvc,
 		imports:       importSvc,
@@ -577,6 +590,9 @@ func (a *App) Run(ctx context.Context) error {
 		// Always started; SyncNow self-gates on the runtime enabled flag, same
 		// as the evictor.
 		a.spawn(func() { a.concerts.Run(ctx) })
+	}
+	if a.purchases != nil {
+		a.spawn(func() { a.purchases.Worker(ctx) })
 	}
 	if a.logPruner != nil {
 		a.spawn(func() { a.logPruner.Run(ctx) })

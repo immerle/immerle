@@ -50,6 +50,8 @@ export interface Capabilities {
     hallOfFame: boolean;
     /** Concert discovery (`/me/concerts`): nearby shows for your top artists. */
     concertDiscovery: boolean;
+    /** Import your own Bandcamp purchases (`/me/purchases/bandcamp`). */
+    bandcampImport: boolean;
   };
   /**
    * Live on/off state for the handful of features an admin can toggle at
@@ -275,6 +277,47 @@ export interface ConcertsAdminStatus {
   country: string;
   ticketmasterConfigured: boolean;
   skiddleConfigured: boolean;
+}
+
+/** The caller's Bandcamp connection state. The cookie is write-only. */
+export interface BandcampStatus {
+  connected: boolean;
+  fanId?: string;
+  lastSyncedAt?: string;
+  /** The stored cookie stopped working (logout/password change) — reconnect. */
+  needsReconnect?: boolean;
+}
+
+/** One purchased Bandcamp item, annotated with any existing import job. */
+export interface BandcampCollectionItem {
+  saleItemType: string;
+  saleItemId: string;
+  itemType: 'album' | 'track';
+  artistName: string;
+  itemTitle: string;
+  artUrl?: string;
+  purchased: string;
+  jobStatus?: BandcampJobStatus;
+  jobId?: string;
+}
+
+export type BandcampJobStatus = 'queued' | 'running' | 'completed' | 'failed';
+
+/** One queued/running/completed/failed Bandcamp import. */
+export interface BandcampJob {
+  id: string;
+  saleItemType: string;
+  saleItemId: string;
+  itemType: 'album' | 'track';
+  artistName: string;
+  itemTitle: string;
+  format?: string;
+  status: BandcampJobStatus;
+  trackIds?: string[];
+  error?: string;
+  attempts: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 /** A federated instance surfaced by discovery / subscriptions (no secrets). */
