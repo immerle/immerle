@@ -107,7 +107,9 @@ jobs:
       - name: Attach to the release
         uses: softprops/action-gh-release@v2
         with:
-          files: iml-*.tar.gz iml-*.zip
+          files: |
+            iml-*.tar.gz
+            iml-*.zip
 
   desktop:
     strategy:
@@ -169,11 +171,15 @@ jobs:
           cache-dependency-path: ui/package-lock.json
       - run: npm ci --legacy-peer-deps
 
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
       - name: Build APK on EAS
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
-          npx eas build --platform android --profile apk --non-interactive --wait \
+          eas build --platform android --profile apk --non-interactive --wait \
             --message "${{ github.ref_name }}" --json > eas-build.json
 
       - name: Download APK
