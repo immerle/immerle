@@ -5,25 +5,32 @@ import { useToast } from '../stores/toast';
 import { useT } from '../i18n/store';
 import { qk } from './keys';
 
-/** Your upcoming, non-dismissed concert matches (see account settings for the
- * city that drives matching), soonest first. Refreshed daily server-side, so
- * a slow poll is enough to pick up a fresh sync without a dedicated push
- * channel — same reasoning as the Jam-invites poll in query/social.ts.
- *
- * Toasts once for every match that wasn't already in the previous snapshot —
- * not on the first load (a page reload shouldn't re-announce concerts the
- * caller already knew about), same pattern as useJamInvites there.
- */
+/** Your upcoming, non-dismissed concert matches (see admin settings for the
+ * country that drives matching), soonest first. Refreshed daily server-side,
+ * so a slow poll is enough to pick up a fresh sync without a dedicated push
+ * channel — same reasoning as the Jam-invites poll in query/social.ts. */
 export function useConcerts() {
-  const t = useT();
   const client = useAuth((s) => s.client);
-  const query = useQuery({
+  return useQuery({
     queryKey: qk.concerts,
     enabled: !!client && client.isFeatureEnabled('concertDiscovery'),
     refetchInterval: 10 * 60 * 1000,
     queryFn: ({ signal }) => client!.getConcerts(signal),
   });
+}
 
+/** Toasts once for every concert match that wasn't already in the previous
+ * snapshot — not on the first load (a page reload shouldn't re-announce
+ * concerts the caller already knew about), same pattern as useJamInvites.
+ *
+ * Call this once from a persistently-mounted component (NotificationsBell,
+ * same as the Jam-invite equivalent) — calling it from a tab screen (the
+ * Home banner used to) resets the "seen" baseline every time the user
+ * navigates away and back, silently swallowing the toast for anything that
+ * synced while they were elsewhere. */
+export function useConcertNotifications() {
+  const t = useT();
+  const query = useConcerts();
   const seenIds = useRef<Set<string> | null>(null);
   useEffect(() => {
     if (!query.data) return;
@@ -38,8 +45,6 @@ export function useConcerts() {
     }
     seenIds.current = ids;
   }, [query.data, t]);
-
-  return query;
 }
 
 export function useDismissConcert() {

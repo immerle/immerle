@@ -62,7 +62,7 @@ function OfflineBanner({ onRetry, retrying }: { onRetry: () => void; retrying: b
   const t = useT();
   const colors = useColors();
   return (
-    <View className="px-4 pb-2">
+    <View className="px-4 pb-2 pt-2">
       <Card className="flex-row items-center gap-3">
         <Ionicon name="cloud-offline-outline" size={22} color={colors.muted} />
         <Text className="flex-1 text-base font-semibold text-foreground">{t('home.home.offlineTitle')}</Text>
@@ -73,9 +73,10 @@ function OfflineBanner({ onRetry, retrying }: { onRetry: () => void; retrying: b
 }
 
 /** Closable banner for the single nearest upcoming concert match (concert
- * discovery searches Ticketmaster/Skiddle for your top-listened artists near
- * your account's city). Dismissing it just moves on to the next-soonest
- * match, if any — dismissal is permanent per concert, persisted server-side. */
+ * discovery searches every configured source for your top-listened artists
+ * near the admin-configured country). Dismissing it just moves on to the
+ * next-soonest match, if any — dismissal is permanent per concert, persisted
+ * server-side. */
 function ConcertBanner() {
   const t = useT();
   const colors = useColors();
@@ -88,7 +89,7 @@ function ConcertBanner() {
   const place = [next.venue, next.city].filter(Boolean).join(', ');
 
   return (
-    <View className="px-4 pb-2">
+    <View className="px-4 pb-2 pt-2">
       <Card className="flex-row items-center gap-3">
         <View className="h-10 w-10 items-center justify-center rounded-full bg-primary/15">
           <Ionicon name="megaphone" size={20} color={colors.primary} />
