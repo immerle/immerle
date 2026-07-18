@@ -763,6 +763,51 @@ type DownloadJob struct {
 	UpdatedAt       time.Time      `json:"updatedAt"`
 }
 
+// BandcampConnection is one user's link to their personal Bandcamp account.
+// There's no official OAuth, so IdentityEnc holds their pasted browser session
+// cookie, encrypted at rest — never exposed over the API.
+type BandcampConnection struct {
+	UserID       string
+	FanID        string
+	IdentityEnc  string
+	ConnectedAt  time.Time
+	LastSyncedAt *time.Time
+	// InvalidSince is set the first time an import job discovers the cookie no
+	// longer works, so the user can be prompted to reconnect instead of the
+	// worker silently retrying forever.
+	InvalidSince *time.Time
+}
+
+// BandcampJobStatus enumerates Bandcamp import job states.
+type BandcampJobStatus string
+
+// Bandcamp import job status values.
+const (
+	BandcampQueued    BandcampJobStatus = "queued"
+	BandcampRunning   BandcampJobStatus = "running"
+	BandcampCompleted BandcampJobStatus = "completed"
+	BandcampFailed    BandcampJobStatus = "failed"
+)
+
+// BandcampImportJob is an async download+ingest of one purchased Bandcamp item
+// (an album or a single track) into the user's library.
+type BandcampImportJob struct {
+	ID           string            `json:"id"`
+	UserID       string            `json:"-"`
+	SaleItemType string            `json:"saleItemType"`
+	SaleItemID   string            `json:"saleItemId"`
+	ItemType     string            `json:"itemType"` // "album" | "track"
+	ArtistName   string            `json:"artistName"`
+	ItemTitle    string            `json:"itemTitle"`
+	Format       string            `json:"format,omitempty"`
+	Status       BandcampJobStatus `json:"status"`
+	TrackIDs     []string          `json:"trackIds,omitempty"`
+	Error        string            `json:"error,omitempty"`
+	Attempts     int               `json:"attempts"`
+	CreatedAt    time.Time         `json:"createdAt"`
+	UpdatedAt    time.Time         `json:"updatedAt"`
+}
+
 // ImportStatus enumerates playlist-import job states.
 type ImportStatus string
 
