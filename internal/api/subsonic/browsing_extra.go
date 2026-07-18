@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/immerle/immerle/internal/lrclib"
 	"github.com/immerle/immerle/internal/lyrics"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
@@ -276,8 +277,18 @@ func (h *Handler) handleGetLyrics(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handleGetLyricsBySongID(w http.ResponseWriter, r *http.Request) {
 	resp := newResponse()
 	out := &LyricsList{}
-	if t, err := h.Catalog.GetTrack(r.Context(), param(r, "id")); err == nil && t.Lyrics != "" {
-		out.StructuredLyrics = []StructuredLyrics{parseStructuredLyrics(t.Lyrics)}
+	if t, err := h.Catalog.GetTrack(r.Context(), param(r, "id")); err == nil {
+		if t.Lyrics == "" {
+			if fetched, err := lrclib.NewClient().Get(r.Context(), t.ArtistName, t.Title, t.AlbumName, t.Duration); err == nil && fetched != "" {
+				t.Lyrics = fetched
+				if _, err := h.Catalog.UpsertTrack(r.Context(), t); err != nil {
+					h.Logger.Warn("lrclib: failed to cache fetched lyrics", "track", t.ID, "err", err)
+				}
+			}
+		}
+		if t.Lyrics != "" {
+			out.StructuredLyrics = []StructuredLyrics{parseStructuredLyrics(t.Lyrics)}
+		}
 	}
 	resp.LyricsList = out
 	write(w, r, resp)
