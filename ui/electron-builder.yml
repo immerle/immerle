@@ -2,6 +2,10 @@ appId: com.immerle.app
 productName: Immerle
 copyright: © Immerle
 
+# No version in the filename: keeps a stable name across releases, so
+# /releases/latest/download/<name> always resolves to the newest build.
+artifactName: "${productName}-${os}-${arch}.${ext}"
+
 directories:
   output: release
   buildResources: build

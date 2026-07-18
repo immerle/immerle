@@ -96,8 +96,11 @@ jobs:
             -o "iml${ext}" ./cmd/iml
 
       - name: Archive
+        # No version in the filename: it keeps a stable name across releases,
+        # so /releases/latest/download/<name> always resolves to the newest
+        # build -- a plain wget install one-liner without checking a version.
         run: |
-          name="iml-${{ github.ref_name }}-${{ matrix.goos }}-${{ matrix.goarch }}"
+          name="iml-${{ matrix.goos }}-${{ matrix.goarch }}"
           if [ "${{ matrix.goos }}" = "windows" ]; then
             zip "$name.zip" iml.exe
           else
@@ -107,7 +110,9 @@ jobs:
       - name: Attach to the release
         uses: softprops/action-gh-release@v2
         with:
-          files: iml-*.tar.gz iml-*.zip
+          files: |
+            iml-*.tar.gz
+            iml-*.zip
 
   desktop:
     strategy:
@@ -169,19 +174,24 @@ jobs:
           cache-dependency-path: ui/package-lock.json
       - run: npm ci --legacy-peer-deps
 
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
       - name: Build APK on EAS
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
-          npx eas build --platform android --profile apk --non-interactive --wait \
+          eas build --platform android --profile apk --non-interactive --wait \
             --message "${{ github.ref_name }}" --json > eas-build.json
 
       - name: Download APK
+        # No version in the filename, same reasoning as the iml archives above.
         run: |
           url=$(node -e "console.log(JSON.parse(require('fs').readFileSync('eas-build.json', 'utf8'))[0].artifacts.buildUrl)")
-          curl -fsSL "$url" -o "immerle-${{ github.ref_name }}.apk"
+          curl -fsSL "$url" -o immerle.apk
 
       - name: Attach to the release
         uses: softprops/action-gh-release@v2
         with:
-          files: ui/immerle-*.apk
+          files: ui/immerle.apk
