@@ -191,6 +191,30 @@ curl -X DELETE "http://host:4533/api/v1/admin/federation/subscriptions/<id>" -H 
 Toggle `syncPlaylists`/`exportScrobbles` the same way as any other runtime
 setting, under `{"federation": {...}}` — all hot, no restart.
 
+## Concert discovery (admin)
+
+See [Configuration](../configuration.md#concert-discovery) for what each field
+means and which sources cover which countries.
+
+```bash
+curl "http://host:4533/api/v1/admin/concerts" -H 'Authorization: Bearer <admin>'
+curl -X PUT "http://host:4533/api/v1/admin/concerts" -H 'Authorization: Bearer <admin>' \
+  -H 'Content-Type: application/json' \
+  -d '{"enabled":true,"country":"FR","ticketmasterApiKey":"...","skiddleApiKey":"..."}'
+
+# force an immediate sync instead of waiting for the daily one
+curl -X POST "http://host:4533/api/v1/admin/concerts/sync" -H 'Authorization: Bearer <admin>'
+```
+
+API keys are write-only — `GET /admin/concerts` reports `ticketmasterConfigured`/
+`skiddleConfigured` booleans, never the keys themselves.
+
+```bash
+# a user's own upcoming, non-dismissed matches, soonest first
+curl "http://host:4533/api/v1/me/concerts" -H 'Authorization: Bearer <token>'
+curl -X PUT "http://host:4533/api/v1/me/concerts/<id>/dismiss" -H 'Authorization: Bearer <token>'
+```
+
 ## UI theme
 
 Each account stores its own theme (currently just an accent colour), applied
