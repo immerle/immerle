@@ -101,6 +101,97 @@ components:
           example: 2001
           type: integer
       type: object
+    immerle.BandcampCollectionDTO:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/immerle.BandcampCollectionItemDTO'
+          type: array
+          uniqueItems: false
+      type: object
+    immerle.BandcampCollectionItemDTO:
+      properties:
+        artUrl:
+          type: string
+        artistName:
+          type: string
+        itemTitle:
+          type: string
+        itemType:
+          example: album
+          type: string
+        jobId:
+          type: string
+        jobStatus:
+          example: completed
+          type: string
+        purchased:
+          example: "2021-01-01T10:00:00Z"
+          type: string
+        saleItemId:
+          example: "123456789"
+          type: string
+        saleItemType:
+          example: p
+          type: string
+      type: object
+    immerle.BandcampJobDTO:
+      properties:
+        artistName:
+          type: string
+        attempts:
+          type: integer
+        createdAt:
+          example: "2026-07-18T21:42:00Z"
+          type: string
+        error:
+          type: string
+        format:
+          example: flac
+          type: string
+        id:
+          type: string
+        itemTitle:
+          type: string
+        itemType:
+          example: album
+          type: string
+        saleItemId:
+          type: string
+        saleItemType:
+          type: string
+        status:
+          example: completed
+          type: string
+        trackIds:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+        updatedAt:
+          example: "2026-07-18T21:43:00Z"
+          type: string
+      type: object
+    immerle.BandcampJobsDTO:
+      properties:
+        jobs:
+          items:
+            $ref: '#/components/schemas/immerle.BandcampJobDTO'
+          type: array
+          uniqueItems: false
+      type: object
+    immerle.BandcampStatusDTO:
+      properties:
+        connected:
+          type: boolean
+        fanId:
+          type: string
+        lastSyncedAt:
+          example: "2026-07-18T21:42:00Z"
+          type: string
+        needsReconnect:
+          type: boolean
+      type: object
     immerle.CapabilitiesDTO:
       properties:
         capabilities:
@@ -1090,6 +1181,20 @@ components:
         name:
           type: string
         starred:
+          type: string
+      type: object
+    immerle.bandcampConnectRequest:
+      properties:
+        cookie:
+          type: string
+      type: object
+    immerle.bandcampImportRequest:
+      properties:
+        artistName:
+          type: string
+        itemTitle:
+          type: string
+        itemType:
           type: string
       type: object
     immerle.channelView:
@@ -5439,6 +5544,198 @@ paths:
       summary: Change own password
       tags:
       - account
+  /me/purchases/bandcamp:
+    delete:
+      responses:
+        "204":
+          description: disconnected
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Disconnect Bandcamp
+      tags:
+      - purchases
+    get:
+      description: Reports whether the caller has connected their Bandcamp account,
+        and whether the stored cookie needs to be refreshed.
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.BandcampStatusDTO'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Bandcamp connection status
+      tags:
+      - purchases
+  /me/purchases/bandcamp/collection:
+    get:
+      description: Fetches the caller's purchase collection live from Bandcamp. Each
+        item is annotated with its import job status, if any.
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.BandcampCollectionDTO'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Service Unavailable
+      security:
+      - BearerAuth: []
+      summary: List Bandcamp purchases
+      tags:
+      - purchases
+  /me/purchases/bandcamp/connect:
+    post:
+      description: Validates the pasted session cookie against Bandcamp and stores
+        it (encrypted), replacing any previous connection.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/immerle.bandcampConnectRequest'
+                description: Bandcamp session cookie
+                summary: body
+        description: Bandcamp session cookie
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.BandcampStatusDTO'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Service Unavailable
+      security:
+      - BearerAuth: []
+      summary: Connect a Bandcamp account
+      tags:
+      - purchases
+  /me/purchases/bandcamp/items/{saleItemType}/{saleItemId}/import:
+    post:
+      parameters:
+      - description: Bandcamp sale item type
+        in: path
+        name: saleItemType
+        required: true
+        schema:
+          type: string
+      - description: Bandcamp sale item id
+        in: path
+        name: saleItemId
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/immerle.bandcampImportRequest'
+                description: Item display fields
+                summary: body
+        description: Item display fields
+        required: true
+      responses:
+        "202":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.BandcampJobDTO'
+          description: Accepted
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Service Unavailable
+      security:
+      - BearerAuth: []
+      summary: Import a Bandcamp purchase
+      tags:
+      - purchases
+  /me/purchases/bandcamp/jobs:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.BandcampJobsDTO'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: List Bandcamp import jobs
+      tags:
+      - purchases
   /now-playing:
     get:
       description: Returns the tracks every user is currently playing, newest first.

@@ -329,7 +329,7 @@ func extractZip(archivePath, destDir string, maxFileBytes int64) ([]string, erro
 	if err != nil {
 		return nil, err
 	}
-	defer r.Close()
+	defer func() { _ = r.Close() }()
 
 	var out []string
 	for _, f := range r.File {
@@ -356,12 +356,12 @@ func extractZipEntry(f *zip.File, destPath string, maxBytes int64) error {
 	if err != nil {
 		return err
 	}
-	defer rc.Close()
+	defer func() { _ = rc.Close() }()
 	out, err := os.Create(destPath)
 	if err != nil {
 		return err
 	}
-	defer out.Close()
+	defer func() { _ = out.Close() }()
 	n, err := io.Copy(out, io.LimitReader(rc, maxBytes+1))
 	if err != nil {
 		return err
