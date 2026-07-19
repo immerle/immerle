@@ -1,4 +1,4 @@
-import { adaptCapabilities, SUBSONIC_ONLY_CAPABILITIES } from './capabilities';
+import { adaptCapabilities, probeCapabilities, SUBSONIC_ONLY_CAPABILITIES } from './capabilities';
 import type { CapabilitiesResponse } from '../immerleApi';
 
 describe('adaptCapabilities', () => {
@@ -64,5 +64,17 @@ describe('adaptCapabilities', () => {
   it('leaves toggles empty for an unadvertised feature', () => {
     const caps = adaptCapabilities({ ok: true, capabilities: {} } as CapabilitiesResponse);
     expect(caps.toggles.hallOfFame).toBeUndefined();
+  });
+});
+
+describe('probeCapabilities', () => {
+  it('falls back to the conservative capabilities when the signal is already aborted', async () => {
+    // Regression: session restore bounds this call with a timeout signal so an
+    // unreachable server can't hang the app forever -- the fallback must still
+    // resolve (not throw) when that timeout fires.
+    const controller = new AbortController();
+    controller.abort();
+    const caps = await probeCapabilities('http://example.invalid', controller.signal);
+    expect(caps).toEqual(SUBSONIC_ONLY_CAPABILITIES);
   });
 });

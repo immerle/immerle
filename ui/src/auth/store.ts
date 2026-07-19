@@ -77,12 +77,25 @@ async function nativeLogin(serverUrl: string, username: string, password: string
   return { serverUrl, username, apiToken: tok.data.token, tokenId: tok.data.id ?? '' };
 }
 
+// A browser's fetch fails fast (ECONNREFUSED/DNS error) against an unreachable
+// server, so the web build already falls through to degraded/offline mode
+// almost immediately. Native's networking stack can leave the same request
+// hanging indefinitely instead -- bound it so restore() can't get stuck on
+// the launch screen forever.
+const RESTORE_TIMEOUT_MS = 8000;
+
+function timeoutSignal(ms: number): AbortSignal {
+  const controller = new AbortController();
+  setTimeout(() => controller.abort(), ms);
+  return controller.signal;
+}
+
 /**
  * Build a fully-wired client from stored native credentials: probe capabilities
  * and fetch the account record (for the display name and admin role).
  */
 async function buildClient(stored: StoredAuth): Promise<ImmerleClient> {
-  const capabilities = await probeCapabilities(stored.serverUrl);
+  const capabilities = await probeCapabilities(stored.serverUrl, timeoutSignal(RESTORE_TIMEOUT_MS));
   const session: ImmerleSession = {
     token: stored.apiToken,
     userId: '',
@@ -92,7 +105,7 @@ async function buildClient(stored: StoredAuth): Promise<ImmerleClient> {
   };
   const client = new ImmerleClient(stored.serverUrl, stored.username, capabilities, session);
   try {
-    const me = await client.getAccount();
+    const me = await client.getAccount(timeoutSignal(RESTORE_TIMEOUT_MS));
     client.setDisplayName(me.displayName);
     client.setSession({ ...session, isAdmin: Boolean(me.isAdmin) });
   } catch {
