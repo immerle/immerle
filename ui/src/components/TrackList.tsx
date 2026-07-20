@@ -23,6 +23,10 @@ interface TrackListProps {
    * is unresolved (a federated-playlist track pending resolution — see
    * `Song.unresolved`). Required for lists that may contain such rows. */
   onPlayUnresolved?: (song: Song, index: number) => void;
+  /** Playlist these songs belong to, if any — passed through to playSongs so an
+   * unresolved track hit later in playback can resolve itself instead of just
+   * skipping (see resolveAndPlayUnresolved in audio/store.ts). */
+  playlistId?: string;
 }
 
 /**
@@ -41,6 +45,7 @@ export function TrackList({
   showRank = false,
   onEditTrack,
   onPlayUnresolved,
+  playlistId,
 }: TrackListProps) {
   const playSongs = usePlayer((s) => s.playSongs);
   const current = usePlayer((s) => (s.index >= 0 ? s.songs[s.index]?.id : undefined));
@@ -53,11 +58,11 @@ export function TrackList({
         active={item.id === current}
         showArtwork={showArtwork}
         rank={showRank ? index + 1 : undefined}
-        onPress={() => (item.unresolved ? onPlayUnresolved?.(item, index) : playSongs(songs, index))}
+        onPress={() => (item.unresolved ? onPlayUnresolved?.(item, index) : playSongs(songs, index, playlistId))}
         onMore={() => openMenu(item, onEditTrack ? { onEdit: onEditTrack } : undefined)}
       />
     ),
-    [songs, current, showArtwork, showRank, playSongs, openMenu, onEditTrack, onPlayUnresolved],
+    [songs, current, showArtwork, showRank, playSongs, openMenu, onEditTrack, onPlayUnresolved, playlistId],
   );
 
   return (
