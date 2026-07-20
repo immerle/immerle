@@ -19,8 +19,36 @@ function baseUrl(serverUrl: string): string {
   return normalizeServerUrl(serverUrl) + API_BASE;
 }
 
+// A browser's fetch fails fast (ECONNREFUSED/DNS error) against an
+// unreachable server; native's networking stack can leave the same request
+// hanging indefinitely instead. Every request gets bounded here so a dead
+// server always settles to an error within a few seconds -- letting
+// TanStack Query (and anything else awaiting a client call) reach its
+// offline/error fallback instead of spinning forever.
+const REQUEST_TIMEOUT_MS = 6000;
+
+/** Bounds `request` with `REQUEST_TIMEOUT_MS`, still honoring whatever
+ * signal the caller already attached (e.g. TanStack Query's cancel-on-unmount).
+ * Exported for `ImmerleClient`'s own raw-fetch helpers (uploads excepted --
+ * those legitimately need more than a few seconds). */
+export async function fetchWithTimeout(request: Request): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const callerSignal = request.signal;
+  const forwardAbort = () => controller.abort(callerSignal.reason);
+  if (callerSignal.aborted) controller.abort(callerSignal.reason);
+  else callerSignal.addEventListener('abort', forwardAbort, { once: true });
+
+  try {
+    return await globalThis.fetch(new Request(request, { signal: controller.signal }));
+  } finally {
+    clearTimeout(timer);
+    callerSignal.removeEventListener('abort', forwardAbort);
+  }
+}
+
 export function createImmerleApi(serverUrl: string): ImmerleApi {
-  return createClient<paths>({ baseUrl: baseUrl(serverUrl) });
+  return createClient<paths>({ baseUrl: baseUrl(serverUrl), fetch: fetchWithTimeout });
 }
 
 /** An authenticated REST client: sends `Authorization: Bearer <token>` on every request. */

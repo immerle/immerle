@@ -34,6 +34,7 @@ import {
   ErrorResponse,
   createAuthedImmerleApi,
   CreateTokenResponse,
+  fetchWithTimeout,
   HallOfFameView,
   ImmerleApi,
   JamInviteDTO,
@@ -230,12 +231,14 @@ export class ImmerleClient {
     if (body !== undefined) headers['Content-Type'] = 'application/json';
     if (this.session?.token) headers.Authorization = `Bearer ${this.session.token}`;
 
-    const res = await fetch(url, {
-      method,
-      headers,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
-      signal,
-    });
+    const res = await fetchWithTimeout(
+      new Request(url, {
+        method,
+        headers,
+        body: body !== undefined ? JSON.stringify(body) : undefined,
+        signal,
+      }),
+    );
     if (!res.ok) {
       let message = `HTTP ${res.status}`;
       let code: string | undefined;

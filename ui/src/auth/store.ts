@@ -1,10 +1,11 @@
 import { Platform } from 'react-native';
 import { create } from 'zustand';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { normalizeServerUrl } from '../utils/serverUrl';
 import { createAuthedImmerleApi, createImmerleApi } from '../api/immerleApi';
 import { ImmerleClient } from '../api/immerle/client';
-import { probeCapabilities } from '../api/immerle/capabilities';
-import { ImmerleSession } from '../api/immerle/types';
+import { probeCapabilities, SUBSONIC_ONLY_CAPABILITIES } from '../api/immerle/capabilities';
+import { Capabilities, ImmerleSession } from '../api/immerle/types';
 import {
   deleteSecureItem,
   getSecureItem,
@@ -77,41 +78,73 @@ async function nativeLogin(serverUrl: string, username: string, password: string
   return { serverUrl, username, apiToken: tok.data.token, tokenId: tok.data.id ?? '' };
 }
 
-// A browser's fetch fails fast (ECONNREFUSED/DNS error) against an unreachable
-// server, so the web build already falls through to degraded/offline mode
-// almost immediately. Native's networking stack can leave the same request
-// hanging indefinitely instead -- bound it so restore() can't get stuck on
-// the launch screen forever.
-const RESTORE_TIMEOUT_MS = 8000;
-
-function timeoutSignal(ms: number): AbortSignal {
-  const controller = new AbortController();
-  setTimeout(() => controller.abort(), ms);
-  return controller.signal;
-}
-
 /**
  * Build a fully-wired client from stored native credentials: probe capabilities
- * and fetch the account record (for the display name and admin role).
+ * and fetch the account record (for the display name and admin role). Every
+ * request the client layer makes is already bounded by a default timeout (see
+ * `immerleApi.ts`), so an unreachable server still resolves this within a few
+ * seconds instead of hanging.
  */
 async function buildClient(stored: StoredAuth): Promise<ImmerleClient> {
-  const capabilities = await probeCapabilities(stored.serverUrl, timeoutSignal(RESTORE_TIMEOUT_MS));
-  const session: ImmerleSession = {
-    token: stored.apiToken,
-    userId: '',
-    username: stored.username,
-    isAdmin: false,
-    deviceId: stored.tokenId || undefined,
-  };
+  const capabilities = await probeCapabilities(stored.serverUrl);
+  const session = sessionOf(stored);
   const client = new ImmerleClient(stored.serverUrl, stored.username, capabilities, session);
   try {
-    const me = await client.getAccount(timeoutSignal(RESTORE_TIMEOUT_MS));
+    const me = await client.getAccount();
     client.setDisplayName(me.displayName);
     client.setSession({ ...session, isAdmin: Boolean(me.isAdmin) });
   } catch {
     /* keep defaults (display name falls back to the username) */
   }
   return client;
+}
+
+function sessionOf(stored: StoredAuth): ImmerleSession {
+  return {
+    token: stored.apiToken,
+    userId: '',
+    username: stored.username,
+    isAdmin: false,
+    deviceId: stored.tokenId || undefined,
+  };
+}
+
+const CAPABILITIES_CACHE_KEY = 'immerle.capabilities.v1';
+
+/** Last capabilities a probe actually confirmed (not the conservative
+ * fallback) -- lets a restore render fully-featured immediately instead of
+ * waiting on the network, while the real set is reconfirmed in the background. */
+async function loadCachedCapabilities(): Promise<Capabilities | null> {
+  try {
+    const raw = await AsyncStorage.getItem(CAPABILITIES_CACHE_KEY);
+    return raw ? (JSON.parse(raw) as Capabilities) : null;
+  } catch {
+    return null;
+  }
+}
+
+function cacheCapabilities(capabilities: Capabilities): void {
+  // Never cache the conservative fallback itself: it means the probe failed
+  // (or timed out), not that the server is actually Subsonic-only, so caching
+  // it would degrade next boot's optimistic render after a merely transient
+  // outage. probeCapabilities returns this exact reference on any failure.
+  if (capabilities === SUBSONIC_ONLY_CAPABILITIES) return;
+  void AsyncStorage.setItem(CAPABILITIES_CACHE_KEY, JSON.stringify(capabilities));
+}
+
+/**
+ * Reconciles the optimistic client set by `restore()` with the real server in
+ * the background, then swaps in the refreshed client -- but only if this
+ * session is still the active one (a logout/re-login mid-flight must win).
+ * Silent no-op on failure/timeout: the app just keeps running on its
+ * cached/conservative defaults.
+ */
+async function reconcileInBackground(stored: StoredAuth): Promise<void> {
+  const client = await buildClient(stored);
+  cacheCapabilities(client.capabilities);
+  if (useAuth.getState().status === 'authenticated' && useAuth.getState().client?.serverUrl === stored.serverUrl) {
+    useAuth.setState({ client, displayName: client.displayName });
+  }
 }
 
 export const useAuth = create<AuthState>((set, get) => ({
@@ -139,8 +172,15 @@ export const useAuth = create<AuthState>((set, get) => ({
         set({ status: 'unauthenticated', client: null });
         return;
       }
-      const client = await buildClient(stored as StoredAuth);
+      const creds = stored as StoredAuth;
+      // Boot immediately from the last confirmed capabilities (or the
+      // conservative default) -- never block the launch screen on a network
+      // round-trip. The real capabilities/display name are reconfirmed in the
+      // background once the server actually answers (see reconcileInBackground).
+      const cached = await loadCachedCapabilities();
+      const client = new ImmerleClient(creds.serverUrl, creds.username, cached ?? SUBSONIC_ONLY_CAPABILITIES, sessionOf(creds));
       set({ status: 'authenticated', client, displayName: client.displayName });
+      void reconcileInBackground(creds);
     } catch {
       await deleteSecureItem(STORAGE_KEYS.credentials);
       await deleteSecureItem(STORAGE_KEYS.session);
