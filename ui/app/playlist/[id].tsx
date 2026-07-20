@@ -94,15 +94,14 @@ export default function PlaylistDetail() {
   };
 
   // Unresolved federated track: resolve now (local catalog, then providers) and
-  // play in place, keeping the rest of the queue intact.
-  // ponytail: only covers tapping a row or "play all" from track 0 — skipping
-  // to a later unresolved track mid-queue during playback still won't
-  // resolve; add if that turns out to matter in practice.
+  // play in place, keeping the rest of the queue intact. Any other unresolved
+  // track hit later in the queue resolves itself the same way — see
+  // resolveAndPlayUnresolved in audio/store.ts.
   const playUnresolved = async (song: Song, index: number) => {
     if (!client) return;
     try {
       const resolved = await client.resolvePlaylistTrack(id, index);
-      playSongs([...songs.slice(0, index), resolved, ...songs.slice(index + 1)], index);
+      playSongs([...songs.slice(0, index), resolved, ...songs.slice(index + 1)], index, id);
     } catch {
       useToast.getState().warning(t('media.playlist.resolveErrorMessage'), {
         label: t('media.playlist.resolveErrorCta'),
@@ -212,7 +211,7 @@ export default function PlaylistDetail() {
               onPress={() => {
                 if (!songs.length) return;
                 if (songs[0].unresolved) void playUnresolved(songs[0], 0);
-                else playSongs(songs, 0);
+                else playSongs(songs, 0, id);
               }}
               size={56}
               accessibilityLabel={t('media.playlist.play')}
@@ -304,6 +303,7 @@ export default function PlaylistDetail() {
             refreshing={q.isRefetching}
             onRefresh={q.refetch}
             onPlayUnresolved={playUnresolved}
+            playlistId={id}
           />
         )}
       </View>

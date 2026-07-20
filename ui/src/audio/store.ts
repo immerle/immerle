@@ -70,6 +70,10 @@ interface AudioState {
   engine: AudioEngine | null;
   /** Source songs backing the current queue (for sync & playlist ops). */
   songs: Song[];
+  /** Playlist the current queue was loaded from, if any — lets an unresolved
+   * federated track hit mid-playback be resolved by position (see
+   * resolveAndPlayUnresolved) instead of just skipped. */
+  playlistId: string | null;
   index: number;
   status: 'idle' | 'loading' | 'playing' | 'paused' | 'ended';
   position: number;
@@ -103,7 +107,7 @@ interface AudioState {
   init: () => Promise<void>;
   hydrateSettings: () => Promise<void>;
 
-  playSongs: (songs: Song[], startIndex?: number) => Promise<void>;
+  playSongs: (songs: Song[], startIndex?: number, playlistId?: string) => Promise<void>;
   /**
    * Plays songs with shuffle mode turned on, instead of each screen
    * (liked/album/artist) hand-rolling its own one-off shuffled array — that
@@ -326,6 +330,7 @@ async function applyRemoteQueue(
     scrobble = { nowPlayingSent: false, submitted: false };
     set({
       songs: remote.songs,
+      playlistId: null, // not tracked across devices — an unresolved track here just skips, see resolveAndPlayUnresolved
       index: idx,
       position: remote.positionMs / 1000,
       duration: remote.songs[idx]?.duration ?? 0,
@@ -647,9 +652,45 @@ async function upgradeIfDownloaded(
   return true;
 }
 
+/**
+ * A federated-playlist track hit mid-playback while still unresolved (empty-url
+ * placeholder — see songToTrack): resolve it by its playlist position, same as
+ * TrackList's tap-to-resolve flow (playlist/[id].tsx's playUnresolved), then
+ * swap it into the running queue in place so playback continues instead of
+ * skipping. Falls back to the skip+toast if there's no playlist context (a
+ * queue not sourced from a playlist) or resolution fails (unresolvable track).
+ */
+async function resolveAndPlayUnresolved(
+  get: () => AudioState,
+  set: (partial: Partial<AudioState>) => void,
+  index: number,
+  song: Song,
+): Promise<void> {
+  const c = client();
+  const engine = get().engine;
+  const playlistId = get().playlistId;
+  if (c && engine && playlistId) {
+    try {
+      const resolved = await c.resolvePlaylistTrack(playlistId, index);
+      if (get().index === index && get().songs[index]?.unresolved) {
+        const songs = [...get().songs];
+        songs[index] = resolved;
+        set({ songs });
+        await engine.replaceAt(index, await songToTrack(c, resolved, get().qualityId));
+        return;
+      }
+    } catch {
+      /* fall through to skip+toast below */
+    }
+  }
+  useToast.getState().warning(t('media.player.unresolvedSkipped', { title: song.title }));
+  void get().engine?.next();
+}
+
 export const usePlayer = create<AudioState>((set, get) => ({
   engine: null,
   songs: [],
+  playlistId: null,
   index: -1,
   status: 'idle',
   position: 0,
@@ -707,13 +748,12 @@ export const usePlayer = create<AudioState>((set, get) => ({
       sendNowPlaying(get);
       flushSaveQueue(get, false, 'engine:trackChange');
       // Unresolved federated-playlist track (empty-url placeholder — see
-      // songToTrack): warn instead of sitting on dead air, and move on.
-      // ponytail: if the whole queue is unresolved this cascades toast-after-toast to the end (or forever, with repeat on) — fine for the size of federated playlists today.
+      // songToTrack): resolve it in place instead of sitting on dead air.
+      // ponytail: if the whole queue is unresolved this cascades resolve calls
+      // to the end (or forever, with repeat on) — fine for the size of
+      // federated playlists today.
       const song = get().songs[index];
-      if (song?.unresolved) {
-        useToast.getState().warning(t('media.player.unresolvedSkipped', { title: song.title }));
-        void get().engine?.next();
-      }
+      if (song?.unresolved) void resolveAndPlayUnresolved(get, set, index, song);
     });
 
     await engine.setVolume(get().volume);
@@ -757,7 +797,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
     }
   },
 
-  playSongs: async (songs, startIndex = 0) => {
+  playSongs: async (songs, startIndex = 0, playlistId) => {
     const { stale, release } = await acquireEngineReloadLock();
     try {
       if (stale()) return; // superseded while queued — see acquireEngineReloadLock
@@ -767,7 +807,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
       claimActiveDevice(get, set);
       const tracks = await Promise.all(songs.map((s) => songToTrack(c, s, get().qualityId)));
       orderBackup = null; // new playback context invalidates any shuffle backup
-      set({ songs, index: startIndex, position: 0, duration: songs[startIndex]?.duration ?? 0 });
+      set({ songs, index: startIndex, position: 0, duration: songs[startIndex]?.duration ?? 0, playlistId: playlistId ?? null });
       scrobble = { nowPlayingSent: false, submitted: false };
       await engine.setQueue(tracks, startIndex); // loads paused — see engine.setQueue
       await engine.play();
@@ -804,7 +844,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
       const song = { id: station.id, title: station.name, artist: '', coverUrl } as Song;
       orderBackup = null;
       scrobble = { nowPlayingSent: true, submitted: true };
-      set({ songs: [song], index: 0, position: 0 });
+      set({ songs: [song], index: 0, position: 0, playlistId: null });
       await engine.setQueue([track], 0); // loads paused — see engine.setQueue
       await engine.play();
     } finally {
@@ -825,7 +865,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
       const song = await c.getSong(id).catch(() => ({ id, title: 'Piste' }) as Song);
       orderBackup = null;
       scrobble = { nowPlayingSent: false, submitted: false };
-      set({ songs: [song], index: 0, position: positionSec, duration: song.duration ?? 0 });
+      set({ songs: [song], index: 0, position: positionSec, duration: song.duration ?? 0, playlistId: null });
       // setQueue only loads (paused) — seek before playing, see applyRemoteQueue.
       await engine.setQueue([await songToTrack(c, song, get().qualityId)], 0);
       await engine.seekTo(positionSec);
