@@ -54,6 +54,14 @@ func (s *UserService) ListUsers(ctx context.Context, caller models.User) ([]mode
 	return s.users.List(ctx)
 }
 
+// ListPublicUsers returns every user for the member directory (any
+// authenticated caller may browse it to find a profile) -- unlike ListUsers,
+// not admin-gated. The caller is responsible for only exposing the
+// non-sensitive fields (see the API's userSummaryView).
+func (s *UserService) ListPublicUsers(ctx context.Context) ([]models.User, error) {
+	return s.users.List(ctx)
+}
+
 // CreateUser creates an account; admin only. The caller validates that username
 // and password are present.
 func (s *UserService) CreateUser(ctx context.Context, caller models.User, username, password, email, displayName string, admin bool) error {

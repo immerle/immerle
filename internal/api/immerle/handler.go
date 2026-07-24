@@ -215,6 +215,7 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Post("/me/purchases/bandcamp/items/{saleItemType}/{saleItemId}/import", h.handleBandcampImport)
 			r.Get("/me/purchases/bandcamp/jobs", h.handleBandcampJobs)
 			r.Put("/me/password", h.handleChangePassword)
+			r.Get("/users", h.handleListPublicUsers)
 			r.Get("/users/{username}", h.handleProfile)
 			r.Get("/users/{username}/hall-of-fame", h.handleUserHallOfFame)
 

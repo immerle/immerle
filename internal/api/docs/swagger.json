@@ -1443,6 +1443,22 @@
                 },
                 "type": "object"
             },
+            "immerle.UserSummaryDTO": {
+                "properties": {
+                    "displayName": {
+                        "example": "Bob Marley",
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "username": {
+                        "example": "bob",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "immerle.WrappedCountDTO": {
                 "properties": {
                     "name": {
@@ -12089,6 +12105,58 @@
                 "summary": "Revoke an API token",
                 "tags": [
                     "tokens"
+                ]
+            }
+        },
+        "/users": {
+            "get": {
+                "description": "Returns every user's public identity (id, username, display name) so any authenticated caller can browse to a profile.",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": {
+                                        "items": {
+                                            "$ref": "#/components/schemas/immerle.UserSummaryDTO"
+                                        },
+                                        "type": "array"
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "List users",
+                "tags": [
+                    "users"
                 ]
             }
         },

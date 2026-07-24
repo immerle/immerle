@@ -164,6 +164,33 @@ func (h *Handler) activityItem(ctx context.Context, e models.ActivityEvent) map[
 	return nil
 }
 
+// handleListPublicUsers lists every user on the server, minimally (id,
+// username, displayName) -- a member directory so any authenticated caller
+// can find someone's profile, unlike GET /admin/users which is admin-only and
+// exposes the full account (email, admin flag, scrobbling setting).
+//
+// @Summary      List users
+// @Description  Returns every user's public identity (id, username, display name) so any authenticated caller can browse to a profile.
+// @Tags         users
+// @Security     BearerAuth
+// @Produce      json
+// @Success      200  {object}  map[string][]UserSummaryDTO
+// @Failure      401  {object}  errorResponse
+// @Failure      500  {object}  errorResponse
+// @Router       /users [get]
+func (h *Handler) handleListPublicUsers(w http.ResponseWriter, r *http.Request) {
+	users, err := h.userSvc.ListPublicUsers(r.Context())
+	if err != nil {
+		writeInternal(w, err)
+		return
+	}
+	out := make([]UserSummaryDTO, 0, len(users))
+	for _, u := range users {
+		out = append(out, UserSummaryDTO{ID: u.ID, Username: u.Username, DisplayName: u.DisplayName})
+	}
+	writeResource(w, http.StatusOK, map[string]any{"users": out})
+}
+
 // resolveProfileUser resolves the {username} path param used by profile and
 // profile-adjacent routes (its Hall of Fame) to the target user — "me" or the
 // caller's own username resolve without a lookup.

@@ -474,6 +474,15 @@ type ProfileStatsDTO struct {
 	Playlists     int   `json:"playlists" example:"5"`
 }
 
+// UserSummaryDTO is one entry of the member directory (GET /users) — just
+// enough identity to browse to a profile, never the private fields
+// (email, admin, scrobbling) adminUserView exposes to admins.
+type UserSummaryDTO struct {
+	ID          string `json:"id"`
+	Username    string `json:"username" example:"bob"`
+	DisplayName string `json:"displayName,omitempty" example:"Bob Marley"`
+}
+
 // ProfileDTO is a user's public profile: identity, visible activity and public
 // playlists.
 type ProfileDTO struct {
