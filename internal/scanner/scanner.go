@@ -153,9 +153,16 @@ func (s *Scanner) ScanPaths(ctx context.Context, paths []string) (Result, error)
 	}
 
 	// Prune tracks that were not re-indexed this run (their files disappeared).
+	// DeleteTrackCascade, not the plain delete: a vanished-from-disk track is
+	// exactly as gone as an explicitly deleted one, so its annotations (e.g. a
+	// starred flag) must go with it — annotations has no DB-level FK to tracks
+	// (item_id is polymorphic, shared with artists/albums), so a plain delete
+	// would leave a dangling starred row that later crashes
+	// autoplaylists' forgotten-favorites sync with a foreign key violation when
+	// it tries to add that dead track id to a playlist.
 	for _, id := range existing {
 		if !seenIDs[id] {
-			if err := s.catalog.DeleteTrack(ctx, id); err != nil {
+			if err := s.catalog.DeleteTrackCascade(ctx, id); err != nil {
 				s.logger.Warn("prune error", "track", id, "error", err)
 				continue
 			}
@@ -196,7 +203,9 @@ func (s *Scanner) IngestFile(ctx context.Context, path string) (string, error) {
 	return id, err
 }
 
-// RemoveFile deletes the track for a removed file path.
+// RemoveFile deletes the track for a removed file path. DeleteTrackCascade,
+// same reasoning as the prune step in Scan: a removed file is gone the same
+// way an explicit delete is, so its annotations must go with it too.
 func (s *Scanner) RemoveFile(ctx context.Context, path string) error {
 	abs, _ := filepath.Abs(path)
 	existing, err := s.catalog.AllTrackPaths(ctx)
@@ -204,7 +213,7 @@ func (s *Scanner) RemoveFile(ctx context.Context, path string) error {
 		return err
 	}
 	if id, ok := existing[abs]; ok {
-		return s.catalog.DeleteTrack(ctx, id)
+		return s.catalog.DeleteTrackCascade(ctx, id)
 	}
 	return nil
 }

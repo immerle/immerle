@@ -23,12 +23,14 @@ import (
 	"fmt"
 	"log/slog"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
 
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
+	"github.com/immerle/immerle/internal/reccobeats"
 )
 
 // Source instance ids distinguish each kind in the dedupe key (FindFederated),
@@ -42,10 +44,11 @@ const (
 	sourceDecade   = "decade-mix"
 	sourceTrending = "weekly-trending-mix"
 
-	SourceTopMonth  = "top-month-mix"
-	SourceOnRepeat  = "on-repeat-mix"
-	SourceForgotten = "forgotten-mix"
-	SourceRandom    = "random-mix"
+	SourceTopMonth    = "top-month-mix"
+	SourceOnRepeat    = "on-repeat-mix"
+	SourceForgotten   = "forgotten-mix"
+	SourceRandom      = "random-mix"
+	SourceRecommended = "recommended-mix"
 )
 
 // minTracks is the minimum catalog size for a genre/decade to get its own
@@ -62,6 +65,17 @@ const maxPersonalTracks = 20
 // randomTrackCount is how many tracks the "Aléatoire" personal list holds —
 // its own size, distinct from maxPersonalTracks.
 const randomTrackCount = 30
+
+// maxRecommendedTracks bounds the "Découvertes" personal list — the max the
+// user asked for. recommendedSeedCount is how many of the user's top tracks
+// seed the ReccoBeats request (capped at its own maxSeeds limit anyway).
+// recommendedFetchSize is how many candidates to ask ReccoBeats for per seed
+// batch — oversized relative to maxRecommendedTracks since most of its
+// catalog (built from Spotify metadata) won't exist in any given local
+// library.
+const maxRecommendedTracks = 50
+const recommendedSeedCount = 5
+const recommendedFetchSize = 100
 
 // forgottenMinDays is how long a starred track must go unplayed (or never
 // played at all) to count as "forgotten."
@@ -94,6 +108,18 @@ type Service struct {
 
 	ownerID string
 	ownerFn func(ctx context.Context) (string, error)
+
+	// recco is nil unless SetRecommender is called — the "Découvertes"
+	// personal list is simply skipped in that case (no external network call
+	// made), same as any other optional wiring in this package.
+	recco Recommender
+}
+
+// Recommender resolves recommended tracks from seed tracks. *reccobeats.Client
+// satisfies this; it's a separate interface only so tests can fake it instead
+// of making a real network call.
+type Recommender interface {
+	Recommend(ctx context.Context, seeds []reccobeats.Seed, size int) ([]reccobeats.Track, error)
 }
 
 // New builds a Service.
@@ -121,6 +147,13 @@ func (s *Service) SetOwner(id string) { s.ownerID = id }
 // one exists at boot.
 func (s *Service) SetOwnerResolver(fn func(ctx context.Context) (string, error)) {
 	s.ownerFn = fn
+}
+
+// SetRecommender wires up the "Découvertes" personal list (recommendations
+// from the keyless ReccoBeats API, seeded from each user's top tracks).
+// Optional: not calling this simply leaves that list unsynced.
+func (s *Service) SetRecommender(r Recommender) {
+	s.recco = r
 }
 
 func (s *Service) owner(ctx context.Context) (string, error) {
@@ -266,8 +299,38 @@ func (s *Service) syncPersonal(ctx context.Context) int {
 			func() ([]string, error) { return s.randomTrackIDs(ctx) }) {
 			synced++
 		}
+		if s.recco != nil && s.syncRecommendedOne(ctx, u.ID) {
+			synced++
+		}
 	}
 	return synced
+}
+
+// syncRecommendedOne rebuilds one user's "Découvertes" list. Unlike every
+// other personal list, its tracks are kept as portable artist/title
+// references (persistence.FederatedTrackRef), resolved lazily at play time
+// (federation.Service.ResolvePlaylistTrack) exactly like a kworb chart entry
+// — see internal/charts. ReccoBeats' catalog is Spotify-side and has no
+// notion of what's already in any given local library, so requiring an exact
+// local match up front (like every other personal list does) would leave
+// "Découvertes" empty for almost anyone with a small or niche collection.
+func (s *Service) syncRecommendedOne(ctx context.Context, userID string) bool {
+	refs, err := s.recommendedTrackRefs(ctx, userID)
+	if err != nil {
+		s.logger.Warn("autoplaylists: personal list failed", "kind", SourceRecommended, "user", userID, "error", err)
+		return false
+	}
+	if len(refs) == 0 {
+		return false
+	}
+	if err := s.upsert(ctx, playlistSpec{
+		ownerID: userID, sourceInstanceID: SourceRecommended, sourceExternalID: userID,
+		name: recommendedName, icon: compassIcon, public: false, refs: refs,
+	}); err != nil {
+		s.logger.Warn("autoplaylists: personal list sync failed", "kind", SourceRecommended, "user", userID, "error", err)
+		return false
+	}
+	return true
 }
 
 // syncPersonalOne resolves one personal list's track ids and upserts it if
@@ -316,15 +379,67 @@ func (s *Service) randomTrackIDs(ctx context.Context) ([]string, error) {
 	return trackIDs(tracks), nil
 }
 
+// recommendedTrackRefs seeds a ReccoBeats recommendation request with the
+// user's all-time top tracks and returns up to maxRecommendedTracks of what
+// comes back as portable artist/title references — deliberately not matched
+// against the local catalog here (unlike every other personal list): with a
+// small or niche library, requiring an exact match up front would leave
+// "Découvertes" empty almost always, since ReccoBeats' own catalog skews
+// toward globally mainstream/Spotify-side metadata. Left unresolved, each
+// entry instead gets resolved the same lazy way a kworb chart entry does —
+// local catalog first, else a remote provider search — the first time it's
+// actually played (see internal/charts and federation.Service.
+// ResolvePlaylistTrack). A user with no listening history yet, or whose
+// favorites don't resolve to a ReccoBeats seed, just skips this list (like
+// any other personal list with nothing to show).
+func (s *Service) recommendedTrackRefs(ctx context.Context, userID string) ([]persistence.FederatedTrackRef, error) {
+	top, err := s.wrapped.TopTracks(ctx, userID, 0, time.Now().UnixMilli(), recommendedSeedCount)
+	if err != nil || len(top) == 0 {
+		return nil, err
+	}
+	seeds := make([]reccobeats.Seed, len(top))
+	seen := make(map[string]bool, len(top))
+	for i, t := range top {
+		seeds[i] = reccobeats.Seed{Artist: t.Artist, Title: t.Title}
+		seen[seedKey(t.Artist, t.Title)] = true
+	}
+	recs, err := s.recco.Recommend(ctx, seeds, recommendedFetchSize)
+	if err != nil {
+		return nil, err
+	}
+	refs := make([]persistence.FederatedTrackRef, 0, maxRecommendedTracks)
+	for _, r := range recs {
+		if len(refs) >= maxRecommendedTracks {
+			break
+		}
+		key := seedKey(r.Artist, r.Title)
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		refs = append(refs, persistence.FederatedTrackRef{Artist: r.Artist, Title: r.Title})
+	}
+	return refs, nil
+}
+
+// seedKey is a case-insensitive (artist, title) dedupe key: ReccoBeats often
+// returns the same track multiple times over (different Spotify pressings
+// sharing one ISRC), and a recommendation must not just echo back one of the
+// seeds it was generated from.
+func seedKey(artist, title string) string {
+	return strings.ToLower(artist) + "\x00" + strings.ToLower(title)
+}
+
 // Personal-list display names. Plain strings (like genre/decade names, and
 // like internal/charts' chart names) — a playlist's stored Name isn't
 // per-viewer-locale, same limitation every server-generated playlist name has.
 const (
-	topMonthName  = "Top du mois"
-	onRepeatName  = "On Repeat"
-	forgottenName = "Favoris oubliés"
-	randomName    = "Aléatoire"
-	trendingName  = "Tendances de la semaine"
+	topMonthName    = "Top du mois"
+	onRepeatName    = "On Repeat"
+	forgottenName   = "Favoris oubliés"
+	randomName      = "Aléatoire"
+	trendingName    = "Tendances de la semaine"
+	recommendedName = "Découvertes"
 )
 
 // Twemoji codepoints (see covergen.FetchEmoji) for each auto-playlist kind.
@@ -335,6 +450,7 @@ const (
 	diceIcon       = "1f3b2" // 🎲 — Aléatoire
 	hourglassIcon  = "23f3"  // ⏳ — Favoris oubliés
 	fireIcon       = "1f525" // 🔥 — Tendances de la semaine
+	compassIcon    = "1f9ed" // 🧭 — Découvertes
 )
 
 // decade is one candidate decade bucket: [from, from+10).
@@ -363,7 +479,10 @@ func trackIDs(tracks []models.Track) []string {
 	return ids
 }
 
-// playlistSpec is one auto-playlist to create-or-refresh.
+// playlistSpec is one auto-playlist to create-or-refresh. Exactly one of ids
+// (already-local tracks, set directly by id) or refs (portable artist/title
+// references, resolved lazily at play time — see replaceTracks) is set;
+// every kind but recommended-mix uses ids.
 type playlistSpec struct {
 	ownerID          string
 	sourceInstanceID string
@@ -372,6 +491,7 @@ type playlistSpec struct {
 	icon             string
 	public           bool
 	ids              []string
+	refs             []persistence.FederatedTrackRef
 }
 
 // upsert creates or refreshes the auto-playlist for (sourceInstanceID,
@@ -393,7 +513,7 @@ func (s *Service) upsert(ctx context.Context, spec playlistSpec) error {
 				s.logger.Warn("autoplaylists: cover update failed", "name", spec.name, "error", err)
 			}
 		}
-		return s.playlists.ReplaceTracks(ctx, existing.ID, spec.ids, spec.ownerID)
+		return s.replaceTracks(ctx, existing.ID, spec)
 	case errors.Is(err, persistence.ErrNotFound):
 		now := time.Now()
 		p := models.Playlist{
@@ -407,10 +527,20 @@ func (s *Service) upsert(ctx context.Context, spec playlistSpec) error {
 		if err := s.playlists.SetCover(ctx, p.ID, cover); err != nil {
 			s.logger.Warn("autoplaylists: cover save failed", "name", spec.name, "error", err)
 		}
-		return s.playlists.ReplaceTracks(ctx, p.ID, spec.ids, spec.ownerID)
+		return s.replaceTracks(ctx, p.ID, spec)
 	default:
 		return err
 	}
+}
+
+// replaceTracks writes spec's tracks into playlistID: refs (portable
+// artist/title, resolved lazily at play time — see federation.Service.
+// ResolvePlaylistTrack) when set, else ids (already-local tracks).
+func (s *Service) replaceTracks(ctx context.Context, playlistID string, spec playlistSpec) error {
+	if spec.refs != nil {
+		return s.playlists.ReplaceFederatedTracks(ctx, playlistID, spec.refs)
+	}
+	return s.playlists.ReplaceTracks(ctx, playlistID, spec.ids, spec.ownerID)
 }
 
 // coverGradients cycles a small fixed palette across genres/decades/personal

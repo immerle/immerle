@@ -2,6 +2,7 @@ package autoplaylists
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
+	"github.com/immerle/immerle/internal/reccobeats"
 	"github.com/immerle/immerle/internal/testutil"
 )
 
@@ -281,6 +283,112 @@ func TestSyncNowMaterializesWeeklyTrendingChart(t *testing.T) {
 	}
 	if len(trendingTracks) != minTracks {
 		t.Fatalf("expected %d tracks in the trending chart, got %d", minTracks, len(trendingTracks))
+	}
+}
+
+// fakeRecommender is a Recommender test double: it ignores the seeds it's
+// given and always returns the same fixed set of recommended tracks, so tests
+// control matching/capping behavior without a real ReccoBeats call.
+type fakeRecommender struct {
+	tracks []reccobeats.Track
+}
+
+func (f fakeRecommender) Recommend(context.Context, []reccobeats.Seed, int) ([]reccobeats.Track, error) {
+	return f.tracks, nil
+}
+
+// TestSyncNowMaterializesRecommendedMixAsUnresolvedFederatedTracks covers
+// "Découvertes": recommended tracks are kept as unresolved artist/title
+// references (not required to already be in the local library — a small or
+// niche library would otherwise leave this list permanently empty; they
+// resolve lazily at play time instead, exactly like a kworb chart entry),
+// capped at maxRecommendedTracks, deduped against both each other and the
+// seeds themselves, and a user with no listening history gets no such list
+// (nothing to seed the request with).
+func TestSyncNowMaterializesRecommendedMixAsUnresolvedFederatedTracks(t *testing.T) {
+	store := testutil.NewStore(t)
+	ctx := context.Background()
+	now := time.Now()
+
+	admin := models.User{ID: uuid.NewString(), Username: "admin", PasswordHash: "x", IsAdmin: true}
+	if err := store.Users.Create(ctx, admin); err != nil {
+		t.Fatal(err)
+	}
+	listener := models.User{ID: uuid.NewString(), Username: "listener", PasswordHash: "x"}
+	if err := store.Users.Create(ctx, listener); err != nil {
+		t.Fatal(err)
+	}
+	idle := models.User{ID: uuid.NewString(), Username: "idle", PasswordHash: "x"}
+	if err := store.Users.Create(ctx, idle); err != nil {
+		t.Fatal(err)
+	}
+
+	artistID, _ := store.Catalog.UpsertArtist(ctx, models.Artist{ID: uuid.NewString(), Name: "Seed Artist", CreatedAt: now})
+	albumID, _ := store.Catalog.UpsertAlbum(ctx, models.Album{ID: uuid.NewString(), Name: "Al", ArtistID: artistID, CreatedAt: now})
+	seed := models.Track{ID: uuid.NewString(), Title: "Seed Song", AlbumID: albumID, ArtistID: artistID, Path: uuid.NewString(), CreatedAt: now, UpdatedAt: now}
+	if _, err := store.Catalog.UpsertTrack(ctx, seed); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Scrobbles.Insert(ctx, models.Scrobble{ID: uuid.NewString(), UserID: listener.ID, TrackID: seed.ID, PlayedAt: now, Submitted: true}); err != nil {
+		t.Fatal(err)
+	}
+
+	// One recommended track duplicated (must be deduped to a single entry),
+	// one echoing the seed itself (must be dropped), and enough distinct ones
+	// to cross maxRecommendedTracks (must be capped).
+	var tracks []reccobeats.Track
+	tracks = append(tracks,
+		reccobeats.Track{Artist: "Not In Library", Title: "Brand New Song", ISRC: "X"},
+		reccobeats.Track{Artist: "Not In Library", Title: "Brand New Song", ISRC: "X"}, // duplicate
+		reccobeats.Track{Artist: "Seed Artist", Title: "Seed Song", ISRC: "S"},         // echoes the seed
+	)
+	for i := 0; i < maxRecommendedTracks+10; i++ {
+		tracks = append(tracks, reccobeats.Track{Artist: "Filler Artist", Title: fmt.Sprintf("Filler Song %d", i), ISRC: "F"})
+	}
+	fake := fakeRecommender{tracks: tracks}
+
+	svc := New(store.Catalog, store.Genres, store.Wrapped, store.Annotations, store.Users, store.Playlists, testutil.NewLogger())
+	svc.SetOwner(admin.ID)
+	svc.SetRecommender(fake)
+
+	if _, err := svc.SyncNow(ctx); err != nil {
+		t.Fatalf("SyncNow: %v", err)
+	}
+
+	rec, err := store.Playlists.FindFederated(ctx, SourceRecommended, listener.ID)
+	if err != nil {
+		t.Fatalf("recommended playlist not created for listener: %v", err)
+	}
+	if rec.Public || !rec.Federated || rec.OwnerID != listener.ID {
+		t.Fatalf("expected a private, federated, listener-owned recommended playlist, got %+v", rec)
+	}
+	got, err := store.Playlists.Tracks(ctx, rec.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != maxRecommendedTracks {
+		t.Fatalf("expected exactly maxRecommendedTracks (%d) entries, got %d", maxRecommendedTracks, len(got))
+	}
+	for _, tr := range got {
+		if !tr.Unresolved {
+			t.Fatalf("expected every entry to be unresolved (matched lazily at play time), got %+v", tr)
+		}
+		if tr.ArtistName == "Seed Artist" {
+			t.Fatalf("the seed track must not come back as its own recommendation, got %+v", tr)
+		}
+	}
+	seen := map[string]int{}
+	for _, tr := range got {
+		seen[tr.ArtistName+"|"+tr.Title]++
+	}
+	if seen["Not In Library|Brand New Song"] != 1 {
+		t.Fatalf("expected the duplicated recommendation to appear exactly once, got %d", seen["Not In Library|Brand New Song"])
+	}
+
+	// The idle user has no listening history, so nothing to seed a
+	// recommendation request with: no recommended-mix list at all.
+	if _, err := store.Playlists.FindFederated(ctx, SourceRecommended, idle.ID); err == nil {
+		t.Fatal("an idle user must not get a recommended-mix playlist")
 	}
 }
 
