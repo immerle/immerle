@@ -28,6 +28,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/immerle/immerle/internal/listenbrainz"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 	"github.com/immerle/immerle/internal/reccobeats"
@@ -49,6 +50,10 @@ const (
 	SourceRandom      = "random-mix"
 	SourceRecommended = "recommended-mix"
 	SourceTrending    = "weekly-trending-mix"
+
+	SourceListenBrainzDaily             = "listenbrainz-daily-jams"
+	SourceListenBrainzWeeklyJams        = "listenbrainz-weekly-jams"
+	SourceListenBrainzWeeklyExploration = "listenbrainz-weekly-exploration"
 )
 
 // AutoPlaylistKinds is the fixed, stable set of source instance ids this
@@ -57,15 +62,18 @@ const (
 // AutoPlaylistKind) so they can render a translated label instead of the
 // (French-only) stored Name. Unlike genre/decade playlists (free-text tags,
 // not a fixed enum) or a federation-imported playlist's real instance id
-// (internal only, never meant to leave the server), these six values never
+// (internal only, never meant to leave the server), these values never
 // change and carry no per-instance/per-user information.
 var AutoPlaylistKinds = map[string]bool{
-	SourceTopMonth:    true,
-	SourceOnRepeat:    true,
-	SourceForgotten:   true,
-	SourceRandom:      true,
-	SourceRecommended: true,
-	SourceTrending:    true,
+	SourceTopMonth:                      true,
+	SourceOnRepeat:                      true,
+	SourceForgotten:                     true,
+	SourceRandom:                        true,
+	SourceRecommended:                   true,
+	SourceTrending:                      true,
+	SourceListenBrainzDaily:             true,
+	SourceListenBrainzWeeklyJams:        true,
+	SourceListenBrainzWeeklyExploration: true,
 }
 
 // minTracks is the minimum catalog size for a genre/decade to get its own
@@ -130,6 +138,11 @@ type Service struct {
 	// personal list is simply skipped in that case (no external network call
 	// made), same as any other optional wiring in this package.
 	recco Recommender
+
+	// lbPlaylists is nil unless SetListenBrainzPlaylists is called — the Daily
+	// Jams/Weekly Jams/Weekly Exploration personal lists are simply skipped in
+	// that case, same as recco.
+	lbPlaylists ListenBrainzPlaylists
 }
 
 // Recommender resolves recommended tracks from seed tracks. *reccobeats.Client
@@ -137,6 +150,14 @@ type Service struct {
 // of making a real network call.
 type Recommender interface {
 	Recommend(ctx context.Context, seeds []reccobeats.Seed, size int) ([]reccobeats.Track, error)
+}
+
+// ListenBrainzPlaylists resolves a user's ListenBrainz-generated
+// recommendation playlists. *listenbrainz.Client satisfies this; it's a
+// separate interface only so tests can fake it instead of making real network
+// calls.
+type ListenBrainzPlaylists interface {
+	RecommendedPlaylists(ctx context.Context, token string) (map[listenbrainz.RecommendedPlaylistKind][]listenbrainz.RecommendedPlaylistTrack, error)
 }
 
 // New builds a Service.
@@ -171,6 +192,13 @@ func (s *Service) SetOwnerResolver(fn func(ctx context.Context) (string, error))
 // Optional: not calling this simply leaves that list unsynced.
 func (s *Service) SetRecommender(r Recommender) {
 	s.recco = r
+}
+
+// SetListenBrainzPlaylists wires up the Daily Jams/Weekly Jams/Weekly
+// Exploration personal lists for users who've set a ListenBrainz token.
+// Optional: not calling this simply leaves them unsynced.
+func (s *Service) SetListenBrainzPlaylists(p ListenBrainzPlaylists) {
+	s.lbPlaylists = p
 }
 
 func (s *Service) owner(ctx context.Context) (string, error) {
@@ -319,6 +347,9 @@ func (s *Service) syncPersonal(ctx context.Context) int {
 		if s.recco != nil && s.syncRecommendedOne(ctx, u.ID) {
 			synced++
 		}
+		if s.lbPlaylists != nil && u.ListenBrainzToken != "" {
+			synced += s.syncListenBrainzPlaylists(ctx, u.ID, u.ListenBrainzToken)
+		}
 	}
 	return synced
 }
@@ -348,6 +379,51 @@ func (s *Service) syncRecommendedOne(ctx context.Context, userID string) bool {
 		return false
 	}
 	return true
+}
+
+// listenBrainzPlaylistSpecs maps each ListenBrainz recommendation kind to
+// this package's source instance id, display name and cover icon.
+var listenBrainzPlaylistSpecs = map[listenbrainz.RecommendedPlaylistKind]struct{ source, name, icon string }{
+	listenbrainz.DailyJams:         {SourceListenBrainzDaily, "Daily Jams", radioIcon},
+	listenbrainz.WeeklyJams:        {SourceListenBrainzWeeklyJams, "Weekly Jams", radioIcon},
+	listenbrainz.WeeklyExploration: {SourceListenBrainzWeeklyExploration, "Weekly Exploration", compassIcon},
+}
+
+// syncListenBrainzPlaylists rebuilds one user's Daily Jams/Weekly
+// Jams/Weekly Exploration lists from ListenBrainz. Same portable-reference
+// treatment as "Découvertes" (syncRecommendedOne): tracks are kept as
+// (mbid, artist, title, album) references, resolved lazily at play time
+// (federation.Service.ResolvePlaylistTrack tries the mbid first, so a track
+// already MusicBrainz-tagged locally -- see core.MusicBrainzEnricher --
+// resolves immediately without a remote search). ListenBrainz not having
+// generated a given kind yet (too little listening history) just skips it,
+// same as any other personal list with nothing to show.
+func (s *Service) syncListenBrainzPlaylists(ctx context.Context, userID, token string) int {
+	playlists, err := s.lbPlaylists.RecommendedPlaylists(ctx, token)
+	if err != nil {
+		s.logger.Warn("autoplaylists: listenbrainz playlists fetch failed", "user", userID, "error", err)
+		return 0
+	}
+	synced := 0
+	for kind, tracks := range playlists {
+		spec, ok := listenBrainzPlaylistSpecs[kind]
+		if !ok || len(tracks) == 0 {
+			continue
+		}
+		refs := make([]persistence.FederatedTrackRef, len(tracks))
+		for i, t := range tracks {
+			refs[i] = persistence.FederatedTrackRef{MBID: t.MBID, Artist: t.Artist, Title: t.Title, Album: t.Album}
+		}
+		if err := s.upsert(ctx, playlistSpec{
+			ownerID: userID, sourceInstanceID: spec.source, sourceExternalID: userID,
+			name: spec.name, icon: spec.icon, public: false, refs: refs,
+		}); err != nil {
+			s.logger.Warn("autoplaylists: listenbrainz playlist sync failed", "kind", kind, "user", userID, "error", err)
+			continue
+		}
+		synced++
+	}
+	return synced
 }
 
 // syncPersonalOne resolves one personal list's track ids and upserts it if
@@ -467,7 +543,8 @@ const (
 	diceIcon       = "1f3b2" // 🎲 — Aléatoire
 	hourglassIcon  = "23f3"  // ⏳ — Favoris oubliés
 	fireIcon       = "1f525" // 🔥 — Tendances de la semaine
-	compassIcon    = "1f9ed" // 🧭 — Découvertes
+	compassIcon    = "1f9ed" // 🧭 — Découvertes, Weekly Exploration
+	radioIcon      = "1f4fb" // 📻 — Daily Jams, Weekly Jams
 )
 
 // decade is one candidate decade bucket: [from, from+10).

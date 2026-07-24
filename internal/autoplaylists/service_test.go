@@ -2,12 +2,14 @@ package autoplaylists
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
 
+	"github.com/immerle/immerle/internal/listenbrainz"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 	"github.com/immerle/immerle/internal/reccobeats"
@@ -395,6 +397,103 @@ func TestSyncNowMaterializesRecommendedMixAsUnresolvedFederatedTracks(t *testing
 	// recommendation request with: no recommended-mix list at all.
 	if _, err := store.Playlists.FindFederated(ctx, SourceRecommended, idle.ID); err == nil {
 		t.Fatal("an idle user must not get a recommended-mix playlist")
+	}
+}
+
+// fakeListenBrainzPlaylists is a ListenBrainzPlaylists test double: it
+// ignores the token it's given and always returns the same fixed result, so
+// tests control which kinds are "available" without a real ListenBrainz call.
+type fakeListenBrainzPlaylists struct {
+	byKind map[listenbrainz.RecommendedPlaylistKind][]listenbrainz.RecommendedPlaylistTrack
+	err    error
+}
+
+func (f fakeListenBrainzPlaylists) RecommendedPlaylists(context.Context, string) (map[listenbrainz.RecommendedPlaylistKind][]listenbrainz.RecommendedPlaylistTrack, error) {
+	return f.byKind, f.err
+}
+
+// TestSyncNowMaterializesListenBrainzPlaylists covers Daily Jams/Weekly
+// Jams/Weekly Exploration: only synced for a user with a ListenBrainz token,
+// as unresolved (mbid, artist, title, album) references (same lazy-resolve
+// treatment as "Découvertes"), one kind ListenBrainz hasn't generated yet is
+// simply absent, and a fetch failure for one user doesn't block the rest of
+// the sync.
+func TestSyncNowMaterializesListenBrainzPlaylists(t *testing.T) {
+	store := testutil.NewStore(t)
+	ctx := context.Background()
+
+	admin := models.User{ID: uuid.NewString(), Username: "admin", PasswordHash: "x", IsAdmin: true}
+	if err := store.Users.Create(ctx, admin); err != nil {
+		t.Fatal(err)
+	}
+	connected := models.User{ID: uuid.NewString(), Username: "connected", PasswordHash: "x", ListenBrainzToken: "tok"}
+	if err := store.Users.Create(ctx, connected); err != nil {
+		t.Fatal(err)
+	}
+	notConnected := models.User{ID: uuid.NewString(), Username: "not-connected", PasswordHash: "x"}
+	if err := store.Users.Create(ctx, notConnected); err != nil {
+		t.Fatal(err)
+	}
+
+	fake := fakeListenBrainzPlaylists{byKind: map[listenbrainz.RecommendedPlaylistKind][]listenbrainz.RecommendedPlaylistTrack{
+		listenbrainz.DailyJams: {{MBID: "mbid-1", Artist: "Lana Del Rey", Title: "Diet Mountain Dew", Album: "Born to Die"}},
+		// weekly-jams and weekly-exploration: not generated yet for this user.
+	}}
+
+	svc := New(store.Catalog, store.Genres, store.Wrapped, store.Annotations, store.Users, store.Playlists, testutil.NewLogger())
+	svc.SetOwner(admin.ID)
+	svc.SetListenBrainzPlaylists(fake)
+
+	if _, err := svc.SyncNow(ctx); err != nil {
+		t.Fatalf("SyncNow: %v", err)
+	}
+
+	daily, err := store.Playlists.FindFederated(ctx, SourceListenBrainzDaily, connected.ID)
+	if err != nil {
+		t.Fatalf("Daily Jams playlist not created: %v", err)
+	}
+	if daily.Public || !daily.Federated || daily.OwnerID != connected.ID {
+		t.Fatalf("expected a private, federated, connected-user-owned playlist, got %+v", daily)
+	}
+	tracks, err := store.Playlists.Tracks(ctx, daily.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(tracks) != 1 || tracks[0].ArtistName != "Lana Del Rey" || tracks[0].Title != "Diet Mountain Dew" || !tracks[0].Unresolved {
+		t.Fatalf("unexpected Daily Jams tracks: %+v", tracks)
+	}
+
+	// Not generated for this user -- no playlist at all, not an empty one.
+	if _, err := store.Playlists.FindFederated(ctx, SourceListenBrainzWeeklyJams, connected.ID); err == nil {
+		t.Fatal("weekly-jams should not exist: ListenBrainz never generated one")
+	}
+
+	// A user with no token gets nothing (RecommendedPlaylists never even called
+	// for them -- fake ignores the token anyway, but the sync must still skip).
+	if _, err := store.Playlists.FindFederated(ctx, SourceListenBrainzDaily, notConnected.ID); err == nil {
+		t.Fatal("a user with no ListenBrainz token must not get a Daily Jams playlist")
+	}
+}
+
+func TestSyncListenBrainzPlaylistsFetchErrorIsNonFatal(t *testing.T) {
+	store := testutil.NewStore(t)
+	ctx := context.Background()
+
+	admin := models.User{ID: uuid.NewString(), Username: "admin", PasswordHash: "x", IsAdmin: true}
+	if err := store.Users.Create(ctx, admin); err != nil {
+		t.Fatal(err)
+	}
+	connected := models.User{ID: uuid.NewString(), Username: "connected", PasswordHash: "x", ListenBrainzToken: "bad-token"}
+	if err := store.Users.Create(ctx, connected); err != nil {
+		t.Fatal(err)
+	}
+
+	svc := New(store.Catalog, store.Genres, store.Wrapped, store.Annotations, store.Users, store.Playlists, testutil.NewLogger())
+	svc.SetOwner(admin.ID)
+	svc.SetListenBrainzPlaylists(fakeListenBrainzPlaylists{err: errors.New("token rejected")})
+
+	if _, err := svc.SyncNow(ctx); err != nil {
+		t.Fatalf("SyncNow must not fail the whole sync on one user's fetch error: %v", err)
 	}
 }
 
