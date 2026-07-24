@@ -112,6 +112,9 @@ export type ProfilePlaylistDTO = components['schemas']['immerle.ProfilePlaylistD
 export type ProfileHallOfFameDTO = components['schemas']['immerle.ProfileHallOfFameDTO'];
 export type ProfileStatsDTO = components['schemas']['immerle.ProfileStatsDTO'];
 
+// Member directory (GET /users): every user's public identity, to browse to a profile.
+export type UserSummaryDTO = components['schemas']['immerle.UserSummaryDTO'];
+
 // Playlist imports from external platforms.
 export type ImportDTO = components['schemas']['immerle.ImportDTO'];
 export type ImportItemDTO = components['schemas']['immerle.ImportItemDTO'];

@@ -99,12 +99,9 @@ export function TopBar({ wide }: { wide: boolean }) {
         <CircleButton icon="chevron-forward" onPress={goForward} label={t('components.topbar.forward')} />
       </View>
 
-      {/* Right — jam + social + avatar */}
+      {/* Right — notifications + avatar */}
       <View className="flex-row items-center gap-3">
         <NotificationsBell />
-        {hasSocial ? (
-          <CircleButton icon="people" onPress={() => go('/social')} active={pathname === '/social'} label={t('components.topbar.social')} />
-        ) : null}
         <Pressable
           onPress={() => setMenu(true)}
           accessibilityRole="button"
@@ -131,7 +128,10 @@ export function TopBar({ wide }: { wide: boolean }) {
               </Text>
             </View>
             {hasSocial ? (
-              <MenuItem icon="person-circle-outline" label={t('components.topbar.myProfile')} onPress={() => go('/profile/me')} />
+              <>
+                <MenuItem icon="person-circle-outline" label={t('components.topbar.myProfile')} onPress={() => go('/profile/me')} />
+                <MenuItem icon="people-outline" label={t('components.topbar.social')} onPress={() => go('/social')} />
+              </>
             ) : null}
             <MenuItem icon="settings-outline" label={t('components.topbar.settings')} onPress={() => go('/settings')} />
             {isAdmin ? (

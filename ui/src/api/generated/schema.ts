@@ -8970,6 +8970,65 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List users
+         * @description Returns every user's public identity (id, username, display name) so any authenticated caller can browse to a profile.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            [key: string]: components["schemas"]["immerle.UserSummaryDTO"][];
+                        };
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/users/{username}": {
         parameters: {
             query?: never;
@@ -9800,6 +9859,13 @@ export interface components {
             /** @example true */
             isAdmin?: boolean;
             /** @example kilian */
+            username?: string;
+        };
+        "immerle.UserSummaryDTO": {
+            /** @example Bob Marley */
+            displayName?: string;
+            id?: string;
+            /** @example bob */
             username?: string;
         };
         "immerle.WrappedCountDTO": {

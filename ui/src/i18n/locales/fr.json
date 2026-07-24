@@ -190,6 +190,7 @@
     "account_failed": "Impossible de charger votre compte.",
     "account_update_failed": "Impossible de mettre à jour votre compte.",
     "profile_failed": "Impossible de charger le profil.",
+    "users_failed": "Impossible de charger la liste des utilisateurs.",
     "jam_create_failed": "Impossible de créer le jam.",
     "jam_join_failed": "Impossible de rejoindre le jam.",
     "jam_state_failed": "Impossible de charger le jam.",
@@ -383,6 +384,12 @@
     "unavailable": {
       "title": "Social indisponible",
       "subtitle": "Cette instance n'active pas les fonctionnalités sociales."
+    },
+    "members": {
+      "title": "Membres",
+      "emptyTitle": "Aucun membre",
+      "emptySubtitle": "Les autres utilisateurs de ce serveur apparaîtront ici.",
+      "you": "vous"
     },
     "feed": {
       "title": "Activité",

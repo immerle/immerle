@@ -12,6 +12,7 @@ import { qk } from './keys';
 const KEYS = {
   activity: ['social', 'activity'] as const,
   profile: (username: string) => ['social', 'profile', username] as const,
+  users: ['social', 'users'] as const,
   jam: (id: string) => ['jam', id] as const,
   myJam: ['jam', 'mine'] as const,
   myJamInvites: ['jam', 'invites', 'mine'] as const,
@@ -33,6 +34,17 @@ export function useActivity() {
     queryKey: KEYS.activity,
     enabled: !!client && !!client.has('social'),
     queryFn: ({ signal }) => client!.getActivity(signal),
+  });
+}
+
+/** The member directory: every user's public identity, to browse to a
+ * profile — backs the Social screen's "Members" section. */
+export function useUsers() {
+  const client = useAuth((s) => s.client);
+  return useQuery({
+    queryKey: KEYS.users,
+    enabled: !!client && !!client.has('social'),
+    queryFn: ({ signal }) => client!.listUsers(signal),
   });
 }
 

@@ -51,6 +51,7 @@ import {
   PublicPlaylistDTO,
   RuntimeSettingsDTO,
   ThemeDTO,
+  UserSummaryDTO,
 } from '../immerleApi';
 import {
   BandcampCollectionItem,
@@ -1277,6 +1278,14 @@ export class ImmerleClient {
       stats: toProfileStats(data.stats),
       hallOfFame: toProfileHallOfFame(data.hallOfFame),
     };
+  }
+
+  /** Every user's public identity (id, username, display name) — the member
+   * directory, for browsing to a profile. */
+  async listUsers(signal?: AbortSignal): Promise<UserSummaryDTO[]> {
+    const { data, error } = await this.api.GET('/users', { signal });
+    if (error || !data) throw apiErr(error, 'users_failed');
+    return data.users ?? [];
   }
 
   /** A user's full Hall of Fame (read-only unless it's the caller's own — see

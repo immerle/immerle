@@ -190,6 +190,7 @@
     "account_failed": "Could not load your account.",
     "account_update_failed": "Could not update your account.",
     "profile_failed": "Could not load the profile.",
+    "users_failed": "Could not load the user list.",
     "jam_create_failed": "Could not create the jam.",
     "jam_join_failed": "Could not join the jam.",
     "jam_state_failed": "Could not load the jam.",
@@ -383,6 +384,12 @@
     "unavailable": {
       "title": "Social unavailable",
       "subtitle": "This instance does not enable social features."
+    },
+    "members": {
+      "title": "Members",
+      "emptyTitle": "No members",
+      "emptySubtitle": "Other users of this server will appear here.",
+      "you": "you"
     },
     "feed": {
       "title": "Activity",
