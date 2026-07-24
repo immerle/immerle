@@ -5333,7 +5333,7 @@ export interface paths {
         head?: never;
         /**
          * Update your account
-         * @description Partial update — only fields present are changed. Lets a user set their display name and email themselves.
+         * @description Partial update — only fields present are changed. Lets a user set their display name, email and ListenBrainz token themselves.
          */
         patch: {
             parameters: {
@@ -9191,6 +9191,12 @@ export interface components {
             isAdmin?: boolean;
             /** @example fr */
             language?: string;
+            /**
+             * @description ListenBrainzToken is the caller's personal ListenBrainz API token, when
+             *     set (empty means ListenBrainz scrobbling is off).
+             * @example 00000000-0000-0000-0000-000000000000
+             */
+            listenBrainzToken?: string;
             /** @example bob */
             username?: string;
         };
@@ -10331,6 +10337,7 @@ export interface components {
             displayName?: string;
             email?: string;
             language?: string;
+            listenBrainzToken?: string;
         };
         "immerle.updateJamRequest": {
             currentTrackId?: string;

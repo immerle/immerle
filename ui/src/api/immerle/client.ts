@@ -1175,11 +1175,17 @@ export class ImmerleClient {
       email: data.email ?? '',
       isAdmin: data.isAdmin ?? false,
       language: (data.language ?? '') as AccountLanguage,
+      listenBrainzToken: data.listenBrainzToken ?? '',
     };
   }
 
-  /** Update the caller's own display name / email / language (partial). */
-  async updateAccount(patch: { displayName?: string; email?: string; language?: AccountLanguage }): Promise<Account> {
+  /** Update the caller's own display name / email / language / ListenBrainz token (partial). */
+  async updateAccount(patch: {
+    displayName?: string;
+    email?: string;
+    language?: AccountLanguage;
+    listenBrainzToken?: string;
+  }): Promise<Account> {
     const { data, error } = await this.api.PATCH('/me', { body: patch });
     if (error || !data) throw apiErr(error, 'account_update_failed');
     this.setDisplayName(data.displayName);
@@ -1189,6 +1195,7 @@ export class ImmerleClient {
       email: data.email ?? '',
       isAdmin: data.isAdmin ?? false,
       language: (data.language ?? '') as AccountLanguage,
+      listenBrainzToken: data.listenBrainzToken ?? '',
     };
   }
 
@@ -1644,6 +1651,7 @@ export interface Account {
   email: string;
   isAdmin: boolean;
   language: AccountLanguage;
+  listenBrainzToken: string;
 }
 
 /** A user's profile: identity, recent activity and public playlists. */
