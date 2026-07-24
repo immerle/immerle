@@ -8,6 +8,7 @@ import { PlaylistCover } from '../src/components/PlaylistCover';
 import { PublicPlaylistDTO } from '../src/api/immerleApi';
 import { formatCount } from '../src/utils/format';
 import { useT } from '../src/i18n/store';
+import { autoPlaylistName } from '../src/i18n/autoPlaylists';
 
 /**
  * Discover public playlists. Subscribing adds a read-only copy to your library;
@@ -62,7 +63,7 @@ export default function Discover() {
                   <PlaylistCover coverArt={item.coverArt} covers={item.coverArts ?? []} size={52} rounded="rounded-lg" fallbackIcon="list" />
                   <View className="flex-1">
                     <Text numberOfLines={1} className="text-base font-semibold text-foreground">
-                      {item.name}
+                      {autoPlaylistName(t, item.autoPlaylistKind, item.name ?? '')}
                     </Text>
                     <Text numberOfLines={1} className="text-sm text-muted">
                       {t('social.discover.byOwner', { owner: item.owner ?? '—', count: formatCount(item.songCount) })}

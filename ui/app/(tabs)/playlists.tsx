@@ -17,6 +17,7 @@ import { Playlist } from '../../src/api/subsonic/types';
 import { formatCount } from '../../src/utils/format';
 import { useColors } from '../../src/theme/colors';
 import { useT } from '../../src/i18n/store';
+import { autoPlaylistName } from '../../src/i18n/autoPlaylists';
 
 /** Pinned virtual playlist of starred songs — always shown first. */
 function LikedRow() {
@@ -211,7 +212,7 @@ export default function Playlists() {
             <PlaylistCover coverArt={item.coverArt} covers={item.coverArts ?? []} size={56} rounded="rounded-lg" fallbackIcon="list" />
             <View className="flex-1">
               <Text numberOfLines={1} className="text-base font-semibold text-foreground">
-                {item.name}
+                {autoPlaylistName(t, item.autoPlaylistKind, item.name)}
               </Text>
               <Text className="text-sm text-muted">{t('home.playlists.trackCount', { count: formatCount(item.songCount) })}</Text>
             </View>

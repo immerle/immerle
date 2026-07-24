@@ -13,6 +13,7 @@ import { Playlist } from '../api/subsonic/types';
 import { useColors } from '../theme/colors';
 import { WIDE_BREAKPOINT } from '../theme/layout';
 import { useT } from '../i18n/store';
+import { autoPlaylistName } from '../i18n/autoPlaylists';
 
 const EXPANDED = 248;
 const COLLAPSED = 76;
@@ -174,7 +175,7 @@ export function LibrarySidebar() {
             active={pathname === `/playlist/${p.id}`}
             collapsed={collapsed}
             cover={<PlaylistCover coverArt={p.coverArt} covers={p.coverArts ?? []} size={48} rounded="rounded-md" fallbackIcon="musical-notes" />}
-            title={p.name}
+            title={autoPlaylistName(t, p.autoPlaylistKind, p.name)}
             subtitle={t('components.sidebar.playlist')}
             onPress={() => router.push(`/playlist/${p.id}` as never)}
           />

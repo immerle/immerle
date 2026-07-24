@@ -754,6 +754,14 @@
       "add": "Add",
       "save": "Save",
       "delete": "Delete playlist",
+      "autoKind": {
+        "topMonthMix": "Top of the month",
+        "onRepeatMix": "On Repeat",
+        "forgottenMix": "Forgotten favorites",
+        "randomMix": "Shuffle",
+        "recommendedMix": "Discover",
+        "weeklyTrendingMix": "Trending this week"
+      },
       "cover": {
         "title": "Create a cover",
         "close": "Close",

@@ -26,6 +26,7 @@ import { Song } from '../../src/api/subsonic/types';
 import { formatDuration } from '../../src/utils/format';
 import { useColors } from '../../src/theme/colors';
 import { useT } from '../../src/i18n/store';
+import { autoPlaylistName } from '../../src/i18n/autoPlaylists';
 import { useToast } from '../../src/stores/toast';
 import { useWebTitle } from '../../src/utils/documentTitle';
 
@@ -72,7 +73,7 @@ export default function PlaylistDetail() {
       setIsPublic(!!q.data.public);
     }
   }, [q.data]);
-  useWebTitle(q.data?.name);
+  useWebTitle(q.data ? autoPlaylistName(t, q.data.autoPlaylistKind, q.data.name) : undefined);
 
   if (q.isLoading && !cached) return <Loading />;
   if ((q.isError || !q.data) && !cached) return <ErrorState message={t('media.playlist.notFound')} onRetry={q.refetch} />;
@@ -80,7 +81,11 @@ export default function PlaylistDetail() {
   // Falls back to the offline snapshot when the server is unreachable; that path is
   // read-only since edit/subscribe/collaborator mutations can't work offline.
   const offline = !q.data && !!cached;
-  const playlist = q.data ?? { id, name: cached!.name, coverArt: cached!.coverArt, entry: cached!.songs };
+  const playlist = q.data ?? { id, name: cached!.name, coverArt: cached!.coverArt, entry: cached!.songs, autoPlaylistKind: undefined };
+  // A server-generated playlist ("Top du mois", "Découvertes"...) shows a
+  // translated label instead of the raw (French-only) stored name; anything
+  // else (user-created, genre/decade, hub-imported) is shown as-is.
+  const displayName = autoPlaylistName(t, playlist.autoPlaylistKind, playlist.name);
   const songs = playlist.entry ?? [];
   const totalDuration = songs.reduce((n, s) => n + (s.duration ?? 0), 0);
   // Some servers omit `owner` for one's own playlists, so a missing owner counts as
@@ -129,7 +134,7 @@ export default function PlaylistDetail() {
     const doIt = () => unsubscribe.mutate(id, { onSuccess: () => router.back() });
     if (Platform.OS === 'web') doIt();
     else
-      Alert.alert(t('media.playlist.unsubscribeTitle'), t('media.playlist.unsubscribeMessage', { name: playlist.name }), [
+      Alert.alert(t('media.playlist.unsubscribeTitle'), t('media.playlist.unsubscribeMessage', { name: displayName }), [
         { text: t('media.playlist.cancel'), style: 'cancel' },
         { text: t('media.playlist.unsubscribeConfirm'), style: 'destructive', onPress: doIt },
       ]);
@@ -157,7 +162,7 @@ export default function PlaylistDetail() {
     if (Platform.OS === 'web') {
       doDelete();
     } else {
-      Alert.alert(t('media.playlist.deleteTitle'), t('media.playlist.deleteMessage', { name: playlist.name }), [
+      Alert.alert(t('media.playlist.deleteTitle'), t('media.playlist.deleteMessage', { name: displayName }), [
         { text: t('media.playlist.cancel'), style: 'cancel' },
         { text: t('media.playlist.deleteConfirm'), style: 'destructive', onPress: doDelete },
       ]);
@@ -179,7 +184,7 @@ export default function PlaylistDetail() {
           <Field value={name} onChangeText={setName} placeholder={t('media.playlist.namePlaceholder')} />
         </View>
       ) : (
-        <Text className="text-center text-2xl font-bold text-foreground">{playlist.name}</Text>
+        <Text className="text-center text-2xl font-bold text-foreground">{displayName}</Text>
       )}
       <Text className="text-xs text-muted">
         {t('media.playlist.trackCount', { count: songs.length })} · {formatDuration(totalDuration)}
@@ -207,7 +212,7 @@ export default function PlaylistDetail() {
             />
           )}
           <View className="flex-row items-center gap-4">
-            <DownloadButton songs={songs} size={24} snapshot={{ type: 'playlist', id: playlist.id, name: playlist.name, coverArt: playlist.coverArt }} />
+            <DownloadButton songs={songs} size={24} snapshot={{ type: 'playlist', id: playlist.id, name: displayName, coverArt: playlist.coverArt }} />
             <PlayButton
               onPress={() => {
                 if (!songs.length) return;
@@ -265,7 +270,7 @@ export default function PlaylistDetail() {
     <>
       <Stack.Screen
         options={{
-          title: playlist.name,
+          title: displayName,
           headerRight: () =>
             editing ? (
               <IconButton name="close" color={colors.primary} onPress={() => setEditing(false)} />

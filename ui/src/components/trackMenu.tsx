@@ -14,6 +14,7 @@ import { useDownloads } from '../offline/store';
 import { isSupported as offlineSupported } from '../offline/fs';
 import { useColors } from '../theme/colors';
 import { useT } from '../i18n/store';
+import { autoPlaylistName } from '../i18n/autoPlaylists';
 import { useToast } from '../stores/toast';
 import { tError } from '../i18n';
 
@@ -241,7 +242,7 @@ function PlaylistPicker({ song, onDone }: { song: Song; onDone: () => void }) {
             onPress={() => add(p.id)}
             className="flex-row items-center justify-between py-3 active:opacity-60"
           >
-            <Text className="text-base text-foreground">{p.name}</Text>
+            <Text className="text-base text-foreground">{autoPlaylistName(t, p.autoPlaylistKind, p.name)}</Text>
             <Text className="text-xs text-muted">{p.songCount ?? 0}</Text>
           </Pressable>
         ))}

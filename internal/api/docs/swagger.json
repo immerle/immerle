@@ -973,6 +973,10 @@
             },
             "immerle.PublicPlaylistDTO": {
                 "properties": {
+                    "autoPlaylistKind": {
+                        "description": "AutoPlaylistKind identifies a server-generated playlist's stable kind\n(see autoplaylists.AutoPlaylistKinds — currently only \"Tendances de la\nsemaine\" is both public and server-generated), for clients to render a\ntranslated label instead of the (French-only) stored Name. Empty for\nevery other public playlist.",
+                        "type": "string"
+                    },
                     "comment": {
                         "type": "string"
                     },
@@ -2229,6 +2233,10 @@
             },
             "immerle.playlistView": {
                 "properties": {
+                    "autoPlaylistKind": {
+                        "description": "AutoPlaylistKind identifies a server-generated playlist's stable kind\n(see autoplaylists.AutoPlaylistKinds — \"Top du mois\", \"Découvertes\"...),\nfor clients to render a translated label instead of the (French-only)\nstored Name. Empty for every other playlist (user-created, genre/decade,\nhub-imported).",
+                        "type": "string"
+                    },
                     "changedAt": {
                         "type": "string"
                     },
