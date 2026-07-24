@@ -516,7 +516,16 @@ type playlistSpec struct {
 // shape. Always Federated (read-only — a resync would just undo any edit),
 // public or private per spec.public.
 func (s *Service) upsert(ctx context.Context, spec playlistSpec) error {
-	cover := models.GeneratorCoverID(coverParams(spec.name, spec.icon))
+	// A known auto-playlist kind's cover title is the stable kind string, not
+	// the (French-only) display name — GET /cover/generator resolves it as an
+	// i18n key (see internal/charts.labelKeys/ResolveLabel) in the caller's
+	// locale. Genre/decade playlists have no such key, so their cover keeps
+	// showing the literal name (there's nothing else to show).
+	title := spec.name
+	if AutoPlaylistKinds[spec.sourceInstanceID] {
+		title = spec.sourceInstanceID
+	}
+	cover := models.GeneratorCoverID(coverParams(spec.name, title, spec.icon))
 	existing, err := s.playlists.FindFederated(ctx, spec.sourceInstanceID, spec.sourceExternalID)
 	switch {
 	case err == nil:
@@ -578,7 +587,10 @@ var coverGradients = [][2]string{
 // coverParams builds the generator-cover query values (see
 // internal/models.GeneratorCoverID and GET /cover/generator) for an
 // auto-playlist: icon over a gradient picked from coverGradients by name.
-func coverParams(name, icon string) url.Values {
+// title is what actually renders on the cover — name (kept separate so an
+// established gradient doesn't shift) unless the caller passed a stable kind
+// string instead, resolved as an i18n key at render time.
+func coverParams(name, title, icon string) url.Values {
 	sum := 0
 	for _, r := range name {
 		sum += int(r)
@@ -587,7 +599,7 @@ func coverParams(name, icon string) url.Values {
 
 	vals := url.Values{}
 	vals.Set("icon", icon)
-	vals.Set("title", name)
+	vals.Set("title", title)
 	vals.Set("color", g[0])
 	vals.Set("color2", g[1])
 	vals.Set("angle", "45")
