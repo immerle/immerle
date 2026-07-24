@@ -9578,11 +9578,11 @@ export interface components {
         };
         "immerle.PublicPlaylistDTO": {
             /**
-             * @description AutoPlaylistKind identifies a server-generated playlist's stable kind
-             *     (see autoplaylists.AutoPlaylistKinds — currently only "Tendances de la
-             *     semaine" is both public and server-generated), for clients to render a
-             *     translated label instead of the (French-only) stored Name. Empty for
-             *     every other public playlist.
+             * @description AutoPlaylistKind identifies a server-generated playlist's stable kind —
+             *     "Tendances de la semaine" (autoplaylists.AutoPlaylistKinds) or a kworb
+             *     chart (charts.SourceInstanceID) — for clients to render a translated
+             *     label instead of the (French-only) stored Name. Empty for every other
+             *     public playlist.
              */
             autoPlaylistKind?: string;
             comment?: string;
@@ -10116,11 +10116,12 @@ export interface components {
         };
         "immerle.playlistView": {
             /**
-             * @description AutoPlaylistKind identifies a server-generated playlist's stable kind
-             *     (see autoplaylists.AutoPlaylistKinds — "Top du mois", "Découvertes"...),
-             *     for clients to render a translated label instead of the (French-only)
-             *     stored Name. Empty for every other playlist (user-created, genre/decade,
-             *     hub-imported).
+             * @description AutoPlaylistKind identifies a server-generated playlist's stable kind —
+             *     an autoplaylists.AutoPlaylistKinds value ("Top du mois", "Découvertes"...)
+             *     or a charts.SourceInstanceID chart's own external id ("fr_weekly",
+             *     "global_weekly"...) — for clients to render a translated label instead
+             *     of the (French-only) stored Name. Empty for every other playlist
+             *     (user-created, genre/decade, hub-imported).
              */
             autoPlaylistKind?: string;
             changedAt?: string;

@@ -760,7 +760,13 @@
         "forgottenMix": "Favoris oubliés",
         "randomMix": "Aléatoire",
         "recommendedMix": "Découvertes",
-        "weeklyTrendingMix": "Tendances de la semaine"
+        "weeklyTrendingMix": "Tendances de la semaine",
+        "chartGlobal": "Top mondial",
+        "chartFr": "Top 50 France",
+        "chartUs": "Top 50 États-Unis",
+        "chartGb": "Top 50 Royaume-Uni",
+        "chartDe": "Top 50 Allemagne",
+        "chartEs": "Top 50 Espagne"
       },
       "cover": {
         "title": "Créer une pochette",
