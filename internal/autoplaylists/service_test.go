@@ -77,7 +77,7 @@ func TestSyncNowMaterializesGenreAndDecadePlaylists(t *testing.T) {
 	if !rock.Public || !rock.Federated {
 		t.Fatalf("expected a public, federated playlist, got %+v", rock)
 	}
-	if want := models.GeneratorCoverID(coverParams("Rock", "Rock", musicNoteIcon)); rock.CoverArt != want {
+	if want := models.GeneratorCoverID(coverParams("Rock", "Rock", "", musicNoteIcon)); rock.CoverArt != want {
 		t.Fatalf("coverArt = %q, want %q", rock.CoverArt, want)
 	}
 	tracks, err := store.Playlists.Tracks(ctx, rock.ID)
@@ -366,8 +366,9 @@ func TestSyncNowMaterializesRecommendedMixAsUnresolvedFederatedTracks(t *testing
 	}
 	// The cover's title must be the stable kind ("recommended-mix"), not the
 	// French display name — GET /cover/generator resolves it as an i18n key
-	// (internal/charts.labelKeys) in the caller's locale.
-	if want := models.GeneratorCoverID(coverParams(recommendedName, SourceRecommended, compassIcon)); rec.CoverArt != want {
+	// (internal/charts.labelKeys) in the caller's locale. Its subTitle
+	// attributes ReccoBeats as the recommendation source.
+	if want := models.GeneratorCoverID(coverParams(recommendedName, SourceRecommended, "source.reccobeats", compassIcon)); rec.CoverArt != want {
 		t.Fatalf("coverArt = %q, want %q (kind as title, not the display name)", rec.CoverArt, want)
 	}
 	got, err := store.Playlists.Tracks(ctx, rec.ID)
@@ -454,6 +455,10 @@ func TestSyncNowMaterializesListenBrainzPlaylists(t *testing.T) {
 	}
 	if daily.Public || !daily.Federated || daily.OwnerID != connected.ID {
 		t.Fatalf("expected a private, federated, connected-user-owned playlist, got %+v", daily)
+	}
+	// Cover subTitle attributes ListenBrainz as the recommendation source.
+	if want := models.GeneratorCoverID(coverParams("Daily Jams", SourceListenBrainzDaily, "source.listenbrainz", radioIcon)); daily.CoverArt != want {
+		t.Fatalf("coverArt = %q, want %q", daily.CoverArt, want)
 	}
 	tracks, err := store.Playlists.Tracks(ctx, daily.ID)
 	if err != nil {

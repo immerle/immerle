@@ -76,6 +76,19 @@ var AutoPlaylistKinds = map[string]bool{
 	SourceListenBrainzWeeklyExploration: true,
 }
 
+// sourceSubtitleKeys maps a kind backed by a third-party recommendation
+// engine to its cover subTitle i18n key (internal/charts.labelKeys) —
+// attribution ("by ReccoBeats"/"by ListenBrainz") rendered smaller below the
+// cover's title, so it isn't left ambiguous that immerle itself didn't pick
+// those tracks. A kind absent here (every local-library-sourced one) gets no
+// subTitle at all.
+var sourceSubtitleKeys = map[string]string{
+	SourceRecommended:                   "source.reccobeats",
+	SourceListenBrainzDaily:             "source.listenbrainz",
+	SourceListenBrainzWeeklyJams:        "source.listenbrainz",
+	SourceListenBrainzWeeklyExploration: "source.listenbrainz",
+}
+
 // minTracks is the minimum catalog size for a genre/decade to get its own
 // playlist — below this it'd be a near-empty, not-worth-it playlist. Personal
 // lists have no such threshold (even 1-2 tracks are a meaningful personal
@@ -602,7 +615,7 @@ func (s *Service) upsert(ctx context.Context, spec playlistSpec) error {
 	if AutoPlaylistKinds[spec.sourceInstanceID] {
 		title = spec.sourceInstanceID
 	}
-	cover := models.GeneratorCoverID(coverParams(spec.name, title, spec.icon))
+	cover := models.GeneratorCoverID(coverParams(spec.name, title, sourceSubtitleKeys[spec.sourceInstanceID], spec.icon))
 	existing, err := s.playlists.FindFederated(ctx, spec.sourceInstanceID, spec.sourceExternalID)
 	switch {
 	case err == nil:
@@ -666,8 +679,10 @@ var coverGradients = [][2]string{
 // auto-playlist: icon over a gradient picked from coverGradients by name.
 // title is what actually renders on the cover — name (kept separate so an
 // established gradient doesn't shift) unless the caller passed a stable kind
-// string instead, resolved as an i18n key at render time.
-func coverParams(name, title, icon string) url.Values {
+// string instead, resolved as an i18n key at render time. subTitle is
+// optional attribution (e.g. "source.reccobeats") rendered smaller below the
+// title; "" omits it.
+func coverParams(name, title, subTitle, icon string) url.Values {
 	sum := 0
 	for _, r := range name {
 		sum += int(r)
@@ -677,6 +692,9 @@ func coverParams(name, title, icon string) url.Values {
 	vals := url.Values{}
 	vals.Set("icon", icon)
 	vals.Set("title", title)
+	if subTitle != "" {
+		vals.Set("subTitle", subTitle)
+	}
 	vals.Set("color", g[0])
 	vals.Set("color2", g[1])
 	vals.Set("angle", "45")
