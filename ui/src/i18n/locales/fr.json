@@ -754,6 +754,14 @@
       "add": "Ajouter",
       "save": "Enregistrer",
       "delete": "Supprimer la playlist",
+      "autoKind": {
+        "topMonthMix": "Top du mois",
+        "onRepeatMix": "On Repeat",
+        "forgottenMix": "Favoris oubliés",
+        "randomMix": "Aléatoire",
+        "recommendedMix": "Découvertes",
+        "weeklyTrendingMix": "Tendances de la semaine"
+      },
       "cover": {
         "title": "Créer une pochette",
         "close": "Fermer",

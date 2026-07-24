@@ -5519,7 +5519,7 @@ export interface paths {
         };
         /**
          * Custom auto-generated playlists
-         * @description Returns the caller's personal auto-generated playlists (top of the month, on repeat, forgotten favorites, random) that currently have at least one track.
+         * @description Returns the caller's personal auto-generated playlists (top of the month, on repeat, forgotten favorites, random, recommended) that currently have at least one track.
          */
         get: {
             parameters: {
@@ -5658,6 +5658,336 @@ export interface paths {
                 };
             };
         };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/purchases/bandcamp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Bandcamp connection status
+         * @description Reports whether the caller has connected their Bandcamp account, and whether the stored cookie needs to be refreshed.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.BandcampStatusDTO"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        /** Disconnect Bandcamp */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description disconnected */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/purchases/bandcamp/collection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Bandcamp purchases
+         * @description Fetches the caller's purchase collection live from Bandcamp. Each item is annotated with its import job status, if any.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.BandcampCollectionDTO"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/purchases/bandcamp/connect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Connect a Bandcamp account
+         * @description Validates the pasted session cookie against Bandcamp and stores it (encrypted), replacing any previous connection.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Bandcamp session cookie */
+            requestBody: {
+                content: {
+                    "application/json": Record<string, never> | components["schemas"]["immerle.bandcampConnectRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.BandcampStatusDTO"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/purchases/bandcamp/items/{saleItemType}/{saleItemId}/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import a Bandcamp purchase */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Bandcamp sale item type */
+                    saleItemType: string;
+                    /** @description Bandcamp sale item id */
+                    saleItemId: string;
+                };
+                cookie?: never;
+            };
+            /** @description Item display fields */
+            requestBody: {
+                content: {
+                    "application/json": Record<string, never> | components["schemas"]["immerle.bandcampImportRequest"];
+                };
+            };
+            responses: {
+                /** @description Accepted */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.BandcampJobDTO"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/purchases/bandcamp/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Bandcamp import jobs */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.BandcampJobsDTO"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -8897,6 +9227,55 @@ export interface components {
             /** @example 2001 */
             year?: number;
         };
+        "immerle.BandcampCollectionDTO": {
+            items?: components["schemas"]["immerle.BandcampCollectionItemDTO"][];
+        };
+        "immerle.BandcampCollectionItemDTO": {
+            artUrl?: string;
+            artistName?: string;
+            itemTitle?: string;
+            /** @example album */
+            itemType?: string;
+            jobId?: string;
+            /** @example completed */
+            jobStatus?: string;
+            /** @example 2021-01-01T10:00:00Z */
+            purchased?: string;
+            /** @example 123456789 */
+            saleItemId?: string;
+            /** @example p */
+            saleItemType?: string;
+        };
+        "immerle.BandcampJobDTO": {
+            artistName?: string;
+            attempts?: number;
+            /** @example 2026-07-18T21:42:00Z */
+            createdAt?: string;
+            error?: string;
+            /** @example flac */
+            format?: string;
+            id?: string;
+            itemTitle?: string;
+            /** @example album */
+            itemType?: string;
+            saleItemId?: string;
+            saleItemType?: string;
+            /** @example completed */
+            status?: string;
+            trackIds?: string[];
+            /** @example 2026-07-18T21:43:00Z */
+            updatedAt?: string;
+        };
+        "immerle.BandcampJobsDTO": {
+            jobs?: components["schemas"]["immerle.BandcampJobDTO"][];
+        };
+        "immerle.BandcampStatusDTO": {
+            connected?: boolean;
+            fanId?: string;
+            /** @example 2026-07-18T21:42:00Z */
+            lastSyncedAt?: string;
+            needsReconnect?: boolean;
+        };
         "immerle.CapabilitiesDTO": {
             capabilities?: {
                 [key: string]: components["schemas"]["immerle.CapabilityDTO"];
@@ -9198,6 +9577,14 @@ export interface components {
             provider?: string;
         };
         "immerle.PublicPlaylistDTO": {
+            /**
+             * @description AutoPlaylistKind identifies a server-generated playlist's stable kind
+             *     (see autoplaylists.AutoPlaylistKinds — currently only "Tendances de la
+             *     semaine" is both public and server-generated), for clients to render a
+             *     translated label instead of the (French-only) stored Name. Empty for
+             *     every other public playlist.
+             */
+            autoPlaylistKind?: string;
             comment?: string;
             coverArt?: string;
             coverArts?: string[];
@@ -9491,6 +9878,14 @@ export interface components {
             name?: string;
             starred?: string;
         };
+        "immerle.bandcampConnectRequest": {
+            cookie?: string;
+        };
+        "immerle.bandcampImportRequest": {
+            artistName?: string;
+            itemTitle?: string;
+            itemType?: string;
+        };
         "immerle.channelView": {
             description?: string;
             episodes?: components["schemas"]["immerle.episodeView"][];
@@ -9720,6 +10115,14 @@ export interface components {
             removeIndexes?: number[];
         };
         "immerle.playlistView": {
+            /**
+             * @description AutoPlaylistKind identifies a server-generated playlist's stable kind
+             *     (see autoplaylists.AutoPlaylistKinds — "Top du mois", "Découvertes"...),
+             *     for clients to render a translated label instead of the (French-only)
+             *     stored Name. Empty for every other playlist (user-created, genre/decade,
+             *     hub-imported).
+             */
+            autoPlaylistKind?: string;
             changedAt?: string;
             collaborative?: boolean;
             comment?: string;

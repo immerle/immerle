@@ -14,6 +14,7 @@ import { useAuth } from '../auth/store';
 import { useTrackMenu } from './trackMenu';
 import { useColors } from '../theme/colors';
 import { useT } from '../i18n/store';
+import { autoPlaylistName } from '../i18n/autoPlaylists';
 import { SearchHit } from '../api/immerle/catalog';
 
 /** i18n key for a hit's type label, shown in its row's subtitle. */
@@ -167,7 +168,7 @@ function SearchHitRow({ hit, onPress, onMore }: { hit: SearchHit; onPress: () =>
           <PlaylistCover coverArt={hit.playlist.coverArt} covers={hit.playlist.coverArts ?? []} size={44} fallbackIcon="list" />
           <View className="flex-1">
             <Text numberOfLines={1} className="text-base font-medium text-foreground">
-              {hit.playlist.name}
+              {autoPlaylistName(t, hit.playlist.autoPlaylistKind, hit.playlist.name)}
             </Text>
             <Text numberOfLines={1} className="text-sm text-muted">
               {typeLabel}

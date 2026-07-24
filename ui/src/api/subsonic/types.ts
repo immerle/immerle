@@ -176,6 +176,11 @@ export interface Playlist {
   /** Whether the caller has favorited this playlist. Only populated by
    * getPlaylist (the single-playlist resource) — absent from playlist lists. */
   subscribed?: boolean;
+  /** Stable kind for a server-generated playlist ("top-month-mix",
+   * "recommended-mix"...) — see ui/src/i18n/autoPlaylists.ts. Absent for a
+   * user-created, genre/decade or hub-imported playlist, whose `name` is
+   * shown as-is. */
+  autoPlaylistKind?: string;
 }
 
 export interface PlaylistWithSongs extends Playlist {

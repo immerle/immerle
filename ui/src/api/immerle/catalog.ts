@@ -195,6 +195,7 @@ export function toPlaylist(v: PlaylistView): Playlist {
     coverArts: v.coverArts,
     federated: v.federated,
     subscribed: v.subscribed,
+    autoPlaylistKind: v.autoPlaylistKind,
   };
 }
 
