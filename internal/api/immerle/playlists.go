@@ -37,7 +37,7 @@ func (h *Handler) handlePublicPlaylists(w http.ResponseWriter, r *http.Request) 
 			"coverArt":         p.CoverArt,
 			"coverArts":        p.CoverArts,
 			"subscribed":       subscribed,
-			"autoPlaylistKind": autoPlaylistKind(p.SourceInstanceID),
+			"autoPlaylistKind": autoPlaylistKind(p.SourceInstanceID, p.SourceExternalID),
 		})
 	}
 	writeResource(w, http.StatusOK, out)

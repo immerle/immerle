@@ -534,11 +534,11 @@ type PublicPlaylistDTO struct {
 	Duration  int      `json:"duration"`
 	CoverArt  string   `json:"coverArt,omitempty"`
 	CoverArts []string `json:"coverArts,omitempty"`
-	// AutoPlaylistKind identifies a server-generated playlist's stable kind
-	// (see autoplaylists.AutoPlaylistKinds — currently only "Tendances de la
-	// semaine" is both public and server-generated), for clients to render a
-	// translated label instead of the (French-only) stored Name. Empty for
-	// every other public playlist.
+	// AutoPlaylistKind identifies a server-generated playlist's stable kind —
+	// "Tendances de la semaine" (autoplaylists.AutoPlaylistKinds) or a kworb
+	// chart (charts.SourceInstanceID) — for clients to render a translated
+	// label instead of the (French-only) stored Name. Empty for every other
+	// public playlist.
 	AutoPlaylistKind string `json:"autoPlaylistKind,omitempty"`
 	Subscribed       bool   `json:"subscribed"`
 }
