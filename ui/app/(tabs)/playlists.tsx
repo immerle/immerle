@@ -17,7 +17,7 @@ import { Playlist } from '../../src/api/subsonic/types';
 import { formatCount } from '../../src/utils/format';
 import { useColors } from '../../src/theme/colors';
 import { useT } from '../../src/i18n/store';
-import { autoPlaylistName } from '../../src/i18n/autoPlaylists';
+import { autoPlaylistName, autoPlaylistSource } from '../../src/i18n/autoPlaylists';
 
 /** Pinned virtual playlist of starred songs — always shown first. */
 function LikedRow() {
@@ -204,20 +204,26 @@ export default function Playlists() {
             <EmptyState icon="list" title={t('home.playlists.empty')} subtitle={t('home.playlists.emptySubtitle')} />
           )
         }
-        renderItem={({ item }) => (
-          <Pressable
-            onPress={() => router.push(`/playlist/${item.id}`)}
-            className="flex-row items-center gap-3 px-4 py-2 active:bg-surface-alt"
-          >
-            <PlaylistCover coverArt={item.coverArt} covers={item.coverArts ?? []} size={56} rounded="rounded-lg" fallbackIcon="list" />
-            <View className="flex-1">
-              <Text numberOfLines={1} className="text-base font-semibold text-foreground">
-                {autoPlaylistName(t, item.autoPlaylistKind, item.name)}
-              </Text>
-              <Text className="text-sm text-muted">{t('home.playlists.trackCount', { count: formatCount(item.songCount) })}</Text>
-            </View>
-          </Pressable>
-        )}
+        renderItem={({ item }) => {
+          const source = autoPlaylistSource(t, item.autoPlaylistKind);
+          return (
+            <Pressable
+              onPress={() => router.push(`/playlist/${item.id}`)}
+              className="flex-row items-center gap-3 px-4 py-2 active:bg-surface-alt"
+            >
+              <PlaylistCover coverArt={item.coverArt} covers={item.coverArts ?? []} size={56} rounded="rounded-lg" fallbackIcon="list" />
+              <View className="flex-1">
+                <Text numberOfLines={1} className="text-base font-semibold text-foreground">
+                  {autoPlaylistName(t, item.autoPlaylistKind, item.name)}
+                </Text>
+                <Text className="text-sm text-muted">
+                  {t('home.playlists.trackCount', { count: formatCount(item.songCount) })}
+                  {source ? ` · ${source}` : ''}
+                </Text>
+              </View>
+            </Pressable>
+          );
+        }}
         contentContainerStyle={{ paddingBottom: 16 }}
       />
     </SafeAreaView>

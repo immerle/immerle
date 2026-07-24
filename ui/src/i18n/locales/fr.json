@@ -775,6 +775,10 @@
         "chartDe": "Top 50 Allemagne",
         "chartEs": "Top 50 Espagne"
       },
+      "source": {
+        "reccobeats": "Généré via ReccoBeats",
+        "listenbrainz": "Généré via ListenBrainz"
+      },
       "cover": {
         "title": "Créer une pochette",
         "close": "Fermer",

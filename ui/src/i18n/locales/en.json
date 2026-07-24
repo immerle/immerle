@@ -775,6 +775,10 @@
         "chartDe": "Top 50 Germany",
         "chartEs": "Top 50 Spain"
       },
+      "source": {
+        "reccobeats": "Powered by ReccoBeats",
+        "listenbrainz": "Powered by ListenBrainz"
+      },
       "cover": {
         "title": "Create a cover",
         "close": "Close",
