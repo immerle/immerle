@@ -688,6 +688,38 @@ func (r *CatalogRepo) MarkArtistImageChecked(ctx context.Context, id string) err
 	return err
 }
 
+// ListTracksNeedingMBID returns tracks with no MusicBrainz id that have not
+// yet been checked (powers the MusicBrainz enrichment loop). Full track rows
+// are returned (not just the id) since the loop needs ISRC for a precise
+// lookup and title/artist for a text-search fallback when there's no ISRC.
+func (r *CatalogRepo) ListTracksNeedingMBID(ctx context.Context, limit int) ([]models.Track, error) {
+	if limit <= 0 {
+		limit = 50
+	}
+	return r.listTracks(ctx, trackSelect+` WHERE t.mbid='' AND t.mb_checked=0 LIMIT ?`, limit)
+}
+
+// SetTrackMBID sets a track's MusicBrainz recording id and marks it checked.
+func (r *CatalogRepo) SetTrackMBID(ctx context.Context, id, mbid string) error {
+	_, err := r.bexec(ctx, r.mel.NewUpdate("tracks").Set("mbid", mbid).Set("mb_checked", 1).Where("id", "=", id))
+	return err
+}
+
+// MarkTrackMBIDChecked flags a track as checked (even when MusicBrainz had no
+// match) so the enrichment loop does not retry it indefinitely.
+func (r *CatalogRepo) MarkTrackMBIDChecked(ctx context.Context, id string) error {
+	_, err := r.bexec(ctx, r.mel.NewUpdate("tracks").Set("mb_checked", 1).Where("id", "=", id))
+	return err
+}
+
+// SetTrackISRC backfills a track's ISRC (e.g. once MusicBrainz.LookupISRC
+// resolves one for a track that was matched by text search rather than by
+// ISRC in the first place).
+func (r *CatalogRepo) SetTrackISRC(ctx context.Context, id, isrc string) error {
+	_, err := r.bexec(ctx, r.mel.NewUpdate("tracks").Set("isrc", isrc).Where("id", "=", id))
+	return err
+}
+
 // FindArtistByName returns an artist by exact name (powers getTopSongs).
 func (r *CatalogRepo) FindArtistByName(ctx context.Context, name string) (models.Artist, error) {
 	row := r.bqueryRow(ctx, r.mel.New("artists").
