@@ -11,6 +11,9 @@ const AUTO_PLAYLIST_KIND_KEYS: Record<string, string> = {
   'random-mix': 'media.playlist.autoKind.randomMix',
   'recommended-mix': 'media.playlist.autoKind.recommendedMix',
   'weekly-trending-mix': 'media.playlist.autoKind.weeklyTrendingMix',
+  'listenbrainz-daily-jams': 'media.playlist.autoKind.listenBrainzDailyJams',
+  'listenbrainz-weekly-jams': 'media.playlist.autoKind.listenBrainzWeeklyJams',
+  'listenbrainz-weekly-exploration': 'media.playlist.autoKind.listenBrainzWeeklyExploration',
   'global_weekly': 'media.playlist.autoKind.chartGlobal',
   'fr_weekly': 'media.playlist.autoKind.chartFr',
   'us_weekly': 'media.playlist.autoKind.chartUs',
@@ -30,4 +33,21 @@ export function autoPlaylistName(
 ): string {
   const key = kind ? AUTO_PLAYLIST_KIND_KEYS[kind] : undefined;
   return key ? t(key) : fallbackName;
+}
+
+/** Maps an auto-generated playlist's kind to the external recommendation
+ * engine that built it — shown as a subtitle so a "Discover" or "Daily Jams"
+ * playlist doesn't read as if immerle itself picked the tracks. undefined for
+ * every other kind (charts, genre/decade, personal listening lists), which
+ * are all sourced from the local library/scrobbles, not a third party. */
+const AUTO_PLAYLIST_SOURCE_KEYS: Record<string, string> = {
+  'recommended-mix': 'media.playlist.source.reccobeats',
+  'listenbrainz-daily-jams': 'media.playlist.source.listenbrainz',
+  'listenbrainz-weekly-jams': 'media.playlist.source.listenbrainz',
+  'listenbrainz-weekly-exploration': 'media.playlist.source.listenbrainz',
+};
+
+export function autoPlaylistSource(t: (scope: string) => string, kind: string | undefined | null): string | undefined {
+  const key = kind ? AUTO_PLAYLIST_SOURCE_KEYS[kind] : undefined;
+  return key ? t(key) : undefined;
 }

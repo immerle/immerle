@@ -39,11 +39,14 @@ var flagEmoji = map[string]string{
 // unknown locale falls back to French.
 //
 // The autoplaylists.* entries aren't chart-related — they're
-// internal/autoplaylists' six auto-playlist kinds (its
+// internal/autoplaylists' auto-playlist kinds (its
 // AutoPlaylistKinds/SourceXxx constants), keyed by that same stable string.
 // This registry doubles as the shared cover-title i18n table for any
 // package producing a generator cover, not just this one; autoplaylists
-// doesn't import this package for it, it just emits the matching key.
+// doesn't import this package for it, it just emits the matching key. The
+// "source.*" entries are a subTitle, not a title — attribution for the
+// personal lists backed by a third-party recommendation engine (ReccoBeats,
+// ListenBrainz), so that isn't left ambiguous on the cover itself.
 var labelKeys = map[string]map[string]string{
 	"charts.top50":          {"fr": "Top 50", "en": "Top 50"},
 	"charts.country.global": {"fr": "Mondial", "en": "Global"},
@@ -53,12 +56,18 @@ var labelKeys = map[string]map[string]string{
 	"charts.country.de":     {"fr": "Allemagne", "en": "German"},
 	"charts.country.es":     {"fr": "Espagne", "en": "Spanish"},
 
-	"top-month-mix":       {"fr": "Top du mois", "en": "Top of the month"},
-	"on-repeat-mix":       {"fr": "On Repeat", "en": "On Repeat"},
-	"forgotten-mix":       {"fr": "Favoris oubliés", "en": "Forgotten favorites"},
-	"random-mix":          {"fr": "Aléatoire", "en": "Shuffle"},
-	"recommended-mix":     {"fr": "Découvertes", "en": "Discover"},
-	"weekly-trending-mix": {"fr": "Tendances de la semaine", "en": "Trending this week"},
+	"top-month-mix":                   {"fr": "Top du mois", "en": "Top of the month"},
+	"on-repeat-mix":                   {"fr": "On Repeat", "en": "On Repeat"},
+	"forgotten-mix":                   {"fr": "Favoris oubliés", "en": "Forgotten favorites"},
+	"random-mix":                      {"fr": "Aléatoire", "en": "Shuffle"},
+	"recommended-mix":                 {"fr": "Découvertes", "en": "Discover"},
+	"weekly-trending-mix":             {"fr": "Tendances de la semaine", "en": "Trending this week"},
+	"listenbrainz-daily-jams":         {"fr": "Daily Jams", "en": "Daily Jams"},
+	"listenbrainz-weekly-jams":        {"fr": "Weekly Jams", "en": "Weekly Jams"},
+	"listenbrainz-weekly-exploration": {"fr": "Weekly Exploration", "en": "Weekly Exploration"},
+
+	"source.reccobeats":   {"fr": "par ReccoBeats", "en": "by ReccoBeats"},
+	"source.listenbrainz": {"fr": "par ListenBrainz", "en": "by ListenBrainz"},
 }
 
 // NormalizeLocale reduces a BCP47-ish tag ("en-US", "FR") to the bare

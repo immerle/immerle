@@ -26,7 +26,7 @@ import { Song } from '../../src/api/subsonic/types';
 import { formatDuration } from '../../src/utils/format';
 import { useColors } from '../../src/theme/colors';
 import { useT } from '../../src/i18n/store';
-import { autoPlaylistName } from '../../src/i18n/autoPlaylists';
+import { autoPlaylistName, autoPlaylistSource } from '../../src/i18n/autoPlaylists';
 import { useToast } from '../../src/stores/toast';
 import { useWebTitle } from '../../src/utils/documentTitle';
 
@@ -86,6 +86,7 @@ export default function PlaylistDetail() {
   // translated label instead of the raw (French-only) stored name; anything
   // else (user-created, genre/decade, hub-imported) is shown as-is.
   const displayName = autoPlaylistName(t, playlist.autoPlaylistKind, playlist.name);
+  const source = autoPlaylistSource(t, playlist.autoPlaylistKind);
   const songs = playlist.entry ?? [];
   const totalDuration = songs.reduce((n, s) => n + (s.duration ?? 0), 0);
   // Some servers omit `owner` for one's own playlists, so a missing owner counts as
@@ -188,6 +189,7 @@ export default function PlaylistDetail() {
       <Text className="text-xs text-muted">
         {t('media.playlist.trackCount', { count: songs.length })} · {formatDuration(totalDuration)}
       </Text>
+      {source ? <Text className="text-xs text-muted">{source}</Text> : null}
       <View className="flex-row gap-2">
         {!isOwner && playlist.subscribed ? <Badge label={t('media.playlist.subscriptionBadge')} /> : null}
         {playlist.public ? <Badge label={t('media.playlist.publicBadge')} tone="primary" /> : null}

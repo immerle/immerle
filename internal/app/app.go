@@ -411,6 +411,11 @@ func New(cfg config.Config) (*App, error) {
 	// API (https://reccobeats.com), seeded from each user's top tracks and
 	// synced daily along with the other personal lists above.
 	autoplaylistsSvc.SetRecommender(reccobeats.NewClient())
+	// Daily Jams/Weekly Jams/Weekly Exploration: per-user recommendation
+	// playlists ListenBrainz itself generates, for users who've set a personal
+	// token (same lbClient used for scrobbling above). A kind ListenBrainz
+	// hasn't generated yet for a given user is simply skipped.
+	autoplaylistsSvc.SetListenBrainzPlaylists(lbClient)
 
 	// Concert discovery: matches each user-with-a-city's top-listened artists
 	// against Ticketmaster/Skiddle, once daily. Disabled by default (needs at

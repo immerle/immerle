@@ -765,12 +765,19 @@
         "randomMix": "Shuffle",
         "recommendedMix": "Discover",
         "weeklyTrendingMix": "Trending this week",
+        "listenBrainzDailyJams": "Daily Jams",
+        "listenBrainzWeeklyJams": "Weekly Jams",
+        "listenBrainzWeeklyExploration": "Weekly Exploration",
         "chartGlobal": "Global Top 50",
         "chartFr": "Top 50 France",
         "chartUs": "Top 50 United States",
         "chartGb": "Top 50 United Kingdom",
         "chartDe": "Top 50 Germany",
         "chartEs": "Top 50 Spain"
+      },
+      "source": {
+        "reccobeats": "Powered by ReccoBeats",
+        "listenbrainz": "Powered by ListenBrainz"
       },
       "cover": {
         "title": "Create a cover",
