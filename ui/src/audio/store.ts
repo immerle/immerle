@@ -677,6 +677,11 @@ async function resolveAndPlayUnresolved(
         songs[index] = resolved;
         set({ songs });
         await engine.replaceAt(index, await songToTrack(c, resolved, get().qualityId));
+        // The placeholder never actually played (empty url), so replaceAt's own
+        // wasPlaying check (engine.web.ts) sees status stuck at 'loading' and
+        // won't resume, so force it explicitly, same as the manual tap-resolve
+        // flow (playlist/[id].tsx's playUnresolved -> playSongs) does.
+        await engine.play();
         return;
       }
     } catch {
