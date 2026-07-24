@@ -21,6 +21,9 @@ type User struct {
 	// Language is the user's preferred UI language (e.g. "en", "fr"). Empty means
 	// the client should fall back to the device locale.
 	Language string `json:"language,omitempty"`
+	// ListenBrainzToken is the user's personal ListenBrainz API token. Empty
+	// means scrobbling to ListenBrainz is off for this account.
+	ListenBrainzToken string `json:"-"`
 }
 
 // ThemeSettings holds a user's per-account UI theme, applied client-side. It is

@@ -47,10 +47,12 @@ export default function Settings() {
   const updateAccount = useUpdateAccount();
   const [editName, setEditName] = useState('');
   const [editEmail, setEditEmail] = useState('');
+  const [editListenBrainzToken, setEditListenBrainzToken] = useState('');
   useEffect(() => {
     if (account.data) {
       setEditName(account.data.displayName);
       setEditEmail(account.data.email);
+      setEditListenBrainzToken(account.data.listenBrainzToken);
       // Server is the cross-device source of truth ("" → follow device); AsyncStorage is just the offline fallback.
       setLocale(account.data.language || 'system');
     }
@@ -126,6 +128,28 @@ export default function Settings() {
             icon="save-outline"
             loading={updateAccount.isPending}
             onPress={() => updateAccount.mutate({ displayName: editName.trim(), email: editEmail.trim() })}
+          />
+        </View>
+      </Card>
+
+      <Card className="gap-3">
+        <CardTitle icon="disc" color="#eab308" title={t('settings.listenBrainz')} />
+        <Field
+          label={t('settings.listenBrainzToken')}
+          placeholder={t('settings.listenBrainzTokenPlaceholder')}
+          autoCapitalize="none"
+          autoCorrect={false}
+          value={editListenBrainzToken}
+          onChangeText={setEditListenBrainzToken}
+        />
+        <Text className="text-xs text-muted">{t('settings.listenBrainzHint')}</Text>
+        <View className="flex-row justify-end">
+          <Button
+            title={t('settings.save')}
+            size="sm"
+            icon="save-outline"
+            loading={updateAccount.isPending}
+            onPress={() => updateAccount.mutate({ listenBrainzToken: editListenBrainzToken.trim() })}
           />
         </View>
       </Card>

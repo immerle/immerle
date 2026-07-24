@@ -28,8 +28,10 @@ import (
 	"github.com/immerle/immerle/internal/db"
 	"github.com/immerle/immerle/internal/federation"
 	"github.com/immerle/immerle/internal/importer"
+	"github.com/immerle/immerle/internal/listenbrainz"
 	"github.com/immerle/immerle/internal/logging"
 	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/musicbrainz"
 	"github.com/immerle/immerle/internal/outbox"
 	"github.com/immerle/immerle/internal/persistence"
 	"github.com/immerle/immerle/internal/providers"
@@ -53,6 +55,7 @@ type App struct {
 	federation    *federation.Service
 	outbox        *outbox.Worker
 	enricher      *core.ArtistImageEnricher
+	mbEnricher    *core.MusicBrainzEnricher
 	evictor       *core.Evictor
 	charts        *charts.Service
 	autoplaylists *autoplaylists.Service
@@ -307,6 +310,11 @@ func New(cfg config.Config) (*App, error) {
 	// provider exposes the artist-image capability.
 	enricher := core.NewArtistImageEnricher(store.Catalog, core.NewProviderImageLookup(onDemand), coversDir, time.Second, logger)
 
+	// Tracks whose tags (or on-demand provider) carried an ISRC but no
+	// MusicBrainz id get one looked up in the background, so ListenBrainz
+	// scrobbles link precisely instead of relying on its own fuzzy matching.
+	mbEnricher := core.NewMusicBrainzEnricher(store.Catalog, musicbrainz.NewClient(), logger)
+
 	// Library analytics (counts + total size/duration), cached and recomputed at
 	// each scan so the analytics endpoint never SUMs over every track on request.
 	libraryStats := core.NewLibraryStatsService(store.Catalog, logger)
@@ -316,6 +324,7 @@ func New(cfg config.Config) (*App, error) {
 			logger.Warn("library stats refresh failed", "error", err)
 		}
 		enricher.Wake()
+		mbEnricher.Wake()
 	})
 
 	// Federation client (S7): always built, config is read live (hot-reloadable,
@@ -368,6 +377,12 @@ func New(cfg config.Config) (*App, error) {
 	// playlists to the hub (upsert) or removes them (delete), with content-
 	// addressed cover de-dup. PlaylistService enqueues on every mutation.
 	playlistSyncer := federation.NewPlaylistSyncer(fed, outboxWorker, store.PlaylistSync, store.CoverUploads, store.Playlists, coverSvc, logger)
+
+	// ListenBrainz scrobbling: opt-in per user (a personal API token set on
+	// their account via PATCH /me). Registers on the same outbox worker, so
+	// no extra background goroutine is needed.
+	lbClient := listenbrainz.NewClient(nil)
+	lbScrobbler := listenbrainz.NewScrobbler(lbClient, outboxWorker, logger)
 
 	// Playlist import (e.g. Spotify): the source playlist is fetched through the
 	// hub (which holds the third-party credentials), then each track is resolved
@@ -422,6 +437,7 @@ func New(cfg config.Config) (*App, error) {
 		Annotations:      store.Annotations,
 		Playlists:        store.Playlists,
 		PlaylistSync:     playlistSyncer,
+		ScrobbleSync:     lbScrobbler,
 		PlayQueues:       store.PlayQueues,
 		Scrobbles:        store.Scrobbles,
 		Shares:           store.Shares,
@@ -446,6 +462,8 @@ func New(cfg config.Config) (*App, error) {
 		Activity:       activitySvc,
 		Playlists:      store.Playlists,
 		PlaylistSync:   playlistSyncer,
+		ScrobbleSync:   lbScrobbler,
+		ListenBrainz:   lbClient,
 		Jam:            jamSvc,
 		Setup:          setupSvc,
 		Federation:     fed,
@@ -520,6 +538,7 @@ func New(cfg config.Config) (*App, error) {
 		federation:    fed,
 		outbox:        outboxWorker,
 		enricher:      enricher,
+		mbEnricher:    mbEnricher,
 		evictor:       evictor,
 		charts:        chartsSvc,
 		autoplaylists: autoplaylistsSvc,
@@ -580,6 +599,9 @@ func (a *App) Run(ctx context.Context) error {
 		// Short idle so incrementally-added artists are picked up promptly; the
 		// post-scan Wake() handles the cold-start case immediately.
 		a.spawn(func() { a.enricher.Run(ctx, 2*time.Minute) })
+	}
+	if a.mbEnricher != nil {
+		a.spawn(func() { a.mbEnricher.Run(ctx, 2*time.Minute) })
 	}
 	if a.evictor != nil {
 		// Always started; it self-gates on the runtime enabled flag.

@@ -157,6 +157,10 @@
     "devicesSubtitle": "Sessions de lecture actives",
     "apiTitle": "API",
     "apiSubtitle": "Gérer vos tokens d'accès",
+    "listenBrainz": "ListenBrainz",
+    "listenBrainzToken": "Token utilisateur",
+    "listenBrainzTokenPlaceholder": "Collez votre token utilisateur ListenBrainz",
+    "listenBrainzHint": "Scrobblez vos écoutes sur ListenBrainz. Récupérez votre token sur listenbrainz.org/settings",
     "logout": "Se déconnecter"
   },
   "errors": {

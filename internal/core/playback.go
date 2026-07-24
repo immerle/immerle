@@ -10,6 +10,14 @@ import (
 	"github.com/immerle/immerle/internal/persistence"
 )
 
+// ScrobbleEnqueuer submits a completed play to an external scrobbling service
+// (ListenBrainz) for the given user, keyed on their own credentials. Backed by
+// the generic outbox, so it is fire-and-forget. Implemented by
+// *listenbrainz.Scrobbler; optional (nil when unset).
+type ScrobbleEnqueuer interface {
+	EnqueueScrobble(ctx context.Context, user models.User, track models.Track, at time.Time)
+}
+
 // PlaybackService holds the user-state mutations on library items — favorites,
 // ratings and play scrobbles — shared by every presentation layer. Remote
 // (provider) track ids are resolved to their local copy (downloaded on demand)
@@ -19,15 +27,16 @@ type PlaybackService struct {
 	annotations *persistence.AnnotationRepo
 	scrobbles   *persistence.ScrobbleRepo
 	// Optional collaborators; may be nil when the feature is disabled.
-	onDemand   *CatalogService
-	activity   *ActivityService
-	nowPlaying *NowPlayingTracker
+	onDemand     *CatalogService
+	activity     *ActivityService
+	nowPlaying   *NowPlayingTracker
+	scrobbleSync ScrobbleEnqueuer
 }
 
 // NewPlaybackService wires the playback/annotation application service. onDemand,
-// activity and nowPlaying are optional and may be nil.
-func NewPlaybackService(catalog *persistence.CatalogRepo, annotations *persistence.AnnotationRepo, scrobbles *persistence.ScrobbleRepo, onDemand *CatalogService, activity *ActivityService, nowPlaying *NowPlayingTracker) *PlaybackService {
-	return &PlaybackService{catalog: catalog, annotations: annotations, scrobbles: scrobbles, onDemand: onDemand, activity: activity, nowPlaying: nowPlaying}
+// activity, nowPlaying and scrobbleSync are optional and may be nil.
+func NewPlaybackService(catalog *persistence.CatalogRepo, annotations *persistence.AnnotationRepo, scrobbles *persistence.ScrobbleRepo, onDemand *CatalogService, activity *ActivityService, nowPlaying *NowPlayingTracker, scrobbleSync ScrobbleEnqueuer) *PlaybackService {
+	return &PlaybackService{catalog: catalog, annotations: annotations, scrobbles: scrobbles, onDemand: onDemand, activity: activity, nowPlaying: nowPlaying, scrobbleSync: scrobbleSync}
 }
 
 // SetStarred stars/unstars tracks, albums and artists. Track ids may be remote
@@ -93,6 +102,9 @@ func (s *PlaybackService) Scrobble(ctx context.Context, user models.User, ids []
 			})
 			_ = s.annotations.IncrementPlay(ctx, user.ID, models.ItemTrack, track.ID, at)
 			_ = s.annotations.IncrementPlay(ctx, user.ID, models.ItemAlbum, track.AlbumID, at)
+			if s.scrobbleSync != nil {
+				s.scrobbleSync.EnqueueScrobble(ctx, user, track, at)
+			}
 		}
 		if s.activity != nil {
 			_ = s.activity.Record(ctx, user, "listen", models.ItemTrack, track.ID)

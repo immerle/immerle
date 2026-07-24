@@ -157,6 +157,10 @@
     "devicesSubtitle": "Active playback sessions",
     "apiTitle": "API",
     "apiSubtitle": "Manage your access tokens",
+    "listenBrainz": "ListenBrainz",
+    "listenBrainzToken": "User token",
+    "listenBrainzTokenPlaceholder": "Paste your ListenBrainz user token",
+    "listenBrainzHint": "Scrobble your plays to ListenBrainz. Find your token on listenbrainz.org/settings",
     "logout": "Log out"
   },
   "errors": {
