@@ -691,6 +691,14 @@ components:
       type: object
     immerle.PublicPlaylistDTO:
       properties:
+        autoPlaylistKind:
+          description: |-
+            AutoPlaylistKind identifies a server-generated playlist's stable kind —
+            "Tendances de la semaine" (autoplaylists.AutoPlaylistKinds) or a kworb
+            chart (charts.SourceInstanceID) — for clients to render a translated
+            label instead of the (French-only) stored Name. Empty for every other
+            public playlist.
+          type: string
         comment:
           type: string
         coverArt:
@@ -1592,6 +1600,15 @@ components:
       type: object
     immerle.playlistView:
       properties:
+        autoPlaylistKind:
+          description: |-
+            AutoPlaylistKind identifies a server-generated playlist's stable kind —
+            an autoplaylists.AutoPlaylistKinds value ("Top du mois", "Découvertes"...)
+            or a charts.SourceInstanceID chart's own external id ("fr_weekly",
+            "global_weekly"...) — for clients to render a translated label instead
+            of the (French-only) stored Name. Empty for every other playlist
+            (user-created, genre/decade, hub-imported).
+          type: string
         changedAt:
           type: string
         collaborative:
@@ -5466,8 +5483,8 @@ paths:
   /me/custom-playlists:
     get:
       description: Returns the caller's personal auto-generated playlists (top of
-        the month, on repeat, forgotten favorites, random) that currently have at
-        least one track.
+        the month, on repeat, forgotten favorites, random, recommended) that currently
+        have at least one track.
       responses:
         "200":
           content:

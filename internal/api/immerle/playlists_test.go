@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/immerle/immerle/internal/charts"
 	"github.com/immerle/immerle/internal/models"
 )
 
@@ -85,6 +86,58 @@ func TestPublicPlaylistSubscriptionFlow(t *testing.T) {
 	}
 	if _, view = doMap(t, srv, http.MethodGet, "/playlists/"+pub.ID, bobToken, nil); view["subscribed"] != false {
 		t.Fatalf("expected subscribed=false after unsubscribing, got %+v", view["subscribed"])
+	}
+}
+
+// TestPublicPlaylistExposesChartKind covers a kworb chart playlist's
+// autoPlaylistKind: its stored Name is a hardcoded French string ("Top 50
+// France"), so a client needs a stable, locale-independent identifier to
+// render a translated label instead — unlike a plain public playlist, which
+// must not carry one at all (nothing to translate).
+func TestPublicPlaylistExposesChartKind(t *testing.T) {
+	srv, store := newEnv(t)
+	ctx := context.Background()
+	alice, _ := store.Users.GetByUsername(ctx, "alice")
+	bobToken := login(t, srv, "bob")
+
+	now := time.Now()
+	chart := models.Playlist{
+		ID: uuid.NewString(), Name: "Top 50 France", OwnerID: alice.ID, Public: true, Federated: true,
+		SourceInstanceID: charts.SourceInstanceID, SourceExternalID: "fr_weekly",
+		CreatedAt: now, UpdatedAt: now,
+	}
+	if err := store.Playlists.Create(ctx, chart); err != nil {
+		t.Fatal(err)
+	}
+	plain := models.Playlist{ID: uuid.NewString(), Name: "Alice's Mix", OwnerID: alice.ID, Public: true, CreatedAt: now, UpdatedAt: now}
+	if err := store.Playlists.Create(ctx, plain); err != nil {
+		t.Fatal(err)
+	}
+
+	status, pls := doArr(t, srv, http.MethodGet, "/playlists/public", bobToken, nil)
+	if status != http.StatusOK || len(pls) != 2 {
+		t.Fatalf("status %d, count %d", status, len(pls))
+	}
+	for _, raw := range pls {
+		p, _ := raw.(map[string]any)
+		switch p["id"] {
+		case chart.ID:
+			if p["autoPlaylistKind"] != "fr_weekly" {
+				t.Errorf("chart playlist: autoPlaylistKind = %v, want %q", p["autoPlaylistKind"], "fr_weekly")
+			}
+		case plain.ID:
+			if k := p["autoPlaylistKind"]; k != nil && k != "" {
+				t.Errorf("plain public playlist must not carry an autoPlaylistKind, got %v", k)
+			}
+		default:
+			t.Errorf("unexpected playlist in results: %+v", p)
+		}
+	}
+
+	// The single-playlist resource (toPlaylistView) must agree.
+	_, view := doMap(t, srv, http.MethodGet, "/playlists/"+chart.ID, bobToken, nil)
+	if view["autoPlaylistKind"] != "fr_weekly" {
+		t.Fatalf("GET /playlists/{id}: autoPlaylistKind = %v, want %q", view["autoPlaylistKind"], "fr_weekly")
 	}
 }
 

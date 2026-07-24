@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/immerle/immerle/internal/autoplaylists"
+	"github.com/immerle/immerle/internal/charts"
 	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/federation"
 	"github.com/immerle/immerle/internal/models"
@@ -31,33 +33,54 @@ type playlistView struct {
 	// Subscribed reports whether the caller has favorited this playlist.
 	// Only set on the single-playlist resource (handleGetPlaylist), false
 	// elsewhere.
-	Subscribed bool       `json:"subscribed"`
-	SongCount  int        `json:"songCount"`
-	Duration   int        `json:"duration"`
-	CoverArt   string     `json:"coverArt,omitempty"`
-	CoverArts  []string   `json:"coverArts,omitempty"`
-	CreatedAt  time.Time  `json:"createdAt"`
-	ChangedAt  time.Time  `json:"changedAt"`
-	Tracks     []songView `json:"tracks,omitempty"`
+	Subscribed bool      `json:"subscribed"`
+	SongCount  int       `json:"songCount"`
+	Duration   int       `json:"duration"`
+	CoverArt   string    `json:"coverArt,omitempty"`
+	CoverArts  []string  `json:"coverArts,omitempty"`
+	CreatedAt  time.Time `json:"createdAt"`
+	ChangedAt  time.Time `json:"changedAt"`
+	// AutoPlaylistKind identifies a server-generated playlist's stable kind —
+	// an autoplaylists.AutoPlaylistKinds value ("Top du mois", "Découvertes"...)
+	// or a charts.SourceInstanceID chart's own external id ("fr_weekly",
+	// "global_weekly"...) — for clients to render a translated label instead
+	// of the (French-only) stored Name. Empty for every other playlist
+	// (user-created, genre/decade, hub-imported).
+	AutoPlaylistKind string     `json:"autoPlaylistKind,omitempty"`
+	Tracks           []songView `json:"tracks,omitempty"`
 }
 
 func toPlaylistView(p models.Playlist, tracks []songView) playlistView {
 	return playlistView{
-		ID:            p.ID,
-		Name:          p.Name,
-		Comment:       p.Comment,
-		Owner:         p.OwnerName,
-		Public:        p.Public,
-		Collaborative: p.Collaborative,
-		Federated:     p.Federated,
-		SongCount:     p.SongCount,
-		Duration:      p.Duration,
-		CoverArt:      p.CoverArt,
-		CoverArts:     p.CoverArts,
-		CreatedAt:     p.CreatedAt,
-		ChangedAt:     p.UpdatedAt,
-		Tracks:        tracks,
+		ID:               p.ID,
+		Name:             p.Name,
+		Comment:          p.Comment,
+		Owner:            p.OwnerName,
+		Public:           p.Public,
+		Collaborative:    p.Collaborative,
+		Federated:        p.Federated,
+		SongCount:        p.SongCount,
+		Duration:         p.Duration,
+		CoverArt:         p.CoverArt,
+		CoverArts:        p.CoverArts,
+		CreatedAt:        p.CreatedAt,
+		ChangedAt:        p.UpdatedAt,
+		AutoPlaylistKind: autoPlaylistKind(p.SourceInstanceID, p.SourceExternalID),
+		Tracks:           tracks,
 	}
+}
+
+// autoPlaylistKind returns the stable, translatable kind for a
+// server-generated playlist, else "" — a federation-imported playlist's real
+// instance id is internal only and must never reach the API.
+func autoPlaylistKind(sourceInstanceID, sourceExternalID string) string {
+	if autoplaylists.AutoPlaylistKinds[sourceInstanceID] {
+		return sourceInstanceID
+	}
+	if sourceInstanceID == charts.SourceInstanceID {
+		return sourceExternalID // e.g. "global_weekly", "fr_weekly"
+	}
+	return ""
 }
 
 func detailToView(d core.PlaylistDetail) playlistView {

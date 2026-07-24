@@ -26,6 +26,7 @@ import { formatDuration } from '../utils/format';
 import { useColors } from '../theme/colors';
 import { WIDE_BREAKPOINT } from '../theme/layout';
 import { useT } from '../i18n/store';
+import { autoPlaylistName } from '../i18n/autoPlaylists';
 
 // Routes where the docked bar should not appear (its own full-screen surfaces,
 // and pre-auth screens).
@@ -455,7 +456,9 @@ function AddToPlaylistButton({ song, disabled }: { song: Song; disabled?: boolea
                 </Text>
                 <ScrollView style={{ maxHeight: 240 }} showsVerticalScrollIndicator>
                   {(playlists ?? []).length ? (
-                    (playlists ?? []).map((p) => <PlaylistCheckRow key={p.id} playlistId={p.id} name={p.name} songId={song.id} />)
+                    (playlists ?? []).map((p) => (
+                      <PlaylistCheckRow key={p.id} playlistId={p.id} name={autoPlaylistName(t, p.autoPlaylistKind, p.name)} songId={song.id} />
+                    ))
                   ) : (
                     <Text className="px-4 py-2 text-sm text-muted">{t('components.player.noPlaylists')}</Text>
                   )}

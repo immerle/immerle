@@ -60,6 +60,10 @@ func TestCustomPlaylistsFindsOwnPrivatePlaylistsWithoutSubscribing(t *testing.T)
 	if len(out.Playlists) != 1 || out.Playlists[0].ID != topMonth.ID {
 		t.Fatalf("expected only the non-empty top-month playlist, got %+v", out.Playlists)
 	}
+	if out.Playlists[0].AutoPlaylistKind != autoplaylists.SourceTopMonth {
+		t.Fatalf("expected autoPlaylistKind %q so clients can render a translated label, got %q",
+			autoplaylists.SourceTopMonth, out.Playlists[0].AutoPlaylistKind)
+	}
 
 	// Not subscribed: confirms the lookup doesn't depend on it.
 	subscribed, err := store.Playlists.IsSubscribed(ctx, topMonth.ID, alice.ID)

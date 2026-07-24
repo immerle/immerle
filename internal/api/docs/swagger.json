@@ -973,6 +973,10 @@
             },
             "immerle.PublicPlaylistDTO": {
                 "properties": {
+                    "autoPlaylistKind": {
+                        "description": "AutoPlaylistKind identifies a server-generated playlist's stable kind —\n\"Tendances de la semaine\" (autoplaylists.AutoPlaylistKinds) or a kworb\nchart (charts.SourceInstanceID) — for clients to render a translated\nlabel instead of the (French-only) stored Name. Empty for every other\npublic playlist.",
+                        "type": "string"
+                    },
                     "comment": {
                         "type": "string"
                     },
@@ -2229,6 +2233,10 @@
             },
             "immerle.playlistView": {
                 "properties": {
+                    "autoPlaylistKind": {
+                        "description": "AutoPlaylistKind identifies a server-generated playlist's stable kind —\nan autoplaylists.AutoPlaylistKinds value (\"Top du mois\", \"Découvertes\"...)\nor a charts.SourceInstanceID chart's own external id (\"fr_weekly\",\n\"global_weekly\"...) — for clients to render a translated label instead\nof the (French-only) stored Name. Empty for every other playlist\n(user-created, genre/decade, hub-imported).",
+                        "type": "string"
+                    },
                     "changedAt": {
                         "type": "string"
                     },
@@ -8559,7 +8567,7 @@
         },
         "/me/custom-playlists": {
             "get": {
-                "description": "Returns the caller's personal auto-generated playlists (top of the month, on repeat, forgotten favorites, random) that currently have at least one track.",
+                "description": "Returns the caller's personal auto-generated playlists (top of the month, on repeat, forgotten favorites, random, recommended) that currently have at least one track.",
                 "responses": {
                     "200": {
                         "content": {

@@ -28,15 +28,16 @@ func (h *Handler) handlePublicPlaylists(w http.ResponseWriter, r *http.Request) 
 	for _, p := range lists {
 		subscribed, _ := h.Playlists.IsSubscribed(r.Context(), p.ID, user.ID)
 		out = append(out, map[string]any{
-			"id":         p.ID,
-			"name":       p.Name,
-			"owner":      p.OwnerName,
-			"comment":    p.Comment,
-			"songCount":  p.SongCount,
-			"duration":   p.Duration,
-			"coverArt":   p.CoverArt,
-			"coverArts":  p.CoverArts,
-			"subscribed": subscribed,
+			"id":               p.ID,
+			"name":             p.Name,
+			"owner":            p.OwnerName,
+			"comment":          p.Comment,
+			"songCount":        p.SongCount,
+			"duration":         p.Duration,
+			"coverArt":         p.CoverArt,
+			"coverArts":        p.CoverArts,
+			"subscribed":       subscribed,
+			"autoPlaylistKind": autoPlaylistKind(p.SourceInstanceID, p.SourceExternalID),
 		})
 	}
 	writeResource(w, http.StatusOK, out)
@@ -46,16 +47,18 @@ func (h *Handler) handlePublicPlaylists(w http.ResponseWriter, r *http.Request) 
 // display order.
 var customPlaylistSources = []string{
 	autoplaylists.SourceTopMonth, autoplaylists.SourceOnRepeat, autoplaylists.SourceForgotten, autoplaylists.SourceRandom,
+	autoplaylists.SourceRecommended,
 }
 
 // handleCustomPlaylists returns the caller's auto-generated personal
-// playlists ("Top du mois", "On Repeat", "Favoris oubliés", "Aléatoire") that
-// currently have at least one track. Looked up directly by (kind, callerID),
-// not via ListVisible/subscriptions, so unsubscribing (easy to do by mistake,
-// since federated playlists hide normal owner controls) never loses access.
+// playlists ("Top du mois", "On Repeat", "Favoris oubliés", "Aléatoire",
+// "Découvertes") that currently have at least one track. Looked up directly
+// by (kind, callerID), not via ListVisible/subscriptions, so unsubscribing
+// (easy to do by mistake, since federated playlists hide normal owner
+// controls) never loses access.
 //
 // @Summary      Custom auto-generated playlists
-// @Description  Returns the caller's personal auto-generated playlists (top of the month, on repeat, forgotten favorites, random) that currently have at least one track.
+// @Description  Returns the caller's personal auto-generated playlists (top of the month, on repeat, forgotten favorites, random, recommended) that currently have at least one track.
 // @Tags         playlists
 // @Security     BearerAuth
 // @Produce      json

@@ -62,7 +62,7 @@ func TestSyncNowMaterializesPublicPlaylists(t *testing.T) {
 		t.Fatalf("expected 1 chart synced, got %d", n)
 	}
 
-	p, err := store.Playlists.FindFederated(ctx, sourceInstanceID, "fr_weekly")
+	p, err := store.Playlists.FindFederated(ctx, SourceInstanceID, "fr_weekly")
 	if err != nil {
 		t.Fatalf("playlist not created: %v", err)
 	}
@@ -100,7 +100,7 @@ func TestSyncNowMaterializesPublicPlaylists(t *testing.T) {
 	}
 	count := 0
 	for _, v := range visible {
-		if v.SourceInstanceID == sourceInstanceID && v.SourceExternalID == "fr_weekly" {
+		if v.SourceInstanceID == SourceInstanceID && v.SourceExternalID == "fr_weekly" {
 			count++
 		}
 	}
@@ -129,7 +129,7 @@ func TestSyncNowMigratesAnOldStoredCover(t *testing.T) {
 	if _, err := svc.SyncNow(ctx); err != nil {
 		t.Fatal(err)
 	}
-	p, err := store.Playlists.FindFederated(ctx, sourceInstanceID, "fr_weekly")
+	p, err := store.Playlists.FindFederated(ctx, SourceInstanceID, "fr_weekly")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -141,7 +141,7 @@ func TestSyncNowMigratesAnOldStoredCover(t *testing.T) {
 	if _, err := svc.SyncNow(ctx); err != nil {
 		t.Fatal(err)
 	}
-	p, err = store.Playlists.FindFederated(ctx, sourceInstanceID, "fr_weekly")
+	p, err = store.Playlists.FindFederated(ctx, SourceInstanceID, "fr_weekly")
 	if err != nil {
 		t.Fatal(err)
 	}

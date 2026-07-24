@@ -34,6 +34,7 @@ import (
 	"github.com/immerle/immerle/internal/persistence"
 	"github.com/immerle/immerle/internal/providers"
 	"github.com/immerle/immerle/internal/providers/httpprovider"
+	"github.com/immerle/immerle/internal/reccobeats"
 	"github.com/immerle/immerle/internal/scanner"
 	"github.com/immerle/immerle/internal/server"
 	"github.com/immerle/immerle/internal/stream"
@@ -391,6 +392,10 @@ func New(cfg config.Config) (*App, error) {
 	// resolution (for the shared genre/decade ones) as chartsSvc above.
 	autoplaylistsSvc := autoplaylists.New(store.Catalog, store.Genres, store.Wrapped, store.Annotations, store.Users, store.Playlists, logger)
 	autoplaylistsSvc.SetOwnerResolver(func(ctx context.Context) (string, error) { return firstAdmin(ctx, store.Users) })
+	// "Découvertes": a per-user recommendation mix from the keyless ReccoBeats
+	// API (https://reccobeats.com), seeded from each user's top tracks and
+	// synced daily along with the other personal lists above.
+	autoplaylistsSvc.SetRecommender(reccobeats.NewClient())
 
 	// Concert discovery: matches each user-with-a-city's top-listened artists
 	// against Ticketmaster/Skiddle, once daily. Disabled by default (needs at
