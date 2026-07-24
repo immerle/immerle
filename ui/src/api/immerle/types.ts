@@ -48,6 +48,10 @@ export interface Capabilities {
     wrapped: boolean;
     /** Personal top-tracks ranking (`/hall-of-fame`), pinned in the sidebar. */
     hallOfFame: boolean;
+    /** Concert discovery (`/me/concerts`): nearby shows for your top artists. */
+    concertDiscovery: boolean;
+    /** Import your own Bandcamp purchases (`/me/purchases/bandcamp`). */
+    bandcampImport: boolean;
   };
   /**
    * Live on/off state for the handful of features an admin can toggle at
@@ -246,6 +250,74 @@ export interface Wrapped {
  */
 export interface HallOfFame {
   entries: Song[];
+}
+
+// --- Concert discovery -------------------------------------------------------
+
+/**
+ * An upcoming show matched to the caller's top-listened artists, near their
+ * account's city (Ticketmaster primary, Skiddle fallback), refreshed daily.
+ */
+export interface Concert {
+  id: string;
+  source: 'ticketmaster' | 'skiddle';
+  artistName: string;
+  eventName: string;
+  venue?: string;
+  city?: string;
+  startTime: string;
+  url?: string;
+}
+
+/** Admin view of concert-discovery config — the API keys are write-only. */
+export interface ConcertsAdminStatus {
+  enabled: boolean;
+  /** ISO 3166-1 alpha-2 code (e.g. "FR") — the single instance-wide location
+   * concert discovery searches near. Empty means not configured yet. */
+  country: string;
+  ticketmasterConfigured: boolean;
+  skiddleConfigured: boolean;
+}
+
+/** The caller's Bandcamp connection state. The cookie is write-only. */
+export interface BandcampStatus {
+  connected: boolean;
+  fanId?: string;
+  lastSyncedAt?: string;
+  /** The stored cookie stopped working (logout/password change) — reconnect. */
+  needsReconnect?: boolean;
+}
+
+/** One purchased Bandcamp item, annotated with any existing import job. */
+export interface BandcampCollectionItem {
+  saleItemType: string;
+  saleItemId: string;
+  itemType: 'album' | 'track';
+  artistName: string;
+  itemTitle: string;
+  artUrl?: string;
+  purchased: string;
+  jobStatus?: BandcampJobStatus;
+  jobId?: string;
+}
+
+export type BandcampJobStatus = 'queued' | 'running' | 'completed' | 'failed';
+
+/** One queued/running/completed/failed Bandcamp import. */
+export interface BandcampJob {
+  id: string;
+  saleItemType: string;
+  saleItemId: string;
+  itemType: 'album' | 'track';
+  artistName: string;
+  itemTitle: string;
+  format?: string;
+  status: BandcampJobStatus;
+  trackIds?: string[];
+  error?: string;
+  attempts: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 /** A federated instance surfaced by discovery / subscriptions (no secrets). */

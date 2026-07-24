@@ -14,11 +14,14 @@ import (
 	"github.com/immerle/immerle/internal/persistence"
 )
 
-// sourceInstanceID tags every playlist this package materializes, so they
+// SourceInstanceID tags every playlist this package materializes, so they
 // dedupe against (and never collide with) hub-editorial playlists (empty
 // instance id) or subscribed-instance feed playlists (a real instance UUID) —
-// see models.Playlist.SourceInstanceID.
-const sourceInstanceID = "kworb"
+// see models.Playlist.SourceInstanceID. Exported so internal/api/immerle can
+// recognize a chart playlist and use its SourceExternalID (e.g.
+// "fr_weekly") as a stable, translatable kind — see playlistView.
+// AutoPlaylistKind.
+const SourceInstanceID = "kworb"
 
 // defaultInterval is the sync cadence: once a week.
 const defaultInterval = 7 * 24 * time.Hour
@@ -114,7 +117,7 @@ func (s *Service) syncOne(ctx context.Context, ownerID string, c Chart) error {
 
 	sourceExternalID := c.Slug + "_weekly"
 	chartCover := models.GeneratorCoverID(GeneratorParams(c.Slug))
-	existing, err := s.playlists.FindFederated(ctx, sourceInstanceID, sourceExternalID)
+	existing, err := s.playlists.FindFederated(ctx, SourceInstanceID, sourceExternalID)
 	switch {
 	case err == nil:
 		existing.Name = c.Name
@@ -137,7 +140,7 @@ func (s *Service) syncOne(ctx context.Context, ownerID string, c Chart) error {
 			OwnerID:          ownerID,
 			Public:           true,
 			Federated:        true,
-			SourceInstanceID: sourceInstanceID,
+			SourceInstanceID: SourceInstanceID,
 			SourceExternalID: sourceExternalID,
 			CreatedAt:        now,
 			UpdatedAt:        now,

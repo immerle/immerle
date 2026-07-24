@@ -13,13 +13,16 @@ import { useRadioAdmin, useSetRadio } from '../../src/query/radio';
 import { useWrappedAdmin, useSetWrapped } from '../../src/query/wrapped';
 import { useOfflineAdmin, useSetOffline } from '../../src/query/offline';
 import { useHallOfFameAdmin, useSetHallOfFame } from '../../src/query/hallOfFame';
+import { useConcertsAdmin, useUpdateConcertsConfig, useConcertsSyncMutation } from '../../src/query/concerts';
 import { useAuth } from '../../src/auth/store';
 import { RuntimeSettingsDTO } from '../../src/api/immerleApi';
-import { Badge, Button, Card, ErrorState, Field, IconButton, Loading } from '../../src/components/ui';
+import { Badge, Button, Card, ErrorState, Field, IconButton, Loading, Select } from '../../src/components/ui';
 import { AdminHeader, AdminScroll } from '../../src/components/AdminUI';
 import { Ionicon } from '../../src/components/Ionicon';
 import { useColors } from '../../src/theme/colors';
 import { useT } from '../../src/i18n/store';
+import { COUNTRIES } from '../../src/utils/countries';
+import { concertProviderNames, concertProviderApplies } from '../../src/utils/concertProviders';
 
 const num = (s: string) => {
   const n = Number(s);
@@ -31,7 +34,7 @@ const RESTART_LABEL_KEYS: Record<string, string> = {
   'scan.watch': 'admin.settings.restartScanWatch',
 };
 
-type SectionKey = 'auth' | 'ldap' | 'server' | 'transcode' | 'cleanup' | 'charts' | 'logs' | 'features';
+type SectionKey = 'auth' | 'ldap' | 'server' | 'transcode' | 'cleanup' | 'charts' | 'concerts' | 'logs' | 'features';
 
 interface Section {
   key: SectionKey;
@@ -70,15 +73,9 @@ function toForm(s: RuntimeSettingsDTO): Form {
 export default function AdminSettings() {
   const t = useT();
   const colors = useColors();
-  const SECTIONS: Section[] = [
-    { key: 'auth', icon: 'key', color: '#3b82f6', title: t('admin.settings.authTitle'), subtitle: t('admin.settings.authSubtitle') },
-    { key: 'ldap', icon: 'people-circle', color: '#22c55e', title: t('admin.settings.ldapTitle'), subtitle: t('admin.settings.ldapSubtitle') },
-    { key: 'server', icon: 'server', color: '#0ea5e9', title: t('admin.settings.serverTitle'), subtitle: t('admin.settings.serverSubtitle') },
-    { key: 'transcode', icon: 'film', color: '#a855f7', title: t('admin.settings.transcodeTitle'), subtitle: t('admin.settings.transcodeSubtitle') },
-    { key: 'cleanup', icon: 'trash-bin', color: '#ef4444', title: t('admin.settings.cleanupTitle'), subtitle: t('admin.settings.cleanupSubtitle') },
-    { key: 'charts', icon: 'trending-up', color: '#1db954', title: t('admin.settings.chartsTitle'), subtitle: t('admin.settings.chartsSubtitle') },
-    { key: 'logs', icon: 'document-text', color: '#f59e0b', title: t('admin.settings.logsTitle'), subtitle: t('admin.settings.logsSubtitle') },
-    { key: 'features', icon: 'sparkles', color: '#8b5cf6', title: t('admin.settings.featuresTitle'), subtitle: t('admin.settings.featuresSubtitle') },
+  const COUNTRY_OPTIONS = [
+    { value: '', label: t('admin.settings.countryNotSet') },
+    ...COUNTRIES.map((c) => ({ value: c.code, label: c.name })),
   ];
   const client = useAuth((s) => s.client);
   const q = useSettings();
@@ -96,14 +93,44 @@ export default function AdminSettings() {
   const setOffline = useSetOffline();
   const hallOfFame = useHallOfFameAdmin();
   const setHallOfFame = useSetHallOfFame();
+  const concerts = useConcertsAdmin();
+  const updateConcerts = useUpdateConcertsConfig();
+  const concertsSync = useConcertsSyncMutation();
   const [form, setForm] = useState<Form | null>(null);
   const [sheet, setSheet] = useState<SectionKey | null>(null);
   const [removed, setRemoved] = useState<number | null>(null);
   const [synced, setSynced] = useState<number | null>(null);
+  const [concertsSynced, setConcertsSynced] = useState<number | null>(null);
+  const [concertsEnabled, setConcertsEnabled] = useState(false);
+  const [concertsCountry, setConcertsCountry] = useState('');
+  const [tmKey, setTmKey] = useState('');
+  const [skKey, setSkKey] = useState('');
+
+  // The concerts subtitle depends on the selected country (Ticketmaster and
+  // Skiddle aren't available everywhere — see CONCERT_PROVIDERS), so this
+  // list is built here, not as a static top-level const.
+  const SECTIONS: Section[] = [
+    { key: 'auth', icon: 'key', color: '#3b82f6', title: t('admin.settings.authTitle'), subtitle: t('admin.settings.authSubtitle') },
+    { key: 'ldap', icon: 'people-circle', color: '#22c55e', title: t('admin.settings.ldapTitle'), subtitle: t('admin.settings.ldapSubtitle') },
+    { key: 'server', icon: 'server', color: '#0ea5e9', title: t('admin.settings.serverTitle'), subtitle: t('admin.settings.serverSubtitle') },
+    { key: 'transcode', icon: 'film', color: '#a855f7', title: t('admin.settings.transcodeTitle'), subtitle: t('admin.settings.transcodeSubtitle') },
+    { key: 'cleanup', icon: 'trash-bin', color: '#ef4444', title: t('admin.settings.cleanupTitle'), subtitle: t('admin.settings.cleanupSubtitle') },
+    { key: 'charts', icon: 'trending-up', color: '#1db954', title: t('admin.settings.chartsTitle'), subtitle: t('admin.settings.chartsSubtitle') },
+    { key: 'concerts', icon: 'megaphone', color: '#ec4899', title: t('admin.settings.concertsTitle'), subtitle: concertProviderNames(concertsCountry) || t('admin.settings.countryNotSet') },
+    { key: 'logs', icon: 'document-text', color: '#f59e0b', title: t('admin.settings.logsTitle'), subtitle: t('admin.settings.logsSubtitle') },
+    { key: 'features', icon: 'sparkles', color: '#8b5cf6', title: t('admin.settings.featuresTitle'), subtitle: t('admin.settings.featuresSubtitle') },
+  ];
 
   useEffect(() => {
     if (q.data?.settings) setForm(toForm(q.data.settings));
   }, [q.data?.settings]);
+
+  useEffect(() => {
+    if (concerts.data) {
+      setConcertsEnabled(concerts.data.enabled);
+      setConcertsCountry(concerts.data.country);
+    }
+  }, [concerts.data]);
 
   if (q.isLoading || !form) return <Loading />;
   if (q.isError) return <ErrorState message={t('admin.settings.loadError')} onRetry={q.refetch} />;
@@ -115,6 +142,7 @@ export default function AdminSettings() {
   const profiles = q.data?.settings.transcode?.profiles ?? [];
   const rows = SECTIONS.filter((s) => {
     if (s.key === 'cleanup') return !!cleanup.data;
+    if (s.key === 'concerts') return !!client?.has('concertDiscovery');
     if (s.key === 'features')
       return (
         !!client?.has('smartPlaylists') ||
@@ -298,6 +326,68 @@ export default function AdminSettings() {
                     variant="secondary"
                     loading={chartsSync.isPending}
                     onPress={() => chartsSync.mutate(undefined, { onSuccess: (n) => setSynced(n) })}
+                  />
+                </>
+              ) : null}
+
+              {sheet === 'concerts' ? (
+                <>
+                  <Text className="text-xs text-muted">{t('admin.settings.concertsDescription')}</Text>
+                  <ToggleRow label={t('admin.settings.concertsEnabled')} value={concertsEnabled} onChange={setConcertsEnabled} />
+                  <View className="gap-1.5">
+                    <Text className="text-sm font-medium text-muted">{t('admin.settings.concertsCountry')}</Text>
+                    <Select value={concertsCountry} options={COUNTRY_OPTIONS} onChange={setConcertsCountry} />
+                    <Text className="text-xs text-muted">
+                      {t('admin.settings.concertsSources', { list: concertProviderNames(concertsCountry) })}
+                    </Text>
+                  </View>
+                  {concertProviderApplies('Ticketmaster', concertsCountry) ? (
+                    <Field
+                      label={t('admin.settings.ticketmasterKey')}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      placeholder={concerts.data?.ticketmasterConfigured ? t('admin.settings.keyConfigured') : t('admin.settings.keyNotConfigured')}
+                      value={tmKey}
+                      onChangeText={setTmKey}
+                      help={!concertProviderApplies('Skiddle', concertsCountry) ? t('admin.settings.concertsKeysHelp') : undefined}
+                    />
+                  ) : null}
+                  {concertProviderApplies('Skiddle', concertsCountry) ? (
+                    <Field
+                      label={t('admin.settings.skiddleKey')}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      placeholder={concerts.data?.skiddleConfigured ? t('admin.settings.keyConfigured') : t('admin.settings.keyNotConfigured')}
+                      value={skKey}
+                      onChangeText={setSkKey}
+                      help={t('admin.settings.concertsKeysHelp')}
+                    />
+                  ) : null}
+                  <SaveButton
+                    loading={updateConcerts.isPending}
+                    onPress={() =>
+                      updateConcerts.mutate(
+                        {
+                          enabled: concertsEnabled,
+                          country: concertsCountry,
+                          ...(tmKey ? { ticketmasterApiKey: tmKey } : {}),
+                          ...(skKey ? { skiddleApiKey: skKey } : {}),
+                        },
+                        {
+                          onSuccess: () => {
+                            setTmKey('');
+                            setSkKey('');
+                          },
+                        },
+                      )
+                    }
+                  />
+                  <Button
+                    title={concertsSynced != null ? t('admin.settings.concertsSyncedCount', { count: concertsSynced }) : t('admin.settings.runConcertsSync')}
+                    icon="megaphone-outline"
+                    variant="secondary"
+                    loading={concertsSync.isPending}
+                    onPress={() => concertsSync.mutate(undefined, { onSuccess: (n) => setConcertsSynced(n) })}
                   />
                 </>
               ) : null}

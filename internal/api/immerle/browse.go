@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/immerle/immerle/internal/core"
+	"github.com/immerle/immerle/internal/lrclib"
 	"github.com/immerle/immerle/internal/lyrics"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
@@ -301,6 +302,14 @@ func (h *Handler) handleGetSongLyrics(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		writeServiceError(w, err)
 		return
+	}
+	if t.Lyrics == "" {
+		if fetched, err := lrclib.NewClient().Get(r.Context(), t.ArtistName, t.Title, t.AlbumName, t.Duration); err == nil && fetched != "" {
+			t.Lyrics = fetched
+			if _, err := h.Catalog.UpsertTrack(r.Context(), t); err != nil {
+				h.Logger.Warn("lrclib: failed to cache fetched lyrics", "track", t.ID, "err", err)
+			}
+		}
 	}
 	doc := lyrics.Parse(t.Lyrics)
 	out := lyricsView{Synced: doc.Synced, Lines: make([]lyricLine, 0, len(doc.Lines))}

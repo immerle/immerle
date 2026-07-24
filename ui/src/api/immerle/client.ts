@@ -34,6 +34,7 @@ import {
   ErrorResponse,
   createAuthedImmerleApi,
   CreateTokenResponse,
+  fetchWithTimeout,
   HallOfFameView,
   ImmerleApi,
   JamInviteDTO,
@@ -52,8 +53,13 @@ import {
   ThemeDTO,
 } from '../immerleApi';
 import {
+  BandcampCollectionItem,
+  BandcampJob,
+  BandcampStatus,
   CapabilityFeature,
   Capabilities,
+  Concert,
+  ConcertsAdminStatus,
   DownloadJob,
   HallOfFame,
   ImmerleApiError,
@@ -225,12 +231,14 @@ export class ImmerleClient {
     if (body !== undefined) headers['Content-Type'] = 'application/json';
     if (this.session?.token) headers.Authorization = `Bearer ${this.session.token}`;
 
-    const res = await fetch(url, {
-      method,
-      headers,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
-      signal,
-    });
+    const res = await fetchWithTimeout(
+      new Request(url, {
+        method,
+        headers,
+        body: body !== undefined ? JSON.stringify(body) : undefined,
+        signal,
+      }),
+    );
     if (!res.ok) {
       let message = `HTTP ${res.status}`;
       let code: string | undefined;
@@ -1048,6 +1056,13 @@ export class ImmerleClient {
     return data.synced ?? 0;
   }
 
+  /** Admin: run concert discovery now; returns how many new matches were found. */
+  async runConcertsSync(): Promise<number> {
+    const { data, error } = await this.api.POST('/admin/concerts/sync', {});
+    if (error || !data) throw apiErr(error, 'concerts_sync_failed');
+    return data.synced ?? 0;
+  }
+
   // --- Admin: on-demand catalog (download jobs, legacy) -------------------
 
   async getDownloadJobs(signal?: AbortSignal): Promise<DownloadJob[]> {
@@ -1175,6 +1190,67 @@ export class ImmerleClient {
       isAdmin: data.isAdmin ?? false,
       language: (data.language ?? '') as AccountLanguage,
     };
+  }
+
+  // --- Concert discovery ---------------------------------------------------
+
+  /** Your upcoming, non-dismissed concert matches, soonest first. */
+  async getConcerts(signal?: AbortSignal): Promise<Concert[]> {
+    const r = await this.request<{ concerts?: Concert[] }>('GET', 'me/concerts', undefined, signal);
+    return r.concerts ?? [];
+  }
+
+  /** Closes a concert match — stays dismissed even after the next daily sync. */
+  async dismissConcert(id: string): Promise<void> {
+    await this.request<void>('PUT', `me/concerts/${encodeURIComponent(id)}/dismiss`);
+  }
+
+  /** Admin: concert-discovery config state (API keys are write-only). */
+  async getConcertsStatus(signal?: AbortSignal): Promise<ConcertsAdminStatus> {
+    return this.request<ConcertsAdminStatus>('GET', 'admin/concerts', undefined, signal);
+  }
+
+  /** Admin: enable/disable concert discovery, set the country to search near, and/or set the Ticketmaster/Skiddle API keys (partial). */
+  async updateConcertsConfig(patch: { enabled?: boolean; country?: string; ticketmasterApiKey?: string; skiddleApiKey?: string }): Promise<ConcertsAdminStatus> {
+    return this.request<ConcertsAdminStatus>('PUT', 'admin/concerts', patch);
+  }
+
+  // --- Bandcamp purchase import ---------------------------------------------
+
+  /** The caller's Bandcamp connection state. */
+  async getBandcampStatus(signal?: AbortSignal): Promise<BandcampStatus> {
+    return this.request<BandcampStatus>('GET', 'me/purchases/bandcamp', undefined, signal);
+  }
+
+  /** Connects a Bandcamp account by validating and storing the pasted session cookie (encrypted). */
+  async connectBandcamp(cookie: string): Promise<BandcampStatus> {
+    return this.request<BandcampStatus>('POST', 'me/purchases/bandcamp/connect', { cookie });
+  }
+
+  /** Disconnects the caller's Bandcamp account. */
+  async disconnectBandcamp(): Promise<void> {
+    await this.request<void>('DELETE', 'me/purchases/bandcamp');
+  }
+
+  /** The caller's Bandcamp purchase collection, fetched live, each item annotated with its import job status. */
+  async getBandcampCollection(signal?: AbortSignal): Promise<BandcampCollectionItem[]> {
+    const r = await this.request<{ items?: BandcampCollectionItem[] }>('GET', 'me/purchases/bandcamp/collection', undefined, signal);
+    return r.items ?? [];
+  }
+
+  /** Queues one purchased Bandcamp item for download+ingest. Idempotent. */
+  async importBandcampItem(item: BandcampCollectionItem): Promise<BandcampJob> {
+    return this.request<BandcampJob>(
+      'POST',
+      `me/purchases/bandcamp/items/${encodeURIComponent(item.saleItemType)}/${encodeURIComponent(item.saleItemId)}/import`,
+      { itemType: item.itemType, artistName: item.artistName, itemTitle: item.itemTitle },
+    );
+  }
+
+  /** The caller's Bandcamp import jobs, most recent first. */
+  async getBandcampJobs(signal?: AbortSignal): Promise<BandcampJob[]> {
+    const r = await this.request<{ jobs?: BandcampJob[] }>('GET', 'me/purchases/bandcamp/jobs', undefined, signal);
+    return r.jobs ?? [];
   }
 
   /** A user's profile: identity, recent activity, public playlists and (when

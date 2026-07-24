@@ -290,6 +290,84 @@ type AccountDTO struct {
 	ListenBrainzToken string `json:"listenBrainzToken,omitempty" example:"00000000-0000-0000-0000-000000000000"`
 }
 
+// ConcertDTO is one upcoming show matched to the caller's listening history.
+type ConcertDTO struct {
+	ID         string `json:"id"`
+	Source     string `json:"source" example:"ticketmaster"`
+	ArtistName string `json:"artistName" example:"Daft Punk"`
+	EventName  string `json:"eventName" example:"Daft Punk World Tour"`
+	Venue      string `json:"venue,omitempty" example:"Accor Arena"`
+	City       string `json:"city,omitempty" example:"Paris"`
+	StartTime  string `json:"startTime" example:"2026-09-12T19:00:00Z"`
+	URL        string `json:"url,omitempty" example:"https://www.ticketmaster.com/event/..."`
+}
+
+// ConcertsDTO wraps the caller's upcoming concert matches.
+type ConcertsDTO struct {
+	Concerts []ConcertDTO `json:"concerts"`
+}
+
+// ConcertsStatusDTO is the admin view of concert-discovery config. The API
+// keys themselves are write-only — this only reports whether one is set.
+type ConcertsStatusDTO struct {
+	Enabled bool `json:"enabled" example:"false"`
+	// Country is an ISO 3166-1 alpha-2 code (e.g. "FR"), picked from a fixed
+	// dropdown in the admin UI — not a secret, returned as-is.
+	Country                string `json:"country,omitempty" example:"FR"`
+	TicketmasterConfigured bool   `json:"ticketmasterConfigured" example:"false"`
+	SkiddleConfigured      bool   `json:"skiddleConfigured" example:"false"`
+}
+
+// BandcampStatusDTO is the caller's Bandcamp connection state. The cookie
+// itself is write-only — this never echoes it back.
+type BandcampStatusDTO struct {
+	Connected      bool   `json:"connected"`
+	FanID          string `json:"fanId,omitempty"`
+	LastSyncedAt   string `json:"lastSyncedAt,omitempty" example:"2026-07-18T21:42:00Z"`
+	NeedsReconnect bool   `json:"needsReconnect,omitempty"`
+}
+
+// BandcampCollectionItemDTO is one purchased Bandcamp item, annotated with any
+// existing import job for it.
+type BandcampCollectionItemDTO struct {
+	SaleItemType string `json:"saleItemType" example:"p"`
+	SaleItemID   string `json:"saleItemId" example:"123456789"`
+	ItemType     string `json:"itemType" example:"album"`
+	ArtistName   string `json:"artistName"`
+	ItemTitle    string `json:"itemTitle"`
+	ArtURL       string `json:"artUrl,omitempty"`
+	Purchased    string `json:"purchased" example:"2021-01-01T10:00:00Z"`
+	JobStatus    string `json:"jobStatus,omitempty" example:"completed"`
+	JobID        string `json:"jobId,omitempty"`
+}
+
+// BandcampCollectionDTO wraps the caller's live Bandcamp purchase collection.
+type BandcampCollectionDTO struct {
+	Items []BandcampCollectionItemDTO `json:"items"`
+}
+
+// BandcampJobDTO is one queued/running/completed/failed Bandcamp import.
+type BandcampJobDTO struct {
+	ID           string   `json:"id"`
+	SaleItemType string   `json:"saleItemType"`
+	SaleItemID   string   `json:"saleItemId"`
+	ItemType     string   `json:"itemType" example:"album"`
+	ArtistName   string   `json:"artistName"`
+	ItemTitle    string   `json:"itemTitle"`
+	Format       string   `json:"format,omitempty" example:"flac"`
+	Status       string   `json:"status" example:"completed"`
+	TrackIDs     []string `json:"trackIds,omitempty"`
+	Error        string   `json:"error,omitempty"`
+	Attempts     int      `json:"attempts"`
+	CreatedAt    string   `json:"createdAt" example:"2026-07-18T21:42:00Z"`
+	UpdatedAt    string   `json:"updatedAt" example:"2026-07-18T21:43:00Z"`
+}
+
+// BandcampJobsDTO wraps the caller's Bandcamp import job history.
+type BandcampJobsDTO struct {
+	Jobs []BandcampJobDTO `json:"jobs"`
+}
+
 // ActivityItemDTO carries resolved, human-readable details about the item an
 // activity event references (fields depend on itemType; empty when unresolved).
 type ActivityItemDTO struct {
@@ -451,15 +529,21 @@ type JamInviteDTO struct {
 
 // PublicPlaylistDTO is a public playlist available to subscribe to.
 type PublicPlaylistDTO struct {
-	ID         string   `json:"id"`
-	Name       string   `json:"name" example:"Editorial Picks"`
-	Owner      string   `json:"owner" example:"alice"`
-	Comment    string   `json:"comment,omitempty"`
-	SongCount  int      `json:"songCount"`
-	Duration   int      `json:"duration"`
-	CoverArt   string   `json:"coverArt,omitempty"`
-	CoverArts  []string `json:"coverArts,omitempty"`
-	Subscribed bool     `json:"subscribed"`
+	ID        string   `json:"id"`
+	Name      string   `json:"name" example:"Editorial Picks"`
+	Owner     string   `json:"owner" example:"alice"`
+	Comment   string   `json:"comment,omitempty"`
+	SongCount int      `json:"songCount"`
+	Duration  int      `json:"duration"`
+	CoverArt  string   `json:"coverArt,omitempty"`
+	CoverArts []string `json:"coverArts,omitempty"`
+	// AutoPlaylistKind identifies a server-generated playlist's stable kind —
+	// "Tendances de la semaine" (autoplaylists.AutoPlaylistKinds) or a kworb
+	// chart (charts.SourceInstanceID) — for clients to render a translated
+	// label instead of the (French-only) stored Name. Empty for every other
+	// public playlist.
+	AutoPlaylistKind string `json:"autoPlaylistKind,omitempty"`
+	Subscribed       bool   `json:"subscribed"`
 }
 
 // LoginDTO is returned by POST /auth/sessions.

@@ -278,5 +278,12 @@ func (s *SettingsService) OfflineEnabled() bool { return s.Get().Offline.Enabled
 // HallOfFameEnabled reports whether the personal Hall of Fame feature is on (read live).
 func (s *SettingsService) HallOfFameEnabled() bool { return s.Get().HallOfFame.Enabled }
 
+// ConcertsEnabled reports whether concert discovery is on (read live).
+func (s *SettingsService) ConcertsEnabled() bool { return s.Get().Concerts.Enabled }
+
+// ConcertsConfig returns the live concert-discovery settings (API keys
+// included) — read fresh on every sync by internal/concerts.Service.
+func (s *SettingsService) ConcertsConfig() models.ConcertsRuntime { return s.Get().Concerts }
+
 // LDAPConfig returns the live LDAP settings (read on each password login).
 func (s *SettingsService) LDAPConfig() models.LDAPRuntime { return s.Get().LDAP }

@@ -422,6 +422,154 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/concerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the concert-discovery feature state */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.ConcertsStatusDTO"];
+                    };
+                };
+            };
+        };
+        /**
+         * Update concert-discovery settings
+         * @description Admin only. Partial update — only fields present are changed. API keys are write-only: the response never echoes them back.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Fields to change */
+            requestBody: {
+                content: {
+                    "application/json": Record<string, never> | components["schemas"]["immerle.concertsUpdateRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.ConcertsStatusDTO"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/concerts/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sync concert discovery now
+         * @description Admin only. Searches every user's top-listened artists for upcoming shows near the configured country immediately, returning how many new matches were found.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.ChartsSyncDTO"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/federation": {
         parameters: {
             query?: never;
@@ -5241,6 +5389,127 @@ export interface paths {
         };
         trace?: never;
     };
+    "/me/concerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Your upcoming concert matches
+         * @description Concert discovery matches your top-listened artists against Ticketmaster/Skiddle/Eventim near the admin-configured country, refreshed daily. Returns upcoming, non-dismissed matches, soonest first. Empty (not an error) when the feature is disabled, no country is configured, or nothing matched yet.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.ConcertsDTO"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/concerts/{id}/dismiss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Dismiss a concert match */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Concert id */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description dismissed */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/custom-playlists": {
         parameters: {
             query?: never;
@@ -5250,7 +5519,7 @@ export interface paths {
         };
         /**
          * Custom auto-generated playlists
-         * @description Returns the caller's personal auto-generated playlists (top of the month, on repeat, forgotten favorites, random) that currently have at least one track.
+         * @description Returns the caller's personal auto-generated playlists (top of the month, on repeat, forgotten favorites, random, recommended) that currently have at least one track.
          */
         get: {
             parameters: {
@@ -5389,6 +5658,336 @@ export interface paths {
                 };
             };
         };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/purchases/bandcamp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Bandcamp connection status
+         * @description Reports whether the caller has connected their Bandcamp account, and whether the stored cookie needs to be refreshed.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.BandcampStatusDTO"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        /** Disconnect Bandcamp */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description disconnected */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/purchases/bandcamp/collection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Bandcamp purchases
+         * @description Fetches the caller's purchase collection live from Bandcamp. Each item is annotated with its import job status, if any.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.BandcampCollectionDTO"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/purchases/bandcamp/connect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Connect a Bandcamp account
+         * @description Validates the pasted session cookie against Bandcamp and stores it (encrypted), replacing any previous connection.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Bandcamp session cookie */
+            requestBody: {
+                content: {
+                    "application/json": Record<string, never> | components["schemas"]["immerle.bandcampConnectRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.BandcampStatusDTO"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/purchases/bandcamp/items/{saleItemType}/{saleItemId}/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import a Bandcamp purchase */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Bandcamp sale item type */
+                    saleItemType: string;
+                    /** @description Bandcamp sale item id */
+                    saleItemId: string;
+                };
+                cookie?: never;
+            };
+            /** @description Item display fields */
+            requestBody: {
+                content: {
+                    "application/json": Record<string, never> | components["schemas"]["immerle.bandcampImportRequest"];
+                };
+            };
+            responses: {
+                /** @description Accepted */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.BandcampJobDTO"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/purchases/bandcamp/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Bandcamp import jobs */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.BandcampJobsDTO"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -8628,6 +9227,55 @@ export interface components {
             /** @example 2001 */
             year?: number;
         };
+        "immerle.BandcampCollectionDTO": {
+            items?: components["schemas"]["immerle.BandcampCollectionItemDTO"][];
+        };
+        "immerle.BandcampCollectionItemDTO": {
+            artUrl?: string;
+            artistName?: string;
+            itemTitle?: string;
+            /** @example album */
+            itemType?: string;
+            jobId?: string;
+            /** @example completed */
+            jobStatus?: string;
+            /** @example 2021-01-01T10:00:00Z */
+            purchased?: string;
+            /** @example 123456789 */
+            saleItemId?: string;
+            /** @example p */
+            saleItemType?: string;
+        };
+        "immerle.BandcampJobDTO": {
+            artistName?: string;
+            attempts?: number;
+            /** @example 2026-07-18T21:42:00Z */
+            createdAt?: string;
+            error?: string;
+            /** @example flac */
+            format?: string;
+            id?: string;
+            itemTitle?: string;
+            /** @example album */
+            itemType?: string;
+            saleItemId?: string;
+            saleItemType?: string;
+            /** @example completed */
+            status?: string;
+            trackIds?: string[];
+            /** @example 2026-07-18T21:43:00Z */
+            updatedAt?: string;
+        };
+        "immerle.BandcampJobsDTO": {
+            jobs?: components["schemas"]["immerle.BandcampJobDTO"][];
+        };
+        "immerle.BandcampStatusDTO": {
+            connected?: boolean;
+            fanId?: string;
+            /** @example 2026-07-18T21:42:00Z */
+            lastSyncedAt?: string;
+            needsReconnect?: boolean;
+        };
         "immerle.CapabilitiesDTO": {
             capabilities?: {
                 [key: string]: components["schemas"]["immerle.CapabilityDTO"];
@@ -8656,6 +9304,40 @@ export interface components {
             intervalSeconds?: number;
             /** @example 2592000 */
             maxAgeSeconds?: number;
+        };
+        "immerle.ConcertDTO": {
+            /** @example Daft Punk */
+            artistName?: string;
+            /** @example Paris */
+            city?: string;
+            /** @example Daft Punk World Tour */
+            eventName?: string;
+            id?: string;
+            /** @example ticketmaster */
+            source?: string;
+            /** @example 2026-09-12T19:00:00Z */
+            startTime?: string;
+            /** @example https://www.ticketmaster.com/event/... */
+            url?: string;
+            /** @example Accor Arena */
+            venue?: string;
+        };
+        "immerle.ConcertsDTO": {
+            concerts?: components["schemas"]["immerle.ConcertDTO"][];
+        };
+        "immerle.ConcertsStatusDTO": {
+            /**
+             * @description Country is an ISO 3166-1 alpha-2 code (e.g. "FR"), picked from a fixed
+             *     dropdown in the admin UI — not a secret, returned as-is.
+             * @example FR
+             */
+            country?: string;
+            /** @example false */
+            enabled?: boolean;
+            /** @example false */
+            skiddleConfigured?: boolean;
+            /** @example false */
+            ticketmasterConfigured?: boolean;
         };
         "immerle.CreateTokenDTO": {
             id?: string;
@@ -8895,6 +9577,14 @@ export interface components {
             provider?: string;
         };
         "immerle.PublicPlaylistDTO": {
+            /**
+             * @description AutoPlaylistKind identifies a server-generated playlist's stable kind —
+             *     "Tendances de la semaine" (autoplaylists.AutoPlaylistKinds) or a kworb
+             *     chart (charts.SourceInstanceID) — for clients to render a translated
+             *     label instead of the (French-only) stored Name. Empty for every other
+             *     public playlist.
+             */
+            autoPlaylistKind?: string;
             comment?: string;
             coverArt?: string;
             coverArts?: string[];
@@ -9188,6 +9878,14 @@ export interface components {
             name?: string;
             starred?: string;
         };
+        "immerle.bandcampConnectRequest": {
+            cookie?: string;
+        };
+        "immerle.bandcampImportRequest": {
+            artistName?: string;
+            itemTitle?: string;
+            itemType?: string;
+        };
         "immerle.channelView": {
             description?: string;
             episodes?: components["schemas"]["immerle.episodeView"][];
@@ -9214,6 +9912,17 @@ export interface components {
             queueIndex?: number;
             trackId?: string;
             type?: string;
+        };
+        "immerle.concertsUpdateRequest": {
+            /**
+             * @description Country is an ISO 3166-1 alpha-2 code (e.g. "FR") from the admin UI's
+             *     fixed dropdown — the single instance-wide location concert discovery
+             *     searches near (there is no per-user location).
+             */
+            country?: string;
+            enabled?: boolean;
+            skiddleApiKey?: string;
+            ticketmasterApiKey?: string;
         };
         "immerle.createJamRequest": {
             name?: string;
@@ -9406,6 +10115,15 @@ export interface components {
             removeIndexes?: number[];
         };
         "immerle.playlistView": {
+            /**
+             * @description AutoPlaylistKind identifies a server-generated playlist's stable kind —
+             *     an autoplaylists.AutoPlaylistKinds value ("Top du mois", "Découvertes"...)
+             *     or a charts.SourceInstanceID chart's own external id ("fr_weekly",
+             *     "global_weekly"...) — for clients to render a translated label instead
+             *     of the (French-only) stored Name. Empty for every other playlist
+             *     (user-created, genre/decade, hub-imported).
+             */
+            autoPlaylistKind?: string;
             changedAt?: string;
             collaborative?: boolean;
             comment?: string;

@@ -28,7 +28,7 @@ export function Lyrics({
   }, [active]);
 
   return (
-    <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false}>
+    <ScrollView ref={scrollRef} className="flex-1" showsVerticalScrollIndicator={false}>
       <View className="py-4">
         {lines.map((line, i) => (
           <Text

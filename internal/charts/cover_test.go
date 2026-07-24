@@ -39,6 +39,29 @@ func TestResolveLabel(t *testing.T) {
 	}
 }
 
+// TestResolveLabelCoversAutoPlaylistKinds covers the six autoplaylists.*
+// entries in labelKeys (see internal/autoplaylists.AutoPlaylistKinds) — this
+// package's registry doubles as their cover-title i18n table too, even
+// though they aren't chart-related.
+func TestResolveLabelCoversAutoPlaylistKinds(t *testing.T) {
+	cases := map[string]string{
+		"top-month-mix":       "Top of the month",
+		"on-repeat-mix":       "On Repeat",
+		"forgotten-mix":       "Forgotten favorites",
+		"random-mix":          "Shuffle",
+		"recommended-mix":     "Discover",
+		"weekly-trending-mix": "Trending this week",
+	}
+	for kind, wantEn := range cases {
+		if got := ResolveLabel(kind, "en"); got != wantEn {
+			t.Errorf("ResolveLabel(%q, en) = %q, want %q", kind, got, wantEn)
+		}
+		if got := ResolveLabel(kind, "fr"); got == kind {
+			t.Errorf("ResolveLabel(%q, fr) returned the key unresolved", kind)
+		}
+	}
+}
+
 func TestResolveLabelFallsBackToFrenchForAnUnknownLocale(t *testing.T) {
 	if got := ResolveLabel("charts.country.fr", "xx"); got != "France" {
 		t.Errorf("ResolveLabel with unknown locale = %q, want French fallback %q", got, "France")

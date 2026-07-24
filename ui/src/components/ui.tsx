@@ -4,6 +4,7 @@ import {
   Modal,
   Pressable,
   PressableProps,
+  ScrollView,
   Text,
   TextInput,
   TextInputProps,
@@ -315,24 +316,28 @@ export function Select<T extends string>({
       </Pressable>
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <Pressable className="flex-1 justify-center bg-black/40 px-8" onPress={() => setOpen(false)}>
-          <View className="overflow-hidden rounded-2xl border border-border bg-surface">
-            {options.map((o, i) => {
-              const active = o.value === value;
-              return (
-                <Pressable
-                  key={o.value}
-                  onPress={() => {
-                    onChange(o.value);
-                    setOpen(false);
-                  }}
-                  className={`flex-row items-center justify-between px-4 py-3 ${i > 0 ? 'border-t border-border' : ''} ${active ? 'bg-primary/10' : 'active:bg-surface-alt'}`}
-                >
-                  <Text className={`text-base ${active ? 'font-semibold text-primary' : 'text-foreground'}`}>{o.label}</Text>
-                  {active ? <Ionicon name="checkmark" size={18} color={colors.primary} /> : null}
-                </Pressable>
-              );
-            })}
-          </View>
+          {/* Own onPress (stopping propagation) keeps the backdrop's dismiss from
+              swallowing taps/scrolls inside — same pattern as the bottom sheets. */}
+          <Pressable className="max-h-[70%] overflow-hidden rounded-2xl border border-border bg-surface" onPress={(e) => e.stopPropagation()}>
+            <ScrollView bounces={false}>
+              {options.map((o, i) => {
+                const active = o.value === value;
+                return (
+                  <Pressable
+                    key={o.value}
+                    onPress={() => {
+                      onChange(o.value);
+                      setOpen(false);
+                    }}
+                    className={`flex-row items-center justify-between px-4 py-3 ${i > 0 ? 'border-t border-border' : ''} ${active ? 'bg-primary/10' : 'active:bg-surface-alt'}`}
+                  >
+                    <Text className={`text-base ${active ? 'font-semibold text-primary' : 'text-foreground'}`}>{o.label}</Text>
+                    {active ? <Ionicon name="checkmark" size={18} color={colors.primary} /> : null}
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </Pressable>
         </Pressable>
       </Modal>
     </>

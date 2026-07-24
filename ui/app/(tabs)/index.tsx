@@ -1,21 +1,24 @@
 import { useMemo } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useAlbumList, useStarred } from '../../src/query/library';
 import { useCustomPlaylists } from '../../src/query/playlists';
+import { useConcerts, useDismissConcert } from '../../src/query/concerts';
 import { useAuth } from '../../src/auth/store';
 import { usePlayer } from '../../src/audio/store';
 import { useDownloads, OfflineEntry } from '../../src/offline/store';
 import { useOfflineCatalog } from '../../src/offline/catalog';
+import { ScrollRow } from '../../src/components/ScrollRow';
 import { AlbumTile } from '../../src/components/AlbumCard';
 import { CoverArt } from '../../src/components/CoverArt';
 import { PlaylistCover } from '../../src/components/PlaylistCover';
 import { Ionicon } from '../../src/components/Ionicon';
-import { Button, Card, Loading, SectionHeader } from '../../src/components/ui';
+import { Button, Card, IconButton, Loading, SectionHeader } from '../../src/components/ui';
 import { useColors } from '../../src/theme/colors';
 import { Album, Playlist, Song } from '../../src/api/subsonic/types';
 import { useT } from '../../src/i18n/store';
+import { autoPlaylistName } from '../../src/i18n/autoPlaylists';
 
 const TILE = 150;
 
@@ -40,7 +43,7 @@ function QuickAccessRow() {
   const canHallOfFame = useAuth((s) => s.client?.isFeatureEnabled('hallOfFame') ?? false);
 
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingLeft: 12, paddingRight: 16 }}>
+    <ScrollRow showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingLeft: 12, paddingRight: 16 }}>
       <ShortcutChip icon="heart" label={t('home.playlists.likedTracks')} onPress={() => router.push('/liked' as never)} />
       <ShortcutChip icon="cloud-upload" label={t('components.sidebar.localSongs')} onPress={() => router.push('/local' as never)} />
       {canHallOfFame ? (
@@ -50,7 +53,7 @@ function QuickAccessRow() {
         <ShortcutChip icon="sparkles" label={t('smart.title')} onPress={() => router.push('/smart-playlists' as never)} />
       ) : null}
       {canRadio ? <ShortcutChip icon="radio" label={t('radio.title')} onPress={() => router.push('/radios' as never)} /> : null}
-    </ScrollView>
+    </ScrollRow>
   );
 }
 
@@ -60,11 +63,56 @@ function OfflineBanner({ onRetry, retrying }: { onRetry: () => void; retrying: b
   const t = useT();
   const colors = useColors();
   return (
-    <View className="px-4 pb-2">
+    <View className="px-4 pb-2 pt-2">
       <Card className="flex-row items-center gap-3">
         <Ionicon name="cloud-offline-outline" size={22} color={colors.muted} />
         <Text className="flex-1 text-base font-semibold text-foreground">{t('home.home.offlineTitle')}</Text>
         <Button title={t('home.home.retry')} variant="secondary" size="sm" loading={retrying} onPress={onRetry} />
+      </Card>
+    </View>
+  );
+}
+
+/** Closable banner for the single nearest upcoming concert match (concert
+ * discovery searches every configured source for your top-listened artists
+ * near the admin-configured country). Dismissing it just moves on to the
+ * next-soonest match, if any — dismissal is permanent per concert, persisted
+ * server-side. */
+function ConcertBanner() {
+  const t = useT();
+  const colors = useColors();
+  const concerts = useConcerts();
+  const dismiss = useDismissConcert();
+  const next = concerts.data?.[0];
+  if (!next) return null;
+
+  const date = new Date(next.startTime).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+  const place = [next.venue, next.city].filter(Boolean).join(', ');
+
+  return (
+    <View className="px-4 pb-2 pt-2">
+      <Card className="flex-row items-center gap-3">
+        <View className="h-10 w-10 items-center justify-center rounded-full bg-primary/15">
+          <Ionicon name="megaphone" size={20} color={colors.primary} />
+        </View>
+        <View className="flex-1">
+          <Text numberOfLines={1} className="text-sm font-semibold text-foreground">
+            {t('home.concerts.bannerTitle', { artist: next.artistName })}
+          </Text>
+          <Text numberOfLines={1} className="text-xs text-muted">
+            {place ? `${place} · ${date}` : date}
+          </Text>
+        </View>
+        {next.url ? (
+          <Button title={t('home.concerts.tickets')} variant="secondary" size="sm" onPress={() => Linking.openURL(next.url!)} />
+        ) : null}
+        <IconButton
+          name="close"
+          size={18}
+          color={colors.muted}
+          accessibilityLabel={t('home.concerts.dismiss')}
+          onPress={() => dismiss.mutate(next.id)}
+        />
       </Card>
     </View>
   );
@@ -88,7 +136,7 @@ function OfflineTracksRow() {
   return (
     <View>
       <SectionHeader title={t('home.home.availableOffline')} />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
+      <ScrollRow showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
         {list.map((e, i) => (
           <Pressable key={e.id} onPress={() => play(i)} style={{ width: TILE }} className="mr-3 active:opacity-70">
             <CoverArt coverArt={e.coverArt} size={TILE} rounded="rounded-xl" />
@@ -100,7 +148,7 @@ function OfflineTracksRow() {
             </Text>
           </Pressable>
         ))}
-      </ScrollView>
+      </ScrollRow>
     </View>
   );
 }
@@ -114,7 +162,7 @@ function OfflineAlbumsRow() {
   return (
     <View>
       <SectionHeader title={t('home.home.offlineAlbums')} />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
+      <ScrollRow showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
         {albums.map((a) => (
           <Pressable key={a.id} onPress={() => router.push(`/album/${a.id}` as never)} style={{ width: TILE }} className="mr-3 active:opacity-70">
             <CoverArt coverArt={a.coverArt} size={TILE} rounded="rounded-xl" />
@@ -126,7 +174,7 @@ function OfflineAlbumsRow() {
             </Text>
           </Pressable>
         ))}
-      </ScrollView>
+      </ScrollRow>
     </View>
   );
 }
@@ -139,7 +187,7 @@ function OfflinePlaylistsRow() {
   return (
     <View>
       <SectionHeader title={t('home.home.offlinePlaylists')} />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
+      <ScrollRow showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
         {playlists.map((p) => (
           <Pressable key={p.id} onPress={() => router.push(`/playlist/${p.id}` as never)} style={{ width: TILE }} className="mr-3 active:opacity-70">
             <PlaylistCover coverArt={p.coverArt} covers={[]} size={TILE} rounded="rounded-xl" fallbackIcon="list" />
@@ -151,7 +199,7 @@ function OfflinePlaylistsRow() {
             </Text>
           </Pressable>
         ))}
-      </ScrollView>
+      </ScrollRow>
     </View>
   );
 }
@@ -168,19 +216,19 @@ function CustomPlaylistsRow({ title, playlists }: { title: string; playlists: Pl
   return (
     <View>
       <SectionHeader title={title} />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
+      <ScrollRow showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
         {nonEmpty.map((p) => (
           <Pressable key={p.id} onPress={() => router.push(`/playlist/${p.id}` as never)} style={{ width: TILE }} className="mr-3 active:opacity-70">
             <PlaylistCover coverArt={p.coverArt} covers={p.coverArts ?? []} size={TILE} rounded="rounded-xl" fallbackIcon="list" />
             <Text numberOfLines={1} className="mt-2 text-sm font-semibold text-foreground">
-              {p.name}
+              {autoPlaylistName(t, p.autoPlaylistKind, p.name)}
             </Text>
             <Text numberOfLines={1} className="text-xs text-muted">
               {t('media.playlist.trackCount', { count: p.songCount ?? 0 })}
             </Text>
           </Pressable>
         ))}
-      </ScrollView>
+      </ScrollRow>
     </View>
   );
 }
@@ -191,11 +239,11 @@ function AlbumRow({ title, albums }: { title: string; albums: Album[] | undefine
   return (
     <View>
       <SectionHeader title={title} />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
+      <ScrollRow showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
         {albums.map((a) => (
           <AlbumTile key={a.id} album={a} size={TILE} />
         ))}
-      </ScrollView>
+      </ScrollRow>
     </View>
   );
 }
@@ -235,6 +283,8 @@ export default function Home() {
         <View className="pb-2 pt-1">
           <QuickAccessRow />
         </View>
+
+        {!offline ? <ConcertBanner /> : null}
 
         {!offline ? <CustomPlaylistsRow title={t('home.home.customPlaylists')} playlists={customPlaylists.data} /> : null}
 

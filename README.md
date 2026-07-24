@@ -100,6 +100,32 @@ Grab the installer for your OS from the
 > Or, without the terminal: try to open it once, then go to **System Settings →
 > Privacy & Security → Open Anyway**.
 
+### 📱 Android
+
+```bash
+wget https://github.com/immerle/immerle/releases/latest/download/immerle.apk
+```
+
+Install it directly (you'll need to allow installs from your file manager /
+browser).
+
+### ⌨️ iml — terminal client
+
+A minimal, UI-less terminal client: search songs/albums/playlists and play.
+Release filenames don't carry a version, so `releases/latest/download/...`
+always grabs the newest build — pick your OS/arch:
+
+```bash
+wget https://github.com/immerle/immerle/releases/latest/download/iml-linux-amd64.tar.gz
+tar xzf iml-linux-amd64.tar.gz
+./iml
+```
+
+Other targets: `linux-arm64`, `darwin-amd64`, `darwin-arm64` (`.tar.gz`),
+`windows-amd64`, `windows-arm64` (`.zip`).
+
+Or straight from source: `go install github.com/immerle/immerle/cmd/iml@latest`.
+
 ## 📚 Going further
 
 The friendly bit ends here; the full reference lives on the

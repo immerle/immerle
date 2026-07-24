@@ -14,6 +14,9 @@ import (
 	"github.com/immerle/immerle/internal/config"
 )
 
+// version is stamped at build time via -ldflags "-X main.version=...".
+var version = "dev"
+
 // awaitShutdownSignal cancels ctx on the first SIGINT/SIGTERM and calls
 // forceExit on the second, so a second Ctrl+C forces an immediate exit.
 // Uses signal.Notify (not signal.NotifyContext) since it keeps relaying
@@ -38,7 +41,13 @@ func main() {
 
 func run() error {
 	envPath := flag.String("env", "", "path to a .env file (default: .env if present)")
+	versionFlag := flag.Bool("version", false, "print version and exit")
 	flag.Parse()
+
+	if *versionFlag {
+		fmt.Println("immerle", version)
+		return nil
+	}
 
 	cfg, err := config.Load(*envPath)
 	if err != nil {

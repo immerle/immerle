@@ -20,7 +20,9 @@ import (
 	"github.com/immerle/immerle/internal/api/immerle"
 	"github.com/immerle/immerle/internal/api/subsonic"
 	"github.com/immerle/immerle/internal/autoplaylists"
+	"github.com/immerle/immerle/internal/bandcamp"
 	"github.com/immerle/immerle/internal/charts"
+	"github.com/immerle/immerle/internal/concerts"
 	"github.com/immerle/immerle/internal/config"
 	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/db"
@@ -33,6 +35,7 @@ import (
 	"github.com/immerle/immerle/internal/persistence"
 	"github.com/immerle/immerle/internal/providers"
 	"github.com/immerle/immerle/internal/providers/httpprovider"
+	"github.com/immerle/immerle/internal/reccobeats"
 	"github.com/immerle/immerle/internal/scanner"
 	"github.com/immerle/immerle/internal/server"
 	"github.com/immerle/immerle/internal/stream"
@@ -54,6 +57,8 @@ type App struct {
 	evictor       *core.Evictor
 	charts        *charts.Service
 	autoplaylists *autoplaylists.Service
+	concerts      *concerts.Service
+	purchases     *core.PurchasesService
 	logPruner     *core.LogPruner
 	settings      *core.SettingsService
 	imports       *importer.Service
@@ -394,6 +399,24 @@ func New(cfg config.Config) (*App, error) {
 	// resolution (for the shared genre/decade ones) as chartsSvc above.
 	autoplaylistsSvc := autoplaylists.New(store.Catalog, store.Genres, store.Wrapped, store.Annotations, store.Users, store.Playlists, logger)
 	autoplaylistsSvc.SetOwnerResolver(func(ctx context.Context) (string, error) { return firstAdmin(ctx, store.Users) })
+	// "Découvertes": a per-user recommendation mix from the keyless ReccoBeats
+	// API (https://reccobeats.com), seeded from each user's top tracks and
+	// synced daily along with the other personal lists above.
+	autoplaylistsSvc.SetRecommender(reccobeats.NewClient())
+
+	// Concert discovery: matches each user-with-a-city's top-listened artists
+	// against Ticketmaster/Skiddle, once daily. Disabled by default (needs at
+	// least one API key, set from the admin settings).
+	concertsSvc := concerts.New(store.Users, store.Wrapped, store.Concerts, settingsSvc.ConcertsConfig, logger)
+
+	// Bandcamp purchase import: a user pastes their personal session cookie
+	// (no official OAuth exists) and we download+ingest their purchased
+	// albums/tracks, same uploads tree a manual upload lands in.
+	purchasesSvc, err := core.NewPurchasesService(store.BandcampConns, store.BandcampImports, bandcamp.NewClient(),
+		store.Catalog, scan, filepath.Join(downloadDir, "uploads"), settingsSvc.Secret(), logger)
+	if err != nil {
+		return nil, fmt.Errorf("purchases service: %w", err)
+	}
 
 	// Daily retention sweep over persisted diagnostic logs. The window is read
 	// live from the runtime settings; register any future log table here.
@@ -439,6 +462,9 @@ func New(cfg config.Config) (*App, error) {
 		Cleanup:        evictor,
 		Charts:         chartsSvc,
 		AutoPlaylists:  autoplaylistsSvc,
+		Concerts:       store.Concerts,
+		ConcertsSync:   concertsSvc,
+		Purchases:      purchasesSvc,
 		Providers:      providerMgr,
 		Settings:       settingsSvc,
 		SmartPlaylists: store.SmartPlaylists,
@@ -507,6 +533,8 @@ func New(cfg config.Config) (*App, error) {
 		evictor:       evictor,
 		charts:        chartsSvc,
 		autoplaylists: autoplaylistsSvc,
+		concerts:      concertsSvc,
+		purchases:     purchasesSvc,
 		logPruner:     logPruner,
 		settings:      settingsSvc,
 		imports:       importSvc,
@@ -572,6 +600,14 @@ func (a *App) Run(ctx context.Context) error {
 	}
 	if a.autoplaylists != nil {
 		a.spawn(func() { a.autoplaylists.Run(ctx) })
+	}
+	if a.concerts != nil {
+		// Always started; SyncNow self-gates on the runtime enabled flag, same
+		// as the evictor.
+		a.spawn(func() { a.concerts.Run(ctx) })
+	}
+	if a.purchases != nil {
+		a.spawn(func() { a.purchases.Worker(ctx) })
 	}
 	if a.logPruner != nil {
 		a.spawn(func() { a.logPruner.Run(ctx) })

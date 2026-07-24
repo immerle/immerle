@@ -451,6 +451,9 @@ func (m model) View() string {
 	return lipgloss.JoinVertical(lipgloss.Left, header, "", list.String(), status, help)
 }
 
+// version is stamped at build time via -ldflags "-X main.version=...".
+var version = "dev"
+
 // session is what's persisted to ~/.immerle/config.json: the server and the
 // device-session JWT from the last login, so it only runs again once the
 // token expires (there's no refresh endpoint -- a fresh login is how you get
@@ -579,9 +582,15 @@ func logout() {
 }
 
 func main() {
-	if len(os.Args) > 1 && os.Args[1] == "logout" {
-		logout()
-		return
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "version", "--version", "-v":
+			fmt.Println("iml", version)
+			return
+		case "logout":
+			logout()
+			return
+		}
 	}
 
 	var client *Client

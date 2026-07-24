@@ -93,6 +93,29 @@
     "playsShort": "{{count}} écoutes",
     "month": { "jan": "J", "feb": "F", "mar": "M", "apr": "A", "may": "M", "jun": "J", "jul": "J", "aug": "A", "sep": "S", "oct": "O", "nov": "N", "dec": "D" }
   },
+  "bandcamp": {
+    "entryTitle": "Achats Bandcamp",
+    "entrySubtitle": "Importe ce que tu as acheté",
+    "title": "Bandcamp",
+    "subtitle": "Importe tes achats dans ta bibliothèque",
+    "connectPrompt": "Connecte ton compte Bandcamp pour importer tes achats.",
+    "cookieLabel": "Cookie de session",
+    "cookieHelp": "Connecte-toi sur bandcamp.com dans un navigateur, ouvre les outils de développement → Application → Cookies, et copie la valeur du cookie \"identity\".",
+    "cookiePlaceholder": "Colle ton cookie identity",
+    "connectButton": "Connecter",
+    "connectError": "Connexion impossible — vérifie ton cookie et réessaie.",
+    "invalidCookie": "Ce cookie est invalide ou expiré.",
+    "connected": "Connecté",
+    "reconnectNeeded": "Ta session a expiré — reconnecte ton compte.",
+    "disconnect": "Déconnecter",
+    "collectionEmpty": "Aucun achat trouvé.",
+    "collectionError": "Impossible de charger ta collection.",
+    "importButton": "Importer",
+    "statusQueued": "En attente",
+    "statusRunning": "Import en cours…",
+    "statusCompleted": "Importé",
+    "statusFailed": "Échec"
+  },
   "offline": {
     "title": "Téléchargements hors-ligne",
     "subtitle": "Titres enregistrés sur cet appareil",
@@ -265,6 +288,12 @@
       "availableOffline": "Disponible hors ligne",
       "offlineAlbums": "Albums disponibles hors ligne",
       "offlinePlaylists": "Playlists disponibles hors ligne"
+    },
+    "concerts": {
+      "bannerTitle": "{{artist}} joue près de chez vous",
+      "tickets": "Billets",
+      "dismiss": "Ignorer",
+      "toastFound": "Nouveau concert trouvé : {{artist}} — {{event}}"
     },
     "playlists": {
       "title": "Playlists",
@@ -555,6 +584,19 @@
       "chartsDescription": "Playlists publiques synchronisées chaque semaine depuis les classements Spotify mondiaux (top titres par pays).",
       "chartsSyncedCount": "{{count}} synchronisée(s)",
       "runChartsSync": "Synchroniser les charts maintenant",
+      "concertsTitle": "Découverte de concerts",
+      "concertsDescription": "Compare les artistes les plus écoutés de chaque utilisateur à chaque source ci-dessous, une fois par jour, dans le pays ci-dessous — le même pays pour toute l'instance.",
+      "concertsEnabled": "Découverte de concerts",
+      "concertsCountry": "Pays",
+      "concertsSources": "Sources pour ce pays : {{list}}.",
+      "countryNotSet": "Non défini",
+      "ticketmasterKey": "Clé API Ticketmaster",
+      "skiddleKey": "Clé API Skiddle",
+      "keyConfigured": "Configurée — laisser vide pour la conserver",
+      "keyNotConfigured": "Non définie",
+      "concertsKeysHelp": "Les clés sont à écriture seule : plus jamais affichées une fois enregistrées.",
+      "concertsSyncedCount": "{{count}} nouveau(x) concert(s)",
+      "runConcertsSync": "Synchroniser les concerts maintenant",
       "logsTitle": "Journaux",
       "logsSubtitle": "Rétention des journaux de diagnostic",
       "logsDescription": "Un balayage quotidien supprime les journaux persistés (erreurs et avertissements des providers) plus anciens que la fenêtre de rétention.",
@@ -712,6 +754,20 @@
       "add": "Ajouter",
       "save": "Enregistrer",
       "delete": "Supprimer la playlist",
+      "autoKind": {
+        "topMonthMix": "Top du mois",
+        "onRepeatMix": "On Repeat",
+        "forgottenMix": "Favoris oubliés",
+        "randomMix": "Aléatoire",
+        "recommendedMix": "Découvertes",
+        "weeklyTrendingMix": "Tendances de la semaine",
+        "chartGlobal": "Top mondial",
+        "chartFr": "Top 50 France",
+        "chartUs": "Top 50 États-Unis",
+        "chartGb": "Top 50 Royaume-Uni",
+        "chartDe": "Top 50 Allemagne",
+        "chartEs": "Top 50 Espagne"
+      },
       "cover": {
         "title": "Créer une pochette",
         "close": "Fermer",
@@ -896,6 +952,10 @@
     }
   },
   "components": {
+    "scrollRow": {
+      "scrollLeft": "Défiler vers la gauche",
+      "scrollRight": "Défiler vers la droite"
+    },
     "sidebar": {
       "library": "Bibliothèque",
       "expandLibrary": "Déplier la bibliothèque",

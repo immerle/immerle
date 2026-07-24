@@ -5,13 +5,17 @@ import { Ionicon } from './Ionicon';
 import { useAuth } from '../auth/store';
 import { useJam } from '../jam/store';
 import { useJamMutations, useJamInvites, useJamInviteMutations } from '../query/social';
+import { useConcertNotifications } from '../query/concerts';
 import { useColors } from '../theme/colors';
 import { useT } from '../i18n/store';
 
 /**
  * Generic notification bell: badge count + a list to act on. Jam invites are
- * the only notification kind today, but the bell itself isn't jam-specific —
- * other kinds can land here later without a redesign.
+ * the only notification kind with a list here today, but the bell itself
+ * isn't jam-specific — other kinds can land here later without a redesign.
+ * Concert-match toasts are wired in here (not on the Home screen) precisely
+ * because this bell stays mounted across every tab, so its "seen" baseline
+ * survives navigation — see useConcertNotifications.
  */
 export function NotificationsBell() {
   const t = useT();
@@ -22,6 +26,7 @@ export function NotificationsBell() {
   const jam = useJamMutations();
   const { dismiss } = useJamInviteMutations();
   const [open, setOpen] = useState(false);
+  useConcertNotifications();
 
   if (!hasJam) return null;
 
