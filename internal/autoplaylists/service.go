@@ -40,16 +40,33 @@ import (
 // GET /me/custom-playlists (internal/api/immerle) can look each one up
 // directly by (kind, callerID) without going through ListVisible/subscriptions.
 const (
-	sourceGenre    = "genre-mix"
-	sourceDecade   = "decade-mix"
-	sourceTrending = "weekly-trending-mix"
+	sourceGenre  = "genre-mix"
+	sourceDecade = "decade-mix"
 
 	SourceTopMonth    = "top-month-mix"
 	SourceOnRepeat    = "on-repeat-mix"
 	SourceForgotten   = "forgotten-mix"
 	SourceRandom      = "random-mix"
 	SourceRecommended = "recommended-mix"
+	SourceTrending    = "weekly-trending-mix"
 )
+
+// AutoPlaylistKinds is the fixed, stable set of source instance ids this
+// package's playlists use — personal lists plus the trending chart — safe to
+// expose to API clients (see internal/api/immerle playlistView.
+// AutoPlaylistKind) so they can render a translated label instead of the
+// (French-only) stored Name. Unlike genre/decade playlists (free-text tags,
+// not a fixed enum) or a federation-imported playlist's real instance id
+// (internal only, never meant to leave the server), these six values never
+// change and carry no per-instance/per-user information.
+var AutoPlaylistKinds = map[string]bool{
+	SourceTopMonth:    true,
+	SourceOnRepeat:    true,
+	SourceForgotten:   true,
+	SourceRandom:      true,
+	SourceRecommended: true,
+	SourceTrending:    true,
+}
 
 // minTracks is the minimum catalog size for a genre/decade to get its own
 // playlist — below this it'd be a near-empty, not-worth-it playlist. Personal
@@ -256,7 +273,7 @@ func (s *Service) syncTrending(ctx context.Context, ownerID string) int {
 		return 0
 	}
 	if err := s.upsert(ctx, playlistSpec{
-		ownerID: ownerID, sourceInstanceID: sourceTrending, sourceExternalID: trendingExternalID,
+		ownerID: ownerID, sourceInstanceID: SourceTrending, sourceExternalID: trendingExternalID,
 		name: trendingName, icon: fireIcon, public: true, ids: ids,
 	}); err != nil {
 		s.logger.Warn("autoplaylists: trending sync failed", "error", err)

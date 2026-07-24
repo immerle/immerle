@@ -36,6 +36,9 @@ func TestPlaylistCRUD(t *testing.T) {
 	if created.SongCount != 1 || len(created.Tracks) != 1 {
 		t.Fatalf("created playlist: %+v", created)
 	}
+	if created.AutoPlaylistKind != "" {
+		t.Fatalf("a user-created playlist must not carry an autoPlaylistKind, got %q", created.AutoPlaylistKind)
+	}
 	id := created.ID
 
 	// List shows it.

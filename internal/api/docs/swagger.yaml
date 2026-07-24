@@ -691,6 +691,14 @@ components:
       type: object
     immerle.PublicPlaylistDTO:
       properties:
+        autoPlaylistKind:
+          description: |-
+            AutoPlaylistKind identifies a server-generated playlist's stable kind
+            (see autoplaylists.AutoPlaylistKinds — currently only "Tendances de la
+            semaine" is both public and server-generated), for clients to render a
+            translated label instead of the (French-only) stored Name. Empty for
+            every other public playlist.
+          type: string
         comment:
           type: string
         coverArt:
@@ -1592,6 +1600,14 @@ components:
       type: object
     immerle.playlistView:
       properties:
+        autoPlaylistKind:
+          description: |-
+            AutoPlaylistKind identifies a server-generated playlist's stable kind
+            (see autoplaylists.AutoPlaylistKinds — "Top du mois", "Découvertes"...),
+            for clients to render a translated label instead of the (French-only)
+            stored Name. Empty for every other playlist (user-created, genre/decade,
+            hub-imported).
+          type: string
         changedAt:
           type: string
         collaborative:

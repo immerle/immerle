@@ -28,15 +28,16 @@ func (h *Handler) handlePublicPlaylists(w http.ResponseWriter, r *http.Request) 
 	for _, p := range lists {
 		subscribed, _ := h.Playlists.IsSubscribed(r.Context(), p.ID, user.ID)
 		out = append(out, map[string]any{
-			"id":         p.ID,
-			"name":       p.Name,
-			"owner":      p.OwnerName,
-			"comment":    p.Comment,
-			"songCount":  p.SongCount,
-			"duration":   p.Duration,
-			"coverArt":   p.CoverArt,
-			"coverArts":  p.CoverArts,
-			"subscribed": subscribed,
+			"id":               p.ID,
+			"name":             p.Name,
+			"owner":            p.OwnerName,
+			"comment":          p.Comment,
+			"songCount":        p.SongCount,
+			"duration":         p.Duration,
+			"coverArt":         p.CoverArt,
+			"coverArts":        p.CoverArts,
+			"subscribed":       subscribed,
+			"autoPlaylistKind": autoPlaylistKind(p.SourceInstanceID),
 		})
 	}
 	writeResource(w, http.StatusOK, out)

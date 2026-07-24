@@ -270,7 +270,7 @@ func TestSyncNowMaterializesWeeklyTrendingChart(t *testing.T) {
 		t.Fatalf("SyncNow: %v", err)
 	}
 
-	trending, err := store.Playlists.FindFederated(ctx, sourceTrending, trendingExternalID)
+	trending, err := store.Playlists.FindFederated(ctx, SourceTrending, trendingExternalID)
 	if err != nil {
 		t.Fatalf("trending playlist not created: %v", err)
 	}
