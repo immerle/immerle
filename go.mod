@@ -18,7 +18,7 @@ require (
 	github.com/oapi-codegen/runtime v1.4.2
 	github.com/pressly/goose/v3 v3.27.1
 	github.com/swaggo/http-swagger/v2 v2.0.2
-	golang.org/x/image v0.42.0
+	golang.org/x/image v0.43.0
 	golang.org/x/sync v0.21.0
 	golang.org/x/term v0.45.0
 	gopkg.in/yaml.v3 v3.0.1

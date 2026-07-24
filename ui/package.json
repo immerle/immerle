@@ -88,7 +88,8 @@
   },
   "private": true,
   "overrides": {
-    "undici": "^6.27.0"
+    "undici": "^6.27.0",
+    "shell-quote": "^1.9.0"
   },
   "expo": {
     "install": {
