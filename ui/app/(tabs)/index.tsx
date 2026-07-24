@@ -18,6 +18,7 @@ import { Button, Card, IconButton, Loading, SectionHeader } from '../../src/comp
 import { useColors } from '../../src/theme/colors';
 import { Album, Playlist, Song } from '../../src/api/subsonic/types';
 import { useT } from '../../src/i18n/store';
+import { autoPlaylistName } from '../../src/i18n/autoPlaylists';
 
 const TILE = 150;
 
@@ -220,7 +221,7 @@ function CustomPlaylistsRow({ title, playlists }: { title: string; playlists: Pl
           <Pressable key={p.id} onPress={() => router.push(`/playlist/${p.id}` as never)} style={{ width: TILE }} className="mr-3 active:opacity-70">
             <PlaylistCover coverArt={p.coverArt} covers={p.coverArts ?? []} size={TILE} rounded="rounded-xl" fallbackIcon="list" />
             <Text numberOfLines={1} className="mt-2 text-sm font-semibold text-foreground">
-              {p.name}
+              {autoPlaylistName(t, p.autoPlaylistKind, p.name)}
             </Text>
             <Text numberOfLines={1} className="text-xs text-muted">
               {t('media.playlist.trackCount', { count: p.songCount ?? 0 })}

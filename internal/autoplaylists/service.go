@@ -40,16 +40,33 @@ import (
 // GET /me/custom-playlists (internal/api/immerle) can look each one up
 // directly by (kind, callerID) without going through ListVisible/subscriptions.
 const (
-	sourceGenre    = "genre-mix"
-	sourceDecade   = "decade-mix"
-	sourceTrending = "weekly-trending-mix"
+	sourceGenre  = "genre-mix"
+	sourceDecade = "decade-mix"
 
 	SourceTopMonth    = "top-month-mix"
 	SourceOnRepeat    = "on-repeat-mix"
 	SourceForgotten   = "forgotten-mix"
 	SourceRandom      = "random-mix"
 	SourceRecommended = "recommended-mix"
+	SourceTrending    = "weekly-trending-mix"
 )
+
+// AutoPlaylistKinds is the fixed, stable set of source instance ids this
+// package's playlists use — personal lists plus the trending chart — safe to
+// expose to API clients (see internal/api/immerle playlistView.
+// AutoPlaylistKind) so they can render a translated label instead of the
+// (French-only) stored Name. Unlike genre/decade playlists (free-text tags,
+// not a fixed enum) or a federation-imported playlist's real instance id
+// (internal only, never meant to leave the server), these six values never
+// change and carry no per-instance/per-user information.
+var AutoPlaylistKinds = map[string]bool{
+	SourceTopMonth:    true,
+	SourceOnRepeat:    true,
+	SourceForgotten:   true,
+	SourceRandom:      true,
+	SourceRecommended: true,
+	SourceTrending:    true,
+}
 
 // minTracks is the minimum catalog size for a genre/decade to get its own
 // playlist — below this it'd be a near-empty, not-worth-it playlist. Personal
@@ -256,7 +273,7 @@ func (s *Service) syncTrending(ctx context.Context, ownerID string) int {
 		return 0
 	}
 	if err := s.upsert(ctx, playlistSpec{
-		ownerID: ownerID, sourceInstanceID: sourceTrending, sourceExternalID: trendingExternalID,
+		ownerID: ownerID, sourceInstanceID: SourceTrending, sourceExternalID: trendingExternalID,
 		name: trendingName, icon: fireIcon, public: true, ids: ids,
 	}); err != nil {
 		s.logger.Warn("autoplaylists: trending sync failed", "error", err)
@@ -499,7 +516,16 @@ type playlistSpec struct {
 // shape. Always Federated (read-only — a resync would just undo any edit),
 // public or private per spec.public.
 func (s *Service) upsert(ctx context.Context, spec playlistSpec) error {
-	cover := models.GeneratorCoverID(coverParams(spec.name, spec.icon))
+	// A known auto-playlist kind's cover title is the stable kind string, not
+	// the (French-only) display name — GET /cover/generator resolves it as an
+	// i18n key (see internal/charts.labelKeys/ResolveLabel) in the caller's
+	// locale. Genre/decade playlists have no such key, so their cover keeps
+	// showing the literal name (there's nothing else to show).
+	title := spec.name
+	if AutoPlaylistKinds[spec.sourceInstanceID] {
+		title = spec.sourceInstanceID
+	}
+	cover := models.GeneratorCoverID(coverParams(spec.name, title, spec.icon))
 	existing, err := s.playlists.FindFederated(ctx, spec.sourceInstanceID, spec.sourceExternalID)
 	switch {
 	case err == nil:
@@ -561,7 +587,10 @@ var coverGradients = [][2]string{
 // coverParams builds the generator-cover query values (see
 // internal/models.GeneratorCoverID and GET /cover/generator) for an
 // auto-playlist: icon over a gradient picked from coverGradients by name.
-func coverParams(name, icon string) url.Values {
+// title is what actually renders on the cover — name (kept separate so an
+// established gradient doesn't shift) unless the caller passed a stable kind
+// string instead, resolved as an i18n key at render time.
+func coverParams(name, title, icon string) url.Values {
 	sum := 0
 	for _, r := range name {
 		sum += int(r)
@@ -570,7 +599,7 @@ func coverParams(name, icon string) url.Values {
 
 	vals := url.Values{}
 	vals.Set("icon", icon)
-	vals.Set("title", name)
+	vals.Set("title", title)
 	vals.Set("color", g[0])
 	vals.Set("color2", g[1])
 	vals.Set("angle", "45")
