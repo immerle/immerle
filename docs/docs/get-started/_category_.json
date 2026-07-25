@@ -1,0 +1,9 @@
+{
+  "label": "Get Started",
+  "position": 1.5,
+  "collapsed": false,
+  "link": {
+    "type": "generated-index",
+    "description": "The simplest, safest path to a running Immerle: Docker Compose, Postgres, no open ports, reached over a VPN, then picking a client."
+  }
+}

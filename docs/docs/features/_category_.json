@@ -1,0 +1,8 @@
+{
+  "label": "Features",
+  "position": 5,
+  "link": {
+    "type": "generated-index",
+    "description": "The on-demand catalog, discovery playlists, social features, playlist import, and federation, everything beyond streaming your own library."
+  }
+}

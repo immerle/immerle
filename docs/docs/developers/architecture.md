@@ -43,14 +43,14 @@ internal/
 
 ## The native Immerle API
 
-Everything under `/api/v1/*` — accounts, social, providers, admin — is
+Everything under `/api/v1/*` (accounts, social, providers, admin) is
 Immerle's own extension on top of the Subsonic surface, documented as an
 **OpenAPI 3.1** specification generated straight from handler annotations
 with [swaggo/swag v2](https://github.com/swaggo/swag):
 
-- `GET /openapi.json` / `GET /openapi.yaml` — the spec
-- `GET /swagger/` — interactive Swagger UI, served by the binary, no CDN
-- [API reference](pathname:///api/) — the same spec, browsable from this site
+- `GET /openapi.json` / `GET /openapi.yaml`: the spec
+- `GET /swagger/`: interactive Swagger UI, served by the binary, no CDN
+- [API reference](pathname:///api/): the same spec, browsable from this site
 
 Capability discovery is unauthenticated so client apps can detect what a
 server supports before logging in:
@@ -59,18 +59,18 @@ server supports before logging in:
 curl http://localhost:4533/api/v1/capabilities
 ```
 
-Everything else authenticates the same way as Subsonic — `u`+`p`, `u`+`t`+`s`,
+Everything else authenticates the same way as Subsonic: `u`+`p`, `u`+`t`+`s`,
 a device JWT (`Authorization: Bearer`, from `POST /auth/sessions`), or a
 personal API token (`gsk_…`, also a Bearer or `?apiKey=`). See
 [Subsonic API](./subsonic-api.md) for the parameter reference and
-[On-demand catalog](../on-demand-providers.md) /
-[Social features](../social.md) / [Playlist import](../playlist-import.md) /
-[Federation](../federation.md) for what each area of the native API covers —
+[On-demand catalog](../features/on-demand-providers.md) /
+[Social features](../features/social.md) / [Playlist import](../features/playlist-import.md) /
+[Federation](../features/federation.md) for what each area of the native API covers:
 those pages describe the *behavior*; regenerate/consult the OpenAPI spec for
 exact request/response shapes.
 
 Regenerate the spec after changing handler annotations (and keep it
-committed — CI enforces this):
+committed, CI enforces this):
 
 ```bash
 make openapi        # regenerate internal/api/docs/swagger.{json,yaml}
@@ -93,4 +93,4 @@ at startup; SQLite is the default backend, Postgres is supported for larger
 instances (`DATABASE_DRIVER=postgres`).
 
 Before opening a PR, run `make ci` (it must pass) and `make openapi` if you
-touched handler annotations — CI fails on a stale spec.
+touched handler annotations, CI fails on a stale spec.

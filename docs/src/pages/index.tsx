@@ -15,7 +15,7 @@ const FEATURES = [
   {
     glyph: '🎧',
     title: 'Works with your clients',
-    body: 'Full Subsonic / OpenSubsonic — browse, search, stream, transcode, playlists, scrobbling, now-playing. Supersonic, Symfonium and DSub just work.',
+    body: 'Full Subsonic / OpenSubsonic: browse, search, stream, transcode, playlists, scrobbling, now-playing. Supersonic, Symfonium and DSub just work.',
   },
   {
     glyph: '🌍',
@@ -35,7 +35,7 @@ const FEATURES = [
   {
     glyph: '📥',
     title: 'Playlist import',
-    body: 'Bring your playlists over — Spotify ships first.',
+    body: 'Bring your playlists over: Spotify ships first.',
   },
   {
     glyph: '🔗',
@@ -82,7 +82,7 @@ export default function Home(): React.ReactElement {
             beat of your <span className={styles.sings}>music</span>
           </h1>
           <p className={styles.lede}>
-            Stream, share and discover — on a music server that's entirely
+            Stream, share and discover, on a music server that's entirely
             yours. No subscriptions, no limits, no lock-in.
           </p>
 
@@ -118,7 +118,7 @@ export default function Home(): React.ReactElement {
 
         <section className={styles.outro}>
           <h2 className={styles.outroTitle}>Up and running in a couple of minutes.</h2>
-          <Link className={styles.primary} to="/docs/installation">
+          <Link className={styles.primary} to="/docs/get-started/quick-start">
             Get started →
           </Link>
         </section>
