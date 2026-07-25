@@ -737,6 +737,31 @@
                 },
                 "type": "object"
             },
+            "immerle.LastFmAdminDTO": {
+                "properties": {
+                    "configured": {
+                        "example": false,
+                        "type": "boolean"
+                    },
+                    "enabled": {
+                        "example": false,
+                        "type": "boolean"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.LastFmStatusDTO": {
+                "properties": {
+                    "connected": {
+                        "type": "boolean"
+                    },
+                    "username": {
+                        "example": "bob",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "immerle.LibraryStatsDTO": {
                 "properties": {
                     "albums": {
@@ -1984,6 +2009,39 @@
                 "properties": {
                     "username": {
                         "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.lastFmConnectFinishRequest": {
+                "properties": {
+                    "token": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.lastFmConnectStartResponse": {
+                "properties": {
+                    "authUrl": {
+                        "type": "string"
+                    },
+                    "token": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.lastFmUpdateRequest": {
+                "properties": {
+                    "apiKey": {
+                        "type": "string"
+                    },
+                    "apiSecret": {
+                        "type": "string"
+                    },
+                    "enabled": {
+                        "type": "boolean"
                     }
                 },
                 "type": "object"
@@ -4111,6 +4169,85 @@
                     }
                 ],
                 "summary": "Toggle the Hall of Fame feature",
+                "tags": [
+                    "admin"
+                ]
+            }
+        },
+        "/admin/lastfm": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.LastFmAdminDTO"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Get the Last.fm scrobbling feature state",
+                "tags": [
+                    "admin"
+                ]
+            },
+            "put": {
+                "description": "Admin only. Partial update — only fields present are changed. The API key/secret are write-only: the response never echoes them back.",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/immerle.lastFmUpdateRequest",
+                                        "summary": "body",
+                                        "description": "Fields to change"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Fields to change",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.LastFmAdminDTO"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Update Last.fm scrobbling settings",
                 "tags": [
                     "admin"
                 ]
@@ -8664,6 +8801,220 @@
                 "summary": "List favorites",
                 "tags": [
                     "catalog"
+                ]
+            }
+        },
+        "/me/lastfm": {
+            "delete": {
+                "responses": {
+                    "204": {
+                        "description": "disconnected"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Disconnect Last.fm",
+                "tags": [
+                    "users"
+                ]
+            },
+            "get": {
+                "description": "Reports whether the caller has connected their Last.fm account.",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.LastFmStatusDTO"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Last.fm connection status",
+                "tags": [
+                    "users"
+                ]
+            }
+        },
+        "/me/lastfm/connect/finish": {
+            "post": {
+                "description": "Exchanges a token approved via the auth URL for a permanent session key, and stores it on the caller's account. Returns 400 not_authorized if the token hasn't been approved yet.",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/immerle.lastFmConnectFinishRequest",
+                                        "summary": "body",
+                                        "description": "Approved auth token"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Approved auth token",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.LastFmStatusDTO"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "503": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Service Unavailable"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Finish connecting a Last.fm account",
+                "tags": [
+                    "users"
+                ]
+            }
+        },
+        "/me/lastfm/connect/start": {
+            "post": {
+                "description": "Requests a fresh auth token and returns the URL the caller must open to approve it, the first step of Last.fm's desktop-auth handshake.",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.lastFmConnectStartResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "502": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Gateway"
+                    },
+                    "503": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Service Unavailable"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Start connecting a Last.fm account",
+                "tags": [
+                    "users"
                 ]
             }
         },

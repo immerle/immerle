@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Linking, Pressable, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../../src/auth/store';
 import { useTheme, ThemePreference } from '../../src/theme/store';
 import { useLocale, LocalePref } from '../../src/i18n/store';
 import { usePlayer } from '../../src/audio/store';
 import { useAccount, useUpdateAccount } from '../../src/query/account';
+import { useLastFmStatus, useStartLastFmConnect, useFinishLastFmConnect, useDisconnectLastFm } from '../../src/query/lastfm';
 import { QUALITY_PRESETS } from '../../src/audio/quality';
 import { Button, Card, Field, Select } from '../../src/components/ui';
 import { AdminHeader, AdminScroll, CardTitle, colorFor } from '../../src/components/AdminUI';
@@ -48,6 +49,11 @@ export default function Settings() {
   const [editName, setEditName] = useState('');
   const [editEmail, setEditEmail] = useState('');
   const [editListenBrainzToken, setEditListenBrainzToken] = useState('');
+  const lastFm = useLastFmStatus();
+  const startLastFm = useStartLastFmConnect();
+  const finishLastFm = useFinishLastFmConnect();
+  const disconnectLastFm = useDisconnectLastFm();
+  const [lastFmToken, setLastFmToken] = useState<string | null>(null);
   useEffect(() => {
     if (account.data) {
       setEditName(account.data.displayName);
@@ -132,26 +138,82 @@ export default function Settings() {
         </View>
       </Card>
 
-      <Card className="gap-3">
-        <CardTitle icon="disc" color="#eab308" title={t('settings.listenBrainz')} />
-        <Field
-          label={t('settings.listenBrainzToken')}
-          placeholder={t('settings.listenBrainzTokenPlaceholder')}
-          autoCapitalize="none"
-          autoCorrect={false}
-          value={editListenBrainzToken}
-          onChangeText={setEditListenBrainzToken}
-        />
-        <Text className="text-xs text-muted">{t('settings.listenBrainzHint')}</Text>
-        <View className="flex-row justify-end">
-          <Button
-            title={t('settings.save')}
-            size="sm"
-            icon="save-outline"
-            loading={updateAccount.isPending}
-            onPress={() => updateAccount.mutate({ listenBrainzToken: editListenBrainzToken.trim() })}
+      <Card className="gap-4">
+        <CardTitle icon="disc" color="#eab308" title={t('settings.scrobbleSection')} />
+
+        <View className="gap-3">
+          <Text className="text-sm font-medium text-muted">{t('settings.listenBrainz')}</Text>
+          <Field
+            label={t('settings.listenBrainzToken')}
+            placeholder={t('settings.listenBrainzTokenPlaceholder')}
+            autoCapitalize="none"
+            autoCorrect={false}
+            value={editListenBrainzToken}
+            onChangeText={setEditListenBrainzToken}
           />
+          <Text className="text-xs text-muted">{t('settings.listenBrainzHint')}</Text>
+          <View className="flex-row justify-end">
+            <Button
+              title={t('settings.save')}
+              size="sm"
+              icon="save-outline"
+              loading={updateAccount.isPending}
+              onPress={() => updateAccount.mutate({ listenBrainzToken: editListenBrainzToken.trim() })}
+            />
+          </View>
         </View>
+
+        {client?.isFeatureEnabled('lastFm') ? (
+          <View className="gap-3 border-t border-border pt-4">
+            <Text className="text-sm font-medium text-muted">{t('settings.lastFm')}</Text>
+            {lastFm.data?.connected ? (
+              <View className="flex-row items-center justify-between gap-3">
+                <Text className="flex-1 text-sm text-foreground">{t('settings.lastFmConnectedAs', { username: lastFm.data.username ?? '' })}</Text>
+                <Button
+                  title={t('settings.lastFmDisconnect')}
+                  variant="danger"
+                  size="sm"
+                  loading={disconnectLastFm.isPending}
+                  onPress={() => disconnectLastFm.mutate(undefined, { onSuccess: () => setLastFmToken(null) })}
+                />
+              </View>
+            ) : lastFmToken ? (
+              <>
+                <Text className="text-xs text-muted">{t('settings.lastFmApproveHint')}</Text>
+                {finishLastFm.isError ? <Text className="text-xs text-danger">{t('settings.lastFmNotAuthorized')}</Text> : null}
+                <View className="flex-row justify-end">
+                  <Button
+                    title={t('settings.lastFmApproved')}
+                    size="sm"
+                    icon="checkmark"
+                    loading={finishLastFm.isPending}
+                    onPress={() => finishLastFm.mutate(lastFmToken, { onSuccess: () => setLastFmToken(null) })}
+                  />
+                </View>
+              </>
+            ) : (
+              <>
+                <Text className="text-xs text-muted">{t('settings.lastFmHint')}</Text>
+                <View className="flex-row justify-end">
+                  <Button
+                    title={t('settings.lastFmConnect')}
+                    size="sm"
+                    icon="link"
+                    loading={startLastFm.isPending}
+                    onPress={() =>
+                      startLastFm.mutate(undefined, {
+                        onSuccess: ({ token, authUrl }) => {
+                          setLastFmToken(token);
+                          Linking.openURL(authUrl);
+                        },
+                      })
+                    }
+                  />
+                </View>
+              </>
+            )}
+          </View>
+        ) : null}
       </Card>
 
       <Card className="gap-3">

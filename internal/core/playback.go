@@ -11,11 +11,23 @@ import (
 )
 
 // ScrobbleEnqueuer submits a completed play to an external scrobbling service
-// (ListenBrainz) for the given user, keyed on their own credentials. Backed by
-// the generic outbox, so it is fire-and-forget. Implemented by
-// *listenbrainz.Scrobbler; optional (nil when unset).
+// (ListenBrainz, Last.fm) for the given user, keyed on their own credentials.
+// Backed by the generic outbox, so it is fire-and-forget. Implemented by
+// *listenbrainz.Scrobbler and *lastfm.Scrobbler; optional (nil when unset).
 type ScrobbleEnqueuer interface {
 	EnqueueScrobble(ctx context.Context, user models.User, track models.Track, at time.Time)
+}
+
+// ScrobbleFanout enqueues a scrobble on every destination, letting a user
+// connect more than one scrobbling service at once.
+type ScrobbleFanout []ScrobbleEnqueuer
+
+// EnqueueScrobble implements ScrobbleEnqueuer by fanning out to every
+// destination in f.
+func (f ScrobbleFanout) EnqueueScrobble(ctx context.Context, user models.User, track models.Track, at time.Time) {
+	for _, e := range f {
+		e.EnqueueScrobble(ctx, user, track, at)
+	}
 }
 
 // PlaybackService holds the user-state mutations on library items — favorites,

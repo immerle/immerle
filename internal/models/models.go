@@ -24,6 +24,12 @@ type User struct {
 	// ListenBrainzToken is the user's personal ListenBrainz API token. Empty
 	// means scrobbling to ListenBrainz is off for this account.
 	ListenBrainzToken string `json:"-"`
+	// LastFmSessionKey is the permanent session key obtained via Last.fm's
+	// desktop-auth handshake (see internal/lastfm). Empty means scrobbling to
+	// Last.fm is off for this account. LastFmUsername is the connected
+	// account's Last.fm username, for display only.
+	LastFmSessionKey string `json:"-"`
+	LastFmUsername   string `json:"-"`
 }
 
 // ThemeSettings holds a user's per-account UI theme, applied client-side. It is
@@ -93,6 +99,7 @@ type RuntimeSettings struct {
 	Offline        OfflineRuntime        `json:"offline"`
 	HallOfFame     HallOfFameRuntime     `json:"hallOfFame"`
 	Concerts       ConcertsRuntime       `json:"concerts"`
+	LastFm         LastFmRuntime         `json:"lastFm"`
 }
 
 // SmartPlaylistsRuntime toggles rule-based "smart" playlists (hot-reloadable).
@@ -142,6 +149,19 @@ type ConcertsRuntime struct {
 	// admin settings API (see redactSettings), only ever set.
 	TicketmasterAPIKey string `json:"ticketmasterApiKey,omitempty"`
 	SkiddleAPIKey      string `json:"skiddleApiKey,omitempty"`
+}
+
+// LastFmRuntime configures Last.fm scrobbling (hot-reloadable): an app-level
+// API key + shared secret registered on Last.fm's developer site, needed for
+// the desktop-auth handshake each user goes through to connect their own
+// account (see internal/lastfm). Disabled by default — same reasoning as
+// ConcertsRuntime, it needs credentials to be useful.
+type LastFmRuntime struct {
+	Enabled bool `json:"enabled"`
+	// APIKey and APISecret are write-only: never returned by the admin
+	// settings API (see redactSettings), only ever set.
+	APIKey    string `json:"apiKey,omitempty"`
+	APISecret string `json:"apiSecret,omitempty"`
 }
 
 // LogsRuntime configures retention of persisted diagnostic logs (provider logs
