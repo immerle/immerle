@@ -12,13 +12,13 @@ import (
 // UserRepo persists user accounts.
 type UserRepo struct{ *base }
 
-const userColumns = `id, username, password_hash, email, is_admin, scrobble_enabled, activity_privacy, created_at, display_name, language, listenbrainz_token`
+const userColumns = `id, username, password_hash, email, is_admin, scrobble_enabled, activity_privacy, created_at, display_name, language, listenbrainz_token, lastfm_session_key, lastfm_username`
 
 func scanUser(s rowScanner) (models.User, error) {
 	var u models.User
 	var isAdmin, scrobble int
 	var createdAt int64
-	if err := s.Scan(&u.ID, &u.Username, &u.PasswordHash, &u.Email, &isAdmin, &scrobble, &u.ActivityPrivacy, &createdAt, &u.DisplayName, &u.Language, &u.ListenBrainzToken); err != nil {
+	if err := s.Scan(&u.ID, &u.Username, &u.PasswordHash, &u.Email, &isAdmin, &scrobble, &u.ActivityPrivacy, &createdAt, &u.DisplayName, &u.Language, &u.ListenBrainzToken, &u.LastFmSessionKey, &u.LastFmUsername); err != nil {
 		return u, err
 	}
 	u.IsAdmin = isAdmin != 0
@@ -33,7 +33,8 @@ func (r *UserRepo) Create(ctx context.Context, u models.User) error {
 		Set("id", u.ID).Set("username", u.Username).Set("password_hash", u.PasswordHash).Set("email", u.Email).
 		Set("is_admin", db.Bool(u.IsAdmin)).Set("scrobble_enabled", db.Bool(u.ScrobbleEnabled)).
 		Set("activity_privacy", u.ActivityPrivacy).Set("created_at", db.Millis(u.CreatedAt)).
-		Set("display_name", u.DisplayName).Set("language", u.Language).Set("listenbrainz_token", u.ListenBrainzToken))
+		Set("display_name", u.DisplayName).Set("language", u.Language).Set("listenbrainz_token", u.ListenBrainzToken).
+		Set("lastfm_session_key", u.LastFmSessionKey).Set("lastfm_username", u.LastFmUsername))
 	return err
 }
 
@@ -52,8 +53,8 @@ func (r *UserRepo) CreateIfEmpty(ctx context.Context, u models.User) (bool, erro
 		if n > 0 {
 			return nil
 		}
-		if _, err := tx.ExecContext(ctx, r.rebind(`INSERT INTO users (`+userColumns+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`),
-			u.ID, u.Username, u.PasswordHash, u.Email, db.Bool(u.IsAdmin), db.Bool(u.ScrobbleEnabled), u.ActivityPrivacy, db.Millis(u.CreatedAt), u.DisplayName, u.Language, u.ListenBrainzToken); err != nil {
+		if _, err := tx.ExecContext(ctx, r.rebind(`INSERT INTO users (`+userColumns+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`),
+			u.ID, u.Username, u.PasswordHash, u.Email, db.Bool(u.IsAdmin), db.Bool(u.ScrobbleEnabled), u.ActivityPrivacy, db.Millis(u.CreatedAt), u.DisplayName, u.Language, u.ListenBrainzToken, u.LastFmSessionKey, u.LastFmUsername); err != nil {
 			return err
 		}
 		created = true
@@ -67,7 +68,8 @@ func (r *UserRepo) Update(ctx context.Context, u models.User) error {
 	_, err := r.bexec(ctx, r.mel.NewUpdate("users").
 		Set("password_hash", u.PasswordHash).Set("email", u.Email).Set("display_name", u.DisplayName).
 		Set("language", u.Language).Set("is_admin", db.Bool(u.IsAdmin)).Set("scrobble_enabled", db.Bool(u.ScrobbleEnabled)).
-		Set("activity_privacy", u.ActivityPrivacy).Set("listenbrainz_token", u.ListenBrainzToken).Where("id", "=", u.ID))
+		Set("activity_privacy", u.ActivityPrivacy).Set("listenbrainz_token", u.ListenBrainzToken).
+		Set("lastfm_session_key", u.LastFmSessionKey).Set("lastfm_username", u.LastFmUsername).Where("id", "=", u.ID))
 	return err
 }
 

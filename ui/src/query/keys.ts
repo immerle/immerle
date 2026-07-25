@@ -29,6 +29,8 @@ export const qk = {
   bandcampStatus: ['bandcamp', 'status'] as const,
   bandcampCollection: ['bandcamp', 'collection'] as const,
   bandcampJobs: ['bandcamp', 'jobs'] as const,
+  lastFmStatus: ['lastfm', 'status'] as const,
+  lastFmAdmin: ['admin', 'lastfm'] as const,
 
   playlists: ['playlists'] as const,
   playlist: (id: string) => ['playlist', id] as const,

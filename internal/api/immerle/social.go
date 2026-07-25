@@ -36,6 +36,7 @@ func (h *Handler) handleCapabilities(w http.ResponseWriter, r *http.Request) {
 	hallOfFame := h.hallOfFameEnabled()
 	concerts := h.concertsEnabled()
 	bandcampImport := h.Purchases != nil
+	lastFm := h.Settings != nil && h.Settings.Get().LastFm.Enabled
 	writeResource(w, http.StatusOK, map[string]any{
 		"server":          "immerle",
 		"protocolVersion": ProtocolVersion,
@@ -63,6 +64,7 @@ func (h *Handler) handleCapabilities(w http.ResponseWriter, r *http.Request) {
 			"hallOfFame":             map[string]any{"version": 1, "admin": true, "enabled": hallOfFame},
 			"concertDiscovery":       map[string]any{"version": 1, "admin": true, "enabled": concerts},
 			"bandcampImport":         map[string]any{"version": 1, "enabled": bandcampImport},
+			"lastFm":                 map[string]any{"version": 1, "admin": true, "enabled": lastFm},
 		},
 	})
 }

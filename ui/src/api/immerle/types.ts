@@ -52,6 +52,8 @@ export interface Capabilities {
     concertDiscovery: boolean;
     /** Import your own Bandcamp purchases (`/me/purchases/bandcamp`). */
     bandcampImport: boolean;
+    /** Last.fm scrobbling (`/me/lastfm`), gated behind an admin-configured API key. */
+    lastFm: boolean;
   };
   /**
    * Live on/off state for the handful of features an admin can toggle at
@@ -277,6 +279,18 @@ export interface ConcertsAdminStatus {
   country: string;
   ticketmasterConfigured: boolean;
   skiddleConfigured: boolean;
+}
+
+/** The caller's Last.fm connection state. */
+export interface LastFmStatus {
+  connected: boolean;
+  username?: string;
+}
+
+/** Admin view of Last.fm scrobbling config — the API key/secret are write-only. */
+export interface LastFmAdminStatus {
+  enabled: boolean;
+  configured: boolean;
 }
 
 /** The caller's Bandcamp connection state. The cookie is write-only. */

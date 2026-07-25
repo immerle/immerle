@@ -56,6 +56,7 @@ you outgrow it). Drop in your music, hit play.
 - [Connecting clients](./clients/index.md): the app, `iml`, or any Subsonic client.
 - [On-demand catalog](./features/on-demand-providers.md): enable built-in providers, add your own, cleanup.
 - [Discovery & Hall of Fame](./features/discovery.md): auto-generated playlists and the top-tracks ranking.
+- [Scrobbling](./features/scrobbling.md): push plays to ListenBrainz and/or Last.fm.
 - [Social features](./features/social.md): activity, sharing, Jam sessions.
 - [Playlist import](./features/playlist-import.md): bring playlists over from Spotify or Deezer.
 - [Purchase import](./features/purchase-import.md): connect Bandcamp and import what you bought.

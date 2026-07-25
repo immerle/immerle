@@ -14,6 +14,7 @@ import { useWrappedAdmin, useSetWrapped } from '../../src/query/wrapped';
 import { useOfflineAdmin, useSetOffline } from '../../src/query/offline';
 import { useHallOfFameAdmin, useSetHallOfFame } from '../../src/query/hallOfFame';
 import { useConcertsAdmin, useUpdateConcertsConfig, useConcertsSyncMutation } from '../../src/query/concerts';
+import { useLastFmAdmin, useUpdateLastFmAdminConfig } from '../../src/query/lastfm';
 import { useAuth } from '../../src/auth/store';
 import { RuntimeSettingsDTO } from '../../src/api/immerleApi';
 import { Badge, Button, Card, ErrorState, Field, IconButton, Loading, Select } from '../../src/components/ui';
@@ -34,7 +35,7 @@ const RESTART_LABEL_KEYS: Record<string, string> = {
   'scan.watch': 'admin.settings.restartScanWatch',
 };
 
-type SectionKey = 'auth' | 'ldap' | 'server' | 'transcode' | 'cleanup' | 'charts' | 'concerts' | 'logs' | 'features';
+type SectionKey = 'auth' | 'ldap' | 'server' | 'transcode' | 'cleanup' | 'charts' | 'concerts' | 'lastfm' | 'logs' | 'features';
 
 interface Section {
   key: SectionKey;
@@ -96,6 +97,8 @@ export default function AdminSettings() {
   const concerts = useConcertsAdmin();
   const updateConcerts = useUpdateConcertsConfig();
   const concertsSync = useConcertsSyncMutation();
+  const lastFm = useLastFmAdmin();
+  const updateLastFm = useUpdateLastFmAdminConfig();
   const [form, setForm] = useState<Form | null>(null);
   const [sheet, setSheet] = useState<SectionKey | null>(null);
   const [removed, setRemoved] = useState<number | null>(null);
@@ -105,6 +108,9 @@ export default function AdminSettings() {
   const [concertsCountry, setConcertsCountry] = useState('');
   const [tmKey, setTmKey] = useState('');
   const [skKey, setSkKey] = useState('');
+  const [lastFmEnabled, setLastFmEnabled] = useState(false);
+  const [lastFmKey, setLastFmKey] = useState('');
+  const [lastFmSecret, setLastFmSecret] = useState('');
 
   // The concerts subtitle depends on the selected country (Ticketmaster and
   // Skiddle aren't available everywhere — see CONCERT_PROVIDERS), so this
@@ -117,6 +123,7 @@ export default function AdminSettings() {
     { key: 'cleanup', icon: 'trash-bin', color: '#ef4444', title: t('admin.settings.cleanupTitle'), subtitle: t('admin.settings.cleanupSubtitle') },
     { key: 'charts', icon: 'trending-up', color: '#1db954', title: t('admin.settings.chartsTitle'), subtitle: t('admin.settings.chartsSubtitle') },
     { key: 'concerts', icon: 'megaphone', color: '#ec4899', title: t('admin.settings.concertsTitle'), subtitle: concertProviderNames(concertsCountry) || t('admin.settings.countryNotSet') },
+    { key: 'lastfm', icon: 'disc', color: '#eab308', title: t('admin.settings.lastFmTitle'), subtitle: t('admin.settings.lastFmSubtitle') },
     { key: 'logs', icon: 'document-text', color: '#f59e0b', title: t('admin.settings.logsTitle'), subtitle: t('admin.settings.logsSubtitle') },
     { key: 'features', icon: 'sparkles', color: '#8b5cf6', title: t('admin.settings.featuresTitle'), subtitle: t('admin.settings.featuresSubtitle') },
   ];
@@ -132,6 +139,10 @@ export default function AdminSettings() {
     }
   }, [concerts.data]);
 
+  useEffect(() => {
+    if (lastFm.data) setLastFmEnabled(lastFm.data.enabled);
+  }, [lastFm.data]);
+
   if (q.isLoading || !form) return <Loading />;
   if (q.isError) return <ErrorState message={t('admin.settings.loadError')} onRetry={q.refetch} />;
 
@@ -143,6 +154,7 @@ export default function AdminSettings() {
   const rows = SECTIONS.filter((s) => {
     if (s.key === 'cleanup') return !!cleanup.data;
     if (s.key === 'concerts') return !!client?.has('concertDiscovery');
+    if (s.key === 'lastfm') return !!client?.has('lastFm');
     if (s.key === 'features')
       return (
         !!client?.has('smartPlaylists') ||
@@ -388,6 +400,48 @@ export default function AdminSettings() {
                     variant="secondary"
                     loading={concertsSync.isPending}
                     onPress={() => concertsSync.mutate(undefined, { onSuccess: (n) => setConcertsSynced(n) })}
+                  />
+                </>
+              ) : null}
+
+              {sheet === 'lastfm' ? (
+                <>
+                  <Text className="text-xs text-muted">{t('admin.settings.lastFmDescription')}</Text>
+                  <ToggleRow label={t('admin.settings.lastFmEnabled')} value={lastFmEnabled} onChange={setLastFmEnabled} />
+                  <Field
+                    label={t('admin.settings.lastFmApiKey')}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    placeholder={lastFm.data?.configured ? t('admin.settings.keyConfigured') : t('admin.settings.keyNotConfigured')}
+                    value={lastFmKey}
+                    onChangeText={setLastFmKey}
+                  />
+                  <Field
+                    label={t('admin.settings.lastFmApiSecret')}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    placeholder={lastFm.data?.configured ? t('admin.settings.keyConfigured') : t('admin.settings.keyNotConfigured')}
+                    value={lastFmSecret}
+                    onChangeText={setLastFmSecret}
+                    help={t('admin.settings.lastFmKeysHelp')}
+                  />
+                  <SaveButton
+                    loading={updateLastFm.isPending}
+                    onPress={() =>
+                      updateLastFm.mutate(
+                        {
+                          enabled: lastFmEnabled,
+                          ...(lastFmKey ? { apiKey: lastFmKey } : {}),
+                          ...(lastFmSecret ? { apiSecret: lastFmSecret } : {}),
+                        },
+                        {
+                          onSuccess: () => {
+                            setLastFmKey('');
+                            setLastFmSecret('');
+                          },
+                        },
+                      )
+                    }
                   />
                 </>
               ) : null}

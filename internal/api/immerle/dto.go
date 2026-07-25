@@ -318,6 +318,19 @@ type ConcertsStatusDTO struct {
 	SkiddleConfigured      bool   `json:"skiddleConfigured" example:"false"`
 }
 
+// LastFmStatusDTO is the caller's Last.fm connection state.
+type LastFmStatusDTO struct {
+	Connected bool   `json:"connected"`
+	Username  string `json:"username,omitempty" example:"bob"`
+}
+
+// LastFmAdminDTO is the admin view of Last.fm scrobbling config. The API
+// key/secret are write-only — this only reports whether they're set.
+type LastFmAdminDTO struct {
+	Enabled    bool `json:"enabled" example:"false"`
+	Configured bool `json:"configured" example:"false"`
+}
+
 // BandcampStatusDTO is the caller's Bandcamp connection state. The cookie
 // itself is write-only — this never echoes it back.
 type BandcampStatusDTO struct {

@@ -37,6 +37,8 @@ func redactSettings(rs models.RuntimeSettings) models.RuntimeSettings {
 	rs.Federation.PrivateKey = ""
 	rs.Concerts.TicketmasterAPIKey = ""
 	rs.Concerts.SkiddleAPIKey = ""
+	rs.LastFm.APIKey = ""
+	rs.LastFm.APISecret = ""
 	return rs
 }
 

@@ -16,6 +16,7 @@ import (
 	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/federation"
 	"github.com/immerle/immerle/internal/importer"
+	"github.com/immerle/immerle/internal/lastfm"
 	"github.com/immerle/immerle/internal/listenbrainz"
 	"github.com/immerle/immerle/internal/logging"
 	"github.com/immerle/immerle/internal/models"
@@ -38,9 +39,12 @@ type Deps struct {
 	// ListenBrainz validates a token live when a user sets one on their
 	// account (PATCH /me). Optional; nil skips live validation.
 	ListenBrainz *listenbrainz.Client
-	Jam          *core.JamService
-	Setup        *core.SetupService
-	Federation   *federation.Service
+	// LastFm drives the Last.fm desktop-auth handshake (POST /me/lastfm/connect/*).
+	// Optional; nil (or the admin not having configured a key/secret) disables it.
+	LastFm     *lastfm.Client
+	Jam        *core.JamService
+	Setup      *core.SetupService
+	Federation *federation.Service
 	// Catalog and OnDemand enrich activity feed items (titles/cover; OnDemand maps a
 	// remote favorite to its downloaded local track). Both also back catalog browse via LibraryService.
 	Catalog     *persistence.CatalogRepo
@@ -208,6 +212,10 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Get("/me/custom-playlists", h.handleCustomPlaylists)
 			r.Get("/me/concerts", h.handleMyConcerts)
 			r.Put("/me/concerts/{id}/dismiss", h.handleDismissConcert)
+			r.Get("/me/lastfm", h.handleLastFmStatus)
+			r.Post("/me/lastfm/connect/start", h.handleLastFmConnectStart)
+			r.Post("/me/lastfm/connect/finish", h.handleLastFmConnectFinish)
+			r.Delete("/me/lastfm", h.handleLastFmDisconnect)
 			r.Get("/me/purchases/bandcamp", h.handleBandcampStatus)
 			r.Post("/me/purchases/bandcamp/connect", h.handleBandcampConnect)
 			r.Delete("/me/purchases/bandcamp", h.handleBandcampDisconnect)
@@ -439,6 +447,10 @@ func (h *Handler) Register(mux chi.Router) {
 			// Admin: concert-discovery settings (enable + API keys).
 			r.Get("/admin/concerts", h.handleConcertsAdmin)
 			r.Put("/admin/concerts", h.handleConcertsUpdate)
+
+			// Admin: Last.fm scrobbling settings (enable + API key/secret).
+			r.Get("/admin/lastfm", h.handleLastFmAdmin)
+			r.Put("/admin/lastfm", h.handleLastFmAdminUpdate)
 		})
 	})
 }

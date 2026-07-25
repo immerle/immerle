@@ -66,6 +66,8 @@ import {
   ImmerleApiError,
   ImmerleSession,
   InstanceSummary,
+  LastFmAdminStatus,
+  LastFmStatus,
   LibraryStats,
   Provider,
   ProviderLog,
@@ -1221,6 +1223,38 @@ export class ImmerleClient {
   /** Admin: enable/disable concert discovery, set the country to search near, and/or set the Ticketmaster/Skiddle API keys (partial). */
   async updateConcertsConfig(patch: { enabled?: boolean; country?: string; ticketmasterApiKey?: string; skiddleApiKey?: string }): Promise<ConcertsAdminStatus> {
     return this.request<ConcertsAdminStatus>('PUT', 'admin/concerts', patch);
+  }
+
+  // --- Last.fm scrobbling ----------------------------------------------------
+
+  /** The caller's Last.fm connection state. */
+  async getLastFmStatus(signal?: AbortSignal): Promise<LastFmStatus> {
+    return this.request<LastFmStatus>('GET', 'me/lastfm', undefined, signal);
+  }
+
+  /** Starts the Last.fm desktop-auth handshake: mints a token and its approval URL. */
+  async startLastFmConnect(): Promise<{ token: string; authUrl: string }> {
+    return this.request<{ token: string; authUrl: string }>('POST', 'me/lastfm/connect/start');
+  }
+
+  /** Finishes the handshake: exchanges an approved token for a session key. */
+  async finishLastFmConnect(token: string): Promise<LastFmStatus> {
+    return this.request<LastFmStatus>('POST', 'me/lastfm/connect/finish', { token });
+  }
+
+  /** Disconnects the caller's Last.fm account. */
+  async disconnectLastFm(): Promise<void> {
+    await this.request<void>('DELETE', 'me/lastfm');
+  }
+
+  /** Admin: Last.fm scrobbling config state (API key/secret are write-only). */
+  async getLastFmAdminStatus(signal?: AbortSignal): Promise<LastFmAdminStatus> {
+    return this.request<LastFmAdminStatus>('GET', 'admin/lastfm', undefined, signal);
+  }
+
+  /** Admin: enable/disable Last.fm scrobbling and/or set the API key/shared secret (partial). */
+  async updateLastFmAdminConfig(patch: { enabled?: boolean; apiKey?: string; apiSecret?: string }): Promise<LastFmAdminStatus> {
+    return this.request<LastFmAdminStatus>('PUT', 'admin/lastfm', patch);
   }
 
   // --- Bandcamp purchase import ---------------------------------------------

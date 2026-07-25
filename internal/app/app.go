@@ -28,6 +28,7 @@ import (
 	"github.com/immerle/immerle/internal/db"
 	"github.com/immerle/immerle/internal/federation"
 	"github.com/immerle/immerle/internal/importer"
+	"github.com/immerle/immerle/internal/lastfm"
 	"github.com/immerle/immerle/internal/listenbrainz"
 	"github.com/immerle/immerle/internal/logging"
 	"github.com/immerle/immerle/internal/models"
@@ -384,6 +385,16 @@ func New(cfg config.Config) (*App, error) {
 	lbClient := listenbrainz.NewClient(nil)
 	lbScrobbler := listenbrainz.NewScrobbler(lbClient, outboxWorker, logger)
 
+	// Last.fm scrobbling: opt-in per user, via a desktop-auth handshake
+	// (POST /me/lastfm/connect/*) gated behind an admin-configured API
+	// key/secret. Same outbox worker as ListenBrainz.
+	lfClient := lastfm.NewClient(nil)
+	lfScrobbler := lastfm.NewScrobbler(lfClient, settingsSvc.LastFmConfig, outboxWorker, logger)
+
+	// A user can connect either or both scrobbling services; every submitted
+	// play fans out to whichever ones they've set up.
+	scrobbleSync := core.ScrobbleFanout{lbScrobbler, lfScrobbler}
+
 	// Playlist import (e.g. Spotify): the source playlist is fetched through the
 	// hub (which holds the third-party credentials), then each track is resolved
 	// against the on-demand content providers and downloaded into a new playlist.
@@ -442,7 +453,7 @@ func New(cfg config.Config) (*App, error) {
 		Annotations:      store.Annotations,
 		Playlists:        store.Playlists,
 		PlaylistSync:     playlistSyncer,
-		ScrobbleSync:     lbScrobbler,
+		ScrobbleSync:     scrobbleSync,
 		PlayQueues:       store.PlayQueues,
 		Scrobbles:        store.Scrobbles,
 		Shares:           store.Shares,
@@ -467,8 +478,9 @@ func New(cfg config.Config) (*App, error) {
 		Activity:       activitySvc,
 		Playlists:      store.Playlists,
 		PlaylistSync:   playlistSyncer,
-		ScrobbleSync:   lbScrobbler,
+		ScrobbleSync:   scrobbleSync,
 		ListenBrainz:   lbClient,
+		LastFm:         lfClient,
 		Jam:            jamSvc,
 		Setup:          setupSvc,
 		Federation:     fed,
