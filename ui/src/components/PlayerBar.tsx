@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Modal, Platform, Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import { router, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Slider from '@react-native-community/slider';
@@ -544,25 +544,104 @@ function PlaylistCheckRow({ playlistId, name, songId }: { playlistId: string; na
  * "This device" to take over playback here, or "Everywhere" to go back to
  * independent mode (today's default — every device manages its own playback).
  *
- * Opens the picker as its own route (/cast-target, modally presented by the
- * navigator), same as the queue button next to it. A custom anchored <Modal>
- * popover was tried first but proved unreliable on native: nested inside
- * app/player.tsx (itself a native modal) it silently never appeared; root-
- * mounted, it rendered behind /player's own modal window and resurfaced
- * blocking all touches after /player closed. A real navigator route avoids
- * both failure modes.
+ * Web: an anchored dropdown, positioned off measureInWindow, right under the
+ * button — a full page navigation for what's a small, transient choice reads
+ * as heavier than it should on desktop, where nothing stops it.
+ *
+ * Native: still opens /cast-target as its own route (see cast-target.tsx).
+ * That's not a stylistic choice — CastButton renders both in the docked bar
+ * *and* inside app/player.tsx, itself a native `presentation: 'modal'`
+ * screen, and a raw RN <Modal> doesn't reliably layer there: nested inside
+ * player.tsx it silently never appeared, and root-mounted it rendered behind
+ * player's own modal window and resurfaced (blocking all touches) once
+ * player closed. Web has no such native modal-window stacking, so the
+ * dropdown is safe there — this only reintroduces the dropdown on the one
+ * platform that was never actually broken.
  */
 export function CastButton({ active, disabled }: { active?: boolean; disabled?: boolean }) {
   const t = useT();
   const colors = useColors();
+  const { height: screenH } = useWindowDimensions();
+  const anchorRef = useRef<View>(null);
+  const [anchor, setAnchor] = useState<{ x: number; y: number } | null>(null);
+  const open = !!anchor;
+
+  const myId = useAuth((s) => s.client?.getSession()?.deviceId);
+  const castTargetId = usePlayer((s) => s.castTargetId);
+  const setCastTarget = usePlayer((s) => s.setCastTarget);
+  const { data: targets, isLoading } = usePlaybackTargets(open);
+  const others = (targets ?? []).filter((d) => d.id !== myId);
+
+  const onPress = () => {
+    if (Platform.OS !== 'web') {
+      router.push('/cast-target');
+      return;
+    }
+    anchorRef.current?.measureInWindow((x, y) => setAnchor({ x, y }));
+  };
+  const close = () => setAnchor(null);
+  const pick = (deviceId: string) => {
+    close();
+    void setCastTarget(deviceId);
+  };
+
   return (
-    <IconButton
-      name={active ? 'tv' : 'tv-outline'}
-      size={20}
-      color={active ? colors.primary : colors.foreground}
-      onPress={() => router.push('/cast-target')}
-      disabled={disabled}
-      accessibilityLabel={t('components.player.cast')}
-    />
+    <>
+      <Pressable
+        ref={anchorRef}
+        collapsable={false}
+        hitSlop={12}
+        onPress={onPress}
+        disabled={disabled}
+        accessibilityState={{ disabled: !!disabled }}
+        accessibilityLabel={t('components.player.cast')}
+        className={`h-8 w-8 items-center justify-center rounded-full ${disabled ? 'opacity-40' : 'active:opacity-70'}`}
+      >
+        <Ionicon name={active ? 'tv' : 'tv-outline'} size={20} color={active ? colors.primary : colors.foreground} />
+      </Pressable>
+
+      {/* Web-only dropdown; native never sets `anchor` (see onPress above). */}
+      <Modal transparent visible={open} animationType="fade" onRequestClose={close}>
+        <Pressable className="flex-1" onPress={close}>
+          {anchor ? (
+            <View
+              style={{ position: 'absolute', left: Math.max(8, anchor.x - 180), bottom: screenH - anchor.y + 8, width: 240 }}
+              className="overflow-hidden rounded-2xl border border-border bg-surface"
+            >
+              <Pressable onPress={(e) => e.stopPropagation()}>
+                <Text className="px-4 pb-1 pt-3 text-xs font-medium uppercase tracking-wider text-muted">
+                  {t('components.player.castTitle')}
+                </Text>
+                {myId ? (
+                  <CastRow label={t('components.player.castThisDevice')} selected={castTargetId === myId} onPress={() => pick(myId)} />
+                ) : null}
+                <CastRow label={t('components.player.castEverywhere')} selected={!castTargetId} onPress={() => pick('')} />
+                {isLoading ? (
+                  <View className="items-center py-3">
+                    <ActivityIndicator size="small" color={colors.muted} />
+                  </View>
+                ) : others.length === 0 ? (
+                  <Text className="px-4 py-2 text-sm text-muted">{t('components.player.castNoOtherDevices')}</Text>
+                ) : (
+                  others.map((d) => <CastRow key={d.id} label={d.name} selected={castTargetId === d.id} onPress={() => pick(d.id)} />)
+                )}
+              </Pressable>
+            </View>
+          ) : null}
+        </Pressable>
+      </Modal>
+    </>
+  );
+}
+
+function CastRow({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
+  const colors = useColors();
+  return (
+    <Pressable onPress={onPress} className="flex-row items-center gap-3 px-4 py-2.5 active:bg-surface-alt">
+      <Text className="flex-1 text-sm text-foreground" numberOfLines={1}>
+        {label}
+      </Text>
+      {selected ? <Ionicon name="checkmark" size={16} color={colors.primary} /> : null}
+    </Pressable>
   );
 }
