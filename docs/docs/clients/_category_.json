@@ -1,0 +1,8 @@
+{
+  "label": "Connecting clients",
+  "position": 4,
+  "link": {
+    "type": "doc",
+    "id": "clients/index"
+  }
+}

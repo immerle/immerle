@@ -6,19 +6,19 @@ title: Custom content provider
 # Building a custom content provider
 
 Immerle's on-demand catalog is pluggable. A **provider** is an external source
-of tracks Immerle doesn't own yet — searched, resolved and streamed
+of tracks Immerle doesn't own yet, searched, resolved and streamed
 progressively on first play. Jamendo and Internet Archive ship built in; you can
 add your own.
 
 There are two kinds:
 
-- **`builtin`** — compiled into the server (Go). Not something you add at runtime.
-- **`http`** — an out-of-process service you host anywhere, in any language.
+- **`builtin`**: compiled into the server (Go). Not something you add at runtime.
+- **`http`**: an out-of-process service you host anywhere, in any language.
   Immerle calls fixed JSON-over-HTTP endpoints on it. **This is what you build.**
 
 Immerle is content-neutral: it knows nothing about your catalog. It just calls a
 few fixed paths under your base URL and unmarshals the JSON you return. This is a
-deliberate design choice — the provider interface lets you put **any** backend
+deliberate design choice: the provider interface lets you put **any** backend
 behind it, so Immerle never has to take a position on what your source is.
 
 :::warning[Your content, your responsibility]
@@ -27,7 +27,7 @@ Because the provider system is content-neutral, it can be pointed at any source.
 That neutrality is purely technical and is **not** an endorsement of any
 particular use.
 
-**You — the operator of the provider and the server — are solely responsible**
+**You (the operator of the provider and the server) are solely responsible**
 for ensuring you have the legal right to access, store and distribute whatever
 content you connect, and for complying with all applicable copyright and other
 laws in your jurisdiction. Immerle and its maintainers provide the mechanism
@@ -43,7 +43,7 @@ bodies) to fixed paths under your configured `endpoint` (any trailing slash is
 stripped). Every request carries the static **headers** and **query params** you
 set in the provider config (see [Config & auth](#config--auth)).
 
-- Any response status `>= 300` is an error — **except `404`**, which on an
+- Any response status `>= 300` is an error, **except `404`**, which on an
   optional endpoint means "not supported" and is silently treated as empty.
 - Metadata responses are capped at **8 MiB**, downloads at **1 GiB**.
 - Responses must be `application/json` (except `/download`, which returns raw
@@ -67,16 +67,16 @@ live version in the admin. The response:
 }
 ```
 
-- `version` — the protocol version you implement. Must be **`1`** (the version
+- `version`: the protocol version you implement. Must be **`1`** (the version
   Immerle currently speaks); otherwise the provider is rejected.
-- `name` — the slug Immerle stores the provider under (`^[a-z0-9][a-z0-9_-]*$`).
-  **The admin doesn't type a name — this is it.**
-- `config` — the config fields you accept, keyed by field name. Each declares its
+- `name`: the slug Immerle stores the provider under (`^[a-z0-9][a-z0-9_-]*$`).
+  **The admin doesn't type a name: this is it.**
+- `config`: the config fields you accept, keyed by field name. Each declares its
   `type` (free-form, e.g. `"string"`), `where` the value travels (`"headers"` or
   `"params"`), and whether it's `required`. Immerle generates the admin's config
   form from this and, on save, rejects a config that's missing any required field.
-- `playlists` — optional, defaults to `false`. Set it to `true` if you implement
-  [`/playlists`](#optional-endpoints-richer-browsing) — that's what tells Immerle
+- `playlists`: optional, defaults to `false`. Set it to `true` if you implement
+  [`/playlists`](#optional-endpoints-richer-browsing): that's what tells Immerle
   it's worth surfacing your playlists in search results at all.
 
 ### Other required endpoints
@@ -98,7 +98,7 @@ These three make a usable provider.
 
 ```json
 {
-  "providerTrackId": "abc123",   // REQUIRED — your stable id for this track
+  "providerTrackId": "abc123",   // REQUIRED, your stable id for this track
   "title": "Song title",
   "artist": "Artist name",
   "album": "Album name",
@@ -135,8 +135,8 @@ optional):
 }
 ```
 
-- **`headers`** — static HTTP headers added to every request (e.g. auth).
-- **`params`** — static query params appended to every request (e.g. an API
+- **`headers`**: static HTTP headers added to every request (e.g. auth).
+- **`params`**: static query params appended to every request (e.g. an API
   key as `?apikey=…`). They never override the protocol params (`q`/`limit`/`id`).
 - `quality` (free-form label), `timeoutSeconds` (per-call, default 60),
   `downloadRetries` (default 3).
@@ -147,7 +147,7 @@ form prompts for them. The same `headers`/`params` are sent on the
 `/capabilities` request too, so authenticated discovery works.
 
 :::note[Built-in providers use the same shape]
-Built-ins (Jamendo, Internet Archive…) read their tunables from `params` too —
+Built-ins (Jamendo, Internet Archive…) read their tunables from `params` too,
 e.g. Jamendo's config is `{"params":{"client_id":"<token>","audioformat":"mp32"}}`.
 Their base URL is compiled in and is **not** configurable.
 :::
@@ -155,7 +155,7 @@ Their base URL is compiled in and is **not** configurable.
 ### Optional endpoints (richer browsing)
 
 Implement these to enrich artist/album pages and surface your own playlists.
-**Return `404` on any you don't support** — that's how an `http` provider opts
+**Return `404` on any you don't support**: that's how an `http` provider opts
 out of a capability.
 
 | Capability   | Method & path          | Params       | Response |
@@ -177,7 +177,7 @@ out of a capability.
 ```
 
 `/playlists` is what lets a provider's own playlists (editorial, curated,
-whatever it hosts) show up in Immerle's search results alongside local ones —
+whatever it hosts) show up in Immerle's search results alongside local ones,
 but only if you also set `"playlists": true` in
 [`/capabilities`](#the-capabilities-endpoint-mandatory); otherwise it's never
 probed. Rows without a `providerPlaylistId`, and tracks within them without a
@@ -245,8 +245,8 @@ app.listen(8080);
 
 ## Registering it
 
-Providers are admin-managed at runtime (see [On-demand catalog](../on-demand-providers.md)).
-Adding one is a three-step flow — you never type a name or config by hand.
+Providers are admin-managed at runtime (see [On-demand catalog](../features/on-demand-providers.md)).
+Adding one is a three-step flow: you never type a name or config by hand.
 
 **1. Create from the URL.** Send just the endpoint; no name, no config. The
 server calls your `/capabilities`, takes the declared `name`, seeds a config
@@ -265,7 +265,7 @@ non-slug `name`, the create is rejected.
 
 **2. Fill the config.** Update the provider with the values for the declared
 fields (`config` is a **JSON string**). On save, the config is validated against
-`/capabilities` — a missing required field is rejected:
+`/capabilities`, a missing required field is rejected:
 
 ```bash
 curl -X POST http://localhost:4533/api/v1/admin/providers \

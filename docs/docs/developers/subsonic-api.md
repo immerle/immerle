@@ -7,10 +7,10 @@ title: Subsonic API
 
 Immerle implements two HTTP surfaces:
 
-- **Immerle REST API** (`/api/v1/*`) — Immerle's own endpoints (accounts,
+- **Immerle REST API** (`/api/v1/*`): Immerle's own endpoints (accounts,
   social, providers, admin…). These are documented in the
   [API reference](pathname:///api/).
-- **Subsonic / OpenSubsonic API** (`/rest/*`) — the standard music API that
+- **Subsonic / OpenSubsonic API** (`/rest/*`): the standard music API that
   existing clients speak. It follows the upstream specification rather than a
   bespoke schema, so it lives here instead of in the OpenAPI reference.
 
@@ -31,8 +31,8 @@ request:
 | Param | Meaning |
 | ----- | ------- |
 | `u`   | Username |
-| `t` + `s` | Auth token (`md5(password + salt)`) and salt — preferred |
-| `p`   | Password (plaintext or `enc:` hex) — legacy alternative to `t`+`s` |
+| `t` + `s` | Auth token (`md5(password + salt)`) and salt, preferred |
+| `p`   | Password (plaintext or `enc:` hex), legacy alternative to `t`+`s` |
 | `v`   | Protocol version the client targets |
 | `c`   | Client application name |
 | `f`   | Response format: `xml` (default), `json`, or `jsonp` |
@@ -41,13 +41,13 @@ An Immerle API token may also be supplied via the `Authorization` header
 instead of `u`/`p`.
 
 :::warning LDAP users must use password auth
-If the account is backed by [LDAP](../configuration.md#ldap-authentication), token
-auth (`t`+`s`) **cannot** work — the directory never exposes the plaintext the
+If the account is backed by [LDAP](../configuration/ldap.md), token
+auth (`t`+`s`) **cannot** work: the directory never exposes the plaintext the
 server would need to recompute `md5(password + salt)`. Configure the client to
 send the password (`p`) instead, and only over HTTPS.
 :::
 
-For full request/response schemas, see the upstream specs — Immerle aims to be
+For full request/response schemas, see the upstream specs, Immerle aims to be
 compatible with them:
 
 - [OpenSubsonic API](https://opensubsonic.netlify.app/)

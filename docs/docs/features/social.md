@@ -1,5 +1,5 @@
 ---
-sidebar_position: 7
+sidebar_position: 3
 title: Social features
 ---
 
@@ -7,7 +7,7 @@ title: Social features
 
 Beyond streaming your own library, Immerle has a small social layer: an
 activity feed, playlists you can share or collaborate on, and synchronized
-listening sessions. All of it is opt-in per action — nothing is public by
+listening sessions. All of it is opt-in per action: nothing is public by
 default.
 
 ## Activity
@@ -22,21 +22,21 @@ feed**, each event tagged with a privacy level:
 
 A user's profile shows their identity, their public activity, and their
 public playlists. Your own account page is separate and always fully visible
-to you — it holds things a public profile never exposes, like your email
+to you: it holds things a public profile never exposes, like your email
 address.
 
 ## Collaborative & public playlists
 
 An owner opts a playlist into two independent things:
 
-- **Public** — visible to anyone browsing public playlists, but not
+- **Public**: visible to anyone browsing public playlists, but not
   automatically added to anyone else's library.
-- **Collaborative** — specific people you choose can edit it.
+- **Collaborative**: specific people you choose can edit it.
 
-Discovering a public playlist doesn't add it to your library automatically —
+Discovering a public playlist doesn't add it to your library automatically:
 you **subscribe** to opt in, at which point it behaves like a normal,
 read-only playlist alongside your own. A subscriber can't modify it; in a
-Subsonic client, "removing" a subscribed playlist just unsubscribes you — the
+Subsonic client, "removing" a subscribed playlist just unsubscribes you; the
 owner's copy is untouched.
 
 ## Share links
@@ -48,15 +48,10 @@ can update or revoke it at any time.
 
 ## Jam sessions
 
-A Jam is a host-controlled, synchronized listening session — everyone
+A Jam is a host-controlled, synchronized listening session: everyone
 listening hears the same track at the same position in real time, streamed
 live. The host starts a session with a queue, anyone can join or leave
 freely, but only the host can change what's playing, seek, pause, or end the
 session for everyone. The host can also invite a specific user straight from
-their profile — the invitee gets a notification to join with one tap, but an
+their profile: the invitee gets a notification to join with one tap, but an
 invite is just a shortcut, not a requirement to join.
-
----
-
-For the exact API calls behind all of this, see the
-[native API walkthrough](./developers/api-guide.md).
