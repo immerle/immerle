@@ -144,6 +144,56 @@ func TestProfileEndpoint(t *testing.T) {
 	}
 }
 
+// TestListPublicUsers covers the member directory (GET /users): every
+// authenticated caller — not just admins — can browse it, and only the
+// minimal, non-sensitive fields are exposed (no email/admin/scrobbling, all
+// present on the admin-only GET /admin/users).
+func TestListPublicUsers(t *testing.T) {
+	store := testutil.NewStore(t)
+	ctx := context.Background()
+	auth, _ := core.NewAuthService(store.Users, store.APITokens, store.Devices, "secret")
+	if _, err := auth.CreateUser(ctx, "alice", "alicepw", "alice@example.com", "Alice W", false); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := auth.CreateUser(ctx, "bob", "bobpw", "", "", false); err != nil {
+		t.Fatal(err)
+	}
+
+	h := NewHandler(Deps{Auth: auth, Users: store.Users, Catalog: store.Catalog, Logger: testutil.NewLogger()})
+	mux := chi.NewRouter()
+	h.Register(mux)
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+
+	// A non-admin caller (bob) can list every user, not just itself.
+	bobToken := login(t, srv, "bob")
+	status, body := doMap(t, srv, http.MethodGet, "/users", bobToken, nil)
+	if status != http.StatusOK {
+		t.Fatalf("status %d", status)
+	}
+	users, _ := body["users"].([]any)
+	if len(users) != 2 {
+		t.Fatalf("expected 2 users, got %d: %+v", len(users), body["users"])
+	}
+	var alice map[string]any
+	for _, u := range users {
+		m := u.(map[string]any)
+		if m["username"] == "alice" {
+			alice = m
+		}
+		// Never leaks admin-only fields.
+		if _, ok := m["email"]; ok {
+			t.Fatalf("email must not be exposed in the public directory, got %+v", m)
+		}
+		if _, ok := m["admin"]; ok {
+			t.Fatalf("admin flag must not be exposed in the public directory, got %+v", m)
+		}
+	}
+	if alice == nil || alice["displayName"] != "Alice W" {
+		t.Fatalf("expected alice with displayName 'Alice W', got %+v", users)
+	}
+}
+
 // TestProfileIncludesHallOfFameTop3 covers embedding another user's Hall of
 // Fame top-3 (plus a total count) on their profile, and TestUserHallOfFame
 // covers the "see all" endpoint the profile's top-3 links to.

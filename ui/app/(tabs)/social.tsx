@@ -4,12 +4,13 @@ import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../src/auth/store';
-import { useActivity, useJamMutations, useMyJam } from '../../src/query/social';
+import { useActivity, useJamMutations, useMyJam, useUsers } from '../../src/query/social';
 import { useJam } from '../../src/jam/store';
 import { Button, Card, EmptyState, Field, Loading, SectionHeader } from '../../src/components/ui';
 import { Ionicon } from '../../src/components/Ionicon';
 import { CoverArt } from '../../src/components/CoverArt';
-import { ActivityEventDTO } from '../../src/api/immerleApi';
+import { colorFor } from '../../src/components/AdminUI';
+import { ActivityEventDTO, UserSummaryDTO } from '../../src/api/immerleApi';
 import { useColors } from '../../src/theme/colors';
 import { formatRelativeTime } from '../../src/utils/format';
 import { useT } from '../../src/i18n/store';
@@ -57,6 +58,7 @@ export default function Social() {
   const colors = useColors();
   const client = useAuth((s) => s.client);
   const activity = useActivity();
+  const users = useUsers();
   const jam = useJamMutations();
   const myJam = useMyJam();
 
@@ -177,6 +179,21 @@ export default function Social() {
           </View>
         ) : null}
 
+        <SectionHeader title={t('social.members.title')} />
+        <View className="px-4">
+          {users.isLoading ? (
+            <Loading />
+          ) : !users.data?.length ? (
+            <EmptyState icon="people-outline" title={t('social.members.emptyTitle')} subtitle={t('social.members.emptySubtitle')} />
+          ) : (
+            <Card className="p-0">
+              {users.data.map((u, i) => (
+                <MemberRow key={u.id ?? u.username ?? i} user={u} first={i === 0} isSelf={u.username === client.username} />
+              ))}
+            </Card>
+          )}
+        </View>
+
         <SectionHeader title={t('social.feed.title')} />
         <View className="px-4">
           {activity.isLoading ? (
@@ -243,6 +260,38 @@ export default function Social() {
         </Pressable>
       </Modal>
     </SafeAreaView>
+  );
+}
+
+/** One row of the member directory: avatar initial, display name/handle, tap
+ * to open their profile. */
+function MemberRow({ user, first, isSelf }: { user: UserSummaryDTO; first: boolean; isSelf: boolean }) {
+  const t = useT();
+  const colors = useColors();
+  const name = user.displayName || user.username || t('social.profile.fallbackName');
+  const accent = colorFor(name);
+  return (
+    <Pressable
+      onPress={() => router.push(`/profile/${isSelf ? 'me' : user.username}` as never)}
+      disabled={!user.username}
+      className={`flex-row items-center gap-3 px-4 py-2.5 ${first ? '' : 'border-t border-border'} active:bg-surface-alt`}
+    >
+      <View className="h-9 w-9 items-center justify-center rounded-full" style={{ backgroundColor: accent }}>
+        <Text className="text-sm font-bold text-white">{name.charAt(0).toUpperCase()}</Text>
+      </View>
+      <View className="flex-1">
+        <Text className="text-sm font-semibold text-foreground" numberOfLines={1}>
+          {name}
+          {isSelf ? ` (${t('social.members.you')})` : ''}
+        </Text>
+        {user.username && user.displayName ? (
+          <Text className="text-xs text-muted" numberOfLines={1}>
+            @{user.username}
+          </Text>
+        ) : null}
+      </View>
+      <Ionicon name="chevron-forward" size={16} color={colors.muted} />
+    </Pressable>
   );
 }
 
