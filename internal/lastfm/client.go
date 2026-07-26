@@ -218,3 +218,42 @@ func (c *Client) Scrobble(ctx context.Context, apiKey, apiSecret, sessionKey str
 	_, err := c.do(ctx, http.MethodPost, "track.scrobble", apiKey, apiSecret, params)
 	return err
 }
+
+// SimilarTrack is one track.getSimilar result.
+type SimilarTrack struct {
+	Artist string
+	Title  string
+}
+
+// GetSimilarTracks returns tracks similar to (artist, track), per Last.fm's
+// listening/tag similarity graph (track.getSimilar). This is a public method
+// -- it needs the app-level API key/secret but no user session key, unlike
+// Scrobble/GetSession.
+func (c *Client) GetSimilarTracks(ctx context.Context, apiKey, apiSecret, artist, track string, limit int) ([]SimilarTrack, error) {
+	params := map[string]string{"artist": artist, "track": track, "autocorrect": "1"}
+	if limit > 0 {
+		params["limit"] = strconv.Itoa(limit)
+	}
+	body, err := c.do(ctx, http.MethodGet, "track.getSimilar", apiKey, apiSecret, params)
+	if err != nil {
+		return nil, err
+	}
+	var out struct {
+		SimilarTracks struct {
+			Track []struct {
+				Name   string `json:"name"`
+				Artist struct {
+					Name string `json:"name"`
+				} `json:"artist"`
+			} `json:"track"`
+		} `json:"similartracks"`
+	}
+	if err := json.Unmarshal(body, &out); err != nil {
+		return nil, fmt.Errorf("lastfm: decode track.getSimilar: %w", err)
+	}
+	similar := make([]SimilarTrack, 0, len(out.SimilarTracks.Track))
+	for _, t := range out.SimilarTracks.Track {
+		similar = append(similar, SimilarTrack{Artist: t.Artist.Name, Title: t.Name})
+	}
+	return similar, nil
+}

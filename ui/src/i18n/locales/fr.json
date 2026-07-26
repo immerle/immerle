@@ -791,6 +791,7 @@
         "listenBrainzDailyJams": "Daily Jams",
         "listenBrainzWeeklyJams": "Weekly Jams",
         "listenBrainzWeeklyExploration": "Weekly Exploration",
+        "lastfmSimilarMix": "Mix Last.fm",
         "chartGlobal": "Top mondial",
         "chartFr": "Top 50 France",
         "chartUs": "Top 50 États-Unis",
@@ -800,7 +801,8 @@
       },
       "source": {
         "reccobeats": "Généré via ReccoBeats",
-        "listenbrainz": "Généré via ListenBrainz"
+        "listenbrainz": "Généré via ListenBrainz",
+        "lastfm": "Généré via Last.fm"
       },
       "cover": {
         "title": "Créer une pochette",

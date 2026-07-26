@@ -791,6 +791,7 @@
         "listenBrainzDailyJams": "Daily Jams",
         "listenBrainzWeeklyJams": "Weekly Jams",
         "listenBrainzWeeklyExploration": "Weekly Exploration",
+        "lastfmSimilarMix": "Last.fm Mix",
         "chartGlobal": "Global Top 50",
         "chartFr": "Top 50 France",
         "chartUs": "Top 50 United States",
@@ -800,7 +801,8 @@
       },
       "source": {
         "reccobeats": "Powered by ReccoBeats",
-        "listenbrainz": "Powered by ListenBrainz"
+        "listenbrainz": "Powered by ListenBrainz",
+        "lastfm": "Powered by Last.fm"
       },
       "cover": {
         "title": "Create a cover",

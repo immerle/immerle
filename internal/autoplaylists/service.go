@@ -54,6 +54,8 @@ const (
 	SourceListenBrainzDaily             = "listenbrainz-daily-jams"
 	SourceListenBrainzWeeklyJams        = "listenbrainz-weekly-jams"
 	SourceListenBrainzWeeklyExploration = "listenbrainz-weekly-exploration"
+
+	SourceLastFmMix = "lastfm-similar-mix"
 )
 
 // AutoPlaylistKinds is the fixed, stable set of source instance ids this
@@ -74,6 +76,7 @@ var AutoPlaylistKinds = map[string]bool{
 	SourceListenBrainzDaily:             true,
 	SourceListenBrainzWeeklyJams:        true,
 	SourceListenBrainzWeeklyExploration: true,
+	SourceLastFmMix:                     true,
 }
 
 // sourceSubtitleKeys maps a kind backed by a third-party recommendation
@@ -87,6 +90,7 @@ var sourceSubtitleKeys = map[string]string{
 	SourceListenBrainzDaily:             "source.listenbrainz",
 	SourceListenBrainzWeeklyJams:        "source.listenbrainz",
 	SourceListenBrainzWeeklyExploration: "source.listenbrainz",
+	SourceLastFmMix:                     "source.lastfm",
 }
 
 // minTracks is the minimum catalog size for a genre/decade to get its own
@@ -114,6 +118,15 @@ const randomTrackCount = 30
 const maxRecommendedTracks = 50
 const recommendedSeedCount = 5
 const recommendedFetchSize = 100
+
+// maxLastFmMixTracks/lastFmSeedCount/lastFmFetchSize size the Last.fm
+// similarity mix, same reasoning as their ReccoBeats equivalents above --
+// track.getSimilar's own catalog is Last.fm's global listening/tag graph, not
+// scoped to any given local library, so requesting more than the target size
+// leaves room for the local-catalog resolution to miss on some candidates.
+const maxLastFmMixTracks = 50
+const lastFmSeedCount = 5
+const lastFmFetchSize = 100
 
 // forgottenMinDays is how long a starred track must go unplayed (or never
 // played at all) to count as "forgotten."
@@ -156,11 +169,19 @@ type Service struct {
 	// Jams/Weekly Jams/Weekly Exploration personal lists are simply skipped in
 	// that case, same as recco.
 	lbPlaylists ListenBrainzPlaylists
+
+	// lastfmMix is nil unless SetLastFmSimilar is called — the Last.fm mix
+	// personal list is simply skipped in that case, same as recco. Unlike
+	// recco/lbPlaylists it needs no per-user credential (track.getSimilar is
+	// public; only the admin-configured API key/secret is needed, read live
+	// inside the *lastfm.Recommender itself), so it applies to every user the
+	// moment it's wired up.
+	lastfmMix Recommender
 }
 
 // Recommender resolves recommended tracks from seed tracks. *reccobeats.Client
-// satisfies this; it's a separate interface only so tests can fake it instead
-// of making a real network call.
+// and *lastfm.Recommender both satisfy this structurally; it's a separate
+// interface only so tests can fake it instead of making a real network call.
 type Recommender interface {
 	Recommend(ctx context.Context, seeds []reccobeats.Seed, size int) ([]reccobeats.Track, error)
 }
@@ -212,6 +233,13 @@ func (s *Service) SetRecommender(r Recommender) {
 // Optional: not calling this simply leaves them unsynced.
 func (s *Service) SetListenBrainzPlaylists(p ListenBrainzPlaylists) {
 	s.lbPlaylists = p
+}
+
+// SetLastFmSimilar wires up the Last.fm similarity-based discovery mix
+// (seeded from each user's top tracks, expanded via track.getSimilar).
+// Optional: not calling this simply leaves that list unsynced.
+func (s *Service) SetLastFmSimilar(r Recommender) {
+	s.lastfmMix = r
 }
 
 func (s *Service) owner(ctx context.Context) (string, error) {
@@ -363,6 +391,9 @@ func (s *Service) syncPersonal(ctx context.Context) int {
 		if s.lbPlaylists != nil && u.ListenBrainzToken != "" {
 			synced += s.syncListenBrainzPlaylists(ctx, u.ID, u.ListenBrainzToken)
 		}
+		if s.lastfmMix != nil && s.syncLastFmMixOne(ctx, u.ID) {
+			synced++
+		}
 	}
 	return synced
 }
@@ -499,7 +530,38 @@ func (s *Service) randomTrackIDs(ctx context.Context) ([]string, error) {
 // favorites don't resolve to a ReccoBeats seed, just skips this list (like
 // any other personal list with nothing to show).
 func (s *Service) recommendedTrackRefs(ctx context.Context, userID string) ([]persistence.FederatedTrackRef, error) {
-	top, err := s.wrapped.TopTracks(ctx, userID, 0, time.Now().UnixMilli(), recommendedSeedCount)
+	return s.seededTrackRefs(ctx, userID, s.recco, recommendedSeedCount, recommendedFetchSize, maxRecommendedTracks)
+}
+
+// syncLastFmMixOne rebuilds one user's Last.fm similarity mix. Same
+// unresolved-portable-reference treatment as "Découvertes" (see
+// recommendedTrackRefs) — Last.fm's similarity graph has no notion of what's
+// already in any given local library either.
+func (s *Service) syncLastFmMixOne(ctx context.Context, userID string) bool {
+	refs, err := s.seededTrackRefs(ctx, userID, s.lastfmMix, lastFmSeedCount, lastFmFetchSize, maxLastFmMixTracks)
+	if err != nil {
+		s.logger.Warn("autoplaylists: personal list failed", "kind", SourceLastFmMix, "user", userID, "error", err)
+		return false
+	}
+	if len(refs) == 0 {
+		return false
+	}
+	if err := s.upsert(ctx, playlistSpec{
+		ownerID: userID, sourceInstanceID: SourceLastFmMix, sourceExternalID: userID,
+		name: lastFmMixName, icon: headphoneIcon, public: false, refs: refs,
+	}); err != nil {
+		s.logger.Warn("autoplaylists: personal list sync failed", "kind", SourceLastFmMix, "user", userID, "error", err)
+		return false
+	}
+	return true
+}
+
+// seededTrackRefs is the shared shape behind recommendedTrackRefs/
+// syncLastFmMixOne: seed a recommendation engine with the user's all-time top
+// tracks, then return up to maxOut portable artist/title references, deduped
+// (case-insensitively) against both the seeds themselves and each other.
+func (s *Service) seededTrackRefs(ctx context.Context, userID string, engine Recommender, seedCount, fetchSize, maxOut int) ([]persistence.FederatedTrackRef, error) {
+	top, err := s.wrapped.TopTracks(ctx, userID, 0, time.Now().UnixMilli(), seedCount)
 	if err != nil || len(top) == 0 {
 		return nil, err
 	}
@@ -509,13 +571,13 @@ func (s *Service) recommendedTrackRefs(ctx context.Context, userID string) ([]pe
 		seeds[i] = reccobeats.Seed{Artist: t.Artist, Title: t.Title}
 		seen[seedKey(t.Artist, t.Title)] = true
 	}
-	recs, err := s.recco.Recommend(ctx, seeds, recommendedFetchSize)
+	recs, err := engine.Recommend(ctx, seeds, fetchSize)
 	if err != nil {
 		return nil, err
 	}
-	refs := make([]persistence.FederatedTrackRef, 0, maxRecommendedTracks)
+	refs := make([]persistence.FederatedTrackRef, 0, maxOut)
 	for _, r := range recs {
-		if len(refs) >= maxRecommendedTracks {
+		if len(refs) >= maxOut {
 			break
 		}
 		key := seedKey(r.Artist, r.Title)
@@ -546,6 +608,7 @@ const (
 	randomName      = "Aléatoire"
 	trendingName    = "Tendances de la semaine"
 	recommendedName = "Découvertes"
+	lastFmMixName   = "Mix Last.fm"
 )
 
 // Twemoji codepoints (see covergen.FetchEmoji) for each auto-playlist kind.
@@ -558,6 +621,7 @@ const (
 	fireIcon       = "1f525" // 🔥 — Tendances de la semaine
 	compassIcon    = "1f9ed" // 🧭 — Découvertes, Weekly Exploration
 	radioIcon      = "1f4fb" // 📻 — Daily Jams, Weekly Jams
+	headphoneIcon  = "1f3a7" // 🎧 — Mix Last.fm
 )
 
 // decade is one candidate decade bucket: [from, from+10).

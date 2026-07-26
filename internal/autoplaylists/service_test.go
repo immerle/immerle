@@ -401,6 +401,65 @@ func TestSyncNowMaterializesRecommendedMixAsUnresolvedFederatedTracks(t *testing
 	}
 }
 
+// TestSyncNowMaterializesLastFmMix covers the Last.fm similarity mix: same
+// unresolved-federated-track treatment and seed/dedupe/cap behavior as
+// "Découvertes" (it shares the seededTrackRefs helper), wired via
+// SetLastFmSimilar instead of SetRecommender, and — unlike ReccoBeats/
+// ListenBrainz — synced for every user regardless of any per-user credential
+// (only the wiring itself gates it).
+func TestSyncNowMaterializesLastFmMix(t *testing.T) {
+	store := testutil.NewStore(t)
+	ctx := context.Background()
+	now := time.Now()
+
+	admin := models.User{ID: uuid.NewString(), Username: "admin", PasswordHash: "x", IsAdmin: true}
+	if err := store.Users.Create(ctx, admin); err != nil {
+		t.Fatal(err)
+	}
+	listener := models.User{ID: uuid.NewString(), Username: "listener", PasswordHash: "x"}
+	if err := store.Users.Create(ctx, listener); err != nil {
+		t.Fatal(err)
+	}
+
+	artistID, _ := store.Catalog.UpsertArtist(ctx, models.Artist{ID: uuid.NewString(), Name: "Seed Artist", CreatedAt: now})
+	albumID, _ := store.Catalog.UpsertAlbum(ctx, models.Album{ID: uuid.NewString(), Name: "Al", ArtistID: artistID, CreatedAt: now})
+	seed := models.Track{ID: uuid.NewString(), Title: "Seed Song", AlbumID: albumID, ArtistID: artistID, Path: uuid.NewString(), CreatedAt: now, UpdatedAt: now}
+	if _, err := store.Catalog.UpsertTrack(ctx, seed); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Scrobbles.Insert(ctx, models.Scrobble{ID: uuid.NewString(), UserID: listener.ID, TrackID: seed.ID, PlayedAt: now, Submitted: true}); err != nil {
+		t.Fatal(err)
+	}
+
+	fake := fakeRecommender{tracks: []reccobeats.Track{{Artist: "Similar Artist", Title: "Similar Song"}}}
+
+	svc := New(store.Catalog, store.Genres, store.Wrapped, store.Annotations, store.Users, store.Playlists, testutil.NewLogger())
+	svc.SetOwner(admin.ID)
+	svc.SetLastFmSimilar(fake)
+
+	if _, err := svc.SyncNow(ctx); err != nil {
+		t.Fatalf("SyncNow: %v", err)
+	}
+
+	mix, err := store.Playlists.FindFederated(ctx, SourceLastFmMix, listener.ID)
+	if err != nil {
+		t.Fatalf("lastfm mix playlist not created for listener: %v", err)
+	}
+	if mix.Public || !mix.Federated || mix.OwnerID != listener.ID {
+		t.Fatalf("expected a private, federated, listener-owned mix playlist, got %+v", mix)
+	}
+	if want := models.GeneratorCoverID(coverParams(lastFmMixName, SourceLastFmMix, "source.lastfm", headphoneIcon)); mix.CoverArt != want {
+		t.Fatalf("coverArt = %q, want %q (kind as title, not the display name)", mix.CoverArt, want)
+	}
+	got, err := store.Playlists.Tracks(ctx, mix.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 || got[0].ArtistName != "Similar Artist" {
+		t.Fatalf("expected exactly the one similar track, got %+v", got)
+	}
+}
+
 // fakeListenBrainzPlaylists is a ListenBrainzPlaylists test double: it
 // ignores the token it's given and always returns the same fixed result, so
 // tests control which kinds are "available" without a real ListenBrainz call.

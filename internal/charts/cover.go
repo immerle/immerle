@@ -65,9 +65,11 @@ var labelKeys = map[string]map[string]string{
 	"listenbrainz-daily-jams":         {"fr": "Daily Jams", "en": "Daily Jams"},
 	"listenbrainz-weekly-jams":        {"fr": "Weekly Jams", "en": "Weekly Jams"},
 	"listenbrainz-weekly-exploration": {"fr": "Weekly Exploration", "en": "Weekly Exploration"},
+	"lastfm-similar-mix":              {"fr": "Mix Last.fm", "en": "Last.fm Mix"},
 
 	"source.reccobeats":   {"fr": "par ReccoBeats", "en": "by ReccoBeats"},
 	"source.listenbrainz": {"fr": "par ListenBrainz", "en": "by ListenBrainz"},
+	"source.lastfm":       {"fr": "par Last.fm", "en": "by Last.fm"},
 }
 
 // NormalizeLocale reduces a BCP47-ish tag ("en-US", "FR") to the bare
