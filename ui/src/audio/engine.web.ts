@@ -1,6 +1,11 @@
 import { EngineEmitter } from './emitter';
 import { AudioEngine, EngineState, PlayableTrack, RepeatMode } from './types';
 
+// HTMLMediaElement.readyState value for "has metadata" (HAVE_METADATA). Used
+// as a literal rather than the DOM constant so this stays testable outside a
+// real browser.
+const HAVE_METADATA = 1;
+
 /**
  * Web audio engine: a single `HTMLAudioElement` plus the MediaSession API for
  * OS-level transport controls (play/pause/next/prev and now-playing metadata on
@@ -148,6 +153,16 @@ class WebAudioEngine implements AudioEngine {
   }
 
   async seekTo(seconds: number): Promise<void> {
+    // Setting currentTime while readyState is HAVE_NOTHING (e.g. right after
+    // load() on a freshly-set src) is only a "default start position" per
+    // spec — browsers are free to drop it once real metadata arrives. Wait
+    // for metadata first so a seek issued right after setQueue() actually
+    // sticks instead of silently playing from 0.
+    if (this.el.readyState < HAVE_METADATA) {
+      await new Promise<void>((resolve) => {
+        this.el.addEventListener('loadedmetadata', () => resolve(), { once: true });
+      });
+    }
     this.el.currentTime = seconds;
     this.updatePositionState();
   }
