@@ -47,7 +47,7 @@ func (h *Handler) handlePublicPlaylists(w http.ResponseWriter, r *http.Request) 
 // display order.
 var customPlaylistSources = []string{
 	autoplaylists.SourceTopMonth, autoplaylists.SourceOnRepeat, autoplaylists.SourceForgotten, autoplaylists.SourceRandom,
-	autoplaylists.SourceRecommended,
+	autoplaylists.SourceRecommended, autoplaylists.SourceLastFmMix,
 }
 
 // handleCustomPlaylists returns the caller's auto-generated personal

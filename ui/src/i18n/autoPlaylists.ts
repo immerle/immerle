@@ -14,6 +14,7 @@ const AUTO_PLAYLIST_KIND_KEYS: Record<string, string> = {
   'listenbrainz-daily-jams': 'media.playlist.autoKind.listenBrainzDailyJams',
   'listenbrainz-weekly-jams': 'media.playlist.autoKind.listenBrainzWeeklyJams',
   'listenbrainz-weekly-exploration': 'media.playlist.autoKind.listenBrainzWeeklyExploration',
+  'lastfm-similar-mix': 'media.playlist.autoKind.lastfmSimilarMix',
   'global_weekly': 'media.playlist.autoKind.chartGlobal',
   'fr_weekly': 'media.playlist.autoKind.chartFr',
   'us_weekly': 'media.playlist.autoKind.chartUs',
@@ -45,6 +46,7 @@ const AUTO_PLAYLIST_SOURCE_KEYS: Record<string, string> = {
   'listenbrainz-daily-jams': 'media.playlist.source.listenbrainz',
   'listenbrainz-weekly-jams': 'media.playlist.source.listenbrainz',
   'listenbrainz-weekly-exploration': 'media.playlist.source.listenbrainz',
+  'lastfm-similar-mix': 'media.playlist.source.lastfm',
 };
 
 export function autoPlaylistSource(t: (scope: string) => string, kind: string | undefined | null): string | undefined {

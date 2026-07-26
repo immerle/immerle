@@ -427,6 +427,12 @@ func New(cfg config.Config) (*App, error) {
 	// token (same lbClient used for scrobbling above). A kind ListenBrainz
 	// hasn't generated yet for a given user is simply skipped.
 	autoplaylistsSvc.SetListenBrainzPlaylists(lbClient)
+	// Mix Last.fm: a per-user similarity mix (track.getSimilar), seeded from
+	// each user's top tracks -- unlike the two sources above, this needs no
+	// per-user credential (only the admin-configured API key/secret, read
+	// live inside lfRecommender), so it applies to every user once wired up.
+	lfRecommender := lastfm.NewRecommender(lfClient, settingsSvc.LastFmConfig)
+	autoplaylistsSvc.SetLastFmSimilar(lfRecommender)
 
 	// Concert discovery: matches each user-with-a-city's top-listened artists
 	// against Ticketmaster/Skiddle, once daily. Disabled by default (needs at

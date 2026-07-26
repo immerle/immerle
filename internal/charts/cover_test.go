@@ -54,6 +54,7 @@ func TestResolveLabelCoversAutoPlaylistKinds(t *testing.T) {
 		"listenbrainz-daily-jams":         "Daily Jams",
 		"listenbrainz-weekly-jams":        "Weekly Jams",
 		"listenbrainz-weekly-exploration": "Weekly Exploration",
+		"lastfm-similar-mix":              "Last.fm Mix",
 	}
 	for kind, wantEn := range cases {
 		if got := ResolveLabel(kind, "en"); got != wantEn {
@@ -69,7 +70,7 @@ func TestResolveLabelCoversAutoPlaylistKinds(t *testing.T) {
 // subTitle keys attributing a personal list to the third-party engine that
 // generated it (see autoplaylists.sourceSubtitleKeys).
 func TestResolveLabelCoversRecommendationSourceSubtitles(t *testing.T) {
-	for _, key := range []string{"source.reccobeats", "source.listenbrainz"} {
+	for _, key := range []string{"source.reccobeats", "source.listenbrainz", "source.lastfm"} {
 		if got := ResolveLabel(key, "en"); got == key {
 			t.Errorf("ResolveLabel(%q, en) returned the key unresolved", key)
 		}
