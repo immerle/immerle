@@ -12,11 +12,20 @@ class FakeAudio {
   playbackRate = 1;
   preload = '';
   playCalls = 0;
+  readyState = 0;
   addEventListener(type: string, cb: () => void) {
     (this.listeners[type] ||= []).push(cb);
   }
   removeAttribute() {}
-  load() {}
+  load() {
+    // Real browsers reset readyState to HAVE_NOTHING on load() and only
+    // reach HAVE_METADATA asynchronously once the new source is probed.
+    this.readyState = 0;
+    setTimeout(() => {
+      this.readyState = 1;
+      this.fire('loadedmetadata');
+    }, 0);
+  }
   async play() {
     this.playCalls += 1;
     this.fire('playing');
@@ -53,6 +62,23 @@ describe('web engine setQueue', () => {
     await engine.seekTo(42);
     expect(lastAudio.currentTime).toBe(42);
     expect(lastAudio.playCalls).toBe(0); // still hasn't started — caller decides
+  });
+
+  it('defers a seek issued right after load until metadata is ready (reload race)', async () => {
+    const engine = createEngine();
+    await engine.setup();
+    await engine.setQueue([track('a')], 0);
+
+    // Regression: applyRemoteQueue seeks immediately after setQueue, before
+    // the source has been probed (readyState still HAVE_NOTHING). Writing
+    // currentTime at that point is a "default start position" a real
+    // browser is free to drop once metadata actually loads — it must not
+    // be applied until then.
+    const seek = engine.seekTo(30);
+    expect(lastAudio.currentTime).toBe(0);
+
+    await seek; // resolves once 'loadedmetadata' fires
+    expect(lastAudio.currentTime).toBe(30);
   });
 });
 
