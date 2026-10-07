@@ -1,4 +1,5 @@
 /** Human-friendly formatters shared across the UI. */
+import { t } from '../i18n';
 
 /** Seconds → `m:ss` or `h:mm:ss`. */
 export function formatDuration(totalSeconds: number | undefined): string {
@@ -11,13 +12,13 @@ export function formatDuration(totalSeconds: number | undefined): string {
   return `${m}:${ss}`;
 }
 
-/** Bytes → `1.2 Go` (French units: o / Ko / Mo / Go / To). */
+/** Bytes → a compact size using the active locale's units. */
 export function formatBytes(bytes: number | undefined): string {
-  if (!bytes || bytes <= 0) return '0 o';
-  const units = ['o', 'Ko', 'Mo', 'Go', 'To'];
+  const units = ['b', 'kb', 'mb', 'gb', 'tb'];
+  if (!bytes || bytes <= 0 || !Number.isFinite(bytes)) return `0 ${t('format.bytes.b')}`;
   const i = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
   const value = bytes / 1024 ** i;
-  return `${value.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
+  return `${value.toFixed(i === 0 ? 0 : 1)} ${t(`format.bytes.${units[i]}`)}`;
 }
 
 /** Large integers → `12.3k`, `1.2M`. */
@@ -28,22 +29,22 @@ export function formatCount(n: number | undefined): string {
   return `${(n / 1_000_000).toFixed(1)}M`;
 }
 
-/** ISO date → compact relative time in French (`à l'instant`, `3 min`, `2 h`, `5 j`). */
+/** ISO date → compact relative time in the active locale. */
 export function formatRelativeTime(iso: string | undefined): string {
   if (!iso) return '';
   const then = new Date(iso).getTime();
   if (!Number.isFinite(then)) return '';
   const diff = Math.max(0, Date.now() - then);
   const min = Math.floor(diff / 60_000);
-  if (min < 1) return "à l'instant";
-  if (min < 60) return `${min} min`;
+  if (min < 1) return t('format.relative.now');
+  if (min < 60) return t('format.relative.minute', { count: min });
   const h = Math.floor(min / 60);
-  if (h < 24) return `${h} h`;
+  if (h < 24) return t('format.relative.hour', { count: h });
   const d = Math.floor(h / 24);
-  if (d < 7) return `${d} j`;
+  if (d < 7) return t('format.relative.day', { count: d });
   const w = Math.floor(d / 7);
-  if (w < 5) return `${w} sem`;
+  if (w < 5) return t('format.relative.week', { count: w });
   const mo = Math.floor(d / 30);
-  if (mo < 12) return `${mo} mois`;
-  return `${Math.floor(d / 365)} an${d >= 730 ? 's' : ''}`;
+  if (mo < 12) return t('format.relative.month', { count: mo });
+  return t('format.relative.year', { count: Math.floor(d / 365) });
 }

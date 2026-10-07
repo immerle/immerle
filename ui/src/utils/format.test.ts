@@ -1,4 +1,5 @@
 import { formatBytes, formatCount, formatDuration } from './format';
+import { i18n } from '../i18n';
 
 describe('formatDuration', () => {
   it('formats seconds as m:ss and h:mm:ss', () => {
@@ -16,6 +17,9 @@ describe('formatDuration', () => {
 });
 
 describe('formatBytes', () => {
+  const originalLocale = i18n.locale;
+  beforeEach(() => { i18n.locale = 'fr'; });
+  afterEach(() => { i18n.locale = originalLocale; });
   it('scales to human units', () => {
     expect(formatBytes(0)).toBe('0 o');
     expect(formatBytes(512)).toBe('512 o');

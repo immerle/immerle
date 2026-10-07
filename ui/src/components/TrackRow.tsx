@@ -8,6 +8,7 @@ import { IconButton } from './ui';
 import { useDownloads } from '../offline/store';
 import { formatDuration } from '../utils/format';
 import { useColors } from '../theme/colors';
+import { useT } from '../i18n/store';
 
 // Medal color per rank (1/2/3); ranks below 3 fall back to the muted theme color.
 const RANK_COLOR: Record<number, string> = { 1: '#f2c94c', 2: '#c0c0c0', 3: '#cd7f32' };
@@ -43,6 +44,7 @@ export const TrackRow = memo(function TrackRow({
   onMore,
 }: TrackRowProps) {
   const colors = useColors();
+  const t = useT();
   const downloaded = useDownloads((s) => !song.unresolved && !!s.entries[song.id]);
   return (
     <Pressable
@@ -75,7 +77,7 @@ export const TrackRow = memo(function TrackRow({
         </Text>
         <Text numberOfLines={1} className="text-sm text-muted">
           {typeLabel ? `${typeLabel} · ` : ''}
-          {song.artist ?? 'Artiste inconnu'}
+          {song.artist || t('components.trackRow.unknownArtist')}
         </Text>
         {song.comment ? <CommentQuote comment={song.comment} className="text-xs italic text-muted" /> : null}
       </View>
@@ -91,7 +93,7 @@ export const TrackRow = memo(function TrackRow({
           size={20}
           color={colors.muted}
           onPress={onMore}
-          accessibilityLabel="Plus d'options"
+          accessibilityLabel={t('components.trackRow.moreOptions')}
         />
       ) : null}
     </Pressable>

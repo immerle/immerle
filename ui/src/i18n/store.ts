@@ -33,17 +33,17 @@ export const useLocale = create<LocaleState>((set) => ({
   hydrate: async () => {
     try {
       const v = (await AsyncStorage.getItem(KEY)) as LocalePref | null;
-      if (v) {
-        set({ preference: v });
+      if (v === 'system' || v === 'en' || v === 'fr') {
         apply(v);
+        set({ preference: v });
       }
     } catch {
       /* keep the device default */
     }
   },
   setPreference: (p) => {
-    set({ preference: p });
     apply(p);
+    set({ preference: p });
     void AsyncStorage.setItem(KEY, p);
   },
 }));

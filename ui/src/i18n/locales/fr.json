@@ -1,4 +1,30 @@
 {
+  "uiKit": {
+    "title": "Système de design", "subtitle": "Direction Spotify · minimaliste · vert #1ED760",
+    "colors": "Couleurs", "typography": "Typographie", "display": "Display", "heading": "Titre",
+    "section": "Section", "bodyStrong": "Corps fort", "body": "Corps", "secondary": "Secondaire",
+    "caption": "Légende", "buttons": "Boutons", "primary": "Primaire", "ghost": "Discret",
+    "danger": "Danger", "small": "Petit", "large": "Grand", "loading": "Chargement…", "disabled": "Désactivé",
+    "playbackIcons": "Lecture & icônes", "chips": "Chips", "genres": "Genres", "badges": "Badges",
+    "default": "Défaut", "fields": "Champs", "withIcon": "Avec icône", "searchPlaceholder": "Rechercher…",
+    "password": "Mot de passe", "states": "États", "emptyTitle": "Rien ici", "emptySubtitle": "Aucun élément.",
+    "error": "Une erreur est survenue."
+  },
+  "examples": { "username": "utilisateur", "displayName": "Jean Dupont", "serverUrl": "https://musique.exemple.fr", "email": "admin@exemple.fr", "providerUrl": "https://mon-service.internal" },
+  "navigation": {
+    "home": "Accueil", "login": "Connexion", "setup": "Configuration", "playlists": "Playlists",
+    "social": "Social", "genre": "Genre", "jam": "Jam", "uiKit": "UI Kit", "import": "Importer",
+    "jobs": "Tâches", "providers": "Fournisseurs", "scan": "Scan", "users": "Utilisateurs",
+    "tracks": "Titres", "federation": "Fédération", "logs": "Journaux"
+  },
+  "quality": {
+    "original": "Original (sans transcodage)", "high": "Haute — 320 kbps",
+    "medium": "Moyenne — 192 kbps", "low": "Économie de données — 96 kbps"
+  },
+  "format": {
+    "bytes": { "b": "o", "kb": "Ko", "mb": "Mo", "gb": "Go", "tb": "To" },
+    "relative": { "now": "à l'instant", "minute": "{{count}} min", "hour": "{{count}} h", "day": "{{count}} j", "week": "{{count}} sem", "month": "{{count}} mois", "year": { "one": "{{count}} an", "other": "{{count}} ans" } }
+  },
   "smart": {
     "title": "Playlists intelligentes",
     "tabSubtitle": "Basées sur des règles, mises à jour auto",
@@ -955,6 +981,7 @@
       "revoke": "Déconnecter"
     },
     "tokens": {
+      "namePlaceholder": "mon-cli",
       "title": "API",
       "subtitle": "Tokens d'accès personnels",
       "revokeConfirmTitle": "Révoquer ce token ?",
@@ -988,6 +1015,7 @@
     }
   },
   "components": {
+    "trackRow": { "unknownArtist": "Artiste inconnu", "moreOptions": "Plus d'options" },
     "scrollRow": {
       "scrollLeft": "Défiler vers la gauche",
       "scrollRight": "Défiler vers la droite"
