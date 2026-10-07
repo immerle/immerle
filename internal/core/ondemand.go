@@ -305,8 +305,7 @@ func (s *CatalogService) remoteTracksFrom(ctx context.Context, prov providers.Pr
 				continue
 			}
 		}
-		if job, err := st.downloads.GetByProviderTrack(ctx, prov.Name(), res.ProviderTrackID); err == nil &&
-			job.Status == models.DownloadCompleted && job.TrackID != "" {
+		if job, err := st.downloads.GetByProviderTrack(ctx, prov.Name(), res.ProviderTrackID); err == nil && job.HasTrack() {
 			continue
 		}
 		seen[id] = true
@@ -435,7 +434,10 @@ func (s *CatalogService) doProcessJob(ctx context.Context, job models.DownloadJo
 		suffix = "mp3"
 	}
 
-	dest := s.destPath(meta, suffix)
+	dest := s.evictedPath(ctx, job, suffix)
+	if dest == "" {
+		dest = s.destPath(meta, suffix)
+	}
 	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
 		return "", err
 	}

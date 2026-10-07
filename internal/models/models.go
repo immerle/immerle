@@ -769,6 +769,9 @@ const (
 	DownloadRunning   DownloadStatus = "running"
 	DownloadCompleted DownloadStatus = "completed"
 	DownloadFailed    DownloadStatus = "failed"
+	// DownloadEvicted: the file was evicted to free space; the track row (and its
+	// stats) is kept as remote and re-downloaded on the next play.
+	DownloadEvicted DownloadStatus = "evicted"
 )
 
 // DownloadJob is an async fetch of a remote track into the local library.
@@ -784,6 +787,12 @@ type DownloadJob struct {
 	Attempts        int            `json:"attempts"`
 	CreatedAt       time.Time      `json:"createdAt"`
 	UpdatedAt       time.Time      `json:"updatedAt"`
+}
+
+// HasTrack reports whether the job produced a library track that still exists,
+// downloaded or evicted (kept as remote, with its stats).
+func (j DownloadJob) HasTrack() bool {
+	return j.TrackID != "" && (j.Status == DownloadCompleted || j.Status == DownloadEvicted)
 }
 
 // BandcampConnection is one user's link to their personal Bandcamp account.

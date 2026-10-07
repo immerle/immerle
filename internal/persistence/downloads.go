@@ -125,11 +125,24 @@ func (r *DownloadRepo) RequeueStale(ctx context.Context) error {
 	return err
 }
 
-// DeleteByTrack removes any download jobs that produced the given track (used
-// when a downloaded track is evicted, so a later play re-downloads cleanly).
-func (r *DownloadRepo) DeleteByTrack(ctx context.Context, trackID string) error {
-	_, err := r.bexec(ctx, r.mel.NewDelete("download_jobs").Where("track_id", "=", trackID))
+// MarkEvicted flags the jobs that produced the given track as evicted, keeping
+// their provider reference so a later play can re-download into the same track.
+func (r *DownloadRepo) MarkEvicted(ctx context.Context, trackID string) error {
+	_, err := r.bexec(ctx, r.mel.NewUpdate("download_jobs").
+		Set("status", string(models.DownloadEvicted)).Set("updated_at", db.Millis(time.Now())).
+		Where("track_id", "=", trackID))
 	return err
+}
+
+// GetByTrack returns the job that produced the given track, if any.
+func (r *DownloadRepo) GetByTrack(ctx context.Context, trackID string) (models.DownloadJob, error) {
+	row := r.bqueryRow(ctx, r.mel.New("download_jobs").Select(downloadColumns).
+		Where("track_id", "=", trackID).Limit(1))
+	j, err := scanDownload(row)
+	if errors.Is(err, sql.ErrNoRows) {
+		return j, ErrNotFound
+	}
+	return j, err
 }
 
 // ListByUser returns a user's jobs, most recent first.

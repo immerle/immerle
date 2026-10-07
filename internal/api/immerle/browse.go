@@ -275,7 +275,8 @@ type songLocalStatusView struct {
 func (h *Handler) handleGetSongLocalStatus(w http.ResponseWriter, r *http.Request) {
 	if h.OnDemand != nil {
 		if localID, ok := h.OnDemand.LocalTrackIDForRemote(r.Context(), pathParam(r, "id")); ok {
-			if te, err := h.library.Song(r.Context(), userFrom(r.Context()).ID, localID); err == nil {
+			// An evicted track maps to its row but has no file yet: not seekable.
+			if te, err := h.library.Song(r.Context(), userFrom(r.Context()).ID, localID); err == nil && !te.Track.Remote {
 				view := toSongViewAnnotated(te.Track, te.Annotation)
 				writeResource(w, http.StatusOK, songLocalStatusView{Local: true, Song: &view})
 				return

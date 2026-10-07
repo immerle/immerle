@@ -605,13 +605,36 @@ func (r *CatalogRepo) UpdateTrackMetadata(ctx context.Context, id string, title,
 // Stays hand-written: it runs inside a transaction (the builder helpers use the
 // pool, not the tx).
 func (r *CatalogRepo) DeleteTrackCascade(ctx context.Context, id string) error {
-	return r.withTx(ctx, func(tx *sql.Tx) error {
+	_, err := r.deleteTrackCascade(ctx, id, `DELETE FROM tracks WHERE id=?`)
+	return err
+}
+
+// DeleteLocalTrackCascade is DeleteTrackCascade for a file that vanished from
+// disk: it only deletes a track that is still local, and reports whether it did.
+// A track evicted meanwhile (now remote, keeping its stats) is left alone, even
+// when the caller's view of it predates the eviction.
+func (r *CatalogRepo) DeleteLocalTrackCascade(ctx context.Context, id string) (bool, error) {
+	return r.deleteTrackCascade(ctx, id, `DELETE FROM tracks WHERE id=? AND remote=0`)
+}
+
+// deleteTrackCascade runs deleteTrack first, so its condition decides atomically
+// whether the referencing rows go too.
+func (r *CatalogRepo) deleteTrackCascade(ctx context.Context, id, deleteTrack string) (bool, error) {
+	deleted := false
+	err := r.withTx(ctx, func(tx *sql.Tx) error {
+		res, err := tx.ExecContext(ctx, r.rebind(deleteTrack), id)
+		if err != nil {
+			return err
+		}
+		if n, err := res.RowsAffected(); err != nil || n == 0 {
+			return err
+		}
+		deleted = true
 		for _, q := range []string{
 			`DELETE FROM annotations WHERE item_type='track' AND item_id=?`,
 			`DELETE FROM shares WHERE item_type='track' AND item_id=?`,
 			`DELETE FROM activity_events WHERE item_type='track' AND item_id=?`,
 			`DELETE FROM download_jobs WHERE track_id=?`,
-			`DELETE FROM tracks WHERE id=?`,
 		} {
 			if _, err := tx.ExecContext(ctx, r.rebind(q), id); err != nil {
 				return err
@@ -619,6 +642,7 @@ func (r *CatalogRepo) DeleteTrackCascade(ctx context.Context, id string) error {
 		}
 		return nil
 	})
+	return deleted && err == nil, err
 }
 
 // PruneEmptyAlbums deletes albums left with no tracks, then artists left with
@@ -787,10 +811,11 @@ func (r *CatalogRepo) listTracks(ctx context.Context, q string, args ...any) ([]
 
 // ProviderTracksToEvict returns provider-downloaded tracks eligible for cleanup:
 // a track that is the result of a completed download job AND has no reason to be
-// kept — not starred (by anyone), not played since `playedSince`, and not in any
-// playlist. Manually-scanned tracks (no download job) are never returned.
+// kept: not starred (by anyone, the track itself or its album), not played since
+// `playedSince`, and not in any playlist. Manually-scanned tracks (no download
+// job) and already-evicted (remote) tracks are never returned.
 // Kept as one raw block: melody's WhereRaw could wrap each EXISTS, but the
-// four-clause predicate reads better written out as SQL.
+// multi-clause predicate reads better written out as SQL.
 func (r *CatalogRepo) ProviderTracksToEvict(ctx context.Context, playedSince time.Time) ([]models.Track, error) {
 	rows, err := r.query(ctx, `
 		SELECT t.id, t.path FROM tracks t
@@ -798,7 +823,8 @@ func (r *CatalogRepo) ProviderTracksToEvict(ctx context.Context, playedSince tim
 		  AND EXISTS (SELECT 1 FROM download_jobs dj WHERE dj.track_id=t.id AND dj.status='completed')
 		  AND NOT EXISTS (SELECT 1 FROM annotations a WHERE a.item_type='track' AND a.item_id=t.id AND a.starred_at IS NOT NULL)
 		  AND NOT EXISTS (SELECT 1 FROM annotations a WHERE a.item_type='track' AND a.item_id=t.id AND a.last_played IS NOT NULL AND a.last_played >= ?)
-		  AND NOT EXISTS (SELECT 1 FROM playlist_tracks pt WHERE pt.track_id=t.id)`,
+		  AND NOT EXISTS (SELECT 1 FROM playlist_tracks pt WHERE pt.track_id=t.id)
+		  AND NOT EXISTS (SELECT 1 FROM annotations a WHERE a.item_type='album' AND a.item_id=t.album_id AND a.starred_at IS NOT NULL)`,
 		db.Millis(playedSince))
 	if err != nil {
 		return nil, err
@@ -813,6 +839,15 @@ func (r *CatalogRepo) ProviderTracksToEvict(ctx context.Context, playedSince tim
 		out = append(out, t)
 	}
 	return out, rows.Err()
+}
+
+// MarkTrackEvicted turns a downloaded track back into a remote one after its file
+// was evicted. The row keeps its id, path and annotations: re-downloading to the
+// same path matches it again (findTrackIdentity) and flips it back to local.
+func (r *CatalogRepo) MarkTrackEvicted(ctx context.Context, id string) error {
+	_, err := r.bexec(ctx, r.mel.NewUpdate("tracks").Set("remote", 1).
+		Set("updated_at", db.Millis(time.Now())).Where("id", "=", id))
+	return err
 }
 
 // DeleteTrack removes a track by id.

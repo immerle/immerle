@@ -9,11 +9,12 @@ import (
 	"github.com/immerle/immerle/internal/persistence"
 )
 
-// Evictor garbage-collects provider-downloaded tracks that are no longer worth
-// keeping. A track is removed only when ALL of these hold (i.e. no reason to
+// Evictor frees the disk space of provider-downloaded tracks that are no longer
+// worth keeping. A file is evicted only when ALL of these hold (i.e. no reason to
 // keep it): it was downloaded by a provider, it has not been played within the
-// retention window, it is in no playlist, and it is starred by nobody.
-// Manually-added tracks are never touched.
+// retention window, it is in no playlist, and neither it nor its album is starred
+// by anyone. Only the file goes: the track row stays (as remote) with its stats,
+// and is re-downloaded on the next play. Manually-added tracks are never touched.
 //
 // enabled and maxAge are read live (from the runtime settings) so the admin can
 // change them without a restart; the loop in Run always runs but only sweeps
@@ -61,8 +62,8 @@ func (e *Evictor) Run(ctx context.Context) {
 	}
 }
 
-// Sweep deletes eligible provider downloads (file + track row + download job)
-// and returns how many were removed.
+// Sweep deletes the files of eligible provider downloads, keeping their track
+// rows as remote, and returns how many were evicted.
 func (e *Evictor) Sweep(ctx context.Context) (int, error) {
 	cutoff := time.Now().Add(-e.maxAge())
 	candidates, err := e.catalog.ProviderTracksToEvict(ctx, cutoff)
@@ -74,17 +75,24 @@ func (e *Evictor) Sweep(ctx context.Context) (int, error) {
 		if err := ctx.Err(); err != nil {
 			return removed, err
 		}
-		if t.Path != "" {
-			if err := os.Remove(t.Path); err != nil && !os.IsNotExist(err) {
-				e.logger.Warn("could not delete evicted file", "path", t.Path, "error", err)
-				// Still drop the DB rows so we don't keep retrying a missing file.
-			}
-		}
-		if err := e.catalog.DeleteTrack(ctx, t.ID); err != nil {
-			e.logger.Warn("could not delete evicted track", "track", t.ID, "error", err)
+		// Keep the row (id, annotations, playlists, album) and its job: only the
+		// file goes, the next play re-downloads into this same track. Mark it
+		// remote before deleting the file, so a scan or the file watcher seeing
+		// the file vanish never mistakes it for a deleted track.
+		if err := e.downloads.MarkEvicted(ctx, t.ID); err != nil {
+			e.logger.Warn("could not mark evicted download", "track", t.ID, "error", err)
 			continue
 		}
-		_ = e.downloads.DeleteByTrack(ctx, t.ID)
+		if err := e.catalog.MarkTrackEvicted(ctx, t.ID); err != nil {
+			e.logger.Warn("could not mark evicted track", "track", t.ID, "error", err)
+			continue
+		}
+		if t.Path != "" {
+			if err := os.Remove(t.Path); err != nil && !os.IsNotExist(err) {
+				// The row is already remote: the next play overwrites this file.
+				e.logger.Warn("could not delete evicted file", "path", t.Path, "error", err)
+			}
+		}
 		e.logger.Debug("evicted provider download", "track", t.ID, "path", t.Path)
 		removed++
 	}
