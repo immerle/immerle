@@ -20,6 +20,10 @@ feed**, each event tagged with a privacy level:
 | Public | anyone |
 | Private | the author only |
 
+The **Social** screen (from the account menu) also lists every member of the
+instance, so you can open anyone's profile without waiting for them to show up
+in the feed. Only public identity (username, display name) is listed.
+
 A user's profile shows their identity, their public activity, and their
 public playlists. Your own account page is separate and always fully visible
 to you: it holds things a public profile never exposes, like your email

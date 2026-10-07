@@ -70,7 +70,7 @@ created automatically, same as the plain `docker run` example.
 
 ## From source
 
-You'll need **Go 1.25+** and `ffmpeg` / `ffprobe` on your `PATH` (for
+You'll need **Go 1.26+** and `ffmpeg` / `ffprobe` on your `PATH` (for
 transcoding, duration probing and on-demand tag embedding).
 
 ```bash

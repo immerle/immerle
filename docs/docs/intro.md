@@ -8,7 +8,7 @@ title: Introduction
 
 **Your music, self-hosted, and it sings.**
 
-Immerle is a self-hosted music server with its own **app** (web, iOS, Android)
+Immerle is a self-hosted music server with its own **app** (web, desktop, iOS, Android)
 and a **terminal client** (`iml`) for the full feature set, plus fluent
 **Subsonic / OpenSubsonic** support, so clients you already use (Supersonic,
 Symfonium, DSub, and friends) work too, as a fallback.
@@ -29,12 +29,17 @@ you outgrow it). Drop in your music, hit play.
   your own HTTP providers) stream tracks you don't own yet, progressively on
   first play.
 - ✨ **Discovery & Hall of Fame**: auto-generated genre/decade/trending/chart
-  playlists, personal "made for you" lists, and a hand-curated top-tracks
-  ranking.
-- 👯 **Social**: an activity feed with per-event privacy, and collaborative
-  or public playlists.
+  playlists, personal "made for you" lists, recommendation mixes (ReccoBeats,
+  ListenBrainz, Last.fm), a hand-curated top-tracks ranking and a yearly
+  *Wrapped*.
+- 📻 **Radio & podcasts**: curated internet radio stations per country, and
+  podcast feeds an admin subscribes from Apple Podcasts, Podcast Index and
+  other directories.
+- 📡 **Scrobbling**: push your plays to ListenBrainz and/or Last.fm.
+- 👯 **Social**: an activity feed with per-event privacy, a member directory,
+  collaborative or public playlists, and share links.
 - 🔊 **Jam sessions**: listen together, in sync, streamed live.
-- 📥 **Playlist import**: bring your playlists over (Spotify ships first).
+- 📥 **Playlist import**: bring your playlists over (Spotify and Deezer).
 - 🛍️ **Purchase import**: bring your own purchases in from Bandcamp (connect
   your account, import the real files you paid for), with more stores planned.
 - 🔗 **Federation (opt-in)**: sync editorial & recommendation playlists via an
@@ -56,10 +61,12 @@ you outgrow it). Drop in your music, hit play.
 - [Connecting clients](./clients/index.md): the app, `iml`, or any Subsonic client.
 - [On-demand catalog](./features/on-demand-providers.md): enable built-in providers, add your own, cleanup.
 - [Discovery & Hall of Fame](./features/discovery.md): auto-generated playlists and the top-tracks ranking.
+- [Radio & podcasts](./features/radio-podcasts.md): internet radio stations and podcast subscriptions.
 - [Scrobbling](./features/scrobbling.md): push plays to ListenBrainz and/or Last.fm.
 - [Social features](./features/social.md): activity, sharing, Jam sessions.
 - [Playlist import](./features/playlist-import.md): bring playlists over from Spotify or Deezer.
 - [Purchase import](./features/purchase-import.md): connect Bandcamp and import what you bought.
+- [Concert discovery](./features/concert-discovery.md): upcoming shows for your top artists.
 - [Federation](./features/federation.md): sync playlists via an `immerle-hub`.
 - [Developers](./developers/architecture.md): architecture, the native &
   Subsonic APIs, and building a custom content provider.

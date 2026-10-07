@@ -54,8 +54,10 @@ Not published to an app store yet, build it yourself, see
 </TabItem>
 <TabItem value="android" label="Android">
 
-Not published to an app store yet, build it yourself, see
-[Connecting clients](../clients/index.md#the-immerle-app-recommended).
+Not on the Play Store yet: download
+[immerle.apk](https://github.com/immerle/immerle/releases/latest/download/immerle.apk)
+on your phone and install it (you'll need to allow installs from your browser
+or file manager).
 
 </TabItem>
 </Tabs>
