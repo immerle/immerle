@@ -713,7 +713,13 @@ export const usePlayer = create<AudioState>((set, get) => ({
       const q = await AsyncStorage.getItem(QUALITY_KEY);
       if (q) set({ qualityId: q });
       const v = await AsyncStorage.getItem(VOLUME_KEY);
-      if (v !== null) set({ volume: Math.max(0, Math.min(1, Number(v))) });
+      if (v !== null) {
+        const volume = Math.max(0, Math.min(1, Number(v)));
+        set({ volume });
+        // init() may have created the engine before this read resolved: push
+        // the saved volume to it too, or it keeps playing at 1.0.
+        void get().engine?.setVolume(volume);
+      }
     } catch {
       /* keep defaults */
     }
@@ -761,8 +767,11 @@ export const usePlayer = create<AudioState>((set, get) => ({
       if (song?.unresolved) void resolveAndPlayUnresolved(get, set, index, song);
     });
 
-    await engine.setVolume(get().volume);
+    // Publish the engine before applying the volume, so a hydrateSettings()
+    // resolving meanwhile either sees it (and applies its volume) or has
+    // already updated get().volume read below.
     set({ engine });
+    await engine.setVolume(get().volume);
     startFakeProgressTicker(get, set);
 
     // Cross-device state: show what's playing on launch, then stay
