@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -20,6 +21,9 @@ type PendingDownload struct {
 	prov   providers.Provider
 	ptid   string
 	userID string
+	// dest overrides the download path: an evicted track goes back to its old
+	// path so it is re-ingested into the same row. Empty means destPath(Meta).
+	dest string
 	// Meta is the resolved provider metadata (title/artist/album/suffix/...).
 	Meta providers.Result
 }
@@ -67,19 +71,57 @@ func (s *CatalogService) PrepareStream(ctx context.Context, userID, id string) (
 			return t, true, nil, err
 		}
 	}
+	pd := &PendingDownload{prov: prov, ptid: ptid, userID: userID, Meta: meta}
 	// Already downloaded earlier via this provider track.
-	if job, err := st.downloads.GetByProviderTrack(ctx, prov.Name(), ptid); err == nil &&
-		job.Status == models.DownloadCompleted && job.TrackID != "" {
-		if t, err := st.catalog.GetTrack(ctx, job.TrackID); err == nil {
-			return t, true, nil, nil
+	if job, err := st.downloads.GetByProviderTrack(ctx, prov.Name(), ptid); err == nil {
+		if job.Status == models.DownloadCompleted && job.TrackID != "" {
+			if t, err := st.catalog.GetTrack(ctx, job.TrackID); err == nil {
+				return t, true, nil, nil
+			}
 		}
+		pd.dest = s.evictedPath(ctx, job, pd.Suffix())
 	}
 
-	return models.Track{}, false, &PendingDownload{prov: prov, ptid: ptid, userID: userID, Meta: meta}, nil
+	return models.Track{}, false, pd, nil
+}
+
+// PendingForEvicted prepares the re-download of a track whose file was evicted
+// (a remote track row), from the provider its download job came from.
+func (s *CatalogService) PendingForEvicted(ctx context.Context, userID string, t models.Track) (*PendingDownload, error) {
+	st := s.state
+	job, err := st.downloads.GetByTrack(ctx, t.ID)
+	if err != nil {
+		return nil, err
+	}
+	prov, ok := st.registry.Get(job.Provider)
+	if !ok {
+		return nil, fmt.Errorf("unknown provider %q", job.Provider)
+	}
+	meta, err := prov.Resolve(ctx, job.ProviderTrackID)
+	if err != nil {
+		return nil, err
+	}
+	pd := &PendingDownload{prov: prov, ptid: job.ProviderTrackID, userID: userID, Meta: meta}
+	pd.dest = s.evictedPath(ctx, job, pd.Suffix())
+	return pd, nil
+}
+
+// evictedPath returns the path an evicted job's track lived at, so its
+// re-download is ingested into the same track row (same id, same stats). Empty
+// when the job isn't evicted or the provider now delivers another format.
+func (s *CatalogService) evictedPath(ctx context.Context, job models.DownloadJob, suffix string) string {
+	if job.Status != models.DownloadEvicted || job.TrackID == "" {
+		return ""
+	}
+	t, err := s.state.catalog.GetTrack(ctx, job.TrackID)
+	if err != nil || !strings.EqualFold(filepath.Ext(t.Path), "."+suffix) {
+		return ""
+	}
+	return t.Path
 }
 
 // LocalTrackIDForRemote returns the local track id a remote provider track was
-// downloaded to (via a completed download job), if any. Read-only: it never
+// downloaded to (via a completed or evicted download job), if any. Read-only: it never
 // downloads. Used to reflect a downloaded track's like/rating/play state when it
 // is still listed under its remote id (e.g. on a provider album page).
 func (s *CatalogService) LocalTrackIDForRemote(ctx context.Context, remoteID string) (string, bool) {
@@ -91,7 +133,7 @@ func (s *CatalogService) LocalTrackIDForRemote(ctx context.Context, remoteID str
 		return "", false
 	}
 	job, err := s.state.downloads.GetByProviderTrack(ctx, provName, ptid)
-	if err == nil && job.Status == models.DownloadCompleted && job.TrackID != "" {
+	if err == nil && job.HasTrack() {
 		return job.TrackID, true
 	}
 	return "", false
@@ -103,7 +145,10 @@ func (s *CatalogService) LocalTrackIDForRemote(ctx context.Context, remoteID str
 // the client as they arrive from the provider, with no prior full-file buffering.
 func (s *CatalogService) StreamPending(ctx context.Context, pd *PendingDownload, w io.Writer) error {
 	suffix := pd.Suffix()
-	dest := s.destPath(pd.Meta, suffix)
+	dest := pd.dest
+	if dest == "" {
+		dest = s.destPath(pd.Meta, suffix)
+	}
 	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
 		return err
 	}

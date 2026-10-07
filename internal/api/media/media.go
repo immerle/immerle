@@ -64,6 +64,19 @@ func (s *Server) ServeAudio(w http.ResponseWriter, r *http.Request, user models.
 	if err != nil {
 		return err
 	}
+	// An evicted provider download: its file is gone, stream it again from the
+	// provider, which also re-ingests it into this same track.
+	if track.Remote && s.onDemand != nil {
+		pending, err := s.onDemand.PendingForEvicted(ctx, user.ID, track)
+		if err != nil {
+			if s.logger != nil {
+				s.logger.Warn("re-download of evicted track failed", "track", track.ID, "error", err)
+			}
+			return persistence.ErrNotFound
+		}
+		s.streamProgressive(w, r, pending)
+		return nil
+	}
 	s.serveLocal(w, r, user, track, opts)
 	return nil
 }

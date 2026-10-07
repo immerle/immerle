@@ -153,7 +153,7 @@ func (s *Scanner) ScanPaths(ctx context.Context, paths []string) (Result, error)
 	}
 
 	// Prune tracks that were not re-indexed this run (their files disappeared).
-	// DeleteTrackCascade, not the plain delete: a vanished-from-disk track is
+	// A cascading delete, not the plain one: a vanished-from-disk track is
 	// exactly as gone as an explicitly deleted one, so its annotations (e.g. a
 	// starred flag) must go with it — annotations has no DB-level FK to tracks
 	// (item_id is polymorphic, shared with artists/albums), so a plain delete
@@ -162,11 +162,16 @@ func (s *Scanner) ScanPaths(ctx context.Context, paths []string) (Result, error)
 	// it tries to add that dead track id to a playlist.
 	for _, id := range existing {
 		if !seenIDs[id] {
-			if err := s.catalog.DeleteTrackCascade(ctx, id); err != nil {
+			// Local-only: a provider download evicted during this scan is now
+			// remote (file gone on purpose, stats kept) and must survive.
+			deleted, err := s.catalog.DeleteLocalTrackCascade(ctx, id)
+			if err != nil {
 				s.logger.Warn("prune error", "track", id, "error", err)
 				continue
 			}
-			res.Removed++
+			if deleted {
+				res.Removed++
+			}
 		}
 	}
 
@@ -211,7 +216,7 @@ func (s *Scanner) IngestFile(ctx context.Context, path string) (string, error) {
 	return id, err
 }
 
-// RemoveFile deletes the track for a removed file path. DeleteTrackCascade,
+// RemoveFile deletes the track for a removed file path. A cascading delete,
 // same reasoning as the prune step in Scan: a removed file is gone the same
 // way an explicit delete is, so its annotations must go with it too.
 func (s *Scanner) RemoveFile(ctx context.Context, path string) error {
@@ -221,7 +226,8 @@ func (s *Scanner) RemoveFile(ctx context.Context, path string) error {
 		return err
 	}
 	if id, ok := existing[abs]; ok {
-		return s.catalog.DeleteTrackCascade(ctx, id)
+		_, err := s.catalog.DeleteLocalTrackCascade(ctx, id)
+		return err
 	}
 	return nil
 }

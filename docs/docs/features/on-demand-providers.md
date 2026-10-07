@@ -76,10 +76,13 @@ supports it.
 
 ## Cleanup of unused downloads
 
-Provider-downloaded tracks don't accumulate forever. A background sweep
+Provider-downloaded files don't accumulate forever. A background sweep
 (on by default: 30-day window, every 6 hours) deletes a downloaded track's
-file and database rows only when there's **no reason to keep it**: unplayed
-within the window, in no playlist, starred by nobody. Anything you added
-manually is never touched, since there's no download job behind it to key
-the sweep on. The sweep can be toggled or run on demand from the admin
-settings.
+file only when there's **no reason to keep it**: unplayed within the window,
+in no playlist, and neither the track nor its album starred by anybody.
+
+Only the file goes: the track stays in your library with its play counts,
+ratings and history, and is simply streamed from its provider again (and
+re-downloaded) the next time someone plays it. Anything you added manually is
+never touched, since there's no download job behind it to key the sweep on.
+The sweep can be toggled or run on demand from the admin settings.
