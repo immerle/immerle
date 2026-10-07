@@ -44,6 +44,9 @@
 
   automerge: false,
 
+  // Our own image (private on GHCR, tracked as :latest): nothing to bump.
+  ignoreDeps: ['ghcr.io/immerle/immerle'],
+
   packageRules: [
     // Majors stay one PR per dependency so each one gets a real review.
     {
