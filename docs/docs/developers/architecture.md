@@ -9,7 +9,10 @@ Immerle is a single Go binary with a layered internal structure and clear
 boundaries between them:
 
 ```
-cmd/immerle              entrypoint
+cmd/immerle              server entrypoint
+cmd/iml                  terminal client
+radio/                   built-in internet radio stations (embedded)
+ui/                      Expo app (web, Electron desktop, iOS, Android)
 internal/
   config                 bootstrap config (.env / environment)
   logging                structured logging (slog)
@@ -20,7 +23,19 @@ internal/
   stream                 audio streaming (range/seek), ffmpeg transcoding, cover art
   providers              pluggable on-demand catalog providers (jamendo, internet-archive, free-music-archive, http)
   core                   business services (auth, annotations, on-demand,
-                         activity, jam, now-playing)
+                         activity, jam, now-playing, settings)
+  autoplaylists          genre/decade/personal/recommendation playlist sync
+  charts, spotifyweb     chart playlists and Spotify public-data access
+  importer               playlist import (Spotify, Deezer) and track matching
+  bandcamp               purchase import
+  matching, musicbrainz  track matching and metadata identification
+  listenbrainz, lastfm   scrobbling and recommendation clients
+  reccobeats             recommendation client
+  concerts               concert discovery, with ticketmaster/skiddle/eventim sources
+  lyrics, lrclib         lyrics reading and lrclib.net fallback
+  podcastsearch          podcast directory adapters
+  covergen               generated playlist covers
+  outbox                 durable async job queue
   federation             immerle-hub client
   api/subsonic           Subsonic / OpenSubsonic handlers (XML + JSON)
   api/immerle            native immerle extension handlers (JSON + SSE)
