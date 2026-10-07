@@ -621,6 +621,43 @@ func (r *CatalogRepo) DeleteTrackCascade(ctx context.Context, id string) error {
 	})
 }
 
+// PruneEmptyAlbums deletes albums left with no tracks, then artists left with
+// neither albums nor tracks, along with their annotations, shares and activity
+// (item_id is polymorphic, so nothing cascades there). Only rows created before
+// `before` are considered, so an album a concurrent ingest just inserted, and
+// hasn't attached its track to yet, is never pruned out from under it.
+func (r *CatalogRepo) PruneEmptyAlbums(ctx context.Context, before time.Time) (albums, artists int64, err error) {
+	const emptyAlbum = `SELECT id FROM albums al WHERE al.created_at < ?
+		AND NOT EXISTS (SELECT 1 FROM tracks t WHERE t.album_id = al.id)`
+	const emptyArtist = `SELECT id FROM artists ar WHERE ar.created_at < ?
+		AND NOT EXISTS (SELECT 1 FROM albums al WHERE al.artist_id = ar.id)
+		AND NOT EXISTS (SELECT 1 FROM tracks t WHERE t.artist_id = ar.id)`
+	cutoff := db.Millis(before)
+	err = r.withTx(ctx, func(tx *sql.Tx) error {
+		prune := func(itemType, table, ids string) (int64, error) {
+			for _, ref := range []string{"annotations", "shares", "activity_events"} {
+				q := `DELETE FROM ` + ref + ` WHERE item_type='` + itemType + `' AND item_id IN (` + ids + `)`
+				if _, err := tx.ExecContext(ctx, r.rebind(q), cutoff); err != nil {
+					return 0, err
+				}
+			}
+			res, err := tx.ExecContext(ctx, r.rebind(`DELETE FROM `+table+` WHERE id IN (`+ids+`)`), cutoff)
+			if err != nil {
+				return 0, err
+			}
+			return res.RowsAffected()
+		}
+		// Albums first: an artist only becomes empty once its albums are gone.
+		var err error
+		if albums, err = prune("album", "albums", emptyAlbum); err != nil {
+			return err
+		}
+		artists, err = prune("artist", "artists", emptyArtist)
+		return err
+	})
+	return albums, artists, err
+}
+
 // RandomTracks returns up to count random tracks, optionally filtered by genre
 // and/or year range (powers getRandomSongs). Built on trackSelect (a JOIN) and
 // ordered by RANDOM(), neither expressible by melody, so it stays hand-written.

@@ -170,9 +170,17 @@ func (s *Scanner) ScanPaths(ctx context.Context, paths []string) (Result, error)
 		}
 	}
 
+	// A retag moves tracks to a new album/artist row, leaving the old ones
+	// empty: prune them so browse and search don't list ghost albums.
+	prunedAlbums, prunedArtists, err := s.catalog.PruneEmptyAlbums(ctx, start)
+	if err != nil {
+		s.logger.Warn("prune empty albums error", "error", err)
+	}
+
 	res.Elapsed = time.Since(start)
 	s.logger.Info("scan complete", "scanned", res.Scanned, "added", res.Added,
-		"updated", res.Updated, "removed", res.Removed, "errors", res.Errors, "elapsed", res.Elapsed)
+		"updated", res.Updated, "removed", res.Removed, "errors", res.Errors,
+		"prunedAlbums", prunedAlbums, "prunedArtists", prunedArtists, "elapsed", res.Elapsed)
 	s.mu.Lock()
 	onComplete := s.onComplete
 	s.mu.Unlock()

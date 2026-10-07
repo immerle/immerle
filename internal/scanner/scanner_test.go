@@ -2,6 +2,7 @@ package scanner
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -197,5 +198,49 @@ func TestRenamePreservesAnnotations(t *testing.T) {
 	}
 	if ann.Starred == nil {
 		t.Fatal("annotation lost after rename")
+	}
+}
+
+func TestRetagPrunesEmptyAlbumsAndArtists(t *testing.T) {
+	if !testutil.FFmpegAvailable() {
+		t.Skip("ffmpeg not available")
+	}
+	root := buildLibrary(t)
+	store := testutil.NewStore(t)
+	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelWarn}))
+	s := New(store.Catalog, store.Genres, NewExtractor("ffprobe"), filepath.Join(t.TempDir(), "covers"), logger)
+	ctx := context.Background()
+
+	if _, err := s.ScanPaths(ctx, []string{root}); err != nil {
+		t.Fatal(err)
+	}
+	_, oldAlbums, _, _ := store.Catalog.Search(ctx, "Album 3", 0, 10, 0)
+	if len(oldAlbums) != 1 {
+		t.Fatalf("expected Album 3 after first scan, got %d", len(oldAlbums))
+	}
+	user := models.User{ID: uuid.NewString(), Username: "u", PasswordHash: "x", CreatedAt: time.Now()}
+	if err := store.Users.Create(ctx, user); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Annotations.SetStarred(ctx, user.ID, models.ItemAlbum, oldAlbums[0].ID, true); err != nil {
+		t.Fatal(err)
+	}
+
+	// Retag Artist B's files to a different artist spelling, same album title.
+	for i, title := range []string{"B3T1", "B3T2"} {
+		p := filepath.Join(root, "Artist B", "Album 3", fmt.Sprintf("%02d.mp3", i+1))
+		testutil.GenerateAudio(t, p, testutil.AudioTags{Title: title, Artist: "Artist Bee", Album: "Album 3", Track: i + 1})
+	}
+	if _, err := s.ScanPaths(ctx, []string{root}); err != nil {
+		t.Fatal(err)
+	}
+
+	artists, albums, tracks, _ := store.Catalog.Stats(ctx)
+	if artists != 2 || albums != 3 || tracks != 5 {
+		t.Fatalf("expected 2 artists / 3 albums / 5 tracks after retag, got %d / %d / %d", artists, albums, tracks)
+	}
+	ann, err := store.Annotations.Get(ctx, user.ID, models.ItemAlbum, oldAlbums[0].ID)
+	if err == nil && ann.Starred != nil {
+		t.Fatal("star on the pruned album was kept")
 	}
 }
