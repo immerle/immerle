@@ -1,6 +1,7 @@
 package immerle
 
 import (
+	"errors"
 	"net/http"
 	"time"
 
@@ -34,6 +35,7 @@ type loginRequest struct {
 // @Success      201  {object}  LoginDTO
 // @Failure      400  {object}  errorResponse
 // @Failure      401  {object}  errorResponse
+// @Failure      429  {object}  errorResponse
 // @Router       /auth/sessions [post]
 func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 	var req loginRequest
@@ -53,6 +55,11 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 		UserAgent: r.UserAgent(),
 	}
 	token, dev, err := h.Auth.IssueDeviceToken(r.Context(), creds, deviceName, h.deviceTokenTTL())
+	if errors.Is(err, core.ErrTooManyAttempts) {
+		h.Logger.Warn("login throttled", "username", req.Username, "remote", httputil.ClientIP(r))
+		writeError(w, http.StatusTooManyRequests, "too_many_attempts", "too many failed login attempts, try again later")
+		return
+	}
 	if err != nil {
 		h.Logger.Warn("login failed", "username", req.Username, "remote", r.RemoteAddr)
 		writeError(w, http.StatusUnauthorized, "unauthorized", "invalid credentials")
