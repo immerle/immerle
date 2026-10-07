@@ -1,4 +1,30 @@
 {
+  "uiKit": {
+    "title": "Design system", "subtitle": "Spotify-inspired · minimalist · green #1ED760",
+    "colors": "Colors", "typography": "Typography", "display": "Display", "heading": "Heading",
+    "section": "Section", "bodyStrong": "Strong body", "body": "Body", "secondary": "Secondary",
+    "caption": "Caption", "buttons": "Buttons", "primary": "Primary", "ghost": "Ghost",
+    "danger": "Danger", "small": "Small", "large": "Large", "loading": "Loading…", "disabled": "Disabled",
+    "playbackIcons": "Playback & icons", "chips": "Chips", "genres": "Genres", "badges": "Badges",
+    "default": "Default", "fields": "Fields", "withIcon": "With icon", "searchPlaceholder": "Search…",
+    "password": "Password", "states": "States", "emptyTitle": "Nothing here", "emptySubtitle": "No items.",
+    "error": "An error occurred."
+  },
+  "examples": { "username": "username", "displayName": "Jane Doe", "serverUrl": "https://music.example.com", "email": "admin@example.com", "providerUrl": "https://my-service.internal" },
+  "navigation": {
+    "home": "Home", "login": "Sign in", "setup": "Setup", "playlists": "Playlists",
+    "social": "Social", "genre": "Genre", "jam": "Jam", "uiKit": "UI Kit", "import": "Import",
+    "jobs": "Jobs", "providers": "Providers", "scan": "Scan", "users": "Users",
+    "tracks": "Tracks", "federation": "Federation", "logs": "Logs"
+  },
+  "quality": {
+    "original": "Original (no transcoding)", "high": "High — 320 kbps",
+    "medium": "Medium — 192 kbps", "low": "Data saver — 96 kbps"
+  },
+  "format": {
+    "bytes": { "b": "B", "kb": "KB", "mb": "MB", "gb": "GB", "tb": "TB" },
+    "relative": { "now": "just now", "minute": "{{count}} min", "hour": "{{count}} h", "day": "{{count}} d", "week": "{{count}} wk", "month": "{{count}} mo", "year": { "one": "{{count}} year", "other": "{{count}} years" } }
+  },
   "smart": {
     "title": "Smart playlists",
     "tabSubtitle": "Rule-based, auto-updating",
@@ -955,6 +981,7 @@
       "revoke": "Sign out"
     },
     "tokens": {
+      "namePlaceholder": "my-cli",
       "title": "API",
       "subtitle": "Personal access tokens",
       "revokeConfirmTitle": "Revoke this token?",
@@ -988,6 +1015,7 @@
     }
   },
   "components": {
+    "trackRow": { "unknownArtist": "Unknown artist", "moreOptions": "More options" },
     "scrollRow": {
       "scrollLeft": "Scroll left",
       "scrollRight": "Scroll right"

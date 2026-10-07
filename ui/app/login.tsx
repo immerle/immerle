@@ -69,7 +69,7 @@ export default function Login() {
       <Field
         label={t('auth.login.serverLabel')}
         icon="globe-outline"
-        placeholder="https://musique.exemple.fr"
+        placeholder={t('examples.serverUrl')}
         autoCapitalize="none"
         autoCorrect={false}
         keyboardType="url"

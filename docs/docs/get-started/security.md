@@ -44,6 +44,13 @@ responsive under a browser's per-origin connection limit. See
 [Troubleshooting](../troubleshooting.md#pages-feel-slow--stall-while-a-jam-is-running)
 for why that limit matters and how the proxy fixes it.
 
+Immerle throttles password logins on its own: after 10 failed attempts within
+15 minutes, the username and the client IP are both locked until the window
+ends (the native API answers `429`, Subsonic clients get "wrong credentials").
+Devices already signed in with a token keep working. The client IP is read
+from `X-Forwarded-For`, so make sure your proxy sets that header itself rather
+than passing through whatever the client sent.
+
 ## 3. Change the default admin password, and close the setup window
 
 The `docker-compose.yml` from Quick Start creates the admin account from

@@ -6,11 +6,11 @@ title: Connecting clients
 
 # Connecting clients
 
-Immerle ships two clients of its own: the **app** (web, iOS, Android) and
+Immerle ships two clients of its own: the **app** (web, desktop, iOS, Android) and
 **`iml`** (terminal), both built against Immerle's native API. That's where
 the full feature set lives: on-demand catalog & providers, Jam sessions,
-federation, Hall of Fame, discovery playlists, playlist import, offline
-downloads, live admin tools, and everything else this site documents.
+federation, Hall of Fame, discovery playlists, radio & podcasts, playlist and
+purchase import, offline downloads, live admin tools, and everything else this site documents.
 
 Subsonic/OpenSubsonic is also fully supported, so any client for that
 ecosystem works too, but the Subsonic API is an older, fixed protocol that
@@ -24,15 +24,17 @@ install links per platform.
 
 ## The Immerle app (recommended)
 
-One codebase, three targets: **web, iOS, Android**.
+One codebase for **web, desktop (macOS, Windows, Linux), iOS and Android**.
 
 - **Web** needs nothing extra: the server embeds and serves it directly at
   `http://<host>:4533`. Sign in with the account you created during
   [installation](../installation.md) and you're done.
-- **iOS / Android** aren't published to an app store yet; build them yourself
-  with EAS (`npx eas build --profile production --platform ios|android`) or
-  run a dev client locally. See `ui/README.md` in the repo for the exact
-  commands.
+- **Desktop and Android** installers are attached to every
+  [release](https://github.com/immerle/immerle/releases/latest) (`.dmg`,
+  `.exe`, `.AppImage`/`.deb`, `immerle.apk`).
+- **iOS** isn't published to the App Store yet; build it yourself with EAS
+  (`npx eas build --profile production --platform ios`) or run a dev client
+  locally. See `ui/README.md` in the repo for the exact commands.
 
 It's *capability-aware*: it probes the server on connect and only shows the
 features that instance actually has enabled, so it degrades gracefully
@@ -55,7 +57,9 @@ leaving the terminal. It renders text, not a GUI, so it barely touches memory
 or CPU, handy for just having music running in the background without
 competing with a game or anything else demanding for resources.
 
-Install it (Go 1.25+ needed to build):
+Install it (Go 1.26+ needed to build), or grab a prebuilt binary from the
+[latest release](https://github.com/immerle/immerle/releases/latest), see
+[Choosing a client](../get-started/choosing-a-client.md):
 
 ```bash
 make install-cli   # go install ./cmd/iml, lands `iml` on your $GOBIN/$PATH

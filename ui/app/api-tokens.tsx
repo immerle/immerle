@@ -103,7 +103,7 @@ export default function ApiTokens() {
 
         <Card className="gap-3">
           <CardTitle icon="add-circle" color="#6366f1" title={t('tools.tokens.newToken')} />
-          <Field label={t('tools.tokens.nameLabel')} placeholder="mon-cli" value={name} onChangeText={setName} autoCapitalize="none" />
+          <Field label={t('tools.tokens.nameLabel')} placeholder={t('tools.tokens.namePlaceholder')} value={name} onChangeText={setName} autoCapitalize="none" />
           <Text className="text-sm font-medium text-muted">{t('tools.tokens.expiration')}</Text>
           <View className="flex-row flex-wrap gap-2">
             {EXPIRIES.map((e) => (

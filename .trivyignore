@@ -21,3 +21,12 @@ CVE-2026-24842
 CVE-2026-26960
 CVE-2026-29786
 CVE-2026-31802
+
+# Reviewed 2026-10-07. Fix is a major bump pinned by the tool, build/dev only.
+# tinypool 1.x (via @docusaurus/core): docs site build only, never shipped.
+CVE-2026-104848
+CVE-2026-104849
+# image-size 1.x (via metro, react-native bundler): runs at bundle time on
+# trusted project assets only, never on user input or in a shipped artifact.
+CVE-2025-71329
+CVE-2025-71330

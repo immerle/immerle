@@ -284,7 +284,7 @@ export default function Settings() {
                 onPress={() => setQuality(p.id)}
                 className={`flex-row items-center justify-between px-3 py-2.5 ${i > 0 ? 'border-t border-border' : ''} ${active ? 'bg-primary/10' : 'active:bg-surface-alt'}`}
               >
-                <Text className={`text-base ${active ? 'font-semibold text-primary' : 'text-foreground'}`}>{p.label}</Text>
+                <Text className={`text-base ${active ? 'font-semibold text-primary' : 'text-foreground'}`}>{t(p.labelKey)}</Text>
                 {active ? <Ionicon name="checkmark" size={20} color={colors.primary} /> : null}
               </Pressable>
             );

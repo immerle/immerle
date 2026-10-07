@@ -66,8 +66,8 @@ export function LibrarySidebar() {
     () => sortPlaylists((playlists ?? []).filter((p) => p.name.toLowerCase().includes(q)), sort),
     [playlists, q, sort],
   );
-  const likedMatches = 'titres likés'.includes(q);
-  const localMatches = 'musiques locales'.includes(q);
+  const likedMatches = t('components.sidebar.likedSongs').toLowerCase().includes(q);
+  const localMatches = t('components.sidebar.localSongs').toLowerCase().includes(q);
 
   return (
     <View style={{ width }} className="border-r border-border bg-surface">

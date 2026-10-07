@@ -1,7 +1,7 @@
 /** Streaming quality presets that map to Subsonic transcoding params. */
 export interface QualityPreset {
   id: string;
-  label: string;
+  labelKey: string;
   /** Server-side max bitrate in kbps; 0 means "original / no transcode". */
   maxBitRate: number;
   /** Target container, e.g. 'mp3', 'opus'. Undefined keeps the server default. */
@@ -9,10 +9,10 @@ export interface QualityPreset {
 }
 
 export const QUALITY_PRESETS: QualityPreset[] = [
-  { id: 'original', label: 'Original (sans transcodage)', maxBitRate: 0 },
-  { id: 'high', label: 'Haute — 320 kbps', maxBitRate: 320, format: 'mp3' },
-  { id: 'medium', label: 'Moyenne — 192 kbps', maxBitRate: 192, format: 'mp3' },
-  { id: 'low', label: 'Économie de données — 96 kbps', maxBitRate: 96, format: 'opus' },
+  { id: 'original', labelKey: 'quality.original', maxBitRate: 0 },
+  { id: 'high', labelKey: 'quality.high', maxBitRate: 320, format: 'mp3' },
+  { id: 'medium', labelKey: 'quality.medium', maxBitRate: 192, format: 'mp3' },
+  { id: 'low', labelKey: 'quality.low', maxBitRate: 96, format: 'opus' },
 ];
 
 export const DEFAULT_QUALITY_ID = 'high';

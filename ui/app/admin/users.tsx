@@ -99,8 +99,8 @@ export default function AdminUsers() {
           {showCreate ? (
             <Card className="gap-3">
               <CardTitle icon="person-add" color="#3b82f6" title={t('admin.users.newUser')} />
-              <Field label={t('admin.users.usernameLabel')} placeholder="utilisateur" autoCapitalize="none" value={form.username} onChangeText={(v) => setForm({ ...form, username: v })} />
-              <Field label={t('admin.users.displayNameLabel')} placeholder="Jean Dupont" value={form.displayName} onChangeText={(v) => setForm({ ...form, displayName: v })} />
+              <Field label={t('admin.users.usernameLabel')} placeholder={t('examples.username')} autoCapitalize="none" value={form.username} onChangeText={(v) => setForm({ ...form, username: v })} />
+              <Field label={t('admin.users.displayNameLabel')} placeholder={t('examples.displayName')} value={form.displayName} onChangeText={(v) => setForm({ ...form, displayName: v })} />
               <Field label={t('admin.users.passwordLabel')} secureTextEntry value={form.password} onChangeText={(v) => setForm({ ...form, password: v })} />
               <Field label={t('admin.users.emailLabel')} keyboardType="email-address" autoCapitalize="none" value={form.email} onChangeText={(v) => setForm({ ...form, email: v })} />
               <View className="flex-row items-center justify-between rounded-xl bg-surface-alt px-3 py-2">

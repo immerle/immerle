@@ -1,6 +1,6 @@
 module github.com/immerle/immerle
 
-go 1.26.5
+go 1.26.6
 
 require (
 	github.com/charmbracelet/bubbletea v1.3.10
@@ -18,8 +18,8 @@ require (
 	github.com/oapi-codegen/runtime v1.4.2
 	github.com/pressly/goose/v3 v3.27.1
 	github.com/swaggo/http-swagger/v2 v2.0.2
-	golang.org/x/image v0.43.0
-	golang.org/x/sync v0.21.0
+	golang.org/x/image v0.45.0
+	golang.org/x/sync v0.22.0
 	golang.org/x/term v0.45.0
 	gopkg.in/yaml.v3 v3.0.1
 	modernc.org/sqlite v1.52.0
@@ -64,10 +64,10 @@ require (
 	github.com/swaggo/swag v1.8.1 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/crypto v0.52.0 // indirect
+	golang.org/x/crypto v0.55.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
-	golang.org/x/text v0.39.0 // indirect
-	golang.org/x/tools v0.47.0 // indirect
+	golang.org/x/text v0.41.0 // indirect
+	golang.org/x/tools v0.48.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	modernc.org/libc v1.72.3 // indirect
 	modernc.org/mathutil v1.7.1 // indirect

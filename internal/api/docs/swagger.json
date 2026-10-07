@@ -6863,6 +6863,16 @@
                             }
                         },
                         "description": "Unauthorized"
+                    },
+                    "429": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Too Many Requests"
                     }
                 },
                 "summary": "Create a device session (issue a JWT)",

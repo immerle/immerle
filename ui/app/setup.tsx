@@ -182,7 +182,7 @@ export default function Setup() {
               <Field
                 label={t('auth.setup.serverAddressLabel')}
                 icon="globe-outline"
-                placeholder="https://musique.exemple.fr"
+                placeholder={t('examples.serverUrl')}
                 autoCapitalize="none"
                 autoCorrect={false}
                 keyboardType="url"
@@ -236,7 +236,7 @@ export default function Setup() {
               <Field
                 label={t('auth.setup.displayNameLabel')}
                 icon="happy-outline"
-                placeholder="Jean Dupont"
+                placeholder={t('examples.displayName')}
                 value={values.displayName}
                 onChangeText={(v) => set('displayName', v)}
                 error={errors.displayName}
@@ -278,7 +278,7 @@ export default function Setup() {
               <Field
                 label={t('auth.setup.emailLabel')}
                 icon="mail-outline"
-                placeholder="admin@exemple.fr"
+                placeholder={t('examples.email')}
                 autoCapitalize="none"
                 autoCorrect={false}
                 keyboardType="email-address"

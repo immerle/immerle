@@ -215,7 +215,7 @@ function CreateProviderModal({ visible, onClose }: { visible: boolean; onClose: 
           <Text className="text-sm text-muted">{t('admin.providers.createSubtitle')}</Text>
           <Field
             label={t('admin.providers.endpointLabel')}
-            placeholder="https://mon-service.internal"
+            placeholder={t('examples.providerUrl')}
             autoCapitalize="none"
             autoCorrect={false}
             keyboardType="url"
@@ -576,7 +576,7 @@ function ProviderModal({ initial, onClose }: { initial: Provider; onClose: () =>
             {!isBuiltin ? (
               <Field
                 label={t('admin.providers.endpointLabel')}
-                placeholder="https://mon-service.internal"
+                placeholder={t('examples.providerUrl')}
                 autoCapitalize="none"
                 autoCorrect={false}
                 keyboardType="url"

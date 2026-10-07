@@ -28,6 +28,26 @@ playlist, in the app or over Subsonic, nothing special to configure):
   [federated](./federation.md) playlist does, no provider configured just
   means those tracks aren't playable locally yet.
 
+## Recommendation mixes
+
+Private, per-user playlists picked by a third-party engine, refreshed daily
+alongside the others. The engine is credited on the cover and under the
+playlist title. Recommended tracks are kept as artist/title references and
+resolved lazily on first play (your library first, then your on-demand
+providers), so even a small library gets a populated list.
+
+| Playlist | Engine | Needs |
+| -------- | ------ | ----- |
+| **Découvertes** | [ReccoBeats](https://reccobeats.com/), seeded from your top tracks | nothing, keyless |
+| **Daily Jams**, **Weekly Jams**, **Weekly Exploration** | ListenBrainz's own generated playlists | the user's ListenBrainz token, see [Scrobbling](./scrobbling.md#listenbrainz) |
+| **Mix Last.fm** | Last.fm track/artist similarity, seeded from your top tracks | the admin-configured Last.fm API key, see [Scrobbling](./scrobbling.md#lastfm); no per-user connection needed |
+
+## Wrapped
+
+A personal year-in-review: total listening, top tracks, artists and genres,
+and a per-month histogram for any calendar year, computed from your play
+history. On by default; an admin can switch it off from the admin settings.
+
 ## Hall of Fame
 
 A personal, hand-curated top-tracks ranking (not a playlist, its own thing).

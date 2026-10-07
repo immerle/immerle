@@ -26,7 +26,7 @@ import { LibrarySidebar } from '../src/components/LibrarySidebar';
 import { AdminSidebar } from '../src/components/AdminSidebar';
 import { MobileDrawer } from '../src/components/MobileDrawer';
 import { useUI } from '../src/stores/ui';
-import { useLocale } from '../src/i18n/store';
+import { useLocale, useT } from '../src/i18n/store';
 import { useSelfServer } from '../src/api/selfServer';
 import { palette } from '../src/theme/colors';
 import { WIDE_BREAKPOINT } from '../src/theme/layout';
@@ -40,6 +40,8 @@ import { installRouterKeyStripper } from '../src/utils/routerKey';
  * which redirects based on the restored session.
  */
 export default function RootLayout() {
+  const t = useT();
+  const locale = useLocale((s) => s.preference);
   const { colorScheme } = useColorScheme();
   const { width } = useWindowDimensions();
   const pathname = usePathname();
@@ -76,7 +78,7 @@ export default function RootLayout() {
   // browser tab title from the current route.
   useEffect(() => {
     if (Platform.OS === 'web') document.title = documentTitle(pathname);
-  }, [pathname]);
+  }, [pathname, locale]);
 
   // Once the session is authenticated, the server is the source of truth for
   // the accent — pull it so the choice follows the user across devices.
@@ -134,26 +136,26 @@ export default function RootLayout() {
                   <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                   {/* On desktop the top bar provides Back, so detail screens hide
                       their own stack header; on mobile they keep it. */}
-                  <Stack.Screen name="album/[id]" options={{ title: 'Album', headerShown: !wide }} />
-                  <Stack.Screen name="artist/[id]" options={{ title: 'Artiste', headerShown: !wide }} />
-                  <Stack.Screen name="profile/[username]" options={{ title: 'Profil', headerShown: !wide }} />
-                  <Stack.Screen name="genre/[id]" options={{ title: 'Genre', headerShown: !wide }} />
-                  <Stack.Screen name="playlist/[id]" options={{ title: 'Playlist', headerShown: !wide }} />
-                  <Stack.Screen name="liked" options={{ title: 'Titres likés', headerShown: !wide }} />
-                  <Stack.Screen name="local" options={{ title: 'Musiques locales', headerShown: !wide }} />
-                  <Stack.Screen name="jam/[id]" options={{ title: 'Jam', headerShown: !wide }} />
+                  <Stack.Screen name="album/[id]" options={{ title: t('media.album.label'), headerShown: !wide }} />
+                  <Stack.Screen name="artist/[id]" options={{ title: t('media.artist.label'), headerShown: !wide }} />
+                  <Stack.Screen name="profile/[username]" options={{ title: t('settings.profile'), headerShown: !wide }} />
+                  <Stack.Screen name="genre/[id]" options={{ title: t('navigation.genre'), headerShown: !wide }} />
+                  <Stack.Screen name="playlist/[id]" options={{ title: t('components.sidebar.playlist'), headerShown: !wide }} />
+                  <Stack.Screen name="liked" options={{ title: t('components.sidebar.likedSongs'), headerShown: !wide }} />
+                  <Stack.Screen name="local" options={{ title: t('media.local.title'), headerShown: !wide }} />
+                  <Stack.Screen name="jam/[id]" options={{ title: t('navigation.jam'), headerShown: !wide }} />
                   <Stack.Screen
                     name="player"
                     options={{ presentation: 'modal', headerShown: false }}
                   />
-                  <Stack.Screen name="queue" options={{ presentation: 'modal', title: 'File de lecture' }} />
-                  <Stack.Screen name="cast-target" options={{ presentation: 'modal', title: 'Lecture sur' }} />
-                  <Stack.Screen name="ui-kit" options={{ title: 'UI Kit', headerShown: !wide }} />
-                  <Stack.Screen name="devices" options={{ title: 'Appareils connectés', headerShown: !wide }} />
-                  <Stack.Screen name="api-tokens" options={{ title: 'API', headerShown: !wide }} />
-                  <Stack.Screen name="import" options={{ title: 'Importer', headerShown: false }} />
-                  <Stack.Screen name="import/[id]" options={{ title: 'Import', headerShown: false }} />
-                  <Stack.Screen name="discover" options={{ title: 'Playlists publiques', headerShown: !wide }} />
+                  <Stack.Screen name="queue" options={{ presentation: 'modal', title: t('media.player.queue') }} />
+                  <Stack.Screen name="cast-target" options={{ presentation: 'modal', title: t('media.player.castTitle') }} />
+                  <Stack.Screen name="ui-kit" options={{ title: t('navigation.uiKit'), headerShown: !wide }} />
+                  <Stack.Screen name="devices" options={{ title: t('tools.devices.title'), headerShown: !wide }} />
+                  <Stack.Screen name="api-tokens" options={{ title: t('tools.tokens.title'), headerShown: !wide }} />
+                  <Stack.Screen name="import" options={{ title: t('navigation.import'), headerShown: false }} />
+                  <Stack.Screen name="import/[id]" options={{ title: t('navigation.import'), headerShown: false }} />
+                  <Stack.Screen name="discover" options={{ title: t('components.sidebar.publicPlaylists'), headerShown: !wide }} />
                 </Stack>
               </View>
             </View>
