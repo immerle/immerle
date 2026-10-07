@@ -411,8 +411,10 @@ func (r *PlaylistRepo) ReplaceFederatedTracks(ctx context.Context, playlistID st
 			if id != "" {
 				trackID = id
 			}
+			// A track deleted since it was resolved leaves the entry unresolved
+			// (NULL) rather than failing the whole replace on the foreign key.
 			if _, err := tx.ExecContext(ctx, r.rebind(`INSERT INTO playlist_tracks (playlist_id, track_id, position, added_by, added_at, mbid, artist, title, album)
-				VALUES (?, ?, ?, '', ?, ?, ?, ?, ?)`), playlistID, trackID, i, now, e.MBID, e.Artist, e.Title, e.Album); err != nil {
+				VALUES (?, (SELECT id FROM tracks WHERE id=?), ?, '', ?, ?, ?, ?, ?)`), playlistID, trackID, i, now, e.MBID, e.Artist, e.Title, e.Album); err != nil {
 				return err
 			}
 		}
@@ -482,10 +484,18 @@ func (r *PlaylistRepo) ReplaceTracks(ctx context.Context, playlistID string, tra
 			return err
 		}
 		now := db.Millis(time.Now())
-		for i, tid := range trackIDs {
-			if _, err := tx.ExecContext(ctx, r.rebind(`INSERT INTO playlist_tracks (playlist_id, track_id, position, added_by, added_at)
-				VALUES (?, ?, ?, ?, ?)`), playlistID, tid, i, addedBy, now); err != nil {
+		// INSERT ... SELECT skips a track deleted since the caller picked its id
+		// (evicted, pruned by a scan, deleted by hand) instead of failing the
+		// whole replace on the foreign key.
+		pos := 0
+		for _, tid := range trackIDs {
+			res, err := tx.ExecContext(ctx, r.rebind(`INSERT INTO playlist_tracks (playlist_id, track_id, position, added_by, added_at)
+				SELECT ?, id, ?, ?, ? FROM tracks WHERE id=?`), playlistID, pos, addedBy, now, tid)
+			if err != nil {
 				return err
+			}
+			if n, _ := res.RowsAffected(); n > 0 {
+				pos++
 			}
 		}
 		_, err := tx.ExecContext(ctx, r.rebind(`UPDATE playlists SET updated_at=? WHERE id=?`), now, playlistID)
