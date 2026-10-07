@@ -38,6 +38,8 @@ type AuthService struct {
 	dummyHash string
 	// ldap, when non-nil, authenticates password logins that fail locally.
 	ldap *ldapAuth
+	// limiter throttles brute-force attempts on username/password logins.
+	limiter *loginLimiter
 }
 
 // WithLDAP enables LDAP password authentication using a direct simple bind.
@@ -61,7 +63,7 @@ func NewAuthService(users *persistence.UserRepo, tokens *persistence.APITokenRep
 	if err != nil {
 		return nil, err
 	}
-	return &AuthService{users: users, tokens: tokens, devices: devices, box: box, jwtKey: jwtKey[:], dummyHash: dummyHash}, nil
+	return &AuthService{users: users, tokens: tokens, devices: devices, box: box, jwtKey: jwtKey[:], dummyHash: dummyHash, limiter: newLoginLimiter()}, nil
 }
 
 // Credentials carry an authentication attempt.
@@ -145,6 +147,22 @@ func (a *AuthService) Authenticate(ctx context.Context, c Credentials) (models.U
 	if c.Username == "" {
 		return models.User{}, ErrUnauthorized
 	}
+	keys := loginKeys(c.Username, c.RemoteIP)
+	if a.limiter.blocked(keys) {
+		return models.User{}, ErrTooManyAttempts
+	}
+	u, err := a.authenticatePassword(ctx, c)
+	switch {
+	case err == nil:
+		a.limiter.succeed(c.Username)
+	case errors.Is(err, ErrUnauthorized):
+		a.limiter.fail(keys)
+	}
+	return u, err
+}
+
+// authenticatePassword checks a username with a password or Subsonic token.
+func (a *AuthService) authenticatePassword(ctx context.Context, c Credentials) (models.User, error) {
 	u, err := a.users.GetByUsername(ctx, c.Username)
 	notFound := errors.Is(err, persistence.ErrNotFound)
 	if err != nil && !notFound {
@@ -320,7 +338,7 @@ func hashToken(plaintext string) string {
 // and revoked. ttl <= 0 means the token never expires.
 func (a *AuthService) IssueDeviceToken(ctx context.Context, c Credentials, deviceName string, ttl time.Duration) (string, models.Device, error) {
 	// Authenticate with username + password/Subsonic-token (not a token itself).
-	user, err := a.Authenticate(ctx, Credentials{Username: c.Username, Password: c.Password, Token: c.Token, Salt: c.Salt})
+	user, err := a.Authenticate(ctx, Credentials{Username: c.Username, Password: c.Password, Token: c.Token, Salt: c.Salt, RemoteIP: c.RemoteIP})
 	if err != nil {
 		return "", models.Device{}, err
 	}
