@@ -9,6 +9,8 @@ Bring a playlist over from another service into a new Immerle playlist.
 Import is **source-pluggable**: Spotify and Deezer ship first, more sources
 can be added later without changing how import itself works.
 
+![A Spotify playlist import, with found, doubtful and missing tracks](/img/screenshots/import.webp)
+
 The import runs in the background: a job is created immediately, and each
 source track is matched to your on-demand catalog one at a time, so a client
 can show live progress instead of waiting for the whole playlist.

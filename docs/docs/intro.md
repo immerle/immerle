@@ -16,6 +16,8 @@ Symfonium, DSub, and friends) work too, as a fallback.
 It ships as one small **Go binary** with **SQLite** out of the box (Postgres if
 you outgrow it). Drop in your music, hit play.
 
+![The Immerle web app home screen](/img/screenshots/home.webp)
+
 ## What you get
 
 - 📱 **Its own app + a terminal client**: the web app is embedded in the
@@ -50,6 +52,8 @@ you outgrow it). Drop in your music, hit play.
 - 🎤 **Lyrics & karaoke**: reads embedded/sidecar lyrics from your files, and
   falls back to [lrclib.net](https://lrclib.net/) for synced lyrics when a
   track has none, highlighting the current line as it plays.
+
+![Synced lyrics on the Now playing screen](/img/screenshots/now-playing.webp)
 
 ## Next steps
 

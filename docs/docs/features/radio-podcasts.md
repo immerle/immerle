@@ -8,6 +8,8 @@ title: Radio & podcasts
 Beyond music files, Immerle plays live internet radio and podcasts, both from
 the app.
 
+![The Radio screen, stations grouped by country](/img/screenshots/radio.webp)
+
 ## Internet radio
 
 A curated set of stations ships **embedded in the binary**, grouped by country

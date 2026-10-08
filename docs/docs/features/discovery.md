@@ -9,6 +9,8 @@ Beyond your own library, Immerle surfaces a handful of automatically generated
 and curated playlists, plus a personal top-tracks ranking. None of it needs
 admin setup: it syncs itself in the background.
 
+![A generated chart playlist, Global Top 50](/img/screenshots/top50.webp)
+
 ## Auto-generated playlists
 
 Materialized as ordinary playlist rows (so they behave exactly like any other
