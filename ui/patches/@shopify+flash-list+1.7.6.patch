@@ -11,3 +11,21 @@ index ed74c43..dd34130 100644
      }
  
      companion object {
+diff --git a/node_modules/@shopify/flash-list/dist/FlashList.js b/node_modules/@shopify/flash-list/dist/FlashList.js
+index 486a284..565adc0 100644
+--- a/node_modules/@shopify/flash-list/dist/FlashList.js
++++ b/node_modules/@shopify/flash-list/dist/FlashList.js
+@@ -67,6 +67,13 @@ var FlashList = /** @class */ (function (_super) {
+         };
+         _this.handleSizeChange = function (event) {
+             var _a;
++            // A screen hidden by the navigator (display: none) reports a 0x0
++            // layout: ignore it instead of warning and re-rendering the list.
++            var hiddenLayout = event.nativeEvent.layout;
++            if (Math.floor(hiddenLayout.width) <= 1 || Math.floor(hiddenLayout.height) <= 1) {
++                _this.clearRenderSizeWarningTimeout();
++                return;
++            }
+             _this.validateListSize(event);
+             var newSize = _this.props.horizontal
+                 ? event.nativeEvent.layout.height

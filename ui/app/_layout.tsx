@@ -1,6 +1,6 @@
 import '../global.css';
 
-import { useEffect } from 'react';
+import { useEffect, useLayoutEffect } from 'react';
 import { Platform, useWindowDimensions, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -76,6 +76,15 @@ export default function RootLayout() {
 
   // Web only: expo-router disables automatic document titles, so set the
   // browser tab title from the current route.
+  // The stack hides the previous screen with aria-hidden while the pressable
+  // that triggered the navigation still holds focus, which browsers flag.
+  // Drop that focus in the same commit, before the accessibility tree updates.
+  useLayoutEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const el = document.activeElement;
+    if (el instanceof HTMLElement && el.closest('[aria-hidden="true"]')) el.blur();
+  }, [pathname]);
+
   useEffect(() => {
     if (Platform.OS === 'web') document.title = documentTitle(pathname);
   }, [pathname, locale]);
