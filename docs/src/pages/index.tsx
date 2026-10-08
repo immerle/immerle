@@ -106,6 +106,16 @@ export default function Home(): React.ReactElement {
           </div>
         </section>
 
+        <section className={styles.screenshot}>
+          <img
+            src={useBaseUrl('/img/screenshots/home.webp')}
+            alt="The Immerle web app home screen"
+            width={1600}
+            height={807}
+            loading="lazy"
+          />
+        </section>
+
         <section className={styles.features}>
           {FEATURES.map((f) => (
             <article key={f.title} className={styles.card}>

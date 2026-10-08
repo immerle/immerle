@@ -19,6 +19,10 @@ scrobbling, concert alerts and optional federation. 🎉
 One tiny **Go binary**, with the web app embedded. **SQLite** out of the box
 (Postgres if you outgrow it). Drop in your music, hit play. That’s it. 🎵
 
+<p align="center">
+  <img src="docs/static/img/screenshots/home.webp" alt="The Immerle web app home screen" />
+</p>
+
 ### What’s in a name? 🤔
 
 A little wink at [**Immich**](https://github.com/immich-app/immich), the
@@ -66,6 +70,14 @@ self-hosted server, for music, that sings: **Immerle**. ✨
 - 🔐 **Solid auth**: Subsonic tokens, revocable device JWTs, personal API
   tokens, optional **LDAP** login, and built-in brute-force login throttling.
 - 📖 **OpenAPI 3.1** + a built-in Swagger UI for the native API.
+
+## 📸 A quick look
+
+| Charts & discovery | Synced lyrics |
+| :---: | :---: |
+| <img src="docs/static/img/screenshots/top50.webp" alt="Global Top 50 playlist" /> | <img src="docs/static/img/screenshots/now-playing.webp" alt="Synced lyrics on the Now playing screen" /> |
+| **Playlist import** | **Internet radio** |
+| <img src="docs/static/img/screenshots/import.webp" alt="Spotify playlist import" /> | <img src="docs/static/img/screenshots/radio.webp" alt="Radio stations by country" /> |
 
 ## 🚀 Quick start
 
