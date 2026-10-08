@@ -25,7 +25,7 @@ function baseUrl(serverUrl: string): string {
 // server always settles to an error within a few seconds -- letting
 // TanStack Query (and anything else awaiting a client call) reach its
 // offline/error fallback instead of spinning forever.
-const REQUEST_TIMEOUT_MS = 6000;
+const REQUEST_TIMEOUT_MS = 3000;
 
 /** Bounds `request` with `REQUEST_TIMEOUT_MS`, still honoring whatever
  * signal the caller already attached (e.g. TanStack Query's cancel-on-unmount).
