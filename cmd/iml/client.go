@@ -181,6 +181,18 @@ func (c *Client) AlbumTracks(ctx context.Context, id string) ([]Song, error) {
 	return out.Tracks, nil
 }
 
+// LikedSongs returns the caller's starred songs, shown in the apps as the
+// virtual "Liked Songs" playlist.
+func (c *Client) LikedSongs(ctx context.Context) ([]Song, error) {
+	var out struct {
+		Songs []Song `json:"songs"`
+	}
+	if err := c.do(ctx, http.MethodGet, "/me/favorites", nil, &out); err != nil {
+		return nil, err
+	}
+	return out.Songs, nil
+}
+
 func (c *Client) PlaylistTracks(ctx context.Context, id string) ([]Song, error) {
 	var out struct {
 		Tracks []Song `json:"tracks"`
