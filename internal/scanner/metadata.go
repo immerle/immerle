@@ -117,9 +117,25 @@ func (e *Extractor) Extract(ctx context.Context, path string) (Metadata, error) 
 		}
 		extractMBIDs(m.Raw(), &md)
 	}
+	var featuring []string
+	if tagErr == nil && (m.Format() == tag.ID3v2_3 || m.Format() == tag.ID3v2_4) {
+		// Multi-value artist frames: the first value is the artist, the
+		// others are featured artists (a "/" in a single value, as in AC/DC,
+		// is part of the name and left alone).
+		multi := readID3MultiValues(f, "TPE1", "TPE2")
+		if vals := multi["TPE1"]; len(vals) > 1 {
+			md.Artist, featuring = vals[0], vals[1:]
+		}
+		if vals := multi["TPE2"]; len(vals) > 1 {
+			md.AlbumArtist = vals[0]
+		}
+	}
 
 	// Always consult ffprobe for technical fields (and as a fallback for tags).
 	e.augmentWithFFprobe(ctx, path, &md)
+	for _, name := range featuring {
+		md.Participants = append(md.Participants, models.Participant{Role: "featuring", Name: name})
+	}
 
 	// A sidecar "<name>.lrc" wins over embedded lyrics (it carries synced
 	// timestamps). Fixes the common case where lyrics live next to the file.
