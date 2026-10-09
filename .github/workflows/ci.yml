@@ -25,12 +25,6 @@ jobs:
           go-version: "1.26.9"
           cache: true
 
-      # cmd/iml pulls in oto/v3, whose Linux audio backend uses cgo + ALSA --
-      # needed just to typecheck/vet the module, even though the server build
-      # below doesn't touch it.
-      - name: Install ALSA dev headers
-        run: sudo apt-get update && sudo apt-get install -y libasound2-dev
-
       - name: Verify go.mod is tidy
         run: |
           go mod tidy
@@ -53,22 +47,15 @@ jobs:
         run: CGO_ENABLED=0 go build -o bin/immerle ./cmd/immerle
 
   build-cli:
-    # Cross-compiles the iml terminal client for every release target. macOS
-    # and Windows are pure Go (oto/v3 uses purego there) and cross-compile
-    # fine from ubuntu-latest; Linux's audio backend uses cgo + ALSA, so that
-    # leg needs a real C toolchain -- linux/arm64 runs on a native arm64
-    # runner rather than fighting a cross-toolchain for one job.
+    # Cross-compiles the iml terminal client for every release target. oto/v3
+    # is pure Go everywhere (on Linux: PulseAudio, or ALSA loaded at runtime
+    # via purego), so every target cross-compiles from ubuntu-latest.
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - { goos: linux, goarch: amd64, runner: ubuntu-latest, cgo: "1" }
-          - { goos: linux, goarch: arm64, runner: ubuntu-24.04-arm, cgo: "1" }
-          - { goos: darwin, goarch: amd64, runner: ubuntu-latest, cgo: "0" }
-          - { goos: darwin, goarch: arm64, runner: ubuntu-latest, cgo: "0" }
-          - { goos: windows, goarch: amd64, runner: ubuntu-latest, cgo: "0" }
-          - { goos: windows, goarch: arm64, runner: ubuntu-latest, cgo: "0" }
-    runs-on: ${{ matrix.runner }}
+        goos: [linux, darwin, windows]
+        goarch: [amd64, arm64]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -76,13 +63,9 @@ jobs:
           go-version: "1.26.9"
           cache: true
 
-      - name: Install ALSA dev headers
-        if: matrix.goos == 'linux'
-        run: sudo apt-get update && sudo apt-get install -y libasound2-dev
-
       - name: Build iml (${{ matrix.goos }}/${{ matrix.goarch }})
         env:
-          CGO_ENABLED: ${{ matrix.cgo }}
+          CGO_ENABLED: "0"
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
         run: |
@@ -98,8 +81,6 @@ jobs:
         with:
           go-version: "1.26.9"
           cache: true
-      - name: Install ALSA dev headers
-        run: sudo apt-get update && sudo apt-get install -y libasound2-dev
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
@@ -135,8 +116,6 @@ jobs:
         with:
           go-version: "1.26.9"
           cache: true
-      - name: Install ALSA dev headers
-        run: sudo apt-get update && sudo apt-get install -y libasound2-dev
       - name: govulncheck (Go)
         run: go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
       - name: Trivy (deps + secrets)
