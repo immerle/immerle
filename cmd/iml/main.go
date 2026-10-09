@@ -106,6 +106,9 @@ type model struct {
 	results []result
 	cursor  int
 	status  string
+	// typing routes every key to the search bar; otherwise letters are
+	// playback controls. "/" focuses the search bar, esc leaves it.
+	typing bool
 
 	queue           []Song
 	queuePlaylistID string // set only when queue came from a playlist -- needed to resolve unresolved (federated) entries
@@ -118,7 +121,7 @@ type model struct {
 }
 
 func initialModel(c *Client, p *Player) model {
-	return model{client: c, player: p, status: "type to search, tab to change scope, enter to play"}
+	return model{client: c, player: p, typing: true, status: "type to search, tab to change scope, enter to play"}
 }
 
 func (m model) Init() tea.Cmd { return nil }
@@ -159,6 +162,9 @@ func (m model) searchCmd() tea.Cmd {
 				out = append(out, result{kind: scopeAlbum, id: a.ID, title: a.Name, subtitle: a.Artist})
 			}
 		case scopePlaylist:
+			if matchesLiked(query) {
+				out = append(out, result{kind: scopePlaylist, id: likedPlaylistID, title: "Liked Songs", subtitle: "your favorites"})
+			}
 			for _, p := range playlists {
 				out = append(out, result{kind: scopePlaylist, id: p.ID, title: p.Name, subtitle: fmt.Sprintf("%d songs", p.SongCount)})
 			}
@@ -182,11 +188,31 @@ func (m model) loadTracksCmd(r result) tea.Cmd {
 		case scopeAlbum:
 			tracks, err = m.client.AlbumTracks(ctx, r.id)
 		case scopePlaylist:
+			if r.id == likedPlaylistID {
+				tracks, err = m.client.LikedSongs(ctx)
+				break
+			}
 			tracks, err = m.client.PlaylistTracks(ctx, r.id)
 			playlistID = r.id
 		}
 		return tracksLoadedMsg{tracks: tracks, playlistID: playlistID, err: err}
 	}
+}
+
+// likedPlaylistID marks the virtual "Liked Songs" playlist: it isn't a real
+// playlist, so the server search never returns it.
+const likedPlaylistID = "liked"
+
+// matchesLiked reports whether a playlist query names the liked songs, in
+// English or French ("liked", "j'aime", "favoris"...).
+func matchesLiked(query string) bool {
+	q := strings.ToLower(strings.TrimSpace(query))
+	for _, name := range []string{"liked songs", "j'aime", "favorites", "favoris", "titres likés"} {
+		if strings.HasPrefix(name, q) || strings.Contains(q, name) {
+			return true
+		}
+	}
+	return false
 }
 
 // streamReadyMsg carries the signed stream URL resolved for the track at
@@ -223,6 +249,13 @@ func (m model) playCurrentCmd() tea.Cmd {
 		url, err := client.StreamURL(ctx, t.ID)
 		return streamReadyMsg{track: t, url: url, err: err}
 	}
+}
+
+// typeText appends typed text to the search query.
+func (m model) typeText(text string) (tea.Model, tea.Cmd) {
+	m.query += text
+	m.applyPrefix()
+	return m, m.searchCmd()
 }
 
 // applyPrefix switches scope and consumes the "/type" prefix from the query
@@ -296,72 +329,51 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.cursor < len(m.results)-1 {
 				m.cursor++
 			}
+		case tea.KeyEsc:
+			m.typing = false
+			m.status = "controls: / to search"
 		case tea.KeyBackspace:
-			if len(m.query) > 0 {
-				m.query = m.query[:len(m.query)-1]
+			if m.typing && len(m.query) > 0 {
+				r := []rune(m.query)
+				m.query = string(r[:len(r)-1])
 				return m, m.searchCmd()
 			}
 		case tea.KeySpace:
-			if m.playing || len(m.queue) > 0 {
-				m.player.TogglePause()
-				return m, nil
+			if m.typing {
+				return m.typeText(" ")
 			}
-			m.query += " "
-			m.applyPrefix()
-			return m, m.searchCmd()
+			m.player.TogglePause()
 		case tea.KeyRunes:
+			if m.typing {
+				return m.typeText(string(msg.Runes))
+			}
 			switch string(msg.Runes) {
+			case "/":
+				m.typing = true
+				m.status = "searching: esc for controls"
+			case "q":
+				return m, tea.Quit
 			case "n":
 				if len(m.queue) > 0 {
 					m.player.Stop()
 					m.queuePos++
 					return m, m.advance()
 				}
-			case "q":
-				return m, tea.Quit
 			case "+", "=":
-				if m.playing || len(m.queue) > 0 {
-					vol := m.player.AdjustVolume(volumeStep)
-					m.status = fmt.Sprintf("volume %d%%", int(vol*100+0.5))
-					return m, nil
-				}
-				m.query += string(msg.Runes)
-				m.applyPrefix()
-				return m, m.searchCmd()
+				vol := m.player.AdjustVolume(volumeStep)
+				m.status = fmt.Sprintf("volume %d%%", int(vol*100+0.5))
 			case "-":
-				if m.playing || len(m.queue) > 0 {
-					vol := m.player.AdjustVolume(-volumeStep)
-					m.status = fmt.Sprintf("volume %d%%", int(vol*100+0.5))
-					return m, nil
-				}
-				m.query += string(msg.Runes)
-				m.applyPrefix()
-				return m, m.searchCmd()
+				vol := m.player.AdjustVolume(-volumeStep)
+				m.status = fmt.Sprintf("volume %d%%", int(vol*100+0.5))
 			case "r":
-				if m.playing || len(m.queue) > 0 {
-					m.repeat = (m.repeat + 1) % 3
-					m.status = "repeat: " + m.repeat.String()
-					return m, nil
-				}
-				m.query += string(msg.Runes)
-				m.applyPrefix()
-				return m, m.searchCmd()
+				m.repeat = (m.repeat + 1) % 3
+				m.status = "repeat: " + m.repeat.String()
 			case "s":
-				if m.playing || len(m.queue) > 0 {
-					m.shuffle = !m.shuffle
-					if m.shuffle && m.queuePos+1 < len(m.queue) {
-						shuffleFrom(m.queue, m.queuePos+1)
-					}
-					m.status = fmt.Sprintf("shuffle: %v", m.shuffle)
-					return m, nil
+				m.shuffle = !m.shuffle
+				if m.shuffle && m.queuePos+1 < len(m.queue) {
+					shuffleFrom(m.queue, m.queuePos+1)
 				}
-				m.query += string(msg.Runes)
-				m.applyPrefix()
-				return m, m.searchCmd()
-			default:
-				m.query += string(msg.Runes)
-				m.applyPrefix()
-				return m, m.searchCmd()
+				m.status = fmt.Sprintf("shuffle: %v", m.shuffle)
 			}
 		}
 
@@ -384,6 +396,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			shuffleFrom(m.queue, 0)
 		}
 		m.queuePos = 0
+		m.typing = false // letters are playback controls again once something plays
 		return m, m.advance()
 
 	case streamReadyMsg:
@@ -419,9 +432,16 @@ func (m model) View() string {
 		height = defaultHeight
 	}
 
-	header := headerStyle.Width(width - 2).Render(fmt.Sprintf("iml  [%s]  %s   repeat:%s shuffle:%v", m.scope, m.query, m.repeat, m.shuffle))
+	query := m.query
+	if m.typing {
+		query += "█"
+	}
+	header := headerStyle.Width(width - 2).Render(fmt.Sprintf("iml  [%s]  %s   repeat:%s shuffle:%v", m.scope, query, m.repeat, m.shuffle))
 	status := statusStyle.Width(width - 2).Render(truncate(m.status, width-2))
-	help := dimStyle.Render("tab or /song /album /playlist: scope  enter: play  space: pause  n: next  +/-: volume  r: repeat  s: shuffle  q: quit")
+	help := dimStyle.Render("tab or /song /album /playlist: scope  enter: play  esc: controls  /: search")
+	if !m.typing {
+		help = dimStyle.Render("/: search  enter: play  space: pause  n: next  +/-: volume  r: repeat  s: shuffle  q: quit")
+	}
 
 	// Results get whatever rows are left once the header, status and help
 	// bars (plus their blank-line spacers) are accounted for.

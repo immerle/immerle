@@ -70,9 +70,10 @@ to `~/.immerle/config.json` and reused after that (`iml logout` clears it).
 
 | Key | Does |
 | --- | --- |
-| type | search (matches songs, albums *and* playlists) |
+| type | search (matches songs, albums *and* playlists, "Liked Songs" / "J'aime" included) |
 | `/song`, `/album`, `/playlist` | scope the search to one type |
 | `↑` / `↓`, `Enter` | move the selection, play it |
+| `Esc` / `/` | leave / focus the search bar (playback keys below only work outside it) |
 | `Space` | play / pause |
 | `n` | next track |
 | `+` / `-` | volume up / down |
