@@ -90,3 +90,62 @@ func TestLocalTrackIDForRemote(t *testing.T) {
 		t.Fatalf("expected mapping to local-1, got %q ok=%v", id, ok)
 	}
 }
+
+func TestSplitArtistsAndMatchKey(t *testing.T) {
+	main, feats := splitArtists("Rick Ross/Drake/Chrisette Michele")
+	if main != "Rick Ross" || len(feats) != 2 || feats[1] != "Chrisette Michele" {
+		t.Fatalf("got %q %v", main, feats)
+	}
+	for _, p := range [][2]string{{"TOTO", "Toto"}, {"RŮDE", "Rude."}, {"JAY Z", "JAŸ-Z"}} {
+		if matchKey(p[0]) != matchKey(p[1]) {
+			t.Fatalf("%q and %q should match", p[0], p[1])
+		}
+	}
+}
+
+func TestPrepareStreamReusesOnDemandDuplicate(t *testing.T) {
+	store := testutil.NewStore(t)
+	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelWarn}))
+	ctx := context.Background()
+
+	registry := NewProviderRegistry()
+	registry.Register(&fakeProvider{name: "p", results: []providers.Result{
+		{ProviderTrackID: "new", Title: "africa", Artist: "TOTO/Someone", Album: "TOTO IV"},
+		{ProviderTrackID: "scanned", Title: "Rosanna", Artist: "Toto", Album: "Toto IV"},
+	}})
+	svc := NewCatalogService(CatalogServiceConfig{
+		Catalog: store.Catalog, Downloads: store.Downloads, Registry: registry, Logger: logger,
+	})
+
+	artistID, _ := store.Catalog.UpsertArtist(ctx, models.Artist{ID: uuid.NewString(), Name: "Toto"})
+	albumID, _ := store.Catalog.UpsertAlbum(ctx, models.Album{ID: uuid.NewString(), Name: "Toto IV", ArtistID: artistID})
+	downloaded, _ := store.Catalog.UpsertTrack(ctx, models.Track{
+		ID: uuid.NewString(), Title: "Africa", ArtistID: artistID, AlbumID: albumID, Path: "/tmp/africa.mp3",
+	})
+	_, _ = store.Catalog.UpsertTrack(ctx, models.Track{
+		ID: uuid.NewString(), Title: "Rosanna", ArtistID: artistID, AlbumID: albumID, Path: "/tmp/rosanna.mp3",
+	})
+	now := time.Now()
+	job, _ := store.Downloads.Enqueue(ctx, models.DownloadJob{
+		ID: uuid.NewString(), Provider: "p", ProviderTrackID: "old",
+		Status: models.DownloadQueued, CreatedAt: now, UpdatedAt: now,
+	})
+	_ = store.Downloads.Complete(ctx, job.ID, downloaded)
+
+	tr, local, _, err := svc.PrepareStream(ctx, "", encodeRemoteID("p", "new"))
+	if err != nil || !local || tr.ID != downloaded {
+		t.Fatalf("expected the downloaded duplicate %s, got %s local=%v err=%v", downloaded, tr.ID, local, err)
+	}
+	if id, ok := svc.LocalTrackIDForRemote(ctx, encodeRemoteID("p", "new")); !ok || id != downloaded {
+		t.Fatalf("the new provider track should now be linked to %s, got %q", downloaded, id)
+	}
+
+	// A manually scanned track (no download job) is never treated as a duplicate.
+	_, local, pd, err := svc.PrepareStream(ctx, "", encodeRemoteID("p", "scanned"))
+	if err != nil || local || pd == nil {
+		t.Fatalf("scanned track must not dedup an on-demand download, local=%v err=%v", local, err)
+	}
+	if pd.Meta.Artist != "Toto" {
+		t.Fatalf("artist should reuse the library spelling, got %q", pd.Meta.Artist)
+	}
+}
