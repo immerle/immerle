@@ -36,14 +36,16 @@ type Result struct {
 	ProviderTrackID string
 	Title           string
 	Artist          string
-	Album           string
-	AlbumArtist     string
-	TrackNo         int
-	DiscNo          int
-	Year            int
-	Duration        int
-	Genre           string
-	MBID            string
+	// Featuring lists the featured artists split off Artist ("Main/Feat1/Feat2").
+	Featuring   []string
+	Album       string
+	AlbumArtist string
+	TrackNo     int
+	DiscNo      int
+	Year        int
+	Duration    int
+	Genre       string
+	MBID        string
 	// ISRC is the track's International Standard Recording Code, when the
 	// provider knows one.
 	ISRC string

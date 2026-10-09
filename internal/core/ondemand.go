@@ -435,6 +435,16 @@ func (s *CatalogService) doProcessJob(ctx context.Context, job models.DownloadJo
 	}
 
 	dest := s.evictedPath(ctx, job, suffix)
+	// The same song already downloaded through another provider track: reuse it,
+	// or re-download an evicted copy into its own row.
+	if dup, ok := s.findOnDemandDuplicate(ctx, &meta); ok {
+		if !dup.Remote {
+			return dup.ID, nil
+		}
+		if dest == "" && strings.EqualFold(filepath.Ext(dup.Path), "."+suffix) {
+			dest = dup.Path
+		}
+	}
 	if dest == "" {
 		dest = s.destPath(meta, suffix)
 	}
@@ -505,6 +515,9 @@ func (s *CatalogService) embedTags(ctx context.Context, src, dest string, meta p
 	}
 	if meta.AlbumArtist != "" {
 		args = append(args, "-metadata", "album_artist="+meta.AlbumArtist)
+	}
+	if len(meta.Featuring) > 0 {
+		args = append(args, "-metadata", "featuring="+strings.Join(meta.Featuring, ";"))
 	}
 	if meta.Genre != "" {
 		args = append(args, "-metadata", "genre="+meta.Genre)

@@ -81,6 +81,23 @@ func (s *CatalogService) PrepareStream(ctx context.Context, userID, id string) (
 		}
 		pd.dest = s.evictedPath(ctx, job, pd.Suffix())
 	}
+	// Already downloaded through another provider track (same album and title).
+	if dup, ok := s.findOnDemandDuplicate(ctx, &pd.Meta); ok {
+		if !dup.Remote {
+			// Link this provider track to it so the next lookup is a direct hit.
+			now := time.Now()
+			if job, err := st.downloads.Enqueue(ctx, models.DownloadJob{
+				ID: uuid.NewString(), UserID: userID, Provider: prov.Name(), ProviderTrackID: ptid,
+				Query: meta.Title, Status: models.DownloadQueued, CreatedAt: now, UpdatedAt: now,
+			}); err == nil && job.TrackID == "" {
+				_ = st.downloads.Complete(ctx, job.ID, dup.ID)
+			}
+			return dup, true, nil, nil
+		}
+		if pd.dest == "" && strings.EqualFold(filepath.Ext(dup.Path), "."+pd.Suffix()) {
+			pd.dest = dup.Path
+		}
+	}
 
 	return models.Track{}, false, pd, nil
 }

@@ -373,6 +373,7 @@ var participantRoles = map[string]string{
 	"remixer":   "remixer",
 	"djmixer":   "dj-mixer",
 	"director":  "director",
+	"featuring": "featuring",
 }
 
 // extractParticipants pulls contributor roles from the merged tag map, splitting
