@@ -96,6 +96,17 @@ func TestSplitArtistsAndMatchKey(t *testing.T) {
 	if main != "Rick Ross" || len(feats) != 2 || feats[1] != "Chrisette Michele" {
 		t.Fatalf("got %q %v", main, feats)
 	}
+	svc := &CatalogService{state: &catalogServiceState{catalog: testutil.NewStore(t).Catalog}}
+	band := providers.Result{Artist: "AC/DC", AlbumArtist: "AC/DC", Album: "Back in Black"}
+	svc.canonicalizeOnDemand(context.Background(), &band)
+	if band.Artist != "AC/DC" || len(band.Featuring) != 0 {
+		t.Fatalf("a band credited as-is on its album must not be split, got %q %v", band.Artist, band.Featuring)
+	}
+	feat := providers.Result{Artist: "SZA/Kendrick Lamar", AlbumArtist: "SZA", Album: "SOS"}
+	svc.canonicalizeOnDemand(context.Background(), &feat)
+	if feat.Artist != "SZA" || len(feat.Featuring) != 1 {
+		t.Fatalf("a featuring credit must be split, got %q %v", feat.Artist, feat.Featuring)
+	}
 	for _, p := range [][2]string{{"TOTO", "Toto"}, {"RŮDE", "Rude."}, {"JAY Z", "JAŸ-Z"}} {
 		if matchKey(p[0]) != matchKey(p[1]) {
 			t.Fatalf("%q and %q should match", p[0], p[1])

@@ -45,8 +45,12 @@ func matchKey(s string) string {
 // the matching existing album id ("" when the album is new).
 func (s *CatalogService) canonicalizeOnDemand(ctx context.Context, meta *providers.Result) string {
 	st := s.state
-	meta.Artist, meta.Featuring = splitArtists(meta.Artist)
-	meta.AlbumArtist, _ = splitArtists(meta.AlbumArtist)
+	// A band named with a slash (AC/DC) is credited as-is on its album too,
+	// whereas a featuring credit's album artist is the main artist alone.
+	if !strings.EqualFold(strings.TrimSpace(meta.AlbumArtist), strings.TrimSpace(meta.Artist)) {
+		meta.Artist, meta.Featuring = splitArtists(meta.Artist)
+		meta.AlbumArtist, _ = splitArtists(meta.AlbumArtist)
+	}
 
 	// ponytail: full artist scan per non-local play, add a normalized-name column if the library gets huge.
 	artists, err := st.catalog.ListArtists(ctx)
