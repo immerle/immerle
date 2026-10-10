@@ -1803,8 +1803,18 @@
                     "queueIndex": {
                         "type": "integer"
                     },
+                    "toIndex": {
+                        "type": "integer"
+                    },
                     "trackId": {
                         "type": "string"
+                    },
+                    "trackIds": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
                     },
                     "type": {
                         "type": "string"
@@ -2145,12 +2155,24 @@
                         "description": "QueueIndex disambiguates \"skipTo\" if TrackID appears more than once in\nthe queue — a hint only, never the primary lookup.",
                         "type": "integer"
                     },
+                    "toIndex": {
+                        "description": "ToIndex is the destination of a \"move\" command (TrackID/QueueIndex\nidentify the moved track, like \"skipTo\"; \"removeAt\" uses those alone).",
+                        "type": "integer"
+                    },
                     "trackId": {
                         "description": "TrackID is the track to jump to for a \"skipTo\" command.",
                         "type": "string"
                     },
+                    "trackIds": {
+                        "description": "TrackIDs are the tracks to insert for a \"playNext\"/\"enqueue\" command.",
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
                     "type": {
-                        "description": "Type is one of \"toggle\", \"next\", \"previous\", \"seekTo\", \"skipTo\",\n\"toggleShuffle\", \"cycleRepeat\".",
+                        "description": "Type is one of \"toggle\", \"next\", \"previous\", \"seekTo\", \"skipTo\",\n\"toggleShuffle\", \"cycleRepeat\", \"playNext\", \"enqueue\", \"removeAt\", \"move\".",
                         "type": "string"
                     }
                 },
@@ -2237,6 +2259,10 @@
                     "targetDeviceId": {
                         "description": "TargetDeviceID, when set, is the sole device that should be actively\nplaying this queue — every other device should pause. Empty means\nunrestricted (default): each device plays independently.",
                         "type": "string"
+                    },
+                    "targetOnline": {
+                        "description": "TargetOnline reports whether TargetDeviceID is currently connected. When\nit isn't, nobody is playing: a spectator resumes locally instead of\nsending a command that would never be applied.",
+                        "type": "boolean"
                     }
                 },
                 "type": "object"
@@ -9455,6 +9481,16 @@
         "/play-queue": {
             "get": {
                 "description": "Returns the caller's saved cross-device play queue with its tracks.",
+                "parameters": [
+                    {
+                        "description": "Polling device id, marked online (see targetOnline)",
+                        "in": "query",
+                        "name": "deviceId",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "content": {
@@ -9532,6 +9568,16 @@
                             }
                         },
                         "description": "Unauthorized"
+                    },
+                    "409": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Another device is the active player"
                     }
                 },
                 "security": [
@@ -9547,7 +9593,7 @@
         },
         "/play-queue/commands": {
             "post": {
-                "description": "Sends a remote-control command (toggle, next, previous, seekTo, skipTo, toggleShuffle, cycleRepeat) for the active device (see targetDeviceId) to apply. Does not modify the saved queue state directly.",
+                "description": "Sends a remote-control command (toggle, next, previous, seekTo, skipTo, toggleShuffle, cycleRepeat, playNext, enqueue, removeAt, move) for the active device (see targetDeviceId) to apply. Does not modify the saved queue state directly.",
                 "requestBody": {
                     "content": {
                         "application/json": {
@@ -9607,6 +9653,16 @@
         "/play-queue/events": {
             "get": {
                 "description": "Server-Sent Events stream. Emits the current queue immediately, then again on every change (save, target change); also emits the caller's pending Jam invites (event \"invites\") on connect and whenever they change.",
+                "parameters": [
+                    {
+                        "description": "Connecting device id, marked online while the stream is open (see targetOnline)",
+                        "in": "query",
+                        "name": "deviceId",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "content": {

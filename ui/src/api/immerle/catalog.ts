@@ -73,12 +73,16 @@ export function toPlayQueueSnapshot(v: PlayQueueView): PlayQueueSnapshot {
     playing: !!v.playing,
     changedBy: v.changedBy || undefined,
     targetDeviceId: v.targetDeviceId ?? '',
+    targetOnline: !!v.targetOnline,
+    changedAt: v.changedAt ? Date.parse(v.changedAt) : undefined,
     pendingCommand: v.pendingCommand
       ? {
           type: v.pendingCommand.type as PlayQueueCommand['type'],
           positionMs: v.pendingCommand.positionMs,
           trackId: v.pendingCommand.trackId,
           queueIndex: v.pendingCommand.queueIndex,
+          trackIds: v.pendingCommand.trackIds,
+          toIndex: v.pendingCommand.toIndex,
           forTarget: v.pendingCommand.forTarget,
           issuedBy: v.pendingCommand.issuedBy,
         }

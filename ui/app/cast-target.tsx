@@ -31,7 +31,6 @@ export default function CastTarget() {
       {myId ? (
         <CastRow label={t('components.player.castThisDevice')} selected={castTargetId === myId} onPress={() => pick(myId)} />
       ) : null}
-      <CastRow label={t('components.player.castEverywhere')} selected={!castTargetId} onPress={() => pick('')} />
       {isLoading ? (
         <Loading />
       ) : others.length === 0 ? (

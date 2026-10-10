@@ -3770,6 +3770,15 @@ export interface paths {
                         "application/json": components["schemas"]["immerle.errorResponse"];
                     };
                 };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
             };
         };
         delete?: never;
@@ -6361,7 +6370,10 @@ export interface paths {
          */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @description Polling device id, marked online (see targetOnline) */
+                    deviceId?: string;
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -6431,6 +6443,15 @@ export interface paths {
                         "application/json": components["schemas"]["immerle.errorResponse"];
                     };
                 };
+                /** @description Another device is the active player */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
             };
         };
         post?: never;
@@ -6451,7 +6472,7 @@ export interface paths {
         put?: never;
         /**
          * Send a play-queue command
-         * @description Sends a remote-control command (toggle, next, previous, seekTo, skipTo, toggleShuffle, cycleRepeat) for the active device (see targetDeviceId) to apply. Does not modify the saved queue state directly.
+         * @description Sends a remote-control command (toggle, next, previous, seekTo, skipTo, toggleShuffle, cycleRepeat, playNext, enqueue, removeAt, move) for the active device (see targetDeviceId) to apply. Does not modify the saved queue state directly.
          */
         post: {
             parameters: {
@@ -6513,7 +6534,10 @@ export interface paths {
          */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @description Connecting device id, marked online while the stream is open (see targetOnline) */
+                    deviceId?: string;
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -10296,7 +10320,9 @@ export interface components {
             issuedBy?: string;
             positionMs?: number;
             queueIndex?: number;
+            toIndex?: number;
             trackId?: string;
+            trackIds?: string[];
             type?: string;
         };
         "immerle.concertsUpdateRequest": {
@@ -10432,11 +10458,18 @@ export interface components {
              *     the queue — a hint only, never the primary lookup.
              */
             queueIndex?: number;
+            /**
+             * @description ToIndex is the destination of a "move" command (TrackID/QueueIndex
+             *     identify the moved track, like "skipTo"; "removeAt" uses those alone).
+             */
+            toIndex?: number;
             /** @description TrackID is the track to jump to for a "skipTo" command. */
             trackId?: string;
+            /** @description TrackIDs are the tracks to insert for a "playNext"/"enqueue" command. */
+            trackIds?: string[];
             /**
              * @description Type is one of "toggle", "next", "previous", "seekTo", "skipTo",
-             *     "toggleShuffle", "cycleRepeat".
+             *     "toggleShuffle", "cycleRepeat", "playNext", "enqueue", "removeAt", "move".
              */
             type?: string;
         };
@@ -10492,6 +10525,12 @@ export interface components {
              *     unrestricted (default): each device plays independently.
              */
             targetDeviceId?: string;
+            /**
+             * @description TargetOnline reports whether TargetDeviceID is currently connected. When
+             *     it isn't, nobody is playing: a spectator resumes locally instead of
+             *     sending a command that would never be applied.
+             */
+            targetOnline?: boolean;
         };
         "immerle.playbackTargetView": {
             id?: string;

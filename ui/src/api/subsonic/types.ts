@@ -123,13 +123,17 @@ export interface PlaybackTarget {
  * an intent for the active device to apply itself, not a computed snapshot.
  */
 export interface PlayQueueCommand {
-  type: 'toggle' | 'next' | 'previous' | 'seekTo' | 'skipTo' | 'toggleShuffle' | 'cycleRepeat';
+  type: 'toggle' | 'next' | 'previous' | 'seekTo' | 'skipTo' | 'toggleShuffle' | 'cycleRepeat' | 'playNext' | 'enqueue' | 'removeAt' | 'move';
   /** Target position for a "seekTo" command. */
   positionMs?: number;
   /** Track to jump to for a "skipTo" command — resolved against the receiver's own queue. */
   trackId?: string;
   /** Disambiguates "skipTo" if trackId appears more than once in the queue — a hint only. */
   queueIndex?: number;
+  /** Tracks to insert for a "playNext"/"enqueue" command. */
+  trackIds?: string[];
+  /** Destination index for a "move" command (trackId/queueIndex identify the moved track). */
+  toIndex?: number;
   /** The sender's view of the current active device id; ignored if the receiver isn't (or is no longer) that device. */
   forTarget?: string;
   /** The sending device's id. */
@@ -145,6 +149,10 @@ export interface PlayQueueSnapshot {
   playing: boolean;
   /** The device id that should be the sole active player, or '' if unrestricted. */
   targetDeviceId: string;
+  /** Whether targetDeviceId is connected right now. When it isn't, nobody is playing: a spectator resumes locally instead of sending commands into the void. */
+  targetOnline: boolean;
+  /** When this state was saved (epoch ms): lets a spectator extrapolate the live position of a playing track. */
+  changedAt?: number;
   /** The device id that wrote this snapshot — tells "I wrote this" from "someone else did". */
   changedBy?: string;
   /** A spectator's not-yet-applied remote-control command, if any (see PlayQueueCommand). */

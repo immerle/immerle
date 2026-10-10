@@ -615,7 +615,6 @@ export function CastButton({ active, disabled }: { active?: boolean; disabled?: 
                 {myId ? (
                   <CastRow label={t('components.player.castThisDevice')} selected={castTargetId === myId} onPress={() => pick(myId)} />
                 ) : null}
-                <CastRow label={t('components.player.castEverywhere')} selected={!castTargetId} onPress={() => pick('')} />
                 {isLoading ? (
                   <View className="items-center py-3">
                     <ActivityIndicator size="small" color={colors.muted} />

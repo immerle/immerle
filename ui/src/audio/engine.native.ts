@@ -130,6 +130,11 @@ class NativeAudioEngine implements AudioEngine {
     }
     const i = Math.max(0, Math.min(startIndex, tracks.length - 1));
     TrackPlayer.setMediaItems(tracks.map(toMediaItem), i);
+    // Loads paused, like the web engine (see AudioEngine.setQueue's callers).
+    // Must come after: on iOS a non-zero start index goes through the native
+    // skipTo, which calls play(), and a reload also keeps the current play
+    // state, so audio would otherwise run behind a "paused" UI.
+    TrackPlayer.pause();
     this.index = i;
   }
 
