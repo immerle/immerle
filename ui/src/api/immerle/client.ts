@@ -515,7 +515,8 @@ export class ImmerleClient {
 
   /** The caller's saved cross-device play queue — restore it on launch, or to see what's playing elsewhere. */
   async getPlayQueue(signal?: AbortSignal): Promise<PlayQueueSnapshot> {
-    const { data, error } = await this.api.GET('/play-queue', { signal });
+    const deviceId = this.session?.deviceId;
+    const { data, error } = await this.api.GET('/play-queue', { signal, params: { query: deviceId ? { deviceId } : {} } });
     if (error) throw apiErr(error, 'playqueue.get');
     return toPlayQueueSnapshot(data);
   }
@@ -526,7 +527,8 @@ export class ImmerleClient {
    * ui/src/audio/store.ts. */
   playQueueEventsUrl(): string {
     const token = this.session?.token ?? '';
-    return `${this.serverUrl}/api/v1/play-queue/events?apiKey=${encodeURIComponent(token)}`;
+    const deviceId = this.session?.deviceId ?? '';
+    return `${this.serverUrl}/api/v1/play-queue/events?apiKey=${encodeURIComponent(token)}&deviceId=${encodeURIComponent(deviceId)}`;
   }
 
   /** Recently-active app installs on this account — candidates for "cast to device". */

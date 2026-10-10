@@ -653,7 +653,7 @@ type QueueEntry struct {
 // without discussing it first.
 type CommandEnvelope struct {
 	// Type is one of "toggle", "next", "previous", "seekTo", "skipTo",
-	// "toggleShuffle", "cycleRepeat".
+	// "toggleShuffle", "cycleRepeat", "playNext", "enqueue", "removeAt", "move".
 	Type string `json:"type"`
 	// PositionMs is the target position for a "seekTo" command.
 	PositionMs int64 `json:"positionMs,omitempty"`
@@ -664,6 +664,11 @@ type CommandEnvelope struct {
 	// QueueIndex disambiguates a "skipTo" when TrackID appears more than once
 	// in the queue (nearest match to this index) — never the primary lookup.
 	QueueIndex int `json:"queueIndex,omitempty"`
+	// TrackIDs are the tracks to insert for a "playNext"/"enqueue" command.
+	TrackIDs []string `json:"trackIds,omitempty"`
+	// ToIndex is the destination of a "move" command, whose moved track is
+	// TrackID (QueueIndex disambiguating duplicates, like "skipTo").
+	ToIndex int `json:"toIndex,omitempty"`
 	// ForTarget is the device id this command was addressed to (the sender's
 	// view of TargetDeviceID at send time). The receiver ignores it if
 	// ForTarget doesn't match its own id — scoped to one active-device tenure

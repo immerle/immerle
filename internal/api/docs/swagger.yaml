@@ -1281,8 +1281,15 @@ components:
           type: integer
         queueIndex:
           type: integer
+        toIndex:
+          type: integer
         trackId:
           type: string
+        trackIds:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
         type:
           type: string
       type: object
@@ -1521,13 +1528,25 @@ components:
             QueueIndex disambiguates "skipTo" if TrackID appears more than once in
             the queue — a hint only, never the primary lookup.
           type: integer
+        toIndex:
+          description: |-
+            ToIndex is the destination of a "move" command (TrackID/QueueIndex
+            identify the moved track, like "skipTo"; "removeAt" uses those alone).
+          type: integer
         trackId:
           description: TrackID is the track to jump to for a "skipTo" command.
           type: string
+        trackIds:
+          description: TrackIDs are the tracks to insert for a "playNext"/"enqueue"
+            command.
+          items:
+            type: string
+          type: array
+          uniqueItems: false
         type:
           description: |-
             Type is one of "toggle", "next", "previous", "seekTo", "skipTo",
-            "toggleShuffle", "cycleRepeat".
+            "toggleShuffle", "cycleRepeat", "playNext", "enqueue", "removeAt", "move".
           type: string
       type: object
     immerle.playQueueRequest:
@@ -1606,6 +1625,12 @@ components:
             playing this queue — every other device should pause. Empty means
             unrestricted (default): each device plays independently.
           type: string
+        targetOnline:
+          description: |-
+            TargetOnline reports whether TargetDeviceID is currently connected. When
+            it isn't, nobody is playing: a spectator resumes locally instead of
+            sending a command that would never be applied.
+          type: boolean
       type: object
     immerle.playbackTargetView:
       properties:
@@ -6018,6 +6043,12 @@ paths:
   /play-queue:
     get:
       description: Returns the caller's saved cross-device play queue with its tracks.
+      parameters:
+      - description: Polling device id, marked online (see targetOnline)
+        in: query
+        name: deviceId
+        schema:
+          type: string
       responses:
         "200":
           content:
@@ -6065,6 +6096,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Another device is the active player
       security:
       - BearerAuth: []
       summary: Save play queue
@@ -6073,8 +6110,9 @@ paths:
   /play-queue/commands:
     post:
       description: Sends a remote-control command (toggle, next, previous, seekTo,
-        skipTo, toggleShuffle, cycleRepeat) for the active device (see targetDeviceId)
-        to apply. Does not modify the saved queue state directly.
+        skipTo, toggleShuffle, cycleRepeat, playNext, enqueue, removeAt, move) for
+        the active device (see targetDeviceId) to apply. Does not modify the saved
+        queue state directly.
       requestBody:
         content:
           application/json:
@@ -6111,6 +6149,13 @@ paths:
       description: Server-Sent Events stream. Emits the current queue immediately,
         then again on every change (save, target change); also emits the caller's
         pending Jam invites (event "invites") on connect and whenever they change.
+      parameters:
+      - description: Connecting device id, marked online while the stream is open
+          (see targetOnline)
+        in: query
+        name: deviceId
+        schema:
+          type: string
       responses:
         "200":
           content:

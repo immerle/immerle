@@ -30,6 +30,10 @@ type playQueueView struct {
 	// playing this queue — every other device should pause. Empty means
 	// unrestricted (default): each device plays independently.
 	TargetDeviceID string `json:"targetDeviceId,omitempty"`
+	// TargetOnline reports whether TargetDeviceID is currently connected. When
+	// it isn't, nobody is playing: a spectator resumes locally instead of
+	// sending a command that would never be applied.
+	TargetOnline bool `json:"targetOnline"`
 	// PendingCommand is a spectator's remote-control command for the active
 	// device to apply (see POST /play-queue/commands). CommandSeq increases
 	// on every new command, so a receiver can tell a new one from one it
@@ -44,12 +48,14 @@ type playQueueView struct {
 
 // commandView mirrors models.CommandEnvelope for the wire.
 type commandView struct {
-	Type       string `json:"type"`
-	PositionMs int64  `json:"positionMs,omitempty"`
-	TrackID    string `json:"trackId,omitempty"`
-	QueueIndex int    `json:"queueIndex,omitempty"`
-	ForTarget  string `json:"forTarget,omitempty"`
-	IssuedBy   string `json:"issuedBy,omitempty"`
+	Type       string   `json:"type"`
+	PositionMs int64    `json:"positionMs,omitempty"`
+	TrackID    string   `json:"trackId,omitempty"`
+	QueueIndex int      `json:"queueIndex,omitempty"`
+	TrackIDs   []string `json:"trackIds,omitempty"`
+	ToIndex    int      `json:"toIndex,omitempty"`
+	ForTarget  string   `json:"forTarget,omitempty"`
+	IssuedBy   string   `json:"issuedBy,omitempty"`
 }
 
 func toPlayQueueView(res core.PlayQueueResult) playQueueView {
@@ -60,6 +66,7 @@ func toPlayQueueView(res core.PlayQueueResult) playQueueView {
 		ChangedBy:      res.Queue.ChangedBy,
 		Entries:        make([]songView, 0, len(res.Entries)),
 		TargetDeviceID: res.Queue.TargetDeviceID,
+		TargetOnline:   res.TargetOnline,
 		CommandSeq:     res.Queue.CommandSeq,
 		Shuffle:        res.Queue.Shuffle,
 		Repeat:         res.Queue.Repeat,
@@ -70,7 +77,7 @@ func toPlayQueueView(res core.PlayQueueResult) playQueueView {
 	if c := res.Queue.PendingCommand; c != nil {
 		v.PendingCommand = &commandView{
 			Type: c.Type, PositionMs: c.PositionMs, TrackID: c.TrackID,
-			QueueIndex: c.QueueIndex, ForTarget: c.ForTarget, IssuedBy: c.IssuedBy,
+			QueueIndex: c.QueueIndex, TrackIDs: c.TrackIDs, ToIndex: c.ToIndex, ForTarget: c.ForTarget, IssuedBy: c.IssuedBy,
 		}
 	}
 	for _, e := range res.Entries {
@@ -87,11 +94,14 @@ func toPlayQueueView(res core.PlayQueueResult) playQueueView {
 // @Tags     playback
 // @Security BearerAuth
 // @Produce  json
+// @Param    deviceId  query  string  false  "Polling device id, marked online (see targetOnline)"
 // @Success  200  {object}  playQueueView
 // @Failure  401  {object}  errorResponse
 // @Router   /play-queue [get]
 func (h *Handler) handleGetPlayQueue(w http.ResponseWriter, r *http.Request) {
-	res, err := h.playQueue.Get(r.Context(), userFrom(r.Context()).ID)
+	userID := userFrom(r.Context()).ID
+	h.playQueue.Touch(userID, r.URL.Query().Get("deviceId"))
+	res, err := h.playQueue.Get(r.Context(), userID)
 	if err != nil {
 		if errors.Is(err, persistence.ErrNotFound) {
 			writeResource(w, http.StatusOK, playQueueView{Entries: []songView{}})
@@ -121,6 +131,7 @@ func (h *Handler) handleGetPlayQueue(w http.ResponseWriter, r *http.Request) {
 // @Tags         playback
 // @Security     BearerAuth
 // @Produce      text/event-stream
+// @Param        deviceId  query  string  false  "Connecting device id, marked online while the stream is open (see targetOnline)"
 // @Success      200  {string}  string  "SSE stream"
 // @Failure      401  {object}  errorResponse
 // @Router       /play-queue/events [get]
@@ -137,7 +148,7 @@ func (h *Handler) handleStreamPlayQueue(w http.ResponseWriter, r *http.Request) 
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 
-	ch, unsubscribe := h.playQueue.Subscribe(user.ID)
+	ch, unsubscribe := h.playQueue.Subscribe(user.ID, r.URL.Query().Get("deviceId"))
 	defer unsubscribe()
 
 	var inviteCh <-chan []models.JamInvite
@@ -254,6 +265,7 @@ type playQueueRequest struct {
 // @Success  204  "No Content"
 // @Failure  400  {object}  errorResponse
 // @Failure  401  {object}  errorResponse
+// @Failure  409  {object}  errorResponse  "Another device is the active player"
 // @Router   /play-queue [put]
 func (h *Handler) handleSavePlayQueue(w http.ResponseWriter, r *http.Request) {
 	var req playQueueRequest
@@ -270,7 +282,11 @@ func (h *Handler) handleSavePlayQueue(w http.ResponseWriter, r *http.Request) {
 			CoverArt: e.CoverArt, Duration: e.Duration, Remote: e.Remote,
 		})
 	}
-	if err := h.playQueue.Save(r.Context(), user.ID, req.Current, req.Position, req.Playing, req.Client, req.IDs, entries, req.Shuffle, req.Repeat); err != nil {
+	if err := h.playQueue.SaveFromDevice(r.Context(), user.ID, req.Current, req.Position, req.Playing, req.Client, req.IDs, entries, req.Shuffle, req.Repeat); err != nil {
+		if errors.Is(err, core.ErrNotActiveDevice) {
+			writeError(w, http.StatusConflict, "not_active_device", err.Error())
+			return
+		}
 		writeServiceError(w, err)
 		return
 	}
@@ -345,13 +361,14 @@ func (h *Handler) handleSetPlaybackTarget(w http.ResponseWriter, r *http.Request
 // commandTypes are the allowed playQueueCommandRequest.Type values.
 var commandTypes = map[string]bool{
 	"toggle": true, "next": true, "previous": true, "seekTo": true, "skipTo": true,
-	"toggleShuffle": true, "cycleRepeat": true,
+	"toggleShuffle": true, "cycleRepeat": true, "playNext": true, "enqueue": true,
+	"removeAt": true, "move": true,
 }
 
 // playQueueCommandRequest is the body for POST /play-queue/commands.
 type playQueueCommandRequest struct {
 	// Type is one of "toggle", "next", "previous", "seekTo", "skipTo",
-	// "toggleShuffle", "cycleRepeat".
+	// "toggleShuffle", "cycleRepeat", "playNext", "enqueue", "removeAt", "move".
 	Type string `json:"type"`
 	// PositionMs is the target position for a "seekTo" command.
 	PositionMs int64 `json:"positionMs"`
@@ -360,6 +377,11 @@ type playQueueCommandRequest struct {
 	// QueueIndex disambiguates "skipTo" if TrackID appears more than once in
 	// the queue — a hint only, never the primary lookup.
 	QueueIndex int `json:"queueIndex"`
+	// TrackIDs are the tracks to insert for a "playNext"/"enqueue" command.
+	TrackIDs []string `json:"trackIds"`
+	// ToIndex is the destination of a "move" command (TrackID/QueueIndex
+	// identify the moved track, like "skipTo"; "removeAt" uses those alone).
+	ToIndex int `json:"toIndex"`
 	// ForTarget is the sender's view of the current active device id — the
 	// receiver ignores this command if it isn't (or is no longer) that device.
 	ForTarget string `json:"forTarget"`
@@ -368,13 +390,13 @@ type playQueueCommandRequest struct {
 }
 
 // handleSendPlayQueueCommand records a spectator's remote-control command
-// (next/previous/seek/toggle/skip/shuffle/repeat) for the active device to
+// (next/previous/seek/toggle/skip/shuffle/repeat/queue edits) for the active device to
 // apply itself — it does not change the caller's saved queue state (current/
 // position/playing/tracks), only the side-channel pendingCommand/commandSeq
 // fields.
 //
 // @Summary  Send a play-queue command
-// @Description  Sends a remote-control command (toggle, next, previous, seekTo, skipTo, toggleShuffle, cycleRepeat) for the active device (see targetDeviceId) to apply. Does not modify the saved queue state directly.
+// @Description  Sends a remote-control command (toggle, next, previous, seekTo, skipTo, toggleShuffle, cycleRepeat, playNext, enqueue, removeAt, move) for the active device (see targetDeviceId) to apply. Does not modify the saved queue state directly.
 // @Tags     playback
 // @Security BearerAuth
 // @Accept   json
@@ -396,7 +418,7 @@ func (h *Handler) handleSendPlayQueueCommand(w http.ResponseWriter, r *http.Requ
 	h.Logger.Info("play-queue command", "user", user.Username, "type", req.Type, "forTarget", req.ForTarget, "issuedBy", req.IssuedBy)
 	cmd := models.CommandEnvelope{
 		Type: req.Type, PositionMs: req.PositionMs, TrackID: req.TrackID,
-		QueueIndex: req.QueueIndex, ForTarget: req.ForTarget, IssuedBy: req.IssuedBy,
+		QueueIndex: req.QueueIndex, TrackIDs: req.TrackIDs, ToIndex: req.ToIndex, ForTarget: req.ForTarget, IssuedBy: req.IssuedBy,
 	}
 	if err := h.playQueue.SendCommand(r.Context(), user.ID, cmd); err != nil {
 		writeServiceError(w, err)
