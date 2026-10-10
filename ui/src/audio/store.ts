@@ -866,8 +866,10 @@ export const usePlayer = create<AudioState>((set, get) => ({
     const startLiveSync = () => {
       // eslint-disable-next-line no-console
       console.log('[playqueue] starting live sync', { deviceId: client()?.getSession()?.deviceId });
-      void restoreQueue(get, set);
-      connectPlayQueueLive(get, set);
+      // Live sync only once the restore has recorded the active device: the
+      // stream's first snapshot would otherwise look like a fresh takeover
+      // (castTargetId still '') and resume playback on its own at launch.
+      void restoreQueue(get, set).finally(() => connectPlayQueueLive(get, set));
     };
     if (client()) {
       // eslint-disable-next-line no-console
