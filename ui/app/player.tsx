@@ -70,7 +70,7 @@ export default function Player() {
   return (
     <SafeAreaView className="flex-1 bg-background">
       {/* iOS presents this as a sheet with no top inset: give the header room below the sheet's edge. */}
-      <View className="flex-row items-center justify-between px-4 pt-2 ios:pt-6">
+      <View className="flex-row items-center justify-between px-6 pt-2 ios:pt-6">
         <IconButton name="chevron-down" size={28} onPress={() => router.back()} accessibilityLabel={t('media.player.close')} />
         <Text className="text-sm font-medium text-muted">{t('media.player.nowPlaying')}</Text>
         <View className="flex-row items-center gap-3">
