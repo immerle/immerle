@@ -190,6 +190,17 @@ function queueWrite(write: () => Promise<unknown>): void {
 // reconciles (a takeover still loading while a command lands) would otherwise
 // interleave their engine calls.
 let reconcileChain: Promise<void> = Promise.resolve();
+// changedAt of the state a remote currently shows (see applyDisplaySnapshot).
+let shownChangedAt = 0;
+// Set by sendRemoteCommand: until the active device saves a state newer than
+// what was shown when the command left (or this deadline passes, for a
+// command that turned out to be a no-op), incoming snapshots still describe
+// the pre-command state. The command itself triggers one right away; showing
+// it would undo the optimistic update (pause, then the icon flips back to
+// playing until the real state lands).
+let awaitingCommandUntil = 0;
+let awaitingNewerThan = 0;
+const COMMAND_ACK_TIMEOUT_MS = 3000;
 
 // Chained promise backing acquireEngineReloadLock — always the completion
 // promise of whichever reload most recently claimed the lock (already
@@ -331,6 +342,8 @@ function sendRemoteCommand(get: () => AudioState, cmd: Omit<PlayQueueCommand, 'f
   const issuedBy = c.getSession()?.deviceId;
   // eslint-disable-next-line no-console
   console.log('[playqueue] command', { ...cmd, forTarget, issuedBy });
+  awaitingNewerThan = shownChangedAt;
+  awaitingCommandUntil = Date.now() + COMMAND_ACK_TIMEOUT_MS;
   queueWrite(() => c.sendPlayQueueCommand({ ...cmd, forTarget, issuedBy }));
 }
 
@@ -414,6 +427,9 @@ async function applyRemoteQueue(
  */
 function applyDisplaySnapshot(set: (partial: Partial<AudioState>) => void, remote: PlayQueueSnapshot): void {
   if (!remote.songs.length) return; // nothing saved yet — leave whatever's already shown alone
+  if (Date.now() < awaitingCommandUntil && (remote.changedAt ?? 0) <= awaitingNewerThan) return; // pre-command state, see awaitingCommandUntil
+  awaitingCommandUntil = 0;
+  shownChangedAt = remote.changedAt ?? 0;
   engineLoaded = false; // the shown queue is no longer what the engine holds: see takeControl
   const idx = Math.max(0, remote.songs.findIndex((s) => s.id === remote.currentId));
   const duration = remote.songs[idx]?.duration ?? 0;
@@ -1026,6 +1042,10 @@ export const usePlayer = create<AudioState>((set, get) => ({
     set({ status: wasPlaying ? 'paused' : 'playing' });
     if (wasPlaying) await engine.pause();
     else await engine.play();
+    // Immediately: the optimistic set above means the engine's own 'state'
+    // event sees no transition and wouldn't save, leaving remotes on the old
+    // state until the next progress save.
+    flushSaveQueue(get, false, 'toggle');
   },
 
   next: async () => {
