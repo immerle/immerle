@@ -138,7 +138,7 @@ interface AudioState {
   toggleShuffle: () => Promise<void>;
   setVolume: (volume: number) => void;
   setQuality: (id: string) => Promise<void>;
-  /** Make `deviceId` the sole active player ('' clears it back to independent/"everywhere"). */
+  /** Make `deviceId` the sole active player (Spotify Connect's "Play on"). */
   setCastTarget: (deviceId: string) => Promise<void>;
 
   current: () => Song | undefined;
@@ -1239,7 +1239,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
       return; // best-effort; UI keeps its previous state
     }
     set({ castTargetId: deviceId, castTargetOnline: true });
-    if (!deviceId) return; // cleared — independent mode, no forced action
+    if (!deviceId) return;
     const myId = c.getSession()?.deviceId;
     if (deviceId === myId) {
       const remote = await c.getPlayQueue().catch(() => null);
