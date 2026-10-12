@@ -19,7 +19,7 @@ require (
 	github.com/pressly/goose/v3 v3.28.0
 	github.com/swaggo/http-swagger/v2 v2.0.2
 	golang.org/x/image v0.46.0
-	golang.org/x/sync v0.23.0
+	golang.org/x/sync v0.24.0
 	golang.org/x/term v0.46.0
 	golang.org/x/text v0.42.0
 	gopkg.in/yaml.v3 v3.0.1
