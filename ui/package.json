@@ -69,7 +69,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.25.0",
-    "@react-native/jest-preset": "^0.86.0",
+    "@react-native/jest-preset": "^0.87.0",
     "@types/jest": "^29.5.14",
     "@types/react": "~19.2.10",
     "babel-preset-expo": "~57.0.0",
