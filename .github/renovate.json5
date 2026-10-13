@@ -81,11 +81,41 @@
       matchUpdateTypes: ['major'],
       matchPackageNames: ['@docusaurus/**', 'redocusaurus'],
     },
+    // The Expo SDK dictates these versions: bumping one alone breaks the app
+    // (see #297). Renovate only proposes the expo major; the rest follows
+    // through `npx expo install --fix`.
+    {
+      matchFileNames: ['ui/package.json'],
+      matchPackageNames: [
+        'expo-**',
+        '@expo/**',
+        'react',
+        'react-dom',
+        '@types/react',
+        'react-native',
+        'react-native-**',
+        '!react-native-draggable-flatlist', // not part of the SDK
+        '@react-native/**',
+        '@react-native-community/**',
+        '@react-native-async-storage/**',
+        '@shopify/flash-list',
+        'jest-expo',
+        'babel-preset-expo',
+        'eslint-config-expo',
+      ],
+      enabled: false,
+    },
+    {
+      matchFileNames: ['ui/package.json'],
+      matchPackageNames: ['expo'],
+      matchUpdateTypes: ['minor', 'patch', 'pin'],
+      enabled: false,
+    },
     {
       groupName: 'expo sdk',
-      matchUpdateTypes: ['major'],
       matchFileNames: ['ui/package.json'],
-      matchPackageNames: ['expo', 'expo-**', 'react-native', 'react-native-**'],
+      matchPackageNames: ['expo'],
+      matchUpdateTypes: ['major'],
     },
 
     // Go itself: track the toolchain but never auto-bump the language major.
