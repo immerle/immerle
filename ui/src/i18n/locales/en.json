@@ -880,6 +880,8 @@
       "nothingPlaying": "Nothing playing",
       "close": "Close",
       "nowPlaying": "Now playing",
+      "playbackFailed": "Playback failed. Check the track and try again.",
+      "playerNotReady": "The player is still starting. Try again in a moment.",
       "queue": "Queue",
       "repeat": "Repeat",
       "previous": "Previous",

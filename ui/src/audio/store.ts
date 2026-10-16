@@ -12,7 +12,7 @@ import { createEngine } from './engine';
 import { EventSourceImpl } from './eventSource';
 import { DEFAULT_QUALITY_ID, presetById } from './quality';
 import { useToast } from '../stores/toast';
-import { t } from '../i18n';
+import { t, tError } from '../i18n';
 
 const QUALITY_KEY = 'immerle.quality.v1';
 const VOLUME_KEY = 'immerle.volume.v1';
@@ -849,6 +849,9 @@ export const usePlayer = create<AudioState>((set, get) => ({
       const song = get().songs[index];
       if (song?.unresolved) void resolveAndPlayUnresolved(get, set, index, song);
     });
+    engine.on('error', () => {
+      useToast.getState().error(t('media.player.playbackFailed'));
+    });
 
     // Publish the engine before applying the volume, so a hydrateSettings()
     // resolving meanwhile either sees it (and applies its volume) or has
@@ -898,19 +901,40 @@ export const usePlayer = create<AudioState>((set, get) => ({
 
   playSongs: async (songs, startIndex = 0, playlistId) => {
     const { stale, release } = await acquireEngineReloadLock();
+    let queueApplied = false;
     try {
       if (stale()) return; // superseded while queued — see acquireEngineReloadLock
       const c = client();
       const engine = get().engine;
-      if (!c || !engine || songs.length === 0) return;
+      if (songs.length === 0) return;
+      if (!c || !engine) {
+        useToast.getState().error(t('media.player.playerNotReady'));
+        return;
+      }
       claimActiveDevice(get, set);
       const tracks = await Promise.all(songs.map((s) => songToTrack(c, s, get().qualityId)));
       orderBackup = null; // new playback context invalidates any shuffle backup
       set({ songs, index: startIndex, position: 0, duration: songs[startIndex]?.duration ?? 0, playlistId: playlistId ?? null });
+      queueApplied = true;
       scrobble = { nowPlayingSent: false, submitted: false };
       await engine.setQueue(tracks, startIndex); // loads paused — see engine.setQueue
       engineLoaded = true;
       await engine.play();
+      // HTMLAudioElement.play() may resolve before a network-backed source has
+      // produced audio. Do not overwrite an error event's paused state with an
+      // optimistic "playing" state.
+      if (typeof document !== 'undefined' && engine.getState().status !== 'playing') {
+        set({ status: 'paused' });
+        flushSaveQueue(get, true, 'playSongs:failed');
+        return;
+      }
+    } catch (error) {
+      if (queueApplied) {
+        set({ status: 'paused' });
+        flushSaveQueue(get, true, 'playSongs:failed');
+      }
+      useToast.getState().error(tError(error));
+      return;
     } finally {
       release();
     }

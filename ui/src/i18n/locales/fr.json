@@ -880,6 +880,8 @@
       "nothingPlaying": "Aucune lecture en cours",
       "close": "Fermer",
       "nowPlaying": "En lecture",
+      "playbackFailed": "La lecture a échoué. Vérifiez le morceau et réessayez.",
+      "playerNotReady": "Le lecteur démarre encore. Réessayez dans un instant.",
       "queue": "File",
       "repeat": "Répéter",
       "previous": "Précédent",

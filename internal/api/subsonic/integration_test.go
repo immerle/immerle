@@ -203,6 +203,42 @@ func TestPlaylistsAndPlayQueueSync(t *testing.T) {
 	}
 }
 
+func TestSavePlayQueuePreservesRemoteIDWithoutMetadata(t *testing.T) {
+	e := newTestEnv(t)
+	remoteID := "remote:deezer:62847142"
+
+	// Subsonic savePlayQueue has no metadata payload. A remote ID must still be
+	// retained even though it cannot be resolved against the local catalog.
+	resp := e.get(t, "bob", "bobpass", "savePlayQueue", map[string]string{
+		"id": remoteID, "current": remoteID, "position": "1234",
+	})
+	if resp.Status != "ok" {
+		t.Fatalf("savePlayQueue failed: %+v", resp.Error)
+	}
+
+	user, err := e.store.Users.GetByUsername(context.Background(), "bob")
+	if err != nil {
+		t.Fatal(err)
+	}
+	q, err := e.store.PlayQueues.Get(context.Background(), user.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(q.TrackIDs) != 1 || q.TrackIDs[0] != remoteID {
+		t.Fatalf("remote id without metadata was dropped: %+v", q.TrackIDs)
+	}
+	if len(q.Entries) != 0 {
+		t.Fatalf("expected no synthetic display metadata, got %+v", q.Entries)
+	}
+	if q.Current != remoteID || q.PositionMs != 1234 {
+		t.Fatalf("remote current track was not preserved: %+v", q)
+	}
+	current := e.get(t, "bob", "bobpass", "getPlayQueue", nil)
+	if current.PlayQueue == nil || current.PlayQueue.Current != remoteID {
+		t.Fatalf("remote ID without metadata disappeared on queue restore: %+v", current.PlayQueue)
+	}
+}
+
 func TestGetArtistIncludeSongs(t *testing.T) {
 	e := newTestEnv(t)
 
