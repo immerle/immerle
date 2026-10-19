@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/immerle/immerle/internal/covergen"
 	"github.com/immerle/immerle/internal/federation/hub"
 	"github.com/immerle/immerle/internal/federation/stream"
 	"github.com/immerle/immerle/internal/models"
@@ -375,7 +376,7 @@ func (s *PlaylistSyncer) resolveCovers(ctx context.Context, p *syncPayload) erro
 				tiles = append(tiles, blobs[h])
 			}
 		}
-		if mosaic, ct, err := renderMosaic(tiles); err == nil {
+		if mosaic, ct, err := covergen.RenderMosaic(tiles); err == nil {
 			sum := sha256.Sum256(mosaic)
 			h := hex.EncodeToString(sum[:])
 			idHash[p.Image] = h

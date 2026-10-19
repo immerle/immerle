@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	chi "github.com/go-chi/chi/v5"
@@ -415,5 +416,36 @@ func TestStreamServesAudioWithRange(t *testing.T) {
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusPartialContent {
 		t.Fatalf("expected 206 for range request, got %d", resp.StatusCode)
+	}
+}
+
+func TestPlaylistGeneratedCoverIsServed(t *testing.T) {
+	e := newTestEnv(t)
+	// Without a custom cover, the track mosaic is exposed under the same id.
+	songID := e.get(t, "bob", "bobpass", "search3", map[string]string{"query": "So What"}).SearchResult3.Song[0].ID
+	created := e.get(t, "bob", "bobpass", "createPlaylist", map[string]string{"name": "Mix", "songId": songID})
+	id := created.Playlist.ID
+	if created.Playlist.CoverArt != "pl-"+id {
+		t.Fatalf("mosaic coverArt = %q, want pl-%s", created.Playlist.CoverArt, id)
+	}
+	// A generator id holds '&' and '=': clients don't escape those in a query.
+	if err := e.store.Playlists.SetCover(context.Background(), id, "generator:color=%23123456&title=Mix"); err != nil {
+		t.Fatal(err)
+	}
+
+	cover := e.get(t, "bob", "bobpass", "getPlaylists", nil).Playlists.Playlist[0].CoverArt
+	if cover != "pl-"+id {
+		t.Fatalf("coverArt = %q, want pl-%s", cover, id)
+	}
+	// Arpeggi asks for the bare playlist id instead of the coverArt field.
+	for _, coverID := range []string{cover, id} {
+		resp, err := http.Get(e.server.URL + "/rest/getCoverArt?u=bob&p=bobpass&c=test&v=1.16.1&id=" + coverID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_ = resp.Body.Close()
+		if resp.StatusCode != http.StatusOK || !strings.HasPrefix(resp.Header.Get("Content-Type"), "image/") {
+			t.Fatalf("getCoverArt(%s): status %d, type %q", coverID, resp.StatusCode, resp.Header.Get("Content-Type"))
+		}
 	}
 }

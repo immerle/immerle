@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"image"
 	"image/color"
 	"image/jpeg"
@@ -42,7 +43,7 @@ type perIDCovers struct{ byID map[string][]byte }
 func (f perIDCovers) Get(_ context.Context, id string, _ int, _ string) ([]byte, string, error) {
 	data, ok := f.byID[id]
 	if !ok {
-		return nil, "", errNoCovers
+		return nil, "", errors.New("no cover")
 	}
 	return data, "image/jpeg", nil
 }
