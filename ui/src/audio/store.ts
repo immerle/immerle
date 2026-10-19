@@ -6,6 +6,7 @@ import { ImmerleClient, toJamInvite } from '../api/immerle/client';
 import { toPlayQueueSnapshot } from '../api/immerle/catalog';
 import { JamInviteDTO, PlayQueueView } from '../api/immerleApi';
 import { PlayQueueCommand, PlayQueueSnapshot, Song } from '../api/subsonic/types';
+import { ImmerleApiError } from '../api/immerle/types';
 import { offlinePlayableUrl } from '../offline/store';
 import { AudioEngine, PlayableTrack, RepeatMode } from './types';
 import { createEngine } from './engine';
@@ -35,7 +36,7 @@ function shuffled<T>(arr: T[]): T[] {
  * A downloaded track plays from its local file instead (offline, quality-setting
  * doesn't apply); artwork always points at the server since covers aren't downloaded.
  */
-async function songToTrack(client: ImmerleClient, song: Song, qualityId: string): Promise<PlayableTrack> {
+export async function songToTrack(client: ImmerleClient, song: Song, qualityId: string): Promise<PlayableTrack> {
   // Unresolved (federated-playlist) entries have no playable id yet — resolve
   // via TrackList's tap flow first. Return an empty-url placeholder instead of
   // throwing, so one bad entry doesn't break building the whole queue (skipped
@@ -47,10 +48,18 @@ async function songToTrack(client: ImmerleClient, song: Song, qualityId: string)
   let url = local;
   if (!url) {
     const preset = presetById(qualityId);
-    url = await client.streamUrl(song.id, {
-      maxBitRate: preset.maxBitRate || undefined,
-      format: preset.format,
-    });
+    try {
+      url = await client.streamUrl(song.id, {
+        maxBitRate: preset.maxBitRate || undefined,
+        format: preset.format,
+      });
+    } catch (error) {
+      // Deleted from the catalog since the list was fetched: same empty-url
+      // placeholder as an unresolved entry, so one stale track doesn't fail
+      // every Promise.all building a queue.
+      if (!(error instanceof ImmerleApiError && error.code === 'not_found')) throw error;
+      url = '';
+    }
   }
   return {
     id: song.id,
