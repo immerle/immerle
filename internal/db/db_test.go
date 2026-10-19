@@ -77,6 +77,15 @@ func TestMigrate(t *testing.T) {
 			if err := database.QueryRow("SELECT COUNT(*) FROM tracks").Scan(&n); err != nil {
 				t.Fatalf("expected tracks table after migration: %v", err)
 			}
+			if driver == "postgres" {
+				// Millisecond timestamps overflow int4 (#312).
+				err := database.QueryRow(`SELECT COUNT(*) FROM information_schema.columns
+					WHERE table_schema = current_schema() AND data_type = 'integer'
+					  AND table_name <> 'goose_db_version'`).Scan(&n)
+				if err != nil || n != 0 {
+					t.Fatalf("int4 columns left after migration: %d (%v)", n, err)
+				}
+			}
 		})
 	}
 }

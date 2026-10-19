@@ -58,6 +58,11 @@ jobs:
       - name: Test
         run: go test -race ./...
 
+      - name: Test (Postgres)
+        run: go test ./...
+        env:
+          IMMERLE_TEST_DB_DSN: ${{ env.IMMERLE_TEST_POSTGRES_DSN }}
+
       - name: Build
         run: CGO_ENABLED=0 go build -o bin/immerle ./cmd/immerle
 

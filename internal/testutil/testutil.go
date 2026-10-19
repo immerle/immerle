@@ -4,8 +4,10 @@ package testutil
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -21,12 +23,16 @@ func NewLogger() *slog.Logger {
 	return slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelWarn}))
 }
 
-// NewDB opens an isolated, migrated SQLite database in a temp directory.
+// NewDB opens an isolated, migrated SQLite database in a temp directory. Set
+// IMMERLE_TEST_DB_DSN to a Postgres DSN to run against Postgres instead, each
+// test getting its own schema.
 func NewDB(t *testing.T) *db.DB {
 	t.Helper()
-	dir := t.TempDir()
-	dsn := filepath.Join(dir, "test.db")
-	database, err := db.Open("sqlite", dsn)
+	driver, dsn := "sqlite", filepath.Join(t.TempDir(), "test.db")
+	if pg := os.Getenv("IMMERLE_TEST_DB_DSN"); pg != "" {
+		driver, dsn = "postgres", newPostgresSchema(t, pg)
+	}
+	database, err := db.Open(driver, dsn)
 	if err != nil {
 		t.Fatalf("open db: %v", err)
 	}
@@ -41,6 +47,33 @@ func NewDB(t *testing.T) *db.DB {
 }
 
 // NewStore returns a store over a fresh database.
+func newPostgresSchema(t *testing.T, dsn string) string {
+	t.Helper()
+	admin, err := sql.Open("pgx", dsn)
+	if err != nil {
+		t.Fatalf("open postgres: %v", err)
+	}
+	defer func() { _ = admin.Close() }()
+	schema := fmt.Sprintf("test_%d", time.Now().UnixNano())
+	if _, err := admin.Exec("CREATE SCHEMA " + schema); err != nil {
+		t.Fatalf("create schema: %v", err)
+	}
+	t.Cleanup(func() {
+		if c, err := sql.Open("pgx", dsn); err == nil {
+			_, _ = c.Exec("DROP SCHEMA " + schema + " CASCADE")
+			_ = c.Close()
+		}
+	})
+	u, err := url.Parse(dsn)
+	if err != nil {
+		t.Fatalf("parse postgres dsn: %v", err)
+	}
+	q := u.Query()
+	q.Set("search_path", schema)
+	u.RawQuery = q.Encode()
+	return u.String()
+}
+
 func NewStore(t *testing.T) *persistence.Store {
 	t.Helper()
 	return persistence.New(NewDB(t))
