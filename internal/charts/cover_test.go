@@ -80,9 +80,11 @@ func TestResolveLabelCoversRecommendationSourceSubtitles(t *testing.T) {
 	}
 }
 
-func TestResolveLabelFallsBackToFrenchForAnUnknownLocale(t *testing.T) {
-	if got := ResolveLabel("charts.country.fr", "xx"); got != "France" {
-		t.Errorf("ResolveLabel with unknown locale = %q, want French fallback %q", got, "France")
+func TestResolveLabelFallsBackToEnglishForAnUnknownLocale(t *testing.T) {
+	for _, locale := range []string{"es", "xx", ""} {
+		if got := ResolveLabel("charts.country.fr", locale); got != "French" {
+			t.Errorf("ResolveLabel with locale %q = %q, want English fallback %q", locale, got, "French")
+		}
 	}
 }
 
