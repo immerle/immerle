@@ -3,7 +3,6 @@ package subsonic
 import (
 	"net/http"
 	"sort"
-	"strconv"
 	"strings"
 	"unicode"
 
@@ -20,14 +19,10 @@ func (h *Handler) handleGetMusicFolders(w http.ResponseWriter, r *http.Request) 
 		if idx := strings.LastIndexAny(strings.TrimRight(p, "/"), "/"); idx >= 0 {
 			name = p[idx+1:]
 		}
-		folders = append(folders, MusicFolder{ID: musicFolderID(i), Name: name})
+		folders = append(folders, MusicFolder{ID: i + 1, Name: name})
 	}
 	resp.MusicFolders = &MusicFolders{MusicFolder: folders}
 	write(w, r, resp)
-}
-
-func musicFolderID(i int) string {
-	return "folder-" + strconv.Itoa(i)
 }
 
 func (h *Handler) handleGetIndexes(w http.ResponseWriter, r *http.Request) {
