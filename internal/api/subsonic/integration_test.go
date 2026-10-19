@@ -432,12 +432,15 @@ func TestPlaylistGeneratedCoverIsServed(t *testing.T) {
 	if cover != "pl-"+id {
 		t.Fatalf("coverArt = %q, want pl-%s", cover, id)
 	}
-	resp, err := http.Get(e.server.URL + "/rest/getCoverArt?u=bob&p=bobpass&c=test&v=1.16.1&id=" + cover)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK || !strings.HasPrefix(resp.Header.Get("Content-Type"), "image/") {
-		t.Fatalf("getCoverArt: status %d, type %q", resp.StatusCode, resp.Header.Get("Content-Type"))
+	// Arpeggi asks for the bare playlist id instead of the coverArt field.
+	for _, coverID := range []string{cover, id} {
+		resp, err := http.Get(e.server.URL + "/rest/getCoverArt?u=bob&p=bobpass&c=test&v=1.16.1&id=" + coverID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_ = resp.Body.Close()
+		if resp.StatusCode != http.StatusOK || !strings.HasPrefix(resp.Header.Get("Content-Type"), "image/") {
+			t.Fatalf("getCoverArt(%s): status %d, type %q", coverID, resp.StatusCode, resp.Header.Get("Content-Type"))
+		}
 	}
 }
