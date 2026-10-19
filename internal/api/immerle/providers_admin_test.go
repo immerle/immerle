@@ -32,6 +32,15 @@ func (s stubProvider) Download(context.Context, string, io.Writer) error { retur
 func (s stubProvider) MaxQuality() string                                { return "remote" }
 
 func newProvidersEnv(t *testing.T) *httptest.Server {
+	return newProvidersEnvWith(t, func(c models.ProviderConfig) (providers.Provider, error) {
+		if _, err := httpprovider.New(c.Name, c.Endpoint, c.Config); err != nil {
+			return nil, err
+		}
+		return stubProvider{name: c.Name}, nil
+	})
+}
+
+func newProvidersEnvWith(t *testing.T, build core.ProviderBuilder) *httptest.Server {
 	store := testutil.NewStore(t)
 	ctx := context.Background()
 	auth, _ := core.NewAuthService(store.Users, store.APITokens, store.Devices, "secret")
@@ -42,12 +51,6 @@ func newProvidersEnv(t *testing.T) *httptest.Server {
 		t.Fatal(err)
 	}
 	reg := core.NewProviderRegistry()
-	build := func(c models.ProviderConfig) (providers.Provider, error) {
-		if _, err := httpprovider.New(c.Name, c.Endpoint, c.Config); err != nil {
-			return nil, err
-		}
-		return stubProvider{name: c.Name}, nil
-	}
 	mgr := core.NewProviderManager(store.ProviderConfigs, reg, build, nil, testutil.NewLogger())
 	h := NewHandler(Deps{Auth: auth, Users: store.Users, Providers: mgr, Logger: testutil.NewLogger()})
 	mux := chi.NewRouter()
@@ -107,6 +110,26 @@ func TestProvidersCrudFlow(t *testing.T) {
 	st, provs = doArr(t, srv, http.MethodGet, "/admin/providers", admin, nil)
 	if st != http.StatusOK || len(provs) != 0 {
 		t.Fatalf("expected 0 providers after delete, got status %d len %d", st, len(provs))
+	}
+}
+
+// A provider on a private network (same compose/LAN as immerle) must be
+// addable from its URL: the admin is trusted with endpoint choice (#316).
+func TestProvidersCreateFromPrivateURL(t *testing.T) {
+	remote := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = io.WriteString(w, `{"version":1,"name":"lan"}`)
+	}))
+	t.Cleanup(remote.Close)
+	srv := newProvidersEnvWith(t, func(c models.ProviderConfig) (providers.Provider, error) {
+		return httpprovider.New(c.Name, c.Endpoint, c.Config)
+	})
+	admin := login(t, srv, "admin")
+
+	status, prov := doMap(t, srv, http.MethodPost, "/admin/providers", admin, map[string]any{
+		"endpoint": remote.URL, // 127.0.0.1
+	})
+	if status != http.StatusOK || prov["name"] != "lan" {
+		t.Fatalf("create from private URL failed: %d %+v", status, prov)
 	}
 }
 
