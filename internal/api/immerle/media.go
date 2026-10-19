@@ -53,11 +53,23 @@ type streamURLs struct {
 // @Param    id   path  string  true  "Track id"
 // @Success  200  {object}  streamURLs
 // @Failure  401  {object}  errorResponse
+// @Failure  404  {object}  errorResponse
 // @Router   /songs/{id}/stream-url [get]
 func (h *Handler) handleStreamURL(w http.ResponseWriter, r *http.Request) {
 	// Sign the raw (still percent-encoded) id, since that's what mediaAuthMiddleware
 	// reads back via chi.URLParam — signing the decoded id breaks verification for ids needing escaping.
 	id := chi.URLParam(r, "id")
+	decodedID := pathParam(r, "id")
+	if !core.IsRemoteID(decodedID) {
+		if h.Catalog == nil {
+			writeInternal(w, errors.New("catalog unavailable"))
+			return
+		}
+		if _, err := h.Catalog.GetTrack(r.Context(), decodedID); err != nil {
+			writeServiceError(w, err)
+			return
+		}
+	}
 	exp, sig := h.media.SignToken(id)
 	q := "?exp=" + exp + "&sig=" + sig
 	writeResource(w, http.StatusOK, streamURLs{

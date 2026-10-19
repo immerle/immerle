@@ -9002,6 +9002,15 @@ export interface paths {
                         "application/json": components["schemas"]["immerle.errorResponse"];
                     };
                 };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
             };
         };
         put?: never;

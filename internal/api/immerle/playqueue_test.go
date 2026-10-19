@@ -2,10 +2,13 @@ package immerle
 
 import (
 	"bufio"
+	"context"
 	"net/http"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/immerle/immerle/internal/models"
 )
 
 func TestPlayQueueAndNowPlaying(t *testing.T) {
@@ -366,5 +369,65 @@ func TestPlayQueueRemoteTrackFallsBackToSentMetadata(t *testing.T) {
 	}
 	if byID[remoteID].Title != "On Demand Track" || byID[remoteID].Artist != "Some Artist" {
 		t.Fatalf("remote track should fall back to the sent metadata, got %+v", byID[remoteID])
+	}
+}
+
+func TestPlayQueueDropsMissingLocalTracks(t *testing.T) {
+	srv, token, store := newBrowseEnv(t)
+	ctx := context.Background()
+	user, err := store.Users.GetByUsername(ctx, "admin")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var search searchView
+	if st := getJSON(t, srv, token, "/search?q=So+What", &search); st != http.StatusOK || len(search.Songs()) == 0 {
+		t.Fatalf("search: status %d, songs %d", st, len(search.Songs()))
+	}
+	validID := search.Songs()[0].ID
+	staleID := "deleted-local-track"
+
+	// Simulate a queue row left behind after a local track was removed from the
+	// catalog by a later scan. The persisted metadata must not make it look
+	// playable on queue restore.
+	if err := store.PlayQueues.Save(ctx, models.PlayQueue{
+		UserID: user.ID, TrackIDs: []string{staleID, validID}, Current: staleID,
+		PositionMs: 184359, Playing: true,
+		Entries: []models.QueueEntry{
+			{ID: staleID, Title: "Deleted local track", Artist: "Unknown"},
+			{ID: validID, Title: "So What", Artist: "Miles Davis"},
+		},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	var restored playQueueView
+	if st := getJSON(t, srv, token, "/play-queue", &restored); st != http.StatusOK {
+		t.Fatalf("get queue: status %d", st)
+	}
+	if len(restored.Entries) != 1 || restored.Entries[0].ID != validID {
+		t.Fatalf("stale local track survived restore: %+v", restored.Entries)
+	}
+	if restored.Current != validID || restored.Position != 0 || restored.Playing {
+		t.Fatalf("stale current track should resume paused at the next valid track: %+v", restored)
+	}
+
+	// New saves are normalized too, so another device cannot re-persist the
+	// stale local id from an old in-memory queue snapshot.
+	if st := doStatus(t, srv, http.MethodPut, "/play-queue", token, map[string]any{
+		"ids": []string{staleID, validID}, "current": staleID, "position": 184359, "playing": true,
+		"entries": []map[string]any{
+			{"id": staleID, "title": "Deleted local track", "artist": "Unknown"},
+			{"id": validID, "title": "So What", "artist": "Miles Davis"},
+		},
+	}); st != http.StatusNoContent {
+		t.Fatalf("save queue: status %d", st)
+	}
+	saved, err := store.PlayQueues.Get(ctx, user.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(saved.TrackIDs) != 1 || saved.TrackIDs[0] != validID || saved.Current != validID || saved.Playing || saved.PositionMs != 0 {
+		t.Fatalf("save persisted stale queue state: %+v", saved)
 	}
 }

@@ -45,6 +45,15 @@ func TestSignedStreamURLs(t *testing.T) {
 	}
 }
 
+func TestStreamURLRejectsMissingLocalTrack(t *testing.T) {
+	srv, token, _ := newBrowseEnv(t)
+
+	var urls streamURLs
+	if st := getJSON(t, srv, token, "/songs/deleted-local-track/stream-url", &urls); st != http.StatusNotFound {
+		t.Fatalf("missing track stream URL: expected 404, got %d (%+v)", st, urls)
+	}
+}
+
 func TestCoverIsPublic(t *testing.T) {
 	srv, token, _ := newBrowseEnv(t)
 

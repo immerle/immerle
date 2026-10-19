@@ -4,6 +4,7 @@ import { EngineEvents } from './types';
 export class EngineEmitter {
   private handlers: { [K in keyof EngineEvents]: Set<EngineEvents[K]> } = {
     state: new Set(),
+    error: new Set(),
     progress: new Set(),
     trackChange: new Set(),
   };

@@ -32,6 +32,10 @@ class WebAudioEngine implements AudioEngine {
       if (this.status !== 'ended') this.setStatus('paused');
     });
     audio.addEventListener('waiting', () => this.setStatus('loading'));
+    audio.addEventListener('error', () => {
+      this.setStatus('paused');
+      this.emitter.emit('error');
+    });
     audio.addEventListener('ended', () => this.handleEnded());
     audio.addEventListener('timeupdate', () => {
       this.emitter.emit('progress', audio.currentTime, audio.duration || 0);
