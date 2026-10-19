@@ -119,7 +119,12 @@ func (e *testEnv) get(t *testing.T, user, pass, endpoint string, params map[stri
 func TestBrowsingAndSearch(t *testing.T) {
 	e := newTestEnv(t)
 
-	r := e.get(t, "admin", "admin", "getArtists", nil)
+	r := e.get(t, "admin", "admin", "getMusicFolders", nil)
+	if f := r.MusicFolders.MusicFolder; len(f) != 1 || f[0].ID != 1 {
+		t.Fatalf("expected one music folder with int id 1, got %+v", f)
+	}
+
+	r = e.get(t, "admin", "admin", "getArtists", nil)
 	count := 0
 	for _, idx := range r.Artists.Index {
 		count += len(idx.Artist)

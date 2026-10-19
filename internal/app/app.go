@@ -473,7 +473,7 @@ func New(cfg config.Config) (*App, error) {
 		Scanner:          scan,
 		OnDemand:         onDemand,
 		Activity:         activitySvc,
-		MusicFolderPaths: cfg.Library.Paths,
+		MusicFolderPaths: scanPaths, // includes the downloads dir, so it is never empty
 		BaseURL:          baseURL(cfg),
 		Logger:           logger,
 	})
