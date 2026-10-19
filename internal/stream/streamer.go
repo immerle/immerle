@@ -1,13 +1,16 @@
 package stream
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -62,12 +65,24 @@ func (s *Streamer) Serve(w http.ResponseWriter, r *http.Request, track models.Tr
 		return s.serveFile(w, r, track.Path, track.ContentType)
 	}
 
-	cachePath, err := s.transcodedFile(r.Context(), track, format, bitrate)
-	if err != nil {
+	ct := contentTypeForFormat(format)
+	var live http.ResponseWriter
+	if progressiveRequest(r) {
+		live = w
+	}
+	cachePath, streamed, err := s.transcodedFile(r.Context(), track, format, bitrate, live, ct)
+	if streamed || err != nil {
 		return err
 	}
-	ct := contentTypeForFormat(format)
 	return s.serveFile(w, r, cachePath, ct)
+}
+
+// progressiveRequest reports whether a not-yet-cached transcode can be streamed
+// to this request as ffmpeg produces it: a GET from the first byte. Any other
+// range (a seek, or AVPlayer's bytes=0-1 probe) waits for the cached file.
+func progressiveRequest(r *http.Request) bool {
+	rg := r.Header.Get("Range")
+	return r.Method == http.MethodGet && (rg == "" || rg == "bytes=0-")
 }
 
 // serveFile serves a file with full Range/seek support via http.ServeContent.
@@ -120,15 +135,18 @@ func (s *Streamer) decide(track models.Track, opts Options) (transcode bool, for
 
 // transcodedFile returns the path to a cached transcode, producing it if needed.
 // Concurrent identical requests share a single ffmpeg run via singleflight.
-func (s *Streamer) transcodedFile(ctx context.Context, track models.Track, format string, bitrate int) (string, error) {
+// With live set, the caller that runs ffmpeg also streams its output to live as
+// it is produced (streamed=true), so the first byte doesn't wait for the whole
+// transcode; the other callers wait for the cached file as before.
+func (s *Streamer) transcodedFile(ctx context.Context, track models.Track, format string, bitrate int, live http.ResponseWriter, contentType string) (cachePath string, streamed bool, err error) {
 	key := fmt.Sprintf("%s_%s_%d", track.ID, format, bitrate)
-	cachePath := filepath.Join(s.cacheDir, key+"."+format)
+	cachePath = filepath.Join(s.cacheDir, key+"."+format)
 
 	if _, err := os.Stat(cachePath); err == nil {
-		return cachePath, nil
+		return cachePath, false, nil
 	}
 
-	_, err, _ := s.group.Do(key, func() (any, error) {
+	_, err, _ = s.group.Do(key, func() (any, error) {
 		if _, err := os.Stat(cachePath); err == nil {
 			return nil, nil
 		}
@@ -140,35 +158,79 @@ func (s *Streamer) transcodedFile(ctx context.Context, track models.Track, forma
 		// ponytail: fixed 10m ceiling; make configurable if long transcodes appear.
 		fctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Minute)
 		defer cancel()
-		return nil, s.runFFmpeg(fctx, track.Path, cachePath, format, bitrate)
+		if live == nil {
+			return nil, s.runFFmpeg(fctx, track.Path, cachePath, format, bitrate, nil)
+		}
+		streamed = true
+		live.Header().Set("Content-Type", contentType)
+		live.Header().Set("Accept-Ranges", "none")
+		live.WriteHeader(http.StatusOK)
+		return nil, s.runFFmpeg(fctx, track.Path, cachePath, format, bitrate, &flushWriter{w: live})
 	})
 	if err != nil {
-		return "", err
+		return "", streamed, err
 	}
-	return cachePath, nil
+	return cachePath, streamed, nil
+}
+
+// flushWriter pushes each chunk to the client right away and swallows write
+// errors (client gone), so ffmpeg keeps filling the cache regardless.
+type flushWriter struct {
+	w   http.ResponseWriter
+	err error
+}
+
+func (f *flushWriter) Write(p []byte) (int, error) {
+	if f.err == nil {
+		if _, f.err = f.w.Write(p); f.err == nil {
+			f.err = http.NewResponseController(f.w).Flush()
+		}
+	}
+	return len(p), nil
 }
 
 // runFFmpeg transcodes src to a temp file then atomically renames it into place,
-// so partial outputs are never served. The command is bound to ctx so a
-// cancelled/closed request terminates ffmpeg (no leaked processes).
-func (s *Streamer) runFFmpeg(ctx context.Context, src, dst, format string, bitrate int) error {
+// so partial outputs are never served from the cache. With live set, ffmpeg
+// writes to a pipe teed to both the temp file and live instead. The command is
+// bound to ctx so a cancelled/closed request terminates ffmpeg (no leaked processes).
+func (s *Streamer) runFFmpeg(ctx context.Context, src, dst, format string, bitrate int, live io.Writer) error {
 	tmp := dst + ".tmp"
 	defer os.Remove(tmp)
 
-	args := s.ffmpegArgs(src, tmp, format, bitrate)
-	cmd := exec.CommandContext(ctx, s.ffmpegPath, args...)
+	var out bytes.Buffer
+	var cmd *exec.Cmd
+	var pipeFile *os.File
+	if live == nil {
+		cmd = exec.CommandContext(ctx, s.ffmpegPath, s.ffmpegArgs(src, tmp, format, bitrate)...)
+		cmd.Stdout = &out
+	} else {
+		f, err := os.Create(tmp)
+		if err != nil {
+			return err
+		}
+		defer func() { _ = f.Close() }()
+		pipeFile = f
+		cmd = exec.CommandContext(ctx, s.ffmpegPath, s.ffmpegArgs(src, "pipe:1", format, bitrate)...)
+		cmd.Stdout = io.MultiWriter(f, live)
+	}
+	cmd.Stderr = &out
 	// Ensure a hard kill on context cancellation.
 	cmd.Cancel = func() error { return cmd.Process.Kill() }
 	cmd.WaitDelay = 5 * time.Second
 
 	start := time.Now()
-	out, err := cmd.CombinedOutput()
-	if err != nil {
+	if err := cmd.Run(); err != nil {
+		out := out.Bytes()
 		s.logger.Warn("ffmpeg transcode failed", "src", src, "format", format, "error", err, "output", string(out[:min(len(out), 500)]))
 		return fmt.Errorf("transcode: %w", err)
 	}
 	s.logger.Debug("transcoded", "src", src, "format", format, "bitrate", bitrate, "elapsed", time.Since(start))
 
+	if pipeFile != nil {
+		if err := pipeFile.Close(); err != nil {
+			return err
+		}
+	}
 	return os.Rename(tmp, dst)
 }
 
@@ -183,23 +245,39 @@ func (s *Streamer) ffmpegArgs(src, dst, format string, bitrate int) []string {
 		// extra input/output and turn the transcode into an arbitrary file
 		// read/write (it's argv, not a shell, but ffmpeg flags are still powerful).
 		if fields, ok := safeFFmpegArgs(custom); ok {
+			if !slices.Contains(fields, "-f") {
+				// A pipe output has no extension to infer the muxer from.
+				fields = append(fields, "-f", muxerFor(format))
+			}
 			return append(append(base, fields...), dst)
 		}
 		s.logger.Warn("ignoring ffmpeg profile args: disallowed flag", "format", format, "args", custom)
 		// fall through to the built-in defaults below
 	}
 
+	codec := "libmp3lame"
 	switch format {
 	case "opus":
-		base = append(base, "-c:a", "libopus", "-b:a", fmt.Sprintf("%dk", bitrate), "-f", "opus")
+		codec = "libopus"
 	case "ogg", "vorbis":
-		base = append(base, "-c:a", "libvorbis", "-b:a", fmt.Sprintf("%dk", bitrate), "-f", "ogg")
+		codec = "libvorbis"
 	case "aac", "m4a":
-		base = append(base, "-c:a", "aac", "-b:a", fmt.Sprintf("%dk", bitrate), "-f", "adts")
-	default: // mp3
-		base = append(base, "-c:a", "libmp3lame", "-b:a", fmt.Sprintf("%dk", bitrate), "-f", "mp3")
+		codec = "aac"
 	}
-	return append(base, dst)
+	return append(base, "-c:a", codec, "-b:a", fmt.Sprintf("%dk", bitrate), "-f", muxerFor(format), dst)
+}
+
+func muxerFor(format string) string {
+	switch format {
+	case "opus":
+		return "opus"
+	case "ogg", "vorbis":
+		return "ogg"
+	case "aac", "m4a":
+		return "adts"
+	default:
+		return "mp3"
+	}
 }
 
 // allowedFFmpegFlags is the set of ffmpeg flags an admin transcode profile may
