@@ -74,6 +74,7 @@ func newPostgresSchema(t *testing.T, dsn string) string {
 	return u.String()
 }
 
+// NewStore returns a persistence store backed by NewDB.
 func NewStore(t *testing.T) *persistence.Store {
 	t.Helper()
 	return persistence.New(NewDB(t))
