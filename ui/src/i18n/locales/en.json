@@ -176,6 +176,8 @@
     "apply": "Apply",
     "resetAccent": "Reset (default green)",
     "quality": "Playback quality",
+    "adaptiveQuality": "Adapt to network",
+    "adaptiveQualityHint": "Lowers quality on cellular or slow connections",
     "access": "Account & access",
     "importTitle": "Import a playlist",
     "importSubtitle": "From Spotify and other platforms",

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Linking, Pressable, Text, View } from 'react-native';
+import { Linking, Pressable, Switch, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../../src/auth/store';
 import { useTheme, ThemePreference } from '../../src/theme/store';
@@ -33,6 +33,8 @@ export default function Settings() {
   const setAccent = useTheme((s) => s.setAccent);
   const qualityId = usePlayer((s) => s.qualityId);
   const setQuality = usePlayer((s) => s.setQuality);
+  const adaptiveQuality = usePlayer((s) => s.adaptiveQuality);
+  const setAdaptiveQuality = usePlayer((s) => s.setAdaptiveQuality);
   const localePref = useLocale((s) => s.preference);
   const setLocale = useLocale((s) => s.setPreference);
   // `system` is translated; the fixed locales keep their endonym.
@@ -289,6 +291,13 @@ export default function Settings() {
               </Pressable>
             );
           })}
+        </View>
+        <View className="flex-row items-center justify-between">
+          <View className="flex-1 pr-2">
+            <Text className="text-base text-foreground">{t('settings.adaptiveQuality')}</Text>
+            <Text className="text-sm text-muted">{t('settings.adaptiveQualityHint')}</Text>
+          </View>
+          <Switch value={adaptiveQuality} onValueChange={setAdaptiveQuality} trackColor={{ true: colors.primary, false: colors.border }} />
         </View>
       </Card>
 

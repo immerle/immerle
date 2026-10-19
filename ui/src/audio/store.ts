@@ -10,11 +10,13 @@ import { offlinePlayableUrl } from '../offline/store';
 import { AudioEngine, PlayableTrack, RepeatMode } from './types';
 import { createEngine } from './engine';
 import { EventSourceImpl } from './eventSource';
-import { DEFAULT_QUALITY_ID, presetById } from './quality';
+import { DEFAULT_QUALITY_ID, effectiveQualityId, NetworkClass, presetById } from './quality';
+import { networkClass, onNetworkChange } from './network';
 import { useToast } from '../stores/toast';
 import { t } from '../i18n';
 
 const QUALITY_KEY = 'immerle.quality.v1';
+const ADAPTIVE_KEY = 'immerle.adaptiveQuality.v1';
 const VOLUME_KEY = 'immerle.volume.v1';
 
 /** Fisher–Yates shuffle (pure). */
@@ -84,6 +86,10 @@ interface AudioState {
   /** 0..1 playback volume. */
   volume: number;
   qualityId: string;
+  /** Lower the stream quality on cellular/slow networks (on by default). Persisted. */
+  adaptiveQuality: boolean;
+  /** Current connection class, kept live by init() (see src/audio/network.ts). */
+  network: NetworkClass;
   /**
    * Server-assigned sole active-playback device id for this account ('' =
    * unrestricted — every device plays independently, today's default). When
@@ -138,6 +144,7 @@ interface AudioState {
   toggleShuffle: () => Promise<void>;
   setVolume: (volume: number) => void;
   setQuality: (id: string) => Promise<void>;
+  setAdaptiveQuality: (on: boolean) => Promise<void>;
   /** Make `deviceId` the sole active player (Spotify Connect's "Play on"). */
   setCastTarget: (deviceId: string) => Promise<void>;
 
@@ -291,6 +298,27 @@ function noteSyncResult(set: (partial: Partial<AudioState>) => void, ok: boolean
  * there (Spotify Connect's "Playing on X"). An offline target doesn't count:
  * nobody would ever apply our commands, so actions run locally instead.
  */
+/** The quality preset id to stream at right now (user pick, network-capped). */
+function streamQuality(s: AudioState): string {
+  return effectiveQualityId(s.qualityId, s.adaptiveQuality, s.network);
+}
+
+/**
+ * Re-mint the stream URLs of the tracks after the current one at the current
+ * effective quality, so a network change applies mid-queue without
+ * interrupting what's playing.
+ */
+async function requeueUpcoming(get: () => AudioState): Promise<void> {
+  const c = client();
+  const { engine, songs, index } = get();
+  if (!c || !engine || isSpectating(get) || index < 0) return;
+  const upcoming = songs.slice(index + 1);
+  const tracks = await Promise.all(upcoming.map((s) => songToTrack(c, s, streamQuality(get()))));
+  // The queue moved on while minting: the next build already uses the new quality.
+  if (get().songs !== songs || get().index !== index) return;
+  for (let i = 0; i < tracks.length; i += 1) await engine.replaceAt(index + 1 + i, tracks[i]);
+}
+
 function isSpectating(get: () => AudioState): boolean {
   const myId = client()?.getSession()?.deviceId;
   const { castTargetId: target, castTargetOnline } = get();
@@ -393,7 +421,7 @@ async function applyRemoteQueue(
       shuffle: remote.shuffle,
       repeat: remote.repeat,
     });
-    const tracks = await Promise.all(remote.songs.map((s) => songToTrack(c, s, get().qualityId)));
+    const tracks = await Promise.all(remote.songs.map((s) => songToTrack(c, s, streamQuality(get()))));
     // setQueue only loads (paused) — seek before playing, so a fresh source
     // never briefly plays from 0 and races the seek (see engine.web.ts).
     await engine.setQueue(tracks, idx);
@@ -730,7 +758,7 @@ async function upgradeIfDownloaded(
   const songs = [...get().songs];
   songs[index] = status.song;
   set({ songs });
-  await engine.replaceAt(index, await songToTrack(c, status.song, get().qualityId));
+  await engine.replaceAt(index, await songToTrack(c, status.song, streamQuality(get())));
   return true;
 }
 
@@ -758,7 +786,7 @@ async function resolveAndPlayUnresolved(
         const songs = [...get().songs];
         songs[index] = resolved;
         set({ songs });
-        await engine.replaceAt(index, await songToTrack(c, resolved, get().qualityId));
+        await engine.replaceAt(index, await songToTrack(c, resolved, streamQuality(get())));
         // The placeholder never actually played (empty url), so replaceAt's own
         // wasPlaying check (engine.web.ts) sees status stuck at 'loading' and
         // won't resume, so force it explicitly, same as the manual tap-resolve
@@ -786,6 +814,8 @@ export const usePlayer = create<AudioState>((set, get) => ({
   shuffle: false,
   volume: 1,
   qualityId: DEFAULT_QUALITY_ID,
+  adaptiveQuality: true,
+  network: 'fast',
   castTargetId: '',
   castTargetOnline: false,
   playingDeviceId: '',
@@ -795,6 +825,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
     try {
       const q = await AsyncStorage.getItem(QUALITY_KEY);
       if (q) set({ qualityId: q });
+      if ((await AsyncStorage.getItem(ADAPTIVE_KEY)) === 'false') set({ adaptiveQuality: false });
       const v = await AsyncStorage.getItem(VOLUME_KEY);
       if (v !== null) {
         const volume = Math.max(0, Math.min(1, Number(v)));
@@ -857,6 +888,16 @@ export const usePlayer = create<AudioState>((set, get) => ({
     await engine.setVolume(get().volume);
     startFakeProgressTicker(get, set);
 
+    const refreshNetwork = async () => {
+      const network = await networkClass();
+      if (network === get().network) return;
+      const before = streamQuality(get());
+      set({ network });
+      if (streamQuality(get()) !== before) await requeueUpcoming(get);
+    };
+    void refreshNetwork();
+    onNetworkChange(() => void refreshNetwork());
+
     // Cross-device state: show what's playing on launch, then stay
     // live-updated on any device's changes (see connectPlayQueueLive).
     // init() races useAuth's restore() — client() is usually still null here
@@ -904,7 +945,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
       const engine = get().engine;
       if (!c || !engine || songs.length === 0) return;
       claimActiveDevice(get, set);
-      const tracks = await Promise.all(songs.map((s) => songToTrack(c, s, get().qualityId)));
+      const tracks = await Promise.all(songs.map((s) => songToTrack(c, s, streamQuality(get()))));
       orderBackup = null; // new playback context invalidates any shuffle backup
       set({ songs, index: startIndex, position: 0, duration: songs[startIndex]?.duration ?? 0, playlistId: playlistId ?? null });
       scrobble = { nowPlayingSent: false, submitted: false };
@@ -968,7 +1009,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
       scrobble = { nowPlayingSent: false, submitted: false };
       set({ songs: [song], index: 0, position: positionSec, duration: song.duration ?? 0, playlistId: null });
       // setQueue only loads (paused) — seek before playing, see applyRemoteQueue.
-      await engine.setQueue([await songToTrack(c, song, get().qualityId)], 0);
+      await engine.setQueue([await songToTrack(c, song, streamQuality(get()))], 0);
       engineLoaded = true;
       await engine.seekTo(positionSec);
       if (autoplay) await engine.play();
@@ -1002,7 +1043,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
     next.splice(at, 0, ...songs);
     set({ songs: next });
     // Engine has no insert-at; append then move into place.
-    await engine.add(await Promise.all(songs.map((s) => songToTrack(c, s, get().qualityId))));
+    await engine.add(await Promise.all(songs.map((s) => songToTrack(c, s, streamQuality(get())))));
     for (let i = 0; i < songs.length; i += 1) {
       await engine.move(get().songs.length - 1, at + i);
     }
@@ -1022,7 +1063,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
     }
     await takeControl(get, set);
     set({ songs: [...get().songs, ...songs] });
-    await engine.add(await Promise.all(songs.map((s) => songToTrack(c, s, get().qualityId))));
+    await engine.add(await Promise.all(songs.map((s) => songToTrack(c, s, streamQuality(get())))));
     flushSaveQueue(get, false, 'enqueue');
   },
 
@@ -1220,7 +1261,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
     // Rebuild the engine queue around the (unchanged) current track, then
     // restore the playback position so the music doesn't visibly restart —
     // and only resume playing if it already was (setQueue loads paused).
-    const tracks = await Promise.all(nextSongs.map((s) => songToTrack(c, s, get().qualityId)));
+    const tracks = await Promise.all(nextSongs.map((s) => songToTrack(c, s, streamQuality(get()))));
     await engine.setQueue(tracks, nextIndex);
     await engine.seekTo(position);
     if (wasPlaying) await engine.play();
@@ -1246,10 +1287,17 @@ export const usePlayer = create<AudioState>((set, get) => ({
     const pos = get().position;
     const idx = get().index;
     const wasPlaying = get().status === 'playing';
-    const tracks = await Promise.all(get().songs.map((s) => songToTrack(c, s, id)));
+    const tracks = await Promise.all(get().songs.map((s) => songToTrack(c, s, streamQuality(get()))));
     await engine.setQueue(tracks, idx); // loads paused — see engine.setQueue
     await engine.seekTo(pos);
     if (wasPlaying) await engine.play();
+  },
+
+  setAdaptiveQuality: async (on) => {
+    const before = streamQuality(get());
+    set({ adaptiveQuality: on });
+    void AsyncStorage.setItem(ADAPTIVE_KEY, String(on));
+    if (streamQuality(get()) !== before) await requeueUpcoming(get);
   },
 
   setCastTarget: async (deviceId) => {
