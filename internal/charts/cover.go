@@ -36,7 +36,7 @@ var flagEmoji = map[string]string{
 // labelKeys is the i18n dictionary behind the generator cover's `title`/
 // `subTitle` params, resolved via ResolveLabel (e.g. "charts.country.fr" ->
 // "France"/"French"); an unrecognized param is used as literal text, and an
-// unknown locale falls back to French.
+// unknown locale falls back to English.
 //
 // The autoplaylists.* entries aren't chart-related — they're
 // internal/autoplaylists' auto-playlist kinds (its
@@ -93,7 +93,9 @@ func ResolveLabel(key, locale string) string {
 	if l, ok := labels[NormalizeLocale(locale)]; ok {
 		return l
 	}
-	return labels["fr"]
+	// Same fallback as the UI (i18n.defaultLocale): an unsupported UI language
+	// (es, de...) renders English there, so the cover must too.
+	return labels["en"]
 }
 
 // GeneratorParams builds the GET /cover/generator query params for a chart

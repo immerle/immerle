@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import { Ionicon } from './Ionicon';
 import { useColors } from '../theme/colors';
 import { useAuth } from '../auth/store';
+import { useLocale } from '../i18n/store';
 
 interface CoverArtProps {
   /** Subsonic coverArt id. */
@@ -55,6 +56,8 @@ export function CoverArt({ coverArt, url, size, rounded = 'rounded-lg', fallback
 // Resolve a coverArt id to a URL using the live client.
 function useCoverUrl(coverArt: string | undefined, size: number): string | undefined {
   const client = useAuth((s) => s.client);
+  // Generator cover URLs embed the locale: rebuild them when the language changes.
+  useLocale((s) => s.preference);
   if (!coverArt || !client) return undefined;
   return client.coverArtUrl(coverArt, size);
 }
