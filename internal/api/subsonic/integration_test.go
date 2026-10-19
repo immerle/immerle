@@ -416,8 +416,13 @@ func TestStreamServesAudioWithRange(t *testing.T) {
 
 func TestPlaylistGeneratedCoverIsServed(t *testing.T) {
 	e := newTestEnv(t)
-	created := e.get(t, "bob", "bobpass", "createPlaylist", map[string]string{"name": "Mix"})
+	// Without a custom cover, the track mosaic is exposed under the same id.
+	songID := e.get(t, "bob", "bobpass", "search3", map[string]string{"query": "So What"}).SearchResult3.Song[0].ID
+	created := e.get(t, "bob", "bobpass", "createPlaylist", map[string]string{"name": "Mix", "songId": songID})
 	id := created.Playlist.ID
+	if created.Playlist.CoverArt != "pl-"+id {
+		t.Fatalf("mosaic coverArt = %q, want pl-%s", created.Playlist.CoverArt, id)
+	}
 	// A generator id holds '&' and '=': clients don't escape those in a query.
 	if err := e.store.Playlists.SetCover(context.Background(), id, "generator:color=%23123456&title=Mix"); err != nil {
 		t.Fatal(err)
