@@ -155,7 +155,11 @@ export type SearchHit =
   | { type: 'album'; album: Album }
   | { type: 'song'; song: Song }
   | { type: 'playlist'; playlist: Playlist }
-  | { type: 'radio'; radio: RadioStation };
+  | { type: 'radio'; radio: RadioStation }
+  | { type: 'spotifyPlaylist'; spotify: SpotifyPlaylistHit };
+
+/** A public Spotify playlist from global search; selecting it starts an import. */
+export type SpotifyPlaylistHit = { id: string; name: string; owner?: string; coverArt?: string };
 
 export function toSearchResult(v: SearchView): SearchHit[] {
   const hits: SearchHit[] = [];
@@ -165,6 +169,11 @@ export function toSearchResult(v: SearchView): SearchHit[] {
     else if (r.type === 'song' && r.song) hits.push({ type: 'song', song: toSong(r.song) });
     else if (r.type === 'playlist' && r.playlist) hits.push({ type: 'playlist', playlist: toPlaylist(r.playlist) });
     else if (r.type === 'radio' && r.radio) hits.push({ type: 'radio', radio: toStation(r.radio) });
+    else if (r.type === 'spotifyPlaylist' && r.spotifyPlaylist?.id)
+      hits.push({
+        type: 'spotifyPlaylist',
+        spotify: { id: r.spotifyPlaylist.id, name: r.spotifyPlaylist.name ?? '', owner: r.spotifyPlaylist.owner, coverArt: r.spotifyPlaylist.coverArt },
+      });
   }
   return hits;
 }

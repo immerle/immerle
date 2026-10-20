@@ -665,6 +665,8 @@
       "wrappedEnabled": "Wrapped (rétrospective annuelle)",
       "offlineEnabled": "Téléchargements hors-ligne",
       "hallOfFameEnabled": "Hall of Fame",
+      "spotifySearchEnabled": "Recherche de playlists Spotify",
+      "spotifySearchHelp": "Si activé, la recherche affiche aussi les playlists Spotify publiques, ouvertes à la demande. Un utilisateur peut en garder une dans sa bibliothèque, elle est alors mise à jour chaque semaine.",
       "save": "Enregistrer"
     },
     "users": {
@@ -1121,6 +1123,8 @@
       "typeSong": "Titre",
       "typePlaylist": "Playlist",
       "typeRadio": "Radio",
+      "typeSpotifyPlaylist": "Playlist Spotify",
+      "spotifyOpenError": "Impossible de charger cette playlist Spotify",
       "cancel": "Annuler"
     },
     "admin": {

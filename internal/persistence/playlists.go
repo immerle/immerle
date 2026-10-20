@@ -199,7 +199,7 @@ func (r *PlaylistRepo) ListVisible(ctx context.Context, userID string) ([]models
 // subscribe to them like anyone else.
 func (r *PlaylistRepo) ListPublic(ctx context.Context, excludeUserID string) ([]models.Playlist, error) {
 	rows, err := r.query(ctx, playlistSelect+`
-		WHERE p.public=1 AND (p.federated=1 OR p.owner_id<>?) ORDER BY p.name`, excludeUserID)
+		WHERE p.public=1 AND (p.federated=1 OR p.owner_id<>?) AND p.source_instance_id<>? ORDER BY p.name`, excludeUserID, SpotifySourceID)
 	if err != nil {
 		return nil, err
 	}
@@ -224,8 +224,8 @@ func (r *PlaylistRepo) ListPublic(ctx context.Context, excludeUserID string) ([]
 func (r *PlaylistRepo) SearchPublic(ctx context.Context, excludeUserID, q string, limit int) ([]models.Playlist, error) {
 	like := "%" + strings.ToLower(q) + "%"
 	rows, err := r.query(ctx, playlistSelect+`
-		WHERE p.public=1 AND (p.federated=1 OR p.owner_id<>?) AND LOWER(p.name) LIKE ?
-		ORDER BY p.name LIMIT ?`, excludeUserID, like, limit)
+		WHERE p.public=1 AND (p.federated=1 OR p.owner_id<>?) AND p.source_instance_id<>? AND LOWER(p.name) LIKE ?
+		ORDER BY p.name LIMIT ?`, excludeUserID, SpotifySourceID, like, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -616,6 +616,60 @@ func (r *PlaylistRepo) DeleteUnsubscribedFederated(ctx context.Context, instance
 	_, err := r.exec(ctx, `DELETE FROM playlists WHERE federated=1 AND source_instance_id=?
 		AND id NOT IN (SELECT playlist_id FROM playlist_subscriptions)`, instanceID)
 	return err
+}
+
+// SpotifySourceID tags federated playlists mirrored from Spotify (see
+// internal/spotifyplaylists). They're reached on demand from Spotify search,
+// so ListPublic/SearchPublic leave them out: a user keeps one by subscribing.
+const SpotifySourceID = "spotify"
+
+// StaleFederatedRef is a federated playlist last synced before a cutoff.
+type StaleFederatedRef struct {
+	ID, ExternalID string
+	Subscribed     bool
+}
+
+// StaleFederated lists the federated playlists sourced from instanceID whose
+// tracks were last replaced before the cutoff, flagging the ones at least one
+// user subscribed to.
+func (r *PlaylistRepo) StaleFederated(ctx context.Context, instanceID string, before time.Time) ([]StaleFederatedRef, error) {
+	rows, err := r.query(ctx, `SELECT p.id, p.source_external_id,
+		CASE WHEN EXISTS (SELECT 1 FROM playlist_subscriptions s WHERE s.playlist_id=p.id) THEN 1 ELSE 0 END
+		FROM playlists p WHERE p.federated=1 AND p.source_instance_id=? AND p.updated_at<?`, instanceID, db.Millis(before))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []StaleFederatedRef
+	for rows.Next() {
+		var ref StaleFederatedRef
+		var sub int
+		if err := rows.Scan(&ref.ID, &ref.ExternalID, &sub); err != nil {
+			return nil, err
+		}
+		ref.Subscribed = sub == 1
+		out = append(out, ref)
+	}
+	return out, rows.Err()
+}
+
+// FederatedCovers returns the cover ids of the federated playlists sourced
+// from instanceID, so a cover-cache sweep can keep the ones still in use.
+func (r *PlaylistRepo) FederatedCovers(ctx context.Context, instanceID string) (map[string]bool, error) {
+	rows, err := r.query(ctx, `SELECT cover_art FROM playlists WHERE federated=1 AND source_instance_id=? AND cover_art<>''`, instanceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := map[string]bool{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		out[id] = true
+	}
+	return out, rows.Err()
 }
 
 // FindFederated returns the federated playlist sourced from (instanceID,

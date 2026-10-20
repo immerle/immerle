@@ -1,10 +1,12 @@
 package immerle
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/immerle/immerle/internal/core"
@@ -12,6 +14,7 @@ import (
 	"github.com/immerle/immerle/internal/lyrics"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
+	"github.com/immerle/immerle/internal/spotifyweb"
 )
 
 // lyricsView is a track's lyrics, plain or synced. When synced, every line
@@ -386,12 +389,25 @@ func (h *Handler) handleGetGenres(w http.ResponseWriter, r *http.Request) {
 // searchHitView is one entry in a search result: exactly one of Artist/Album/
 // Song/Playlist/Radio is set, per Type.
 type searchHitView struct {
-	Type     string        `json:"type"` // artist|album|song|playlist|radio
+	Type     string        `json:"type"` // artist|album|song|playlist|radio|spotifyPlaylist
 	Artist   *artistView   `json:"artist,omitempty"`
 	Album    *albumView    `json:"album,omitempty"`
 	Song     *songView     `json:"song,omitempty"`
 	Playlist *playlistView `json:"playlist,omitempty"`
 	Radio    *stationView  `json:"radio,omitempty"`
+	// Spotify is a public Spotify playlist (type spotifyPlaylist): selecting it
+	// opens it on demand (POST /spotify-playlists/{spotifyId}/open).
+	Spotify *spotifyPlaylistView `json:"spotifyPlaylist,omitempty"`
+}
+
+// spotifyPlaylistView is a public Spotify playlist found by global search.
+type spotifyPlaylistView struct {
+	ID    string `json:"id" example:"37i9dQZF1DZ06evO2CNgSk"`
+	Name  string `json:"name" example:"This Is Daft Punk"`
+	Owner string `json:"owner,omitempty" example:"Spotify"`
+	// CoverArt is a cover id served by GET /cover/{id} (fetched and cached
+	// server-side), so clients never call Spotify directly.
+	CoverArt string `json:"coverArt,omitempty"`
 }
 
 // searchView is the result of a catalog search: every match — artists,
@@ -403,6 +419,30 @@ type searchView struct {
 
 // maxSearchRadio caps the radio stations returned by a global search.
 const maxSearchRadio = 10
+
+// maxSearchSpotify caps the Spotify playlists returned by a global search.
+const maxSearchSpotify = 5
+
+// searchSpotify starts a Spotify playlist search in the background when the
+// feature is on and the search covers playlists; the returned func waits for
+// it. Failures are logged and yield no hits: Spotify must never break search.
+func (h *Handler) searchSpotify(r *http.Request, q, searchType string) func() []spotifyweb.PlaylistSummary {
+	if h.SpotifyPlaylists == nil || h.Settings == nil || !h.SpotifyPlaylists.Enabled() ||
+		strings.TrimSpace(q) == "" || (searchType != "" && searchType != "playlist") {
+		return func() []spotifyweb.PlaylistSummary { return nil }
+	}
+	done := make(chan []spotifyweb.PlaylistSummary, 1)
+	go func() {
+		ctx, cancel := context.WithTimeout(r.Context(), h.Settings.SearchTimeout())
+		defer cancel()
+		res, err := h.SpotifyPlaylists.Search(ctx, q, maxSearchSpotify)
+		if err != nil {
+			h.Logger.Warn("spotify playlist search failed", "error", err)
+		}
+		done <- res
+	}()
+	return func() []spotifyweb.PlaylistSummary { return <-done }
+}
 
 // Songs extracts just the song hits, in ranked order — a convenience for
 // callers (mainly tests) that only want the flat song list.
@@ -444,7 +484,7 @@ func searchCounts(r *http.Request) (artistCount, albumCount, songCount, playlist
 // remote-provider results), ranked together by relevance to the query.
 //
 // @Summary      Search the catalog
-// @Description  Searches artists, albums, songs, public playlists and radio stations (merging remote-provider results when enabled), returned as one list ranked by relevance to the query. `type` scopes the search server-side to just that result type.
+// @Description  Searches artists, albums, songs, public playlists and radio stations (merging remote-provider results when enabled, plus public Spotify playlists when the spotifySearch setting is on), returned as one list ranked by relevance to the query. `type` scopes the search server-side to just that result type.
 // @Tags         catalog
 // @Security     BearerAuth
 // @Produce      json
@@ -460,6 +500,7 @@ func (h *Handler) handleSearch(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query().Get("q")
 	searchType := r.URL.Query().Get("type")
 	artistCount, albumCount, songCount, playlistCount := searchCounts(r)
+	spotifyHits := h.searchSpotify(r, q, searchType)
 	res, err := h.library.Search(r.Context(), userFrom(r.Context()).ID, q, artistCount, albumCount, songCount, playlistCount)
 	if err != nil {
 		writeServiceError(w, err)
@@ -504,6 +545,11 @@ func (h *Handler) handleSearch(w http.ResponseWriter, r *http.Request) {
 				matched++
 			}
 		}
+	}
+
+	for _, p := range spotifyHits() {
+		v := spotifyPlaylistView{ID: p.ID, Name: p.Name, Owner: p.Owner, CoverArt: models.RemoteCoverID(p.ImageURL)}
+		hits = append(hits, rankedHit{p.Name, searchHitView{Type: "spotifyPlaylist", Spotify: &v}})
 	}
 
 	sort.SliceStable(hits, func(i, j int) bool {
@@ -579,4 +625,32 @@ func (h *Handler) handleSongsByGenre(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeResource(w, http.StatusOK, map[string]any{"songs": trackEntriesToSongViews(tracks)})
+}
+
+// handleOpenSpotifyPlaylist opens a public Spotify playlist found by search as
+// an on-demand, read-only playlist (nothing is imported).
+//
+// @Summary      Open a Spotify playlist
+// @Description  Returns the local on-demand mirror of a public Spotify playlist (fetched from Spotify when missing or older than a week). Its tracks resolve lazily at play time like any federated playlist; subscribe to it to keep it in the library, refreshed weekly. 404 when the spotifySearch setting is off.
+// @Tags         playlists
+// @Security     BearerAuth
+// @Produce      json
+// @Param        spotifyId  path  string  true  "Spotify playlist id"
+// @Success      200  {object}  playlistView
+// @Failure      401  {object}  errorResponse
+// @Failure      404  {object}  errorResponse
+// @Failure      502  {object}  errorResponse
+// @Router       /spotify-playlists/{spotifyId}/open [post]
+func (h *Handler) handleOpenSpotifyPlaylist(w http.ResponseWriter, r *http.Request) {
+	if h.SpotifyPlaylists == nil || !h.SpotifyPlaylists.Enabled() {
+		writeError(w, http.StatusNotFound, "not_found", "spotify playlists are disabled")
+		return
+	}
+	p, err := h.SpotifyPlaylists.Open(r.Context(), pathParam(r, "spotifyId"))
+	if err != nil {
+		h.Logger.Warn("spotify playlist open failed", "error", err)
+		writeError(w, http.StatusBadGateway, "spotify_unavailable", "could not load this Spotify playlist")
+		return
+	}
+	writeResource(w, http.StatusOK, toPlaylistView(p, nil))
 }

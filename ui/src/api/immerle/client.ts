@@ -357,6 +357,16 @@ export class ImmerleClient {
   }
 
   /**
+   * Opens a public Spotify playlist found by search as an on-demand,
+   * read-only playlist (nothing is imported) and returns it; navigate to its id.
+   */
+  async openSpotifyPlaylist(spotifyId: string): Promise<Playlist> {
+    const { data, error } = await this.api.POST('/spotify-playlists/{spotifyId}/open', { params: { path: { spotifyId } } });
+    if (error) throw apiErr(error, 'spotify.openPlaylist');
+    return toPlaylist(data);
+  }
+
+  /**
    * Playlist CRUD over the native REST API, normalized into the app's domain
    * types — drop-in replacements for the Subsonic playlist methods. (Public /
    * collaborative playlist ops live in their own native methods below.)

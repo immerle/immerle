@@ -79,6 +79,9 @@ type RuntimeSettingsDTO struct {
 	Logs struct {
 		RetentionDays int `json:"retentionDays" example:"30"`
 	} `json:"logs"`
+	SpotifySearch struct {
+		Enabled bool `json:"enabled" example:"false"`
+	} `json:"spotifySearch"`
 }
 
 // FederationUpdateDTO is the body of PATCH /admin/federation: the instance
