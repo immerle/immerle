@@ -27,6 +27,8 @@ interface SearchUIState {
   setTypeFilter: (f: SearchTypeFilter) => void;
   loadRecents: () => Promise<void>;
   addRecent: (q: string) => void;
+  removeRecent: (q: string) => void;
+  clearRecents: () => void;
 }
 
 export const useSearchUI = create<SearchUIState>((set, get) => ({
@@ -44,7 +46,16 @@ export const useSearchUI = create<SearchUIState>((set, get) => ({
   loadRecents: async () => {
     try {
       const raw = await AsyncStorage.getItem(RECENTS_KEY);
-      if (raw) set({ recents: JSON.parse(raw) as string[] });
+      if (raw) {
+        const parsed: unknown = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          set({
+            recents: parsed
+              .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+              .slice(0, MAX_RECENTS),
+          });
+        }
+      }
     } catch {
       /* ignore */
     }
@@ -54,7 +65,17 @@ export const useSearchUI = create<SearchUIState>((set, get) => ({
     if (!query) return;
     const recents = [query, ...get().recents.filter((r) => r !== query)].slice(0, MAX_RECENTS);
     set({ recents });
-    void AsyncStorage.setItem(RECENTS_KEY, JSON.stringify(recents));
+    void AsyncStorage.setItem(RECENTS_KEY, JSON.stringify(recents)).catch(() => undefined);
+  },
+  removeRecent: (query) => {
+    const recents = get().recents.filter((recent) => recent !== query);
+    if (recents.length === get().recents.length) return;
+    set({ recents });
+    void AsyncStorage.setItem(RECENTS_KEY, JSON.stringify(recents)).catch(() => undefined);
+  },
+  clearRecents: () => {
+    set({ recents: [] });
+    void AsyncStorage.removeItem(RECENTS_KEY).catch(() => undefined);
   },
 }));
 

@@ -28,17 +28,19 @@ const userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 
 // Track is a single playlist track as returned by Spotify's web player API.
 type Track struct {
 	Title    string
-	Artist   string
+	Artist   string   // every credited artist, comma-joined (display)
+	Artists  []string // the same, one per entry; Artists[0] is the main one
 	Album    string
+	CoverURL string // album cover, may be empty
 	Duration time.Duration
 	URI      string
 }
 
-// Playlist is a public Spotify playlist's tracks. Spotify's pathfinder query
-// used here (mirroring the web player's own scroll-pagination call) doesn't
-// return the playlist's display name, only its content.
+// Playlist is a public Spotify playlist: its display name, cover and tracks.
 type Playlist struct {
-	Tracks []Track
+	Name     string
+	ImageURL string
+	Tracks   []Track
 }
 
 // Client fetches public Spotify playlists. The zero value is not usable; build
@@ -68,18 +70,21 @@ func (c *Client) FetchPlaylist(ctx context.Context, ref string) (Playlist, error
 		return Playlist{}, err
 	}
 
-	var tracks []Track
+	var pl Playlist
 	for offset := 0; ; offset += pageSize {
-		page, total, err := fetchTracksPage(ctx, c.http, tok, id, offset, pageSize)
+		page, total, err := fetchPage(ctx, c.http, tok, id, offset, pageSize)
 		if err != nil {
 			return Playlist{}, err
 		}
-		tracks = append(tracks, page...)
-		if len(page) == 0 || offset+pageSize >= total {
+		if offset == 0 {
+			pl.Name, pl.ImageURL = page.Name, page.ImageURL
+		}
+		pl.Tracks = append(pl.Tracks, page.Tracks...)
+		if len(page.Tracks) == 0 || offset+pageSize >= total {
 			break
 		}
 	}
-	return Playlist{Tracks: tracks}, nil
+	return pl, nil
 }
 
 // token returns a still-valid access token, minting a fresh one if the cached

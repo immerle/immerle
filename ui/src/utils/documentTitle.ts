@@ -46,7 +46,6 @@ const ADMIN_SUB: Record<string, string> = {
   scan: 'navigation.scan',
   settings: 'settings.title',
   users: 'navigation.users',
-  tracks: 'navigation.tracks',
   radio: 'radio.manageTitle',
   federation: 'navigation.federation',
   logs: 'navigation.logs',

@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS provider_cache (
     id         TEXT PRIMARY KEY,
     provider   TEXT NOT NULL,
     query_hash TEXT NOT NULL,
-    response   BLOB NOT NULL,
+    response   BYTEA NOT NULL,
     created_at INTEGER NOT NULL,
     UNIQUE (provider, query_hash)
 );

@@ -88,6 +88,7 @@ func (h *Handler) handleSettingsUpdate(w http.ResponseWriter, r *http.Request) {
 	next.Scan = merged.Scan
 	next.Cleanup = merged.Cleanup
 	next.Logs = merged.Logs
+	next.SpotifySearch = merged.SpotifySearch
 	// Federation: only the operator-editable fields. The instance UUID, sqid, name
 	// and private key come from the hub (bootstrap / /admin/federation), never from
 	// this generic endpoint.

@@ -16,6 +16,21 @@ permissions:
 jobs:
   build-test:
     runs-on: ubuntu-latest
+    # Throwaway Postgres so TestMigrate checks the migrations on both dialects.
+    services:
+      postgres:
+        image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 15
+    env:
+      IMMERLE_TEST_POSTGRES_DSN: postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
@@ -42,6 +57,11 @@ jobs:
 
       - name: Test
         run: go test -race ./...
+
+      - name: Test (Postgres)
+        run: go test ./...
+        env:
+          IMMERLE_TEST_DB_DSN: ${{ env.IMMERLE_TEST_POSTGRES_DSN }}
 
       - name: Build
         run: CGO_ENABLED=0 go build -o bin/immerle ./cmd/immerle

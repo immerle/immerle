@@ -119,7 +119,8 @@ type MusicFolders struct {
 
 // MusicFolder is a configured library root.
 type MusicFolder struct {
-	ID   string `xml:"id,attr" json:"id"`
+	// ID is an int per the Subsonic spec; strict clients (e.g. Arpeggi) reject a string.
+	ID   int    `xml:"id,attr" json:"id"`
 	Name string `xml:"name,attr" json:"name"`
 }
 

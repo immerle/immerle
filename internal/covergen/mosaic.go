@@ -1,4 +1,4 @@
-package federation
+package covergen
 
 import (
 	"bytes"
@@ -16,14 +16,16 @@ import (
 // across generated covers).
 const mosaicSize = 1000
 
-var errNoCovers = errors.New("federation: no covers to compose")
+// ErrNoCovers is returned by RenderMosaic when no tile could be decoded.
+var ErrNoCovers = errors.New("covergen: no covers to compose")
 
-// renderMosaic composes up to 4 cover images into a single square JPEG,
+// RenderMosaic composes up to 4 cover images into a single square JPEG,
 // mirroring the client's PlaylistMosaic layout exactly (1 cover fills the
 // square; 2 alternate diagonally; 3 cycle to fill the fourth cell; 4+ are used
-// as-is) so the cover pushed to the hub matches what's shown locally.
+// as-is) so a cover pushed to the hub or served to a Subsonic client matches what's
+// shown locally.
 // Undecodable tiles are skipped; an empty or fully-undecodable input errors.
-func renderMosaic(tiles [][]byte) ([]byte, string, error) {
+func RenderMosaic(tiles [][]byte) ([]byte, string, error) {
 	imgs := make([]image.Image, 0, len(tiles))
 	for _, t := range tiles {
 		img, _, err := image.Decode(bytes.NewReader(t))
@@ -33,7 +35,7 @@ func renderMosaic(tiles [][]byte) ([]byte, string, error) {
 		imgs = append(imgs, img)
 	}
 	if len(imgs) == 0 {
-		return nil, "", errNoCovers
+		return nil, "", ErrNoCovers
 	}
 	if len(imgs) == 1 {
 		return encodeSquareJPEG(imgs[0], mosaicSize)

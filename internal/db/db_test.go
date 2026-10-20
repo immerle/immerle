@@ -2,8 +2,11 @@ package db
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/pressly/goose/v3"
 )
 
 func TestOpenSqlite(t *testing.T) {
@@ -40,21 +43,50 @@ func TestOpenUnsupportedDriver(t *testing.T) {
 	}
 }
 
+// TestMigrate runs every migration up, all the way down, then up again, so a
+// dialect-specific statement in either direction fails here instead of at
+// startup. Postgres runs only when IMMERLE_TEST_POSTGRES_DSN is set (CI sets it).
 func TestMigrate(t *testing.T) {
-	dsn := filepath.Join(t.TempDir(), "test.db")
-	database, err := Open("sqlite", dsn)
-	if err != nil {
-		t.Fatalf("Open: %v", err)
+	dsns := map[string]string{
+		"sqlite":   filepath.Join(t.TempDir(), "test.db"),
+		"postgres": os.Getenv("IMMERLE_TEST_POSTGRES_DSN"),
 	}
-	defer database.Close()
+	for driver, dsn := range dsns {
+		t.Run(driver, func(t *testing.T) {
+			if dsn == "" {
+				t.Skip("IMMERLE_TEST_POSTGRES_DSN not set")
+			}
+			database, err := Open(driver, dsn)
+			if err != nil {
+				t.Fatalf("Open: %v", err)
+			}
+			defer database.Close()
 
-	if err := database.Migrate(context.Background()); err != nil {
-		t.Fatalf("Migrate: %v", err)
-	}
+			ctx := context.Background()
+			if err := database.Migrate(ctx); err != nil {
+				t.Fatalf("Migrate: %v", err)
+			}
+			if err := goose.DownToContext(ctx, database.DB, "migrations", 0); err != nil {
+				t.Fatalf("migrate down: %v", err)
+			}
+			if err := database.Migrate(ctx); err != nil {
+				t.Fatalf("Migrate after down: %v", err)
+			}
 
-	var name string
-	if err := database.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='tracks'").Scan(&name); err != nil {
-		t.Fatalf("expected tracks table after migration: %v", err)
+			var n int
+			if err := database.QueryRow("SELECT COUNT(*) FROM tracks").Scan(&n); err != nil {
+				t.Fatalf("expected tracks table after migration: %v", err)
+			}
+			if driver == "postgres" {
+				// Millisecond timestamps overflow int4 (#312).
+				err := database.QueryRow(`SELECT COUNT(*) FROM information_schema.columns
+					WHERE table_schema = current_schema() AND data_type = 'integer'
+					  AND table_name <> 'goose_db_version'`).Scan(&n)
+				if err != nil || n != 0 {
+					t.Fatalf("int4 columns left after migration: %d (%v)", n, err)
+				}
+			}
+		})
 	}
 }
 

@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Modal, Pressable, ScrollView, Switch, Text, View } from 'react-native';
+import { ReactNode, useEffect, useState } from 'react';
+import { Pressable, Switch, Text, View } from 'react-native';
 import { Stack } from 'expo-router';
 import {
   useChartsSyncMutation,
@@ -17,7 +17,7 @@ import { useConcertsAdmin, useUpdateConcertsConfig, useConcertsSyncMutation } fr
 import { useLastFmAdmin, useUpdateLastFmAdminConfig } from '../../src/query/lastfm';
 import { useAuth } from '../../src/auth/store';
 import { RuntimeSettingsDTO } from '../../src/api/immerleApi';
-import { Badge, Button, Card, ErrorState, Field, IconButton, Loading, Select } from '../../src/components/ui';
+import { Badge, Button, Card, ErrorState, Field, Loading, Select } from '../../src/components/ui';
 import { AdminHeader, AdminScroll } from '../../src/components/AdminUI';
 import { Ionicon } from '../../src/components/Ionicon';
 import { useColors } from '../../src/theme/colors';
@@ -36,6 +36,15 @@ const RESTART_LABEL_KEYS: Record<string, string> = {
 };
 
 type SectionKey = 'auth' | 'ldap' | 'server' | 'transcode' | 'cleanup' | 'charts' | 'concerts' | 'lastfm' | 'logs' | 'features';
+
+/** Sections grouped by theme, in display order. */
+const GROUPS: { titleKey: string; keys: SectionKey[] }[] = [
+  { titleKey: 'admin.settings.groupAccess', keys: ['auth', 'ldap', 'server'] },
+  { titleKey: 'admin.settings.groupPlayback', keys: ['transcode'] },
+  { titleKey: 'admin.settings.groupContent', keys: ['features', 'charts', 'concerts'] },
+  { titleKey: 'admin.settings.groupIntegrations', keys: ['lastfm'] },
+  { titleKey: 'admin.settings.groupMaintenance', keys: ['cleanup', 'logs'] },
+];
 
 interface Section {
   key: SectionKey;
@@ -69,11 +78,11 @@ function toForm(s: RuntimeSettingsDTO): Form {
   };
 }
 
-/** Runtime settings admin. Each group opens in a bottom sheet; hot-reload fields
- * apply instantly, restart-only changes raise a "restart pending" banner. */
+/** Runtime settings admin, grouped by theme. Each section expands in place;
+ * hot-reload fields apply instantly, restart-only changes raise a "restart
+ * pending" banner. */
 export default function AdminSettings() {
   const t = useT();
-  const colors = useColors();
   const COUNTRY_OPTIONS = [
     { value: '', label: t('admin.settings.countryNotSet') },
     ...COUNTRIES.map((c) => ({ value: c.code, label: c.name })),
@@ -100,7 +109,7 @@ export default function AdminSettings() {
   const lastFm = useLastFmAdmin();
   const updateLastFm = useUpdateLastFmAdminConfig();
   const [form, setForm] = useState<Form | null>(null);
-  const [sheet, setSheet] = useState<SectionKey | null>(null);
+  const [open, setOpen] = useState<Set<SectionKey>>(new Set());
   const [removed, setRemoved] = useState<number | null>(null);
   const [synced, setSynced] = useState<number | null>(null);
   const [concertsSynced, setConcertsSynced] = useState<number | null>(null);
@@ -151,21 +160,19 @@ export default function AdminSettings() {
 
   const pending = q.data?.pendingRestart ?? [];
   const profiles = q.data?.settings.transcode?.profiles ?? [];
-  const rows = SECTIONS.filter((s) => {
-    if (s.key === 'cleanup') return !!cleanup.data;
-    if (s.key === 'concerts') return !!client?.has('concertDiscovery');
-    if (s.key === 'lastfm') return !!client?.has('lastFm');
-    if (s.key === 'features')
-      return (
-        !!client?.has('smartPlaylists') ||
-        !!client?.has('internetRadio') ||
-        !!client?.has('wrapped') ||
-        !!client?.has('offlineDownloads') ||
-        !!client?.has('hallOfFame')
-      );
+  const visible = (key: SectionKey) => {
+    if (key === 'cleanup') return !!cleanup.data;
+    if (key === 'concerts') return !!client?.has('concertDiscovery');
+    if (key === 'lastfm') return !!client?.has('lastFm');
     return true;
-  });
-  const active = SECTIONS.find((s) => s.key === sheet);
+  };
+  const toggle = (key: SectionKey) =>
+    setOpen((cur) => {
+      const next = new Set(cur);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
 
   return (
     <>
@@ -186,278 +193,296 @@ export default function AdminSettings() {
           </View>
         ) : null}
 
-        {rows.map((s) => (
-          <SettingRow key={s.key} section={s} onPress={() => setSheet(s.key)} />
-        ))}
-      </AdminScroll>
-
-      <Modal transparent visible={!!sheet} animationType="slide" onRequestClose={() => setSheet(null)}>
-        <Pressable className="flex-1 justify-end bg-black/50" onPress={() => setSheet(null)}>
-          <Pressable className="max-h-[85%] rounded-t-3xl bg-surface pb-6 pt-2" onPress={(e) => e.stopPropagation()}>
-            <View className="mb-1 items-center pt-1">
-              <View className="h-1 w-10 rounded-full bg-border" />
+        {GROUPS.map((g) => {
+          const sections = g.keys.filter(visible).map((k) => SECTIONS.find((sec) => sec.key === k)!);
+          if (!sections.length) return null;
+          return (
+            <View key={g.titleKey} className="gap-2.5">
+              <Text className="px-1 pt-2 text-xs font-semibold uppercase tracking-wider text-muted">{t(g.titleKey)}</Text>
+              {sections.map((sec) => (
+                <SettingSection key={sec.key} section={sec} open={open.has(sec.key)} onToggle={() => toggle(sec.key)}>
+                  {renderBody(sec.key)}
+                </SettingSection>
+              ))}
             </View>
-            {active ? (
-              <View className="flex-row items-center gap-2.5 px-5 pb-2 pt-1">
-                <View className="h-9 w-9 items-center justify-center rounded-xl" style={{ backgroundColor: active.color + '22' }}>
-                  <Ionicon name={active.icon} size={18} color={active.color} />
-                </View>
-                <Text className="flex-1 text-lg font-bold tracking-tight text-foreground">{active.title}</Text>
-                <IconButton name="close" color={colors.muted} onPress={() => setSheet(null)} accessibilityLabel={t('admin.settings.close')} />
-              </View>
-            ) : null}
-
-            <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: 8, gap: 12 }} keyboardShouldPersistTaps="handled">
-              {sheet === 'auth' ? (
-                <>
-                  <Field label={t('admin.settings.deviceTokenTtl')} keyboardType="number-pad" value={form.ttl} onChangeText={(v) => set('ttl', v)} />
-                  <SaveButton loading={update.isPending} onPress={() => save({ auth: { deviceTokenTtlSeconds: num(form.ttl) } })} />
-                </>
-              ) : null}
-
-              {sheet === 'ldap' ? (
-                <>
-                  <Text className="text-xs text-muted">{t('admin.settings.ldapDescription')}</Text>
-                  <ToggleRow label={t('admin.settings.ldapEnabled')} value={form.ldapEnabled} onChange={(v) => set('ldapEnabled', v)} />
-                  <Field label={t('admin.settings.ldapUrl')} autoCapitalize="none" autoCorrect={false} keyboardType="url" placeholder="ldaps://ldap.example.com:636" value={form.ldapUrl} onChangeText={(v) => set('ldapUrl', v)} />
-                  <Field label={t('admin.settings.ldapBindDn')} autoCapitalize="none" autoCorrect={false} placeholder="uid=%s,ou=people,dc=example,dc=com" value={form.ldapBindDn} onChangeText={(v) => set('ldapBindDn', v)} help={t('admin.settings.ldapBindDnHelp')} />
-                  <SaveButton
-                    loading={update.isPending}
-                    onPress={() => save({ ldap: { enabled: form.ldapEnabled, url: form.ldapUrl, bindDnTemplate: form.ldapBindDn } })}
-                  />
-                </>
-              ) : null}
-
-              {sheet === 'server' ? (
-                <>
-                  <Field label={t('admin.settings.corsLabel')} autoCapitalize="none" placeholder="*" value={form.cors} onChangeText={(v) => set('cors', v)} help={t('admin.settings.corsHelp')} />
-                  <SaveButton
-                    loading={update.isPending}
-                    onPress={() => save({ server: { corsAllowedOrigins: form.cors.split(',').map((o) => o.trim()).filter(Boolean) } })}
-                  />
-                </>
-              ) : null}
-
-              {sheet === 'transcode' ? (
-                <>
-                  <Field label={t('admin.settings.ffmpegPath')} autoCapitalize="none" value={form.ffmpeg} onChangeText={(v) => set('ffmpeg', v)} />
-                  <Field label={t('admin.settings.ffprobePath')} autoCapitalize="none" value={form.ffprobe} onChangeText={(v) => set('ffprobe', v)} />
-                  {profiles.length ? (
-                    <View className="gap-1.5 rounded-xl bg-surface-alt p-3">
-                      <Text className="text-xs font-medium uppercase tracking-wider text-muted">{t('admin.settings.profiles')}</Text>
-                      {profiles.map((p, i) => (
-                        <Text key={i} className="text-sm text-foreground">
-                          {p.name} · {p.format?.toUpperCase()} · {p.bitRate} kbps
-                        </Text>
-                      ))}
-                    </View>
-                  ) : null}
-                  <SaveButton loading={update.isPending} hint={t('admin.settings.restartHint')} onPress={() => save({ transcode: { ffmpegPath: form.ffmpeg, ffprobePath: form.ffprobe } })} />
-                </>
-              ) : null}
-
-              {sheet === 'logs' ? (
-                <>
-                  <Text className="text-xs text-muted">{t('admin.settings.logsDescription')}</Text>
-                  <Field
-                    label={t('admin.settings.logRetention')}
-                    keyboardType="number-pad"
-                    value={form.logRetention}
-                    onChangeText={(v) => set('logRetention', v)}
-                    help={t('admin.settings.logRetentionHelp')}
-                  />
-                  <SaveButton loading={update.isPending} onPress={() => save({ logs: { retentionDays: num(form.logRetention) } })} />
-                </>
-              ) : null}
-
-              {sheet === 'features' ? (
-                <>
-                  <Text className="text-xs text-muted">{t('admin.settings.featuresDescription')}</Text>
-                  {client?.has('smartPlaylists') ? (
-                    <ToggleRow
-                      label={t('admin.settings.smartPlaylistsEnabled')}
-                      value={smart.data ?? false}
-                      onChange={(v) => setSmart.mutate(v)}
-                    />
-                  ) : null}
-                  {client?.has('internetRadio') ? (
-                    <ToggleRow
-                      label={t('admin.settings.radioEnabled')}
-                      value={radio.data ?? false}
-                      onChange={(v) => setRadio.mutate(v)}
-                    />
-                  ) : null}
-                  {client?.has('wrapped') ? (
-                    <ToggleRow
-                      label={t('admin.settings.wrappedEnabled')}
-                      value={wrapped.data ?? false}
-                      onChange={(v) => setWrapped.mutate(v)}
-                    />
-                  ) : null}
-                  {client?.has('offlineDownloads') ? (
-                    <ToggleRow
-                      label={t('admin.settings.offlineEnabled')}
-                      value={offline.data ?? false}
-                      onChange={(v) => setOffline.mutate(v)}
-                    />
-                  ) : null}
-                  {client?.has('hallOfFame') ? (
-                    <ToggleRow
-                      label={t('admin.settings.hallOfFameEnabled')}
-                      value={hallOfFame.data ?? false}
-                      onChange={(v) => setHallOfFame.mutate(v)}
-                    />
-                  ) : null}
-                </>
-              ) : null}
-
-              {sheet === 'cleanup' && cleanup.data ? (
-                <>
-                  <Text className="text-xs text-muted">
-                    {t('admin.settings.cleanupDescription', {
-                      days: Math.round(cleanup.data.maxAgeSeconds / 86400),
-                      hours: Math.round(cleanup.data.intervalSeconds / 3600),
-                    })}
-                  </Text>
-                  <ToggleRow label={t('admin.settings.autoSweep')} value={cleanup.data.enabled} onChange={(v) => cleanupM.setEnabled.mutate(v)} />
-                  <Button
-                    title={removed != null ? t('admin.settings.removedCount', { count: removed }) : t('admin.settings.runCleanup')}
-                    icon="trash-outline"
-                    variant="secondary"
-                    loading={cleanupM.run.isPending}
-                    onPress={() => cleanupM.run.mutate(undefined, { onSuccess: (n) => setRemoved(n) })}
-                  />
-                </>
-              ) : null}
-              {sheet === 'charts' ? (
-                <>
-                  <Text className="text-xs text-muted">{t('admin.settings.chartsDescription')}</Text>
-                  <Button
-                    title={synced != null ? t('admin.settings.chartsSyncedCount', { count: synced }) : t('admin.settings.runChartsSync')}
-                    icon="trending-up"
-                    variant="secondary"
-                    loading={chartsSync.isPending}
-                    onPress={() => chartsSync.mutate(undefined, { onSuccess: (n) => setSynced(n) })}
-                  />
-                </>
-              ) : null}
-
-              {sheet === 'concerts' ? (
-                <>
-                  <Text className="text-xs text-muted">{t('admin.settings.concertsDescription')}</Text>
-                  <ToggleRow label={t('admin.settings.concertsEnabled')} value={concertsEnabled} onChange={setConcertsEnabled} />
-                  <View className="gap-1.5">
-                    <Text className="text-sm font-medium text-muted">{t('admin.settings.concertsCountry')}</Text>
-                    <Select value={concertsCountry} options={COUNTRY_OPTIONS} onChange={setConcertsCountry} />
-                    <Text className="text-xs text-muted">
-                      {t('admin.settings.concertsSources', { list: concertProviderNames(concertsCountry) })}
-                    </Text>
-                  </View>
-                  {concertProviderApplies('Ticketmaster', concertsCountry) ? (
-                    <Field
-                      label={t('admin.settings.ticketmasterKey')}
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      placeholder={concerts.data?.ticketmasterConfigured ? t('admin.settings.keyConfigured') : t('admin.settings.keyNotConfigured')}
-                      value={tmKey}
-                      onChangeText={setTmKey}
-                      help={!concertProviderApplies('Skiddle', concertsCountry) ? t('admin.settings.concertsKeysHelp') : undefined}
-                    />
-                  ) : null}
-                  {concertProviderApplies('Skiddle', concertsCountry) ? (
-                    <Field
-                      label={t('admin.settings.skiddleKey')}
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      placeholder={concerts.data?.skiddleConfigured ? t('admin.settings.keyConfigured') : t('admin.settings.keyNotConfigured')}
-                      value={skKey}
-                      onChangeText={setSkKey}
-                      help={t('admin.settings.concertsKeysHelp')}
-                    />
-                  ) : null}
-                  <SaveButton
-                    loading={updateConcerts.isPending}
-                    onPress={() =>
-                      updateConcerts.mutate(
-                        {
-                          enabled: concertsEnabled,
-                          country: concertsCountry,
-                          ...(tmKey ? { ticketmasterApiKey: tmKey } : {}),
-                          ...(skKey ? { skiddleApiKey: skKey } : {}),
-                        },
-                        {
-                          onSuccess: () => {
-                            setTmKey('');
-                            setSkKey('');
-                          },
-                        },
-                      )
-                    }
-                  />
-                  <Button
-                    title={concertsSynced != null ? t('admin.settings.concertsSyncedCount', { count: concertsSynced }) : t('admin.settings.runConcertsSync')}
-                    icon="megaphone-outline"
-                    variant="secondary"
-                    loading={concertsSync.isPending}
-                    onPress={() => concertsSync.mutate(undefined, { onSuccess: (n) => setConcertsSynced(n) })}
-                  />
-                </>
-              ) : null}
-
-              {sheet === 'lastfm' ? (
-                <>
-                  <Text className="text-xs text-muted">{t('admin.settings.lastFmDescription')}</Text>
-                  <ToggleRow label={t('admin.settings.lastFmEnabled')} value={lastFmEnabled} onChange={setLastFmEnabled} />
-                  <Field
-                    label={t('admin.settings.lastFmApiKey')}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    placeholder={lastFm.data?.configured ? t('admin.settings.keyConfigured') : t('admin.settings.keyNotConfigured')}
-                    value={lastFmKey}
-                    onChangeText={setLastFmKey}
-                  />
-                  <Field
-                    label={t('admin.settings.lastFmApiSecret')}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    placeholder={lastFm.data?.configured ? t('admin.settings.keyConfigured') : t('admin.settings.keyNotConfigured')}
-                    value={lastFmSecret}
-                    onChangeText={setLastFmSecret}
-                    help={t('admin.settings.lastFmKeysHelp')}
-                  />
-                  <SaveButton
-                    loading={updateLastFm.isPending}
-                    onPress={() =>
-                      updateLastFm.mutate(
-                        {
-                          enabled: lastFmEnabled,
-                          ...(lastFmKey ? { apiKey: lastFmKey } : {}),
-                          ...(lastFmSecret ? { apiSecret: lastFmSecret } : {}),
-                        },
-                        {
-                          onSuccess: () => {
-                            setLastFmKey('');
-                            setLastFmSecret('');
-                          },
-                        },
-                      )
-                    }
-                  />
-                </>
-              ) : null}
-            </ScrollView>
-          </Pressable>
-        </Pressable>
-      </Modal>
+          );
+        })}
+      </AdminScroll>
     </>
   );
+
+  function renderBody(sheet: SectionKey) {
+    if (!form) return null;
+    return (
+      <>
+        {sheet === 'auth' ? (
+          <>
+            <Field label={t('admin.settings.deviceTokenTtl')} keyboardType="number-pad" value={form.ttl} onChangeText={(v) => set('ttl', v)} />
+            <SaveButton loading={update.isPending} onPress={() => save({ auth: { deviceTokenTtlSeconds: num(form.ttl) } })} />
+          </>
+        ) : null}
+
+        {sheet === 'ldap' ? (
+          <>
+            <Text className="text-xs text-muted">{t('admin.settings.ldapDescription')}</Text>
+            <ToggleRow label={t('admin.settings.ldapEnabled')} value={form.ldapEnabled} onChange={(v) => set('ldapEnabled', v)} />
+            <Field label={t('admin.settings.ldapUrl')} autoCapitalize="none" autoCorrect={false} keyboardType="url" placeholder="ldaps://ldap.example.com:636" value={form.ldapUrl} onChangeText={(v) => set('ldapUrl', v)} />
+            <Field label={t('admin.settings.ldapBindDn')} autoCapitalize="none" autoCorrect={false} placeholder="uid=%s,ou=people,dc=example,dc=com" value={form.ldapBindDn} onChangeText={(v) => set('ldapBindDn', v)} help={t('admin.settings.ldapBindDnHelp')} />
+            <SaveButton
+              loading={update.isPending}
+              onPress={() => save({ ldap: { enabled: form.ldapEnabled, url: form.ldapUrl, bindDnTemplate: form.ldapBindDn } })}
+            />
+          </>
+        ) : null}
+
+        {sheet === 'server' ? (
+          <>
+            <Field label={t('admin.settings.corsLabel')} autoCapitalize="none" placeholder="*" value={form.cors} onChangeText={(v) => set('cors', v)} help={t('admin.settings.corsHelp')} />
+            <SaveButton
+              loading={update.isPending}
+              onPress={() => save({ server: { corsAllowedOrigins: form.cors.split(',').map((o) => o.trim()).filter(Boolean) } })}
+            />
+          </>
+        ) : null}
+
+        {sheet === 'transcode' ? (
+          <>
+            <Field label={t('admin.settings.ffmpegPath')} autoCapitalize="none" value={form.ffmpeg} onChangeText={(v) => set('ffmpeg', v)} />
+            <Field label={t('admin.settings.ffprobePath')} autoCapitalize="none" value={form.ffprobe} onChangeText={(v) => set('ffprobe', v)} />
+            {profiles.length ? (
+              <View className="gap-1.5 rounded-xl bg-surface-alt p-3">
+                <Text className="text-xs font-medium uppercase tracking-wider text-muted">{t('admin.settings.profiles')}</Text>
+                {profiles.map((p, i) => (
+                  <Text key={i} className="text-sm text-foreground">
+                    {p.name} · {p.format?.toUpperCase()} · {p.bitRate} kbps
+                  </Text>
+                ))}
+              </View>
+            ) : null}
+            <SaveButton loading={update.isPending} hint={t('admin.settings.restartHint')} onPress={() => save({ transcode: { ffmpegPath: form.ffmpeg, ffprobePath: form.ffprobe } })} />
+          </>
+        ) : null}
+
+        {sheet === 'logs' ? (
+          <>
+            <Text className="text-xs text-muted">{t('admin.settings.logsDescription')}</Text>
+            <Field
+              label={t('admin.settings.logRetention')}
+              keyboardType="number-pad"
+              value={form.logRetention}
+              onChangeText={(v) => set('logRetention', v)}
+              help={t('admin.settings.logRetentionHelp')}
+            />
+            <SaveButton loading={update.isPending} onPress={() => save({ logs: { retentionDays: num(form.logRetention) } })} />
+          </>
+        ) : null}
+
+        {sheet === 'features' ? (
+          <>
+            <Text className="text-xs text-muted">{t('admin.settings.featuresDescription')}</Text>
+            {client?.has('smartPlaylists') ? (
+              <ToggleRow
+                label={t('admin.settings.smartPlaylistsEnabled')}
+                value={smart.data ?? false}
+                onChange={(v) => setSmart.mutate(v)}
+              />
+            ) : null}
+            {client?.has('internetRadio') ? (
+              <ToggleRow
+                label={t('admin.settings.radioEnabled')}
+                value={radio.data ?? false}
+                onChange={(v) => setRadio.mutate(v)}
+              />
+            ) : null}
+            {client?.has('wrapped') ? (
+              <ToggleRow
+                label={t('admin.settings.wrappedEnabled')}
+                value={wrapped.data ?? false}
+                onChange={(v) => setWrapped.mutate(v)}
+              />
+            ) : null}
+            {client?.has('offlineDownloads') ? (
+              <ToggleRow
+                label={t('admin.settings.offlineEnabled')}
+                value={offline.data ?? false}
+                onChange={(v) => setOffline.mutate(v)}
+              />
+            ) : null}
+            {client?.has('hallOfFame') ? (
+              <ToggleRow
+                label={t('admin.settings.hallOfFameEnabled')}
+                value={hallOfFame.data ?? false}
+                onChange={(v) => setHallOfFame.mutate(v)}
+              />
+            ) : null}
+            <ToggleRow
+              label={t('admin.settings.spotifySearchEnabled')}
+              value={q.data?.settings.spotifySearch?.enabled ?? false}
+              onChange={(v) => save({ spotifySearch: { enabled: v } })}
+            />
+            <Text className="text-xs text-muted">{t('admin.settings.spotifySearchHelp')}</Text>
+          </>
+        ) : null}
+
+        {sheet === 'cleanup' && cleanup.data ? (
+          <>
+            <Text className="text-xs text-muted">
+              {t('admin.settings.cleanupDescription', {
+                days: Math.round(cleanup.data.maxAgeSeconds / 86400),
+                hours: Math.round(cleanup.data.intervalSeconds / 3600),
+              })}
+            </Text>
+            <ToggleRow label={t('admin.settings.autoSweep')} value={cleanup.data.enabled} onChange={(v) => cleanupM.setEnabled.mutate(v)} />
+            <Button
+              title={removed != null ? t('admin.settings.removedCount', { count: removed }) : t('admin.settings.runCleanup')}
+              icon="trash-outline"
+              variant="secondary"
+              loading={cleanupM.run.isPending}
+              onPress={() => cleanupM.run.mutate(undefined, { onSuccess: (n) => setRemoved(n) })}
+            />
+          </>
+        ) : null}
+        {sheet === 'charts' ? (
+          <>
+            <Text className="text-xs text-muted">{t('admin.settings.chartsDescription')}</Text>
+            <Button
+              title={synced != null ? t('admin.settings.chartsSyncedCount', { count: synced }) : t('admin.settings.runChartsSync')}
+              icon="trending-up"
+              variant="secondary"
+              loading={chartsSync.isPending}
+              onPress={() => chartsSync.mutate(undefined, { onSuccess: (n) => setSynced(n) })}
+            />
+          </>
+        ) : null}
+
+        {sheet === 'concerts' ? (
+          <>
+            <Text className="text-xs text-muted">{t('admin.settings.concertsDescription')}</Text>
+            <ToggleRow label={t('admin.settings.concertsEnabled')} value={concertsEnabled} onChange={setConcertsEnabled} />
+            <View className="gap-1.5">
+              <Text className="text-sm font-medium text-muted">{t('admin.settings.concertsCountry')}</Text>
+              <Select value={concertsCountry} options={COUNTRY_OPTIONS} onChange={setConcertsCountry} />
+              <Text className="text-xs text-muted">
+                {t('admin.settings.concertsSources', { list: concertProviderNames(concertsCountry) })}
+              </Text>
+            </View>
+            {concertProviderApplies('Ticketmaster', concertsCountry) ? (
+              <Field
+                label={t('admin.settings.ticketmasterKey')}
+                autoCapitalize="none"
+                autoCorrect={false}
+                placeholder={concerts.data?.ticketmasterConfigured ? t('admin.settings.keyConfigured') : t('admin.settings.keyNotConfigured')}
+                value={tmKey}
+                onChangeText={setTmKey}
+                help={!concertProviderApplies('Skiddle', concertsCountry) ? t('admin.settings.concertsKeysHelp') : undefined}
+              />
+            ) : null}
+            {concertProviderApplies('Skiddle', concertsCountry) ? (
+              <Field
+                label={t('admin.settings.skiddleKey')}
+                autoCapitalize="none"
+                autoCorrect={false}
+                placeholder={concerts.data?.skiddleConfigured ? t('admin.settings.keyConfigured') : t('admin.settings.keyNotConfigured')}
+                value={skKey}
+                onChangeText={setSkKey}
+                help={t('admin.settings.concertsKeysHelp')}
+              />
+            ) : null}
+            <SaveButton
+              loading={updateConcerts.isPending}
+              onPress={() =>
+                updateConcerts.mutate(
+                  {
+                    enabled: concertsEnabled,
+                    country: concertsCountry,
+                    ...(tmKey ? { ticketmasterApiKey: tmKey } : {}),
+                    ...(skKey ? { skiddleApiKey: skKey } : {}),
+                  },
+                  {
+                    onSuccess: () => {
+                      setTmKey('');
+                      setSkKey('');
+                    },
+                  },
+                )
+              }
+            />
+            <Button
+              title={concertsSynced != null ? t('admin.settings.concertsSyncedCount', { count: concertsSynced }) : t('admin.settings.runConcertsSync')}
+              icon="megaphone-outline"
+              variant="secondary"
+              loading={concertsSync.isPending}
+              onPress={() => concertsSync.mutate(undefined, { onSuccess: (n) => setConcertsSynced(n) })}
+            />
+          </>
+        ) : null}
+
+        {sheet === 'lastfm' ? (
+          <>
+            <Text className="text-xs text-muted">{t('admin.settings.lastFmDescription')}</Text>
+            <ToggleRow label={t('admin.settings.lastFmEnabled')} value={lastFmEnabled} onChange={setLastFmEnabled} />
+            <Field
+              label={t('admin.settings.lastFmApiKey')}
+              autoCapitalize="none"
+              autoCorrect={false}
+              placeholder={lastFm.data?.configured ? t('admin.settings.keyConfigured') : t('admin.settings.keyNotConfigured')}
+              value={lastFmKey}
+              onChangeText={setLastFmKey}
+            />
+            <Field
+              label={t('admin.settings.lastFmApiSecret')}
+              autoCapitalize="none"
+              autoCorrect={false}
+              placeholder={lastFm.data?.configured ? t('admin.settings.keyConfigured') : t('admin.settings.keyNotConfigured')}
+              value={lastFmSecret}
+              onChangeText={setLastFmSecret}
+              help={t('admin.settings.lastFmKeysHelp')}
+            />
+            <SaveButton
+              loading={updateLastFm.isPending}
+              onPress={() =>
+                updateLastFm.mutate(
+                  {
+                    enabled: lastFmEnabled,
+                    ...(lastFmKey ? { apiKey: lastFmKey } : {}),
+                    ...(lastFmSecret ? { apiSecret: lastFmSecret } : {}),
+                  },
+                  {
+                    onSuccess: () => {
+                      setLastFmKey('');
+                      setLastFmSecret('');
+                    },
+                  },
+                )
+              }
+            />
+          </>
+        ) : null}
+      </>
+    );
+  }
 }
 
-function SettingRow({ section, onPress }: { section: Section; onPress: () => void }) {
+function SettingSection({
+  section,
+  open,
+  onToggle,
+  children,
+}: {
+  section: Section;
+  open: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+}) {
   const colors = useColors();
   return (
-    <Pressable onPress={onPress} className="active:opacity-70">
-      <Card className="flex-row items-center gap-3">
+    <Card className="gap-3">
+      <Pressable
+        onPress={onToggle}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        className="flex-row items-center gap-3 active:opacity-70"
+      >
         <View className="h-10 w-10 items-center justify-center rounded-xl" style={{ backgroundColor: section.color + '22' }}>
           <Ionicon name={section.icon} size={20} color={section.color} />
         </View>
@@ -465,9 +490,10 @@ function SettingRow({ section, onPress }: { section: Section; onPress: () => voi
           <Text className="text-base font-semibold text-foreground">{section.title}</Text>
           <Text className="text-xs text-muted">{section.subtitle}</Text>
         </View>
-        <Ionicon name="chevron-forward" size={18} color={colors.muted} />
-      </Card>
-    </Pressable>
+        <Ionicon name={open ? 'chevron-up' : 'chevron-down'} size={18} color={colors.muted} />
+      </Pressable>
+      {open ? <View className="gap-3 border-t border-border pt-3">{children}</View> : null}
+    </Card>
   );
 }
 

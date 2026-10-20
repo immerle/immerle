@@ -100,11 +100,19 @@ type RuntimeSettings struct {
 	HallOfFame     HallOfFameRuntime     `json:"hallOfFame"`
 	Concerts       ConcertsRuntime       `json:"concerts"`
 	LastFm         LastFmRuntime         `json:"lastFm"`
+	SpotifySearch  SpotifySearchRuntime  `json:"spotifySearch"`
 }
 
 // SmartPlaylistsRuntime toggles rule-based "smart" playlists (hot-reloadable).
 // When disabled, the smart-playlist endpoints 404 and clients hide them.
 type SmartPlaylistsRuntime struct {
+	Enabled bool `json:"enabled"`
+}
+
+// SpotifySearchRuntime toggles adding public Spotify playlists to the global
+// search results (hot-reloadable). Off by default: it calls Spotify on every
+// search.
+type SpotifySearchRuntime struct {
 	Enabled bool `json:"enabled"`
 }
 

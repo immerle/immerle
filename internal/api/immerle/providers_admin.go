@@ -4,7 +4,6 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/immerle/immerle/internal/api/httputil"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 )
@@ -109,10 +108,6 @@ func (h *Handler) handleProviderUpsert(w http.ResponseWriter, r *http.Request) {
 	}
 	// No name + an endpoint → create a dynamic provider from its URL.
 	if req.Name == "" && req.Endpoint != "" {
-		if err := httputil.ValidateFetchURL(r.Context(), req.Endpoint); err != nil {
-			writeError(w, http.StatusBadRequest, "provider_invalid_config", "endpoint URL is not allowed")
-			return
-		}
 		saved, err := h.Providers.CreateFromURL(r.Context(), req.Endpoint)
 		if err != nil {
 			h.Logger.Warn("provider create from url failed", "endpoint", req.Endpoint, "error", err)

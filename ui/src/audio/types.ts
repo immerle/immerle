@@ -39,6 +39,8 @@ export interface EngineState {
 export interface EngineEvents {
   /** Fired on play/pause/load/end and on track transitions. */
   state: (state: EngineState) => void;
+  /** A loaded audio source failed; the UI can explain why playback stopped. */
+  error: () => void;
   /** High-frequency position updates (≈ once per second). */
   progress: (position: number, duration: number) => void;
   /** A track finished and the engine advanced; carries the new index. */

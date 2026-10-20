@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useDebounced, useSearch } from '../query/search';
+import { useToast } from '../stores/toast';
 import { searchNav, useSearchUI } from '../search/store';
 import { CoverArt } from './CoverArt';
 import { PlaylistCover } from './PlaylistCover';
@@ -24,6 +25,7 @@ const TYPE_LABEL_KEY: Record<SearchHit['type'], string> = {
   song: 'components.search.typeSong',
   playlist: 'components.search.typePlaylist',
   radio: 'components.search.typeRadio',
+  spotifyPlaylist: 'components.search.typeSpotifyPlaylist',
 };
 
 /**
@@ -44,6 +46,8 @@ export function SearchResults({ onClose }: { onClose: () => void }) {
   const recents = useSearchUI((s) => s.recents);
   const setQuery = useSearchUI((s) => s.setQuery);
   const addRecent = useSearchUI((s) => s.addRecent);
+  const removeRecent = useSearchUI((s) => s.removeRecent);
+  const clearRecents = useSearchUI((s) => s.clearRecents);
   const activeIndex = useSearchUI((s) => s.activeIndex);
   const typeFilter = useSearchUI((s) => s.typeFilter);
   const debounced = useDebounced(query, 250);
@@ -51,6 +55,7 @@ export function SearchResults({ onClose }: { onClose: () => void }) {
   const playSongs = usePlayer((s) => s.playSongs);
   const playRadio = usePlayer((s) => s.playRadio);
   const openMenu = useTrackMenu((s) => s.open);
+  const client = useAuth((s) => s.client);
 
   const trimmed = debounced.trim();
   const hits = data ?? [];
@@ -74,6 +79,16 @@ export function SearchResults({ onClose }: { onClose: () => void }) {
         return () => select(() => playSongs(songs, songs.indexOf(hit.song)));
       case 'radio':
         return () => select(() => playRadio({ id: hit.radio.id, name: hit.radio.name, streamUrl: hit.radio.streamUrl, hasCover: hit.radio.hasCover }));
+      case 'spotifyPlaylist':
+        return () =>
+          select(() =>
+            // A plain promise, not a mutation: select() closes (unmounts) the
+            // search right away, which would drop a mutation's callbacks.
+            client!
+              .openSpotifyPlaylist(hit.spotify.id)
+              .then((p) => router.push(`/playlist/${p.id}` as never))
+              .catch(() => useToast.getState().error(t('components.search.spotifyOpenError'))),
+          );
     }
   };
 
@@ -95,17 +110,37 @@ export function SearchResults({ onClose }: { onClose: () => void }) {
     }
     return (
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 12 }}>
-        <Text className="px-4 pb-1 pt-3 text-base font-bold text-foreground">{t('components.search.recentSearches')}</Text>
-        {recents.map((r) => (
+        <View className="flex-row items-center justify-between px-4 pb-1 pt-3">
+          <Text className="text-base font-bold text-foreground">{t('components.search.recentSearches')}</Text>
           <Pressable
-            key={r}
-            onPress={() => setQuery(r)}
-            className="flex-row items-center gap-3 px-4 py-3 active:bg-surface-alt"
+            onPress={clearRecents}
+            accessibilityRole="button"
+            accessibilityLabel={t('components.search.clearAllRecents')}
+            className="rounded px-2 py-1 active:bg-surface-alt"
           >
-            <Ionicon name="time-outline" size={20} color={colors.muted} />
-            <Text className="flex-1 text-base text-foreground">{r}</Text>
-            <Ionicon name="arrow-forward-outline" size={16} color={colors.muted} />
+            <Text className="text-sm font-medium text-muted">{t('components.search.clearAll')}</Text>
           </Pressable>
+        </View>
+        {recents.map((r) => (
+          <View key={r} className="flex-row items-center px-4 active:bg-surface-alt">
+            <Pressable
+              onPress={() => setQuery(r)}
+              className="flex-1 flex-row items-center gap-3 py-3"
+            >
+              <Ionicon name="time-outline" size={20} color={colors.muted} />
+              <Text className="flex-1 text-base text-foreground">{r}</Text>
+              <Ionicon name="arrow-forward-outline" size={16} color={colors.muted} />
+            </Pressable>
+            <Pressable
+              onPress={() => removeRecent(r)}
+              accessibilityRole="button"
+              accessibilityLabel={t('components.search.removeRecent', { query: r })}
+              hitSlop={8}
+              className="ml-1 items-center justify-center rounded p-2 active:bg-surface-alt"
+            >
+              <Ionicon name="close-outline" size={18} color={colors.muted} />
+            </Pressable>
+          </View>
         ))}
       </ScrollView>
     );
@@ -172,6 +207,20 @@ function SearchHitRow({ hit, onPress, onMore }: { hit: SearchHit; onPress: () =>
             </Text>
             <Text numberOfLines={1} className="text-sm text-muted">
               {typeLabel}
+            </Text>
+          </View>
+        </Pressable>
+      );
+    case 'spotifyPlaylist':
+      return (
+        <Pressable onPress={onPress} className="flex-row items-center gap-3 px-4 py-2 active:bg-surface-alt">
+          <CoverArt coverArt={hit.spotify.coverArt} size={44} fallbackIcon="logo-spotify" />
+          <View className="flex-1">
+            <Text numberOfLines={1} className="text-base font-medium text-foreground">
+              {hit.spotify.name}
+            </Text>
+            <Text numberOfLines={1} className="text-sm text-muted">
+              {hit.spotify.owner ? `${typeLabel} · ${hit.spotify.owner}` : typeLabel}
             </Text>
           </View>
         </Pressable>

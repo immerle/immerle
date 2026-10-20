@@ -40,32 +40,35 @@ import (
 	"github.com/immerle/immerle/internal/reccobeats"
 	"github.com/immerle/immerle/internal/scanner"
 	"github.com/immerle/immerle/internal/server"
+	"github.com/immerle/immerle/internal/spotifyplaylists"
+	"github.com/immerle/immerle/internal/spotifyweb"
 	"github.com/immerle/immerle/internal/stream"
 	webui "github.com/immerle/immerle/ui"
 )
 
 // App holds the assembled application.
 type App struct {
-	cfg           config.Config
-	logger        *slog.Logger
-	database      *db.DB
-	store         *persistence.Store
-	scanner       *scanner.Scanner
-	watcher       *scanner.Watcher
-	onDemand      *core.CatalogService
-	federation    *federation.Service
-	outbox        *outbox.Worker
-	enricher      *core.ArtistImageEnricher
-	mbEnricher    *core.MusicBrainzEnricher
-	evictor       *core.Evictor
-	charts        *charts.Service
-	autoplaylists *autoplaylists.Service
-	concerts      *concerts.Service
-	purchases     *core.PurchasesService
-	logPruner     *core.LogPruner
-	settings      *core.SettingsService
-	imports       *importer.Service
-	handler       http.Handler
+	cfg              config.Config
+	logger           *slog.Logger
+	database         *db.DB
+	store            *persistence.Store
+	scanner          *scanner.Scanner
+	watcher          *scanner.Watcher
+	onDemand         *core.CatalogService
+	federation       *federation.Service
+	outbox           *outbox.Worker
+	enricher         *core.ArtistImageEnricher
+	mbEnricher       *core.MusicBrainzEnricher
+	evictor          *core.Evictor
+	charts           *charts.Service
+	spotifyPlaylists *spotifyplaylists.Service
+	autoplaylists    *autoplaylists.Service
+	concerts         *concerts.Service
+	purchases        *core.PurchasesService
+	logPruner        *core.LogPruner
+	settings         *core.SettingsService
+	imports          *importer.Service
+	handler          http.Handler
 
 	scanPaths []string
 	// watch is captured at boot; changing it requires a restart.
@@ -412,6 +415,11 @@ func New(cfg config.Config) (*App, error) {
 	chartsSvc := charts.New(store.Playlists, "", nil, logger)
 	chartsSvc.SetOwnerResolver(func(ctx context.Context) (string, error) { return firstAdmin(ctx, store.Users) })
 
+	// Public Spotify playlists surfaced in search, opened on demand as
+	// federated playlists (same owner resolution as chartsSvc above).
+	spotifyPlaylistsSvc := spotifyplaylists.New(spotifyweb.NewClient(), store.Playlists, store.Catalog, coverSvc, settingsSvc.SpotifySearchEnabled,
+		func(ctx context.Context) (string, error) { return firstAdmin(ctx, store.Users) }, logger)
+
 	// Genre/decade playlists ("Rock", "Rap", "1990s"...) and personal listening
 	// lists ("Top du mois", "On Repeat", "Favoris oubliés"), auto-generated and
 	// refreshed daily as real playlists. Same materializer mechanism and owner
@@ -473,55 +481,56 @@ func New(cfg config.Config) (*App, error) {
 		Scanner:          scan,
 		OnDemand:         onDemand,
 		Activity:         activitySvc,
-		MusicFolderPaths: cfg.Library.Paths,
+		MusicFolderPaths: scanPaths, // includes the downloads dir, so it is never empty
 		BaseURL:          baseURL(cfg),
 		Logger:           logger,
 	})
 
 	gosHandler := immerle.NewHandler(immerle.Deps{
-		Auth:           authSvc,
-		Users:          store.Users,
-		Activity:       activitySvc,
-		Playlists:      store.Playlists,
-		PlaylistSync:   playlistSyncer,
-		ScrobbleSync:   scrobbleSync,
-		ListenBrainz:   lbClient,
-		LastFm:         lfClient,
-		Jam:            jamSvc,
-		Setup:          setupSvc,
-		Federation:     fed,
-		Cleanup:        evictor,
-		Charts:         chartsSvc,
-		AutoPlaylists:  autoplaylistsSvc,
-		Concerts:       store.Concerts,
-		ConcertsSync:   concertsSvc,
-		Purchases:      purchasesSvc,
-		Providers:      providerMgr,
-		Settings:       settingsSvc,
-		SmartPlaylists: store.SmartPlaylists,
-		Radio:          store.Radio,
-		Podcasts:       podcastSvc,
-		Wrapped:        store.Wrapped,
-		HallOfFame:     store.HallOfFame,
-		Catalog:        store.Catalog,
-		Annotations:    store.Annotations,
-		Genres:         store.Genres,
-		Scrobbles:      store.Scrobbles,
-		PlayQueues:     store.PlayQueues,
-		NowPlaying:     nowPlaying,
-		OnDemand:       onDemand,
-		Streamer:       streamer,
-		Cover:          coverSvc,
-		Shares:         store.Shares,
-		BaseURL:        baseURL(cfg),
-		SigningKey:     settingsSvc.Secret(),
-		LibraryStats:   libraryStats,
-		Imports:        importSvc,
-		Scanner:        scan,
-		UploadsDir:     filepath.Join(downloadDir, "uploads"),
-		CoversDir:      coversDir,
-		Logger:         logger,
-		LogHub:         logHub,
+		Auth:             authSvc,
+		Users:            store.Users,
+		Activity:         activitySvc,
+		Playlists:        store.Playlists,
+		PlaylistSync:     playlistSyncer,
+		ScrobbleSync:     scrobbleSync,
+		ListenBrainz:     lbClient,
+		LastFm:           lfClient,
+		Jam:              jamSvc,
+		Setup:            setupSvc,
+		Federation:       fed,
+		Cleanup:          evictor,
+		Charts:           chartsSvc,
+		AutoPlaylists:    autoplaylistsSvc,
+		Concerts:         store.Concerts,
+		ConcertsSync:     concertsSvc,
+		Purchases:        purchasesSvc,
+		Providers:        providerMgr,
+		Settings:         settingsSvc,
+		SmartPlaylists:   store.SmartPlaylists,
+		Radio:            store.Radio,
+		Podcasts:         podcastSvc,
+		Wrapped:          store.Wrapped,
+		HallOfFame:       store.HallOfFame,
+		Catalog:          store.Catalog,
+		Annotations:      store.Annotations,
+		Genres:           store.Genres,
+		Scrobbles:        store.Scrobbles,
+		PlayQueues:       store.PlayQueues,
+		NowPlaying:       nowPlaying,
+		OnDemand:         onDemand,
+		Streamer:         streamer,
+		Cover:            coverSvc,
+		Shares:           store.Shares,
+		BaseURL:          baseURL(cfg),
+		SigningKey:       settingsSvc.Secret(),
+		LibraryStats:     libraryStats,
+		Imports:          importSvc,
+		SpotifyPlaylists: spotifyPlaylistsSvc,
+		Scanner:          scan,
+		UploadsDir:       filepath.Join(downloadDir, "uploads"),
+		CoversDir:        coversDir,
+		Logger:           logger,
+		LogHub:           logHub,
 	})
 
 	// Warm the analytics cache from whatever is already indexed (the post-scan
@@ -551,25 +560,26 @@ func New(cfg config.Config) (*App, error) {
 	mux.NotFound(webui.Handler().ServeHTTP)
 
 	return &App{
-		cfg:           cfg,
-		logger:        logger,
-		database:      database,
-		store:         store,
-		scanner:       scan,
-		watcher:       scanner.NewWatcher(scan, scanPaths, settingsSvc.ScanInterval, logger),
-		onDemand:      onDemand,
-		federation:    fed,
-		outbox:        outboxWorker,
-		enricher:      enricher,
-		mbEnricher:    mbEnricher,
-		evictor:       evictor,
-		charts:        chartsSvc,
-		autoplaylists: autoplaylistsSvc,
-		concerts:      concertsSvc,
-		purchases:     purchasesSvc,
-		logPruner:     logPruner,
-		settings:      settingsSvc,
-		imports:       importSvc,
+		cfg:              cfg,
+		logger:           logger,
+		database:         database,
+		store:            store,
+		scanner:          scan,
+		watcher:          scanner.NewWatcher(scan, scanPaths, settingsSvc.ScanInterval, logger),
+		onDemand:         onDemand,
+		federation:       fed,
+		outbox:           outboxWorker,
+		enricher:         enricher,
+		mbEnricher:       mbEnricher,
+		evictor:          evictor,
+		charts:           chartsSvc,
+		spotifyPlaylists: spotifyPlaylistsSvc,
+		autoplaylists:    autoplaylistsSvc,
+		concerts:         concertsSvc,
+		purchases:        purchasesSvc,
+		logPruner:        logPruner,
+		settings:         settingsSvc,
+		imports:          importSvc,
 		// Panic recovery outermost (so it catches every downstream handler), then
 		// security headers (apply to every response), then CORS (answers preflight
 		// before routing), then logging. Origins are read live from the runtime
@@ -632,6 +642,9 @@ func (a *App) Run(ctx context.Context) error {
 	}
 	if a.charts != nil {
 		a.spawn(func() { a.charts.Run(ctx) })
+	}
+	if a.spotifyPlaylists != nil {
+		a.spawn(func() { a.spotifyPlaylists.Run(ctx) })
 	}
 	if a.autoplaylists != nil {
 		a.spawn(func() { a.autoplaylists.Run(ctx) })

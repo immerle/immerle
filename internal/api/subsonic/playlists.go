@@ -19,9 +19,24 @@ func toPlaylist(p models.Playlist, entries []Child) Playlist {
 		Duration:  p.Duration,
 		Created:   formatTime(p.CreatedAt),
 		Changed:   formatTime(p.UpdatedAt),
+		CoverArt:  playlistCoverArt(p),
 		CoverArts: p.CoverArts,
 		Entry:     entries,
 	}
+}
+
+// playlistCoverPrefix marks a getCoverArt id as "this playlist's cover". The
+// stored cover id can be a generator id full of '&'/'=' that clients don't
+// escape in a query string, so expose an opaque, URL-safe one instead.
+const playlistCoverPrefix = "pl-"
+
+// playlistCoverArt points getCoverArt at the playlist's cover: its custom one
+// (generated or uploaded) when set, else the track mosaic the UI shows.
+func playlistCoverArt(p models.Playlist) string {
+	if p.CoverArt == "" && len(p.CoverArts) == 0 {
+		return ""
+	}
+	return playlistCoverPrefix + p.ID
 }
 
 func (h *Handler) handleGetPlaylists(w http.ResponseWriter, r *http.Request) {

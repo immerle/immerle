@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth/store';
-import { Song } from '../api/subsonic/types';
+import { PlaylistWithSongs, Song } from '../api/subsonic/types';
 import { PlaylistCoverSpec } from '../api/immerle/client';
 import { qk } from './keys';
+import { queryClient } from './queryClient';
 
 export function usePlaylists() {
   const client = useAuth((s) => s.client);
@@ -21,6 +22,17 @@ export function useCustomPlaylists() {
     enabled: !!client,
     queryFn: () => client!.getCustomPlaylists(),
   });
+}
+
+/**
+ * Swaps a just-resolved federated entry into the cached playlist, so its row
+ * shows the real track (cover, duration) without a refetch: until a provider
+ * hit finishes downloading, the server still lists the entry as unresolved.
+ */
+export function setResolvedPlaylistTrack(playlistId: string, index: number, song: Song) {
+  queryClient.setQueryData<PlaylistWithSongs>(qk.playlist(playlistId), (p) =>
+    p?.entry ? { ...p, entry: p.entry.map((s, i) => (i === index ? song : s)) } : p,
+  );
 }
 
 export function usePlaylist(id: string) {

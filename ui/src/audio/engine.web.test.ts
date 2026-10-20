@@ -116,6 +116,21 @@ describe('web engine end of queue', () => {
   });
 });
 
+describe('web engine media errors', () => {
+  it('pauses and emits an error when the current source cannot be loaded', async () => {
+    const engine = createEngine();
+    const onError = jest.fn();
+    await engine.setup();
+    engine.on('error', onError);
+    await engine.setQueue([track('missing')], 0);
+
+    lastAudio.fire('error');
+
+    expect(engine.getState().status).toBe('paused');
+    expect(onError).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('web engine replaceAt', () => {
   it('reloads the currently playing track in place and resumes playback', async () => {
     const engine = createEngine();

@@ -22,6 +22,7 @@ import (
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 	"github.com/immerle/immerle/internal/scanner"
+	"github.com/immerle/immerle/internal/spotifyplaylists"
 	"github.com/immerle/immerle/internal/stream"
 )
 
@@ -66,6 +67,10 @@ type Deps struct {
 	LibraryStats *core.LibraryStatsService
 	// Imports runs playlist imports from external sources (e.g. Spotify).
 	Imports *importer.Service
+	// SpotifyPlaylists adds public Spotify playlists to the global search when
+	// the spotifySearch setting is on, opened as on-demand federated playlists.
+	// Optional.
+	SpotifyPlaylists *spotifyplaylists.Service
 	// Scanner ingests user-uploaded ("local") audio files into the catalog.
 	Scanner *scanner.Scanner
 	// UploadsDir is where user-uploaded audio files are written (a scanned dir).
@@ -336,6 +341,7 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Delete("/playlists/{id}", h.handleDeletePlaylist)
 			r.Put("/playlists/{id}/tracks", h.handleReplacePlaylistTracks)
 			r.Post("/playlists/{id}/tracks/{position}/resolve", h.handleResolvePlaylistTrack)
+			r.Post("/spotify-playlists/{spotifyId}/open", h.handleOpenSpotifyPlaylist)
 			r.Put("/playlists/{id}/cover", h.handlePlaylistCover)
 			r.Post("/playlists/{id}/cover/generate", h.handlePlaylistCoverGenerate)
 

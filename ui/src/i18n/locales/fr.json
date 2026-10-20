@@ -15,7 +15,7 @@
     "home": "Accueil", "login": "Connexion", "setup": "Configuration", "playlists": "Playlists",
     "social": "Social", "genre": "Genre", "jam": "Jam", "uiKit": "UI Kit", "import": "Importer",
     "jobs": "Tâches", "providers": "Fournisseurs", "scan": "Scan", "users": "Utilisateurs",
-    "tracks": "Titres", "federation": "Fédération", "logs": "Journaux"
+    "federation": "Fédération", "logs": "Journaux"
   },
   "quality": {
     "original": "Original (sans transcodage)", "high": "Haute — 320 kbps",
@@ -176,6 +176,8 @@
     "apply": "Appliquer",
     "resetAccent": "Réinitialiser (vert par défaut)",
     "quality": "Qualité de lecture",
+    "adaptiveQuality": "Adapter au réseau",
+    "adaptiveQualityHint": "Baisse la qualité en données mobiles ou sur une connexion lente",
     "access": "Compte & accès",
     "importTitle": "Importer une playlist",
     "importSubtitle": "Depuis Spotify et autres plateformes",
@@ -379,10 +381,6 @@
         "library": {
           "title": "Bibliothèque",
           "subtitle": "Scan & statistiques"
-        },
-        "tracks": {
-          "title": "Morceaux",
-          "subtitle": "Parcourir, éditer pochettes & métadonnées, supprimer"
         },
         "providers": {
           "title": "Providers",
@@ -663,6 +661,13 @@
       "wrappedEnabled": "Wrapped (rétrospective annuelle)",
       "offlineEnabled": "Téléchargements hors-ligne",
       "hallOfFameEnabled": "Hall of Fame",
+      "groupAccess": "Accès & sécurité",
+      "groupPlayback": "Lecture",
+      "groupContent": "Contenu & découverte",
+      "groupIntegrations": "Intégrations",
+      "groupMaintenance": "Maintenance",
+      "spotifySearchEnabled": "Recherche de playlists Spotify",
+      "spotifySearchHelp": "Si activé, la recherche affiche aussi les playlists Spotify publiques, ouvertes à la demande. Un utilisateur peut en garder une dans sa bibliothèque, elle est alors mise à jour chaque semaine.",
       "save": "Enregistrer"
     },
     "users": {
@@ -880,6 +885,8 @@
       "nothingPlaying": "Aucune lecture en cours",
       "close": "Fermer",
       "nowPlaying": "En lecture",
+      "playbackFailed": "La lecture a échoué. Vérifiez le morceau et réessayez.",
+      "playerNotReady": "Le lecteur démarre encore. Réessayez dans un instant.",
       "queue": "File",
       "repeat": "Répéter",
       "previous": "Précédent",
@@ -1102,6 +1109,9 @@
       "searchTitle": "Rechercher",
       "searchSubtitle": "Artistes, albums, titres…",
       "recentSearches": "Recherches récentes",
+      "clearAll": "Tout effacer",
+      "clearAllRecents": "Effacer toutes les recherches récentes",
+      "removeRecent": "Supprimer {{query}} des recherches récentes",
       "noResults": "Aucun résultat",
       "nothingFor": "Rien pour « {{query}} »",
       "artists": "Artistes",
@@ -1114,6 +1124,8 @@
       "typeSong": "Titre",
       "typePlaylist": "Playlist",
       "typeRadio": "Radio",
+      "typeSpotifyPlaylist": "Playlist Spotify",
+      "spotifyOpenError": "Impossible de charger cette playlist Spotify",
       "cancel": "Annuler"
     },
     "admin": {

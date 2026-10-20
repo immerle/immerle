@@ -836,6 +836,12 @@ components:
               type: array
               uniqueItems: false
           type: object
+        spotifySearch:
+          properties:
+            enabled:
+              example: false
+              type: boolean
+          type: object
         transcode:
           properties:
             ffmpegPath:
@@ -1824,8 +1830,10 @@ components:
           $ref: '#/components/schemas/immerle.stationView'
         song:
           $ref: '#/components/schemas/immerle.songView'
+        spotifyPlaylist:
+          $ref: '#/components/schemas/immerle.spotifyPlaylistView'
         type:
-          description: artist|album|song|playlist|radio
+          description: artist|album|song|playlist|radio|spotifyPlaylist
           type: string
       type: object
     immerle.searchView:
@@ -1977,6 +1985,26 @@ components:
           type: string
         year:
           type: integer
+      type: object
+    immerle.spotifyPlaylistView:
+      description: |-
+        Spotify is a public Spotify playlist (type spotifyPlaylist): selecting it
+        opens it on demand (POST /spotify-playlists/{spotifyId}/open).
+      properties:
+        coverArt:
+          description: |-
+            CoverArt is a cover id served by GET /cover/{id} (fetched and cached
+            server-side), so clients never call Spotify directly.
+          type: string
+        id:
+          example: 37i9dQZF1DZ06evO2CNgSk
+          type: string
+        name:
+          example: This Is Daft Punk
+          type: string
+        owner:
+          example: Spotify
+          type: string
       type: object
     immerle.startImportRequest:
       properties:
@@ -6936,9 +6964,9 @@ paths:
   /search:
     get:
       description: Searches artists, albums, songs, public playlists and radio stations
-        (merging remote-provider results when enabled), returned as one list ranked
-        by relevance to the query. `type` scopes the search server-side to just that
-        result type.
+        (merging remote-provider results when enabled, plus public Spotify playlists
+        when the spotifySearch setting is on), returned as one list ranked by relevance
+        to the query. `type` scopes the search server-side to just that result type.
       parameters:
       - description: Search query
         in: query
@@ -7685,11 +7713,60 @@ paths:
               schema:
                 $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Not Found
       security:
       - BearerAuth: []
       summary: Mint signed media URLs
       tags:
       - media
+  /spotify-playlists/{spotifyId}/open:
+    post:
+      description: Returns the local on-demand mirror of a public Spotify playlist
+        (fetched from Spotify when missing or older than a week). Its tracks resolve
+        lazily at play time like any federated playlist; subscribe to it to keep it
+        in the library, refreshed weekly. 404 when the spotifySearch setting is off.
+      parameters:
+      - description: Spotify playlist id
+        in: path
+        name: spotifyId
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.playlistView'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Not Found
+        "502":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Bad Gateway
+      security:
+      - BearerAuth: []
+      summary: Open a Spotify playlist
+      tags:
+      - playlists
   /theme:
     get:
       responses:

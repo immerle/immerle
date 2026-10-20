@@ -15,11 +15,12 @@ import (
 
 const pathfinderURL = "https://api-partner.spotify.com/pathfinder/v2/query"
 
-// fetchPlaylistContentsHash identifies, server-side, the persisted GraphQL
-// query the web player uses to page through a playlist's tracks. It's stable
-// across web player releases (it names the query text, not this request) but
-// may need updating if Spotify republishes the query under a new hash.
-const fetchPlaylistContentsHash = "a65e12194ed5fc443a1cdebed5fabe33ca5b07b987185d63c72483867ad13cb4"
+// fetchPlaylistHash identifies, server-side, the persisted GraphQL query the
+// web player uses to load a playlist (name, cover and a page of tracks). It's
+// stable across web player releases (it names the query text, not this
+// request) but may need updating if Spotify republishes the query under a new
+// hash.
+const fetchPlaylistHash = "21ea11a6ac75a5f3e01fd365d29c18e0a4a8b7dc09f89bbb5d73910190c6acaf"
 
 type pathfinderRequest struct {
 	Variables     map[string]any `json:"variables"`
@@ -37,7 +38,15 @@ type playlistContentsResponse struct {
 		PlaylistV2 struct {
 			Typename string `json:"__typename"`
 			Message  string `json:"message"` // set when Typename is e.g. "NotFound"
-			Content  struct {
+			Name     string `json:"name"`
+			Images   struct {
+				Items []struct {
+					Sources []struct {
+						URL string `json:"url"`
+					} `json:"sources"`
+				} `json:"items"`
+			} `json:"images"`
+			Content struct {
 				Items      []playlistItem `json:"items"`
 				TotalCount int            `json:"totalCount"`
 			} `json:"content"`
@@ -58,7 +67,13 @@ type playlistItem struct {
 				TotalMilliseconds int64 `json:"totalMilliseconds"`
 			} `json:"trackDuration"`
 			AlbumOfTrack struct {
-				Name string `json:"name"`
+				Name     string `json:"name"`
+				CoverArt struct {
+					Sources []struct {
+						URL    string `json:"url"`
+						Height int    `json:"height"`
+					} `json:"sources"`
+				} `json:"coverArt"`
 			} `json:"albumOfTrack"`
 			Artists struct {
 				Items []struct {
@@ -71,28 +86,20 @@ type playlistItem struct {
 	} `json:"itemV2"`
 }
 
-// fetchTracksPage fetches one page ([offset, offset+limit)) of a playlist's
-// tracks, returning it alongside the playlist's total track count.
-func fetchTracksPage(ctx context.Context, client *http.Client, token, playlistID string, offset, limit int) ([]Track, int, error) {
-	body := pathfinderRequest{
-		Variables: map[string]any{
-			"uri":                            "spotify:playlist:" + playlistID,
-			"offset":                         offset,
-			"limit":                          limit,
-			"includeEpisodeContentRatingsV2": true,
-		},
-		OperationName: "fetchPlaylistContents",
-	}
+// pathfinderQuery runs one persisted GraphQL operation against the web
+// player's pathfinder endpoint and decodes the JSON response into out.
+func pathfinderQuery(ctx context.Context, client *http.Client, token, operation, hash string, vars map[string]any, out any) error {
+	body := pathfinderRequest{Variables: vars, OperationName: operation}
 	body.Extensions.PersistedQuery.Version = 1
-	body.Extensions.PersistedQuery.SHA256Hash = fetchPlaylistContentsHash
+	body.Extensions.PersistedQuery.SHA256Hash = hash
 
 	payload, err := json.Marshal(body)
 	if err != nil {
-		return nil, 0, err
+		return err
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, pathfinderURL, bytes.NewReader(payload))
 	if err != nil {
-		return nil, 0, err
+		return err
 	}
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Content-Type", "application/json;charset=UTF-8")
@@ -103,26 +110,41 @@ func fetchTracksPage(ctx context.Context, client *http.Client, token, playlistID
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, 0, fmt.Errorf("spotifyweb: fetching playlist tracks: %w", err)
+		return fmt.Errorf("spotifyweb: %s: %w", operation, err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, 0, fmt.Errorf("spotifyweb: pathfinder query returned %s", resp.Status)
+		return fmt.Errorf("spotifyweb: %s returned %s", operation, resp.Status)
 	}
+	if err := json.NewDecoder(io.LimitReader(resp.Body, providers.MaxMetadataBytes)).Decode(out); err != nil {
+		return fmt.Errorf("spotifyweb: decoding %s response: %w", operation, err)
+	}
+	return nil
+}
 
+// fetchPage fetches one page ([offset, offset+limit)) of a playlist: its
+// tracks plus the playlist's name, cover URL and total track count.
+func fetchPage(ctx context.Context, client *http.Client, token, playlistID string, offset, limit int) (Playlist, int, error) {
+	vars := map[string]any{
+		"uri":                            "spotify:playlist:" + playlistID,
+		"offset":                         offset,
+		"limit":                          limit,
+		"enableWatchFeedEntrypoint":      false,
+		"includeEpisodeContentRatingsV2": true,
+	}
 	var out playlistContentsResponse
-	if err := json.NewDecoder(io.LimitReader(resp.Body, providers.MaxMetadataBytes)).Decode(&out); err != nil {
-		return nil, 0, fmt.Errorf("spotifyweb: decoding pathfinder response: %w", err)
+	if err := pathfinderQuery(ctx, client, token, "fetchPlaylist", fetchPlaylistHash, vars, &out); err != nil {
+		return Playlist{}, 0, err
 	}
 	if len(out.Errors) > 0 {
-		return nil, 0, fmt.Errorf("spotifyweb: pathfinder: %s", out.Errors[0].Message)
+		return Playlist{}, 0, fmt.Errorf("spotifyweb: pathfinder: %s", out.Errors[0].Message)
 	}
 	if out.Data.PlaylistV2.Typename != "Playlist" {
 		msg := out.Data.PlaylistV2.Message
 		if msg == "" {
 			msg = out.Data.PlaylistV2.Typename
 		}
-		return nil, 0, fmt.Errorf("spotifyweb: %s", msg)
+		return Playlist{}, 0, fmt.Errorf("spotifyweb: %s", msg)
 	}
 
 	tracks := make([]Track, 0, len(out.Data.PlaylistV2.Content.Items))
@@ -138,10 +160,33 @@ func fetchTracksPage(ctx context.Context, client *http.Client, token, playlistID
 		tracks = append(tracks, Track{
 			Title:    d.Name,
 			Artist:   strings.Join(artists, ", "),
+			Artists:  artists,
+			CoverURL: albumCover(d.AlbumOfTrack.CoverArt.Sources),
 			Album:    d.AlbumOfTrack.Name,
 			Duration: time.Duration(d.TrackDuration.TotalMilliseconds) * time.Millisecond,
 			URI:      d.URI,
 		})
 	}
-	return tracks, out.Data.PlaylistV2.Content.TotalCount, nil
+	pl := Playlist{Name: out.Data.PlaylistV2.Name, Tracks: tracks}
+	if imgs := out.Data.PlaylistV2.Images.Items; len(imgs) > 0 && len(imgs[0].Sources) > 0 {
+		pl.ImageURL = imgs[0].Sources[0].URL
+	}
+	return pl, out.Data.PlaylistV2.Content.TotalCount, nil
+}
+
+// albumCover picks the 300px album cover (big enough for a track row, a
+// fraction of the 640px one), else the first one listed.
+func albumCover(sources []struct {
+	URL    string `json:"url"`
+	Height int    `json:"height"`
+}) string {
+	for _, s := range sources {
+		if s.Height == 300 {
+			return s.URL
+		}
+	}
+	if len(sources) > 0 {
+		return sources[0].URL
+	}
+	return ""
 }

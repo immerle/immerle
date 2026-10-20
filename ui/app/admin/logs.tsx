@@ -84,6 +84,7 @@ export default function AdminLogs() {
         />
       }
     >
+      <Stack.Screen options={{ headerShown: false }} />
       {!supported ? (
         <EmptyState icon="desktop-outline" title={t('admin.logs.unsupportedTitle')} subtitle={t('admin.logs.unsupportedSubtitle')} />
       ) : (

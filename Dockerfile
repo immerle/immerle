@@ -3,7 +3,7 @@
 # ---- web app stage ----
 # Pin to the build platform: the export is static web assets (arch-independent),
 # so we build it once natively instead of emulating it per target arch.
-FROM --platform=$BUILDPLATFORM node:24-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1 AS ui
+FROM --platform=$BUILDPLATFORM node:24-alpine@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f AS ui
 WORKDIR /ui
 COPY ui/package.json ui/package-lock.json ./
 RUN --mount=type=cache,id=npm-expo57,target=/root/.npm,sharing=locked npm ci --legacy-peer-deps
@@ -13,7 +13,7 @@ RUN npm run export:web
 # ---- build stage ----
 # Also pinned to the build platform; Go cross-compiles to $TARGETARCH natively,
 # which is far faster than running the toolchain under QEMU emulation.
-FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS build
+FROM --platform=$BUILDPLATFORM golang:1.27-alpine@sha256:f92b6ef800e499660581efdabdf25d9d817a9d124eaf900924f0504e7e27e12d AS build
 WORKDIR /src
 ARG TARGETOS TARGETARCH
 

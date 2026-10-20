@@ -15,7 +15,7 @@
     "home": "Home", "login": "Sign in", "setup": "Setup", "playlists": "Playlists",
     "social": "Social", "genre": "Genre", "jam": "Jam", "uiKit": "UI Kit", "import": "Import",
     "jobs": "Jobs", "providers": "Providers", "scan": "Scan", "users": "Users",
-    "tracks": "Tracks", "federation": "Federation", "logs": "Logs"
+    "federation": "Federation", "logs": "Logs"
   },
   "quality": {
     "original": "Original (no transcoding)", "high": "High — 320 kbps",
@@ -176,6 +176,8 @@
     "apply": "Apply",
     "resetAccent": "Reset (default green)",
     "quality": "Playback quality",
+    "adaptiveQuality": "Adapt to network",
+    "adaptiveQualityHint": "Lowers quality on cellular or slow connections",
     "access": "Account & access",
     "importTitle": "Import a playlist",
     "importSubtitle": "From Spotify and other platforms",
@@ -379,10 +381,6 @@
         "library": {
           "title": "Library",
           "subtitle": "Scan & statistics"
-        },
-        "tracks": {
-          "title": "Tracks",
-          "subtitle": "Browse, edit covers & metadata, delete"
         },
         "providers": {
           "title": "Providers",
@@ -663,6 +661,13 @@
       "wrappedEnabled": "Wrapped (year-in-review)",
       "offlineEnabled": "Offline downloads",
       "hallOfFameEnabled": "Hall of Fame",
+      "groupAccess": "Access & security",
+      "groupPlayback": "Playback",
+      "groupContent": "Content & discovery",
+      "groupIntegrations": "Integrations",
+      "groupMaintenance": "Maintenance",
+      "spotifySearchEnabled": "Search Spotify playlists",
+      "spotifySearchHelp": "When on, global search also lists public Spotify playlists, opened on demand. Users keep one by adding it to their library; kept playlists refresh weekly.",
       "save": "Save"
     },
     "users": {
@@ -880,6 +885,8 @@
       "nothingPlaying": "Nothing playing",
       "close": "Close",
       "nowPlaying": "Now playing",
+      "playbackFailed": "Playback failed. Check the track and try again.",
+      "playerNotReady": "The player is still starting. Try again in a moment.",
       "queue": "Queue",
       "repeat": "Repeat",
       "previous": "Previous",
@@ -1102,6 +1109,9 @@
       "searchTitle": "Search",
       "searchSubtitle": "Artists, albums, songs…",
       "recentSearches": "Recent searches",
+      "clearAll": "Clear all",
+      "clearAllRecents": "Clear all recent searches",
+      "removeRecent": "Remove {{query}} from recent searches",
       "noResults": "No results",
       "nothingFor": "Nothing for « {{query}} »",
       "artists": "Artists",
@@ -1114,6 +1124,8 @@
       "typeSong": "Song",
       "typePlaylist": "Playlist",
       "typeRadio": "Radio",
+      "typeSpotifyPlaylist": "Spotify playlist",
+      "spotifyOpenError": "Could not load this Spotify playlist",
       "cancel": "Cancel"
     },
     "admin": {
