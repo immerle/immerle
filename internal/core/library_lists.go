@@ -66,9 +66,13 @@ func (s *LibraryService) TopSongs(ctx context.Context, userID, artistName string
 	return toTrackEntries(tracks, ann)
 }
 
-// SimilarSongs is a lightweight heuristic: tracks sharing the seed item's genre
-// (falling back to random) since no external recommendation source is wired.
+// SimilarSongs returns tracks that sound like the seed (a track, album or
+// artist id) when the sonic radio is on and the seed is analyzed. Otherwise it
+// falls back to random tracks sharing the seed track's genre.
 func (s *LibraryService) SimilarSongs(ctx context.Context, userID, seedID string, count int) []TrackEntry {
+	if tracks, ok := s.SonicRadio(ctx, userID, []string{seedID}, nil, count); ok {
+		return tracks
+	}
 	genre := ""
 	if t, err := s.catalog.GetTrack(ctx, seedID); err == nil {
 		genre = t.Genre
@@ -108,6 +112,60 @@ func (s *LibraryService) Starred(ctx context.Context, userID string) StarredResu
 	for _, id := range songIDs {
 		if t, err := s.catalog.GetTrack(ctx, id); err == nil {
 			out.Songs = append(out.Songs, t)
+		}
+	}
+	return out
+}
+
+// SonicRadio returns up to count tracks that sound like the seeds (track,
+// album or artist ids, mixed freely), excluding the exclude track ids. ok is
+// false when the sonic radio is off or none of the seeds is analyzed.
+func (s *LibraryService) SonicRadio(ctx context.Context, userID string, seeds, exclude []string, count int) ([]TrackEntry, bool) {
+	if !s.sonic.RadioEnabled() {
+		return nil, false
+	}
+	trackSeeds := s.resolveSeedTracks(ctx, seeds)
+	ids, ok, err := s.sonic.Similar(ctx, trackSeeds, exclude, count)
+	if err != nil || !ok {
+		return nil, false
+	}
+	byID, err := s.catalog.TracksByIDs(ctx, ids)
+	if err != nil {
+		return nil, false
+	}
+	tracks := make([]models.Track, 0, len(ids))
+	for _, id := range ids {
+		if t, found := byID[id]; found {
+			tracks = append(tracks, t)
+		}
+	}
+	return s.annotateTracks(ctx, userID, tracks), true
+}
+
+// resolveSeedTracks expands seed ids into local track ids: a track stays as is
+// (a downloaded remote track maps to its local copy), an album or an artist
+// becomes its tracks.
+func (s *LibraryService) resolveSeedTracks(ctx context.Context, seeds []string) []string {
+	var out []string
+	for _, id := range seeds {
+		if IsRemoteID(id) {
+			if s.onDemand != nil {
+				if local, ok := s.onDemand.LocalTrackIDForRemote(ctx, id); ok {
+					out = append(out, local)
+				}
+			}
+			continue
+		}
+		if _, err := s.catalog.GetTrack(ctx, id); err == nil {
+			out = append(out, id)
+			continue
+		}
+		tracks, _ := s.catalog.ListTracksByAlbum(ctx, id)
+		if len(tracks) == 0 {
+			tracks, _ = s.catalog.ListTracksByArtist(ctx, id, 200)
+		}
+		for _, t := range tracks {
+			out = append(out, t.ID)
 		}
 	}
 	return out

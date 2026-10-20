@@ -107,9 +107,9 @@ type Deps struct {
 	// Purchases imports a user's own purchases from external stores (Bandcamp
 	// first). nil disables the feature. Implemented by *core.PurchasesService.
 	Purchases *core.PurchasesService
-	// Sonic runs the local audio analysis (admin progress + capability).
-	// Optional; nil hides the feature.
-	Sonic  *sonic.Worker
+	// Sonic runs the local audio analysis (admin progress, capabilities, sonic
+	// radio). Optional; nil hides the features.
+	Sonic  *sonic.Service
 	Logger *slog.Logger
 	// LogHub streams live server log lines to the admin log viewer (SSE).
 	LogHub *logging.Hub
@@ -167,7 +167,7 @@ type Handler struct {
 func NewHandler(d Deps) *Handler {
 	return &Handler{
 		Deps:          d,
-		library:       core.NewLibraryService(d.Catalog, d.Annotations, d.Playlists, d.OnDemand),
+		library:       core.NewLibraryService(d.Catalog, d.Annotations, d.Playlists, d.OnDemand).WithSonic(d.Sonic),
 		playback:      core.NewPlaybackService(d.Catalog, d.Annotations, d.Scrobbles, d.OnDemand, d.Activity, d.NowPlaying, d.ScrobbleSync),
 		playQueue:     core.NewPlayQueueService(d.PlayQueues, d.Catalog, d.Annotations, d.Logger),
 		playlistSvc:   core.NewPlaylistService(d.Playlists, d.Annotations, d.Activity, d.PlaylistSync, d.OnDemand),
@@ -277,6 +277,7 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Get("/albums", h.handleListAlbums)
 			r.Get("/albums/{id}", h.handleGetAlbum)
 			r.Get("/songs", h.handleSongsByGenre)
+			r.Get("/songs/radio", h.handleSonicRadio)
 			r.Get("/songs/{id}", h.handleGetSong)
 			r.Get("/songs/{id}/local", h.handleGetSongLocalStatus)
 			r.Get("/songs/{id}/lyrics", h.handleGetSongLyrics)

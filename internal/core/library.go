@@ -9,6 +9,7 @@ import (
 
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
+	"github.com/immerle/immerle/internal/sonic"
 )
 
 // remoteFetchTimeout bounds the provider calls made while assembling an
@@ -25,6 +26,15 @@ type LibraryService struct {
 	playlists   *persistence.PlaylistRepo
 	// onDemand is optional (remote provider integration); may be nil when disabled.
 	onDemand *CatalogService
+	// sonic powers the sonic radio; nil (or switched off) falls back to the
+	// genre heuristic.
+	sonic *sonic.Service
+}
+
+// WithSonic plugs the local audio analysis in, for the sonic radio.
+func (s *LibraryService) WithSonic(svc *sonic.Service) *LibraryService {
+	s.sonic = svc
+	return s
 }
 
 // NewLibraryService wires the library application service. onDemand may be nil.

@@ -302,6 +302,16 @@ export class ImmerleClient {
     return (data.songs ?? []).map(toSong);
   }
 
+  /** Tracks that sound like the seeds (track, album or artist ids). */
+  async getSonicRadio(seeds: string[], opts: { exclude?: string[]; count?: number } = {}, signal?: AbortSignal): Promise<Song[]> {
+    const { data, error } = await this.api.GET('/songs/radio', {
+      params: { query: { seed: seeds, exclude: opts.exclude?.join(',') || undefined, count: opts.count } },
+      signal,
+    });
+    if (error) throw apiErr(error, 'browse.sonicRadio');
+    return (data.songs ?? []).map(toSong);
+  }
+
   async getSong(id: string, signal?: AbortSignal): Promise<Song> {
     const { data, error } = await this.api.GET('/songs/{id}', { params: { path: { id } }, signal });
     if (error) throw apiErr(error, 'browse.song');

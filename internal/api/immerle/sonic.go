@@ -1,6 +1,9 @@
 package immerle
 
-import "net/http"
+import (
+	"net/http"
+	"strings"
+)
 
 // SonicStatusDTO is the local audio-analysis state and progress.
 type SonicStatusDTO struct {
@@ -47,4 +50,38 @@ func (h *Handler) handleSonicStatus(w http.ResponseWriter, r *http.Request) {
 		Analyzed:  st.Analyzed,
 		Failed:    st.Failed,
 	})
+}
+
+// handleSonicRadio returns tracks that sound like the seeds.
+//
+// @Summary      Sonic radio
+// @Description  Tracks that sound like the seeds, from the local audio analysis: the closest analyzed tracks, at most two per artist, with a little randomness so two radios differ. A seed is a track, album or artist id; several seeds blend into one radio (e.g. the last tracks played, to extend a queue). 404 when the sonic radio is switched off; an empty list when none of the seeds is analyzed yet.
+// @Tags         browse
+// @Security     BearerAuth
+// @Produce      json
+// @Param        seed     query  []string  true   "Track, album or artist id (repeatable)"  collectionFormat(multi)
+// @Param        exclude  query  string    false  "Comma-separated track ids to leave out (e.g. the current queue)"
+// @Param        count    query  int       false  "Number of tracks (default 50, max 200)"
+// @Success      200  {object}  map[string][]songView
+// @Failure      400  {object}  errorResponse
+// @Failure      401  {object}  errorResponse
+// @Failure      404  {object}  errorResponse
+// @Router       /songs/radio [get]
+func (h *Handler) handleSonicRadio(w http.ResponseWriter, r *http.Request) {
+	if !h.Sonic.RadioEnabled() {
+		writeError(w, http.StatusNotFound, "not_found", "sonic radio is disabled")
+		return
+	}
+	seeds := r.URL.Query()["seed"]
+	if len(seeds) == 0 {
+		writeValidation(w, []fieldError{{Field: "seed", Message: "at least one seed is required"}})
+		return
+	}
+	var exclude []string
+	if raw := r.URL.Query().Get("exclude"); raw != "" {
+		exclude = strings.Split(raw, ",")
+	}
+	count := min(max(intQuery(r, "count", 50), 1), 200)
+	tracks, _ := h.library.SonicRadio(r.Context(), userFrom(r.Context()).ID, seeds, exclude, count)
+	writeResource(w, http.StatusOK, map[string]any{"songs": trackEntriesToSongViews(tracks)})
 }

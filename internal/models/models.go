@@ -112,6 +112,8 @@ type SonicRuntime struct {
 	Enabled bool `json:"enabled"`
 	// Workers is how many tracks are analyzed in parallel (default 1).
 	Workers int `json:"workers"`
+	// Radio turns on the sonic track radio (and sonic getSimilarSongs).
+	Radio bool `json:"radio"`
 }
 
 // SmartPlaylistsRuntime toggles rule-based "smart" playlists (hot-reloadable).

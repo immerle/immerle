@@ -60,7 +60,7 @@ type App struct {
 	outbox           *outbox.Worker
 	enricher         *core.ArtistImageEnricher
 	mbEnricher       *core.MusicBrainzEnricher
-	sonic            *sonic.Worker
+	sonic            *sonic.Service
 	evictor          *core.Evictor
 	charts           *charts.Service
 	spotifyPlaylists *spotifyplaylists.Service
@@ -323,7 +323,7 @@ func New(cfg config.Config) (*App, error) {
 
 	// Local audio analysis (tempo, key, energy, timbre). Always built; it idles
 	// while the sonic setting is off or ffmpeg is missing, and yields to scans.
-	sonicWorker := sonic.NewWorker(store.Sonic, transcodeCfg.FFmpegPath, settingsSvc.SonicConfig, scan.Scanning, logger)
+	sonicSvc := sonic.NewService(store.Sonic, transcodeCfg.FFmpegPath, settingsSvc.SonicConfig, scan.Scanning, logger)
 
 	// Library analytics (counts + total size/duration), cached and recomputed at
 	// each scan so the analytics endpoint never SUMs over every track on request.
@@ -335,7 +335,7 @@ func New(cfg config.Config) (*App, error) {
 		}
 		enricher.Wake()
 		mbEnricher.Wake()
-		sonicWorker.Wake()
+		sonicSvc.Wake()
 	})
 
 	// Federation client (S7): always built, config is read live (hot-reloadable,
@@ -491,6 +491,7 @@ func New(cfg config.Config) (*App, error) {
 		MusicFolderPaths: scanPaths, // includes the downloads dir, so it is never empty
 		BaseURL:          baseURL(cfg),
 		Logger:           logger,
+		Sonic:            sonicSvc,
 	})
 
 	gosHandler := immerle.NewHandler(immerle.Deps{
@@ -510,7 +511,7 @@ func New(cfg config.Config) (*App, error) {
 		AutoPlaylists:    autoplaylistsSvc,
 		Concerts:         store.Concerts,
 		ConcertsSync:     concertsSvc,
-		Sonic:            sonicWorker,
+		Sonic:            sonicSvc,
 		Purchases:        purchasesSvc,
 		Providers:        providerMgr,
 		Settings:         settingsSvc,
@@ -579,7 +580,7 @@ func New(cfg config.Config) (*App, error) {
 		outbox:           outboxWorker,
 		enricher:         enricher,
 		mbEnricher:       mbEnricher,
-		sonic:            sonicWorker,
+		sonic:            sonicSvc,
 		evictor:          evictor,
 		charts:           chartsSvc,
 		spotifyPlaylists: spotifyPlaylistsSvc,

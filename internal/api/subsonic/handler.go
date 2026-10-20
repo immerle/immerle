@@ -17,6 +17,7 @@ import (
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 	"github.com/immerle/immerle/internal/scanner"
+	"github.com/immerle/immerle/internal/sonic"
 	"github.com/immerle/immerle/internal/stream"
 )
 
@@ -48,6 +49,8 @@ type Deps struct {
 	// BaseURL is used to build absolute share links.
 	BaseURL string
 	Logger  *slog.Logger
+	// Sonic backs getSimilarSongs with the sonic radio when switched on. Optional.
+	Sonic *sonic.Service
 }
 
 // Handler implements the Subsonic REST API.
@@ -69,7 +72,7 @@ type Handler struct {
 func NewHandler(d Deps) *Handler {
 	return &Handler{
 		Deps:         d,
-		library:      core.NewLibraryService(d.Catalog, d.Annotations, d.Playlists, d.OnDemand),
+		library:      core.NewLibraryService(d.Catalog, d.Annotations, d.Playlists, d.OnDemand).WithSonic(d.Sonic),
 		playback:     core.NewPlaybackService(d.Catalog, d.Annotations, d.Scrobbles, d.OnDemand, d.Activity, d.NowPlaying, d.ScrobbleSync),
 		playlistSvc:  core.NewPlaylistService(d.Playlists, d.Annotations, d.Activity, d.PlaylistSync, d.OnDemand),
 		userSvc:      core.NewUserService(d.Users, d.Auth),
