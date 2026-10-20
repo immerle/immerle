@@ -15,7 +15,7 @@
     "home": "Accueil", "login": "Connexion", "setup": "Configuration", "playlists": "Playlists",
     "social": "Social", "genre": "Genre", "jam": "Jam", "uiKit": "UI Kit", "import": "Importer",
     "jobs": "Tâches", "providers": "Fournisseurs", "scan": "Scan", "users": "Utilisateurs",
-    "tracks": "Titres", "federation": "Fédération", "logs": "Journaux"
+    "federation": "Fédération", "logs": "Journaux"
   },
   "quality": {
     "original": "Original (sans transcodage)", "high": "Haute — 320 kbps",
@@ -382,10 +382,6 @@
           "title": "Bibliothèque",
           "subtitle": "Scan & statistiques"
         },
-        "tracks": {
-          "title": "Morceaux",
-          "subtitle": "Parcourir, éditer pochettes & métadonnées, supprimer"
-        },
         "providers": {
           "title": "Providers",
           "subtitle": "Sources de contenu dynamiques"
@@ -665,6 +661,11 @@
       "wrappedEnabled": "Wrapped (rétrospective annuelle)",
       "offlineEnabled": "Téléchargements hors-ligne",
       "hallOfFameEnabled": "Hall of Fame",
+      "groupAccess": "Accès & sécurité",
+      "groupPlayback": "Lecture",
+      "groupContent": "Contenu & découverte",
+      "groupIntegrations": "Intégrations",
+      "groupMaintenance": "Maintenance",
       "spotifySearchEnabled": "Recherche de playlists Spotify",
       "spotifySearchHelp": "Si activé, la recherche affiche aussi les playlists Spotify publiques, ouvertes à la demande. Un utilisateur peut en garder une dans sa bibliothèque, elle est alors mise à jour chaque semaine.",
       "save": "Enregistrer"
