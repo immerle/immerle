@@ -37,6 +37,7 @@ func (h *Handler) handleCapabilities(w http.ResponseWriter, r *http.Request) {
 	concerts := h.concertsEnabled()
 	bandcampImport := h.Purchases != nil
 	lastFm := h.Settings != nil && h.Settings.Get().LastFm.Enabled
+	sonicAnalysis := h.Sonic.Enabled()
 	writeResource(w, http.StatusOK, map[string]any{
 		"server":          "immerle",
 		"protocolVersion": ProtocolVersion,
@@ -55,7 +56,7 @@ func (h *Handler) handleCapabilities(w http.ResponseWriter, r *http.Request) {
 			"devices":                map[string]any{"version": 1, "auth": "jwt"},
 			"theme":                  map[string]any{"version": 1, "properties": []string{"accentColor"}},
 			"dynamicProviders":       map[string]any{"version": 1, "kinds": []string{"http"}, "admin": true},
-			"runtimeSettings":        map[string]any{"version": 1, "admin": true, "groups": []string{"providers", "scan", "cleanup", "federation", "import", "smartPlaylists", "radio", "wrapped", "offline"}},
+			"runtimeSettings":        map[string]any{"version": 1, "admin": true, "groups": []string{"providers", "scan", "cleanup", "federation", "import", "smartPlaylists", "radio", "wrapped", "offline", "sonic"}},
 			"federation":             map[string]any{"version": 1, "enabled": federation},
 			"smartPlaylists":         map[string]any{"version": 1, "admin": true, "enabled": smart},
 			"internetRadio":          map[string]any{"version": 1, "admin": true, "enabled": radio},
@@ -65,6 +66,7 @@ func (h *Handler) handleCapabilities(w http.ResponseWriter, r *http.Request) {
 			"concertDiscovery":       map[string]any{"version": 1, "admin": true, "enabled": concerts},
 			"bandcampImport":         map[string]any{"version": 1, "enabled": bandcampImport},
 			"lastFm":                 map[string]any{"version": 1, "admin": true, "enabled": lastFm},
+			"sonicAnalysis":          map[string]any{"version": 1, "admin": true, "enabled": sonicAnalysis},
 		},
 	})
 }

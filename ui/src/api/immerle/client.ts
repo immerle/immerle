@@ -50,6 +50,7 @@ import {
   ProviderDTO,
   PublicPlaylistDTO,
   RuntimeSettingsDTO,
+  SonicStatusDTO,
   ThemeDTO,
   UserSummaryDTO,
 } from '../immerleApi';
@@ -1033,6 +1034,11 @@ export class ImmerleClient {
   async setHallOfFameEnabled(enabled: boolean): Promise<boolean> {
     const r = await this.request<{ enabled: boolean }>('PUT', 'admin/hall-of-fame', { enabled });
     return !!r.enabled;
+  }
+
+  /** Admin: local audio-analysis availability and progress. */
+  async getSonicStatus(signal?: AbortSignal): Promise<SonicStatusDTO> {
+    return this.request<SonicStatusDTO>('GET', 'admin/sonic', undefined, signal);
   }
 
   // --- Admin: downloads cleanup (eviction sweep) --------------------------

@@ -32,12 +32,13 @@ export const SUBSONIC_ONLY_CAPABILITIES: Capabilities = {
     concertDiscovery: false,
     bandcampImport: false,
     lastFm: false,
+    sonicAnalysis: false,
   },
   toggles: {},
 };
 
 /** The admin-togglable capability keys — see `Capabilities.toggles`. */
-const TOGGLEABLE = ['smartPlaylists', 'internetRadio', 'wrapped', 'offlineDownloads', 'hallOfFame', 'concertDiscovery', 'lastFm'] as const;
+const TOGGLEABLE = ['smartPlaylists', 'internetRadio', 'wrapped', 'offlineDownloads', 'hallOfFame', 'concertDiscovery', 'lastFm', 'sonicAnalysis'] as const;
 
 /**
  * Probe an instance for Immerle capabilities via the generated client
@@ -104,6 +105,7 @@ export function adaptCapabilities(payload: CapabilitiesResponse): Capabilities {
       concertDiscovery: has('concertDiscovery'),
       bandcampImport: has('bandcampImport'),
       lastFm: has('lastFm'),
+      sonicAnalysis: has('sonicAnalysis'),
     },
     toggles,
   };

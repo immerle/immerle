@@ -54,6 +54,8 @@ export interface Capabilities {
     bandcampImport: boolean;
     /** Last.fm scrobbling (`/me/lastfm`), gated behind an admin-configured API key. */
     lastFm: boolean;
+    /** Local audio analysis (tempo, key, energy) behind the sonic features. */
+    sonicAnalysis: boolean;
   };
   /**
    * Live on/off state for the handful of features an admin can toggle at

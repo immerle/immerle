@@ -40,6 +40,7 @@ import (
 	"github.com/immerle/immerle/internal/reccobeats"
 	"github.com/immerle/immerle/internal/scanner"
 	"github.com/immerle/immerle/internal/server"
+	"github.com/immerle/immerle/internal/sonic"
 	"github.com/immerle/immerle/internal/spotifyplaylists"
 	"github.com/immerle/immerle/internal/spotifyweb"
 	"github.com/immerle/immerle/internal/stream"
@@ -59,6 +60,7 @@ type App struct {
 	outbox           *outbox.Worker
 	enricher         *core.ArtistImageEnricher
 	mbEnricher       *core.MusicBrainzEnricher
+	sonic            *sonic.Worker
 	evictor          *core.Evictor
 	charts           *charts.Service
 	spotifyPlaylists *spotifyplaylists.Service
@@ -319,6 +321,10 @@ func New(cfg config.Config) (*App, error) {
 	// scrobbles link precisely instead of relying on its own fuzzy matching.
 	mbEnricher := core.NewMusicBrainzEnricher(store.Catalog, musicbrainz.NewClient(), logger)
 
+	// Local audio analysis (tempo, key, energy, timbre). Always built; it idles
+	// while the sonic setting is off or ffmpeg is missing, and yields to scans.
+	sonicWorker := sonic.NewWorker(store.Sonic, transcodeCfg.FFmpegPath, settingsSvc.SonicConfig, scan.Scanning, logger)
+
 	// Library analytics (counts + total size/duration), cached and recomputed at
 	// each scan so the analytics endpoint never SUMs over every track on request.
 	libraryStats := core.NewLibraryStatsService(store.Catalog, logger)
@@ -329,6 +335,7 @@ func New(cfg config.Config) (*App, error) {
 		}
 		enricher.Wake()
 		mbEnricher.Wake()
+		sonicWorker.Wake()
 	})
 
 	// Federation client (S7): always built, config is read live (hot-reloadable,
@@ -503,6 +510,7 @@ func New(cfg config.Config) (*App, error) {
 		AutoPlaylists:    autoplaylistsSvc,
 		Concerts:         store.Concerts,
 		ConcertsSync:     concertsSvc,
+		Sonic:            sonicWorker,
 		Purchases:        purchasesSvc,
 		Providers:        providerMgr,
 		Settings:         settingsSvc,
@@ -571,6 +579,7 @@ func New(cfg config.Config) (*App, error) {
 		outbox:           outboxWorker,
 		enricher:         enricher,
 		mbEnricher:       mbEnricher,
+		sonic:            sonicWorker,
 		evictor:          evictor,
 		charts:           chartsSvc,
 		spotifyPlaylists: spotifyPlaylistsSvc,
@@ -635,6 +644,9 @@ func (a *App) Run(ctx context.Context) error {
 	}
 	if a.mbEnricher != nil {
 		a.spawn(func() { a.mbEnricher.Run(ctx, 2*time.Minute) })
+	}
+	if a.sonic != nil {
+		a.spawn(func() { a.sonic.Run(ctx) })
 	}
 	if a.evictor != nil {
 		// Always started; it self-gates on the runtime enabled flag.

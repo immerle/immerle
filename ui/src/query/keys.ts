@@ -48,6 +48,7 @@ export const qk = {
   federationSearch: (q: string) => ['admin', 'federation', 'search', q] as const,
   settings: ['admin', 'settings'] as const,
   cleanup: ['admin', 'cleanup'] as const,
+  sonic: ['admin', 'sonic'] as const,
 } as const;
 
 /**

@@ -668,6 +668,15 @@
       "groupMaintenance": "Maintenance",
       "spotifySearchEnabled": "Recherche de playlists Spotify",
       "spotifySearchHelp": "Si activé, la recherche affiche aussi les playlists Spotify publiques, ouvertes à la demande. Un utilisateur peut en garder une dans sa bibliothèque, elle est alors mise à jour chaque semaine.",
+      "sonicTitle": "Analyse audio",
+      "sonicSubtitle": "Tempo, tonalité et énergie de vos morceaux",
+      "sonicDescription": "Analyse votre bibliothèque en local avec ffmpeg (tempo, tonalité, énergie, timbre). Elle alimente les fonctionnalités sonores comme la radio par morceau, les playlists d'ambiance et l'Auto-DJ, chacune activable séparément. La première passe tourne en arrière-plan et peut prendre quelques heures sur un petit serveur.",
+      "sonicEnabled": "Analyser la bibliothèque",
+      "sonicWorkers": "Morceaux analysés en parallèle",
+      "sonicWorkersHelp": "Plus c'est rapide, plus ça consomme de CPU. 1 convient bien à un Raspberry Pi.",
+      "sonicUnavailable": "ffmpeg est introuvable (voir Transcodage), l'analyse audio ne peut pas tourner.",
+      "sonicProgress": "{{analyzed}} / {{total}} morceaux analysés",
+      "sonicFailed": "{{count}} n'ont pas pu être analysés",
       "save": "Enregistrer"
     },
     "users": {

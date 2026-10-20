@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"sync"
@@ -204,6 +205,7 @@ func sanitizeSettings(rs models.RuntimeSettings) models.RuntimeSettings {
 	if rs.Transcode.FFprobePath == "" {
 		rs.Transcode.FFprobePath = "ffprobe"
 	}
+	rs.Sonic.Workers = max(1, min(rs.Sonic.Workers, runtime.NumCPU()))
 	if rs.Cleanup.MaxAgeSeconds <= 0 {
 		rs.Cleanup.MaxAgeSeconds = 720 * 3600
 	}
@@ -296,3 +298,6 @@ func (s *SettingsService) LastFmConfig() models.LastFmRuntime { return s.Get().L
 
 // LDAPConfig returns the live LDAP settings (read on each password login).
 func (s *SettingsService) LDAPConfig() models.LDAPRuntime { return s.Get().LDAP }
+
+// SonicConfig returns the live audio-analysis settings.
+func (s *SettingsService) SonicConfig() models.SonicRuntime { return s.Get().Sonic }
