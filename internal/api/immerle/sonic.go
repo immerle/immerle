@@ -138,3 +138,58 @@ func (h *Handler) handleAutoDJ(w http.ResponseWriter, r *http.Request) {
 	}
 	writeResource(w, http.StatusOK, AutoDJResponseDTO{IDs: ids})
 }
+
+// SonicDuplicatesDTO lists groups of tracks that sound identical.
+type SonicDuplicatesDTO struct {
+	Groups [][]songView `json:"groups"`
+}
+
+// handleSonicDuplicates lists probable duplicates.
+//
+// @Summary      Sonic duplicates
+// @Description  Admin only. Groups of analyzed tracks that sound identical and last about as long (within 3 s): the same recording under other tags, or in another format. Nothing is deleted; the admin picks which copy to keep. 404 when the sonic duplicates setting is off.
+// @Tags         admin
+// @Security     BearerAuth
+// @Produce      json
+// @Success      200  {object}  SonicDuplicatesDTO
+// @Failure      401  {object}  errorResponse
+// @Failure      403  {object}  errorResponse
+// @Failure      404  {object}  errorResponse
+// @Failure      500  {object}  errorResponse
+// @Router       /admin/sonic/duplicates [get]
+func (h *Handler) handleSonicDuplicates(w http.ResponseWriter, r *http.Request) {
+	if !h.requireAdmin(w, r) {
+		return
+	}
+	if !h.Sonic.DuplicatesEnabled() {
+		writeError(w, http.StatusNotFound, "not_found", "sonic duplicates are disabled")
+		return
+	}
+	groups, err := h.Sonic.Duplicates(r.Context())
+	if err != nil {
+		writeInternal(w, err)
+		return
+	}
+	var ids []string
+	for _, g := range groups {
+		ids = append(ids, g...)
+	}
+	byID, err := h.Catalog.TracksByIDs(r.Context(), ids)
+	if err != nil {
+		writeInternal(w, err)
+		return
+	}
+	out := SonicDuplicatesDTO{Groups: [][]songView{}}
+	for _, g := range groups {
+		var views []songView
+		for _, id := range g {
+			if t, ok := byID[id]; ok {
+				views = append(views, toSongView(t))
+			}
+		}
+		if len(views) > 1 { // a copy deleted since the index was built
+			out.Groups = append(out.Groups, views)
+		}
+	}
+	writeResource(w, http.StatusOK, out)
+}

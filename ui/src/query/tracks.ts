@@ -14,6 +14,19 @@ export function useAdminTracks(query: string, limit = 50, offset = 0) {
 }
 
 /**
+ * Admin: sonic duplicates, fetched on demand (enabled once asked). Keyed under
+ * ['admin', 'tracks'] so deleting a copy refreshes the groups.
+ */
+export function useSonicDuplicates(enabled: boolean) {
+  const client = useAuth((s) => s.client);
+  return useQuery({
+    queryKey: ['admin', 'tracks', 'sonic-duplicates'] as const,
+    enabled: enabled && !!client,
+    queryFn: ({ signal }) => client!.adminSonicDuplicates(signal),
+  });
+}
+
+/**
  * Admin: edit metadata, replace cover, delete. All three invalidate the admin
  * track list plus the wider catalog — a track is cached independently
  * everywhere it's shown, so e.g. delete would otherwise leave it playable elsewhere.

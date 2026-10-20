@@ -1207,6 +1207,10 @@
                                 "example": false,
                                 "type": "boolean"
                             },
+                            "duplicates": {
+                                "example": false,
+                                "type": "boolean"
+                            },
                             "enabled": {
                                 "example": false,
                                 "type": "boolean"
@@ -1409,6 +1413,21 @@
                     "sort": {
                         "example": "playCount",
                         "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.SonicDuplicatesDTO": {
+                "properties": {
+                    "groups": {
+                        "items": {
+                            "items": {
+                                "$ref": "#/components/schemas/immerle.songView"
+                            },
+                            "type": "array"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
                     }
                 },
                 "type": "object"
@@ -2758,6 +2777,9 @@
                     },
                     "artistId": {
                         "type": "string"
+                    },
+                    "bitRate": {
+                        "type": "integer"
                     },
                     "bpm": {
                         "type": "integer"
@@ -5828,6 +5850,72 @@
                     }
                 ],
                 "summary": "Audio analysis status",
+                "tags": [
+                    "admin"
+                ]
+            }
+        },
+        "/admin/sonic/duplicates": {
+            "get": {
+                "description": "Admin only. Groups of analyzed tracks that sound identical and last about as long (within 3 s): the same recording under other tags, or in another format. Nothing is deleted; the admin picks which copy to keep. 404 when the sonic duplicates setting is off.",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.SonicDuplicatesDTO"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Sonic duplicates",
                 "tags": [
                     "admin"
                 ]

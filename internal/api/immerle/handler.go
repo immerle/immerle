@@ -414,6 +414,7 @@ func (h *Handler) Register(mux chi.Router) {
 
 			// Admin: local audio-analysis progress (toggled via /admin/settings).
 			r.Get("/admin/sonic", h.handleSonicStatus)
+			r.Get("/admin/sonic/duplicates", h.handleSonicDuplicates)
 
 			// Admin: runtime-configurable on-demand providers.
 			r.Get("/admin/providers", h.handleProviders)

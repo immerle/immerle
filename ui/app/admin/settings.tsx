@@ -377,6 +377,13 @@ export default function AdminSettings() {
               onChange={(v) => save({ sonic: { autoDj: v } })}
             />
             <Text className="text-xs text-muted">{t('admin.settings.sonicAutoDjHelp')}</Text>
+            <ToggleRow
+              label={t('admin.settings.sonicDuplicates')}
+              hint={q.data?.settings.sonic?.enabled ? undefined : t('admin.settings.sonicNeedsAnalysis')}
+              value={q.data?.settings.sonic?.duplicates ?? false}
+              onChange={(v) => save({ sonic: { duplicates: v } })}
+            />
+            <Text className="text-xs text-muted">{t('admin.settings.sonicDuplicatesHelp')}</Text>
             {sonic.data?.available && sonic.data.total ? (
               <View className="gap-0.5 rounded-xl bg-surface-alt p-3">
                 <Text className="text-sm text-foreground">

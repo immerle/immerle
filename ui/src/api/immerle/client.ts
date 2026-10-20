@@ -788,6 +788,13 @@ export class ImmerleClient {
     return this.uploadForm<Song>('PUT', `admin/tracks/${encodeURIComponent(id)}/cover`, form);
   }
 
+  /** Admin: groups of tracks that sound identical (sonic duplicates). */
+  async adminSonicDuplicates(signal?: AbortSignal): Promise<Song[][]> {
+    const { data, error } = await this.api.GET('/admin/sonic/duplicates', { signal });
+    if (error) throw apiErr(error, 'sonic_duplicates_failed');
+    return (data.groups ?? []).map((g) => g.map(toSong));
+  }
+
   /** Delete any track: its file, DB row and references. Admin-only. */
   async adminDeleteTrack(id: string): Promise<void> {
     const { error } = await this.api.DELETE('/admin/tracks/{id}', {

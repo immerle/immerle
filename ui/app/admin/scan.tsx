@@ -9,7 +9,7 @@ import {
   useStartScan,
   useUpdateSettings,
 } from '../../src/query/admin';
-import { useAdminTracks, useTrackMutations } from '../../src/query/tracks';
+import { useAdminTracks, useSonicDuplicates, useTrackMutations } from '../../src/query/tracks';
 import { useAuth } from '../../src/auth/store';
 import { Song } from '../../src/api/subsonic/types';
 import { Badge, Button, Card, ErrorState, Field, Loading } from '../../src/components/ui';
@@ -102,6 +102,7 @@ export default function AdminScan() {
 
         <ScanConfigCard />
         <TracksCard />
+        <DuplicatesCard />
       </AdminScroll>
     </>
   );
@@ -231,6 +232,79 @@ function TracksCard() {
           />
         </View>
       ) : null}
+    </Card>
+  );
+}
+
+/** The copy worth keeping in a group: best bitrate, then the biggest file. */
+function bestCopy(group: Song[]): string | undefined {
+  return [...group].sort((a, b) => (b.bitRate ?? 0) - (a.bitRate ?? 0) || (b.size ?? 0) - (a.size ?? 0))[0]?.id;
+}
+
+/** Admin: groups of tracks that sound identical, to delete the extra copies. */
+function DuplicatesCard() {
+  const t = useT();
+  const client = useAuth((s) => s.client);
+  const [asked, setAsked] = useState(false);
+  const q = useSonicDuplicates(asked);
+  const { remove } = useTrackMutations();
+
+  if (!client?.isFeatureEnabled('sonicDuplicates')) return null;
+
+  const confirmDelete = (track: Song) => {
+    const doDelete = () => remove.mutate(track.id);
+    if (Platform.OS === 'web') doDelete();
+    else
+      Alert.alert(t('admin.tracks.deleteConfirmTitle'), track.title, [
+        { text: t('admin.tracks.cancel'), style: 'cancel' },
+        { text: t('admin.tracks.delete'), style: 'destructive', onPress: doDelete },
+      ]);
+  };
+
+  return (
+    <Card className="gap-3">
+      <CardTitle icon="copy-outline" color="#f59e0b" title={t('admin.duplicates.title')} />
+      <Text className="text-xs text-muted">{t('admin.duplicates.description')}</Text>
+      {!asked ? (
+        <Button title={t('admin.duplicates.search')} icon="search" variant="secondary" onPress={() => setAsked(true)} />
+      ) : q.isLoading ? (
+        <Loading />
+      ) : q.isError ? (
+        <ErrorState message={t('admin.duplicates.loadError')} onRetry={q.refetch} />
+      ) : !q.data?.length ? (
+        <Text className="py-4 text-center text-muted">{t('admin.duplicates.none')}</Text>
+      ) : (
+        <>
+          <Text className="text-xs text-muted">{t('admin.duplicates.groupCount', { count: q.data.length })}</Text>
+          {q.data.map((group) => {
+            const keep = bestCopy(group);
+            return (
+              <View key={group.map((s) => s.id).join()} className="overflow-hidden rounded-xl bg-surface-alt">
+                {group.map((track, i) => (
+                  <View key={track.id} className={`flex-row items-center gap-3 px-3 py-2.5 ${i ? 'border-t border-border' : ''}`}>
+                    <CoverArt coverArt={track.coverArt} size={40} rounded="rounded-md" />
+                    <View className="flex-1">
+                      <Text numberOfLines={1} className="text-sm text-foreground">
+                        {track.title} · {track.artist}
+                      </Text>
+                      <Text numberOfLines={1} className="text-xs text-muted">
+                        {[track.album, track.suffix?.toUpperCase(), track.bitRate ? `${track.bitRate} kbps` : '', track.size ? formatBytes(track.size) : '']
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </Text>
+                    </View>
+                    {track.id === keep ? (
+                      <Badge label={t('admin.duplicates.keep')} tone="primary" />
+                    ) : (
+                      <Button title={t('admin.tracks.delete')} size="sm" icon="trash-outline" variant="danger" loading={remove.isPending && remove.variables === track.id} onPress={() => confirmDelete(track)} />
+                    )}
+                  </View>
+                ))}
+              </View>
+            );
+          })}
+        </>
+      )}
     </Card>
   );
 }

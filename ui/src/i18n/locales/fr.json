@@ -693,6 +693,8 @@
       "sonicMoodsHelp": "Publie des playlists partagées Calme, Focus, Mélancolie, Énergie, Soirée et Workout, mises à jour chaque jour. Chacune a besoin d'au moins 15 morceaux correspondants.",
       "sonicAutoDj": "Auto-DJ",
       "sonicAutoDjHelp": "Permet de lire une playlist, ou de réordonner sa file d'attente, pour des enchaînements fluides : tempos proches, tonalités compatibles, énergie sans à-coups.",
+      "sonicDuplicates": "Doublons sonores",
+      "sonicDuplicatesHelp": "Liste, dans Admin > Bibliothèque, les morceaux qui sonnent à l'identique : le même enregistrement sous d'autres tags ou dans un autre format. Rien n'est supprimé automatiquement.",
       "save": "Enregistrer"
     },
     "users": {
@@ -717,6 +719,15 @@
       "newPassword": "Nouveau mot de passe",
       "validate": "Valider",
       "resetPassword": "Réinitialiser le mot de passe"
+    },
+    "duplicates": {
+      "title": "Doublons probables",
+      "description": "Morceaux qui sonnent à l'identique et durent à peu près pareil, repérés par l'analyse audio : le même enregistrement sous d'autres tags ou dans un autre format. La copie de meilleure qualité est marquée à garder.",
+      "search": "Rechercher les doublons",
+      "loadError": "Impossible de charger les doublons.",
+      "none": "Aucun doublon trouvé.",
+      "groupCount": "{{count}} groupe(s) de doublons",
+      "keep": "À garder"
     },
     "tracks": {
       "title": "Morceaux",

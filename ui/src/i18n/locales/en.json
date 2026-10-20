@@ -693,6 +693,8 @@
       "sonicMoodsHelp": "Publishes shared Calm, Focus, Melancholy, Energy, Party and Workout playlists, refreshed daily. Each needs at least 15 matching tracks.",
       "sonicAutoDj": "Auto-DJ",
       "sonicAutoDjHelp": "Lets listeners play a playlist, or reorder their queue, so tracks flow smoothly: close tempos, compatible keys, small energy jumps.",
+      "sonicDuplicates": "Sonic duplicates",
+      "sonicDuplicatesHelp": "Lists, in Admin > Library, tracks that sound identical: the same recording under other tags or in another format. Nothing is deleted automatically.",
       "save": "Save"
     },
     "users": {
@@ -717,6 +719,15 @@
       "newPassword": "New password",
       "validate": "Confirm",
       "resetPassword": "Reset password"
+    },
+    "duplicates": {
+      "title": "Probable duplicates",
+      "description": "Tracks that sound identical and last about as long, found by the audio analysis: the same recording under other tags or in another format. The copy with the best quality is marked to keep.",
+      "search": "Find duplicates",
+      "loadError": "Could not load the duplicates.",
+      "none": "No duplicates found.",
+      "groupCount": "{{count}} group(s) of duplicates",
+      "keep": "Keep"
     },
     "tracks": {
       "title": "Tracks",

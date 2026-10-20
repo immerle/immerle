@@ -64,6 +64,8 @@ export interface Capabilities {
     sonicMoods: boolean;
     /** Auto-DJ: order a playlist or the queue for smooth transitions. */
     sonicAutoDj: boolean;
+    /** Admin: list tracks that sound identical (sonic duplicates). */
+    sonicDuplicates: boolean;
   };
   /**
    * Live on/off state for the handful of features an admin can toggle at
