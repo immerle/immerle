@@ -370,6 +370,13 @@ export default function AdminSettings() {
               onChange={(v) => save({ sonic: { moods: v } })}
             />
             <Text className="text-xs text-muted">{t('admin.settings.sonicMoodsHelp')}</Text>
+            <ToggleRow
+              label={t('admin.settings.sonicAutoDj')}
+              hint={q.data?.settings.sonic?.enabled ? undefined : t('admin.settings.sonicNeedsAnalysis')}
+              value={q.data?.settings.sonic?.autoDj ?? false}
+              onChange={(v) => save({ sonic: { autoDj: v } })}
+            />
+            <Text className="text-xs text-muted">{t('admin.settings.sonicAutoDjHelp')}</Text>
             {sonic.data?.available && sonic.data.total ? (
               <View className="gap-0.5 rounded-xl bg-surface-alt p-3">
                 <Text className="text-sm text-foreground">

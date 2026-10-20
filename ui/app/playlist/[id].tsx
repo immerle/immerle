@@ -21,6 +21,7 @@ import { Badge, Button, ErrorState, Field, IconButton, Loading } from '../../src
 import { PlayButton } from '../../src/components/PlayButton';
 import { DownloadButton } from '../../src/components/DownloadButton';
 import { usePlayer } from '../../src/audio/store';
+import { useAutoDj } from '../../src/query/sonic';
 import { useAuth } from '../../src/auth/store';
 import { useAddCollaborator } from '../../src/query/social';
 import { Song } from '../../src/api/subsonic/types';
@@ -50,6 +51,7 @@ export default function PlaylistDetail() {
   const reorder = useReorderPlaylist();
   const del = useDeletePlaylist();
   const playSongs = usePlayer((s) => s.playSongs);
+  const autoDj = useAutoDj();
 
   const client = useAuth((s) => s.client);
   const username = useAuth((s) => s.client?.username);
@@ -216,6 +218,16 @@ export default function PlaylistDetail() {
           )}
           <View className="flex-row items-center gap-4">
             <DownloadButton songs={songs} size={24} snapshot={{ type: 'playlist', id: playlist.id, name: displayName, coverArt: playlist.coverArt }} />
+            {autoDj.available && songs.length > 2 ? (
+              <IconButton
+                name="pulse-outline"
+                size={24}
+                color={colors.muted}
+                disabled={autoDj.busy}
+                onPress={() => void autoDj.play(songs)}
+                accessibilityLabel={t('media.playlist.autoDj')}
+              />
+            ) : null}
             <PlayButton
               onPress={() => {
                 if (!songs.length) return;

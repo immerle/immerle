@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/binary"
 	"math"
+	"strings"
 
 	"github.com/immerle/immerle/internal/db"
 	"github.com/immerle/immerle/internal/models"
@@ -108,14 +109,31 @@ type SonicSummary struct {
 	Energy       float64
 	Danceability float64
 	Mode         string
+	Camelot      string
 }
 
 // Summaries returns the scalar features of every track analyzed successfully
 // from its current file with the given algorithm.
 func (r *SonicRepo) Summaries(ctx context.Context, algoVersion int) ([]SonicSummary, error) {
-	rows, err := r.query(ctx, `SELECT s.track_id, t.artist_id, s.bpm, s.energy, s.danceability, s.mode FROM track_sonic s
+	return r.summaries(ctx, "", algoVersion)
+}
+
+// SummariesFor is Summaries restricted to the given track ids.
+func (r *SonicRepo) SummariesFor(ctx context.Context, ids []string, algoVersion int) ([]SonicSummary, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	args := []any{algoVersion}
+	for _, id := range ids {
+		args = append(args, id)
+	}
+	return r.summaries(ctx, " AND s.track_id IN (?"+strings.Repeat(", ?", len(ids)-1)+")", args...)
+}
+
+func (r *SonicRepo) summaries(ctx context.Context, filter string, args ...any) ([]SonicSummary, error) {
+	rows, err := r.query(ctx, `SELECT s.track_id, t.artist_id, s.bpm, s.energy, s.danceability, s.mode, s.camelot FROM track_sonic s
 		JOIN tracks t ON t.id = s.track_id
-		WHERE s.algo_version = ? AND s.error = '' AND s.file_hash = t.file_hash`, algoVersion)
+		WHERE s.algo_version = ? AND s.error = '' AND s.file_hash = t.file_hash`+filter, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +141,7 @@ func (r *SonicRepo) Summaries(ctx context.Context, algoVersion int) ([]SonicSumm
 	var out []SonicSummary
 	for rows.Next() {
 		var v SonicSummary
-		if err := rows.Scan(&v.TrackID, &v.ArtistID, &v.BPM, &v.Energy, &v.Danceability, &v.Mode); err != nil {
+		if err := rows.Scan(&v.TrackID, &v.ArtistID, &v.BPM, &v.Energy, &v.Danceability, &v.Mode, &v.Camelot); err != nil {
 			return nil, err
 		}
 		out = append(out, v)

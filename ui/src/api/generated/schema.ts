@@ -8568,6 +8568,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/songs/autodj": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Auto-DJ order
+         * @description Reorders tracks for smooth transitions from the local audio analysis: close tempos (a half or double tempo counts as close), harmonically compatible keys on the Camelot wheel, small energy jumps. Starts from ids[0] when keepFirst, else from the calmest track. Tracks not analyzed yet follow, in their original order. 404 when Auto-DJ is switched off.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Tracks to order */
+            requestBody: {
+                content: {
+                    "application/json": Record<string, never> | components["schemas"]["immerle.AutoDJRequestDTO"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.AutoDJResponseDTO"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/songs/radio": {
         parameters: {
             query?: never;
@@ -9847,6 +9927,21 @@ export interface components {
             /** @example 2001 */
             year?: number;
         };
+        "immerle.AutoDJRequestDTO": {
+            /**
+             * @description IDs are the track ids to order (a playlist, or the queue from the
+             *     current track on). Duplicates are kept.
+             */
+            ids?: string[];
+            /**
+             * @description KeepFirst pins ids[0], e.g. the track playing now.
+             * @example true
+             */
+            keepFirst?: boolean;
+        };
+        "immerle.AutoDJResponseDTO": {
+            ids?: string[];
+        };
         "immerle.BandcampCollectionDTO": {
             items?: components["schemas"]["immerle.BandcampCollectionItemDTO"][];
         };
@@ -10293,6 +10388,8 @@ export interface components {
                 corsAllowedOrigins?: string[];
             };
             sonic?: {
+                /** @example false */
+                autoDj?: boolean;
                 /** @example false */
                 autoplay?: boolean;
                 /** @example false */

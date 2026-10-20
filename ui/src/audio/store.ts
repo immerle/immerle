@@ -17,6 +17,7 @@ import { networkClass, onNetworkChange } from './network';
 import { useToast } from '../stores/toast';
 import { t, tError } from '../i18n';
 import { autoplayRequest, AUTOPLAY_BATCH } from './autoplay';
+import { planMoves } from './autodj';
 
 const QUALITY_KEY = 'immerle.quality.v1';
 const ADAPTIVE_KEY = 'immerle.adaptiveQuality.v1';
@@ -158,6 +159,12 @@ interface AudioState {
   skipTo: (index: number) => Promise<void>;
   removeAt: (index: number) => Promise<void>;
   move: (from: number, to: number) => Promise<void>;
+  /**
+   * Reorders the queue from the current track on to `ordered` (ids, current
+   * track first), e.g. an Auto-DJ order. Saved once, not per move. Only on
+   * the device playing: a device mirroring another one leaves it as is.
+   */
+  reorderUpcoming: (ordered: string[]) => Promise<void>;
   cycleRepeat: () => Promise<void>;
   toggleShuffle: () => Promise<void>;
   setVolume: (volume: number) => void;
@@ -1298,6 +1305,19 @@ export const usePlayer = create<AudioState>((set, get) => ({
     set({ songs });
     await engine.move(from, to);
     flushSaveQueue(get, false, 'move');
+  },
+
+  reorderUpcoming: async (ordered) => {
+    const engine = get().engine;
+    if (!engine || isSpectating(get)) return;
+    await takeControl(get, set);
+    const songs = [...get().songs];
+    for (const [from, to] of planMoves(songs.map((s) => s.id), get().index, ordered)) {
+      songs.splice(to, 0, ...songs.splice(from, 1));
+      await engine.move(from, to);
+    }
+    set({ songs });
+    flushSaveQueue(get, false, 'reorderUpcoming');
   },
 
   cycleRepeat: async () => {

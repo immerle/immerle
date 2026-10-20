@@ -88,6 +88,7 @@ type RuntimeSettingsDTO struct {
 		Radio    bool `json:"radio" example:"false"`
 		Autoplay bool `json:"autoplay" example:"false"`
 		Moods    bool `json:"moods" example:"false"`
+		AutoDJ   bool `json:"autoDj" example:"false"`
 	} `json:"sonic"`
 }
 

@@ -312,6 +312,13 @@ export class ImmerleClient {
     return (data.songs ?? []).map(toSong);
   }
 
+  /** Track ids reordered for smooth transitions (Auto-DJ). keepFirst pins ids[0]. */
+  async autoDjOrder(ids: string[], keepFirst: boolean): Promise<string[]> {
+    const { data, error } = await this.api.POST('/songs/autodj', { body: { ids, keepFirst } });
+    if (error) throw apiErr(error, 'browse.autoDj');
+    return data.ids ?? ids;
+  }
+
   async getSong(id: string, signal?: AbortSignal): Promise<Song> {
     const { data, error } = await this.api.GET('/songs/{id}', { params: { path: { id } }, signal });
     if (error) throw apiErr(error, 'browse.song');
