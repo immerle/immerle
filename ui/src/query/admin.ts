@@ -219,6 +219,18 @@ export function useUpdateSettings() {
 
 // --- Downloads cleanup (admin) ---------------------------------------------
 
+/** Audio-analysis progress; polled while the analysis runs. */
+export function useSonicStatus(enabled: boolean) {
+  const client = useAuth((s) => s.client);
+  return useQuery({
+    queryKey: qk.sonic,
+    enabled: enabled && !!client && !!client.has('runtimeSettings'),
+    retry: false,
+    queryFn: ({ signal }) => client!.getSonicStatus(signal),
+    refetchInterval: (q) => (q.state.data?.enabled ? 10_000 : false),
+  });
+}
+
 export function useCleanup() {
   const client = useAuth((s) => s.client);
   return useQuery({

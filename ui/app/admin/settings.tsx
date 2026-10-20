@@ -6,6 +6,7 @@ import {
   useCleanup,
   useCleanupMutations,
   useSettings,
+  useSonicStatus,
   useUpdateSettings,
 } from '../../src/query/admin';
 import { useSmartPlaylistsAdmin, useSetSmartPlaylists } from '../../src/query/smartPlaylists';
@@ -35,13 +36,13 @@ const RESTART_LABEL_KEYS: Record<string, string> = {
   'scan.watch': 'admin.settings.restartScanWatch',
 };
 
-type SectionKey = 'auth' | 'ldap' | 'server' | 'transcode' | 'cleanup' | 'charts' | 'concerts' | 'lastfm' | 'logs' | 'features';
+type SectionKey = 'auth' | 'ldap' | 'server' | 'transcode' | 'cleanup' | 'charts' | 'concerts' | 'lastfm' | 'logs' | 'features' | 'sonic';
 
 /** Sections grouped by theme, in display order. */
 const GROUPS: { titleKey: string; keys: SectionKey[] }[] = [
   { titleKey: 'admin.settings.groupAccess', keys: ['auth', 'ldap', 'server'] },
   { titleKey: 'admin.settings.groupPlayback', keys: ['transcode'] },
-  { titleKey: 'admin.settings.groupContent', keys: ['features', 'charts', 'concerts'] },
+  { titleKey: 'admin.settings.groupContent', keys: ['features', 'sonic', 'charts', 'concerts'] },
   { titleKey: 'admin.settings.groupIntegrations', keys: ['lastfm'] },
   { titleKey: 'admin.settings.groupMaintenance', keys: ['cleanup', 'logs'] },
 ];
@@ -63,6 +64,7 @@ interface Form {
   ffmpeg: string;
   ffprobe: string;
   logRetention: string;
+  sonicWorkers: string;
 }
 
 function toForm(s: RuntimeSettingsDTO): Form {
@@ -75,6 +77,7 @@ function toForm(s: RuntimeSettingsDTO): Form {
     ffmpeg: s.transcode?.ffmpegPath ?? '',
     ffprobe: s.transcode?.ffprobePath ?? '',
     logRetention: String(s.logs?.retentionDays ?? 30),
+    sonicWorkers: String(s.sonic?.workers ?? 1),
   };
 }
 
@@ -110,6 +113,7 @@ export default function AdminSettings() {
   const updateLastFm = useUpdateLastFmAdminConfig();
   const [form, setForm] = useState<Form | null>(null);
   const [open, setOpen] = useState<Set<SectionKey>>(new Set());
+  const sonic = useSonicStatus(open.has('sonic'));
   const [removed, setRemoved] = useState<number | null>(null);
   const [synced, setSynced] = useState<number | null>(null);
   const [concertsSynced, setConcertsSynced] = useState<number | null>(null);
@@ -134,6 +138,7 @@ export default function AdminSettings() {
     { key: 'concerts', icon: 'megaphone', color: '#ec4899', title: t('admin.settings.concertsTitle'), subtitle: concertProviderNames(concertsCountry) || t('admin.settings.countryNotSet') },
     { key: 'lastfm', icon: 'disc', color: '#eab308', title: t('admin.settings.lastFmTitle'), subtitle: t('admin.settings.lastFmSubtitle') },
     { key: 'logs', icon: 'document-text', color: '#f59e0b', title: t('admin.settings.logsTitle'), subtitle: t('admin.settings.logsSubtitle') },
+    { key: 'sonic', icon: 'pulse', color: '#14b8a6', title: t('admin.settings.sonicTitle'), subtitle: t('admin.settings.sonicSubtitle') },
     { key: 'features', icon: 'sparkles', color: '#8b5cf6', title: t('admin.settings.featuresTitle'), subtitle: t('admin.settings.featuresSubtitle') },
   ];
 
@@ -321,6 +326,38 @@ export default function AdminSettings() {
               onChange={(v) => save({ spotifySearch: { enabled: v } })}
             />
             <Text className="text-xs text-muted">{t('admin.settings.spotifySearchHelp')}</Text>
+          </>
+        ) : null}
+
+        {sheet === 'sonic' ? (
+          <>
+            <Text className="text-xs text-muted">{t('admin.settings.sonicDescription')}</Text>
+            {sonic.data && !sonic.data.available ? (
+              <Text className="text-xs text-danger">{t('admin.settings.sonicUnavailable')}</Text>
+            ) : null}
+            <ToggleRow
+              label={t('admin.settings.sonicEnabled')}
+              value={q.data?.settings.sonic?.enabled ?? false}
+              onChange={(v) => save({ sonic: { enabled: v } }, () => sonic.refetch())}
+            />
+            <Field
+              label={t('admin.settings.sonicWorkers')}
+              keyboardType="number-pad"
+              value={form.sonicWorkers}
+              onChangeText={(v) => set('sonicWorkers', v)}
+              help={t('admin.settings.sonicWorkersHelp')}
+            />
+            <SaveButton loading={update.isPending} onPress={() => save({ sonic: { workers: num(form.sonicWorkers) } })} />
+            {sonic.data?.available && sonic.data.total ? (
+              <View className="gap-0.5 rounded-xl bg-surface-alt p-3">
+                <Text className="text-sm text-foreground">
+                  {t('admin.settings.sonicProgress', { analyzed: sonic.data.analyzed ?? 0, total: sonic.data.total })}
+                </Text>
+                {sonic.data.failed ? (
+                  <Text className="text-xs text-muted">{t('admin.settings.sonicFailed', { count: sonic.data.failed })}</Text>
+                ) : null}
+              </View>
+            ) : null}
           </>
         ) : null}
 

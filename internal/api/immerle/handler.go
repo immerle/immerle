@@ -22,6 +22,7 @@ import (
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 	"github.com/immerle/immerle/internal/scanner"
+	"github.com/immerle/immerle/internal/sonic"
 	"github.com/immerle/immerle/internal/spotifyplaylists"
 	"github.com/immerle/immerle/internal/stream"
 )
@@ -106,7 +107,10 @@ type Deps struct {
 	// Purchases imports a user's own purchases from external stores (Bandcamp
 	// first). nil disables the feature. Implemented by *core.PurchasesService.
 	Purchases *core.PurchasesService
-	Logger    *slog.Logger
+	// Sonic runs the local audio analysis (admin progress + capability).
+	// Optional; nil hides the feature.
+	Sonic  *sonic.Worker
+	Logger *slog.Logger
 	// LogHub streams live server log lines to the admin log viewer (SSE).
 	LogHub *logging.Hub
 }
@@ -405,6 +409,9 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Post("/admin/charts/sync", h.handleChartsSync)
 			r.Post("/admin/autoplaylists/sync", h.handleAutoPlaylistsSync)
 			r.Post("/admin/concerts/sync", h.handleConcertsSync)
+
+			// Admin: local audio-analysis progress (toggled via /admin/settings).
+			r.Get("/admin/sonic", h.handleSonicStatus)
 
 			// Admin: runtime-configurable on-demand providers.
 			r.Get("/admin/providers", h.handleProviders)

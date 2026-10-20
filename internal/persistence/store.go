@@ -49,6 +49,7 @@ type Store struct {
 	Concerts        *ConcertRepo
 	BandcampConns   *BandcampConnectionRepo
 	BandcampImports *BandcampImportRepo
+	Sonic           *SonicRepo
 }
 
 // New builds a Store over the given database.
@@ -83,6 +84,7 @@ func New(database *db.DB) *Store {
 		Concerts:        &ConcertRepo{base},
 		BandcampConns:   &BandcampConnectionRepo{base},
 		BandcampImports: &BandcampImportRepo{base},
+		Sonic:           &SonicRepo{base},
 	}
 }
 

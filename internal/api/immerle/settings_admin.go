@@ -89,6 +89,7 @@ func (h *Handler) handleSettingsUpdate(w http.ResponseWriter, r *http.Request) {
 	next.Cleanup = merged.Cleanup
 	next.Logs = merged.Logs
 	next.SpotifySearch = merged.SpotifySearch
+	next.Sonic = merged.Sonic
 	// Federation: only the operator-editable fields. The instance UUID, sqid, name
 	// and private key come from the hub (bootstrap / /admin/federation), never from
 	// this generic endpoint.
@@ -105,6 +106,9 @@ func (h *Handler) handleSettingsUpdate(w http.ResponseWriter, r *http.Request) {
 		if err := h.PlaylistSync.PurgePlaylists(r.Context()); err != nil {
 			h.Logger.Warn("purge synced playlists failed", "error", err)
 		}
+	}
+	if saved.Sonic.Enabled && !current.Sonic.Enabled {
+		h.Sonic.Wake() // start analyzing now, not at the next idle tick
 	}
 	h.Logger.Info("runtime settings updated", "restartRequired", len(pending) > 0, "pending", pending, "by", userFrom(r.Context()).Username)
 	writeResource(w, http.StatusOK, settingsBody(redactSettings(saved), pending))

@@ -2652,6 +2652,81 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/sonic": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Audio analysis status
+         * @description Admin only. Whether local audio analysis can run (ffmpeg found) and is switched on (sonic.enabled setting), plus its progress over the local library.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.SonicStatusDTO"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/tracks": {
         parameters: {
             query?: never;
@@ -10142,6 +10217,12 @@ export interface components {
                  */
                 corsAllowedOrigins?: string[];
             };
+            sonic?: {
+                /** @example false */
+                enabled?: boolean;
+                /** @example 1 */
+                workers?: number;
+            };
             spotifySearch?: {
                 /** @example false */
                 enabled?: boolean;
@@ -10226,6 +10307,25 @@ export interface components {
             order?: string;
             /** @example playCount */
             sort?: string;
+        };
+        "immerle.SonicStatusDTO": {
+            /** @example 4210 */
+            analyzed?: number;
+            /**
+             * @description Available is false when ffmpeg is missing: analysis can't run at all.
+             * @example true
+             */
+            available?: boolean;
+            /** @example true */
+            enabled?: boolean;
+            /** @example 3 */
+            failed?: number;
+            /**
+             * @description Total counts local tracks; Analyzed and Failed those processed with the
+             *     current algorithm.
+             * @example 12000
+             */
+            total?: number;
         };
         "immerle.SubscribeRequestDTO": {
             /** @example 3f1c2d4e-5a6b-7c8d-9e0f-1a2b3c4d5e6f */

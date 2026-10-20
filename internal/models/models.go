@@ -101,6 +101,17 @@ type RuntimeSettings struct {
 	Concerts       ConcertsRuntime       `json:"concerts"`
 	LastFm         LastFmRuntime         `json:"lastFm"`
 	SpotifySearch  SpotifySearchRuntime  `json:"spotifySearch"`
+	Sonic          SonicRuntime          `json:"sonic"`
+}
+
+// SonicRuntime configures local audio analysis (hot-reloadable). Off by
+// default: the first pass decodes the whole library, which takes hours on a
+// small server. Each feature built on it (radio, moods, Auto-DJ...) has its
+// own toggle on top of Enabled.
+type SonicRuntime struct {
+	Enabled bool `json:"enabled"`
+	// Workers is how many tracks are analyzed in parallel (default 1).
+	Workers int `json:"workers"`
 }
 
 // SmartPlaylistsRuntime toggles rule-based "smart" playlists (hot-reloadable).
@@ -308,7 +319,27 @@ func DefaultRuntimeSettings() RuntimeSettings {
 		Offline:        OfflineRuntime{Enabled: true},
 		HallOfFame:     HallOfFameRuntime{Enabled: true},
 		Concerts:       ConcertsRuntime{Enabled: false},
+		Sonic:          SonicRuntime{Enabled: false, Workers: 1},
 	}
+}
+
+// TrackSonic is a track's locally computed audio features (internal/sonic).
+// Error is set when the analysis failed; the other fields are then zero.
+type TrackSonic struct {
+	TrackID      string
+	FileHash     string
+	AlgoVersion  int
+	BPM          float64
+	Key          string
+	Mode         string
+	Camelot      string
+	Energy       float64
+	Loudness     float64
+	Danceability float64
+	Brightness   float64
+	Vector       []float32
+	Error        string
+	AnalyzedAt   time.Time
 }
 
 // Concert is one upcoming show found by matching a user's top-listened

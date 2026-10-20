@@ -82,6 +82,10 @@ type RuntimeSettingsDTO struct {
 	SpotifySearch struct {
 		Enabled bool `json:"enabled" example:"false"`
 	} `json:"spotifySearch"`
+	Sonic struct {
+		Enabled bool `json:"enabled" example:"false"`
+		Workers int  `json:"workers" example:"1"`
+	} `json:"sonic"`
 }
 
 // FederationUpdateDTO is the body of PATCH /admin/federation: the instance

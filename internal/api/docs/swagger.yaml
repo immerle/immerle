@@ -836,6 +836,15 @@ components:
               type: array
               uniqueItems: false
           type: object
+        sonic:
+          properties:
+            enabled:
+              example: false
+              type: boolean
+            workers:
+              example: 1
+              type: integer
+          type: object
         spotifySearch:
           properties:
             enabled:
@@ -969,6 +978,29 @@ components:
         sort:
           example: playCount
           type: string
+      type: object
+    immerle.SonicStatusDTO:
+      properties:
+        analyzed:
+          example: 4210
+          type: integer
+        available:
+          description: 'Available is false when ffmpeg is missing: analysis can''t
+            run at all.'
+          example: true
+          type: boolean
+        enabled:
+          example: true
+          type: boolean
+        failed:
+          example: 3
+          type: integer
+        total:
+          description: |-
+            Total counts local tracks; Analyzed and Failed those processed with the
+            current algorithm.
+          example: 12000
+          type: integer
       type: object
     immerle.SubscribeRequestDTO:
       properties:
@@ -3762,6 +3794,47 @@ paths:
       security:
       - BearerAuth: []
       summary: Toggle the smart-playlists feature
+      tags:
+      - admin
+  /admin/sonic:
+    get:
+      description: Admin only. Whether local audio analysis can run (ffmpeg found)
+        and is switched on (sonic.enabled setting), plus its progress over the local
+        library.
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.SonicStatusDTO'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Forbidden
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Internal Server Error
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Service Unavailable
+      security:
+      - BearerAuth: []
+      summary: Audio analysis status
       tags:
       - admin
   /admin/tracks:
