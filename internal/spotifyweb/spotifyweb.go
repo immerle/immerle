@@ -31,6 +31,7 @@ type Track struct {
 	Artist   string   // every credited artist, comma-joined (display)
 	Artists  []string // the same, one per entry; Artists[0] is the main one
 	Album    string
+	CoverURL string // album cover, may be empty
 	Duration time.Duration
 	URI      string
 }
