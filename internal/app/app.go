@@ -433,6 +433,9 @@ func New(cfg config.Config) (*App, error) {
 	// resolution (for the shared genre/decade ones) as chartsSvc above.
 	autoplaylistsSvc := autoplaylists.New(store.Catalog, store.Genres, store.Wrapped, store.Annotations, store.Users, store.Playlists, logger)
 	autoplaylistsSvc.SetOwnerResolver(func(ctx context.Context) (string, error) { return firstAdmin(ctx, store.Users) })
+	// Mood playlists (calm, focus, party...) from the local audio analysis,
+	// published only while the sonic moods setting is on.
+	autoplaylistsSvc.SetSonic(sonicSvc)
 	// "Découvertes": a per-user recommendation mix from the keyless ReccoBeats
 	// API (https://reccobeats.com), seeded from each user's top tracks and
 	// synced daily along with the other personal lists above.

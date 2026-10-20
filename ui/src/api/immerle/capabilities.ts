@@ -35,12 +35,13 @@ export const SUBSONIC_ONLY_CAPABILITIES: Capabilities = {
     sonicAnalysis: false,
     sonicRadio: false,
     sonicAutoplay: false,
+    sonicMoods: false,
   },
   toggles: {},
 };
 
 /** The admin-togglable capability keys — see `Capabilities.toggles`. */
-const TOGGLEABLE = ['smartPlaylists', 'internetRadio', 'wrapped', 'offlineDownloads', 'hallOfFame', 'concertDiscovery', 'lastFm', 'sonicAnalysis', 'sonicRadio', 'sonicAutoplay'] as const;
+const TOGGLEABLE = ['smartPlaylists', 'internetRadio', 'wrapped', 'offlineDownloads', 'hallOfFame', 'concertDiscovery', 'lastFm', 'sonicAnalysis', 'sonicRadio', 'sonicAutoplay', 'sonicMoods'] as const;
 
 /**
  * Probe an instance for Immerle capabilities via the generated client
@@ -110,6 +111,7 @@ export function adaptCapabilities(payload: CapabilitiesResponse): Capabilities {
       sonicAnalysis: has('sonicAnalysis'),
       sonicRadio: has('sonicRadio'),
       sonicAutoplay: has('sonicAutoplay'),
+      sonicMoods: has('sonicMoods'),
     },
     toggles,
   };

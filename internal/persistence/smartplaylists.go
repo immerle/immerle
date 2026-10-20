@@ -122,21 +122,34 @@ func (r *SmartPlaylistRepo) Evaluate(ctx context.Context, rules models.SmartRule
 // IS NULL / IS NOT NULL, COALESCE, column-relative comparisons, a literal
 // JOIN ... ON, and ORDER BY RANDOM() — none of which melody can express.
 
+// Audio-analysis expressions (track_sonic, joined as ts). A track not analyzed
+// yet reads NULL there, so it never matches an energy/danceability/key rule.
+// The BPM tag wins over the analyzed tempo when both exist; with neither, the
+// BPM is unknown (NULL) and matches no BPM rule.
+const (
+	sonicBPM          = "COALESCE(NULLIF(t.bpm,0), CAST(ROUND(ts.bpm) AS INTEGER))"
+	sonicEnergy       = "CAST(ROUND(ts.energy*100) AS INTEGER)"
+	sonicDanceability = "CAST(ROUND(ts.danceability*100) AS INTEGER)"
+)
+
 // stringField maps a string condition field to its SQL column.
 var stringField = map[string]string{
 	"genre": "t.genre", "artist": "ar.name", "album": "al.name", "title": "t.title",
+	"camelot": "ts.camelot", "mode": "ts.mode",
 }
 
-// intField maps a numeric condition field to its SQL expression.
+// intField maps a numeric condition field to its SQL expression. energy and
+// danceability are on a 0..100 scale.
 var intField = map[string]string{
-	"year": "t.year", "bpm": "t.bpm",
+	"year": "t.year", "bpm": sonicBPM, "energy": sonicEnergy, "danceability": sonicDanceability,
 	"playCount": "COALESCE(an.play_count,0)", "rating": "COALESCE(an.rating,0)",
 }
 
 // sortExpr maps a whitelisted sort key to its SQL ordering expression.
 var sortExpr = map[string]string{
 	"playCount": "COALESCE(an.play_count,0)", "recentlyAdded": "t.created_at",
-	"recentlyPlayed": "an.last_played", "year": "t.year", "title": "t.title", "bpm": "t.bpm",
+	"recentlyPlayed": "an.last_played", "year": "t.year", "title": "t.title", "bpm": "COALESCE(" + sonicBPM + ",0)",
+	"energy": "COALESCE(ts.energy,0)", "danceability": "COALESCE(ts.danceability,0)",
 }
 
 // buildSmartQuery turns rules into a track query. now is injected for testability
@@ -201,7 +214,8 @@ func buildSmartQuery(userID string, rules models.SmartRules, now time.Time) (str
 		}
 	}
 
-	q := trackSelect + ` LEFT JOIN annotations an ON an.user_id=? AND an.item_type='track' AND an.item_id=t.id`
+	q := trackSelect + ` LEFT JOIN annotations an ON an.user_id=? AND an.item_type='track' AND an.item_id=t.id` +
+		` LEFT JOIN track_sonic ts ON ts.track_id=t.id AND ts.error=''`
 	if len(conds) > 0 {
 		joiner := " AND "
 		if rules.Match == "any" {

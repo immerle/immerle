@@ -87,6 +87,7 @@ type RuntimeSettingsDTO struct {
 		Workers  int  `json:"workers" example:"1"`
 		Radio    bool `json:"radio" example:"false"`
 		Autoplay bool `json:"autoplay" example:"false"`
+		Moods    bool `json:"moods" example:"false"`
 	} `json:"sonic"`
 }
 

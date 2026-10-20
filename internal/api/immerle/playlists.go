@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/immerle/immerle/internal/autoplaylists"
+	"github.com/immerle/immerle/internal/sonic"
 )
 
 // handlePublicPlaylists lists public playlists the caller can subscribe to.
@@ -58,7 +59,7 @@ var customPlaylistSources = []string{
 // controls) never loses access.
 //
 // @Summary      Custom auto-generated playlists
-// @Description  Returns the caller's personal auto-generated playlists (top of the month, on repeat, forgotten favorites, random, recommended) that currently have at least one track.
+// @Description  Returns the caller's personal auto-generated playlists (top of the month, on repeat, forgotten favorites, random, recommended) that currently have at least one track, followed by the shared mood playlists when the sonic moods setting is on.
 // @Tags         playlists
 // @Security     BearerAuth
 // @Produce      json
@@ -74,6 +75,14 @@ func (h *Handler) handleCustomPlaylists(w http.ResponseWriter, r *http.Request) 
 			continue
 		}
 		out = append(out, toPlaylistView(p, nil))
+	}
+	// Mood playlists are shared (one per instance), not per user.
+	if h.Sonic.MoodsEnabled() {
+		for _, m := range sonic.Moods {
+			if p, err := h.Playlists.FindFederated(r.Context(), autoplaylists.MoodSource(m), "global"); err == nil && p.SongCount > 0 {
+				out = append(out, toPlaylistView(p, nil))
+			}
+		}
 	}
 	writeResource(w, http.StatusOK, map[string]any{"playlists": out})
 }

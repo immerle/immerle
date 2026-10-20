@@ -91,3 +91,50 @@ func TestSonicPendingTracksLifecycle(t *testing.T) {
 		t.Fatalf("changed file should be pending, got %v", got)
 	}
 }
+
+func TestSmartPlaylistSonicRules(t *testing.T) {
+	store := testutil.NewStore(t)
+	ctx := context.Background()
+	now := time.Now()
+
+	user := models.User{ID: uuid.NewString(), Username: "u", PasswordHash: "x", CreatedAt: now}
+	if err := store.Users.Create(ctx, user); err != nil {
+		t.Fatal(err)
+	}
+	artistID, _ := store.Catalog.UpsertArtist(ctx, models.Artist{ID: uuid.NewString(), Name: "Artist", CreatedAt: now})
+	albumID, _ := store.Catalog.UpsertAlbum(ctx, models.Album{ID: uuid.NewString(), Name: "Album", ArtistID: artistID, CreatedAt: now})
+	mk := func(title string, tagBPM int, sonic *models.TrackSonic) string {
+		id, err := store.Catalog.UpsertTrack(ctx, models.Track{ID: uuid.NewString(), Title: title, AlbumID: albumID, ArtistID: artistID,
+			BPM: tagBPM, Path: uuid.NewString(), CreatedAt: now, UpdatedAt: now})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if sonic != nil {
+			sonic.TrackID, sonic.AlgoVersion, sonic.AnalyzedAt = id, 1, now
+			if err := store.Sonic.Save(ctx, *sonic); err != nil {
+				t.Fatal(err)
+			}
+		}
+		return id
+	}
+	banger := mk("Banger", 0, &models.TrackSonic{BPM: 127.6, Energy: 0.91, Danceability: 0.8, Camelot: "8A", Mode: "minor"})
+	ballad := mk("Ballad", 72, &models.TrackSonic{BPM: 140, Energy: 0.2, Danceability: 0.3, Camelot: "8B", Mode: "major"})
+	mk("Not analyzed", 0, nil)
+
+	only := func(field, op, value, want string) {
+		t.Helper()
+		got, err := store.SmartPlaylists.Evaluate(ctx, models.SmartRules{Conditions: []models.SmartCondition{{Field: field, Op: op, Value: value}}}, user.ID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(got) != 1 || got[0].ID != want {
+			t.Errorf("%s %s %s: got %d tracks, want only %s", field, op, value, len(got), want)
+		}
+	}
+	only("energy", "gte", "90", banger)
+	only("danceability", "lte", "30", ballad)
+	only("camelot", "is", "8A", banger)
+	only("mode", "is", "major", ballad)
+	only("bpm", "gte", "128", banger) // rounded analyzed tempo, no tag
+	only("bpm", "lte", "100", ballad) // the tag (72) wins over the analysis (140)
+}

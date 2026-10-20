@@ -60,6 +60,8 @@ export interface Capabilities {
     sonicRadio: boolean;
     /** Sonic autoplay: extend a queue about to run out with similar tracks. */
     sonicAutoplay: boolean;
+    /** Shared mood playlists (calm, focus, party...) from the audio analysis. */
+    sonicMoods: boolean;
   };
   /**
    * Live on/off state for the handful of features an admin can toggle at

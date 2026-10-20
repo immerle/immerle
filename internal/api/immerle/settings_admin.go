@@ -1,6 +1,7 @@
 package immerle
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
@@ -109,6 +110,14 @@ func (h *Handler) handleSettingsUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 	if saved.Sonic.Enabled && !current.Sonic.Enabled {
 		h.Sonic.Wake() // start analyzing now, not at the next idle tick
+	}
+	// Publish (or remove) the mood playlists now rather than at the next daily sync.
+	if h.AutoPlaylists != nil && h.Sonic.MoodsEnabled() != (current.Sonic.Enabled && current.Sonic.Moods) {
+		go func() {
+			if _, err := h.AutoPlaylists.SyncNow(context.WithoutCancel(r.Context())); err != nil {
+				h.Logger.Warn("auto-playlist sync after a moods toggle failed", "error", err)
+			}
+		}()
 	}
 	h.Logger.Info("runtime settings updated", "restartRequired", len(pending) > 0, "pending", pending, "by", userFrom(r.Context()).Username)
 	writeResource(w, http.StatusOK, settingsBody(redactSettings(saved), pending))

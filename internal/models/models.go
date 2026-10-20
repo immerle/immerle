@@ -117,6 +117,9 @@ type SonicRuntime struct {
 	// Autoplay lets clients extend a queue about to run out with tracks that
 	// sound like its last ones.
 	Autoplay bool `json:"autoplay"`
+	// Moods publishes shared mood playlists (calm, focus, party...) picked
+	// from the analysis, refreshed with the other auto-playlists.
+	Moods bool `json:"moods"`
 }
 
 // SmartPlaylistsRuntime toggles rule-based "smart" playlists (hot-reloadable).
