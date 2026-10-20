@@ -178,6 +178,8 @@
     "quality": "Playback quality",
     "adaptiveQuality": "Adapt to network",
     "adaptiveQualityHint": "Lowers quality on cellular or slow connections",
+    "autoplay": "Autoplay",
+    "autoplayHint": "Keep the music going with similar tracks when the queue runs out",
     "access": "Account & access",
     "importTitle": "Import a playlist",
     "importSubtitle": "From Spotify and other platforms",
@@ -681,6 +683,8 @@
       "sonicRadio": "Track radio",
       "sonicNeedsAnalysis": "Needs the analysis",
       "sonicRadioHelp": "\"Start radio\" on a track, album or artist plays tracks that sound alike. Also answers getSimilarSongs for Subsonic clients (instant mix).",
+      "sonicAutoplay": "Autoplay",
+      "sonicAutoplayHelp": "When a queue is about to run out, the apps add tracks that sound like the last ones played. Each listener can turn it off in their own settings.",
       "save": "Save"
     },
     "users": {

@@ -39,6 +39,7 @@ func (h *Handler) handleCapabilities(w http.ResponseWriter, r *http.Request) {
 	lastFm := h.Settings != nil && h.Settings.Get().LastFm.Enabled
 	sonicAnalysis := h.Sonic.Enabled()
 	sonicRadio := h.Sonic.RadioEnabled()
+	sonicAutoplay := h.Sonic.AutoplayEnabled()
 	writeResource(w, http.StatusOK, map[string]any{
 		"server":          "immerle",
 		"protocolVersion": ProtocolVersion,
@@ -69,6 +70,7 @@ func (h *Handler) handleCapabilities(w http.ResponseWriter, r *http.Request) {
 			"lastFm":                 map[string]any{"version": 1, "admin": true, "enabled": lastFm},
 			"sonicAnalysis":          map[string]any{"version": 1, "admin": true, "enabled": sonicAnalysis},
 			"sonicRadio":             map[string]any{"version": 1, "admin": true, "enabled": sonicRadio},
+			"sonicAutoplay":          map[string]any{"version": 1, "admin": true, "enabled": sonicAutoplay},
 		},
 	})
 }

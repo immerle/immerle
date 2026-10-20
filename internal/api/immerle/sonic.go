@@ -55,7 +55,7 @@ func (h *Handler) handleSonicStatus(w http.ResponseWriter, r *http.Request) {
 // handleSonicRadio returns tracks that sound like the seeds.
 //
 // @Summary      Sonic radio
-// @Description  Tracks that sound like the seeds, from the local audio analysis: the closest analyzed tracks, at most two per artist, with a little randomness so two radios differ. A seed is a track, album or artist id; several seeds blend into one radio (e.g. the last tracks played, to extend a queue). 404 when the sonic radio is switched off; an empty list when none of the seeds is analyzed yet.
+// @Description  Tracks that sound like the seeds, from the local audio analysis: the closest analyzed tracks, at most two per artist, with a little randomness so two radios differ. A seed is a track, album or artist id; several seeds blend into one radio (e.g. the last tracks played, to extend a queue). 404 when both the sonic radio and autoplay are switched off; an empty list when none of the seeds is analyzed yet.
 // @Tags         browse
 // @Security     BearerAuth
 // @Produce      json
@@ -68,7 +68,7 @@ func (h *Handler) handleSonicStatus(w http.ResponseWriter, r *http.Request) {
 // @Failure      404  {object}  errorResponse
 // @Router       /songs/radio [get]
 func (h *Handler) handleSonicRadio(w http.ResponseWriter, r *http.Request) {
-	if !h.Sonic.RadioEnabled() {
+	if !h.Sonic.RadioEnabled() && !h.Sonic.AutoplayEnabled() {
 		writeError(w, http.StatusNotFound, "not_found", "sonic radio is disabled")
 		return
 	}

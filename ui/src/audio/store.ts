@@ -16,10 +16,12 @@ import { DEFAULT_QUALITY_ID, effectiveQualityId, NetworkClass, presetById } from
 import { networkClass, onNetworkChange } from './network';
 import { useToast } from '../stores/toast';
 import { t, tError } from '../i18n';
+import { autoplayRequest, AUTOPLAY_BATCH } from './autoplay';
 
 const QUALITY_KEY = 'immerle.quality.v1';
 const ADAPTIVE_KEY = 'immerle.adaptiveQuality.v1';
 const VOLUME_KEY = 'immerle.volume.v1';
+const AUTOPLAY_KEY = 'immerle.autoplay.v1';
 
 /** Fisher–Yates shuffle (pure). */
 function shuffled<T>(arr: T[]): T[] {
@@ -98,6 +100,8 @@ interface AudioState {
   qualityId: string;
   /** Lower the stream quality on cellular/slow networks (on by default). Persisted. */
   adaptiveQuality: boolean;
+  /** Extend a queue about to run out with similar tracks, when the server offers it (on by default). Persisted. */
+  autoplay: boolean;
   /** Current connection class, kept live by init() (see src/audio/network.ts). */
   network: NetworkClass;
   /**
@@ -155,6 +159,7 @@ interface AudioState {
   setVolume: (volume: number) => void;
   setQuality: (id: string) => Promise<void>;
   setAdaptiveQuality: (on: boolean) => Promise<void>;
+  setAutoplay: (on: boolean) => void;
   /** Make `deviceId` the sole active player (Spotify Connect's "Play on"). */
   setCastTarget: (deviceId: string) => Promise<void>;
 
@@ -172,6 +177,14 @@ const QUEUE_SAVE_THROTTLE_MS = 5000;
 // (restoreQueue, or reconcilePlayQueue's takeover branch) so stale commands
 // from before that point are never (re)applied.
 let lastAppliedCommandSeq = 0;
+// True while the queue can't be extended by autoplay: a live internet radio
+// stream, or a Jam follower's single track driven by the host.
+let externalQueue = false;
+// Autoplay bookkeeping (see maybeAutoplay): a request in flight, and the
+// queue it was last attempted for, so an empty answer isn't retried on every
+// progress tick.
+let autoplayInflight = false;
+let autoplayTriedFor = '';
 // Original queue order, kept so shuffle can be turned off again.
 let orderBackup: Song[] | null = null;
 // True while an engine reload (setQueue) is mid-flight — a fresh load
@@ -275,6 +288,34 @@ function acquireEngineReloadLock(): Promise<{ stale: () => boolean; release: () 
  */
 function waitForEngineReloadSlot(): Promise<void> {
   return engineReloadChain;
+}
+
+/**
+ * Sonic autoplay: when the queue is about to run out, append tracks that sound
+ * like the last ones played. Runs from the progress ticks on the active device
+ * only; best effort, a failure is retried once the queue changes.
+ */
+async function maybeAutoplay(get: () => AudioState) {
+  const s = get();
+  if (!s.autoplay || externalQueue || autoplayInflight || s.repeat !== 'off' || isSpectating(get)) return;
+  const req = autoplayRequest(s.songs, s.index);
+  const c = client();
+  if (!req || !c?.isFeatureEnabled('sonicAutoplay')) return;
+  const key = `${s.songs.length}:${s.songs[s.songs.length - 1]?.id}`;
+  if (key === autoplayTriedFor) return;
+  autoplayTriedFor = key;
+  autoplayInflight = true;
+  try {
+    const songs = await c.getSonicRadio(req.seeds, { exclude: req.exclude, count: AUTOPLAY_BATCH });
+    if (!songs.length) return;
+    const ended = get().status === 'ended';
+    await get().enqueue(songs);
+    if (ended) await get().next();
+  } catch {
+    /* best effort */
+  } finally {
+    autoplayInflight = false;
+  }
 }
 
 function client(): ImmerleClient | null {
@@ -826,6 +867,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
   volume: 1,
   qualityId: DEFAULT_QUALITY_ID,
   adaptiveQuality: true,
+  autoplay: true,
   network: 'fast',
   castTargetId: '',
   castTargetOnline: false,
@@ -837,6 +879,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
       const q = await AsyncStorage.getItem(QUALITY_KEY);
       if (q) set({ qualityId: q });
       if ((await AsyncStorage.getItem(ADAPTIVE_KEY)) === 'false') set({ adaptiveQuality: false });
+      if ((await AsyncStorage.getItem(AUTOPLAY_KEY)) === 'false') set({ autoplay: false });
       const v = await AsyncStorage.getItem(VOLUME_KEY);
       if (v !== null) {
         const volume = Math.max(0, Math.min(1, Number(v)));
@@ -876,6 +919,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
       set({ position, duration: duration || get().duration });
       maybeScrobble(get, position, duration);
       scheduleSaveQueue(get);
+      void maybeAutoplay(get);
     });
     engine.on('trackChange', (index) => {
       if (isSpectating(get) || suppressEngineEvents) return;
@@ -952,6 +996,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
   },
 
   playSongs: async (songs, startIndex = 0, playlistId) => {
+    externalQueue = false;
     const { stale, release } = await acquireEngineReloadLock();
     let queueApplied = false;
     try {
@@ -1006,6 +1051,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
   },
 
   playRadio: async (station) => {
+    externalQueue = true;
     const { stale, release } = await acquireEngineReloadLock();
     try {
       if (stale()) return; // superseded while queued — see acquireEngineReloadLock
@@ -1032,6 +1078,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
   },
 
   playTrackById: async (id, positionSec, autoplay) => {
+    externalQueue = true;
     const { stale, release } = await acquireEngineReloadLock();
     try {
       if (stale()) return; // superseded while queued — see acquireEngineReloadLock
@@ -1333,6 +1380,11 @@ export const usePlayer = create<AudioState>((set, get) => ({
     set({ adaptiveQuality: on });
     void AsyncStorage.setItem(ADAPTIVE_KEY, String(on));
     if (streamQuality(get()) !== before) await requeueUpcoming(get);
+  },
+
+  setAutoplay: (on) => {
+    set({ autoplay: on });
+    void AsyncStorage.setItem(AUTOPLAY_KEY, String(on));
   },
 
   setCastTarget: async (deviceId) => {
