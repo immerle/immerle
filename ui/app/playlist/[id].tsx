@@ -12,6 +12,7 @@ import {
   useSetPlaylistCover,
   useSetPlaylistPublic,
   useSubscriptionMutations,
+  setResolvedPlaylistTrack,
 } from '../../src/query/playlists';
 import { useOfflineCatalog } from '../../src/offline/catalog';
 import { PlaylistCover } from '../../src/components/PlaylistCover';
@@ -107,6 +108,7 @@ export default function PlaylistDetail() {
     if (!client) return;
     try {
       const resolved = await client.resolvePlaylistTrack(id, index);
+      setResolvedPlaylistTrack(id, index, resolved);
       playSongs([...songs.slice(0, index), resolved, ...songs.slice(index + 1)], index, id);
     } catch {
       useToast.getState().warning(t('media.playlist.resolveErrorMessage'), {

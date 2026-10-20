@@ -67,7 +67,13 @@ type playlistItem struct {
 				TotalMilliseconds int64 `json:"totalMilliseconds"`
 			} `json:"trackDuration"`
 			AlbumOfTrack struct {
-				Name string `json:"name"`
+				Name     string `json:"name"`
+				CoverArt struct {
+					Sources []struct {
+						URL    string `json:"url"`
+						Height int    `json:"height"`
+					} `json:"sources"`
+				} `json:"coverArt"`
 			} `json:"albumOfTrack"`
 			Artists struct {
 				Items []struct {
@@ -155,6 +161,7 @@ func fetchPage(ctx context.Context, client *http.Client, token, playlistID strin
 			Title:    d.Name,
 			Artist:   strings.Join(artists, ", "),
 			Artists:  artists,
+			CoverURL: albumCover(d.AlbumOfTrack.CoverArt.Sources),
 			Album:    d.AlbumOfTrack.Name,
 			Duration: time.Duration(d.TrackDuration.TotalMilliseconds) * time.Millisecond,
 			URI:      d.URI,
@@ -165,4 +172,21 @@ func fetchPage(ctx context.Context, client *http.Client, token, playlistID strin
 		pl.ImageURL = imgs[0].Sources[0].URL
 	}
 	return pl, out.Data.PlaylistV2.Content.TotalCount, nil
+}
+
+// albumCover picks the 300px album cover (big enough for a track row, a
+// fraction of the 640px one), else the first one listed.
+func albumCover(sources []struct {
+	URL    string `json:"url"`
+	Height int    `json:"height"`
+}) string {
+	for _, s := range sources {
+		if s.Height == 300 {
+			return s.URL
+		}
+	}
+	if len(sources) > 0 {
+		return sources[0].URL
+	}
+	return ""
 }

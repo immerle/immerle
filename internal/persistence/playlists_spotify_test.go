@@ -63,3 +63,42 @@ func TestSpotifyMirrorsHiddenAndStale(t *testing.T) {
 		t.Fatalf("StaleFederated = %+v, want kept (subscribed) and dropped (not)", stale)
 	}
 }
+
+// An unresolved entry carries its own cover until played, and that cover
+// counts as in use for the cover-cache sweep.
+func TestUnresolvedEntryCover(t *testing.T) {
+	store := testutil.NewStore(t)
+	ctx := context.Background()
+	now := time.Now()
+
+	owner := models.User{ID: uuid.NewString(), Username: "admin", PasswordHash: "x", CreatedAt: now}
+	if err := store.Users.Create(ctx, owner); err != nil {
+		t.Fatal(err)
+	}
+	p := models.Playlist{ID: uuid.NewString(), Name: "Mirror", OwnerID: owner.ID, Public: true, Federated: true,
+		SourceInstanceID: persistence.SpotifySourceID, SourceExternalID: "x", CreatedAt: now, UpdatedAt: now}
+	if err := store.Playlists.Create(ctx, p); err != nil {
+		t.Fatal(err)
+	}
+	cover := models.RemoteCoverID("https://i.scdn.co/image/album")
+	if err := store.Playlists.ReplaceFederatedTracks(ctx, p.ID, []persistence.FederatedTrackRef{
+		{Artist: "Vacra", Title: "Fille à Papa", CoverArt: cover},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	tracks, err := store.Playlists.Tracks(ctx, p.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(tracks) != 1 || !tracks[0].Unresolved || tracks[0].CoverArt != cover {
+		t.Fatalf("tracks = %+v, want one unresolved entry with cover %q", tracks, cover)
+	}
+	inUse, err := store.Playlists.FederatedCovers(ctx, persistence.SpotifySourceID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !inUse[cover] {
+		t.Fatalf("FederatedCovers = %v, want the entry cover kept", inUse)
+	}
+}

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../auth/store';
 import { queryClient } from '../query/queryClient';
+import { setResolvedPlaylistTrack } from '../query/playlists';
 import { ImmerleClient, toJamInvite } from '../api/immerle/client';
 import { toPlayQueueSnapshot } from '../api/immerle/catalog';
 import { JamInviteDTO, PlayQueueView } from '../api/immerleApi';
@@ -791,6 +792,7 @@ async function resolveAndPlayUnresolved(
   if (c && engine && playlistId) {
     try {
       const resolved = await c.resolvePlaylistTrack(playlistId, index);
+      setResolvedPlaylistTrack(playlistId, index, resolved);
       if (get().index === index && get().songs[index]?.unresolved) {
         const songs = [...get().songs];
         songs[index] = resolved;

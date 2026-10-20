@@ -169,7 +169,7 @@ func (s *Service) trackRef(ctx context.Context, t spotifyweb.Track) persistence.
 	if len(t.Artists) > 0 {
 		artist = t.Artists[0]
 	}
-	ref := persistence.FederatedTrackRef{Artist: artist, Title: t.Title, Album: t.Album}
+	ref := persistence.FederatedTrackRef{Artist: artist, Title: t.Title, Album: t.Album, CoverArt: models.RemoteCoverID(t.CoverURL)}
 	if s.catalog != nil {
 		if local, found, _ := s.catalog.FindByArtistTitle(ctx, artist, t.Title); found {
 			ref.TrackID = local.ID
