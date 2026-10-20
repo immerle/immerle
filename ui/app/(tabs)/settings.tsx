@@ -36,6 +36,12 @@ export default function Settings() {
   const adaptiveQuality = usePlayer((s) => s.adaptiveQuality);
   const setAdaptiveQuality = usePlayer((s) => s.setAdaptiveQuality);
   const autoplay = usePlayer((s) => s.autoplay);
+  const crossfade = usePlayer((s) => s.crossfade);
+  const setCrossfade = usePlayer((s) => s.setCrossfade);
+  const crossfadeOptions = [0, 2, 4, 6, 8, 12].map((s) => ({
+    value: String(s),
+    label: s ? t('settings.crossfadeSeconds', { count: s }) : t('settings.crossfadeOff'),
+  }));
   const setAutoplay = usePlayer((s) => s.setAutoplay);
   const localePref = useLocale((s) => s.preference);
   const setLocale = useLocale((s) => s.setPreference);
@@ -300,6 +306,11 @@ export default function Settings() {
             <Text className="text-sm text-muted">{t('settings.adaptiveQualityHint')}</Text>
           </View>
           <Switch value={adaptiveQuality} onValueChange={setAdaptiveQuality} trackColor={{ true: colors.primary, false: colors.border }} />
+        </View>
+        <View className="gap-1.5">
+          <Text className="text-base text-foreground">{t('settings.crossfade')}</Text>
+          <Select value={String(crossfade)} options={crossfadeOptions} onChange={(v) => setCrossfade(Number(v))} />
+          <Text className="text-sm text-muted">{t('settings.crossfadeHint')}</Text>
         </View>
         {client?.isFeatureEnabled('sonicAutoplay') ? (
           <View className="flex-row items-center justify-between">

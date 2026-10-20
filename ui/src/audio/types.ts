@@ -89,6 +89,13 @@ export interface AudioEngine {
 
   setRepeatMode(mode: RepeatMode): Promise<void>;
   setVolume(volume: number): Promise<void>;
+  /**
+   * Blend into the next track over the last `seconds` of the current one (0
+   * turns it off). Best effort per platform: the web engine overlaps the two
+   * tracks, the native one fades out then in (one player, no overlap). Only
+   * natural track ends blend; skips, seeks and pauses cut as before.
+   */
+  setCrossfade(seconds: number): Promise<void>;
 
   getState(): EngineState;
 

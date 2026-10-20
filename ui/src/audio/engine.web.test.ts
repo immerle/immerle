@@ -12,6 +12,7 @@ class FakeAudio {
   playbackRate = 1;
   preload = '';
   playCalls = 0;
+  pauseCalls = 0;
   readyState = 0;
   addEventListener(type: string, cb: () => void) {
     (this.listeners[type] ||= []).push(cb);
@@ -31,6 +32,7 @@ class FakeAudio {
     this.fire('playing');
   }
   pause() {
+    this.pauseCalls += 1;
     this.fire('pause');
   }
   fire(type: string) {
@@ -155,5 +157,73 @@ describe('web engine replaceAt', () => {
 
     await engine.replaceAt(1, track('b-local'));
     expect(lastAudio.src).toBe(srcBeforeSwap);
+  });
+});
+
+describe('web engine crossfade', () => {
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(() => jest.useRealTimers());
+
+  // Starts playing a then b with a 4s crossfade, the first element positioned
+  // `left` seconds before the end of a, and fires its timeupdate.
+  const playNearEnd = async (left: number, tracks = [track('a'), track('b')]) => {
+    const engine = createEngine();
+    await engine.setup();
+    await engine.setCrossfade(4);
+    await engine.setQueue(tracks, 0);
+    await engine.play();
+    const first = lastAudio;
+    first.currentTime = first.duration - left;
+    first.fire('timeupdate');
+    await Promise.resolve();
+    await Promise.resolve();
+    return { engine, first };
+  };
+
+  it('starts the next track under the current one and swaps once the fade is done', async () => {
+    const changes: number[] = [];
+    const { engine, first } = await playNearEnd(3);
+    engine.on('trackChange', (i) => changes.push(i));
+    const second = lastAudio;
+
+    expect(second).not.toBe(first);
+    expect(second.src).toBe('http://x/b');
+    expect(engine.getState().index).toBe(1);
+
+    jest.advanceTimersByTime(2000);
+    expect(second.volume).toBeGreaterThan(0.3);
+    expect(second.volume).toBeLessThan(0.7);
+    expect(first.volume).toBeCloseTo(1 - second.volume, 1);
+
+    jest.advanceTimersByTime(2500);
+    expect(second.volume).toBe(1);
+    expect(first.pauseCalls).toBe(1);
+
+    // The outgoing element's own end no longer moves the queue.
+    first.fire('ended');
+    expect(engine.getState().index).toBe(1);
+    expect(changes).toEqual([]);
+  });
+
+  it('waits until the crossfade window', async () => {
+    const { engine, first } = await playNearEnd(10);
+    expect(lastAudio).toBe(first);
+    expect(engine.getState().index).toBe(0);
+  });
+
+  it('does not fade out of the last track', async () => {
+    const { first } = await playNearEnd(3, [track('solo')]);
+    expect(lastAudio).toBe(first);
+  });
+
+  it('cuts the outgoing track when the user pauses mid-fade', async () => {
+    const { engine, first } = await playNearEnd(3);
+    const second = lastAudio;
+    jest.advanceTimersByTime(1000);
+
+    await engine.pause();
+    expect(first.pauseCalls).toBe(1);
+    expect(second.volume).toBe(1);
+    expect(engine.getState().index).toBe(1);
   });
 });

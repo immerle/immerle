@@ -5,15 +5,18 @@ import { AudioEngine, EngineState, PlayableTrack, RepeatMode } from './types';
 // as a literal rather than the DOM constant so this stays testable outside a
 // real browser.
 const HAVE_METADATA = 1;
+// Volume ramp step during a crossfade.
+const FADE_TICK_MS = 50;
 
 /**
  * Web audio engine: a single `HTMLAudioElement` plus the MediaSession API for
  * OS-level transport controls (play/pause/next/prev and now-playing metadata on
  * the lockscreen / media keys / notification shade).
  *
- * The queue is managed in JS; the element only ever holds the current track.
- * Gapless playback is not attempted here — a single element cannot preload
- * the next source — matching the "best-effort per platform" requirement.
+ * The queue is managed in JS; the current element only ever holds the current
+ * track. With a crossfade set, a second element is created on the first
+ * transition: the next track starts on it while the current one fades out,
+ * then the two swap roles. Gapless playback is not attempted.
  */
 class WebAudioEngine implements AudioEngine {
   private audio: HTMLAudioElement | null = null;
@@ -22,28 +25,44 @@ class WebAudioEngine implements AudioEngine {
   private repeat: RepeatMode = 'off';
   private emitter = new EngineEmitter();
   private status: EngineState['status'] = 'idle';
+  private volume = 1;
+  private crossfade = 0;
+  /** The element fading out during a crossfade, and its volume ramp. */
+  private fade: { outgoing: HTMLAudioElement; timer: ReturnType<typeof setInterval> | null } | null = null;
+  /** The idle element left over from the last crossfade, reused for the next. */
+  private spare: HTMLAudioElement | null = null;
 
   async setup(): Promise<void> {
     if (this.audio) return;
+    this.audio = this.createElement();
+    this.wireMediaSession();
+  }
+
+  /** Builds an audio element whose events only count while it is the current one. */
+  private createElement(): HTMLAudioElement {
     const audio = new Audio();
     audio.preload = 'auto';
-    audio.addEventListener('playing', () => this.setStatus('playing'));
-    audio.addEventListener('pause', () => {
+    const on = (type: string, handler: () => void) =>
+      audio.addEventListener(type, () => {
+        if (audio === this.audio) handler();
+      });
+    on('playing', () => this.setStatus('playing'));
+    on('pause', () => {
       if (this.status !== 'ended') this.setStatus('paused');
     });
-    audio.addEventListener('waiting', () => this.setStatus('loading'));
-    audio.addEventListener('error', () => {
+    on('waiting', () => this.setStatus('loading'));
+    on('error', () => {
       this.setStatus('paused');
       this.emitter.emit('error');
     });
-    audio.addEventListener('ended', () => this.handleEnded());
-    audio.addEventListener('timeupdate', () => {
+    on('ended', () => this.handleEnded());
+    on('timeupdate', () => {
       this.emitter.emit('progress', audio.currentTime, audio.duration || 0);
       this.updatePositionState();
+      this.maybeStartCrossfade();
     });
-    audio.addEventListener('loadedmetadata', () => this.emitState());
-    this.audio = audio;
-    this.wireMediaSession();
+    on('loadedmetadata', () => this.emitState());
+    return audio;
   }
 
   private get el(): HTMLAudioElement {
@@ -103,6 +122,7 @@ class WebAudioEngine implements AudioEngine {
   private async load(index: number): Promise<void> {
     const track = this.queue[index];
     if (!track) return;
+    this.endFade();
     this.setStatus('loading');
     this.el.src = track.url;
     this.el.load();
@@ -116,6 +136,7 @@ class WebAudioEngine implements AudioEngine {
   }
 
   async pause(): Promise<void> {
+    this.endFade();
     this.el.pause();
   }
 
@@ -157,6 +178,7 @@ class WebAudioEngine implements AudioEngine {
   }
 
   async seekTo(seconds: number): Promise<void> {
+    this.endFade();
     // Setting currentTime while readyState is HAVE_NOTHING (e.g. right after
     // load() on a freshly-set src) is only a "default start position" per
     // spec — browsers are free to drop it once real metadata arrives. Wait
@@ -176,7 +198,12 @@ class WebAudioEngine implements AudioEngine {
   }
 
   async setVolume(volume: number): Promise<void> {
-    this.el.volume = Math.max(0, Math.min(1, volume));
+    this.volume = Math.max(0, Math.min(1, volume));
+    if (!this.fade) this.el.volume = this.volume; // a running fade ramps toward it
+  }
+
+  async setCrossfade(seconds: number): Promise<void> {
+    this.crossfade = Math.max(0, seconds);
   }
 
   getState(): EngineState {
@@ -191,6 +218,7 @@ class WebAudioEngine implements AudioEngine {
   on: AudioEngine['on'] = (event, handler) => this.emitter.on(event, handler);
 
   async destroy(): Promise<void> {
+    this.endFade();
     if (this.audio) {
       this.audio.pause();
       this.audio.src = '';
@@ -203,12 +231,77 @@ class WebAudioEngine implements AudioEngine {
 
   // --- internals -----------------------------------------------------------
 
+  /** The track a natural end moves to, or -1 when playback stops there. */
+  private nextIndex(): number {
+    if (this.repeat === 'track') return -1;
+    if (this.index + 1 < this.queue.length) return this.index + 1;
+    return this.repeat === 'queue' && this.queue.length > 1 ? 0 : -1;
+  }
+
+  /**
+   * Starts blending into the next track once the current one is within the
+   * crossfade window. A progressively transcoded stream reports no duration
+   * until it's done, so the track's known duration stands in for it. Tracks
+   * shorter than twice the window play out normally.
+   */
+  private maybeStartCrossfade(): void {
+    if (!this.crossfade || this.fade || this.status !== 'playing') return;
+    const next = this.nextIndex();
+    if (next === -1) return;
+    const duration =
+      Number.isFinite(this.el.duration) && this.el.duration > 0 ? this.el.duration : this.queue[this.index]?.duration ?? 0;
+    if (duration < this.crossfade * 2 || duration - this.el.currentTime > this.crossfade) return;
+    void this.startCrossfade(next);
+  }
+
+  private async startCrossfade(next: number): Promise<void> {
+    const track = this.queue[next];
+    if (!track) return;
+    const outgoing = this.el;
+    const incoming = this.spare ?? this.createElement();
+    this.spare = null;
+    this.fade = { outgoing, timer: null };
+    // Swap first: from here on, events (and controls) follow the next track.
+    this.audio = incoming;
+    this.index = next;
+    incoming.volume = 0;
+    incoming.src = track.url;
+    incoming.load();
+    this.updateMediaMetadata(track);
+    this.emitter.emit('trackChange', next);
+    this.emitState();
+    await incoming.play().catch(() => undefined);
+    if (this.fade?.outgoing !== outgoing) return; // cancelled meanwhile
+
+    const start = Date.now();
+    const ms = this.crossfade * 1000;
+    this.fade.timer = setInterval(() => {
+      const k = Math.min(1, (Date.now() - start) / ms);
+      incoming.volume = this.volume * k;
+      outgoing.volume = this.volume * (1 - k);
+      if (k >= 1) this.endFade();
+    }, FADE_TICK_MS);
+  }
+
+  /** Stops a running crossfade: the outgoing track is cut, the current one at full volume. */
+  private endFade(): void {
+    if (!this.fade) return;
+    const { outgoing, timer } = this.fade;
+    this.fade = null;
+    if (timer) clearInterval(timer);
+    outgoing.pause();
+    outgoing.removeAttribute('src');
+    this.spare = outgoing;
+    if (this.audio) this.audio.volume = this.volume;
+  }
+
   private handleEnded(): void {
     this.setStatus('ended');
     void this.next();
   }
 
   private stop(): void {
+    this.endFade();
     this.el.pause();
     this.el.removeAttribute('src');
     this.index = -1;
