@@ -8,7 +8,7 @@ export function useAdminTracks(query: string, limit = 50, offset = 0) {
   const client = useAuth((s) => s.client);
   return useQuery({
     queryKey: [...qk.adminTracks(query), limit, offset] as const,
-    enabled: !!client,
+    enabled: !!client && client.has('libraryAdmin'),
     queryFn: ({ signal }) => client!.adminListTracks({ query, limit, offset }, signal),
   });
 }

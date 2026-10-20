@@ -15,7 +15,7 @@
     "home": "Home", "login": "Sign in", "setup": "Setup", "playlists": "Playlists",
     "social": "Social", "genre": "Genre", "jam": "Jam", "uiKit": "UI Kit", "import": "Import",
     "jobs": "Jobs", "providers": "Providers", "scan": "Scan", "users": "Users",
-    "tracks": "Tracks", "federation": "Federation", "logs": "Logs"
+    "federation": "Federation", "logs": "Logs"
   },
   "quality": {
     "original": "Original (no transcoding)", "high": "High — 320 kbps",
@@ -382,10 +382,6 @@
           "title": "Library",
           "subtitle": "Scan & statistics"
         },
-        "tracks": {
-          "title": "Tracks",
-          "subtitle": "Browse, edit covers & metadata, delete"
-        },
         "providers": {
           "title": "Providers",
           "subtitle": "Dynamic content sources"
@@ -665,6 +661,11 @@
       "wrappedEnabled": "Wrapped (year-in-review)",
       "offlineEnabled": "Offline downloads",
       "hallOfFameEnabled": "Hall of Fame",
+      "groupAccess": "Access & security",
+      "groupPlayback": "Playback",
+      "groupContent": "Content & discovery",
+      "groupIntegrations": "Integrations",
+      "groupMaintenance": "Maintenance",
       "spotifySearchEnabled": "Search Spotify playlists",
       "spotifySearchHelp": "When on, global search also lists public Spotify playlists, opened on demand. Users keep one by adding it to their library; kept playlists refresh weekly.",
       "save": "Save"
