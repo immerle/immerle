@@ -11,6 +11,7 @@ jest.mock('./engine', () => ({
     setVolume: async (v: number) => {
       mockSetVolumeCalls.push(v);
     },
+    setCrossfade: async () => {},
   }),
 }));
 

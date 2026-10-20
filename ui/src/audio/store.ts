@@ -22,6 +22,7 @@ const QUALITY_KEY = 'immerle.quality.v1';
 const ADAPTIVE_KEY = 'immerle.adaptiveQuality.v1';
 const VOLUME_KEY = 'immerle.volume.v1';
 const AUTOPLAY_KEY = 'immerle.autoplay.v1';
+const CROSSFADE_KEY = 'immerle.crossfade.v1';
 
 /** Fisher–Yates shuffle (pure). */
 function shuffled<T>(arr: T[]): T[] {
@@ -102,6 +103,8 @@ interface AudioState {
   adaptiveQuality: boolean;
   /** Extend a queue about to run out with similar tracks, when the server offers it (on by default). Persisted. */
   autoplay: boolean;
+  /** Crossfade between tracks, in seconds (0 = off, the default). Persisted. */
+  crossfade: number;
   /** Current connection class, kept live by init() (see src/audio/network.ts). */
   network: NetworkClass;
   /**
@@ -160,6 +163,7 @@ interface AudioState {
   setQuality: (id: string) => Promise<void>;
   setAdaptiveQuality: (on: boolean) => Promise<void>;
   setAutoplay: (on: boolean) => void;
+  setCrossfade: (seconds: number) => void;
   /** Make `deviceId` the sole active player (Spotify Connect's "Play on"). */
   setCastTarget: (deviceId: string) => Promise<void>;
 
@@ -868,6 +872,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
   qualityId: DEFAULT_QUALITY_ID,
   adaptiveQuality: true,
   autoplay: true,
+  crossfade: 0,
   network: 'fast',
   castTargetId: '',
   castTargetOnline: false,
@@ -880,6 +885,11 @@ export const usePlayer = create<AudioState>((set, get) => ({
       if (q) set({ qualityId: q });
       if ((await AsyncStorage.getItem(ADAPTIVE_KEY)) === 'false') set({ adaptiveQuality: false });
       if ((await AsyncStorage.getItem(AUTOPLAY_KEY)) === 'false') set({ autoplay: false });
+      const crossfade = Number(await AsyncStorage.getItem(CROSSFADE_KEY));
+      if (crossfade > 0) {
+        set({ crossfade });
+        void get().engine?.setCrossfade(crossfade); // same race as the volume below
+      }
       const v = await AsyncStorage.getItem(VOLUME_KEY);
       if (v !== null) {
         const volume = Math.max(0, Math.min(1, Number(v)));
@@ -944,6 +954,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
     // already updated get().volume read below.
     set({ engine });
     await engine.setVolume(get().volume);
+    await engine.setCrossfade(get().crossfade);
     startFakeProgressTicker(get, set);
 
     const refreshNetwork = async () => {
@@ -1385,6 +1396,12 @@ export const usePlayer = create<AudioState>((set, get) => ({
   setAutoplay: (on) => {
     set({ autoplay: on });
     void AsyncStorage.setItem(AUTOPLAY_KEY, String(on));
+  },
+
+  setCrossfade: (seconds) => {
+    set({ crossfade: seconds });
+    void AsyncStorage.setItem(CROSSFADE_KEY, String(seconds));
+    void get().engine?.setCrossfade(seconds);
   },
 
   setCastTarget: async (deviceId) => {

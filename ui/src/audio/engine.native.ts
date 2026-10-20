@@ -15,6 +15,8 @@ import { AudioEngine, EngineState, PlayableTrack, RepeatMode } from './types';
 if (Platform.OS === 'android') registerBackgroundHandler();
 
 const PROGRESS_INTERVAL_MS = 1000;
+// Volume ramp step while fading (finer than the 1s progress poll).
+const FADE_TICK_MS = 100;
 
 function mapStatus(state: PlaybackState, playing: boolean): EngineState['status'] {
   switch (state) {
@@ -57,6 +59,10 @@ function toMediaItem(t: PlayableTrack) {
  * notification controls, and now-playing metadata come for free from the OS
  * integration. Track-player owns the queue, so this class is mostly a thin,
  * typed adapter that re-broadcasts player events through our emitter.
+ *
+ * Crossfade: @rntp/player plays one item at a time, so tracks can't overlap.
+ * The engine fades the end of a track out and the next one in instead, by
+ * ramping the player volume.
  */
 class NativeAudioEngine implements AudioEngine {
   private emitter = new EngineEmitter();
@@ -67,6 +73,10 @@ class NativeAudioEngine implements AudioEngine {
   private position = 0;
   private duration = 0;
   private progressTimer: ReturnType<typeof setInterval> | null = null;
+  private volume = 1;
+  private crossfade = 0;
+  private repeat: RepeatMode = 'off';
+  private fadeTimer: ReturnType<typeof setInterval> | null = null;
 
   async setup(): Promise<void> {
     if (this.ready) return;
@@ -108,6 +118,9 @@ class NativeAudioEngine implements AudioEngine {
       this.emitState();
     });
     TrackPlayer.addEventListener(Event.MediaItemTransition, (e) => {
+      // Fade the next track in only after a natural end; a skip starts loud.
+      if (this.crossfade && e.reason === 'auto') this.fadeIn();
+      else this.stopFade();
       this.index = e.index;
       this.emitter.emit('trackChange', e.index);
       this.emitState();
@@ -120,6 +133,47 @@ class NativeAudioEngine implements AudioEngine {
     this.position = position;
     this.duration = duration;
     this.emitter.emit('progress', position, duration);
+    if (!this.fadeTimer && this.inFadeOutWindow(position, duration)) {
+      this.fadeTimer = setInterval(() => this.fadeOutTick(), FADE_TICK_MS);
+    }
+  }
+
+  /** Whether playback is within the crossfade window before a natural move to another track. */
+  private inFadeOutWindow(position: number, duration: number): boolean {
+    if (!this.crossfade || !this.playing || this.repeat === 'track') return false;
+    if (duration < this.crossfade * 2 || duration - position > this.crossfade) return false;
+    const last = this.index >= TrackPlayer.getQueue().length - 1;
+    return !last || this.repeat === 'queue';
+  }
+
+  /** Volume follows the time left, so a seek out of the window restores it. */
+  private fadeOutTick(): void {
+    const { position, duration } = TrackPlayer.getProgress();
+    if (!this.inFadeOutWindow(position, duration)) {
+      this.stopFade();
+      return;
+    }
+    TrackPlayer.setVolume(this.volume * Math.max(0, (duration - position) / this.crossfade));
+  }
+
+  private fadeIn(): void {
+    if (this.fadeTimer) clearInterval(this.fadeTimer); // the fade-out hands over at volume ~0
+    const start = Date.now();
+    const ms = (this.crossfade * 1000) / 2; // a full-length fade-in feels like a quiet intro
+    TrackPlayer.setVolume(0);
+    this.fadeTimer = setInterval(() => {
+      const k = Math.min(1, (Date.now() - start) / ms);
+      TrackPlayer.setVolume(this.volume * k);
+      if (k >= 1) this.stopFade();
+    }, FADE_TICK_MS);
+  }
+
+  /** Ends any fade and restores the full volume. */
+  private stopFade(): void {
+    if (!this.fadeTimer) return;
+    clearInterval(this.fadeTimer);
+    this.fadeTimer = null;
+    TrackPlayer.setVolume(this.volume);
   }
 
   async setQueue(tracks: PlayableTrack[], startIndex: number): Promise<void> {
@@ -159,6 +213,7 @@ class NativeAudioEngine implements AudioEngine {
   }
 
   async pause(): Promise<void> {
+    this.stopFade();
     TrackPlayer.pause();
   }
 
@@ -192,11 +247,18 @@ class NativeAudioEngine implements AudioEngine {
   }
 
   async setRepeatMode(mode: RepeatMode): Promise<void> {
+    this.repeat = mode;
     TrackPlayer.setRepeatMode(mapRepeat(mode));
   }
 
   async setVolume(volume: number): Promise<void> {
-    TrackPlayer.setVolume(Math.max(0, Math.min(1, volume)));
+    this.volume = Math.max(0, Math.min(1, volume));
+    if (!this.fadeTimer) TrackPlayer.setVolume(this.volume); // a running fade ramps toward it
+  }
+
+  async setCrossfade(seconds: number): Promise<void> {
+    this.crossfade = Math.max(0, seconds);
+    if (!this.crossfade) this.stopFade();
   }
 
   getState(): EngineState {
@@ -211,6 +273,7 @@ class NativeAudioEngine implements AudioEngine {
   on: AudioEngine['on'] = (event, handler) => this.emitter.on(event, handler);
 
   async destroy(): Promise<void> {
+    this.stopFade();
     if (this.progressTimer) clearInterval(this.progressTimer);
     this.progressTimer = null;
     TrackPlayer.clear();
