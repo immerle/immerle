@@ -7846,7 +7846,7 @@ export interface paths {
         };
         /**
          * Search the catalog
-         * @description Searches artists, albums, songs, public playlists and radio stations (merging remote-provider results when enabled), returned as one list ranked by relevance to the query. `type` scopes the search server-side to just that result type.
+         * @description Searches artists, albums, songs, public playlists and radio stations (merging remote-provider results when enabled, plus public Spotify playlists when the spotifySearch setting is on), returned as one list ranked by relevance to the query. `type` scopes the search server-side to just that result type.
          */
         get: {
             parameters: {
@@ -9021,6 +9021,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/spotify-playlists/{spotifyId}/open": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Open a Spotify playlist
+         * @description Returns the local on-demand mirror of a public Spotify playlist (fetched from Spotify when missing or older than a week). Its tracks resolve lazily at play time like any federated playlist; subscribe to it to keep it in the library, refreshed weekly. 404 when the spotifySearch setting is off.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Spotify playlist id */
+                    spotifyId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.playlistView"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Bad Gateway */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/theme": {
         parameters: {
             query?: never;
@@ -10073,6 +10142,10 @@ export interface components {
                  */
                 corsAllowedOrigins?: string[];
             };
+            spotifySearch?: {
+                /** @example false */
+                enabled?: boolean;
+            };
             transcode?: {
                 /** @example ffmpeg */
                 ffmpegPath?: string;
@@ -10644,7 +10717,8 @@ export interface components {
             playlist?: components["schemas"]["immerle.playlistView"];
             radio?: components["schemas"]["immerle.stationView"];
             song?: components["schemas"]["immerle.songView"];
-            /** @description artist|album|song|playlist|radio */
+            spotifyPlaylist?: components["schemas"]["immerle.spotifyPlaylistView"];
+            /** @description artist|album|song|playlist|radio|spotifyPlaylist */
             type?: string;
         };
         "immerle.searchView": {
@@ -10735,6 +10809,23 @@ export interface components {
             unresolved?: boolean;
             work?: string;
             year?: number;
+        };
+        /**
+         * @description Spotify is a public Spotify playlist (type spotifyPlaylist): selecting it
+         *     opens it on demand (POST /spotify-playlists/{spotifyId}/open).
+         */
+        "immerle.spotifyPlaylistView": {
+            /**
+             * @description CoverArt is a cover id served by GET /cover/{id} (fetched and cached
+             *     server-side), so clients never call Spotify directly.
+             */
+            coverArt?: string;
+            /** @example 37i9dQZF1DZ06evO2CNgSk */
+            id?: string;
+            /** @example This Is Daft Punk */
+            name?: string;
+            /** @example Spotify */
+            owner?: string;
         };
         "immerle.startImportRequest": {
             ref?: string;

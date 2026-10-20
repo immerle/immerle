@@ -15,6 +15,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -46,10 +47,12 @@ type CoverService struct {
 // allowed in addition to the built-in provider hosts.
 func NewCoverService(catalog *persistence.CatalogRepo, coversDir string, extraHosts ...string) *CoverService {
 	c := &CoverService{
-		catalog:    catalog,
-		coversDir:  coversDir,
-		cacheDir:   filepath.Join(coversDir, "cache"),
-		allowHosts: append([]string{"dzcdn.net"}, extraHosts...),
+		catalog:   catalog,
+		coversDir: coversDir,
+		cacheDir:  filepath.Join(coversDir, "cache"),
+		// scdn.co/spotifycdn.com: Spotify playlist covers (internal/spotifyplaylists),
+		// fetched here server-side so clients never call Spotify themselves.
+		allowHosts: append([]string{"dzcdn.net", "scdn.co", "spotifycdn.com"}, extraHosts...),
 	}
 	// Re-validate every redirect hop against the host allowlist: the initial URL
 	// check is not enough, since an allowlisted host could redirect to a private
@@ -318,6 +321,38 @@ func (c *CoverService) fetchRemoteCover(ctx context.Context, id string) ([]byte,
 	_ = os.MkdirAll(c.cacheDir, 0o755)
 	_ = os.WriteFile(cache, data, 0o644)
 	return data, nil
+}
+
+// remoteCacheName matches the cached files of a remote cover: the original
+// ("remote_<b64>") and its resized variants ("rcov_<b64>_<size>.jpg"; remote
+// covers have no locale). The base64url payload may itself contain "_", so the
+// size suffix is anchored at the end.
+var remoteCacheName = regexp.MustCompile(`^(?:remote_(.+)|rcov_(.+)_\d+\.jpg)$`)
+
+// PruneRemote deletes the cached files of remote covers last written before
+// cutoff for which prune(coverID) is true, returning how many files went.
+// Covers are cached on first view and otherwise never expire, so callers that
+// mint short-lived remote covers (e.g. Spotify search results) sweep them here.
+func (c *CoverService) PruneRemote(cutoff time.Time, prune func(coverID string) bool) int {
+	entries, err := os.ReadDir(c.cacheDir)
+	if err != nil {
+		return 0
+	}
+	removed := 0
+	for _, e := range entries {
+		m := remoteCacheName.FindStringSubmatch(e.Name())
+		if m == nil {
+			continue
+		}
+		info, err := e.Info()
+		if err != nil || !info.ModTime().Before(cutoff) || !prune(models.RemoteCoverPrefix+m[1]+m[2]) {
+			continue
+		}
+		if os.Remove(filepath.Join(c.cacheDir, e.Name())) == nil {
+			removed++
+		}
+	}
+	return removed
 }
 
 func (c *CoverService) hostAllowed(host string) bool {

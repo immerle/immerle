@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useDebounced, useSearch } from '../query/search';
+import { useToast } from '../stores/toast';
 import { searchNav, useSearchUI } from '../search/store';
 import { CoverArt } from './CoverArt';
 import { PlaylistCover } from './PlaylistCover';
@@ -24,6 +25,7 @@ const TYPE_LABEL_KEY: Record<SearchHit['type'], string> = {
   song: 'components.search.typeSong',
   playlist: 'components.search.typePlaylist',
   radio: 'components.search.typeRadio',
+  spotifyPlaylist: 'components.search.typeSpotifyPlaylist',
 };
 
 /**
@@ -53,6 +55,7 @@ export function SearchResults({ onClose }: { onClose: () => void }) {
   const playSongs = usePlayer((s) => s.playSongs);
   const playRadio = usePlayer((s) => s.playRadio);
   const openMenu = useTrackMenu((s) => s.open);
+  const client = useAuth((s) => s.client);
 
   const trimmed = debounced.trim();
   const hits = data ?? [];
@@ -76,6 +79,16 @@ export function SearchResults({ onClose }: { onClose: () => void }) {
         return () => select(() => playSongs(songs, songs.indexOf(hit.song)));
       case 'radio':
         return () => select(() => playRadio({ id: hit.radio.id, name: hit.radio.name, streamUrl: hit.radio.streamUrl, hasCover: hit.radio.hasCover }));
+      case 'spotifyPlaylist':
+        return () =>
+          select(() =>
+            // A plain promise, not a mutation: select() closes (unmounts) the
+            // search right away, which would drop a mutation's callbacks.
+            client!
+              .openSpotifyPlaylist(hit.spotify.id)
+              .then((p) => router.push(`/playlist/${p.id}` as never))
+              .catch(() => useToast.getState().error(t('components.search.spotifyOpenError'))),
+          );
     }
   };
 
@@ -194,6 +207,20 @@ function SearchHitRow({ hit, onPress, onMore }: { hit: SearchHit; onPress: () =>
             </Text>
             <Text numberOfLines={1} className="text-sm text-muted">
               {typeLabel}
+            </Text>
+          </View>
+        </Pressable>
+      );
+    case 'spotifyPlaylist':
+      return (
+        <Pressable onPress={onPress} className="flex-row items-center gap-3 px-4 py-2 active:bg-surface-alt">
+          <CoverArt coverArt={hit.spotify.coverArt} size={44} fallbackIcon="logo-spotify" />
+          <View className="flex-1">
+            <Text numberOfLines={1} className="text-base font-medium text-foreground">
+              {hit.spotify.name}
+            </Text>
+            <Text numberOfLines={1} className="text-sm text-muted">
+              {hit.spotify.owner ? `${typeLabel} · ${hit.spotify.owner}` : typeLabel}
             </Text>
           </View>
         </Pressable>

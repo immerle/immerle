@@ -665,6 +665,8 @@
       "wrappedEnabled": "Wrapped (year-in-review)",
       "offlineEnabled": "Offline downloads",
       "hallOfFameEnabled": "Hall of Fame",
+      "spotifySearchEnabled": "Search Spotify playlists",
+      "spotifySearchHelp": "When on, global search also lists public Spotify playlists, opened on demand. Users keep one by adding it to their library; kept playlists refresh weekly.",
       "save": "Save"
     },
     "users": {
@@ -1121,6 +1123,8 @@
       "typeSong": "Song",
       "typePlaylist": "Playlist",
       "typeRadio": "Radio",
+      "typeSpotifyPlaylist": "Spotify playlist",
+      "spotifyOpenError": "Could not load this Spotify playlist",
       "cancel": "Cancel"
     },
     "admin": {

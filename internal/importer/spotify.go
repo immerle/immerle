@@ -34,5 +34,5 @@ func toImporterPlaylist(pl spotifyweb.Playlist) Playlist {
 	for i, t := range pl.Tracks {
 		tracks[i] = Track{Title: t.Title, Artist: t.Artist, Album: t.Album}
 	}
-	return Playlist{Tracks: tracks}
+	return Playlist{Name: pl.Name, Tracks: tracks}
 }

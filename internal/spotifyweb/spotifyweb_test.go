@@ -97,3 +97,30 @@ func TestParsePlaylistContentsResponse(t *testing.T) {
 		t.Fatalf("expected the non-track item to keep its own typename")
 	}
 }
+
+func TestToSummaries(t *testing.T) {
+	raw := `{"data":{"searchV2":{"playlists":{"items":[
+		{"data":{"__typename":"Playlist","name":"This Is Daft Punk","uri":"spotify:playlist:37i9dQZF1DZ06evO2CNgSk",
+			"images":{"items":[{"sources":[{"url":"https://img/1"}]}]},
+			"ownerV2":{"data":{"name":"Spotify"}}}},
+		{"data":{"__typename":"NotFound","uri":""}},
+		{"data":{"__typename":"Playlist","name":"No cover","uri":"spotify:playlist:78YWsrPFPJoF5cD3mkTQuY"}}
+	]}}}}`
+	var out searchPlaylistsResponse
+	if err := json.Unmarshal([]byte(raw), &out); err != nil {
+		t.Fatal(err)
+	}
+	got := toSummaries(out)
+	want := []PlaylistSummary{
+		{ID: "37i9dQZF1DZ06evO2CNgSk", Name: "This Is Daft Punk", Owner: "Spotify", ImageURL: "https://img/1"},
+		{ID: "78YWsrPFPJoF5cD3mkTQuY", Name: "No cover"},
+	}
+	if len(got) != len(want) {
+		t.Fatalf("got %d summaries, want %d: %+v", len(got), len(want), got)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("summary %d = %+v, want %+v", i, got[i], want[i])
+		}
+	}
+}

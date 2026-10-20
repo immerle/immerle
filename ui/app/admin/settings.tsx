@@ -155,14 +155,6 @@ export default function AdminSettings() {
     if (s.key === 'cleanup') return !!cleanup.data;
     if (s.key === 'concerts') return !!client?.has('concertDiscovery');
     if (s.key === 'lastfm') return !!client?.has('lastFm');
-    if (s.key === 'features')
-      return (
-        !!client?.has('smartPlaylists') ||
-        !!client?.has('internetRadio') ||
-        !!client?.has('wrapped') ||
-        !!client?.has('offlineDownloads') ||
-        !!client?.has('hallOfFame')
-      );
     return true;
   });
   const active = SECTIONS.find((s) => s.key === sheet);
@@ -308,6 +300,12 @@ export default function AdminSettings() {
                       onChange={(v) => setHallOfFame.mutate(v)}
                     />
                   ) : null}
+                  <ToggleRow
+                    label={t('admin.settings.spotifySearchEnabled')}
+                    value={q.data?.settings.spotifySearch?.enabled ?? false}
+                    onChange={(v) => save({ spotifySearch: { enabled: v } })}
+                  />
+                  <Text className="text-xs text-muted">{t('admin.settings.spotifySearchHelp')}</Text>
                 </>
               ) : null}
 

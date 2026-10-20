@@ -58,7 +58,8 @@ self-hosted server, for music, that sings: **Immerle**. ✨
 - 👯 **Social**: an activity feed with per-event privacy, a member directory,
   collaborative or public/subscribable playlists, and public share links.
 - 🔊 **Jam sessions**: listen together, in sync, streamed live, with invites.
-- 📥 **Playlist import**: bring your playlists over from Spotify or Deezer.
+- 📥 **Playlist import**: bring your playlists over from Spotify or Deezer, or
+  browse public Spotify playlists straight from search, on demand.
 - 🛍️ **Purchase import**: connect Bandcamp and import the real files you paid
   for.
 - 🎫 **Concert discovery (opt-in)**: upcoming shows for your top artists near
