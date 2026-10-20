@@ -23,6 +23,7 @@ const ADAPTIVE_KEY = 'immerle.adaptiveQuality.v1';
 const VOLUME_KEY = 'immerle.volume.v1';
 const AUTOPLAY_KEY = 'immerle.autoplay.v1';
 const CROSSFADE_KEY = 'immerle.crossfade.v1';
+const DEFAULT_CROSSFADE = 4;
 
 /** Fisher–Yates shuffle (pure). */
 function shuffled<T>(arr: T[]): T[] {
@@ -103,7 +104,7 @@ interface AudioState {
   adaptiveQuality: boolean;
   /** Extend a queue about to run out with similar tracks, when the server offers it (on by default). Persisted. */
   autoplay: boolean;
-  /** Crossfade between tracks, in seconds (0 = off, the default). Persisted. */
+  /** Crossfade between tracks, in seconds (0 = off; 4 by default). Persisted. */
   crossfade: number;
   /** Current connection class, kept live by init() (see src/audio/network.ts). */
   network: NetworkClass;
@@ -872,7 +873,7 @@ export const usePlayer = create<AudioState>((set, get) => ({
   qualityId: DEFAULT_QUALITY_ID,
   adaptiveQuality: true,
   autoplay: true,
-  crossfade: 0,
+  crossfade: DEFAULT_CROSSFADE,
   network: 'fast',
   castTargetId: '',
   castTargetOnline: false,
@@ -885,8 +886,10 @@ export const usePlayer = create<AudioState>((set, get) => ({
       if (q) set({ qualityId: q });
       if ((await AsyncStorage.getItem(ADAPTIVE_KEY)) === 'false') set({ adaptiveQuality: false });
       if ((await AsyncStorage.getItem(AUTOPLAY_KEY)) === 'false') set({ autoplay: false });
-      const crossfade = Number(await AsyncStorage.getItem(CROSSFADE_KEY));
-      if (crossfade > 0) {
+      // A saved 0 means the listener turned it off: keep it, not the default.
+      const savedCrossfade = await AsyncStorage.getItem(CROSSFADE_KEY);
+      const crossfade = Number(savedCrossfade);
+      if (savedCrossfade !== null && Number.isFinite(crossfade) && crossfade >= 0) {
         set({ crossfade });
         void get().engine?.setCrossfade(crossfade); // same race as the volume below
       }
