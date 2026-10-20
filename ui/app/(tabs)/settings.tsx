@@ -35,6 +35,8 @@ export default function Settings() {
   const setQuality = usePlayer((s) => s.setQuality);
   const adaptiveQuality = usePlayer((s) => s.adaptiveQuality);
   const setAdaptiveQuality = usePlayer((s) => s.setAdaptiveQuality);
+  const autoplay = usePlayer((s) => s.autoplay);
+  const setAutoplay = usePlayer((s) => s.setAutoplay);
   const localePref = useLocale((s) => s.preference);
   const setLocale = useLocale((s) => s.setPreference);
   // `system` is translated; the fixed locales keep their endonym.
@@ -299,6 +301,15 @@ export default function Settings() {
           </View>
           <Switch value={adaptiveQuality} onValueChange={setAdaptiveQuality} trackColor={{ true: colors.primary, false: colors.border }} />
         </View>
+        {client?.isFeatureEnabled('sonicAutoplay') ? (
+          <View className="flex-row items-center justify-between">
+            <View className="flex-1 pr-2">
+              <Text className="text-base text-foreground">{t('settings.autoplay')}</Text>
+              <Text className="text-sm text-muted">{t('settings.autoplayHint')}</Text>
+            </View>
+            <Switch value={autoplay} onValueChange={setAutoplay} trackColor={{ true: colors.primary, false: colors.border }} />
+          </View>
+        ) : null}
       </Card>
 
       <Card className="gap-2">

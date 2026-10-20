@@ -8577,7 +8577,7 @@ export interface paths {
         };
         /**
          * Sonic radio
-         * @description Tracks that sound like the seeds, from the local audio analysis: the closest analyzed tracks, at most two per artist, with a little randomness so two radios differ. A seed is a track, album or artist id; several seeds blend into one radio (e.g. the last tracks played, to extend a queue). 404 when the sonic radio is switched off; an empty list when none of the seeds is analyzed yet.
+         * @description Tracks that sound like the seeds, from the local audio analysis: the closest analyzed tracks, at most two per artist, with a little randomness so two radios differ. A seed is a track, album or artist id; several seeds blend into one radio (e.g. the last tracks played, to extend a queue). 404 when both the sonic radio and autoplay are switched off; an empty list when none of the seeds is analyzed yet.
          */
         get: {
             parameters: {
@@ -10293,6 +10293,8 @@ export interface components {
                 corsAllowedOrigins?: string[];
             };
             sonic?: {
+                /** @example false */
+                autoplay?: boolean;
                 /** @example false */
                 enabled?: boolean;
                 /** @example false */

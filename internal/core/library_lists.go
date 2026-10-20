@@ -70,8 +70,10 @@ func (s *LibraryService) TopSongs(ctx context.Context, userID, artistName string
 // artist id) when the sonic radio is on and the seed is analyzed. Otherwise it
 // falls back to random tracks sharing the seed track's genre.
 func (s *LibraryService) SimilarSongs(ctx context.Context, userID, seedID string, count int) []TrackEntry {
-	if tracks, ok := s.SonicRadio(ctx, userID, []string{seedID}, nil, count); ok {
-		return tracks
+	if s.sonic.RadioEnabled() {
+		if tracks, ok := s.SonicRadio(ctx, userID, []string{seedID}, nil, count); ok {
+			return tracks
+		}
 	}
 	genre := ""
 	if t, err := s.catalog.GetTrack(ctx, seedID); err == nil {
@@ -119,9 +121,9 @@ func (s *LibraryService) Starred(ctx context.Context, userID string) StarredResu
 
 // SonicRadio returns up to count tracks that sound like the seeds (track,
 // album or artist ids, mixed freely), excluding the exclude track ids. ok is
-// false when the sonic radio is off or none of the seeds is analyzed.
+// false when none of the seeds is analyzed. Callers check the feature toggles.
 func (s *LibraryService) SonicRadio(ctx context.Context, userID string, seeds, exclude []string, count int) ([]TrackEntry, bool) {
-	if !s.sonic.RadioEnabled() {
+	if s.sonic == nil {
 		return nil, false
 	}
 	trackSeeds := s.resolveSeedTracks(ctx, seeds)

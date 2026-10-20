@@ -83,9 +83,10 @@ type RuntimeSettingsDTO struct {
 		Enabled bool `json:"enabled" example:"false"`
 	} `json:"spotifySearch"`
 	Sonic struct {
-		Enabled bool `json:"enabled" example:"false"`
-		Workers int  `json:"workers" example:"1"`
-		Radio   bool `json:"radio" example:"false"`
+		Enabled  bool `json:"enabled" example:"false"`
+		Workers  int  `json:"workers" example:"1"`
+		Radio    bool `json:"radio" example:"false"`
+		Autoplay bool `json:"autoplay" example:"false"`
 	} `json:"sonic"`
 }
 

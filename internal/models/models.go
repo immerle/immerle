@@ -114,6 +114,9 @@ type SonicRuntime struct {
 	Workers int `json:"workers"`
 	// Radio turns on the sonic track radio (and sonic getSimilarSongs).
 	Radio bool `json:"radio"`
+	// Autoplay lets clients extend a queue about to run out with tracks that
+	// sound like its last ones.
+	Autoplay bool `json:"autoplay"`
 }
 
 // SmartPlaylistsRuntime toggles rule-based "smart" playlists (hot-reloadable).

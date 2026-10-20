@@ -178,6 +178,8 @@
     "quality": "Qualité de lecture",
     "adaptiveQuality": "Adapter au réseau",
     "adaptiveQualityHint": "Baisse la qualité en données mobiles ou sur une connexion lente",
+    "autoplay": "Lecture automatique",
+    "autoplayHint": "Continue avec des morceaux similaires quand la file d'attente se termine",
     "access": "Compte & accès",
     "importTitle": "Importer une playlist",
     "importSubtitle": "Depuis Spotify et autres plateformes",
@@ -681,6 +683,8 @@
       "sonicRadio": "Radio par morceau",
       "sonicNeedsAnalysis": "Nécessite l'analyse",
       "sonicRadioHelp": "\"Lancer la radio\" sur un morceau, un album ou un artiste joue des morceaux qui sonnent pareil. Répond aussi à getSimilarSongs pour les clients Subsonic (instant mix).",
+      "sonicAutoplay": "Lecture automatique",
+      "sonicAutoplayHelp": "Quand une file d'attente arrive à sa fin, les apps ajoutent des morceaux qui sonnent comme les derniers écoutés. Chaque utilisateur peut la couper dans ses réglages.",
       "save": "Enregistrer"
     },
     "users": {

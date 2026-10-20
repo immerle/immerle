@@ -55,6 +55,9 @@ func (s *Service) Enabled() bool { return s.Available() && s.config().Enabled }
 // RadioEnabled reports whether the sonic track radio is switched on.
 func (s *Service) RadioEnabled() bool { return s.Enabled() && s.config().Radio }
 
+// AutoplayEnabled reports whether endless queues (sonic autoplay) are switched on.
+func (s *Service) AutoplayEnabled() bool { return s.Enabled() && s.config().Autoplay }
+
 // Wake makes an idle worker check for work now (after a scan, or once the
 // feature is switched on).
 func (s *Service) Wake() {

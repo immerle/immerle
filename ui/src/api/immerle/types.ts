@@ -58,6 +58,8 @@ export interface Capabilities {
     sonicAnalysis: boolean;
     /** Sonic radio (`/songs/radio`): tracks that sound like a track, album or artist. */
     sonicRadio: boolean;
+    /** Sonic autoplay: extend a queue about to run out with similar tracks. */
+    sonicAutoplay: boolean;
   };
   /**
    * Live on/off state for the handful of features an admin can toggle at
