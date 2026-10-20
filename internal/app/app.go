@@ -417,7 +417,7 @@ func New(cfg config.Config) (*App, error) {
 
 	// Public Spotify playlists surfaced in search, opened on demand as
 	// federated playlists (same owner resolution as chartsSvc above).
-	spotifyPlaylistsSvc := spotifyplaylists.New(spotifyweb.NewClient(), store.Playlists, coverSvc, settingsSvc.SpotifySearchEnabled,
+	spotifyPlaylistsSvc := spotifyplaylists.New(spotifyweb.NewClient(), store.Playlists, store.Catalog, coverSvc, settingsSvc.SpotifySearchEnabled,
 		func(ctx context.Context) (string, error) { return firstAdmin(ctx, store.Users) }, logger)
 
 	// Genre/decade playlists ("Rock", "Rap", "1990s"...) and personal listening

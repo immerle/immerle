@@ -28,7 +28,8 @@ const userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 
 // Track is a single playlist track as returned by Spotify's web player API.
 type Track struct {
 	Title    string
-	Artist   string
+	Artist   string   // every credited artist, comma-joined (display)
+	Artists  []string // the same, one per entry; Artists[0] is the main one
 	Album    string
 	Duration time.Duration
 	URI      string
