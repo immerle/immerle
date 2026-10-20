@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/text/unicode/norm"
+
 	"github.com/immerle/immerle/internal/db"
 	"github.com/immerle/immerle/internal/matching"
 	"github.com/immerle/immerle/internal/models"
@@ -441,7 +443,12 @@ func (r *CatalogRepo) TrackExistsByMBIDOrHash(ctx context.Context, mbid, hash st
 // (e.g. manually uploaded, tagged without an mbid) is found before resorting
 // to a remote provider search.
 func (r *CatalogRepo) FindByArtistTitle(ctx context.Context, artist, title string) (models.Track, bool, error) {
-	candidates, err := r.listTracks(ctx, trackSelect+` WHERE t.remote=0 AND LOWER(ar.name)=LOWER(?) AND LOWER(t.title)=LOWER(?)`, artist, title)
+	// Match both Unicode forms: tags/filenames written on macOS are often NFD
+	// ("a" + combining grave) while provider/Spotify metadata is NFC ("à"), and
+	// LOWER() compares bytes, so "Fille à Papa" would never match itself.
+	candidates, err := r.listTracks(ctx, trackSelect+` WHERE t.remote=0
+		AND LOWER(ar.name) IN (LOWER(?), LOWER(?)) AND LOWER(t.title) IN (LOWER(?), LOWER(?))`,
+		norm.NFC.String(artist), norm.NFD.String(artist), norm.NFC.String(title), norm.NFD.String(title))
 	if err != nil {
 		return models.Track{}, false, err
 	}

@@ -154,6 +154,7 @@ func fetchPage(ctx context.Context, client *http.Client, token, playlistID strin
 		tracks = append(tracks, Track{
 			Title:    d.Name,
 			Artist:   strings.Join(artists, ", "),
+			Artists:  artists,
 			Album:    d.AlbumOfTrack.Name,
 			Duration: time.Duration(d.TrackDuration.TotalMilliseconds) * time.Millisecond,
 			URI:      d.URI,

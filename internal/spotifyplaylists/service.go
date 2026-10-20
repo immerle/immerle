@@ -43,6 +43,7 @@ type cachedSearch struct {
 type Service struct {
 	client    *spotifyweb.Client
 	playlists *persistence.PlaylistRepo
+	catalog   *persistence.CatalogRepo
 	covers    *stream.CoverService
 	enabled   func() bool
 	ownerFn   func(ctx context.Context) (string, error)
@@ -52,11 +53,13 @@ type Service struct {
 	searches map[string]cachedSearch
 }
 
-// New builds a Service. covers caches the Spotify covers server-side (nil
-// skips the cache sweep); enabled reports the live admin toggle; ownerFn
-// resolves the nominal owner of mirrored playlists (the first admin).
-func New(client *spotifyweb.Client, playlists *persistence.PlaylistRepo, covers *stream.CoverService, enabled func() bool, ownerFn func(ctx context.Context) (string, error), logger *slog.Logger) *Service {
-	return &Service{client: client, playlists: playlists, covers: covers, enabled: enabled, ownerFn: ownerFn, logger: logger, searches: map[string]cachedSearch{}}
+// New builds a Service. catalog links tracks already in the library at sync
+// time (nil leaves every track to play-time resolution); covers caches the
+// Spotify covers server-side (nil skips the cache sweep); enabled reports the
+// live admin toggle; ownerFn resolves the nominal owner of mirrored playlists
+// (the first admin).
+func New(client *spotifyweb.Client, playlists *persistence.PlaylistRepo, catalog *persistence.CatalogRepo, covers *stream.CoverService, enabled func() bool, ownerFn func(ctx context.Context) (string, error), logger *slog.Logger) *Service {
+	return &Service{client: client, playlists: playlists, catalog: catalog, covers: covers, enabled: enabled, ownerFn: ownerFn, logger: logger, searches: map[string]cachedSearch{}}
 }
 
 // Enabled reports whether the admin turned Spotify playlists on.
@@ -110,7 +113,7 @@ func (s *Service) sync(ctx context.Context, existing *models.Playlist, spotifyID
 	}
 	entries := make([]persistence.FederatedTrackRef, 0, len(src.Tracks))
 	for _, t := range src.Tracks {
-		entries = append(entries, persistence.FederatedTrackRef{Artist: t.Artist, Title: t.Title, Album: t.Album})
+		entries = append(entries, s.trackRef(ctx, t))
 	}
 	name := src.Name
 	if name == "" {
@@ -154,6 +157,25 @@ func (s *Service) sync(ctx context.Context, existing *models.Playlist, spotifyID
 		return models.Playlist{}, err
 	}
 	return s.playlists.Get(ctx, p.ID)
+}
+
+// trackRef maps a Spotify track to a playlist entry keyed by its main artist
+// only: the library files a track under its main artist, so a featured artist
+// ("Vacra, La Rvfleuze") would make the artist+title lookup miss. A track
+// already in the local catalog is linked right away so it shows as playable;
+// the rest resolve lazily at play time.
+func (s *Service) trackRef(ctx context.Context, t spotifyweb.Track) persistence.FederatedTrackRef {
+	artist := t.Artist
+	if len(t.Artists) > 0 {
+		artist = t.Artists[0]
+	}
+	ref := persistence.FederatedTrackRef{Artist: artist, Title: t.Title, Album: t.Album}
+	if s.catalog != nil {
+		if local, found, _ := s.catalog.FindByArtistTitle(ctx, artist, t.Title); found {
+			ref.TrackID = local.ID
+		}
+	}
+	return ref
 }
 
 // Refresh re-syncs every mirrored playlist older than ttl that a user kept
