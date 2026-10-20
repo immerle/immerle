@@ -691,6 +691,8 @@
       "sonicAutoplayHelp": "Quand une file d'attente arrive à sa fin, les apps ajoutent des morceaux qui sonnent comme les derniers écoutés. Chaque utilisateur peut la couper dans ses réglages.",
       "sonicMoods": "Playlists d'ambiance",
       "sonicMoodsHelp": "Publie des playlists partagées Calme, Focus, Mélancolie, Énergie, Soirée et Workout, mises à jour chaque jour. Chacune a besoin d'au moins 15 morceaux correspondants.",
+      "sonicAutoDj": "Auto-DJ",
+      "sonicAutoDjHelp": "Permet de lire une playlist, ou de réordonner sa file d'attente, pour des enchaînements fluides : tempos proches, tonalités compatibles, énergie sans à-coups.",
       "save": "Enregistrer"
     },
     "users": {
@@ -829,6 +831,7 @@
       "subscribe": "S'abonner",
       "unsubscribe": "Se désabonner",
       "play": "Lecture de la playlist",
+      "autoDj": "Lire en Auto-DJ",
       "publicToggle": "Playlist publique",
       "publicHint": "Visible dans « Playlists publiques » ; abonnement opt-in.",
       "reorderHandle": "Glisser pour réordonner",
@@ -910,7 +913,9 @@
     },
     "queue": {
       "empty": "File vide",
-      "emptySubtitle": "Lancez un titre pour commencer."
+      "emptySubtitle": "Lancez un titre pour commencer.",
+      "autoDj": "Auto-DJ",
+      "autoDjHint": "Réordonner la suite pour des enchaînements fluides"
     },
     "player": {
       "nothingPlaying": "Aucune lecture en cours",

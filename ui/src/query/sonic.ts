@@ -36,3 +36,48 @@ export function useStartRadio() {
 
   return { available, busy, start };
 }
+
+/** Orders songs by id the way the server returned them (Auto-DJ). */
+function byOrder(songs: Song[], ids: string[]): Song[] {
+  const pool = new Map<string, Song[]>();
+  for (const s of songs) pool.set(s.id, [...(pool.get(s.id) ?? []), s]);
+  return ids.map((id) => pool.get(id)?.shift()).filter((s): s is Song => !!s);
+}
+
+/**
+ * Auto-DJ: play a list ordered for smooth transitions, or reorder the queue
+ * from the current track on. `available` is false while the admin has it
+ * switched off.
+ */
+export function useAutoDj() {
+  const client = useAuth((s) => s.client);
+  const available = useAuth((s) => s.client?.isFeatureEnabled('sonicAutoDj') ?? false);
+  const [busy, setBusy] = useState(false);
+
+  const run = async (fn: () => Promise<void>) => {
+    if (!client || busy) return;
+    setBusy(true);
+    try {
+      await fn();
+    } catch (e) {
+      useToast.getState().error(tError(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const play = (songs: Song[]) =>
+    run(async () => {
+      const ids = await client!.autoDjOrder(songs.map((s) => s.id), false);
+      await usePlayer.getState().playSongs(byOrder(songs, ids), 0);
+    });
+
+  const reorderQueue = () =>
+    run(async () => {
+      const { songs, index } = usePlayer.getState();
+      const ids = await client!.autoDjOrder(songs.slice(index).map((s) => s.id), true);
+      await usePlayer.getState().reorderUpcoming(ids);
+    });
+
+  return { available, busy, play, reorderQueue };
+}

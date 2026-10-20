@@ -62,6 +62,8 @@ export interface Capabilities {
     sonicAutoplay: boolean;
     /** Shared mood playlists (calm, focus, party...) from the audio analysis. */
     sonicMoods: boolean;
+    /** Auto-DJ: order a playlist or the queue for smooth transitions. */
+    sonicAutoDj: boolean;
   };
   /**
    * Live on/off state for the handful of features an admin can toggle at

@@ -41,6 +41,7 @@ func (h *Handler) handleCapabilities(w http.ResponseWriter, r *http.Request) {
 	sonicRadio := h.Sonic.RadioEnabled()
 	sonicAutoplay := h.Sonic.AutoplayEnabled()
 	sonicMoods := h.Sonic.MoodsEnabled()
+	sonicAutoDJ := h.Sonic.AutoDJEnabled()
 	writeResource(w, http.StatusOK, map[string]any{
 		"server":          "immerle",
 		"protocolVersion": ProtocolVersion,
@@ -73,6 +74,7 @@ func (h *Handler) handleCapabilities(w http.ResponseWriter, r *http.Request) {
 			"sonicRadio":             map[string]any{"version": 1, "admin": true, "enabled": sonicRadio},
 			"sonicAutoplay":          map[string]any{"version": 1, "admin": true, "enabled": sonicAutoplay},
 			"sonicMoods":             map[string]any{"version": 1, "admin": true, "enabled": sonicMoods},
+			"sonicAutoDj":            map[string]any{"version": 1, "admin": true, "enabled": sonicAutoDJ},
 		},
 	})
 }

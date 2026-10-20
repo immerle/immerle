@@ -2,7 +2,8 @@ import { Pressable, Text, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { usePlayer } from '../src/audio/store';
 import { CoverArt } from '../src/components/CoverArt';
-import { IconButton, EmptyState } from '../src/components/ui';
+import { Button, IconButton, EmptyState } from '../src/components/ui';
+import { useAutoDj } from '../src/query/sonic';
 import { useColors } from '../src/theme/colors';
 import { useT } from '../src/i18n/store';
 
@@ -19,6 +20,7 @@ export default function Queue() {
   const skipTo = usePlayer((s) => s.skipTo);
   const move = usePlayer((s) => s.move);
   const removeAt = usePlayer((s) => s.removeAt);
+  const autoDj = useAutoDj();
 
   if (songs.length === 0) {
     return <EmptyState icon="list" title={t('media.queue.empty')} subtitle={t('media.queue.emptySubtitle')} />;
@@ -31,6 +33,14 @@ export default function Queue() {
         keyExtractor={(s, i) => `${s.id}:${i}`}
         estimatedItemSize={64}
         extraData={index}
+        ListHeaderComponent={
+          autoDj.available && songs.length - index > 2 ? (
+            <View className="flex-row items-center justify-between gap-3 px-3 pb-1 pt-3">
+              <Text className="flex-1 text-sm text-muted">{t('media.queue.autoDjHint')}</Text>
+              <Button title={t('media.queue.autoDj')} icon="pulse-outline" variant="secondary" size="sm" loading={autoDj.busy} onPress={() => void autoDj.reorderQueue()} />
+            </View>
+          ) : null
+        }
         renderItem={({ item, index: i }) => {
           const active = i === index;
           return (

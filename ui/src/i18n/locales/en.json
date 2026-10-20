@@ -691,6 +691,8 @@
       "sonicAutoplayHelp": "When a queue is about to run out, the apps add tracks that sound like the last ones played. Each listener can turn it off in their own settings.",
       "sonicMoods": "Mood playlists",
       "sonicMoodsHelp": "Publishes shared Calm, Focus, Melancholy, Energy, Party and Workout playlists, refreshed daily. Each needs at least 15 matching tracks.",
+      "sonicAutoDj": "Auto-DJ",
+      "sonicAutoDjHelp": "Lets listeners play a playlist, or reorder their queue, so tracks flow smoothly: close tempos, compatible keys, small energy jumps.",
       "save": "Save"
     },
     "users": {
@@ -829,6 +831,7 @@
       "subscribe": "Subscribe",
       "unsubscribe": "Unsubscribe",
       "play": "Play playlist",
+      "autoDj": "Play with Auto-DJ",
       "publicToggle": "Public playlist",
       "publicHint": "Visible in “Public playlists”; opt-in subscription.",
       "reorderHandle": "Drag to reorder",
@@ -910,7 +913,9 @@
     },
     "queue": {
       "empty": "Queue empty",
-      "emptySubtitle": "Play a track to get started."
+      "emptySubtitle": "Play a track to get started.",
+      "autoDj": "Auto-DJ",
+      "autoDjHint": "Reorder what's next for smooth transitions"
     },
     "player": {
       "nothingPlaying": "Nothing playing",

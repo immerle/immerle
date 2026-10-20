@@ -120,6 +120,9 @@ type SonicRuntime struct {
 	// Moods publishes shared mood playlists (calm, focus, party...) picked
 	// from the analysis, refreshed with the other auto-playlists.
 	Moods bool `json:"moods"`
+	// AutoDJ lets listeners reorder a playlist or their queue for smooth
+	// transitions (tempo, key, energy).
+	AutoDJ bool `json:"autoDj"`
 }
 
 // SmartPlaylistsRuntime toggles rule-based "smart" playlists (hot-reloadable).
