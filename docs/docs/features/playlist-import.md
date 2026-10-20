@@ -42,3 +42,24 @@ Anything that isn't matched can be fixed by hand afterwards: either accept
 the flagged candidate as-is, or search again yourself with a different query
 and use that result instead. Either way, once resolved the track is
 downloaded and appended to the playlist just like a normal match.
+
+## Spotify playlists in search
+
+If you'd rather browse a Spotify playlist than import it, an admin can turn on
+**Search Spotify playlists** in *Settings → Features* (off by default). Global
+search then also lists public Spotify playlists matching your query.
+
+Nothing is imported or downloaded up front:
+
+- **On demand**: opening a result shows the playlist read-only, with its real
+  name and cover. Its tracks resolve when you play them, local catalog first,
+  then your on-demand providers, just like a
+  [chart playlist](./discovery.md#auto-generated-playlists).
+- **Keep it**: add it to your library to keep it. Kept playlists re-sync from
+  Spotify once a week (new tracks, renames, new cover). Playlists nobody kept
+  are removed after a week.
+- **Not in public discovery**: these playlists don't show up in public playlist
+  discovery. Users only reach them through search or their library.
+- **Light on Spotify**: search results are cached for a week, and an opened
+  playlist is only fetched again once it is a week old. Covers are fetched once
+  by your instance and served from its cache: clients never contact Spotify.

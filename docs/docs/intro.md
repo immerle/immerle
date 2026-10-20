@@ -41,7 +41,8 @@ you outgrow it). Drop in your music, hit play.
 - 👯 **Social**: an activity feed with per-event privacy, a member directory,
   collaborative or public playlists, and share links.
 - 🔊 **Jam sessions**: listen together, in sync, streamed live.
-- 📥 **Playlist import**: bring your playlists over (Spotify and Deezer).
+- 📥 **Playlist import**: bring your playlists over (Spotify and Deezer), or
+  open public Spotify playlists on demand from search.
 - 🛍️ **Purchase import**: bring your own purchases in from Bandcamp (connect
   your account, import the real files you paid for), with more stores planned.
 - 🔗 **Federation (opt-in)**: sync editorial & recommendation playlists via an
@@ -68,7 +69,7 @@ you outgrow it). Drop in your music, hit play.
 - [Radio & podcasts](./features/radio-podcasts.md): internet radio stations and podcast subscriptions.
 - [Scrobbling](./features/scrobbling.md): push plays to ListenBrainz and/or Last.fm.
 - [Social features](./features/social.md): activity, sharing, Jam sessions.
-- [Playlist import](./features/playlist-import.md): bring playlists over from Spotify or Deezer.
+- [Playlist import](./features/playlist-import.md): bring playlists over from Spotify or Deezer, or browse Spotify playlists from search.
 - [Purchase import](./features/purchase-import.md): connect Bandcamp and import what you bought.
 - [Concert discovery](./features/concert-discovery.md): upcoming shows for your top artists.
 - [Federation](./features/federation.md): sync playlists via an `immerle-hub`.
