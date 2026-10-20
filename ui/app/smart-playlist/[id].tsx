@@ -26,7 +26,14 @@ const FIELDS: { value: string; kind: Kind }[] = [
   { value: 'neverPlayed', kind: 'none' },
   { value: 'addedWithinDays', kind: 'days' },
   { value: 'playedWithinDays', kind: 'days' },
+  // Audio analysis (0..100 scales, Camelot key, major/minor).
+  { value: 'energy', kind: 'number' },
+  { value: 'danceability', kind: 'number' },
+  { value: 'camelot', kind: 'text' },
+  { value: 'mode', kind: 'text' },
 ];
+/** Fields and sorts only meaningful once the audio analysis runs. */
+const SONIC_KEYS = new Set(['energy', 'danceability', 'camelot', 'mode']);
 const OPS_BY_KIND: Record<Kind, string[]> = {
   text: ['is', 'isNot', 'contains'],
   number: ['is', 'gte', 'lte'],
@@ -34,7 +41,7 @@ const OPS_BY_KIND: Record<Kind, string[]> = {
   none: [],
   days: [],
 };
-const SORTS = ['none', 'random', 'playCount', 'recentlyAdded', 'recentlyPlayed', 'year', 'title', 'bpm'];
+const SORTS = ['none', 'random', 'playCount', 'recentlyAdded', 'recentlyPlayed', 'year', 'title', 'bpm', 'energy', 'danceability'];
 
 const kindOf = (field: string): Kind => FIELDS.find((f) => f.value === field)?.kind ?? 'text';
 
@@ -110,7 +117,8 @@ export default function SmartPlaylistEditor() {
     else update.mutate({ id: id!, name: finalName, rules }, { onSuccess: after });
   };
 
-  const fieldOpts = FIELDS.map((f) => ({ value: f.value, label: t(`smart.field.${f.value}`) }));
+  const sonic = client?.isFeatureEnabled('sonicAnalysis') ?? false;
+  const fieldOpts = FIELDS.filter((f) => sonic || !SONIC_KEYS.has(f.value)).map((f) => ({ value: f.value, label: t(`smart.field.${f.value}`) }));
 
   return (
     <>
@@ -182,7 +190,7 @@ export default function SmartPlaylistEditor() {
 
         <Card className="gap-3">
           <CardTitle icon="swap-vertical" color="#a855f7" title={t('smart.sortTitle')} />
-          <Select<string> value={sort} options={SORTS.map((s) => ({ value: s, label: t(`smart.sort.${s}`) }))} onChange={setSort} />
+          <Select<string> value={sort} options={SORTS.filter((s) => sonic || !SONIC_KEYS.has(s)).map((s) => ({ value: s, label: t(`smart.sort.${s}`) }))} onChange={setSort} />
           {sort !== 'none' && sort !== 'random' ? (
             <Select<'asc' | 'desc'>
               value={order}

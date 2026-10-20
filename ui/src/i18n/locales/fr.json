@@ -60,9 +60,9 @@
     "play": "Lire",
     "save": "Enregistrer",
     "delete": "Supprimer",
-    "field": { "genre": "Genre", "artist": "Artiste", "album": "Album", "title": "Titre", "year": "Année", "bpm": "BPM", "playCount": "Nombre d'écoutes", "rating": "Note", "starred": "Favori", "neverPlayed": "Jamais écouté", "addedWithinDays": "Ajouté depuis (jours)", "playedWithinDays": "Écouté depuis (jours)" },
+    "field": { "genre": "Genre", "artist": "Artiste", "album": "Album", "title": "Titre", "year": "Année", "bpm": "BPM", "playCount": "Nombre d'écoutes", "rating": "Note", "starred": "Favori", "neverPlayed": "Jamais écouté", "addedWithinDays": "Ajouté depuis (jours)", "playedWithinDays": "Écouté depuis (jours)", "energy": "Énergie (0-100)", "danceability": "Dansabilité (0-100)", "camelot": "Tonalité (Camelot, ex. 8A)", "mode": "Mode (major / minor)" },
     "op": { "is": "est", "isNot": "n'est pas", "contains": "contient", "gte": "au moins", "lte": "au plus" },
-    "sort": { "none": "Par défaut", "random": "Aléatoire", "playCount": "Écoutes", "recentlyAdded": "Récemment ajoutés", "recentlyPlayed": "Récemment écoutés", "year": "Année", "title": "Titre", "bpm": "BPM" }
+    "sort": { "none": "Par défaut", "random": "Aléatoire", "playCount": "Écoutes", "recentlyAdded": "Récemment ajoutés", "recentlyPlayed": "Récemment écoutés", "year": "Année", "title": "Titre", "bpm": "BPM", "energy": "Énergie", "danceability": "Dansabilité" }
   },
   "radio": {
     "title": "Radio",
@@ -685,6 +685,8 @@
       "sonicRadioHelp": "\"Lancer la radio\" sur un morceau, un album ou un artiste joue des morceaux qui sonnent pareil. Répond aussi à getSimilarSongs pour les clients Subsonic (instant mix).",
       "sonicAutoplay": "Lecture automatique",
       "sonicAutoplayHelp": "Quand une file d'attente arrive à sa fin, les apps ajoutent des morceaux qui sonnent comme les derniers écoutés. Chaque utilisateur peut la couper dans ses réglages.",
+      "sonicMoods": "Playlists d'ambiance",
+      "sonicMoodsHelp": "Publie des playlists partagées Calme, Focus, Mélancolie, Énergie, Soirée et Workout, mises à jour chaque jour. Chacune a besoin d'au moins 15 morceaux correspondants.",
       "save": "Enregistrer"
     },
     "users": {
@@ -842,6 +844,12 @@
         "listenBrainzWeeklyJams": "Weekly Jams",
         "listenBrainzWeeklyExploration": "Weekly Exploration",
         "lastfmSimilarMix": "Mix Last.fm",
+        "moodCalm": "Calme",
+        "moodFocus": "Focus",
+        "moodMelancholy": "Mélancolie",
+        "moodEnergetic": "Énergie",
+        "moodParty": "Soirée",
+        "moodWorkout": "Workout",
         "chartGlobal": "Top mondial",
         "chartFr": "Top 50 France",
         "chartUs": "Top 50 États-Unis",

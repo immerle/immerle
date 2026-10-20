@@ -66,6 +66,12 @@ var labelKeys = map[string]map[string]string{
 	"listenbrainz-weekly-jams":        {"fr": "Weekly Jams", "en": "Weekly Jams"},
 	"listenbrainz-weekly-exploration": {"fr": "Weekly Exploration", "en": "Weekly Exploration"},
 	"lastfm-similar-mix":              {"fr": "Mix Last.fm", "en": "Last.fm Mix"},
+	"mood-calm-mix":                   {"fr": "Calme", "en": "Calm"},
+	"mood-focus-mix":                  {"fr": "Focus", "en": "Focus"},
+	"mood-melancholy-mix":             {"fr": "Mélancolie", "en": "Melancholy"},
+	"mood-energetic-mix":              {"fr": "Énergie", "en": "Energy"},
+	"mood-party-mix":                  {"fr": "Soirée", "en": "Party"},
+	"mood-workout-mix":                {"fr": "Workout", "en": "Workout"},
 
 	"source.reccobeats":   {"fr": "par ReccoBeats", "en": "by ReccoBeats"},
 	"source.listenbrainz": {"fr": "par ListenBrainz", "en": "by ListenBrainz"},

@@ -844,6 +844,9 @@ components:
             enabled:
               example: false
               type: boolean
+            moods:
+              example: false
+              type: boolean
             radio:
               example: false
               type: boolean
@@ -5725,7 +5728,8 @@ paths:
     get:
       description: Returns the caller's personal auto-generated playlists (top of
         the month, on repeat, forgotten favorites, random, recommended) that currently
-        have at least one track.
+        have at least one track, followed by the shared mood playlists when the sonic
+        moods setting is on.
       responses:
         "200":
           content:

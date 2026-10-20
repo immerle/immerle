@@ -60,9 +60,9 @@
     "play": "Play",
     "save": "Save",
     "delete": "Delete",
-    "field": { "genre": "Genre", "artist": "Artist", "album": "Album", "title": "Title", "year": "Year", "bpm": "BPM", "playCount": "Play count", "rating": "Rating", "starred": "Starred", "neverPlayed": "Never played", "addedWithinDays": "Added within (days)", "playedWithinDays": "Played within (days)" },
+    "field": { "genre": "Genre", "artist": "Artist", "album": "Album", "title": "Title", "year": "Year", "bpm": "BPM", "playCount": "Play count", "rating": "Rating", "starred": "Starred", "neverPlayed": "Never played", "addedWithinDays": "Added within (days)", "playedWithinDays": "Played within (days)", "energy": "Energy (0-100)", "danceability": "Danceability (0-100)", "camelot": "Key (Camelot, e.g. 8A)", "mode": "Mode (major / minor)" },
     "op": { "is": "is", "isNot": "is not", "contains": "contains", "gte": "at least", "lte": "at most" },
-    "sort": { "none": "Default", "random": "Random", "playCount": "Play count", "recentlyAdded": "Recently added", "recentlyPlayed": "Recently played", "year": "Year", "title": "Title", "bpm": "BPM" }
+    "sort": { "none": "Default", "random": "Random", "playCount": "Play count", "recentlyAdded": "Recently added", "recentlyPlayed": "Recently played", "year": "Year", "title": "Title", "bpm": "BPM", "energy": "Energy", "danceability": "Danceability" }
   },
   "radio": {
     "title": "Radio",
@@ -685,6 +685,8 @@
       "sonicRadioHelp": "\"Start radio\" on a track, album or artist plays tracks that sound alike. Also answers getSimilarSongs for Subsonic clients (instant mix).",
       "sonicAutoplay": "Autoplay",
       "sonicAutoplayHelp": "When a queue is about to run out, the apps add tracks that sound like the last ones played. Each listener can turn it off in their own settings.",
+      "sonicMoods": "Mood playlists",
+      "sonicMoodsHelp": "Publishes shared Calm, Focus, Melancholy, Energy, Party and Workout playlists, refreshed daily. Each needs at least 15 matching tracks.",
       "save": "Save"
     },
     "users": {
@@ -842,6 +844,12 @@
         "listenBrainzWeeklyJams": "Weekly Jams",
         "listenBrainzWeeklyExploration": "Weekly Exploration",
         "lastfmSimilarMix": "Last.fm Mix",
+        "moodCalm": "Calm",
+        "moodFocus": "Focus",
+        "moodMelancholy": "Melancholy",
+        "moodEnergetic": "Energy",
+        "moodParty": "Party",
+        "moodWorkout": "Workout",
         "chartGlobal": "Global Top 50",
         "chartFr": "Top 50 France",
         "chartUs": "Top 50 United States",

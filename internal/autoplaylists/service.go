@@ -32,6 +32,7 @@ import (
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 	"github.com/immerle/immerle/internal/reccobeats"
+	"github.com/immerle/immerle/internal/sonic"
 )
 
 // Source instance ids distinguish each kind in the dedupe key (FindFederated),
@@ -58,6 +59,24 @@ const (
 	SourceLastFmMix = "lastfm-similar-mix"
 )
 
+// MoodSource is the source instance id of a mood playlist. Each mood is its
+// own kind (not one kind keyed by mood) so the UI and the cover translate
+// each name. All of them use moodExternalID: there's one per instance.
+func MoodSource(m sonic.Mood) string { return "mood-" + string(m) + "-mix" }
+
+const moodExternalID = "global"
+
+// moodSpecs gives each mood its (French, like every stored auto-playlist
+// name) display name and cover icon.
+var moodSpecs = map[sonic.Mood]struct{ name, icon string }{
+	sonic.MoodCalm:       {"Calme", "1f319"},      // 🌙
+	sonic.MoodFocus:      {"Focus", "1f3af"},      // 🎯
+	sonic.MoodMelancholy: {"Mélancolie", "1f327"}, // 🌧
+	sonic.MoodEnergetic:  {"Énergie", "26a1"},     // ⚡
+	sonic.MoodParty:      {"Soirée", "1f389"},     // 🎉
+	sonic.MoodWorkout:    {"Workout", "1f4aa"},    // 💪
+}
+
 // AutoPlaylistKinds is the fixed, stable set of source instance ids this
 // package's playlists use — personal lists plus the trending chart — safe to
 // expose to API clients (see internal/api/immerle playlistView.
@@ -77,6 +96,12 @@ var AutoPlaylistKinds = map[string]bool{
 	SourceListenBrainzWeeklyJams:        true,
 	SourceListenBrainzWeeklyExploration: true,
 	SourceLastFmMix:                     true,
+}
+
+func init() {
+	for _, m := range sonic.Moods {
+		AutoPlaylistKinds[MoodSource(m)] = true
+	}
 }
 
 // sourceSubtitleKeys maps a kind backed by a third-party recommendation
@@ -177,6 +202,10 @@ type Service struct {
 	// inside the *lastfm.Recommender itself), so it applies to every user the
 	// moment it's wired up.
 	lastfmMix Recommender
+
+	// sonic is nil unless SetSonic is called; mood playlists are then never
+	// published.
+	sonic *sonic.Service
 }
 
 // Recommender resolves recommended tracks from seed tracks. *reccobeats.Client
@@ -242,6 +271,12 @@ func (s *Service) SetLastFmSimilar(r Recommender) {
 	s.lastfmMix = r
 }
 
+// SetSonic wires up the mood playlists, picked from the local audio analysis
+// while its moods setting is on (and removed once it's off).
+func (s *Service) SetSonic(svc *sonic.Service) {
+	s.sonic = svc
+}
+
 func (s *Service) owner(ctx context.Context) (string, error) {
 	if s.ownerID != "" {
 		return s.ownerID, nil
@@ -269,6 +304,7 @@ func (s *Service) SyncNow(ctx context.Context) (int, error) {
 	synced += s.syncGenres(ctx, ownerID)
 	synced += s.syncDecades(ctx, ownerID)
 	synced += s.syncTrending(ctx, ownerID)
+	synced += s.syncMoods(ctx, ownerID)
 	synced += s.syncPersonal(ctx)
 	return synced, nil
 }
@@ -349,6 +385,45 @@ func (s *Service) syncTrending(ctx context.Context, ownerID string) int {
 		return 0
 	}
 	return 1
+}
+
+// syncMoods rebuilds the shared mood playlists from the audio analysis. A
+// mood with fewer than minTracks matches, or every mood once the setting is
+// off, has its playlist removed rather than left stale.
+func (s *Service) syncMoods(ctx context.Context, ownerID string) int {
+	if s.sonic == nil {
+		return 0
+	}
+	var picks map[sonic.Mood][]string
+	if s.sonic.MoodsEnabled() {
+		var err error
+		if picks, err = s.sonic.MoodPlaylists(ctx, maxTracks); err != nil {
+			s.logger.Warn("autoplaylists: mood sync failed", "error", err)
+			return 0
+		}
+	}
+	synced := 0
+	for _, m := range sonic.Moods {
+		spec := moodSpecs[m]
+		ids := picks[m]
+		if len(ids) < minTracks {
+			if p, err := s.playlists.FindFederated(ctx, MoodSource(m), moodExternalID); err == nil {
+				if err := s.playlists.Delete(ctx, p.ID); err != nil {
+					s.logger.Warn("autoplaylists: mood removal failed", "mood", m, "error", err)
+				}
+			}
+			continue
+		}
+		if err := s.upsert(ctx, playlistSpec{
+			ownerID: ownerID, sourceInstanceID: MoodSource(m), sourceExternalID: moodExternalID,
+			name: spec.name, icon: spec.icon, public: true, ids: ids,
+		}); err != nil {
+			s.logger.Warn("autoplaylists: mood sync failed", "mood", m, "error", err)
+			continue
+		}
+		synced++
+	}
+	return synced
 }
 
 // syncPersonal rebuilds every user's "Top du mois"/"On Repeat"/"Favoris

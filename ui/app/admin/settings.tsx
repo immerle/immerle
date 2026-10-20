@@ -363,6 +363,13 @@ export default function AdminSettings() {
               onChange={(v) => save({ sonic: { autoplay: v } })}
             />
             <Text className="text-xs text-muted">{t('admin.settings.sonicAutoplayHelp')}</Text>
+            <ToggleRow
+              label={t('admin.settings.sonicMoods')}
+              hint={q.data?.settings.sonic?.enabled ? undefined : t('admin.settings.sonicNeedsAnalysis')}
+              value={q.data?.settings.sonic?.moods ?? false}
+              onChange={(v) => save({ sonic: { moods: v } })}
+            />
+            <Text className="text-xs text-muted">{t('admin.settings.sonicMoodsHelp')}</Text>
             {sonic.data?.available && sonic.data.total ? (
               <View className="gap-0.5 rounded-xl bg-surface-alt p-3">
                 <Text className="text-sm text-foreground">

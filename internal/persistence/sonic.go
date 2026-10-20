@@ -100,6 +100,37 @@ func (r *SonicRepo) Vectors(ctx context.Context, algoVersion int) ([]SonicVector
 	return out, rows.Err()
 }
 
+// SonicSummary is one analyzed track's scalar features (mood playlists).
+type SonicSummary struct {
+	TrackID      string
+	ArtistID     string
+	BPM          float64
+	Energy       float64
+	Danceability float64
+	Mode         string
+}
+
+// Summaries returns the scalar features of every track analyzed successfully
+// from its current file with the given algorithm.
+func (r *SonicRepo) Summaries(ctx context.Context, algoVersion int) ([]SonicSummary, error) {
+	rows, err := r.query(ctx, `SELECT s.track_id, t.artist_id, s.bpm, s.energy, s.danceability, s.mode FROM track_sonic s
+		JOIN tracks t ON t.id = s.track_id
+		WHERE s.algo_version = ? AND s.error = '' AND s.file_hash = t.file_hash`, algoVersion)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []SonicSummary
+	for rows.Next() {
+		var v SonicSummary
+		if err := rows.Scan(&v.TrackID, &v.ArtistID, &v.BPM, &v.Energy, &v.Danceability, &v.Mode); err != nil {
+			return nil, err
+		}
+		out = append(out, v)
+	}
+	return out, rows.Err()
+}
+
 // SonicStats is the analysis progress over the local library.
 type SonicStats struct {
 	Total    int

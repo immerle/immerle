@@ -5676,7 +5676,7 @@ export interface paths {
         };
         /**
          * Custom auto-generated playlists
-         * @description Returns the caller's personal auto-generated playlists (top of the month, on repeat, forgotten favorites, random, recommended) that currently have at least one track.
+         * @description Returns the caller's personal auto-generated playlists (top of the month, on repeat, forgotten favorites, random, recommended) that currently have at least one track, followed by the shared mood playlists when the sonic moods setting is on.
          */
         get: {
             parameters: {
@@ -10297,6 +10297,8 @@ export interface components {
                 autoplay?: boolean;
                 /** @example false */
                 enabled?: boolean;
+                /** @example false */
+                moods?: boolean;
                 /** @example false */
                 radio?: boolean;
                 /** @example 1 */
