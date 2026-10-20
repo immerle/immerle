@@ -56,6 +56,8 @@ export interface Capabilities {
     lastFm: boolean;
     /** Local audio analysis (tempo, key, energy) behind the sonic features. */
     sonicAnalysis: boolean;
+    /** Sonic radio (`/songs/radio`): tracks that sound like a track, album or artist. */
+    sonicRadio: boolean;
   };
   /**
    * Live on/off state for the handful of features an admin can toggle at

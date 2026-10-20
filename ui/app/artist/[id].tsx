@@ -9,6 +9,7 @@ import { AlbumCard } from '../../src/components/AlbumCard';
 import { ErrorState, IconButton, Loading } from '../../src/components/ui';
 import { PlayButton } from '../../src/components/PlayButton';
 import { usePlayer } from '../../src/audio/store';
+import { useStartRadio } from '../../src/query/sonic';
 import { Song } from '../../src/api/subsonic/types';
 import { useColors } from '../../src/theme/colors';
 import { useT } from '../../src/i18n/store';
@@ -26,6 +27,7 @@ export default function ArtistDetail() {
   const playSongs = usePlayer((s) => s.playSongs);
   const playShuffled = usePlayer((s) => s.playShuffled);
   const shuffleOn = usePlayer((s) => s.shuffle);
+  const radio = useStartRadio();
   const [busy, setBusy] = useState(false);
   useWebTitle(q.data?.name);
 
@@ -108,6 +110,9 @@ export default function ArtistDetail() {
         <View className="flex-row items-center gap-5 px-4 pb-2 pt-3">
           <PlayButton onPress={() => run(false)} size={56} accessibilityLabel={t('media.artist.play')} />
           <IconButton name="shuffle" size={26} color={shuffleOn ? colors.primary : colors.muted} onPress={() => run(true)} accessibilityLabel={t('media.artist.shuffle')} />
+          {radio.available ? (
+            <IconButton name="radio-outline" size={26} color={colors.muted} onPress={() => void radio.start([artist.id])} accessibilityLabel={t('media.artist.radio')} />
+          ) : null}
         </View>
 
         <Text className="px-4 pb-2 text-xl font-bold tracking-tight text-foreground">{t('media.artist.discography')}</Text>

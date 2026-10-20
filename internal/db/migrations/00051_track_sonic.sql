@@ -7,7 +7,7 @@
 CREATE TABLE IF NOT EXISTS track_sonic (
     track_id      TEXT PRIMARY KEY REFERENCES tracks(id) ON DELETE CASCADE,
     file_hash     TEXT NOT NULL DEFAULT '',
-    algo_version  INTEGER NOT NULL,
+    algo_version  BIGINT NOT NULL,
     bpm           REAL NOT NULL DEFAULT 0,
     musical_key   TEXT NOT NULL DEFAULT '',
     mode          TEXT NOT NULL DEFAULT '',

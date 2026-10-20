@@ -70,6 +70,36 @@ func (r *SonicRepo) Get(ctx context.Context, trackID string) (models.TrackSonic,
 	return f, err
 }
 
+// SonicVector is one analyzed track's similarity vector.
+type SonicVector struct {
+	TrackID  string
+	ArtistID string
+	Vector   []float32
+}
+
+// Vectors returns the vectors of every track analyzed successfully from its
+// current file with the given algorithm.
+func (r *SonicRepo) Vectors(ctx context.Context, algoVersion int) ([]SonicVector, error) {
+	rows, err := r.query(ctx, `SELECT s.track_id, t.artist_id, s.vector FROM track_sonic s
+		JOIN tracks t ON t.id = s.track_id
+		WHERE s.algo_version = ? AND s.error = '' AND s.file_hash = t.file_hash`, algoVersion)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []SonicVector
+	for rows.Next() {
+		var v SonicVector
+		var raw []byte
+		if err := rows.Scan(&v.TrackID, &v.ArtistID, &raw); err != nil {
+			return nil, err
+		}
+		v.Vector = decodeVector(raw)
+		out = append(out, v)
+	}
+	return out, rows.Err()
+}
+
 // SonicStats is the analysis progress over the local library.
 type SonicStats struct {
 	Total    int

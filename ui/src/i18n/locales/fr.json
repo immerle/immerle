@@ -677,6 +677,10 @@
       "sonicUnavailable": "ffmpeg est introuvable (voir Transcodage), l'analyse audio ne peut pas tourner.",
       "sonicProgress": "{{analyzed}} / {{total}} morceaux analysés",
       "sonicFailed": "{{count}} n'ont pas pu être analysés",
+      "sonicFeatures": "Fonctionnalités",
+      "sonicRadio": "Radio par morceau",
+      "sonicNeedsAnalysis": "Nécessite l'analyse",
+      "sonicRadioHelp": "\"Lancer la radio\" sur un morceau, un album ou un artiste joue des morceaux qui sonnent pareil. Répond aussi à getSimilarSongs pour les clients Subsonic (instant mix).",
       "save": "Enregistrer"
     },
     "users": {
@@ -780,7 +784,8 @@
       "label": "Album",
       "trackCount": "{{count}} titres",
       "play": "Lecture de l'album",
-      "shuffle": "Aléatoire"
+      "shuffle": "Aléatoire",
+      "radio": "Lancer la radio"
     },
     "artist": {
       "notFound": "Artiste introuvable.",
@@ -788,6 +793,7 @@
       "albumCount": "{{count}} albums",
       "play": "Lire l'artiste",
       "shuffle": "Aléatoire",
+      "radio": "Lancer la radio",
       "discography": "Discographie"
     },
     "genre": {
@@ -1030,6 +1036,9 @@
     }
   },
   "components": {
+    "sonicRadio": {
+      "notAnalyzed": "Aucun de ces morceaux n'a encore été analysé."
+    },
     "trackRow": { "unknownArtist": "Artiste inconnu", "moreOptions": "Plus d'options" },
     "scrollRow": {
       "scrollLeft": "Défiler vers la gauche",
@@ -1100,6 +1109,7 @@
       "playNow": "Lire maintenant",
       "playNext": "Lire ensuite",
       "addToQueue": "Ajouter à la file",
+      "startRadio": "Lancer la radio",
       "addToPlaylist": "Ajouter à une playlist",
       "addToHallOfFame": "Ajouter au Hall of Fame",
       "addedToHallOfFame": "Ajouté à votre Hall of Fame",

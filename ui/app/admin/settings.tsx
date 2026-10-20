@@ -348,6 +348,14 @@ export default function AdminSettings() {
               help={t('admin.settings.sonicWorkersHelp')}
             />
             <SaveButton loading={update.isPending} onPress={() => save({ sonic: { workers: num(form.sonicWorkers) } })} />
+            <Text className="pt-2 text-xs font-semibold uppercase tracking-wider text-muted">{t('admin.settings.sonicFeatures')}</Text>
+            <ToggleRow
+              label={t('admin.settings.sonicRadio')}
+              hint={q.data?.settings.sonic?.enabled ? undefined : t('admin.settings.sonicNeedsAnalysis')}
+              value={q.data?.settings.sonic?.radio ?? false}
+              onChange={(v) => save({ sonic: { radio: v } })}
+            />
+            <Text className="text-xs text-muted">{t('admin.settings.sonicRadioHelp')}</Text>
             {sonic.data?.available && sonic.data.total ? (
               <View className="gap-0.5 rounded-xl bg-surface-alt p-3">
                 <Text className="text-sm text-foreground">

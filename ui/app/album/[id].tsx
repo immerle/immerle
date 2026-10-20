@@ -11,6 +11,7 @@ import { ErrorState, IconButton, Skeleton } from '../../src/components/ui';
 import { PlayButton } from '../../src/components/PlayButton';
 import { DownloadButton } from '../../src/components/DownloadButton';
 import { usePlayer } from '../../src/audio/store';
+import { useStartRadio } from '../../src/query/sonic';
 import { useColors } from '../../src/theme/colors';
 import { formatDuration } from '../../src/utils/format';
 import { useT } from '../../src/i18n/store';
@@ -30,6 +31,7 @@ export default function AlbumDetail() {
   const playSongs = usePlayer((s) => s.playSongs);
   const playShuffled = usePlayer((s) => s.playShuffled);
   const shuffleOn = usePlayer((s) => s.shuffle);
+  const radio = useStartRadio();
   useWebTitle(q.data?.name);
 
   if (q.isLoading && !cached) {
@@ -126,6 +128,9 @@ export default function AlbumDetail() {
       <View className="flex-row items-center gap-5 px-4 py-4">
         <PlayButton onPress={playAll} size={56} accessibilityLabel={t('media.album.play')} />
         <IconButton name="shuffle" size={26} color={shuffleOn ? colors.primary : colors.muted} onPress={shuffle} accessibilityLabel={t('media.album.shuffle')} />
+        {radio.available ? (
+          <IconButton name="radio-outline" size={26} color={colors.muted} onPress={() => void radio.start([album.id])} accessibilityLabel={t('media.album.radio')} />
+        ) : null}
         <DownloadButton
           songs={songs}
           size={26}

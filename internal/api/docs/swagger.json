@@ -1173,6 +1173,10 @@
                                 "example": false,
                                 "type": "boolean"
                             },
+                            "radio": {
+                                "example": false,
+                                "type": "boolean"
+                            },
                             "workers": {
                                 "example": 1,
                                 "type": "integer"
@@ -11851,6 +11855,99 @@
                 "summary": "List songs by genre",
                 "tags": [
                     "catalog"
+                ]
+            }
+        },
+        "/songs/radio": {
+            "get": {
+                "description": "Tracks that sound like the seeds, from the local audio analysis: the closest analyzed tracks, at most two per artist, with a little randomness so two radios differ. A seed is a track, album or artist id; several seeds blend into one radio (e.g. the last tracks played, to extend a queue). 404 when the sonic radio is switched off; an empty list when none of the seeds is analyzed yet.",
+                "parameters": [
+                    {
+                        "description": "Track, album or artist id (repeatable)",
+                        "in": "query",
+                        "name": "seed",
+                        "required": true,
+                        "schema": {
+                            "items": {
+                                "type": "string"
+                            },
+                            "type": "array"
+                        },
+                        "style": "form"
+                    },
+                    {
+                        "description": "Comma-separated track ids to leave out (e.g. the current queue)",
+                        "in": "query",
+                        "name": "exclude",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Number of tracks (default 50, max 200)",
+                        "in": "query",
+                        "name": "count",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": {
+                                        "items": {
+                                            "$ref": "#/components/schemas/immerle.songView"
+                                        },
+                                        "type": "array"
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Sonic radio",
+                "tags": [
+                    "browse"
                 ]
             }
         },

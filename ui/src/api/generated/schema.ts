@@ -8568,6 +8568,81 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/songs/radio": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Sonic radio
+         * @description Tracks that sound like the seeds, from the local audio analysis: the closest analyzed tracks, at most two per artist, with a little randomness so two radios differ. A seed is a track, album or artist id; several seeds blend into one radio (e.g. the last tracks played, to extend a queue). 404 when the sonic radio is switched off; an empty list when none of the seeds is analyzed yet.
+         */
+        get: {
+            parameters: {
+                query: {
+                    /** @description Track, album or artist id (repeatable) */
+                    seed: string[];
+                    /** @description Comma-separated track ids to leave out (e.g. the current queue) */
+                    exclude?: string;
+                    /** @description Number of tracks (default 50, max 200) */
+                    count?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            [key: string]: components["schemas"]["immerle.songView"][];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/songs/{id}": {
         parameters: {
             query?: never;
@@ -10220,6 +10295,8 @@ export interface components {
             sonic?: {
                 /** @example false */
                 enabled?: boolean;
+                /** @example false */
+                radio?: boolean;
                 /** @example 1 */
                 workers?: number;
             };

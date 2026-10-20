@@ -677,6 +677,10 @@
       "sonicUnavailable": "ffmpeg was not found (see Transcoding), audio analysis can't run.",
       "sonicProgress": "{{analyzed}} / {{total}} tracks analyzed",
       "sonicFailed": "{{count}} could not be analyzed",
+      "sonicFeatures": "Features",
+      "sonicRadio": "Track radio",
+      "sonicNeedsAnalysis": "Needs the analysis",
+      "sonicRadioHelp": "\"Start radio\" on a track, album or artist plays tracks that sound alike. Also answers getSimilarSongs for Subsonic clients (instant mix).",
       "save": "Save"
     },
     "users": {
@@ -780,7 +784,8 @@
       "label": "Album",
       "trackCount": "{{count}} tracks",
       "play": "Play album",
-      "shuffle": "Shuffle"
+      "shuffle": "Shuffle",
+      "radio": "Start radio"
     },
     "artist": {
       "notFound": "Artist not found.",
@@ -788,6 +793,7 @@
       "albumCount": "{{count}} albums",
       "play": "Play artist",
       "shuffle": "Shuffle",
+      "radio": "Start radio",
       "discography": "Discography"
     },
     "genre": {
@@ -1030,6 +1036,9 @@
     }
   },
   "components": {
+    "sonicRadio": {
+      "notAnalyzed": "None of these tracks has been analyzed yet."
+    },
     "trackRow": { "unknownArtist": "Unknown artist", "moreOptions": "More options" },
     "scrollRow": {
       "scrollLeft": "Scroll left",
@@ -1100,6 +1109,7 @@
       "playNow": "Play now",
       "playNext": "Play next",
       "addToQueue": "Add to queue",
+      "startRadio": "Start radio",
       "addToPlaylist": "Add to a playlist",
       "addToHallOfFame": "Add to Hall of Fame",
       "addedToHallOfFame": "Added to your Hall of Fame",
