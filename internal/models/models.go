@@ -123,6 +123,9 @@ type SonicRuntime struct {
 	// AutoDJ lets listeners reorder a playlist or their queue for smooth
 	// transitions (tempo, key, energy).
 	AutoDJ bool `json:"autoDj"`
+	// Duplicates lists, in the admin library, tracks that sound identical
+	// (the same recording under other tags or in another format).
+	Duplicates bool `json:"duplicates"`
 }
 
 // SmartPlaylistsRuntime toggles rule-based "smart" playlists (hot-reloadable).

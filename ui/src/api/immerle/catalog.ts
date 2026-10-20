@@ -46,6 +46,7 @@ export function toSong(v: SongView): Song {
     artistId: v.artistId,
     coverArt: v.coverArt,
     duration: v.duration,
+    bitRate: v.bitRate,
     track: v.track,
     year: v.year,
     genre: v.genre,

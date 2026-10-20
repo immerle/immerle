@@ -2727,6 +2727,81 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/sonic/duplicates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Sonic duplicates
+         * @description Admin only. Groups of analyzed tracks that sound identical and last about as long (within 3 s): the same recording under other tags, or in another format. Nothing is deleted; the admin picks which copy to keep. 404 when the sonic duplicates setting is off.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.SonicDuplicatesDTO"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/tracks": {
         parameters: {
             query?: never;
@@ -10393,6 +10468,8 @@ export interface components {
                 /** @example false */
                 autoplay?: boolean;
                 /** @example false */
+                duplicates?: boolean;
+                /** @example false */
                 enabled?: boolean;
                 /** @example false */
                 moods?: boolean;
@@ -10485,6 +10562,9 @@ export interface components {
             order?: string;
             /** @example playCount */
             sort?: string;
+        };
+        "immerle.SonicDuplicatesDTO": {
+            groups?: components["schemas"]["immerle.songView"][][];
         };
         "immerle.SonicStatusDTO": {
             /** @example 4210 */
@@ -11042,6 +11122,7 @@ export interface components {
             albumId?: string;
             artist?: string;
             artistId?: string;
+            bitRate?: number;
             bpm?: number;
             /**
              * @description Comment is a personal nostalgia note on this track (e.g. "listened to

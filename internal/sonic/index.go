@@ -56,13 +56,14 @@ type index struct {
 	repo  *persistence.SonicRepo
 	dirty atomic.Bool
 
-	mu      sync.Mutex
-	built   time.Time
-	ids     []string
-	artists []string
-	pos     map[string]int
-	vecs    []float32 // len(ids) rows of dim values
-	dim     int
+	mu        sync.Mutex
+	built     time.Time
+	ids       []string
+	artists   []string
+	durations []int
+	pos       map[string]int
+	vecs      []float32 // len(ids) rows of dim values
+	dim       int
 }
 
 func newIndex(repo *persistence.SonicRepo) *index { return &index{repo: repo} }
@@ -89,7 +90,7 @@ func (x *index) ensure(ctx context.Context) error {
 // load z-scores each dimension over the library (so BPM and MFCCs weigh in on
 // the same scale), applies the dimension weights and L2-normalizes each row.
 func (x *index) load(rows []persistence.SonicVector) {
-	x.ids, x.artists, x.vecs, x.dim = nil, nil, nil, 0
+	x.ids, x.artists, x.durations, x.vecs, x.dim = nil, nil, nil, nil, 0
 	x.pos = make(map[string]int, len(rows))
 	if len(rows) == 0 {
 		return
@@ -136,6 +137,7 @@ func (x *index) load(rows []persistence.SonicVector) {
 		x.pos[r.TrackID] = len(x.ids)
 		x.ids = append(x.ids, r.TrackID)
 		x.artists = append(x.artists, r.ArtistID)
+		x.durations = append(x.durations, r.Duration)
 	}
 }
 

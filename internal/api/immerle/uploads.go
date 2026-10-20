@@ -35,6 +35,7 @@ type songView struct {
 	ArtistID        string            `json:"artistId"`
 	CoverArt        string            `json:"coverArt"`
 	Duration        int               `json:"duration"`
+	BitRate         int               `json:"bitRate,omitempty"`
 	Track           int               `json:"track,omitempty"`
 	Year            int               `json:"year,omitempty"`
 	Composer        string            `json:"composer,omitempty"`
@@ -88,7 +89,7 @@ func toSongView(t models.Track) songView {
 	}
 	return songView{
 		ID: t.ID, Title: t.Title, Album: t.AlbumName, Artist: t.ArtistName,
-		AlbumID: t.AlbumID, ArtistID: t.ArtistID, CoverArt: cover, Duration: t.Duration,
+		AlbumID: t.AlbumID, ArtistID: t.ArtistID, CoverArt: cover, Duration: t.Duration, BitRate: t.BitRate,
 		Track: t.TrackNo, Year: t.Year, Composer: t.Composer, Genre: t.Genre, Suffix: t.Suffix,
 		ContentType: t.ContentType, Size: t.Size,
 		BPM: t.BPM, ReplayGainTrack: t.ReplayGainTrack, ReplayGainAlbum: t.ReplayGainAlbum,
