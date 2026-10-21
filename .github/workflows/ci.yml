@@ -46,11 +46,7 @@ jobs:
           git diff --exit-code go.mod go.sum
 
       - name: Verify OpenAPI spec is up to date
-        run: |
-          go run github.com/swaggo/swag/v2/cmd/swag@v2.0.0-rc5 init \
-            -g doc.go -d internal/api/immerle -o internal/api/docs \
-            --ot json,yaml --parseInternal --v3.1
-          git diff --exit-code internal/api/docs
+        run: make openapi-check
 
       - name: Vet
         run: go vet ./...

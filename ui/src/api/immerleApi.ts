@@ -79,6 +79,7 @@ export type CapabilitiesResponse =
 export type ArtistView = components['schemas']['immerle.artistView'];
 export type AlbumView = components['schemas']['immerle.albumView'];
 export type SongView = components['schemas']['immerle.songView'];
+export type SmartPlaylistView = components['schemas']['immerle.smartPlaylistView'];
 export type GenreView = components['schemas']['immerle.genreView'];
 export type FavoritesView = components['schemas']['immerle.favoritesView'];
 export type SearchView = components['schemas']['immerle.searchView'];

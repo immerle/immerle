@@ -67,7 +67,7 @@ clean:
 
 ## openapi: regenerate the OpenAPI 3.1 spec from handler annotations (swaggo/swag v2)
 openapi:
-	$(SWAG) init -g doc.go -d internal/api/immerle -o internal/api/docs --ot json,yaml --parseInternal --v3.1
+	$(SWAG) init -g doc.go -d internal/api/immerle,internal/models -o internal/api/docs --ot json,yaml --parseInternal --v3.1
 
 ## openapi-check: fail if the committed spec is out of date
 openapi-check: openapi

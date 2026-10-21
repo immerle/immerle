@@ -71,6 +71,11 @@ type songView struct {
 	Comment string `json:"comment,omitempty"`
 }
 
+// songListView is the {"songs": [...]} body shared by every track-list endpoint.
+type songListView struct {
+	Songs []songView `json:"songs"`
+}
+
 // participantView mirrors models.Participant locally so the OpenAPI generator
 // (swag) can resolve it without cross-package parsing. Same JSON shape.
 type participantView struct {
