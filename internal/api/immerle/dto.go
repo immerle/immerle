@@ -164,34 +164,6 @@ type ProviderLogDTO struct {
 	CreatedAt string `json:"createdAt" example:"2026-06-18T20:00:00Z" validate:"optional"`
 }
 
-// TrackDTO is a library track in the admin management API. It mirrors the
-// Subsonic-compatible song shape returned by toSongView (shared with the
-// user-facing "local" uploads endpoints).
-type TrackDTO struct {
-	ID          string `json:"id" validate:"optional"`
-	Title       string `json:"title" example:"One More Time" validate:"optional"`
-	Album       string `json:"album" example:"Discovery" validate:"optional"`
-	Artist      string `json:"artist" example:"Daft Punk" validate:"optional"`
-	AlbumID     string `json:"albumId" validate:"optional"`
-	ArtistID    string `json:"artistId" validate:"optional"`
-	CoverArt    string `json:"coverArt" validate:"optional"`
-	Duration    int    `json:"duration" example:"320" validate:"optional"`
-	Track       int    `json:"track,omitempty" example:"1" validate:"optional"`
-	Year        int    `json:"year,omitempty" example:"2001" validate:"optional"`
-	Genre       string `json:"genre,omitempty" example:"House" validate:"optional"`
-	Suffix      string `json:"suffix,omitempty" example:"flac" validate:"optional"`
-	ContentType string `json:"contentType,omitempty" example:"audio/flac" validate:"optional"`
-	Size        int64  `json:"size,omitempty" example:"8123456" validate:"optional"`
-}
-
-// TrackListDTO is a page of library tracks.
-type TrackListDTO struct {
-	Tracks []TrackDTO `json:"tracks" validate:"optional"`
-	Total  int        `json:"total" example:"1560" validate:"optional"`
-	Limit  int        `json:"limit" example:"50" validate:"optional"`
-	Offset int        `json:"offset" example:"0" validate:"optional"`
-}
-
 // CleanupStatusDTO reports the provider-download eviction sweep state.
 type CleanupStatusDTO struct {
 	Enabled         bool  `json:"enabled" example:"true" validate:"optional"`
@@ -404,16 +376,6 @@ type ActivityEventDTO struct {
 	Privacy     string          `json:"privacy" example:"public" validate:"optional"`
 	CreatedAt   string          `json:"createdAt" example:"2026-06-15T09:00:00Z" validate:"optional"`
 	Item        ActivityItemDTO `json:"item,omitempty" validate:"optional"`
-}
-
-// LibraryStatsDTO is a snapshot of the library analytics.
-type LibraryStatsDTO struct {
-	Artists       int    `json:"artists" example:"42" validate:"optional"`
-	Albums        int    `json:"albums" example:"128" validate:"optional"`
-	Tracks        int    `json:"tracks" example:"1560" validate:"optional"`
-	TotalSize     int64  `json:"totalSize" example:"9663676416" validate:"optional"`
-	TotalDuration int64  `json:"totalDuration" example:"432000" validate:"optional"`
-	UpdatedAt     string `json:"updatedAt" example:"2026-06-17T09:00:00Z" validate:"optional"`
 }
 
 // ImportItemDTO is one source track and the outcome of resolving it.

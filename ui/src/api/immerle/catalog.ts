@@ -37,8 +37,8 @@ import type { HallOfFame, RadioStation } from './types';
 
 export function toSong(v: SongView): Song {
   return {
-    id: v.id ?? '',
-    title: v.title ?? '',
+    id: v.id,
+    title: v.title,
     album: v.album,
     artist: v.artist,
     albumId: v.albumId,

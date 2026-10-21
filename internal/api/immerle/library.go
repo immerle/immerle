@@ -15,7 +15,7 @@ import (
 // @Tags         library
 // @Security     BearerAuth
 // @Produce      json
-// @Success      200  {object}  LibraryStatsDTO
+// @Success      200  {object}  models.LibraryStats
 // @Failure      401  {object}  errorResponse
 // @Router       /library/stats [get]
 func (h *Handler) handleLibraryStats(w http.ResponseWriter, r *http.Request) {

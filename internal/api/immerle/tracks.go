@@ -24,7 +24,7 @@ import (
 // @Param        query   query  string  false  "Case-insensitive search over title/artist/album"
 // @Param        limit   query  int     false  "Page size (default 50, max 200)"
 // @Param        offset  query  int     false  "Offset for pagination"
-// @Success      200  {object}  TrackListDTO
+// @Success      200  {object}  trackListView
 // @Failure      401  {object}  errorResponse
 // @Failure      403  {object}  errorResponse
 // @Failure      500  {object}  errorResponse
@@ -54,12 +54,15 @@ func (h *Handler) handleAdminTracks(w http.ResponseWriter, r *http.Request) {
 	for _, t := range tracks {
 		songs = append(songs, toSongView(t))
 	}
-	writeResource(w, http.StatusOK, map[string]any{
-		"tracks": songs,
-		"total":  total,
-		"limit":  limit,
-		"offset": offset,
-	})
+	writeResource(w, http.StatusOK, trackListView{Tracks: songs, Total: total, Limit: limit, Offset: offset})
+}
+
+// trackListView is a page of the admin track listing.
+type trackListView struct {
+	Tracks []songView `json:"tracks" validate:"required"`
+	Total  int        `json:"total"`
+	Limit  int        `json:"limit"`
+	Offset int        `json:"offset"`
 }
 
 // trackUpdateRequest is the body for PATCH /admin/tracks/{id}. All fields are
@@ -82,7 +85,7 @@ type trackUpdateRequest struct {
 // @Produce      json
 // @Param        id    path  string              true  "Track id"
 // @Param        body  body  trackUpdateRequest  true  "Fields to update (all optional)"
-// @Success      200  {object}  TrackDTO
+// @Success      200  {object}  songView
 // @Failure      400  {object}  errorResponse
 // @Failure      401  {object}  errorResponse
 // @Failure      403  {object}  errorResponse
@@ -151,7 +154,7 @@ func (h *Handler) handleAdminTrackUpdate(w http.ResponseWriter, r *http.Request)
 // @Produce      json
 // @Param        id    path  string  true  "Track id"
 // @Param        file  formData  file  true  "Cover image (jpeg/png/gif/webp)"
-// @Success      200  {object}  TrackDTO
+// @Success      200  {object}  songView
 // @Failure      400  {object}  errorResponse
 // @Failure      401  {object}  errorResponse
 // @Failure      403  {object}  errorResponse

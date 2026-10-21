@@ -221,7 +221,7 @@ func (h *Handler) writeSmartTracks(w http.ResponseWriter, r *http.Request, rules
 	for _, t := range tracks {
 		songs = append(songs, toSongView(t))
 	}
-	writeResource(w, http.StatusOK, songListView{Songs: songs})
+	writeResource(w, http.StatusOK, songList(songs))
 }
 
 // --- admin toggle ---

@@ -827,35 +827,6 @@
                 ],
                 "type": "object"
             },
-            "immerle.LibraryStatsDTO": {
-                "properties": {
-                    "albums": {
-                        "example": 128,
-                        "type": "integer"
-                    },
-                    "artists": {
-                        "example": 42,
-                        "type": "integer"
-                    },
-                    "totalDuration": {
-                        "example": 432000,
-                        "type": "integer"
-                    },
-                    "totalSize": {
-                        "example": 9663676416,
-                        "type": "integer"
-                    },
-                    "tracks": {
-                        "example": 1560,
-                        "type": "integer"
-                    },
-                    "updatedAt": {
-                        "example": "2026-06-17T09:00:00Z",
-                        "type": "string"
-                    }
-                },
-                "type": "object"
-            },
             "immerle.LoginDTO": {
                 "properties": {
                     "device": {
@@ -1539,87 +1510,6 @@
                 },
                 "type": "object"
             },
-            "immerle.TrackDTO": {
-                "properties": {
-                    "album": {
-                        "example": "Discovery",
-                        "type": "string"
-                    },
-                    "albumId": {
-                        "type": "string"
-                    },
-                    "artist": {
-                        "example": "Daft Punk",
-                        "type": "string"
-                    },
-                    "artistId": {
-                        "type": "string"
-                    },
-                    "contentType": {
-                        "example": "audio/flac",
-                        "type": "string"
-                    },
-                    "coverArt": {
-                        "type": "string"
-                    },
-                    "duration": {
-                        "example": 320,
-                        "type": "integer"
-                    },
-                    "genre": {
-                        "example": "House",
-                        "type": "string"
-                    },
-                    "id": {
-                        "type": "string"
-                    },
-                    "size": {
-                        "example": 8123456,
-                        "type": "integer"
-                    },
-                    "suffix": {
-                        "example": "flac",
-                        "type": "string"
-                    },
-                    "title": {
-                        "example": "One More Time",
-                        "type": "string"
-                    },
-                    "track": {
-                        "example": 1,
-                        "type": "integer"
-                    },
-                    "year": {
-                        "example": 2001,
-                        "type": "integer"
-                    }
-                },
-                "type": "object"
-            },
-            "immerle.TrackListDTO": {
-                "properties": {
-                    "limit": {
-                        "example": 50,
-                        "type": "integer"
-                    },
-                    "offset": {
-                        "example": 0,
-                        "type": "integer"
-                    },
-                    "total": {
-                        "example": 1560,
-                        "type": "integer"
-                    },
-                    "tracks": {
-                        "items": {
-                            "$ref": "#/components/schemas/immerle.TrackDTO"
-                        },
-                        "type": "array",
-                        "uniqueItems": false
-                    }
-                },
-                "type": "object"
-            },
             "immerle.UserDTO": {
                 "properties": {
                     "displayName": {
@@ -1815,6 +1705,21 @@
                 ],
                 "type": "object"
             },
+            "immerle.albumListView": {
+                "properties": {
+                    "albums": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.albumView"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "required": [
+                    "albums"
+                ],
+                "type": "object"
+            },
             "immerle.albumView": {
                 "properties": {
                     "artist": {
@@ -1889,6 +1794,21 @@
                 "required": [
                     "code",
                     "message"
+                ],
+                "type": "object"
+            },
+            "immerle.artistListView": {
+                "properties": {
+                    "artists": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.artistView"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "required": [
+                    "artists"
                 ],
                 "type": "object"
             },
@@ -2226,6 +2146,21 @@
                 ],
                 "type": "object"
             },
+            "immerle.genreListView": {
+                "properties": {
+                    "genres": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.genreView"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "required": [
+                    "genres"
+                ],
+                "type": "object"
+            },
             "immerle.genreView": {
                 "properties": {
                     "albumCount": {
@@ -2391,6 +2326,21 @@
                 },
                 "required": [
                     "synced"
+                ],
+                "type": "object"
+            },
+            "immerle.nowPlayingListView": {
+                "properties": {
+                    "nowPlaying": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.nowPlayingView"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "required": [
+                    "nowPlaying"
                 ],
                 "type": "object"
             },
@@ -3156,6 +3106,9 @@
                         "uniqueItems": false
                     }
                 },
+                "required": [
+                    "songs"
+                ],
                 "type": "object"
             },
             "immerle.songLocalStatusView": {
@@ -3415,6 +3368,33 @@
                 },
                 "type": "object"
             },
+            "immerle.trackListView": {
+                "properties": {
+                    "limit": {
+                        "type": "integer"
+                    },
+                    "offset": {
+                        "type": "integer"
+                    },
+                    "total": {
+                        "type": "integer"
+                    },
+                    "tracks": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.songView"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "required": [
+                    "limit",
+                    "offset",
+                    "total",
+                    "tracks"
+                ],
+                "type": "object"
+            },
             "immerle.trackUpdateRequest": {
                 "properties": {
                     "discNo": {
@@ -3499,6 +3479,37 @@
                         "type": "string"
                     }
                 },
+                "type": "object"
+            },
+            "models.LibraryStats": {
+                "properties": {
+                    "albums": {
+                        "type": "integer"
+                    },
+                    "artists": {
+                        "type": "integer"
+                    },
+                    "totalDuration": {
+                        "type": "integer"
+                    },
+                    "totalSize": {
+                        "type": "integer"
+                    },
+                    "tracks": {
+                        "type": "integer"
+                    },
+                    "updatedAt": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "albums",
+                    "artists",
+                    "totalDuration",
+                    "totalSize",
+                    "tracks",
+                    "updatedAt"
+                ],
                 "type": "object"
             },
             "models.SmartCondition": {
@@ -4990,10 +5001,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "additionalProperties": {
-                                        "type": "boolean"
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/immerle.featureStatusView"
                                 }
                             }
                         },
@@ -5036,10 +5044,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "additionalProperties": {
-                                        "type": "boolean"
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/immerle.featureStatusView"
                                 }
                             }
                         },
@@ -6573,7 +6578,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.TrackListDTO"
+                                    "$ref": "#/components/schemas/immerle.trackListView"
                                 }
                             }
                         },
@@ -6728,7 +6733,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.TrackDTO"
+                                    "$ref": "#/components/schemas/immerle.songView"
                                 }
                             }
                         },
@@ -6832,7 +6837,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.TrackDTO"
+                                    "$ref": "#/components/schemas/immerle.songView"
                                 }
                             }
                         },
@@ -7378,13 +7383,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "additionalProperties": {
-                                        "items": {
-                                            "$ref": "#/components/schemas/immerle.albumView"
-                                        },
-                                        "type": "array"
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/immerle.albumListView"
                                 }
                             }
                         },
@@ -7553,13 +7552,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "additionalProperties": {
-                                        "items": {
-                                            "$ref": "#/components/schemas/immerle.artistView"
-                                        },
-                                        "type": "array"
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/immerle.artistListView"
                                 }
                             }
                         },
@@ -8059,13 +8052,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "additionalProperties": {
-                                        "items": {
-                                            "$ref": "#/components/schemas/immerle.genreView"
-                                        },
-                                        "type": "array"
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/immerle.genreListView"
                                 }
                             }
                         },
@@ -9401,7 +9388,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.LibraryStatsDTO"
+                                    "$ref": "#/components/schemas/models.LibraryStats"
                                 }
                             }
                         },
@@ -10378,13 +10365,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "additionalProperties": {
-                                        "items": {
-                                            "$ref": "#/components/schemas/immerle.nowPlayingView"
-                                        },
-                                        "type": "array"
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/immerle.nowPlayingListView"
                                 }
                             }
                         },
@@ -12608,13 +12589,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "additionalProperties": {
-                                        "items": {
-                                            "$ref": "#/components/schemas/immerle.songView"
-                                        },
-                                        "type": "array"
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/immerle.songListView"
                                 }
                             }
                         },
@@ -12777,13 +12752,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "additionalProperties": {
-                                        "items": {
-                                            "$ref": "#/components/schemas/immerle.songView"
-                                        },
-                                        "type": "array"
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/immerle.songListView"
                                 }
                             }
                         },

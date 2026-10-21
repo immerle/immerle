@@ -62,7 +62,7 @@ func (h *Handler) handleSonicStatus(w http.ResponseWriter, r *http.Request) {
 // @Param        seed     query  []string  true   "Track, album or artist id (repeatable)"  collectionFormat(multi)
 // @Param        exclude  query  string    false  "Comma-separated track ids to leave out (e.g. the current queue)"
 // @Param        count    query  int       false  "Number of tracks (default 50, max 200)"
-// @Success      200  {object}  map[string][]songView
+// @Success      200  {object}  songListView
 // @Failure      400  {object}  errorResponse
 // @Failure      401  {object}  errorResponse
 // @Failure      404  {object}  errorResponse
@@ -83,7 +83,7 @@ func (h *Handler) handleSonicRadio(w http.ResponseWriter, r *http.Request) {
 	}
 	count := min(max(intQuery(r, "count", 50), 1), 200)
 	tracks, _ := h.library.SonicRadio(r.Context(), userFrom(r.Context()).ID, seeds, exclude, count)
-	writeResource(w, http.StatusOK, map[string]any{"songs": trackEntriesToSongViews(tracks)})
+	writeResource(w, http.StatusOK, songList(trackEntriesToSongViews(tracks)))
 }
 
 // maxAutoDJTracks bounds an Auto-DJ request (the ordering is quadratic).
