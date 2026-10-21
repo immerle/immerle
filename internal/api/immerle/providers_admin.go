@@ -97,11 +97,11 @@ func (h *Handler) handleProviders(w http.ResponseWriter, r *http.Request) {
 
 // upsertProviderRequest is the body for POST /admin/providers.
 type upsertProviderRequest struct {
-	Name     string `json:"name"`
-	Kind     string `json:"kind"`
-	Endpoint string `json:"endpoint"`
-	Config   string `json:"config"`
-	Enabled  *bool  `json:"enabled"`
+	Name     string `json:"name" validate:"optional"`
+	Kind     string `json:"kind" validate:"optional"`
+	Endpoint string `json:"endpoint" validate:"optional"`
+	Config   string `json:"config" validate:"optional"`
+	Enabled  *bool  `json:"enabled" validate:"optional"`
 }
 
 // handleProviderUpsert creates or updates an on-demand provider. No name + an
@@ -163,7 +163,7 @@ func (h *Handler) handleProviderUpsert(w http.ResponseWriter, r *http.Request) {
 
 // setEnabledRequest is the body for PUT /admin/providers/{name}/enabled.
 type setEnabledRequest struct {
-	Enabled *bool `json:"enabled"`
+	Enabled *bool `json:"enabled" validate:"optional"`
 }
 
 // handleProviderEnable enables or disables a provider.
@@ -274,7 +274,7 @@ func (h *Handler) handleProviderDelete(w http.ResponseWriter, r *http.Request) {
 
 // reorderRequest is the body for PUT /admin/providers/order.
 type reorderRequest struct {
-	Order []string `json:"order"`
+	Order []string `json:"order" validate:"optional"`
 }
 
 // handleProviderReorder sets the provider priority order.

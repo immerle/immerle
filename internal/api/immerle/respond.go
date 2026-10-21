@@ -24,8 +24,8 @@ type fieldError struct {
 type apiError struct {
 	Code    string         `json:"code"`
 	Message string         `json:"message"`
-	Params  map[string]any `json:"params"` // i18n interpolation values; always present ({} when none)
-	Fields  []fieldError   `json:"fields,omitempty"`
+	Params  map[string]any `json:"params" validate:"optional"` // i18n interpolation values; always present ({} when none)
+	Fields  []fieldError   `json:"fields,omitempty" validate:"optional"`
 }
 
 // errorResponse is the wire envelope for every non-2xx response: the apiError is

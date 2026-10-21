@@ -15,11 +15,11 @@ import (
 type shareView struct {
 	ID          string     `json:"id"`
 	URL         string     `json:"url"`
-	Description string     `json:"description,omitempty"`
-	ExpiresAt   *time.Time `json:"expiresAt,omitempty"`
+	Description string     `json:"description,omitempty" validate:"optional"`
+	ExpiresAt   *time.Time `json:"expiresAt,omitempty" validate:"optional"`
 	CreatedAt   time.Time  `json:"createdAt"`
 	ViewCount   int        `json:"viewCount"`
-	Entries     []songView `json:"entries"`
+	Entries     []songView `json:"entries" validate:"optional"`
 }
 
 // shareURL builds the absolute public link for a share secret.
@@ -78,9 +78,9 @@ func (h *Handler) handleListShares(w http.ResponseWriter, r *http.Request) {
 // shareCreateRequest is the body for POST /shares. expiresAt is epoch millis
 // (omit or <=0 for no expiry).
 type shareCreateRequest struct {
-	ItemID      string `json:"itemId"`
-	Description string `json:"description"`
-	ExpiresAt   int64  `json:"expiresAt"`
+	ItemID      string `json:"itemId" validate:"optional"`
+	Description string `json:"description" validate:"optional"`
+	ExpiresAt   int64  `json:"expiresAt" validate:"optional"`
 }
 
 // handleCreateShare creates a share link for a track, album or playlist.
@@ -117,8 +117,8 @@ func (h *Handler) handleCreateShare(w http.ResponseWriter, r *http.Request) {
 // shareUpdateRequest is the body for PATCH /shares/{id}. It replaces the
 // description and expiry (omit expiresAt or set <=0 to clear it).
 type shareUpdateRequest struct {
-	Description string `json:"description"`
-	ExpiresAt   int64  `json:"expiresAt"`
+	Description string `json:"description" validate:"optional"`
+	ExpiresAt   int64  `json:"expiresAt" validate:"optional"`
 }
 
 // handleUpdateShare updates a share's description and expiry.

@@ -73,7 +73,7 @@ func (h *Handler) handleHallOfFameToggle(w http.ResponseWriter, r *http.Request)
 
 // hallOfFameView is the REST representation of a Hall of Fame.
 type hallOfFameView struct {
-	Tracks    []songView `json:"tracks"`
+	Tracks    []songView `json:"tracks" validate:"optional"`
 	CreatedAt time.Time  `json:"createdAt"`
 	ChangedAt time.Time  `json:"changedAt"`
 }
@@ -154,7 +154,7 @@ func (h *Handler) handleUserHallOfFame(w http.ResponseWriter, r *http.Request) {
 
 // hallOfFameOrderRequest is the body for PUT /hall-of-fame/tracks.
 type hallOfFameOrderRequest struct {
-	IDs []string `json:"ids"`
+	IDs []string `json:"ids" validate:"optional"`
 }
 
 // handleSetHallOfFameOrder replaces the caller's full ranked track list
@@ -194,7 +194,7 @@ func (h *Handler) handleSetHallOfFameOrder(w http.ResponseWriter, r *http.Reques
 
 // hallOfFameAddRequest is the body for POST /hall-of-fame/tracks.
 type hallOfFameAddRequest struct {
-	ID string `json:"id"`
+	ID string `json:"id" validate:"optional"`
 }
 
 // handleAddHallOfFameTrack appends one track to the caller's Hall of Fame (a
@@ -232,7 +232,7 @@ func (h *Handler) handleAddHallOfFameTrack(w http.ResponseWriter, r *http.Reques
 
 // hallOfFameNoteRequest is the body for PATCH /hall-of-fame/tracks/{trackId}/note.
 type hallOfFameNoteRequest struct {
-	Comment string `json:"comment"`
+	Comment string `json:"comment" validate:"optional"`
 }
 
 // handleSetHallOfFameNote sets (or, given an empty comment, clears) a

@@ -93,14 +93,14 @@ const maxAutoDJTracks = 500
 type AutoDJRequestDTO struct {
 	// IDs are the track ids to order (a playlist, or the queue from the
 	// current track on). Duplicates are kept.
-	IDs []string `json:"ids"`
+	IDs []string `json:"ids" validate:"optional"`
 	// KeepFirst pins ids[0], e.g. the track playing now.
-	KeepFirst bool `json:"keepFirst" example:"true"`
+	KeepFirst bool `json:"keepFirst" example:"true" validate:"optional"`
 }
 
 // AutoDJResponseDTO is the same ids, reordered.
 type AutoDJResponseDTO struct {
-	IDs []string `json:"ids"`
+	IDs []string `json:"ids" validate:"optional"`
 }
 
 // handleAutoDJ orders tracks for smooth transitions.
@@ -141,7 +141,7 @@ func (h *Handler) handleAutoDJ(w http.ResponseWriter, r *http.Request) {
 
 // SonicDuplicatesDTO lists groups of tracks that sound identical.
 type SonicDuplicatesDTO struct {
-	Groups [][]songView `json:"groups"`
+	Groups [][]songView `json:"groups" validate:"optional"`
 }
 
 // handleSonicDuplicates lists probable duplicates.

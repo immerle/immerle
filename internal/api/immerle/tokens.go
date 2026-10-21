@@ -41,14 +41,14 @@ func (h *Handler) handleTokens(w http.ResponseWriter, r *http.Request) {
 
 // createTokenRequest is the body for POST /tokens.
 type createTokenRequest struct {
-	Name string `json:"name"`
+	Name string `json:"name" validate:"optional"`
 	// ExpiresAt is an optional RFC3339 timestamp; omit or null for a token that
 	// never expires.
-	ExpiresAt *time.Time `json:"expiresAt"`
+	ExpiresAt *time.Time `json:"expiresAt" validate:"optional"`
 	// Device marks this token as an app login session (one per installed
 	// client) rather than a manually-created personal/CLI token — only
 	// device tokens are offered as playback-transfer targets.
-	Device bool `json:"device"`
+	Device bool `json:"device" validate:"optional"`
 }
 
 // handleCreateToken mints a personal access token; the secret is shown once.

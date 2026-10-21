@@ -18,8 +18,8 @@ type channelView struct {
 	Description string        `json:"description"`
 	ImageURL    string        `json:"imageUrl"`
 	Status      string        `json:"status"`
-	Error       string        `json:"error,omitempty"`
-	Episodes    []episodeView `json:"episodes,omitempty"`
+	Error       string        `json:"error,omitempty" validate:"optional"`
+	Episodes    []episodeView `json:"episodes,omitempty" validate:"optional"`
 }
 
 type episodeView struct {
@@ -210,7 +210,7 @@ func (h *Handler) handlePodcastDownload(w http.ResponseWriter, r *http.Request) 
 
 // podcastCreateRequest is the admin subscribe body.
 type podcastCreateRequest struct {
-	URL string `json:"url"`
+	URL string `json:"url" validate:"optional"`
 }
 
 // handlePodcastCreate subscribes to a feed URL (admin only).
@@ -330,8 +330,8 @@ func (h *Handler) handlePodcastProviders(w http.ResponseWriter, r *http.Request)
 
 // podcastProviderRequest toggles a provider and (optionally) sets its credentials.
 type podcastProviderRequest struct {
-	Enabled bool              `json:"enabled"`
-	Config  map[string]string `json:"config"`
+	Enabled bool              `json:"enabled" validate:"optional"`
+	Config  map[string]string `json:"config" validate:"optional"`
 }
 
 // handlePodcastProviderUpdate enables/disables a directory adapter and stores

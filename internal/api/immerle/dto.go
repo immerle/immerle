@@ -10,26 +10,26 @@ package immerle
 
 // ThemeDTO is a user's UI theme.
 type ThemeDTO struct {
-	AccentColor string `json:"accentColor,omitempty" example:"#3b82f6"`
+	AccentColor string `json:"accentColor,omitempty" example:"#3b82f6" validate:"optional"`
 }
 
 // ProviderDTO is a managed on-demand provider (built-in or dynamic).
 type ProviderDTO struct {
-	Name      string `json:"name" example:"manual"`
-	Kind      string `json:"kind" example:"http"`
-	Endpoint  string `json:"endpoint" example:"https://my-service.internal"`
-	Config    string `json:"config" example:"{\"headers\":{\"Authorization\":\"Bearer x\"}}"`
-	Enabled   bool   `json:"enabled" example:"true"`
-	Active    bool   `json:"active" example:"true"`
-	Builtin   bool   `json:"builtin" example:"false"`
-	Deletable bool   `json:"deletable" example:"true"`
-	SortOrder int    `json:"sortOrder" example:"3"`
+	Name      string `json:"name" example:"manual" validate:"optional"`
+	Kind      string `json:"kind" example:"http" validate:"optional"`
+	Endpoint  string `json:"endpoint" example:"https://my-service.internal" validate:"optional"`
+	Config    string `json:"config" example:"{\"headers\":{\"Authorization\":\"Bearer x\"}}" validate:"optional"`
+	Enabled   bool   `json:"enabled" example:"true" validate:"optional"`
+	Active    bool   `json:"active" example:"true" validate:"optional"`
+	Builtin   bool   `json:"builtin" example:"false" validate:"optional"`
+	Deletable bool   `json:"deletable" example:"true" validate:"optional"`
+	SortOrder int    `json:"sortOrder" example:"3" validate:"optional"`
 	// Version is the remote's live protocol version (HTTP providers), null when
 	// unknown or for built-ins.
-	Version *int `json:"version" example:"1"`
+	Version *int `json:"version" example:"1" validate:"optional"`
 	// Capabilities lists what the provider declares, each with whether the
 	// admin left it on. Empty when the provider can't be reached.
-	Capabilities []ProviderCapabilityDTO `json:"capabilities"`
+	Capabilities []ProviderCapabilityDTO `json:"capabilities" validate:"optional"`
 }
 
 // ProviderCapabilityDTO is one capability a provider declares.
@@ -42,267 +42,267 @@ type ProviderCapabilityDTO struct {
 // RuntimeSettingsDTO mirrors the admin-managed runtime settings.
 type RuntimeSettingsDTO struct {
 	Server struct {
-		CORSAllowedOrigins []string `json:"corsAllowedOrigins" example:"*"`
-	} `json:"server"`
+		CORSAllowedOrigins []string `json:"corsAllowedOrigins" example:"*" validate:"optional"`
+	} `json:"server" validate:"optional"`
 	Auth struct {
-		DeviceTokenTTLSeconds int `json:"deviceTokenTtlSeconds" example:"2592000"`
-	} `json:"auth"`
+		DeviceTokenTTLSeconds int `json:"deviceTokenTtlSeconds" example:"2592000" validate:"optional"`
+	} `json:"auth" validate:"optional"`
 	LDAP struct {
-		Enabled        bool   `json:"enabled" example:"false"`
-		URL            string `json:"url" example:"ldaps://ldap.example.com:636"`
-		BindDNTemplate string `json:"bindDnTemplate" example:"uid=%s,ou=people,dc=example,dc=com"`
-	} `json:"ldap"`
+		Enabled        bool   `json:"enabled" example:"false" validate:"optional"`
+		URL            string `json:"url" example:"ldaps://ldap.example.com:636" validate:"optional"`
+		BindDNTemplate string `json:"bindDnTemplate" example:"uid=%s,ou=people,dc=example,dc=com" validate:"optional"`
+	} `json:"ldap" validate:"optional"`
 	Transcode struct {
-		FFmpegPath  string `json:"ffmpegPath" example:"ffmpeg"`
-		FFprobePath string `json:"ffprobePath" example:"ffprobe"`
+		FFmpegPath  string `json:"ffmpegPath" example:"ffmpeg" validate:"optional"`
+		FFprobePath string `json:"ffprobePath" example:"ffprobe" validate:"optional"`
 		Profiles    []struct {
-			Name       string `json:"name" example:"mp3"`
-			Format     string `json:"format" example:"mp3"`
-			BitRate    int    `json:"bitRate" example:"192"`
-			FFmpegArgs string `json:"ffmpegArgs,omitempty"`
-		} `json:"profiles"`
-	} `json:"transcode"`
+			Name       string `json:"name" example:"mp3" validate:"optional"`
+			Format     string `json:"format" example:"mp3" validate:"optional"`
+			BitRate    int    `json:"bitRate" example:"192" validate:"optional"`
+			FFmpegArgs string `json:"ffmpegArgs,omitempty" validate:"optional"`
+		} `json:"profiles" validate:"optional"`
+	} `json:"transcode" validate:"optional"`
 	Providers struct {
-		AutoDownloadOnPlay   bool `json:"autoDownloadOnPlay" example:"true"`
-		SearchTimeoutSeconds int  `json:"searchTimeoutSeconds" example:"3"`
-	} `json:"providers"`
+		AutoDownloadOnPlay   bool `json:"autoDownloadOnPlay" example:"true" validate:"optional"`
+		SearchTimeoutSeconds int  `json:"searchTimeoutSeconds" example:"3" validate:"optional"`
+	} `json:"providers" validate:"optional"`
 	Scan struct {
-		IntervalSeconds int  `json:"intervalSeconds" example:"3600"`
-		Watch           bool `json:"watch" example:"true"`
-	} `json:"scan"`
+		IntervalSeconds int  `json:"intervalSeconds" example:"3600" validate:"optional"`
+		Watch           bool `json:"watch" example:"true" validate:"optional"`
+	} `json:"scan" validate:"optional"`
 	Cleanup struct {
-		Enabled         bool `json:"enabled" example:"true"`
-		MaxAgeSeconds   int  `json:"maxAgeSeconds" example:"2592000"`
-		IntervalSeconds int  `json:"intervalSeconds" example:"21600"`
-	} `json:"cleanup"`
+		Enabled         bool `json:"enabled" example:"true" validate:"optional"`
+		MaxAgeSeconds   int  `json:"maxAgeSeconds" example:"2592000" validate:"optional"`
+		IntervalSeconds int  `json:"intervalSeconds" example:"21600" validate:"optional"`
+	} `json:"cleanup" validate:"optional"`
 	Federation struct {
 		// Federation is active whenever linked (instanceId set); no enable flag.
-		UserID string `json:"userId" example:"6f1c2b8e-1f0a-4f9b-9c3a-1e2d3c4b5a6f"`
+		UserID string `json:"userId" example:"6f1c2b8e-1f0a-4f9b-9c3a-1e2d3c4b5a6f" validate:"optional"`
 		// InstanceID is the hub-assigned fixed UUID (read-only). Sqid is the
 		// editable handle. PrivateKey is never returned (redacted server-side).
-		InstanceID      string `json:"instanceId" example:"3f1c2d4e-5a6b-7c8d-9e0f-1a2b3c4d5e6f"`
-		Sqid            string `json:"sqid" example:"my-node"`
-		InstanceName    string `json:"instanceName" example:"My living-room immerle"`
-		SyncPlaylists   bool   `json:"syncPlaylists"`
-		ExportScrobbles bool   `json:"exportScrobbles"`
-	} `json:"federation"`
+		InstanceID      string `json:"instanceId" example:"3f1c2d4e-5a6b-7c8d-9e0f-1a2b3c4d5e6f" validate:"optional"`
+		Sqid            string `json:"sqid" example:"my-node" validate:"optional"`
+		InstanceName    string `json:"instanceName" example:"My living-room immerle" validate:"optional"`
+		SyncPlaylists   bool   `json:"syncPlaylists" validate:"optional"`
+		ExportScrobbles bool   `json:"exportScrobbles" validate:"optional"`
+	} `json:"federation" validate:"optional"`
 	Logs struct {
-		RetentionDays int `json:"retentionDays" example:"30"`
-	} `json:"logs"`
+		RetentionDays int `json:"retentionDays" example:"30" validate:"optional"`
+	} `json:"logs" validate:"optional"`
 	Sonic struct {
-		Enabled    bool `json:"enabled" example:"false"`
-		Workers    int  `json:"workers" example:"1"`
-		Radio      bool `json:"radio" example:"false"`
-		Autoplay   bool `json:"autoplay" example:"false"`
-		Moods      bool `json:"moods" example:"false"`
-		AutoDJ     bool `json:"autoDj" example:"false"`
-		Duplicates bool `json:"duplicates" example:"false"`
-	} `json:"sonic"`
+		Enabled    bool `json:"enabled" example:"false" validate:"optional"`
+		Workers    int  `json:"workers" example:"1" validate:"optional"`
+		Radio      bool `json:"radio" example:"false" validate:"optional"`
+		Autoplay   bool `json:"autoplay" example:"false" validate:"optional"`
+		Moods      bool `json:"moods" example:"false" validate:"optional"`
+		AutoDJ     bool `json:"autoDj" example:"false" validate:"optional"`
+		Duplicates bool `json:"duplicates" example:"false" validate:"optional"`
+	} `json:"sonic" validate:"optional"`
 	Discover struct {
-		Enabled          bool   `json:"enabled" example:"true"`
-		Scrobble         bool   `json:"scrobble" example:"true"`
-		MadeForYou       bool   `json:"madeForYou" example:"true"`
-		CuratedPlaylists bool   `json:"curatedPlaylists" example:"true"`
-		SimilarTracks    bool   `json:"similarTracks" example:"true"`
-		InstanceID       string `json:"instanceId,omitempty" example:"6f1c2a4e-0d2b-4c55-9a51-2b8f3c1d9e07"`
-	} `json:"discover"`
+		Enabled          bool   `json:"enabled" example:"true" validate:"optional"`
+		Scrobble         bool   `json:"scrobble" example:"true" validate:"optional"`
+		MadeForYou       bool   `json:"madeForYou" example:"true" validate:"optional"`
+		CuratedPlaylists bool   `json:"curatedPlaylists" example:"true" validate:"optional"`
+		SimilarTracks    bool   `json:"similarTracks" example:"true" validate:"optional"`
+		InstanceID       string `json:"instanceId,omitempty" example:"6f1c2a4e-0d2b-4c55-9a51-2b8f3c1d9e07" validate:"optional"`
+	} `json:"discover" validate:"optional"`
 }
 
 // FederationUpdateDTO is the body of PATCH /admin/federation: the instance
 // name and its editable sqid handle, pushed to the hub.
 type FederationUpdateDTO struct {
-	Name string `json:"name" example:"My living-room immerle"`
-	Sqid string `json:"sqid" example:"my-node"`
+	Name string `json:"name" example:"My living-room immerle" validate:"optional"`
+	Sqid string `json:"sqid" example:"my-node" validate:"optional"`
 }
 
 // InstanceSummaryDTO is a federated instance surfaced by discovery/subscriptions
 // (no sensitive fields).
 type InstanceSummaryDTO struct {
-	ID         string `json:"id" example:"3f1c2d4e-5a6b-7c8d-9e0f-1a2b3c4d5e6f"`
-	Sqid       string `json:"sqid" example:"other-node"`
-	Name       string `json:"name" example:"A friend's immerle"`
-	Region     string `json:"region" example:"eu"`
-	LastSeenAt string `json:"lastSeenAt,omitempty"`
+	ID         string `json:"id" example:"3f1c2d4e-5a6b-7c8d-9e0f-1a2b3c4d5e6f" validate:"optional"`
+	Sqid       string `json:"sqid" example:"other-node" validate:"optional"`
+	Name       string `json:"name" example:"A friend's immerle" validate:"optional"`
+	Region     string `json:"region" example:"eu" validate:"optional"`
+	LastSeenAt string `json:"lastSeenAt,omitempty" validate:"optional"`
 }
 
 // FederationInstancesDTO is the discovery result list.
 type FederationInstancesDTO struct {
-	Instances []InstanceSummaryDTO `json:"instances"`
+	Instances []InstanceSummaryDTO `json:"instances" validate:"optional"`
 }
 
 // FederationSubscriptionsDTO is the list of followed instances.
 type FederationSubscriptionsDTO struct {
-	Subscriptions []InstanceSummaryDTO `json:"subscriptions"`
+	Subscriptions []InstanceSummaryDTO `json:"subscriptions" validate:"optional"`
 }
 
 // SubscribeRequestDTO is the body of POST /admin/federation/subscriptions: the
 // target instance id (UUID) or sqid handle.
 type SubscribeRequestDTO struct {
-	InstanceID string `json:"instanceId" example:"3f1c2d4e-5a6b-7c8d-9e0f-1a2b3c4d5e6f"`
-	Sqid       string `json:"sqid" example:"other-node"`
+	InstanceID string `json:"instanceId" example:"3f1c2d4e-5a6b-7c8d-9e0f-1a2b3c4d5e6f" validate:"optional"`
+	Sqid       string `json:"sqid" example:"other-node" validate:"optional"`
 }
 
 // OkResponse is a minimal success acknowledgement.
 type OkResponse struct {
-	Ok bool `json:"ok" example:"true"`
+	Ok bool `json:"ok" example:"true" validate:"optional"`
 }
 
 // SettingsDTO returns the runtime settings and restart state.
 type SettingsDTO struct {
-	Settings        RuntimeSettingsDTO `json:"settings"`
-	RestartRequired bool               `json:"restartRequired" example:"false"`
-	PendingRestart  []string           `json:"pendingRestart"`
+	Settings        RuntimeSettingsDTO `json:"settings" validate:"optional"`
+	RestartRequired bool               `json:"restartRequired" example:"false" validate:"optional"`
+	PendingRestart  []string           `json:"pendingRestart" validate:"optional"`
 }
 
 // ProviderLogDTO is a persisted warn/error event from a provider action.
 type ProviderLogDTO struct {
-	ID        string `json:"id"`
-	Provider  string `json:"provider" example:"free-music-archive"`
-	Level     string `json:"level" example:"error"`
-	Action    string `json:"action" example:"download"`
-	Message   string `json:"message" example:"unexpected status 404"`
-	CreatedAt string `json:"createdAt" example:"2026-06-18T20:00:00Z"`
+	ID        string `json:"id" validate:"optional"`
+	Provider  string `json:"provider" example:"free-music-archive" validate:"optional"`
+	Level     string `json:"level" example:"error" validate:"optional"`
+	Action    string `json:"action" example:"download" validate:"optional"`
+	Message   string `json:"message" example:"unexpected status 404" validate:"optional"`
+	CreatedAt string `json:"createdAt" example:"2026-06-18T20:00:00Z" validate:"optional"`
 }
 
 // TrackDTO is a library track in the admin management API. It mirrors the
 // Subsonic-compatible song shape returned by toSongView (shared with the
 // user-facing "local" uploads endpoints).
 type TrackDTO struct {
-	ID          string `json:"id"`
-	Title       string `json:"title" example:"One More Time"`
-	Album       string `json:"album" example:"Discovery"`
-	Artist      string `json:"artist" example:"Daft Punk"`
-	AlbumID     string `json:"albumId"`
-	ArtistID    string `json:"artistId"`
-	CoverArt    string `json:"coverArt"`
-	Duration    int    `json:"duration" example:"320"`
-	Track       int    `json:"track,omitempty" example:"1"`
-	Year        int    `json:"year,omitempty" example:"2001"`
-	Genre       string `json:"genre,omitempty" example:"House"`
-	Suffix      string `json:"suffix,omitempty" example:"flac"`
-	ContentType string `json:"contentType,omitempty" example:"audio/flac"`
-	Size        int64  `json:"size,omitempty" example:"8123456"`
+	ID          string `json:"id" validate:"optional"`
+	Title       string `json:"title" example:"One More Time" validate:"optional"`
+	Album       string `json:"album" example:"Discovery" validate:"optional"`
+	Artist      string `json:"artist" example:"Daft Punk" validate:"optional"`
+	AlbumID     string `json:"albumId" validate:"optional"`
+	ArtistID    string `json:"artistId" validate:"optional"`
+	CoverArt    string `json:"coverArt" validate:"optional"`
+	Duration    int    `json:"duration" example:"320" validate:"optional"`
+	Track       int    `json:"track,omitempty" example:"1" validate:"optional"`
+	Year        int    `json:"year,omitempty" example:"2001" validate:"optional"`
+	Genre       string `json:"genre,omitempty" example:"House" validate:"optional"`
+	Suffix      string `json:"suffix,omitempty" example:"flac" validate:"optional"`
+	ContentType string `json:"contentType,omitempty" example:"audio/flac" validate:"optional"`
+	Size        int64  `json:"size,omitempty" example:"8123456" validate:"optional"`
 }
 
 // TrackListDTO is a page of library tracks.
 type TrackListDTO struct {
-	Tracks []TrackDTO `json:"tracks"`
-	Total  int        `json:"total" example:"1560"`
-	Limit  int        `json:"limit" example:"50"`
-	Offset int        `json:"offset" example:"0"`
+	Tracks []TrackDTO `json:"tracks" validate:"optional"`
+	Total  int        `json:"total" example:"1560" validate:"optional"`
+	Limit  int        `json:"limit" example:"50" validate:"optional"`
+	Offset int        `json:"offset" example:"0" validate:"optional"`
 }
 
 // CleanupStatusDTO reports the provider-download eviction sweep state.
 type CleanupStatusDTO struct {
-	Enabled         bool  `json:"enabled" example:"true"`
-	MaxAgeSeconds   int64 `json:"maxAgeSeconds" example:"2592000"`
-	IntervalSeconds int64 `json:"intervalSeconds" example:"21600"`
+	Enabled         bool  `json:"enabled" example:"true" validate:"optional"`
+	MaxAgeSeconds   int64 `json:"maxAgeSeconds" example:"2592000" validate:"optional"`
+	IntervalSeconds int64 `json:"intervalSeconds" example:"21600" validate:"optional"`
 }
 
 // CleanupRunDTO reports the result of an on-demand eviction sweep.
 type CleanupRunDTO struct {
-	Removed int `json:"removed" example:"3"`
+	Removed int `json:"removed" example:"3" validate:"optional"`
 }
 
 // ChartsSyncDTO reports the result of an on-demand curated chart-playlist sync.
 type ChartsSyncDTO struct {
-	Synced int `json:"synced" example:"6"`
+	Synced int `json:"synced" example:"6" validate:"optional"`
 }
 
 // WrappedTrackDTO is one entry in the Wrapped top-tracks chart.
 type WrappedTrackDTO struct {
-	ID     string `json:"id"`
-	Title  string `json:"title" example:"One More Time"`
-	Artist string `json:"artist" example:"Daft Punk"`
-	Plays  int    `json:"plays" example:"42"`
+	ID     string `json:"id" validate:"optional"`
+	Title  string `json:"title" example:"One More Time" validate:"optional"`
+	Artist string `json:"artist" example:"Daft Punk" validate:"optional"`
+	Plays  int    `json:"plays" example:"42" validate:"optional"`
 }
 
 // WrappedCountDTO is a labelled play count (an artist or a genre).
 type WrappedCountDTO struct {
-	Name  string `json:"name" example:"Daft Punk"`
-	Plays int    `json:"plays" example:"120"`
+	Name  string `json:"name" example:"Daft Punk" validate:"optional"`
+	Plays int    `json:"plays" example:"120" validate:"optional"`
 }
 
 // WrappedDTO is a user's year-in-review.
 type WrappedDTO struct {
-	Year         int               `json:"year" example:"2025"`
-	TotalPlays   int               `json:"totalPlays" example:"1234"`
-	TotalSeconds int64             `json:"totalSeconds" example:"987654"`
-	TopTracks    []WrappedTrackDTO `json:"topTracks"`
-	TopArtists   []WrappedCountDTO `json:"topArtists"`
-	TopGenres    []WrappedCountDTO `json:"topGenres"`
-	ByMonth      []int             `json:"byMonth"`
+	Year         int               `json:"year" example:"2025" validate:"optional"`
+	TotalPlays   int               `json:"totalPlays" example:"1234" validate:"optional"`
+	TotalSeconds int64             `json:"totalSeconds" example:"987654" validate:"optional"`
+	TopTracks    []WrappedTrackDTO `json:"topTracks" validate:"optional"`
+	TopArtists   []WrappedCountDTO `json:"topArtists" validate:"optional"`
+	TopGenres    []WrappedCountDTO `json:"topGenres" validate:"optional"`
+	ByMonth      []int             `json:"byMonth" validate:"optional"`
 }
 
 // CapabilityDTO describes one supported capability.
 type CapabilityDTO struct {
-	Version int `json:"version" example:"1"`
+	Version int `json:"version" example:"1" validate:"optional"`
 }
 
 // CapabilitiesDTO is the capability-discovery payload.
 type CapabilitiesDTO struct {
-	Server          string                   `json:"server" example:"immerle"`
-	ProtocolVersion string                   `json:"protocolVersion" example:"1.0.0"`
-	Capabilities    map[string]CapabilityDTO `json:"capabilities"`
+	Server          string                   `json:"server" example:"immerle" validate:"optional"`
+	ProtocolVersion string                   `json:"protocolVersion" example:"1.0.0" validate:"optional"`
+	Capabilities    map[string]CapabilityDTO `json:"capabilities" validate:"optional"`
 }
 
 // SetupStatusDTO reports first-run setup state.
 type SetupStatusDTO struct {
-	Initialized        bool `json:"initialized" example:"false"`
-	NeedsSetup         bool `json:"needsSetup" example:"true"`
-	UserCount          int  `json:"userCount" example:"0"`
-	SetupTokenRequired bool `json:"setupTokenRequired" example:"false"`
+	Initialized        bool `json:"initialized" example:"false" validate:"optional"`
+	NeedsSetup         bool `json:"needsSetup" example:"true" validate:"optional"`
+	UserCount          int  `json:"userCount" example:"0" validate:"optional"`
+	SetupTokenRequired bool `json:"setupTokenRequired" example:"false" validate:"optional"`
 }
 
 // SetupInitRequest creates the first administrator account.
 type SetupInitRequest struct {
-	Username string `json:"username" example:"kilian"`
-	Password string `json:"password" example:"a-strong-password"`
-	Email    string `json:"email,omitempty" example:"me@example.com"`
+	Username string `json:"username" example:"kilian" validate:"optional"`
+	Password string `json:"password" example:"a-strong-password" validate:"optional"`
+	Email    string `json:"email,omitempty" example:"me@example.com" validate:"optional"`
 	// DisplayName is an optional free-text name shown in the UI (falls back to
 	// the username when empty).
-	DisplayName string `json:"displayName,omitempty" example:"Kilian Smiti"`
+	DisplayName string `json:"displayName,omitempty" example:"Kilian Smiti" validate:"optional"`
 	// SetupToken is required only when the server was started with
 	// auth.require_setup_token=true.
-	SetupToken string `json:"setupToken,omitempty"`
+	SetupToken string `json:"setupToken,omitempty" validate:"optional"`
 }
 
 // UserDTO is a public user representation.
 type UserDTO struct {
-	ID          string `json:"id"`
-	Username    string `json:"username" example:"kilian"`
-	DisplayName string `json:"displayName,omitempty" example:"Kilian Smiti"`
-	IsAdmin     bool   `json:"isAdmin" example:"true"`
+	ID          string `json:"id" validate:"optional"`
+	Username    string `json:"username" example:"kilian" validate:"optional"`
+	DisplayName string `json:"displayName,omitempty" example:"Kilian Smiti" validate:"optional"`
+	IsAdmin     bool   `json:"isAdmin" example:"true" validate:"optional"`
 }
 
 // AccountDTO is the caller's own account (includes the private email).
 type AccountDTO struct {
-	ID          string `json:"id"`
-	Username    string `json:"username" example:"bob"`
-	DisplayName string `json:"displayName,omitempty" example:"Bob Marley"`
-	Email       string `json:"email,omitempty" example:"bob@example.com"`
-	IsAdmin     bool   `json:"isAdmin" example:"false"`
-	Language    string `json:"language,omitempty" example:"fr"`
+	ID          string `json:"id" validate:"optional"`
+	Username    string `json:"username" example:"bob" validate:"optional"`
+	DisplayName string `json:"displayName,omitempty" example:"Bob Marley" validate:"optional"`
+	Email       string `json:"email,omitempty" example:"bob@example.com" validate:"optional"`
+	IsAdmin     bool   `json:"isAdmin" example:"false" validate:"optional"`
+	Language    string `json:"language,omitempty" example:"fr" validate:"optional"`
 	// ListenBrainzToken is the caller's personal ListenBrainz API token, when
 	// set (empty means ListenBrainz scrobbling is off).
-	ListenBrainzToken string `json:"listenBrainzToken,omitempty" example:"00000000-0000-0000-0000-000000000000"`
+	ListenBrainzToken string `json:"listenBrainzToken,omitempty" example:"00000000-0000-0000-0000-000000000000" validate:"optional"`
 }
 
 // ConcertDTO is one upcoming show matched to the caller's listening history.
 type ConcertDTO struct {
-	ID         string `json:"id"`
-	Source     string `json:"source" example:"ticketmaster"`
-	ArtistName string `json:"artistName" example:"Daft Punk"`
-	EventName  string `json:"eventName" example:"Daft Punk World Tour"`
-	Venue      string `json:"venue,omitempty" example:"Accor Arena"`
-	City       string `json:"city,omitempty" example:"Paris"`
-	StartTime  string `json:"startTime" example:"2026-09-12T19:00:00Z"`
-	URL        string `json:"url,omitempty" example:"https://www.ticketmaster.com/event/..."`
+	ID         string `json:"id" validate:"optional"`
+	Source     string `json:"source" example:"ticketmaster" validate:"optional"`
+	ArtistName string `json:"artistName" example:"Daft Punk" validate:"optional"`
+	EventName  string `json:"eventName" example:"Daft Punk World Tour" validate:"optional"`
+	Venue      string `json:"venue,omitempty" example:"Accor Arena" validate:"optional"`
+	City       string `json:"city,omitempty" example:"Paris" validate:"optional"`
+	StartTime  string `json:"startTime" example:"2026-09-12T19:00:00Z" validate:"optional"`
+	URL        string `json:"url,omitempty" example:"https://www.ticketmaster.com/event/..." validate:"optional"`
 }
 
 // ConcertsDTO wraps the caller's upcoming concert matches.
 type ConcertsDTO struct {
-	Concerts []ConcertDTO `json:"concerts"`
+	Concerts []ConcertDTO `json:"concerts" validate:"optional"`
 }
 
 // ConcertsStatusDTO is the admin view of concert-discovery config. The API
@@ -311,7 +311,7 @@ type ConcertsStatusDTO struct {
 	Enabled bool `json:"enabled" example:"false"`
 	// Country is an ISO 3166-1 alpha-2 code (e.g. "FR"), picked from a fixed
 	// dropdown in the admin UI — not a secret, returned as-is.
-	Country                string `json:"country,omitempty" example:"FR"`
+	Country                string `json:"country,omitempty" example:"FR" validate:"optional"`
 	TicketmasterConfigured bool   `json:"ticketmasterConfigured" example:"false"`
 	SkiddleConfigured      bool   `json:"skiddleConfigured" example:"false"`
 }
@@ -319,7 +319,7 @@ type ConcertsStatusDTO struct {
 // LastFmStatusDTO is the caller's Last.fm connection state.
 type LastFmStatusDTO struct {
 	Connected bool   `json:"connected"`
-	Username  string `json:"username,omitempty" example:"bob"`
+	Username  string `json:"username,omitempty" example:"bob" validate:"optional"`
 }
 
 // LastFmAdminDTO is the admin view of Last.fm scrobbling config. The API
@@ -333,9 +333,9 @@ type LastFmAdminDTO struct {
 // itself is write-only — this never echoes it back.
 type BandcampStatusDTO struct {
 	Connected      bool   `json:"connected"`
-	FanID          string `json:"fanId,omitempty"`
-	LastSyncedAt   string `json:"lastSyncedAt,omitempty" example:"2026-07-18T21:42:00Z"`
-	NeedsReconnect bool   `json:"needsReconnect,omitempty"`
+	FanID          string `json:"fanId,omitempty" validate:"optional"`
+	LastSyncedAt   string `json:"lastSyncedAt,omitempty" example:"2026-07-18T21:42:00Z" validate:"optional"`
+	NeedsReconnect bool   `json:"needsReconnect,omitempty" validate:"optional"`
 }
 
 // BandcampCollectionItemDTO is one purchased Bandcamp item, annotated with any
@@ -346,15 +346,15 @@ type BandcampCollectionItemDTO struct {
 	ItemType     string `json:"itemType" example:"album"`
 	ArtistName   string `json:"artistName"`
 	ItemTitle    string `json:"itemTitle"`
-	ArtURL       string `json:"artUrl,omitempty"`
+	ArtURL       string `json:"artUrl,omitempty" validate:"optional"`
 	Purchased    string `json:"purchased" example:"2021-01-01T10:00:00Z"`
-	JobStatus    string `json:"jobStatus,omitempty" example:"completed"`
-	JobID        string `json:"jobId,omitempty"`
+	JobStatus    string `json:"jobStatus,omitempty" example:"completed" validate:"optional"`
+	JobID        string `json:"jobId,omitempty" validate:"optional"`
 }
 
 // BandcampCollectionDTO wraps the caller's live Bandcamp purchase collection.
 type BandcampCollectionDTO struct {
-	Items []BandcampCollectionItemDTO `json:"items"`
+	Items []BandcampCollectionItemDTO `json:"items" validate:"optional"`
 }
 
 // BandcampJobDTO is one queued/running/completed/failed Bandcamp import.
@@ -365,10 +365,10 @@ type BandcampJobDTO struct {
 	ItemType     string   `json:"itemType" example:"album"`
 	ArtistName   string   `json:"artistName"`
 	ItemTitle    string   `json:"itemTitle"`
-	Format       string   `json:"format,omitempty" example:"flac"`
+	Format       string   `json:"format,omitempty" example:"flac" validate:"optional"`
 	Status       string   `json:"status" example:"completed"`
-	TrackIDs     []string `json:"trackIds,omitempty"`
-	Error        string   `json:"error,omitempty"`
+	TrackIDs     []string `json:"trackIds,omitempty" validate:"optional"`
+	Error        string   `json:"error,omitempty" validate:"optional"`
 	Attempts     int      `json:"attempts"`
 	CreatedAt    string   `json:"createdAt" example:"2026-07-18T21:42:00Z"`
 	UpdatedAt    string   `json:"updatedAt" example:"2026-07-18T21:43:00Z"`
@@ -376,104 +376,104 @@ type BandcampJobDTO struct {
 
 // BandcampJobsDTO wraps the caller's Bandcamp import job history.
 type BandcampJobsDTO struct {
-	Jobs []BandcampJobDTO `json:"jobs"`
+	Jobs []BandcampJobDTO `json:"jobs" validate:"optional"`
 }
 
 // ActivityItemDTO carries resolved, human-readable details about the item an
 // activity event references (fields depend on itemType; empty when unresolved).
 type ActivityItemDTO struct {
-	Title    string `json:"title,omitempty" example:"One More Time"`
-	Artist   string `json:"artist,omitempty" example:"Daft Punk"`
-	Album    string `json:"album,omitempty" example:"Discovery"`
-	AlbumID  string `json:"albumId,omitempty"`
-	ArtistID string `json:"artistId,omitempty"`
-	CoverArt string `json:"coverArt,omitempty"`
-	Duration int    `json:"duration,omitempty" example:"320"`
-	Year     int    `json:"year,omitempty" example:"2001"`
+	Title    string `json:"title,omitempty" example:"One More Time" validate:"optional"`
+	Artist   string `json:"artist,omitempty" example:"Daft Punk" validate:"optional"`
+	Album    string `json:"album,omitempty" example:"Discovery" validate:"optional"`
+	AlbumID  string `json:"albumId,omitempty" validate:"optional"`
+	ArtistID string `json:"artistId,omitempty" validate:"optional"`
+	CoverArt string `json:"coverArt,omitempty" validate:"optional"`
+	Duration int    `json:"duration,omitempty" example:"320" validate:"optional"`
+	Year     int    `json:"year,omitempty" example:"2001" validate:"optional"`
 }
 
 // ActivityEventDTO is a social activity feed entry.
 type ActivityEventDTO struct {
-	ID          string          `json:"id"`
-	UserID      string          `json:"userId"`
-	Username    string          `json:"username" example:"bob"`
-	DisplayName string          `json:"displayName,omitempty" example:"Bob Marley"`
-	Type        string          `json:"type" example:"listen"`
-	ItemType    string          `json:"itemType" example:"track"`
-	ItemID      string          `json:"itemId"`
-	Privacy     string          `json:"privacy" example:"public"`
-	CreatedAt   string          `json:"createdAt" example:"2026-06-15T09:00:00Z"`
-	Item        ActivityItemDTO `json:"item,omitempty"`
+	ID          string          `json:"id" validate:"optional"`
+	UserID      string          `json:"userId" validate:"optional"`
+	Username    string          `json:"username" example:"bob" validate:"optional"`
+	DisplayName string          `json:"displayName,omitempty" example:"Bob Marley" validate:"optional"`
+	Type        string          `json:"type" example:"listen" validate:"optional"`
+	ItemType    string          `json:"itemType" example:"track" validate:"optional"`
+	ItemID      string          `json:"itemId" validate:"optional"`
+	Privacy     string          `json:"privacy" example:"public" validate:"optional"`
+	CreatedAt   string          `json:"createdAt" example:"2026-06-15T09:00:00Z" validate:"optional"`
+	Item        ActivityItemDTO `json:"item,omitempty" validate:"optional"`
 }
 
 // LibraryStatsDTO is a snapshot of the library analytics.
 type LibraryStatsDTO struct {
-	Artists       int    `json:"artists" example:"42"`
-	Albums        int    `json:"albums" example:"128"`
-	Tracks        int    `json:"tracks" example:"1560"`
-	TotalSize     int64  `json:"totalSize" example:"9663676416"`
-	TotalDuration int64  `json:"totalDuration" example:"432000"`
-	UpdatedAt     string `json:"updatedAt" example:"2026-06-17T09:00:00Z"`
+	Artists       int    `json:"artists" example:"42" validate:"optional"`
+	Albums        int    `json:"albums" example:"128" validate:"optional"`
+	Tracks        int    `json:"tracks" example:"1560" validate:"optional"`
+	TotalSize     int64  `json:"totalSize" example:"9663676416" validate:"optional"`
+	TotalDuration int64  `json:"totalDuration" example:"432000" validate:"optional"`
+	UpdatedAt     string `json:"updatedAt" example:"2026-06-17T09:00:00Z" validate:"optional"`
 }
 
 // ImportItemDTO is one source track and the outcome of resolving it.
 type ImportItemDTO struct {
-	ID             string `json:"id"`
-	Position       int    `json:"position"`
-	SourceTitle    string `json:"sourceTitle" example:"Da Funk"`
-	SourceArtist   string `json:"sourceArtist" example:"Daft Punk"`
-	SourceAlbum    string `json:"sourceAlbum,omitempty"`
-	Status         string `json:"status" example:"matched"`
-	MatchedTrackID string `json:"matchedTrackId,omitempty"`
+	ID             string `json:"id" validate:"optional"`
+	Position       int    `json:"position" validate:"optional"`
+	SourceTitle    string `json:"sourceTitle" example:"Da Funk" validate:"optional"`
+	SourceArtist   string `json:"sourceArtist" example:"Daft Punk" validate:"optional"`
+	SourceAlbum    string `json:"sourceAlbum,omitempty" validate:"optional"`
+	Status         string `json:"status" example:"matched" validate:"optional"`
+	MatchedTrackID string `json:"matchedTrackId,omitempty" validate:"optional"`
 	// CandidateTrackID / CandidateCoverArt let a client preview a doubtful item:
 	// play the candidate (stream accepts the remote track id) and show its cover.
-	CandidateTrackID  string  `json:"candidateTrackId,omitempty"`
-	CandidateCoverArt string  `json:"candidateCoverArt,omitempty"`
-	ResolvedTitle     string  `json:"resolvedTitle,omitempty"`
-	ResolvedArtist    string  `json:"resolvedArtist,omitempty"`
-	Confidence        float64 `json:"confidence" example:"0.62"`
-	Note              string  `json:"note,omitempty"`
+	CandidateTrackID  string  `json:"candidateTrackId,omitempty" validate:"optional"`
+	CandidateCoverArt string  `json:"candidateCoverArt,omitempty" validate:"optional"`
+	ResolvedTitle     string  `json:"resolvedTitle,omitempty" validate:"optional"`
+	ResolvedArtist    string  `json:"resolvedArtist,omitempty" validate:"optional"`
+	Confidence        float64 `json:"confidence" example:"0.62" validate:"optional"`
+	Note              string  `json:"note,omitempty" validate:"optional"`
 }
 
 // ImportDTO is a playlist-import job (with items on a detail fetch).
 type ImportDTO struct {
-	ID                 string          `json:"id"`
-	Source             string          `json:"source" example:"spotify"`
-	SourceRef          string          `json:"sourceRef"`
-	SourcePlaylistName string          `json:"sourcePlaylistName,omitempty"`
-	PlaylistID         string          `json:"playlistId,omitempty"`
-	Status             string          `json:"status" example:"completed"`
-	Total              int             `json:"total" example:"42"`
-	Matched            int             `json:"matched" example:"38"`
-	Doubtful           int             `json:"doubtful" example:"2"`
-	Missing            int             `json:"missing" example:"2"`
-	Failed             int             `json:"failed" example:"0"`
-	Error              string          `json:"error,omitempty"`
-	Items              []ImportItemDTO `json:"items,omitempty"`
+	ID                 string          `json:"id" validate:"optional"`
+	Source             string          `json:"source" example:"spotify" validate:"optional"`
+	SourceRef          string          `json:"sourceRef" validate:"optional"`
+	SourcePlaylistName string          `json:"sourcePlaylistName,omitempty" validate:"optional"`
+	PlaylistID         string          `json:"playlistId,omitempty" validate:"optional"`
+	Status             string          `json:"status" example:"completed" validate:"optional"`
+	Total              int             `json:"total" example:"42" validate:"optional"`
+	Matched            int             `json:"matched" example:"38" validate:"optional"`
+	Doubtful           int             `json:"doubtful" example:"2" validate:"optional"`
+	Missing            int             `json:"missing" example:"2" validate:"optional"`
+	Failed             int             `json:"failed" example:"0" validate:"optional"`
+	Error              string          `json:"error,omitempty" validate:"optional"`
+	Items              []ImportItemDTO `json:"items,omitempty" validate:"optional"`
 }
 
 // ImportSourceDTO describes an available import source.
 type ImportSourceDTO struct {
-	Name       string `json:"name" example:"spotify"`
-	Configured bool   `json:"configured" example:"true"`
+	Name       string `json:"name" example:"spotify" validate:"optional"`
+	Configured bool   `json:"configured" example:"true" validate:"optional"`
 }
 
 // ProfilePlaylistDTO is a public playlist shown on a user's profile.
 type ProfilePlaylistDTO struct {
-	ID        string   `json:"id"`
-	Name      string   `json:"name" example:"Summer vibes"`
-	Comment   string   `json:"comment,omitempty"`
-	SongCount int      `json:"songCount" example:"24"`
-	Duration  int      `json:"duration" example:"5400"`
-	CoverArt  string   `json:"coverArt,omitempty"`
-	CoverArts []string `json:"coverArts,omitempty"`
+	ID        string   `json:"id" validate:"optional"`
+	Name      string   `json:"name" example:"Summer vibes" validate:"optional"`
+	Comment   string   `json:"comment,omitempty" validate:"optional"`
+	SongCount int      `json:"songCount" example:"24" validate:"optional"`
+	Duration  int      `json:"duration" example:"5400" validate:"optional"`
+	CoverArt  string   `json:"coverArt,omitempty" validate:"optional"`
+	CoverArts []string `json:"coverArts,omitempty" validate:"optional"`
 }
 
 // ProfileHallOfFameDTO is the top of a user's Hall of Fame, shown on their
 // profile — omitted entirely when the user's Hall of Fame is empty.
 type ProfileHallOfFameDTO struct {
-	Top   []songView `json:"top"`
-	Total int        `json:"total" example:"12"`
+	Top   []songView `json:"top" validate:"optional"`
+	Total int        `json:"total" example:"12" validate:"optional"`
 }
 
 // ProfileStatsDTO is the profile page's stat row: all-time listening totals
@@ -491,121 +491,121 @@ type ProfileStatsDTO struct {
 type UserSummaryDTO struct {
 	ID          string `json:"id"`
 	Username    string `json:"username" example:"bob"`
-	DisplayName string `json:"displayName,omitempty" example:"Bob Marley"`
+	DisplayName string `json:"displayName,omitempty" example:"Bob Marley" validate:"optional"`
 }
 
 // ProfileDTO is a user's public profile: identity, visible activity and public
 // playlists.
 type ProfileDTO struct {
 	User struct {
-		ID          string `json:"id"`
-		Username    string `json:"username" example:"bob"`
-		DisplayName string `json:"displayName,omitempty" example:"Bob Marley"`
-		IsAdmin     bool   `json:"isAdmin" example:"false"`
-	} `json:"user"`
-	IsSelf     bool                  `json:"isSelf" example:"false"`
-	Activity   []ActivityEventDTO    `json:"activity"`
-	Playlists  []ProfilePlaylistDTO  `json:"playlists"`
-	Stats      ProfileStatsDTO       `json:"stats"`
-	HallOfFame *ProfileHallOfFameDTO `json:"hallOfFame,omitempty"`
+		ID          string `json:"id" validate:"optional"`
+		Username    string `json:"username" example:"bob" validate:"optional"`
+		DisplayName string `json:"displayName,omitempty" example:"Bob Marley" validate:"optional"`
+		IsAdmin     bool   `json:"isAdmin" example:"false" validate:"optional"`
+	} `json:"user" validate:"optional"`
+	IsSelf     bool                  `json:"isSelf" example:"false" validate:"optional"`
+	Activity   []ActivityEventDTO    `json:"activity" validate:"optional"`
+	Playlists  []ProfilePlaylistDTO  `json:"playlists" validate:"optional"`
+	Stats      ProfileStatsDTO       `json:"stats" validate:"optional"`
+	HallOfFame *ProfileHallOfFameDTO `json:"hallOfFame,omitempty" validate:"optional"`
 }
 
 // JamSessionDTO is the shared state of a synchronized listening session.
 type JamSessionDTO struct {
-	ID             string   `json:"id"`
-	HostID         string   `json:"hostId"`
-	Name           string   `json:"name" example:"Friday Night"`
-	CurrentTrackID string   `json:"currentTrackId,omitempty"`
-	PositionMs     int64    `json:"position" example:"42000"`
-	State          string   `json:"state" example:"playing"`
-	TrackIDs       []string `json:"trackIds"`
+	ID             string   `json:"id" validate:"optional"`
+	HostID         string   `json:"hostId" validate:"optional"`
+	Name           string   `json:"name" example:"Friday Night" validate:"optional"`
+	CurrentTrackID string   `json:"currentTrackId,omitempty" validate:"optional"`
+	PositionMs     int64    `json:"position" example:"42000" validate:"optional"`
+	State          string   `json:"state" example:"playing" validate:"optional"`
+	TrackIDs       []string `json:"trackIds" validate:"optional"`
 }
 
 // JamParticipantDTO is a member of a jam session.
 type JamParticipantDTO struct {
-	SessionID string `json:"sessionId"`
-	UserID    string `json:"userId"`
-	Username  string `json:"username" example:"bob"`
-	JoinedAt  string `json:"joinedAt" example:"2026-06-15T09:00:00Z"`
+	SessionID string `json:"sessionId" validate:"optional"`
+	UserID    string `json:"userId" validate:"optional"`
+	Username  string `json:"username" example:"bob" validate:"optional"`
+	JoinedAt  string `json:"joinedAt" example:"2026-06-15T09:00:00Z" validate:"optional"`
 }
 
 // JamDTO wraps a jam session and its participants.
 type JamDTO struct {
-	Session      JamSessionDTO       `json:"session"`
-	Participants []JamParticipantDTO `json:"participants"`
+	Session      JamSessionDTO       `json:"session" validate:"optional"`
+	Participants []JamParticipantDTO `json:"participants" validate:"optional"`
 }
 
 // JamInviteDTO is a pending invite to a Jam session, addressed to the caller.
 type JamInviteDTO struct {
-	ID                 string `json:"id"`
-	SessionID          string `json:"sessionId"`
-	SessionName        string `json:"sessionName" example:"Friday Night"`
-	InviterID          string `json:"inviterId"`
-	InviterUsername    string `json:"inviterUsername" example:"bob"`
-	InviterDisplayName string `json:"inviterDisplayName,omitempty" example:"Bob Marley"`
-	InviteeID          string `json:"inviteeId"`
-	CreatedAt          string `json:"createdAt" example:"2026-06-15T09:00:00Z"`
+	ID                 string `json:"id" validate:"optional"`
+	SessionID          string `json:"sessionId" validate:"optional"`
+	SessionName        string `json:"sessionName" example:"Friday Night" validate:"optional"`
+	InviterID          string `json:"inviterId" validate:"optional"`
+	InviterUsername    string `json:"inviterUsername" example:"bob" validate:"optional"`
+	InviterDisplayName string `json:"inviterDisplayName,omitempty" example:"Bob Marley" validate:"optional"`
+	InviteeID          string `json:"inviteeId" validate:"optional"`
+	CreatedAt          string `json:"createdAt" example:"2026-06-15T09:00:00Z" validate:"optional"`
 }
 
 // PublicPlaylistDTO is a public playlist available to subscribe to.
 type PublicPlaylistDTO struct {
-	ID        string   `json:"id"`
-	Name      string   `json:"name" example:"Editorial Picks"`
-	Owner     string   `json:"owner" example:"alice"`
-	Comment   string   `json:"comment,omitempty"`
-	SongCount int      `json:"songCount"`
-	Duration  int      `json:"duration"`
-	CoverArt  string   `json:"coverArt,omitempty"`
-	CoverArts []string `json:"coverArts,omitempty"`
+	ID        string   `json:"id" validate:"optional"`
+	Name      string   `json:"name" example:"Editorial Picks" validate:"optional"`
+	Owner     string   `json:"owner" example:"alice" validate:"optional"`
+	Comment   string   `json:"comment,omitempty" validate:"optional"`
+	SongCount int      `json:"songCount" validate:"optional"`
+	Duration  int      `json:"duration" validate:"optional"`
+	CoverArt  string   `json:"coverArt,omitempty" validate:"optional"`
+	CoverArts []string `json:"coverArts,omitempty" validate:"optional"`
 	// AutoPlaylistKind identifies a server-generated playlist's stable kind —
 	// "Tendances de la semaine" (autoplaylists.AutoPlaylistKinds) or a kworb
 	// chart (charts.SourceInstanceID) — for clients to render a translated
 	// label instead of the (French-only) stored Name. Empty for every other
 	// public playlist.
-	AutoPlaylistKind string `json:"autoPlaylistKind,omitempty"`
-	Subscribed       bool   `json:"subscribed"`
+	AutoPlaylistKind string `json:"autoPlaylistKind,omitempty" validate:"optional"`
+	Subscribed       bool   `json:"subscribed" validate:"optional"`
 }
 
 // LoginDTO is returned by POST /auth/sessions.
 type LoginDTO struct {
-	Token  string    `json:"token" example:"eyJhbGciOiJIUzI1Ni..."`
-	Device DeviceDTO `json:"device"`
+	Token  string    `json:"token" example:"eyJhbGciOiJIUzI1Ni..." validate:"optional"`
+	Device DeviceDTO `json:"device" validate:"optional"`
 }
 
 // DeviceDTO is a device session.
 type DeviceDTO struct {
-	ID        string `json:"id"`
-	Name      string `json:"name" example:"Pixel 8"`
-	UserAgent string `json:"userAgent,omitempty"`
-	LastSeen  string `json:"lastSeen,omitempty"`
-	LastIP    string `json:"lastIp,omitempty"`
-	CreatedAt string `json:"createdAt,omitempty"`
-	ExpiresAt string `json:"expiresAt,omitempty"`
+	ID        string `json:"id" validate:"optional"`
+	Name      string `json:"name" example:"Pixel 8" validate:"optional"`
+	UserAgent string `json:"userAgent,omitempty" validate:"optional"`
+	LastSeen  string `json:"lastSeen,omitempty" validate:"optional"`
+	LastIP    string `json:"lastIp,omitempty" validate:"optional"`
+	CreatedAt string `json:"createdAt,omitempty" validate:"optional"`
+	ExpiresAt string `json:"expiresAt,omitempty" validate:"optional"`
 	// Connected is true if the device was seen within the last few minutes.
-	Connected bool `json:"connected"`
+	Connected bool `json:"connected" validate:"optional"`
 }
 
 // APITokenDTO is a personal access token (without its secret).
 type APITokenDTO struct {
-	ID         string `json:"id"`
-	Name       string `json:"name" example:"my-cli"`
-	Prefix     string `json:"prefix" example:"gsk_AbC12"`
-	CreatedAt  string `json:"createdAt" example:"2026-06-15T09:00:00Z"`
-	LastUsedAt string `json:"lastUsedAt,omitempty"`
-	ExpiresAt  string `json:"expiresAt,omitempty"`
+	ID         string `json:"id" validate:"optional"`
+	Name       string `json:"name" example:"my-cli" validate:"optional"`
+	Prefix     string `json:"prefix" example:"gsk_AbC12" validate:"optional"`
+	CreatedAt  string `json:"createdAt" example:"2026-06-15T09:00:00Z" validate:"optional"`
+	LastUsedAt string `json:"lastUsedAt,omitempty" validate:"optional"`
+	ExpiresAt  string `json:"expiresAt,omitempty" validate:"optional"`
 	// IsDevice marks an app login session rather than a manually-created
 	// personal/CLI token.
-	IsDevice bool `json:"isDevice,omitempty"`
+	IsDevice bool `json:"isDevice,omitempty" validate:"optional"`
 	// Connected is true if the token was used within the last few minutes.
 	// Only meaningful for device tokens (IsDevice).
-	Connected bool `json:"connected"`
+	Connected bool `json:"connected" validate:"optional"`
 }
 
 // CreateTokenDTO is returned once when a token is created; "token" is the secret
 // and is never shown again.
 type CreateTokenDTO struct {
-	Token  string `json:"token" example:"gsk_AbC12...full-secret"`
-	ID     string `json:"id"`
-	Name   string `json:"name" example:"my-cli"`
-	Prefix string `json:"prefix" example:"gsk_AbC12"`
+	Token  string `json:"token" example:"gsk_AbC12...full-secret" validate:"optional"`
+	ID     string `json:"id" validate:"optional"`
+	Name   string `json:"name" example:"my-cli" validate:"optional"`
+	Prefix string `json:"prefix" example:"gsk_AbC12" validate:"optional"`
 }

@@ -10216,45 +10216,45 @@ export interface components {
         };
         "immerle.BandcampCollectionItemDTO": {
             artUrl?: string;
-            artistName?: string;
-            itemTitle?: string;
+            artistName: string;
+            itemTitle: string;
             /** @example album */
-            itemType?: string;
+            itemType: string;
             jobId?: string;
             /** @example completed */
             jobStatus?: string;
             /** @example 2021-01-01T10:00:00Z */
-            purchased?: string;
+            purchased: string;
             /** @example 123456789 */
-            saleItemId?: string;
+            saleItemId: string;
             /** @example p */
-            saleItemType?: string;
+            saleItemType: string;
         };
         "immerle.BandcampJobDTO": {
-            artistName?: string;
-            attempts?: number;
+            artistName: string;
+            attempts: number;
             /** @example 2026-07-18T21:42:00Z */
-            createdAt?: string;
+            createdAt: string;
             error?: string;
             /** @example flac */
             format?: string;
-            id?: string;
-            itemTitle?: string;
+            id: string;
+            itemTitle: string;
             /** @example album */
-            itemType?: string;
-            saleItemId?: string;
-            saleItemType?: string;
+            itemType: string;
+            saleItemId: string;
+            saleItemType: string;
             /** @example completed */
-            status?: string;
+            status: string;
             trackIds?: string[];
             /** @example 2026-07-18T21:43:00Z */
-            updatedAt?: string;
+            updatedAt: string;
         };
         "immerle.BandcampJobsDTO": {
             jobs?: components["schemas"]["immerle.BandcampJobDTO"][];
         };
         "immerle.BandcampStatusDTO": {
-            connected?: boolean;
+            connected: boolean;
             fanId?: string;
             /** @example 2026-07-18T21:42:00Z */
             lastSyncedAt?: string;
@@ -10317,11 +10317,11 @@ export interface components {
              */
             country?: string;
             /** @example false */
-            enabled?: boolean;
+            enabled: boolean;
             /** @example false */
-            skiddleConfigured?: boolean;
+            skiddleConfigured: boolean;
             /** @example false */
-            ticketmasterConfigured?: boolean;
+            ticketmasterConfigured: boolean;
         };
         "immerle.CreateTokenDTO": {
             id?: string;
@@ -10458,12 +10458,12 @@ export interface components {
         };
         "immerle.LastFmAdminDTO": {
             /** @example false */
-            configured?: boolean;
+            configured: boolean;
             /** @example false */
-            enabled?: boolean;
+            enabled: boolean;
         };
         "immerle.LastFmStatusDTO": {
-            connected?: boolean;
+            connected: boolean;
             /** @example bob */
             username?: string;
         };
@@ -10526,20 +10526,20 @@ export interface components {
         };
         "immerle.ProfileStatsDTO": {
             /** @example 432000 */
-            listenSeconds?: number;
+            listenSeconds: number;
             /** @example 5 */
-            playlists?: number;
+            playlists: number;
             /** @example 1234 */
-            plays?: number;
+            plays: number;
         };
         "immerle.ProviderCapabilityDTO": {
             /** @example true */
-            enabled?: boolean;
+            enabled: boolean;
             /**
              * @description Key is one of trackSearch, artists, playlists, playlistSearch.
              * @example trackSearch
              */
-            key?: string;
+            key: string;
         };
         "immerle.ProviderDTO": {
             /** @example true */
@@ -10753,39 +10753,39 @@ export interface components {
         };
         "immerle.SongSonicDTO": {
             /** @example 127.6 */
-            bpm?: number;
+            bpm: number;
             /** @example 8A */
-            camelot?: string;
+            camelot: string;
             /** @example 0.64 */
-            danceability?: number;
+            danceability: number;
             /** @example 0.82 */
-            energy?: number;
+            energy: number;
             /** @example A */
-            key?: string;
+            key: string;
             /** @example minor */
-            mode?: string;
+            mode: string;
         };
         "immerle.SonicDuplicatesDTO": {
             groups?: components["schemas"]["immerle.songView"][][];
         };
         "immerle.SonicStatusDTO": {
             /** @example 4210 */
-            analyzed?: number;
+            analyzed: number;
             /**
              * @description Available is false when ffmpeg is missing: analysis can't run at all.
              * @example true
              */
-            available?: boolean;
+            available: boolean;
             /** @example true */
-            enabled?: boolean;
+            enabled: boolean;
             /** @example 3 */
-            failed?: number;
+            failed: number;
             /**
              * @description Total counts local tracks; Analyzed and Failed those processed with the
              *     current algorithm.
              * @example 12000
              */
-            total?: number;
+            total: number;
         };
         "immerle.SubscribeRequestDTO": {
             /** @example 3f1c2d4e-5a6b-7c8d-9e0f-1a2b3c4d5e6f */
@@ -10844,9 +10844,9 @@ export interface components {
         "immerle.UserSummaryDTO": {
             /** @example Bob Marley */
             displayName?: string;
-            id?: string;
+            id: string;
             /** @example bob */
-            username?: string;
+            username: string;
         };
         "immerle.WrappedCountDTO": {
             /** @example Daft Punk */
@@ -10893,41 +10893,41 @@ export interface components {
             scrobblingEnabled?: boolean;
         };
         "immerle.adminUserView": {
-            admin?: boolean;
+            admin: boolean;
             displayName?: string;
             email?: string;
-            id?: string;
-            scrobblingEnabled?: boolean;
-            username?: string;
+            id: string;
+            scrobblingEnabled: boolean;
+            username: string;
         };
         "immerle.albumView": {
-            artist?: string;
-            artistId?: string;
+            artist: string;
+            artistId: string;
             coverArt?: string;
-            duration?: number;
+            duration: number;
             genre?: string;
-            id?: string;
-            name?: string;
-            songCount?: number;
+            id: string;
+            name: string;
+            songCount: number;
             starred?: string;
             tracks?: components["schemas"]["immerle.songView"][];
             year?: number;
         };
         "immerle.apiError": {
-            code?: string;
+            code: string;
             fields?: components["schemas"]["immerle.fieldError"][];
-            message?: string;
+            message: string;
             /** @description i18n interpolation values; always present ({} when none) */
             params?: {
                 [key: string]: unknown;
             };
         };
         "immerle.artistView": {
-            albumCount?: number;
+            albumCount: number;
             albums?: components["schemas"]["immerle.albumView"][];
             coverArt?: string;
-            id?: string;
-            name?: string;
+            id: string;
+            name: string;
             starred?: string;
         };
         "immerle.bandcampConnectRequest": {
@@ -10939,14 +10939,14 @@ export interface components {
             itemType?: string;
         };
         "immerle.channelView": {
-            description?: string;
+            description: string;
             episodes?: components["schemas"]["immerle.episodeView"][];
             error?: string;
-            id?: string;
-            imageUrl?: string;
-            status?: string;
-            title?: string;
-            url?: string;
+            id: string;
+            imageUrl: string;
+            status: string;
+            title: string;
+            url: string;
         };
         "immerle.cleanupUpdateRequest": {
             enabled?: boolean;
@@ -10965,7 +10965,7 @@ export interface components {
             toIndex?: number;
             trackId?: string;
             trackIds?: string[];
-            type?: string;
+            type: string;
         };
         "immerle.concertsUpdateRequest": {
             /**
@@ -10997,21 +10997,21 @@ export interface components {
             name?: string;
         };
         "immerle.episodeView": {
-            channelId?: string;
-            contentType?: string;
-            description?: string;
-            duration?: number;
-            id?: string;
-            publishDate?: string;
-            size?: number;
-            status?: string;
+            channelId: string;
+            contentType: string;
+            description: string;
+            duration: number;
+            id: string;
+            publishDate: string;
+            size: number;
+            status: string;
             /** @description Streamable is true once the episode audio has been downloaded. */
-            streamable?: boolean;
-            suffix?: string;
-            title?: string;
+            streamable: boolean;
+            suffix: string;
+            title: string;
         };
         "immerle.errorResponse": {
-            error?: components["schemas"]["immerle.apiError"];
+            error: components["schemas"]["immerle.apiError"];
         };
         "immerle.favoritesView": {
             albums?: components["schemas"]["immerle.albumView"][];
@@ -11019,16 +11019,16 @@ export interface components {
             songs?: components["schemas"]["immerle.songView"][];
         };
         "immerle.featureStatusView": {
-            enabled?: boolean;
+            enabled: boolean;
         };
         "immerle.fieldError": {
-            field?: string;
-            message?: string;
+            field: string;
+            message: string;
         };
         "immerle.genreView": {
-            albumCount?: number;
-            name?: string;
-            songCount?: number;
+            albumCount: number;
+            name: string;
+            songCount: number;
         };
         "immerle.hallOfFameAddRequest": {
             id?: string;
@@ -11040,8 +11040,8 @@ export interface components {
             ids?: string[];
         };
         "immerle.hallOfFameView": {
-            changedAt?: string;
-            createdAt?: string;
+            changedAt: string;
+            createdAt: string;
             tracks?: components["schemas"]["immerle.songView"][];
         };
         "immerle.jamInviteRequest": {
@@ -11051,8 +11051,8 @@ export interface components {
             token?: string;
         };
         "immerle.lastFmConnectStartResponse": {
-            authUrl?: string;
-            token?: string;
+            authUrl: string;
+            token: string;
         };
         "immerle.lastFmUpdateRequest": {
             apiKey?: string;
@@ -11070,20 +11070,20 @@ export interface components {
         };
         "immerle.lyricLine": {
             startMs?: number;
-            text?: string;
+            text: string;
         };
         "immerle.lyricsView": {
             lines?: components["schemas"]["immerle.lyricLine"][];
-            synced?: boolean;
+            synced: boolean;
         };
         "immerle.nowPlayingView": {
-            minutesAgo?: number;
-            song?: components["schemas"]["immerle.songView"];
-            username?: string;
+            minutesAgo: number;
+            song: components["schemas"]["immerle.songView"];
+            username: string;
         };
         "immerle.participantView": {
-            name?: string;
-            role?: string;
+            name: string;
+            role: string;
         };
         "immerle.passwordRequest": {
             password?: string;
@@ -11156,14 +11156,14 @@ export interface components {
              * @description Playing reports whether Current was playing (vs paused) as of
              *     ChangedAt — see playQueueRequest.Playing.
              */
-            playing?: boolean;
-            position?: number;
+            playing: boolean;
+            position: number;
             repeat?: string;
             /**
              * @description Shuffle/Repeat mirror the saving device's transport mode, so any device
              *     that mirrors or takes over this queue shows/resumes the same mode.
              */
-            shuffle?: boolean;
+            shuffle: boolean;
             /**
              * @description TargetDeviceID, when set, is the sole device that should be actively
              *     playing this queue — every other device should pause. Empty means
@@ -11175,12 +11175,12 @@ export interface components {
              *     it isn't, nobody is playing: a spectator resumes locally instead of
              *     sending a command that would never be applied.
              */
-            targetOnline?: boolean;
+            targetOnline: boolean;
         };
         "immerle.playbackTargetView": {
-            id?: string;
+            id: string;
             lastUsedAt?: string;
-            name?: string;
+            name: string;
         };
         "immerle.playlistCreateRequest": {
             ids?: string[];
@@ -11206,30 +11206,30 @@ export interface components {
              *     (user-created, genre/decade, hub-imported).
              */
             autoPlaylistKind?: string;
-            changedAt?: string;
-            collaborative?: boolean;
+            changedAt: string;
+            collaborative: boolean;
             comment?: string;
             coverArt?: string;
             coverArts?: string[];
-            createdAt?: string;
-            duration?: number;
+            createdAt: string;
+            duration: number;
             /**
              * @description Federated marks a read-only playlist synced from the hub: `owner` is
              *     attribution only, not real ownership — clients must offer
              *     subscribe/unsubscribe, not edit/delete/cover.
              */
-            federated?: boolean;
-            id?: string;
-            name?: string;
-            owner?: string;
-            public?: boolean;
-            songCount?: number;
+            federated: boolean;
+            id: string;
+            name: string;
+            owner: string;
+            public: boolean;
+            songCount: number;
             /**
              * @description Subscribed reports whether the caller has favorited this playlist.
              *     Only set on the single-playlist resource (handleGetPlaylist), false
              *     elsewhere.
              */
-            subscribed?: boolean;
+            subscribed: boolean;
             tracks?: components["schemas"]["immerle.songView"][];
         };
         "immerle.podcastCreateRequest": {
@@ -11242,13 +11242,13 @@ export interface components {
             enabled?: boolean;
         };
         "immerle.queueEntryRequest": {
-            album?: string;
-            artist?: string;
-            coverArt?: string;
-            duration?: number;
-            id?: string;
-            remote?: boolean;
-            title?: string;
+            album: string;
+            artist: string;
+            coverArt: string;
+            duration: number;
+            id: string;
+            remote: boolean;
+            title: string;
         };
         "immerle.radioRequest": {
             /** @description CoverURL is the station logo source URL (fetched + cached server-side). */
@@ -11282,7 +11282,7 @@ export interface components {
             song?: components["schemas"]["immerle.songView"];
             spotifyPlaylist?: components["schemas"]["immerle.spotifyPlaylistView"];
             /** @description artist|album|song|playlist|radio|spotifyPlaylist */
-            type?: string;
+            type: string;
         };
         "immerle.searchView": {
             results?: components["schemas"]["immerle.searchHitView"][];
@@ -11307,23 +11307,23 @@ export interface components {
             expiresAt?: number;
         };
         "immerle.shareView": {
-            createdAt?: string;
+            createdAt: string;
             description?: string;
             entries?: components["schemas"]["immerle.songView"][];
             expiresAt?: string;
-            id?: string;
-            url?: string;
-            viewCount?: number;
+            id: string;
+            url: string;
+            viewCount: number;
         };
         "immerle.smartPlaylistListView": {
             playlists?: components["schemas"]["immerle.smartPlaylistView"][];
         };
         "immerle.smartPlaylistView": {
-            createdAt?: string;
-            id?: string;
-            name?: string;
-            rules?: components["schemas"]["models.SmartRules"];
-            updatedAt?: string;
+            createdAt: string;
+            id: string;
+            name: string;
+            rules: components["schemas"]["models.SmartRules"];
+            updatedAt: string;
         };
         "immerle.smartRequest": {
             name?: string;
@@ -11336,14 +11336,14 @@ export interface components {
             songs?: components["schemas"]["immerle.songView"][];
         };
         "immerle.songLocalStatusView": {
-            local?: boolean;
+            local: boolean;
             song?: components["schemas"]["immerle.songView"];
         };
         "immerle.songView": {
-            album?: string;
-            albumId?: string;
-            artist?: string;
-            artistId?: string;
+            album: string;
+            albumId: string;
+            artist: string;
+            artistId: string;
             bitRate?: number;
             bpm?: number;
             /**
@@ -11353,10 +11353,10 @@ export interface components {
             comment?: string;
             composer?: string;
             contentType?: string;
-            coverArt?: string;
-            duration?: number;
+            coverArt: string;
+            duration: number;
             genre?: string;
-            id?: string;
+            id: string;
             lyrics?: string;
             movementName?: string;
             movementNumber?: number;
@@ -11379,7 +11379,7 @@ export interface components {
              */
             starred?: string;
             suffix?: string;
-            title?: string;
+            title: string;
             titleSort?: string;
             track?: number;
             /**
@@ -11402,9 +11402,9 @@ export interface components {
              */
             coverArt?: string;
             /** @example 37i9dQZF1DZ06evO2CNgSk */
-            id?: string;
+            id: string;
             /** @example This Is Daft Punk */
-            name?: string;
+            name: string;
             /** @example Spotify */
             owner?: string;
         };
@@ -11413,27 +11413,27 @@ export interface components {
             source?: string;
         };
         "immerle.stationView": {
-            builtin?: boolean;
-            country?: string;
+            builtin: boolean;
+            country: string;
             /**
              * @description CoverURL is the external logo source URL (for prefilling the admin edit
              *     form). Empty for built-ins whose logo is an embedded asset.
              */
-            coverUrl?: string;
+            coverUrl: string;
             /** @description Deletable is false for built-in stations (they can be edited, not removed). */
-            deletable?: boolean;
+            deletable: boolean;
             /** @description HasCover tells clients whether to load the station cover endpoint. */
-            hasCover?: boolean;
-            homepageUrl?: string;
-            id?: string;
+            hasCover: boolean;
+            homepageUrl: string;
+            id: string;
             /** @description Liked is true when the caller has favorited this station. */
-            liked?: boolean;
-            name?: string;
-            streamUrl?: string;
+            liked: boolean;
+            name: string;
+            streamUrl: string;
         };
         "immerle.streamURLs": {
-            download?: string;
-            stream?: string;
+            download: string;
+            stream: string;
         };
         "immerle.toggleRequest": {
             enabled?: boolean;
@@ -11468,27 +11468,27 @@ export interface components {
             name?: string;
         };
         "models.SmartCondition": {
-            field?: string;
-            op?: string;
-            value?: string;
+            field: string;
+            op: string;
+            value: string;
         };
         "models.SmartRules": {
             /** @description Conditions are the filters; an empty list matches the whole library. */
             conditions?: components["schemas"]["models.SmartCondition"][];
             /** @description Limit caps the result (clamped 1..500). */
-            limit?: number;
+            limit: number;
             /**
              * @description Match is "all" (AND) or "any" (OR) across Conditions. Defaults to "all".
              * @enum {string}
              */
-            match?: "all" | "any";
+            match: "all" | "any";
             /**
              * @description Order is "asc" or "desc" (ignored for "random").
              * @enum {string}
              */
-            order?: "asc" | "desc";
+            order: "asc" | "desc";
             /** @description Sort is a whitelisted sort key (e.g. "random", "playCount", "recentlyAdded"). */
-            sort?: string;
+            sort: string;
         };
     };
     responses: never;

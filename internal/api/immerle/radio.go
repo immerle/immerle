@@ -138,11 +138,11 @@ func (h *Handler) setRadioLike(w http.ResponseWriter, r *http.Request, liked boo
 
 // radioRequest is the admin create/update body.
 type radioRequest struct {
-	Name        string `json:"name"`
-	StreamURL   string `json:"streamUrl"`
-	HomepageURL string `json:"homepageUrl"`
+	Name        string `json:"name" validate:"optional"`
+	StreamURL   string `json:"streamUrl" validate:"optional"`
+	HomepageURL string `json:"homepageUrl" validate:"optional"`
 	// CoverURL is the station logo source URL (fetched + cached server-side).
-	CoverURL string `json:"coverUrl"`
+	CoverURL string `json:"coverUrl" validate:"optional"`
 }
 
 func (req radioRequest) valid() bool {
@@ -422,5 +422,5 @@ func (h *Handler) handleRadioToggle(w http.ResponseWriter, r *http.Request) {
 
 // radioToggleRequest is the admin on/off body.
 type radioToggleRequest struct {
-	Enabled *bool `json:"enabled"`
+	Enabled *bool `json:"enabled" validate:"optional"`
 }

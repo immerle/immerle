@@ -411,7 +411,7 @@ type SmartRules struct {
 	// Match is "all" (AND) or "any" (OR) across Conditions. Defaults to "all".
 	Match string `json:"match" enums:"all,any"`
 	// Conditions are the filters; an empty list matches the whole library.
-	Conditions []SmartCondition `json:"conditions"`
+	Conditions []SmartCondition `json:"conditions" validate:"optional"`
 	// Sort is a whitelisted sort key (e.g. "random", "playCount", "recentlyAdded").
 	Sort string `json:"sort"`
 	// Order is "asc" or "desc" (ignored for "random").

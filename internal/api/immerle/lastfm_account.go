@@ -78,7 +78,7 @@ func (h *Handler) handleLastFmConnectStart(w http.ResponseWriter, r *http.Reques
 
 // lastFmConnectFinishRequest carries the token approved via the auth URL.
 type lastFmConnectFinishRequest struct {
-	Token string `json:"token"`
+	Token string `json:"token" validate:"optional"`
 }
 
 // handleLastFmConnectFinish completes the handshake: exchanges an approved

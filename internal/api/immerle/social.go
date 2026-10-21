@@ -110,7 +110,7 @@ func (h *Handler) handleActivity(w http.ResponseWriter, r *http.Request) {
 // about the item it references (title, artist, cover, …).
 type activityEventView struct {
 	models.ActivityEvent
-	Item map[string]any `json:"item,omitempty"`
+	Item map[string]any `json:"item,omitempty" validate:"optional"`
 }
 
 // activityItem resolves display details for the item an event references. Returns
@@ -312,7 +312,7 @@ func (h *Handler) handleProfile(w http.ResponseWriter, r *http.Request) {
 
 // addCollaboratorBody is the body for POST /playlists/{id}/collaborators.
 type addCollaboratorBody struct {
-	Username string `json:"username"`
+	Username string `json:"username" validate:"optional"`
 }
 
 // handleAddCollaborator grants a user edit rights on a collaborative playlist.
