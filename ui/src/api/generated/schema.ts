@@ -1419,9 +1419,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            [key: string]: boolean;
-                        };
+                        "application/json": components["schemas"]["immerle.featureStatusView"];
                     };
                 };
             };
@@ -1447,9 +1445,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            [key: string]: boolean;
-                        };
+                        "application/json": components["schemas"]["immerle.featureStatusView"];
                     };
                 };
                 /** @description Bad Request */
@@ -2917,7 +2913,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.TrackListDTO"];
+                        "application/json": components["schemas"]["immerle.trackListView"];
                     };
                 };
                 /** @description Unauthorized */
@@ -3057,7 +3053,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.TrackDTO"];
+                        "application/json": components["schemas"]["immerle.songView"];
                     };
                 };
                 /** @description Bad Request */
@@ -3145,7 +3141,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.TrackDTO"];
+                        "application/json": components["schemas"]["immerle.songView"];
                     };
                 };
                 /** @description Bad Request */
@@ -3599,9 +3595,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            [key: string]: components["schemas"]["immerle.albumView"][];
-                        };
+                        "application/json": components["schemas"]["immerle.albumListView"];
                     };
                 };
                 /** @description Unauthorized */
@@ -3785,9 +3779,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            [key: string]: components["schemas"]["immerle.artistView"][];
-                        };
+                        "application/json": components["schemas"]["immerle.artistListView"];
                     };
                 };
                 /** @description Unauthorized */
@@ -4285,9 +4277,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            [key: string]: components["schemas"]["immerle.genreView"][];
-                        };
+                        "application/json": components["schemas"]["immerle.genreListView"];
                     };
                 };
                 /** @description Unauthorized */
@@ -5569,7 +5559,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.LibraryStatsDTO"];
+                        "application/json": components["schemas"]["models.LibraryStats"];
                     };
                 };
                 /** @description Unauthorized */
@@ -6615,9 +6605,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            [key: string]: components["schemas"]["immerle.nowPlayingView"][];
-                        };
+                        "application/json": components["schemas"]["immerle.nowPlayingListView"];
                     };
                 };
                 /** @description Unauthorized */
@@ -8733,9 +8721,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            [key: string]: components["schemas"]["immerle.songView"][];
-                        };
+                        "application/json": components["schemas"]["immerle.songListView"];
                     };
                 };
                 /** @description Bad Request */
@@ -8879,9 +8865,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            [key: string]: components["schemas"]["immerle.songView"][];
-                        };
+                        "application/json": components["schemas"]["immerle.songListView"];
                     };
                 };
                 /** @description Bad Request */
@@ -10456,20 +10440,6 @@ export interface components {
             /** @example bob */
             username?: string;
         };
-        "immerle.LibraryStatsDTO": {
-            /** @example 128 */
-            albums?: number;
-            /** @example 42 */
-            artists?: number;
-            /** @example 432000 */
-            totalDuration?: number;
-            /** @example 9663676416 */
-            totalSize?: number;
-            /** @example 1560 */
-            tracks?: number;
-            /** @example 2026-06-17T09:00:00Z */
-            updatedAt?: string;
-        };
         "immerle.LoginDTO": {
             device?: components["schemas"]["immerle.DeviceDTO"];
             /** @example eyJhbGciOiJIUzI1Ni... */
@@ -10786,41 +10756,6 @@ export interface components {
             /** @example #3b82f6 */
             accentColor?: string;
         };
-        "immerle.TrackDTO": {
-            /** @example Discovery */
-            album?: string;
-            albumId?: string;
-            /** @example Daft Punk */
-            artist?: string;
-            artistId?: string;
-            /** @example audio/flac */
-            contentType?: string;
-            coverArt?: string;
-            /** @example 320 */
-            duration?: number;
-            /** @example House */
-            genre?: string;
-            id?: string;
-            /** @example 8123456 */
-            size?: number;
-            /** @example flac */
-            suffix?: string;
-            /** @example One More Time */
-            title?: string;
-            /** @example 1 */
-            track?: number;
-            /** @example 2001 */
-            year?: number;
-        };
-        "immerle.TrackListDTO": {
-            /** @example 50 */
-            limit?: number;
-            /** @example 0 */
-            offset?: number;
-            /** @example 1560 */
-            total?: number;
-            tracks?: components["schemas"]["immerle.TrackDTO"][];
-        };
         "immerle.UserDTO": {
             /** @example Kilian Smiti */
             displayName?: string;
@@ -10889,6 +10824,9 @@ export interface components {
             scrobblingEnabled: boolean;
             username: string;
         };
+        "immerle.albumListView": {
+            albums: components["schemas"]["immerle.albumView"][];
+        };
         "immerle.albumView": {
             artist: string;
             artistId: string;
@@ -10910,6 +10848,9 @@ export interface components {
             params?: {
                 [key: string]: unknown;
             };
+        };
+        "immerle.artistListView": {
+            artists: components["schemas"]["immerle.artistView"][];
         };
         "immerle.artistView": {
             albumCount: number;
@@ -11020,6 +10961,9 @@ export interface components {
             field: string;
             message: string;
         };
+        "immerle.genreListView": {
+            genres: components["schemas"]["immerle.genreView"][];
+        };
         "immerle.genreView": {
             albumCount: number;
             name: string;
@@ -11070,6 +11014,9 @@ export interface components {
         "immerle.lyricsView": {
             lines?: components["schemas"]["immerle.lyricLine"][];
             synced: boolean;
+        };
+        "immerle.nowPlayingListView": {
+            nowPlaying: components["schemas"]["immerle.nowPlayingView"][];
         };
         "immerle.nowPlayingView": {
             minutesAgo: number;
@@ -11357,7 +11304,7 @@ export interface components {
             enabled?: boolean;
         };
         "immerle.songListView": {
-            songs?: components["schemas"]["immerle.songView"][];
+            songs: components["schemas"]["immerle.songView"][];
         };
         "immerle.songLocalStatusView": {
             local: boolean;
@@ -11466,6 +11413,12 @@ export interface components {
         "immerle.toggleRequest": {
             enabled?: boolean;
         };
+        "immerle.trackListView": {
+            limit: number;
+            offset: number;
+            total: number;
+            tracks: components["schemas"]["immerle.songView"][];
+        };
         "immerle.trackUpdateRequest": {
             discNo?: number;
             genre?: string;
@@ -11494,6 +11447,14 @@ export interface components {
             endpoint?: string;
             kind?: string;
             name?: string;
+        };
+        "models.LibraryStats": {
+            albums: number;
+            artists: number;
+            totalDuration: number;
+            totalSize: number;
+            tracks: number;
+            updatedAt: string;
         };
         "models.SmartCondition": {
             field: string;

@@ -9,8 +9,8 @@ func (h *Handler) offlineEnabled() bool {
 }
 
 // offlineStatus is the admin view of the feature toggle.
-func (h *Handler) offlineStatus() map[string]any {
-	return map[string]any{"enabled": h.offlineEnabled()}
+func (h *Handler) offlineStatus() featureStatusView {
+	return featureStatusView{Enabled: h.offlineEnabled()}
 }
 
 // handleOfflineAdmin reports whether offline downloads are enabled.
@@ -19,7 +19,7 @@ func (h *Handler) offlineStatus() map[string]any {
 // @Tags         admin
 // @Security     BearerAuth
 // @Produce      json
-// @Success      200  {object}  map[string]bool
+// @Success      200  {object}  featureStatusView
 // @Router       /admin/offline [get]
 func (h *Handler) handleOfflineAdmin(w http.ResponseWriter, r *http.Request) {
 	if !h.requireAdmin(w, r) {
@@ -36,7 +36,7 @@ func (h *Handler) handleOfflineAdmin(w http.ResponseWriter, r *http.Request) {
 // @Accept       json
 // @Produce      json
 // @Param        body  body  toggleRequest  true  "Enable or disable"
-// @Success      200  {object}  map[string]bool
+// @Success      200  {object}  featureStatusView
 // @Failure      400  {object}  errorResponse
 // @Router       /admin/offline [put]
 func (h *Handler) handleOfflineUpdate(w http.ResponseWriter, r *http.Request) {

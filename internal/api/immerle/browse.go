@@ -113,6 +113,20 @@ func coverIDForAlbum(a models.Album) string {
 	return a.ID
 }
 
+// List wrappers: each array is built with make (or songList), never null.
+
+type artistListView struct {
+	Artists []artistView `json:"artists" validate:"required"`
+}
+
+type albumListView struct {
+	Albums []albumView `json:"albums" validate:"required"`
+}
+
+type genreListView struct {
+	Genres []genreView `json:"genres" validate:"required"`
+}
+
 func albumEntriesToView(entries []core.AlbumEntry) []albumView {
 	out := make([]albumView, 0, len(entries))
 	for _, e := range entries {
@@ -174,7 +188,7 @@ func writeServiceError(w http.ResponseWriter, err error) {
 // @Tags         catalog
 // @Security     BearerAuth
 // @Produce      json
-// @Success      200  {object}  map[string][]artistView
+// @Success      200  {object}  artistListView
 // @Failure      401  {object}  errorResponse
 // @Router       /artists [get]
 func (h *Handler) handleListArtists(w http.ResponseWriter, r *http.Request) {
@@ -187,7 +201,7 @@ func (h *Handler) handleListArtists(w http.ResponseWriter, r *http.Request) {
 	for _, a := range artists {
 		out = append(out, toArtistView(a, annPtr(starred, a.ID), nil))
 	}
-	writeResource(w, http.StatusOK, map[string]any{"artists": out})
+	writeResource(w, http.StatusOK, artistListView{Artists: out})
 }
 
 // handleGetArtist returns one artist with its albums.
@@ -336,7 +350,7 @@ func (h *Handler) handleGetSongLyrics(w http.ResponseWriter, r *http.Request) {
 // @Param        genre     query  string  false  "Genre (for byGenre)"
 // @Param        fromYear  query  int     false  "From year (for byYear)"
 // @Param        toYear    query  int     false  "To year (for byYear)"
-// @Success      200  {object}  map[string][]albumView
+// @Success      200  {object}  albumListView
 // @Failure      401  {object}  errorResponse
 // @Router       /albums [get]
 func (h *Handler) handleListAlbums(w http.ResponseWriter, r *http.Request) {
@@ -353,7 +367,7 @@ func (h *Handler) handleListAlbums(w http.ResponseWriter, r *http.Request) {
 		writeServiceError(w, err)
 		return
 	}
-	writeResource(w, http.StatusOK, map[string]any{"albums": albumEntriesToView(albums)})
+	writeResource(w, http.StatusOK, albumListView{Albums: albumEntriesToView(albums)})
 }
 
 // genreView is the REST representation of a genre with its catalog counts.
@@ -370,7 +384,7 @@ type genreView struct {
 // @Tags         catalog
 // @Security     BearerAuth
 // @Produce      json
-// @Success      200  {object}  map[string][]genreView
+// @Success      200  {object}  genreListView
 // @Failure      401  {object}  errorResponse
 // @Router       /genres [get]
 func (h *Handler) handleGetGenres(w http.ResponseWriter, r *http.Request) {
@@ -383,7 +397,7 @@ func (h *Handler) handleGetGenres(w http.ResponseWriter, r *http.Request) {
 	for _, g := range genres {
 		out = append(out, genreView{Name: g.Name, SongCount: g.SongCount, AlbumCount: g.AlbumCount})
 	}
-	writeResource(w, http.StatusOK, map[string]any{"genres": out})
+	writeResource(w, http.StatusOK, genreListView{Genres: out})
 }
 
 // searchHitView is one entry in a search result: exactly one of Artist/Album/
@@ -609,7 +623,7 @@ func (h *Handler) handleFavorites(w http.ResponseWriter, r *http.Request) {
 // @Param    genre   query  string  true   "Genre name"
 // @Param    count   query  int     false  "Page size"  default(200)
 // @Param    offset  query  int     false  "Offset"
-// @Success  200  {object}  map[string][]songView
+// @Success  200  {object}  songListView
 // @Failure  400  {object}  errorResponse
 // @Failure  401  {object}  errorResponse
 // @Router   /songs [get]
@@ -624,7 +638,7 @@ func (h *Handler) handleSongsByGenre(w http.ResponseWriter, r *http.Request) {
 		writeServiceError(w, err)
 		return
 	}
-	writeResource(w, http.StatusOK, map[string]any{"songs": trackEntriesToSongViews(tracks)})
+	writeResource(w, http.StatusOK, songList(trackEntriesToSongViews(tracks)))
 }
 
 // handleOpenSpotifyPlaylist opens a public Spotify playlist found by search as

@@ -316,13 +316,13 @@ export class ImmerleClient {
       signal,
     });
     if (error) throw apiErr(error, 'browse.albumList');
-    return (data.albums ?? []).map(toAlbum);
+    return data.albums.map(toAlbum);
   }
 
   async getSongsByGenre(genre: string, count = 200, signal?: AbortSignal): Promise<Song[]> {
     const { data, error } = await this.api.GET('/songs', { params: { query: { genre, count } }, signal });
     if (error) throw apiErr(error, 'browse.songsByGenre');
-    return (data.songs ?? []).map(toSong);
+    return data.songs.map(toSong);
   }
 
   /** A track's audio analysis, or null when it isn't analyzed (or the analysis is off). */
@@ -340,7 +340,7 @@ export class ImmerleClient {
       signal,
     });
     if (error) throw apiErr(error, 'browse.sonicRadio');
-    return (data.songs ?? []).map(toSong);
+    return data.songs.map(toSong);
   }
 
   /** Track ids reordered for smooth transitions (Auto-DJ). keepFirst pins ids[0]. */
@@ -623,7 +623,7 @@ export class ImmerleClient {
   async getNowPlaying(signal?: AbortSignal): Promise<NowPlayingEntry[]> {
     const { data, error } = await this.api.GET('/now-playing', { signal });
     if (error) throw apiErr(error, 'nowplaying');
-    return (data.nowPlaying ?? []).map(toNowPlaying);
+    return data.nowPlaying.map(toNowPlaying);
   }
 
   /**
@@ -759,12 +759,12 @@ export class ImmerleClient {
    */
   async getLibraryStats(signal?: AbortSignal): Promise<LibraryStats> {
     const { data, error } = await this.api.GET('/library/stats', { signal });
-    if (error || !data) throw apiErr(error, 'library.stats');
+    if (error) throw apiErr(error, 'library.stats');
     return {
-      artistCount: data.artists ?? 0,
-      albumCount: data.albums ?? 0,
-      songCount: data.tracks ?? 0,
-      totalSize: data.totalSize ?? 0,
+      artistCount: data.artists,
+      albumCount: data.albums,
+      songCount: data.tracks,
+      totalSize: data.totalSize,
       lastScan: data.updatedAt,
     };
   }
@@ -789,13 +789,8 @@ export class ImmerleClient {
       params: { query: { query: opts.query, limit: opts.limit, offset: opts.offset } },
       signal,
     });
-    if (error || !data) throw apiErr(error, 'tracks_failed');
-    return {
-      tracks: (data.tracks ?? []) as Song[],
-      total: data.total ?? 0,
-      limit: data.limit ?? 0,
-      offset: data.offset ?? 0,
-    };
+    if (error) throw apiErr(error, 'tracks_failed');
+    return { tracks: data.tracks.map(toSong), total: data.total, limit: data.limit, offset: data.offset };
   }
 
   /** Edit any track's simple metadata (title/genre/year/track/disc). Admin-only. */
@@ -1087,14 +1082,16 @@ export class ImmerleClient {
 
   /** Admin: whether offline downloads are enabled. */
   async getOfflineEnabled(signal?: AbortSignal): Promise<boolean> {
-    const r = await this.request<{ enabled: boolean }>('GET', 'admin/offline', undefined, signal);
-    return !!r.enabled;
+    const { data, error } = await this.api.GET('/admin/offline', { signal });
+    if (error) throw apiErr(error, 'offline.admin');
+    return data.enabled;
   }
 
   /** Admin: turn offline downloads on or off. */
   async setOfflineEnabled(enabled: boolean): Promise<boolean> {
-    const r = await this.request<{ enabled: boolean }>('PUT', 'admin/offline', { enabled });
-    return !!r.enabled;
+    const { data, error } = await this.api.PUT('/admin/offline', { body: { enabled } });
+    if (error) throw apiErr(error, 'offline.toggle');
+    return data.enabled;
   }
 
   // --- Hall of Fame (personal top-tracks ranking) -------------------------

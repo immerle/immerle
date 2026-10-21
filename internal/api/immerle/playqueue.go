@@ -434,6 +434,11 @@ type nowPlayingView struct {
 	MinutesAgo int      `json:"minutesAgo"`
 }
 
+// nowPlayingListView is the GET /now-playing body.
+type nowPlayingListView struct {
+	NowPlaying []nowPlayingView `json:"nowPlaying" validate:"required"`
+}
+
 // handleNowPlaying returns what every user is currently playing.
 //
 // @Summary  Now playing
@@ -441,7 +446,7 @@ type nowPlayingView struct {
 // @Tags     playback
 // @Security BearerAuth
 // @Produce  json
-// @Success  200  {object}  map[string][]nowPlayingView
+// @Success  200  {object}  nowPlayingListView
 // @Failure  401  {object}  errorResponse
 // @Router   /now-playing [get]
 func (h *Handler) handleNowPlaying(w http.ResponseWriter, r *http.Request) {
@@ -459,5 +464,5 @@ func (h *Handler) handleNowPlaying(w http.ResponseWriter, r *http.Request) {
 			})
 		}
 	}
-	writeResource(w, http.StatusOK, map[string]any{"nowPlaying": out})
+	writeResource(w, http.StatusOK, nowPlayingListView{NowPlaying: out})
 }

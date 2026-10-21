@@ -71,9 +71,17 @@ type songView struct {
 	Comment string `json:"comment,omitempty" validate:"optional"`
 }
 
-// songListView is the {"songs": [...]} body shared by every track-list endpoint.
+// songListView is the {"songs": [...]} body shared by every track-list
+// endpoint. Build it with songList so songs is never null.
 type songListView struct {
-	Songs []songView `json:"songs" validate:"optional"`
+	Songs []songView `json:"songs" validate:"required"`
+}
+
+func songList(songs []songView) songListView {
+	if songs == nil {
+		songs = []songView{}
+	}
+	return songListView{Songs: songs}
 }
 
 // participantView mirrors models.Participant locally so the OpenAPI generator
