@@ -202,18 +202,6 @@ type WrappedDTO struct {
 	ByMonth      []int             `json:"byMonth,omitempty" validate:"optional"`
 }
 
-// CapabilityDTO describes one supported capability.
-type CapabilityDTO struct {
-	Version int `json:"version" example:"1" validate:"optional"`
-}
-
-// CapabilitiesDTO is the capability-discovery payload.
-type CapabilitiesDTO struct {
-	Server          string                   `json:"server" example:"immerle" validate:"optional"`
-	ProtocolVersion string                   `json:"protocolVersion" example:"1.0.0" validate:"optional"`
-	Capabilities    map[string]CapabilityDTO `json:"capabilities,omitempty" validate:"optional"`
-}
-
 // SetupStatusDTO reports first-run setup state.
 type SetupStatusDTO struct {
 	Initialized        bool `json:"initialized" example:"false" validate:"optional"`
@@ -334,33 +322,6 @@ type BandcampJobsDTO struct {
 	Jobs []BandcampJobDTO `json:"jobs,omitempty" validate:"optional"`
 }
 
-// ActivityItemDTO carries resolved, human-readable details about the item an
-// activity event references (fields depend on itemType; empty when unresolved).
-type ActivityItemDTO struct {
-	Title    string `json:"title,omitempty" example:"One More Time" validate:"optional"`
-	Artist   string `json:"artist,omitempty" example:"Daft Punk" validate:"optional"`
-	Album    string `json:"album,omitempty" example:"Discovery" validate:"optional"`
-	AlbumID  string `json:"albumId,omitempty" validate:"optional"`
-	ArtistID string `json:"artistId,omitempty" validate:"optional"`
-	CoverArt string `json:"coverArt,omitempty" validate:"optional"`
-	Duration int    `json:"duration,omitempty" example:"320" validate:"optional"`
-	Year     int    `json:"year,omitempty" example:"2001" validate:"optional"`
-}
-
-// ActivityEventDTO is a social activity feed entry.
-type ActivityEventDTO struct {
-	ID          string          `json:"id" validate:"optional"`
-	UserID      string          `json:"userId" validate:"optional"`
-	Username    string          `json:"username" example:"bob" validate:"optional"`
-	DisplayName string          `json:"displayName,omitempty" example:"Bob Marley" validate:"optional"`
-	Type        string          `json:"type" example:"listen" validate:"optional"`
-	ItemType    string          `json:"itemType" example:"track" validate:"optional"`
-	ItemID      string          `json:"itemId" validate:"optional"`
-	Privacy     string          `json:"privacy" example:"public" validate:"optional"`
-	CreatedAt   string          `json:"createdAt" example:"2026-06-15T09:00:00Z" validate:"optional"`
-	Item        ActivityItemDTO `json:"item,omitempty" validate:"optional"`
-}
-
 // ImportItemDTO is one source track and the outcome of resolving it.
 type ImportItemDTO struct {
 	ID             string `json:"id" validate:"optional"`
@@ -401,56 +362,4 @@ type ImportDTO struct {
 type ImportSourceDTO struct {
 	Name       string `json:"name" example:"spotify" validate:"optional"`
 	Configured bool   `json:"configured" example:"true" validate:"optional"`
-}
-
-// ProfilePlaylistDTO is a public playlist shown on a user's profile.
-type ProfilePlaylistDTO struct {
-	ID        string   `json:"id" validate:"optional"`
-	Name      string   `json:"name" example:"Summer vibes" validate:"optional"`
-	Comment   string   `json:"comment,omitempty" validate:"optional"`
-	SongCount int      `json:"songCount" example:"24" validate:"optional"`
-	Duration  int      `json:"duration" example:"5400" validate:"optional"`
-	CoverArt  string   `json:"coverArt,omitempty" validate:"optional"`
-	CoverArts []string `json:"coverArts,omitempty" validate:"optional"`
-}
-
-// ProfileHallOfFameDTO is the top of a user's Hall of Fame, shown on their
-// profile — omitted entirely when the user's Hall of Fame is empty.
-type ProfileHallOfFameDTO struct {
-	Top   []songView `json:"top,omitempty" validate:"optional"`
-	Total int        `json:"total" example:"12" validate:"optional"`
-}
-
-// ProfileStatsDTO is the profile page's stat row: all-time listening totals
-// (from submitted scrobbles) plus the public playlist count already returned
-// alongside it.
-type ProfileStatsDTO struct {
-	Plays         int   `json:"plays" example:"1234"`
-	ListenSeconds int64 `json:"listenSeconds" example:"432000"`
-	Playlists     int   `json:"playlists" example:"5"`
-}
-
-// UserSummaryDTO is one entry of the member directory (GET /users) — just
-// enough identity to browse to a profile, never the private fields
-// (email, admin, scrobbling) adminUserView exposes to admins.
-type UserSummaryDTO struct {
-	ID          string `json:"id"`
-	Username    string `json:"username" example:"bob"`
-	DisplayName string `json:"displayName,omitempty" example:"Bob Marley" validate:"optional"`
-}
-
-// ProfileDTO is a user's public profile: identity, visible activity and public
-// playlists.
-type ProfileDTO struct {
-	User struct {
-		ID          string `json:"id" validate:"optional"`
-		Username    string `json:"username" example:"bob" validate:"optional"`
-		DisplayName string `json:"displayName,omitempty" example:"Bob Marley" validate:"optional"`
-		IsAdmin     bool   `json:"isAdmin" example:"false" validate:"optional"`
-	} `json:"user" validate:"optional"`
-	IsSelf     bool                  `json:"isSelf" example:"false" validate:"optional"`
-	Activity   []ActivityEventDTO    `json:"activity,omitempty" validate:"optional"`
-	Playlists  []ProfilePlaylistDTO  `json:"playlists,omitempty" validate:"optional"`
-	Stats      ProfileStatsDTO       `json:"stats" validate:"optional"`
-	HallOfFame *ProfileHallOfFameDTO `json:"hallOfFame,omitempty" validate:"optional"`
 }

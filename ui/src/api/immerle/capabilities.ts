@@ -76,7 +76,7 @@ export async function probeCapabilities(
  * separately in `toggles`, from their nested `enabled` value.
  */
 export function adaptCapabilities(payload: CapabilitiesResponse): Capabilities {
-  const caps = (payload.capabilities ?? {}) as Record<string, { enabled?: boolean } | undefined>;
+  const caps = payload.capabilities;
   const has = (key: string) => Object.prototype.hasOwnProperty.call(caps, key);
 
   const toggles: Capabilities['toggles'] = {};

@@ -95,7 +95,7 @@ export type LoginResponse = components['schemas']['immerle.loginView'];
 export type AccountView = components['schemas']['immerle.accountView'];
 
 // Social / Jam DTOs.
-export type ActivityEventDTO = components['schemas']['immerle.ActivityEventDTO'];
+export type ActivityEventView = components['schemas']['immerle.activityEventView'];
 export type JamSession = components['schemas']['models.JamSession'];
 export type JamParticipant = components['schemas']['models.JamParticipant'];
 export type JamInvite = components['schemas']['models.JamInvite'];
@@ -111,13 +111,13 @@ export type CreateTokenResponse = components['schemas']['immerle.createdTokenVie
 export type PublicPlaylistView = components['schemas']['immerle.publicPlaylistView'];
 
 // User profile (identity + recent activity + public playlists + Hall of Fame top 3).
-export type ProfileResponse = components['schemas']['immerle.ProfileDTO'];
-export type ProfilePlaylistDTO = components['schemas']['immerle.ProfilePlaylistDTO'];
-export type ProfileHallOfFameDTO = components['schemas']['immerle.ProfileHallOfFameDTO'];
-export type ProfileStatsDTO = components['schemas']['immerle.ProfileStatsDTO'];
+export type ProfileResponse = components['schemas']['immerle.profileView'];
+export type ProfilePlaylistView = components['schemas']['immerle.profilePlaylistView'];
+export type ProfileHallOfFameView = components['schemas']['immerle.profileHallOfFameView'];
+export type ProfileStatsView = components['schemas']['immerle.profileStatsView'];
 
 // Member directory (GET /users): every user's public identity, to browse to a profile.
-export type UserSummaryDTO = components['schemas']['immerle.UserSummaryDTO'];
+export type UserSummaryView = components['schemas']['immerle.userSummaryView'];
 
 // Playlist imports from external platforms.
 export type ImportDTO = components['schemas']['immerle.ImportDTO'];
