@@ -40,12 +40,11 @@ import {
   fetchWithTimeout,
   HallOfFameView,
   ImmerleApi,
-  JamInviteDTO,
-  JamParticipantDTO,
+  JamInvite,
+  JamResult,
   ImportDTO,
   ImportItemDTO,
   ImportSourceDTO,
-  JamSessionDTO,
   ProfileHallOfFameDTO,
   ProfileStatsDTO,
   ProfilePlaylistDTO,
@@ -1457,16 +1456,16 @@ export class ImmerleClient {
 
   async jamCreate(name?: string): Promise<JamResult> {
     const { data, error } = await this.api.POST('/jam', { body: { name } });
-    if (error || !data) throw apiErr(error, 'jam_create_failed');
-    return { session: data.session, participants: data.participants ?? [] };
+    if (error) throw apiErr(error, 'jam_create_failed');
+    return data;
   }
 
   async jamJoin(sessionId: string): Promise<JamResult> {
     const { data, error } = await this.api.POST('/jam/{id}/participants', {
       params: { path: { id: sessionId } },
     });
-    if (error || !data) throw apiErr(error, 'jam_join_failed');
-    return { session: data.session, participants: data.participants ?? [] };
+    if (error) throw apiErr(error, 'jam_join_failed');
+    return data;
   }
 
   async jamState(sessionId: string, signal?: AbortSignal): Promise<JamResult> {
@@ -1474,8 +1473,8 @@ export class ImmerleClient {
       params: { path: { id: sessionId } },
       signal,
     });
-    if (error || !data) throw apiErr(error, 'jam_state_failed');
-    return { session: data.session, participants: data.participants ?? [] };
+    if (error) throw apiErr(error, 'jam_state_failed');
+    return data;
   }
 
   /** Host-only. `position` is in milliseconds; `trackIds` is a track-id list. */
@@ -1487,8 +1486,8 @@ export class ImmerleClient {
       params: { path: { id: sessionId } },
       body: fields,
     });
-    if (error || !data) throw apiErr(error, 'jam_update_failed');
-    return { session: data.session, participants: data.participants ?? [] };
+    if (error) throw apiErr(error, 'jam_update_failed');
+    return data;
   }
 
   async jamLeave(sessionId: string): Promise<void> {
@@ -1503,8 +1502,8 @@ export class ImmerleClient {
   async jamMine(signal?: AbortSignal): Promise<JamResult | null> {
     const { data, error, response } = await this.api.GET('/jam/mine', { signal });
     if (response.status === 404) return null;
-    if (error || !data) throw apiErr(error, 'jam_mine_failed');
-    return { session: data.session, participants: data.participants ?? [] };
+    if (error) throw apiErr(error, 'jam_mine_failed');
+    return data;
   }
 
   /** Host-only. Re-inviting the same user just refreshes the invite. */
@@ -1519,8 +1518,8 @@ export class ImmerleClient {
   /** Pending Jam invites addressed to the caller. */
   async jamInvitesMine(signal?: AbortSignal): Promise<JamInvite[]> {
     const { data, error } = await this.api.GET('/jam/invites/mine', { signal });
-    if (error || !data) throw apiErr(error, 'jam_invites_failed');
-    return (data.invites ?? []).map(toJamInvite);
+    if (error) throw apiErr(error, 'jam_invites_failed');
+    return data.invites;
   }
 
   /** Declines a pending invite (accepting is just joining the session normally). */
@@ -1757,36 +1756,6 @@ export class ImmerleClient {
     }
     return (await res.json()) as T;
   }
-}
-
-/** Jam session, with the server-sent timestamps used for drift-corrected sync. */
-export type JamSession = JamSessionDTO & { updatedAt?: string; createdAt?: string };
-
-/** Normalized result of a Jam call: session plus its participants. */
-export interface JamResult {
-  session?: JamSession;
-  participants: JamParticipantDTO[];
-}
-
-/** A pending invite to a Jam session, addressed to the caller. */
-export interface JamInvite {
-  id: string;
-  sessionId: string;
-  sessionName: string;
-  inviterUsername: string;
-  inviterDisplayName?: string;
-  createdAt?: string;
-}
-
-export function toJamInvite(dto: JamInviteDTO): JamInvite {
-  return {
-    id: dto.id ?? '',
-    sessionId: dto.sessionId ?? '',
-    sessionName: dto.sessionName ?? '',
-    inviterUsername: dto.inviterUsername ?? '',
-    inviterDisplayName: dto.inviterDisplayName,
-    createdAt: dto.createdAt,
-  };
 }
 
 /** Raw `/admin/settings` response body. */

@@ -26,10 +26,32 @@ func (h *Handler) jamMember(ctx context.Context, session models.JamSession, user
 	return false
 }
 
-// jamView is the wire representation of a session plus its participants.
-func (h *Handler) jamView(ctx context.Context, session models.JamSession) map[string]any {
+// jamView is the wire representation of a session plus its participants. The
+// models types are what the SSE events carry too, so REST and SSE never drift.
+type jamView struct {
+	Session      models.JamSession       `json:"session"`
+	Participants []models.JamParticipant `json:"participants" validate:"required"`
+}
+
+func (h *Handler) jamView(ctx context.Context, session models.JamSession) jamView {
 	participants, _ := h.Jam.Participants(ctx, session.ID)
-	return map[string]any{"session": session, "participants": participants}
+	if participants == nil {
+		participants = []models.JamParticipant{}
+	}
+	return jamView{Session: session, Participants: participants}
+}
+
+// jamInviteListView is the caller's pending invites (REST and the SSE
+// "invites" event).
+type jamInviteListView struct {
+	Invites []models.JamInvite `json:"invites" validate:"required"`
+}
+
+func jamInviteList(invites []models.JamInvite) jamInviteListView {
+	if invites == nil {
+		invites = []models.JamInvite{}
+	}
+	return jamInviteListView{Invites: invites}
 }
 
 // createJamRequest is the body for POST /jam.
@@ -46,7 +68,7 @@ type createJamRequest struct {
 // @Accept       json
 // @Produce      json
 // @Param        body  body  createJamRequest  true  "Session name and initial track ids"
-// @Success      201  {object}  JamDTO
+// @Success      201  {object}  jamView
 // @Failure      400  {object}  errorResponse
 // @Failure      401  {object}  errorResponse
 // @Failure      500  {object}  errorResponse
@@ -74,7 +96,7 @@ func (h *Handler) handleJamCreate(w http.ResponseWriter, r *http.Request) {
 // @Tags         jam
 // @Security     BearerAuth
 // @Produce      json
-// @Success      200  {object}  JamDTO
+// @Success      200  {object}  jamView
 // @Failure      401  {object}  errorResponse
 // @Failure      404  {object}  errorResponse
 // @Router       /jam/mine [get]
@@ -94,7 +116,7 @@ func (h *Handler) handleJamMine(w http.ResponseWriter, r *http.Request) {
 // @Security     BearerAuth
 // @Produce      json
 // @Param        id  path  string  true  "Jam session id"
-// @Success      201  {object}  JamDTO
+// @Success      201  {object}  jamView
 // @Failure      401  {object}  errorResponse
 // @Failure      404  {object}  errorResponse
 // @Failure      500  {object}  errorResponse
@@ -168,7 +190,7 @@ func (h *Handler) handleJamInvite(w http.ResponseWriter, r *http.Request) {
 // @Tags         jam
 // @Security     BearerAuth
 // @Produce      json
-// @Success      200  {object}  map[string][]JamInviteDTO
+// @Success      200  {object}  jamInviteListView
 // @Failure      401  {object}  errorResponse
 // @Failure      500  {object}  errorResponse
 // @Router       /jam/invites/mine [get]
@@ -178,7 +200,7 @@ func (h *Handler) handleJamInvitesMine(w http.ResponseWriter, r *http.Request) {
 		writeInternal(w, err)
 		return
 	}
-	writeResource(w, http.StatusOK, map[string]any{"invites": invites})
+	writeResource(w, http.StatusOK, jamInviteList(invites))
 }
 
 // handleJamInviteDismiss removes one pending invite — the invitee declining
@@ -205,7 +227,7 @@ func (h *Handler) handleJamInviteDismiss(w http.ResponseWriter, r *http.Request)
 // play-queue events on the caller's one always-open connection rather than a
 // dedicated stream — see its doc comment for why.
 func writeInvitesEvent(w http.ResponseWriter, flusher http.Flusher, invites []models.JamInvite) {
-	payload, _ := json.Marshal(map[string]any{"invites": invites})
+	payload, _ := json.Marshal(jamInviteList(invites))
 	fmt.Fprintf(w, "event: invites\ndata: %s\n\n", payload)
 	flusher.Flush()
 }
@@ -267,7 +289,7 @@ func (h *Handler) handleJamDelete(w http.ResponseWriter, r *http.Request) {
 // @Security     BearerAuth
 // @Produce      json
 // @Param        id  path  string  true  "Jam session id"
-// @Success      200  {object}  JamDTO
+// @Success      200  {object}  jamView
 // @Failure      401  {object}  errorResponse
 // @Failure      404  {object}  errorResponse
 // @Router       /jam/{id} [get]
@@ -305,7 +327,7 @@ type updateJamRequest struct {
 // @Produce      json
 // @Param        id    path  string            true  "Jam session id"
 // @Param        body  body  updateJamRequest  true  "Playback fields to change"
-// @Success      200  {object}  JamDTO
+// @Success      200  {object}  jamView
 // @Failure      400  {object}  errorResponse
 // @Failure      401  {object}  errorResponse
 // @Failure      403  {object}  errorResponse
