@@ -330,6 +330,7 @@
       "mostPlayed": "Most played",
       "favorites": "Your favorites",
       "customPlaylists": "Made for you",
+      "discoverPlaylists": "Curated for you",
       "random": "Random picks",
       "offlineTitle": "Can't reach the server",
       "retry": "Retry",
@@ -695,6 +696,20 @@
       "sonicAutoDjHelp": "Lets listeners play a playlist, or reorder their queue, so tracks flow smoothly: close tempos, compatible keys, small energy jumps.",
       "sonicDuplicates": "Sonic duplicates",
       "sonicDuplicatesHelp": "Lists, in Admin > Library, tracks that sound identical: the same recording under other tags or in another format. Nothing is deleted automatically.",
+      "discoverTitle": "immerle discover",
+      "discoverSubtitle": "Shared catalog, scrobbles and suggestions",
+      "discoverDescription": "Connects this server to discover.immerle.com, a shared music catalog fed by charts and popular playlists. No account needed: the server registers itself. Listeners are sent as anonymous references, never names or emails.",
+      "discoverEnabled": "Enable immerle discover",
+      "discoverFeatures": "Features",
+      "discoverNeedsEnabled": "Requires immerle discover",
+      "discoverScrobble": "Scrobbles",
+      "discoverScrobbleHelp": "Sends completed plays of users who have scrobbling enabled. The suggestions below learn from them.",
+      "discoverMadeForYou": "Discover Mix",
+      "discoverMadeForYouHelp": "A personal playlist per user, picked from what they listen to.",
+      "discoverCurated": "Curated playlists for you",
+      "discoverCuratedHelp": "Proposes to each user the editorial playlists that best match what they listen to.",
+      "discoverSimilar": "Similar tracks",
+      "discoverSimilarHelp": "Suggests tracks from your library similar to the one playing (used when the sonic radio is off or the track is not analyzed).",
       "save": "Save"
     },
     "users": {
@@ -862,6 +877,7 @@
         "listenBrainzWeeklyJams": "Weekly Jams",
         "listenBrainzWeeklyExploration": "Weekly Exploration",
         "lastfmSimilarMix": "Last.fm Mix",
+        "discoverMix": "Discover Mix",
         "moodCalm": "Calm",
         "moodFocus": "Focus",
         "moodMelancholy": "Melancholy",
@@ -878,7 +894,8 @@
       "source": {
         "reccobeats": "Powered by ReccoBeats",
         "listenbrainz": "Powered by ListenBrainz",
-        "lastfm": "Powered by Last.fm"
+        "lastfm": "Powered by Last.fm",
+        "discover": "Powered by immerle discover"
       },
       "cover": {
         "title": "Create a cover",

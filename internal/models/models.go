@@ -102,6 +102,29 @@ type RuntimeSettings struct {
 	LastFm         LastFmRuntime         `json:"lastFm"`
 	SpotifySearch  SpotifySearchRuntime  `json:"spotifySearch"`
 	Sonic          SonicRuntime          `json:"sonic"`
+	Discover       DiscoverRuntime       `json:"discover"`
+}
+
+// DiscoverRuntime configures immerle-discover (hot-reloadable), the shared
+// catalog fed by charts and popular playlists. On by default; each feature has
+// its own toggle on top of Enabled. The instance registers itself on first
+// use, no account needed.
+type DiscoverRuntime struct {
+	Enabled bool `json:"enabled"`
+	// Scrobble sends completed plays (under an opaque per-user reference, never
+	// a name or email), which is what the per-listener suggestions learn from.
+	Scrobble bool `json:"scrobble"`
+	// MadeForYou publishes a personal "Mix discover" playlist per user.
+	MadeForYou bool `json:"madeForYou"`
+	// CuratedPlaylists proposes, per user, the editorial playlists that best
+	// match what they listen to.
+	CuratedPlaylists bool `json:"curatedPlaylists"`
+	// SimilarTracks backs getSimilarSongs with discover's similar tracks.
+	SimilarTracks bool `json:"similarTracks"`
+	// InstanceID and PrivateKey are returned by discover at registration. Not
+	// user-editable; PrivateKey is redacted from API responses.
+	InstanceID string `json:"instanceId,omitempty"`
+	PrivateKey string `json:"privateKey,omitempty"`
 }
 
 // SonicRuntime configures local audio analysis (hot-reloadable). Off by
@@ -334,6 +357,7 @@ func DefaultRuntimeSettings() RuntimeSettings {
 		HallOfFame:     HallOfFameRuntime{Enabled: true},
 		Concerts:       ConcertsRuntime{Enabled: false},
 		Sonic:          SonicRuntime{Enabled: false, Workers: 1},
+		Discover:       DiscoverRuntime{Enabled: true, Scrobble: true, MadeForYou: true, CuratedPlaylists: true, SimilarTracks: true},
 	}
 }
 

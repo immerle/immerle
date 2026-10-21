@@ -28,6 +28,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/immerle/immerle/internal/discover"
 	"github.com/immerle/immerle/internal/listenbrainz"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
@@ -57,7 +58,22 @@ const (
 	SourceListenBrainzWeeklyExploration = "listenbrainz-weekly-exploration"
 
 	SourceLastFmMix = "lastfm-similar-mix"
+
+	// SourceDiscoverMix is the per-user "Mix discover" list from immerle
+	// discover. SourceDiscoverPlaylist holds the curated playlists proposed to
+	// a user, keyed by DiscoverPlaylistExternalID (a fixed slot per user, so a
+	// proposal replaces the previous one in place).
+	SourceDiscoverMix      = "discover-mix"
+	SourceDiscoverPlaylist = "discover-playlist"
 )
+
+// DiscoverPlaylistSlots is how many curated playlists are proposed per user.
+const DiscoverPlaylistSlots = 5
+
+// DiscoverPlaylistExternalID is the dedupe key of a user's curated playlist slot.
+func DiscoverPlaylistExternalID(userID string, slot int) string {
+	return fmt.Sprintf("%s:%d", userID, slot)
+}
 
 // MoodSource is the source instance id of a mood playlist. Each mood is its
 // own kind (not one kind keyed by mood) so the UI and the cover translate
@@ -96,6 +112,7 @@ var AutoPlaylistKinds = map[string]bool{
 	SourceListenBrainzWeeklyJams:        true,
 	SourceListenBrainzWeeklyExploration: true,
 	SourceLastFmMix:                     true,
+	SourceDiscoverMix:                   true,
 }
 
 func init() {
@@ -116,6 +133,8 @@ var sourceSubtitleKeys = map[string]string{
 	SourceListenBrainzWeeklyJams:        "source.listenbrainz",
 	SourceListenBrainzWeeklyExploration: "source.listenbrainz",
 	SourceLastFmMix:                     "source.lastfm",
+	SourceDiscoverMix:                   "source.discover",
+	SourceDiscoverPlaylist:              "source.discover",
 }
 
 // minTracks is the minimum catalog size for a genre/decade to get its own
@@ -206,6 +225,19 @@ type Service struct {
 	// sonic is nil unless SetSonic is called; mood playlists are then never
 	// published.
 	sonic *sonic.Service
+
+	// discover is nil unless SetDiscover is called; its lists are then never
+	// published.
+	discover Discover
+}
+
+// Discover is the slice of *discover.Client the discover lists need.
+type Discover interface {
+	MadeForYouEnabled() bool
+	CuratedPlaylistsEnabled() bool
+	ListenerTracks(ctx context.Context, userID string, limit int) ([]discover.Track, error)
+	ListenerPlaylists(ctx context.Context, userID string, limit int) ([]discover.Playlist, error)
+	Playlist(ctx context.Context, id string, limit int) (discover.Playlist, error)
 }
 
 // Recommender resolves recommended tracks from seed tracks. *reccobeats.Client
@@ -269,6 +301,12 @@ func (s *Service) SetListenBrainzPlaylists(p ListenBrainzPlaylists) {
 // Optional: not calling this simply leaves that list unsynced.
 func (s *Service) SetLastFmSimilar(r Recommender) {
 	s.lastfmMix = r
+}
+
+// SetDiscover wires up the immerle discover lists ("Mix discover" and the
+// proposed curated playlists), each published while its toggle is on.
+func (s *Service) SetDiscover(d Discover) {
+	s.discover = d
 }
 
 // SetSonic wires up the mood playlists, picked from the local audio analysis
@@ -469,6 +507,9 @@ func (s *Service) syncPersonal(ctx context.Context) int {
 		if s.lastfmMix != nil && s.syncLastFmMixOne(ctx, u.ID) {
 			synced++
 		}
+		if s.discover != nil {
+			synced += s.syncDiscover(ctx, u.ID)
+		}
 	}
 	return synced
 }
@@ -498,6 +539,100 @@ func (s *Service) syncRecommendedOne(ctx context.Context, userID string) bool {
 		return false
 	}
 	return true
+}
+
+// discoverCandidates is how many playlist suggestions are fetched to find
+// DiscoverPlaylistSlots made by people: charts rank high on overlap.
+const discoverCandidates = 25
+
+// maxDiscoverTracks bounds the "Mix discover" list and each proposed playlist.
+const maxDiscoverTracks = 50
+
+// syncDiscover rebuilds one user's discover lists, removing those whose toggle
+// is off (or that discover has nothing for) rather than leaving them stale.
+// Tracks are portable references resolved at play time, like "Découvertes".
+func (s *Service) syncDiscover(ctx context.Context, userID string) int {
+	synced := 0
+	var mix []discover.Track
+	var err error
+	if s.discover.MadeForYouEnabled() {
+		mix, err = s.discover.ListenerTracks(ctx, userID, maxDiscoverTracks)
+	}
+	if err != nil {
+		// Keep the previous list rather than wiping it on a network blip.
+		s.logger.Warn("autoplaylists: discover tracks failed", "user", userID, "error", err)
+	} else if s.syncOrRemove(ctx, playlistSpec{
+		ownerID: userID, sourceInstanceID: SourceDiscoverMix, sourceExternalID: userID,
+		name: discoverMixName, icon: sparklesIcon, refs: discoverRefs(mix),
+	}) {
+		synced++
+	}
+
+	var proposals []discover.Playlist
+	if s.discover.CuratedPlaylistsEnabled() {
+		candidates, err := s.discover.ListenerPlaylists(ctx, userID, discoverCandidates)
+		if err != nil {
+			s.logger.Warn("autoplaylists: discover playlists failed", "user", userID, "error", err)
+			return synced
+		}
+		// Only playlists made by people (charts are already covered by
+		// internal/charts) whose tracks discover has ingested.
+		for _, p := range candidates {
+			if p.Kind == "playlist" && p.TrackCount > 0 && len(proposals) < DiscoverPlaylistSlots {
+				proposals = append(proposals, p)
+			}
+		}
+	}
+	for slot := range DiscoverPlaylistSlots {
+		spec := playlistSpec{
+			ownerID: userID, sourceInstanceID: SourceDiscoverPlaylist,
+			sourceExternalID: DiscoverPlaylistExternalID(userID, slot), icon: notesIcon,
+		}
+		if slot < len(proposals) {
+			p, err := s.discover.Playlist(ctx, proposals[slot].ID(), maxDiscoverTracks)
+			if err != nil {
+				s.logger.Warn("autoplaylists: discover playlist fetch failed", "user", userID, "error", err)
+				continue
+			}
+			spec.name = p.Name
+			for _, e := range p.Tracks {
+				spec.refs = append(spec.refs, discoverRef(e.Track))
+			}
+		}
+		if s.syncOrRemove(ctx, spec) {
+			synced++
+		}
+	}
+	return synced
+}
+
+// syncOrRemove upserts spec when it has tracks, else deletes its playlist.
+func (s *Service) syncOrRemove(ctx context.Context, spec playlistSpec) bool {
+	if len(spec.refs) == 0 {
+		if p, err := s.playlists.FindFederated(ctx, spec.sourceInstanceID, spec.sourceExternalID); err == nil {
+			if err := s.playlists.Delete(ctx, p.ID); err != nil {
+				s.logger.Warn("autoplaylists: removal failed", "kind", spec.sourceInstanceID, "error", err)
+			}
+		}
+		return false
+	}
+	if err := s.upsert(ctx, spec); err != nil {
+		s.logger.Warn("autoplaylists: personal list sync failed", "kind", spec.sourceInstanceID, "user", spec.ownerID, "error", err)
+		return false
+	}
+	return true
+}
+
+func discoverRef(t discover.Track) persistence.FederatedTrackRef {
+	return persistence.FederatedTrackRef{MBID: t.MBID(), Artist: t.Artist, Title: t.Title}
+}
+
+func discoverRefs(tracks []discover.Track) []persistence.FederatedTrackRef {
+	refs := make([]persistence.FederatedTrackRef, 0, len(tracks))
+	for _, t := range tracks {
+		refs = append(refs, discoverRef(t))
+	}
+	return refs
 }
 
 // listenBrainzPlaylistSpecs maps each ListenBrainz recommendation kind to
@@ -684,6 +819,7 @@ const (
 	trendingName    = "Tendances de la semaine"
 	recommendedName = "Découvertes"
 	lastFmMixName   = "Mix Last.fm"
+	discoverMixName = "Mix discover"
 )
 
 // Twemoji codepoints (see covergen.FetchEmoji) for each auto-playlist kind.
@@ -697,6 +833,8 @@ const (
 	compassIcon    = "1f9ed" // 🧭 — Découvertes, Weekly Exploration
 	radioIcon      = "1f4fb" // 📻 — Daily Jams, Weekly Jams
 	headphoneIcon  = "1f3a7" // 🎧 — Mix Last.fm
+	sparklesIcon   = "2728"  // ✨ — Mix discover
+	notesIcon      = "1f3b6" // 🎶 — discover curated playlists
 )
 
 // decade is one candidate decade bucket: [from, from+10).

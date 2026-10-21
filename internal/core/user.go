@@ -14,6 +14,21 @@ import (
 type UserService struct {
 	users *persistence.UserRepo
 	auth  *AuthService
+	// forget is told about deleted users, to drop their data from external
+	// services (immerle discover). Optional.
+	forget UserForgetter
+}
+
+// UserForgetter drops a deleted user's data from an external service.
+// Implemented by *discover.Scrobbler.
+type UserForgetter interface {
+	ForgetUser(ctx context.Context, userID string)
+}
+
+// WithForgetter plugs in what to notify when a user is deleted (nil is fine).
+func (s *UserService) WithForgetter(f UserForgetter) *UserService {
+	s.forget = f
+	return s
 }
 
 // NewUserService wires the user administration application service.
@@ -117,7 +132,13 @@ func (s *UserService) DeleteUser(ctx context.Context, caller models.User, userna
 	if err != nil {
 		return err
 	}
-	return s.users.Delete(ctx, u.ID)
+	if err := s.users.Delete(ctx, u.ID); err != nil {
+		return err
+	}
+	if s.forget != nil {
+		s.forget.ForgetUser(ctx, u.ID)
+	}
+	return nil
 }
 
 // ChangePassword sets a user's password. A non-admin caller may only change

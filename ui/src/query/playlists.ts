@@ -24,6 +24,16 @@ export function useCustomPlaylists() {
   });
 }
 
+/** Curated playlists proposed by immerle discover, for Home. */
+export function useDiscoverPlaylists() {
+  const client = useAuth((s) => s.client);
+  return useQuery({
+    queryKey: qk.discoverPlaylists,
+    enabled: !!client,
+    queryFn: () => client!.getDiscoverPlaylists(),
+  });
+}
+
 /**
  * Swaps a just-resolved federated entry into the cached playlist, so its row
  * shows the real track (cover, duration) without a refetch: until a provider

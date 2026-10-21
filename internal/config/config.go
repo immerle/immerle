@@ -31,6 +31,9 @@ type Config struct {
 	// HubURL is the resolved immerle-hub endpoint: the hardcoded DefaultHubURL,
 	// overridden by DEV_IMMERLE_HUB_URL (real env var or .env) for local debugging.
 	HubURL string
+	// DiscoverURL is the resolved immerle-discover endpoint: DefaultDiscoverURL,
+	// overridden by DEV_IMMERLE_DISCOVER_URL, same as HubURL.
+	DiscoverURL string
 }
 
 // ServerConfig holds HTTP server settings. CORS is a runtime setting, not here.
@@ -100,6 +103,10 @@ type TranscodeProfile struct {
 // env var or .env, real env wins) — resolved into Config.HubURL at load.
 const DefaultHubURL = "https://hub.immerle.com"
 
+// DefaultDiscoverURL is the hardcoded immerle-discover endpoint (shared catalog,
+// scrobbles and suggestions). Same override rules as DefaultHubURL.
+const DefaultDiscoverURL = "https://discover.immerle.com"
+
 // FederationConfig configures the optional immerle-hub connection. It is no
 // longer part of the bootstrap Config (it is a runtime setting); the type is
 // kept because the federation service consumes it — app builds it from the
@@ -128,9 +135,10 @@ func Default() Config {
 			Driver: "sqlite",
 			DSN:    "immerle.db",
 		},
-		Log:     LogConfig{Level: "info"},
-		Library: LibraryConfig{DataDir: "data"},
-		HubURL:  DefaultHubURL,
+		Log:         LogConfig{Level: "info"},
+		Library:     LibraryConfig{DataDir: "data"},
+		HubURL:      DefaultHubURL,
+		DiscoverURL: DefaultDiscoverURL,
 	}
 }
 
@@ -255,6 +263,11 @@ func applyEnv(c *Config, lookup func(string) (string, bool)) {
 	if v, ok := lookup("DEV_IMMERLE_HUB_URL"); ok {
 		if t := strings.TrimSpace(v); t != "" {
 			c.HubURL = t
+		}
+	}
+	if v, ok := lookup("DEV_IMMERLE_DISCOVER_URL"); ok {
+		if t := strings.TrimSpace(v); t != "" {
+			c.DiscoverURL = t
 		}
 	}
 }

@@ -109,8 +109,10 @@ type Deps struct {
 	Purchases *core.PurchasesService
 	// Sonic runs the local audio analysis (admin progress, capabilities, sonic
 	// radio). Optional; nil hides the features.
-	Sonic  *sonic.Service
-	Logger *slog.Logger
+	Sonic *sonic.Service
+	// UserForgetter drops deleted users' data from immerle discover. Optional.
+	UserForgetter core.UserForgetter
+	Logger        *slog.Logger
 	// LogHub streams live server log lines to the admin log viewer (SSE).
 	LogHub *logging.Hub
 }
@@ -172,7 +174,7 @@ func NewHandler(d Deps) *Handler {
 		playQueue:     core.NewPlayQueueService(d.PlayQueues, d.Catalog, d.Annotations, d.Logger),
 		playlistSvc:   core.NewPlaylistService(d.Playlists, d.Annotations, d.Activity, d.PlaylistSync, d.OnDemand),
 		hallOfFameSvc: core.NewHallOfFameService(d.HallOfFame, d.OnDemand),
-		userSvc:       core.NewUserService(d.Users, d.Auth),
+		userSvc:       core.NewUserService(d.Users, d.Auth).WithForgetter(d.UserForgetter),
 		shareSvc:      core.NewShareService(d.Shares, d.Catalog, d.Playlists),
 		media:         media.NewServer(d.Catalog, d.Streamer, d.Cover, d.OnDemand, d.NowPlaying, d.Logger, d.SigningKey),
 	}
@@ -219,6 +221,7 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Patch("/me", h.handleAccountUpdate)
 			r.Get("/me/favorites", h.handleFavorites)
 			r.Get("/me/custom-playlists", h.handleCustomPlaylists)
+			r.Get("/me/discover-playlists", h.handleDiscoverPlaylists)
 			r.Get("/me/concerts", h.handleMyConcerts)
 			r.Put("/me/concerts/{id}/dismiss", h.handleDismissConcert)
 			r.Get("/me/lastfm", h.handleLastFmStatus)

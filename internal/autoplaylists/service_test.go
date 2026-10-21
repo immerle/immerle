@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/immerle/immerle/internal/discover"
 	"github.com/immerle/immerle/internal/listenbrainz"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
@@ -570,5 +571,75 @@ func TestDecadesSpansThe1950sToTheCurrentDecade(t *testing.T) {
 	last := d[len(d)-1]
 	if last.from != currentDecade {
 		t.Fatalf("expected to end at the current decade (%d), got %+v", currentDecade, last)
+	}
+}
+
+// fakeDiscover is a Discover test double with switchable toggles.
+type fakeDiscover struct {
+	on     bool
+	tracks []discover.Track
+	lists  map[string]discover.Playlist
+}
+
+func (f *fakeDiscover) MadeForYouEnabled() bool       { return f.on }
+func (f *fakeDiscover) CuratedPlaylistsEnabled() bool { return f.on }
+func (f *fakeDiscover) ListenerTracks(context.Context, string, int) ([]discover.Track, error) {
+	return f.tracks, nil
+}
+
+func (f *fakeDiscover) ListenerPlaylists(context.Context, string, int) ([]discover.Playlist, error) {
+	out := make([]discover.Playlist, 0, len(f.lists))
+	for id := range f.lists {
+		out = append(out, discover.Playlist{IDs: []string{id}, Kind: f.lists[id].Kind, TrackCount: len(f.lists[id].Tracks)})
+	}
+	return out, nil
+}
+
+func (f *fakeDiscover) Playlist(_ context.Context, id string, _ int) (discover.Playlist, error) {
+	return f.lists[id], nil
+}
+
+func TestSyncDiscoverPublishesThenRemovesWhenToggledOff(t *testing.T) {
+	store := testutil.NewStore(t)
+	ctx := context.Background()
+	user := models.User{ID: uuid.NewString(), Username: "listener", PasswordHash: "x"}
+	if err := store.Users.Create(ctx, user); err != nil {
+		t.Fatal(err)
+	}
+	chart := discover.Playlist{IDs: []string{"imlid:c1"}, Kind: "chart", Name: "Top 50", Tracks: []discover.PlaylistEntry{{}}}
+	empty := discover.Playlist{IDs: []string{"imlid:e1"}, Kind: "playlist", Name: "Not ingested yet"}
+	curated := discover.Playlist{IDs: []string{"imlid:p1"}, Kind: "playlist", Name: "Rap FR", Tracks: []discover.PlaylistEntry{
+		{Track: discover.Track{IDs: []string{"imlid:x", "mbid:m1"}, Artist: "Vacra", Title: "Fille à Papa"}},
+	}}
+	fake := &fakeDiscover{
+		on:     true,
+		tracks: []discover.Track{{Artist: "A", Title: "T"}},
+		lists:  map[string]discover.Playlist{"imlid:p1": curated, "imlid:c1": chart, "imlid:e1": empty},
+	}
+	svc := New(store.Catalog, store.Genres, store.Wrapped, store.Annotations, store.Users, store.Playlists, testutil.NewLogger())
+	svc.SetDiscover(fake)
+
+	if n := svc.syncDiscover(ctx, user.ID); n != 2 {
+		t.Fatalf("synced %d, want 2 (made for you + one curated; the chart and the empty one skipped)", n)
+	}
+	mix, err := store.Playlists.FindFederated(ctx, SourceDiscoverMix, user.ID)
+	if err != nil || mix.Public || mix.OwnerID != user.ID {
+		t.Fatalf("made-for-you playlist: %+v, %v", mix, err)
+	}
+	p, err := store.Playlists.FindFederated(ctx, SourceDiscoverPlaylist, DiscoverPlaylistExternalID(user.ID, 0))
+	if err != nil || p.Name != "Rap FR" {
+		t.Fatalf("curated playlist: %+v, %v", p, err)
+	}
+	if got, _ := store.Playlists.Tracks(ctx, p.ID); len(got) != 1 || got[0].MBID != "m1" {
+		t.Fatalf("curated tracks = %+v, want the one track with its mbid", got)
+	}
+
+	fake.on = false
+	svc.syncDiscover(ctx, user.ID)
+	if _, err := store.Playlists.FindFederated(ctx, SourceDiscoverMix, user.ID); !errors.Is(err, persistence.ErrNotFound) {
+		t.Fatalf("made-for-you playlist should be removed, got %v", err)
+	}
+	if _, err := store.Playlists.FindFederated(ctx, SourceDiscoverPlaylist, DiscoverPlaylistExternalID(user.ID, 0)); !errors.Is(err, persistence.ErrNotFound) {
+		t.Fatalf("curated playlist should be removed, got %v", err)
 	}
 }

@@ -26,6 +26,7 @@ import (
 	"github.com/immerle/immerle/internal/config"
 	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/db"
+	"github.com/immerle/immerle/internal/discover"
 	"github.com/immerle/immerle/internal/federation"
 	"github.com/immerle/immerle/internal/importer"
 	"github.com/immerle/immerle/internal/lastfm"
@@ -401,9 +402,25 @@ func New(cfg config.Config) (*App, error) {
 	lfClient := lastfm.NewClient(nil)
 	lfScrobbler := lastfm.NewScrobbler(lfClient, settingsSvc.LastFmConfig, outboxWorker, logger)
 
+	// immerle discover: on by default, registers this instance on first use and
+	// keeps the issued credentials in the runtime settings. Every feature
+	// (scrobbles, made-for-you, curated playlists, similar tracks) has its own
+	// admin toggle, read live.
+	discoverClient := discover.New(cfg.DiscoverURL, nil,
+		func() models.DiscoverRuntime { return settingsSvc.Get().Discover },
+		func(creds discover.Credentials) error {
+			next := settingsSvc.Get()
+			next.Discover.InstanceID = creds.InstanceID
+			next.Discover.PrivateKey = creds.PrivateKey
+			_, _, err := settingsSvc.Update(next)
+			return err
+		},
+		settingsSvc.Secret)
+	discoverScrobbler := discover.NewScrobbler(discoverClient, outboxWorker, logger)
+
 	// A user can connect either or both scrobbling services; every submitted
-	// play fans out to whichever ones they've set up.
-	scrobbleSync := core.ScrobbleFanout{lbScrobbler, lfScrobbler}
+	// play fans out to whichever ones they've set up, plus discover.
+	scrobbleSync := core.ScrobbleFanout{lbScrobbler, lfScrobbler, discoverScrobbler}
 
 	// Playlist import (e.g. Spotify): the source playlist is fetched through the
 	// hub (which holds the third-party credentials), then each track is resolved
@@ -451,6 +468,8 @@ func New(cfg config.Config) (*App, error) {
 	// live inside lfRecommender), so it applies to every user once wired up.
 	lfRecommender := lastfm.NewRecommender(lfClient, settingsSvc.LastFmConfig)
 	autoplaylistsSvc.SetLastFmSimilar(lfRecommender)
+	// "Mix discover" and the curated playlists proposed by immerle discover.
+	autoplaylistsSvc.SetDiscover(discoverClient)
 
 	// Concert discovery: matches each user-with-a-city's top-listened artists
 	// against Ticketmaster/Skiddle, once daily. Disabled by default (needs at
@@ -495,6 +514,8 @@ func New(cfg config.Config) (*App, error) {
 		BaseURL:          baseURL(cfg),
 		Logger:           logger,
 		Sonic:            sonicSvc,
+		Discover:         discoverClient,
+		UserForgetter:    discoverScrobbler,
 	})
 
 	gosHandler := immerle.NewHandler(immerle.Deps{
@@ -515,6 +536,7 @@ func New(cfg config.Config) (*App, error) {
 		Concerts:         store.Concerts,
 		ConcertsSync:     concertsSvc,
 		Sonic:            sonicSvc,
+		UserForgetter:    discoverScrobbler,
 		Purchases:        purchasesSvc,
 		Providers:        providerMgr,
 		Settings:         settingsSvc,

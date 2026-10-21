@@ -3,7 +3,7 @@ import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useAlbumList, useStarred } from '../../src/query/library';
-import { useCustomPlaylists } from '../../src/query/playlists';
+import { useCustomPlaylists, useDiscoverPlaylists } from '../../src/query/playlists';
 import { useConcerts, useDismissConcert } from '../../src/query/concerts';
 import { useAuth } from '../../src/auth/store';
 import { usePlayer } from '../../src/audio/store';
@@ -260,6 +260,7 @@ export default function Home() {
   const random = useAlbumList('random');
   const starred = useStarred();
   const customPlaylists = useCustomPlaylists();
+  const discoverPlaylists = useDiscoverPlaylists();
 
   const loading = recentlyPlayed.isLoading && frequent.isLoading && random.isLoading;
   // All three failing (rather than just one) is a reasonable proxy for "the
@@ -286,8 +287,6 @@ export default function Home() {
 
         {!offline ? <ConcertBanner /> : null}
 
-        {!offline ? <CustomPlaylistsRow title={t('home.home.customPlaylists')} playlists={customPlaylists.data} /> : null}
-
         {offline ? (
           <>
             <OfflineBanner onRetry={retry} retrying={retrying} />
@@ -300,6 +299,8 @@ export default function Home() {
         ) : (
           <>
             <AlbumRow title={t('home.home.recentlyPlayed')} albums={recentlyPlayed.data} />
+            <CustomPlaylistsRow title={t('home.home.customPlaylists')} playlists={customPlaylists.data} />
+            <CustomPlaylistsRow title={t('home.home.discoverPlaylists')} playlists={discoverPlaylists.data} />
             <AlbumRow title={t('home.home.mostPlayed')} albums={frequent.data} />
             {starred.data?.album?.length ? <AlbumRow title={t('home.home.favorites')} albums={starred.data.album} /> : null}
             <AlbumRow title={t('home.home.random')} albums={random.data} />

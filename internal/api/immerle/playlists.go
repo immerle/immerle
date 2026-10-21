@@ -48,7 +48,7 @@ func (h *Handler) handlePublicPlaylists(w http.ResponseWriter, r *http.Request) 
 // display order.
 var customPlaylistSources = []string{
 	autoplaylists.SourceTopMonth, autoplaylists.SourceOnRepeat, autoplaylists.SourceForgotten, autoplaylists.SourceRandom,
-	autoplaylists.SourceRecommended, autoplaylists.SourceLastFmMix,
+	autoplaylists.SourceRecommended, autoplaylists.SourceLastFmMix, autoplaylists.SourceDiscoverMix,
 }
 
 // handleCustomPlaylists returns the caller's auto-generated personal
@@ -59,7 +59,7 @@ var customPlaylistSources = []string{
 // controls) never loses access.
 //
 // @Summary      Custom auto-generated playlists
-// @Description  Returns the caller's personal auto-generated playlists (top of the month, on repeat, forgotten favorites, random, recommended) that currently have at least one track, followed by the shared mood playlists when the sonic moods setting is on.
+// @Description  Returns the caller's personal auto-generated playlists (top of the month, on repeat, forgotten favorites, random, recommended, made for you) that currently have at least one track, followed by the shared mood playlists when the sonic moods setting is on.
 // @Tags         playlists
 // @Security     BearerAuth
 // @Produce      json
@@ -82,6 +82,29 @@ func (h *Handler) handleCustomPlaylists(w http.ResponseWriter, r *http.Request) 
 			if p, err := h.Playlists.FindFederated(r.Context(), autoplaylists.MoodSource(m), "global"); err == nil && p.SongCount > 0 {
 				out = append(out, toPlaylistView(p, nil))
 			}
+		}
+	}
+	writeResource(w, http.StatusOK, map[string]any{"playlists": out})
+}
+
+// handleDiscoverPlaylists returns the playlists made by people that immerle
+// discover proposes to the caller from what they listen to, refreshed daily.
+//
+// @Summary      Curated playlists for the caller
+// @Description  Returns the playlists made by people (not charts) that immerle discover matches to the caller's recent listening, refreshed daily. Empty when the admin turned the feature off.
+// @Tags         playlists
+// @Security     BearerAuth
+// @Produce      json
+// @Success      200  {object}  map[string][]playlistView
+// @Failure      401  {object}  errorResponse
+// @Router       /me/discover-playlists [get]
+func (h *Handler) handleDiscoverPlaylists(w http.ResponseWriter, r *http.Request) {
+	userID := userFrom(r.Context()).ID
+	out := make([]playlistView, 0, autoplaylists.DiscoverPlaylistSlots)
+	for slot := range autoplaylists.DiscoverPlaylistSlots {
+		p, err := h.Playlists.FindFederated(r.Context(), autoplaylists.SourceDiscoverPlaylist, autoplaylists.DiscoverPlaylistExternalID(userID, slot))
+		if err == nil && p.SongCount > 0 {
+			out = append(out, toPlaylistView(p, nil))
 		}
 	}
 	writeResource(w, http.StatusOK, map[string]any{"playlists": out})

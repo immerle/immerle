@@ -40,6 +40,7 @@ func redactSettings(rs models.RuntimeSettings) models.RuntimeSettings {
 	rs.Concerts.SkiddleAPIKey = ""
 	rs.LastFm.APIKey = ""
 	rs.LastFm.APISecret = ""
+	rs.Discover.PrivateKey = ""
 	return rs
 }
 
@@ -91,6 +92,12 @@ func (h *Handler) handleSettingsUpdate(w http.ResponseWriter, r *http.Request) {
 	next.Logs = merged.Logs
 	next.SpotifySearch = merged.SpotifySearch
 	next.Sonic = merged.Sonic
+	// Discover: only the toggles; the instance id and key come from registration.
+	next.Discover.Enabled = merged.Discover.Enabled
+	next.Discover.Scrobble = merged.Discover.Scrobble
+	next.Discover.MadeForYou = merged.Discover.MadeForYou
+	next.Discover.CuratedPlaylists = merged.Discover.CuratedPlaylists
+	next.Discover.SimilarTracks = merged.Discover.SimilarTracks
 	// Federation: only the operator-editable fields. The instance UUID, sqid, name
 	// and private key come from the hub (bootstrap / /admin/federation), never from
 	// this generic endpoint.

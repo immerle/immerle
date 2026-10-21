@@ -12,6 +12,7 @@ export const qk = {
   starred: ['starred'] as const,
   local: ['local'] as const,
   customPlaylists: ['customPlaylists'] as const,
+  discoverPlaylists: ['discoverPlaylists'] as const,
 
   smartPlaylists: ['smartPlaylists'] as const,
   smartPlaylist: (id: string) => ['smartPlaylists', id] as const,
