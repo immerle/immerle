@@ -624,7 +624,7 @@ func (s *Service) syncOrRemove(ctx context.Context, spec playlistSpec) bool {
 }
 
 func discoverRef(t discover.Track) persistence.FederatedTrackRef {
-	return persistence.FederatedTrackRef{MBID: t.MBID(), Artist: t.Artist, Title: t.Title}
+	return persistence.FederatedTrackRef{MBID: t.MBID(), Artist: t.MainArtist(), Title: t.Title}
 }
 
 func discoverRefs(tracks []discover.Track) []persistence.FederatedTrackRef {

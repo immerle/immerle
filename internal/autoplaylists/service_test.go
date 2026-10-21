@@ -609,7 +609,7 @@ func TestSyncDiscoverPublishesThenRemovesWhenToggledOff(t *testing.T) {
 	chart := discover.Playlist{IDs: []string{"imlid:c1"}, Kind: "chart", Name: "Top 50", Tracks: []discover.PlaylistEntry{{}}}
 	empty := discover.Playlist{IDs: []string{"imlid:e1"}, Kind: "playlist", Name: "Not ingested yet"}
 	curated := discover.Playlist{IDs: []string{"imlid:p1"}, Kind: "playlist", Name: "Rap FR", Tracks: []discover.PlaylistEntry{
-		{Track: discover.Track{IDs: []string{"imlid:x", "mbid:m1"}, Artist: "Vacra", Title: "Fille à Papa"}},
+		{Track: discover.Track{IDs: []string{"imlid:x", "mbid:m1"}, Artist: "Vacra feat. La Rvfleuze", Artists: []discover.Artist{{Name: "Vacra"}, {Name: "La Rvfleuze"}}, Title: "Fille à Papa"}},
 	}}
 	fake := &fakeDiscover{
 		on:     true,
@@ -630,8 +630,8 @@ func TestSyncDiscoverPublishesThenRemovesWhenToggledOff(t *testing.T) {
 	if err != nil || p.Name != "Rap FR" {
 		t.Fatalf("curated playlist: %+v, %v", p, err)
 	}
-	if got, _ := store.Playlists.Tracks(ctx, p.ID); len(got) != 1 || got[0].MBID != "m1" {
-		t.Fatalf("curated tracks = %+v, want the one track with its mbid", got)
+	if got, _ := store.Playlists.Tracks(ctx, p.ID); len(got) != 1 || got[0].MBID != "m1" || got[0].ArtistName != "Vacra" {
+		t.Fatalf("curated tracks = %+v, want the one track with its mbid, under its main artist", got)
 	}
 
 	fake.on = false
