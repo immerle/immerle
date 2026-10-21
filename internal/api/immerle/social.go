@@ -16,7 +16,7 @@ import (
 // @Description  Unauthenticated. Lets clients detect supported immerle extensions and whether first-run setup is still needed.
 // @Tags         discovery
 // @Produce      json
-// @Success      200  {object}  CapabilitiesDTO
+// @Success      200  {object}  capabilitiesView
 // @Router       /capabilities [get]
 func (h *Handler) handleCapabilities(w http.ResponseWriter, r *http.Request) {
 	federation := false
@@ -43,43 +43,77 @@ func (h *Handler) handleCapabilities(w http.ResponseWriter, r *http.Request) {
 	sonicMoods := h.Sonic.MoodsEnabled()
 	sonicAutoDJ := h.Sonic.AutoDJEnabled()
 	sonicDuplicates := h.Sonic.DuplicatesEnabled()
-	writeResource(w, http.StatusOK, map[string]any{
-		"server":          "immerle",
-		"protocolVersion": ProtocolVersion,
-		"capabilities": map[string]any{
-			"setup":                  map[string]any{"version": 1, "needed": needsSetup},
-			"profiles":               map[string]any{"version": 1, "selfEditable": []string{"displayName", "email"}},
-			"libraryStats":           map[string]any{"version": 1, "fields": []string{"artists", "albums", "tracks", "totalSize", "totalDuration"}},
-			"libraryAdmin":           map[string]any{"version": 1, "admin": true, "actions": []string{"list", "editMetadata", "editCover", "delete"}},
-			"activityFeed":           map[string]any{"version": 1, "privacy": []string{"public", "private"}},
-			"collaborativePlaylists": map[string]any{"version": 1},
-			"publicPlaylists":        map[string]any{"version": 1, "subscribe": true},
-			"playlistImport":         map[string]any{"version": 1, "sources": importer.Available()},
-			"shares":                 map[string]any{"version": 1},
-			"jam":                    map[string]any{"version": 1, "transports": []string{"sse"}},
-			"apiTokens":              map[string]any{"version": 1},
-			"devices":                map[string]any{"version": 1, "auth": "jwt"},
-			"theme":                  map[string]any{"version": 1, "properties": []string{"accentColor"}},
-			"dynamicProviders":       map[string]any{"version": 1, "kinds": []string{"http"}, "admin": true},
-			"runtimeSettings":        map[string]any{"version": 1, "admin": true, "groups": []string{"providers", "scan", "cleanup", "federation", "import", "smartPlaylists", "radio", "wrapped", "offline", "sonic"}},
-			"federation":             map[string]any{"version": 1, "enabled": federation},
-			"smartPlaylists":         map[string]any{"version": 1, "admin": true, "enabled": smart},
-			"internetRadio":          map[string]any{"version": 1, "admin": true, "enabled": radio},
-			"wrapped":                map[string]any{"version": 1, "admin": true, "enabled": wrapped},
-			"offlineDownloads":       map[string]any{"version": 1, "admin": true, "enabled": offline},
-			"hallOfFame":             map[string]any{"version": 1, "admin": true, "enabled": hallOfFame},
-			"concertDiscovery":       map[string]any{"version": 1, "admin": true, "enabled": concerts},
-			"bandcampImport":         map[string]any{"version": 1, "enabled": bandcampImport},
-			"lastFm":                 map[string]any{"version": 1, "admin": true, "enabled": lastFm},
-			"sonicAnalysis":          map[string]any{"version": 1, "admin": true, "enabled": sonicAnalysis},
-			"sonicRadio":             map[string]any{"version": 1, "admin": true, "enabled": sonicRadio},
-			"sonicAutoplay":          map[string]any{"version": 1, "admin": true, "enabled": sonicAutoplay},
-			"sonicMoods":             map[string]any{"version": 1, "admin": true, "enabled": sonicMoods},
-			"sonicAutoDj":            map[string]any{"version": 1, "admin": true, "enabled": sonicAutoDJ},
-			"sonicDuplicates":        map[string]any{"version": 1, "admin": true, "enabled": sonicDuplicates},
+	writeResource(w, http.StatusOK, capabilitiesView{
+		Server:          "immerle",
+		ProtocolVersion: ProtocolVersion,
+		Capabilities: map[string]capabilityView{
+			"setup":                  {Version: 1, Needed: flag(needsSetup)},
+			"profiles":               {Version: 1, SelfEditable: []string{"displayName", "email"}},
+			"libraryStats":           {Version: 1, Fields: []string{"artists", "albums", "tracks", "totalSize", "totalDuration"}},
+			"libraryAdmin":           {Version: 1, Admin: true, Actions: []string{"list", "editMetadata", "editCover", "delete"}},
+			"activityFeed":           {Version: 1, Privacy: []string{"public", "private"}},
+			"collaborativePlaylists": {Version: 1},
+			"publicPlaylists":        {Version: 1, Subscribe: true},
+			"playlistImport":         {Version: 1, Sources: importer.Available()},
+			"shares":                 {Version: 1},
+			"jam":                    {Version: 1, Transports: []string{"sse"}},
+			"apiTokens":              {Version: 1},
+			"devices":                {Version: 1, Auth: "jwt"},
+			"theme":                  {Version: 1, Properties: []string{"accentColor"}},
+			"dynamicProviders":       {Version: 1, Kinds: []string{"http"}, Admin: true},
+			"runtimeSettings":        {Version: 1, Admin: true, Groups: []string{"providers", "scan", "cleanup", "federation", "import", "smartPlaylists", "radio", "wrapped", "offline", "sonic"}},
+			"federation":             {Version: 1, Enabled: flag(federation)},
+			"smartPlaylists":         {Version: 1, Admin: true, Enabled: flag(smart)},
+			"internetRadio":          {Version: 1, Admin: true, Enabled: flag(radio)},
+			"wrapped":                {Version: 1, Admin: true, Enabled: flag(wrapped)},
+			"offlineDownloads":       {Version: 1, Admin: true, Enabled: flag(offline)},
+			"hallOfFame":             {Version: 1, Admin: true, Enabled: flag(hallOfFame)},
+			"concertDiscovery":       {Version: 1, Admin: true, Enabled: flag(concerts)},
+			"bandcampImport":         {Version: 1, Enabled: flag(bandcampImport)},
+			"lastFm":                 {Version: 1, Admin: true, Enabled: flag(lastFm)},
+			"sonicAnalysis":          {Version: 1, Admin: true, Enabled: flag(sonicAnalysis)},
+			"sonicRadio":             {Version: 1, Admin: true, Enabled: flag(sonicRadio)},
+			"sonicAutoplay":          {Version: 1, Admin: true, Enabled: flag(sonicAutoplay)},
+			"sonicMoods":             {Version: 1, Admin: true, Enabled: flag(sonicMoods)},
+			"sonicAutoDj":            {Version: 1, Admin: true, Enabled: flag(sonicAutoDJ)},
+			"sonicDuplicates":        {Version: 1, Admin: true, Enabled: flag(sonicDuplicates)},
 		},
 	})
 }
+
+// capabilitiesView is the capability-discovery payload. Clients mask every
+// feature the server does not advertise.
+type capabilitiesView struct {
+	Server          string                    `json:"server"`
+	ProtocolVersion string                    `json:"protocolVersion"`
+	Capabilities    map[string]capabilityView `json:"capabilities" validate:"required"`
+}
+
+// capabilityView is one advertised feature: every capability has a version,
+// the other fields are set only by the features they describe.
+type capabilityView struct {
+	Version int `json:"version"`
+	// Enabled is the live on/off state of an admin-togglable feature (or of a
+	// configured integration); absent for the always-on ones.
+	Enabled *bool `json:"enabled,omitempty" validate:"optional"`
+	// Admin marks a feature with admin-only controls.
+	Admin bool `json:"admin,omitempty" validate:"optional"`
+	// Needed (setup) is true until the first administrator is provisioned.
+	Needed       *bool    `json:"needed,omitempty" validate:"optional"`
+	Subscribe    bool     `json:"subscribe,omitempty" validate:"optional"`
+	Auth         string   `json:"auth,omitempty" validate:"optional"`
+	SelfEditable []string `json:"selfEditable,omitempty" validate:"optional"`
+	Fields       []string `json:"fields,omitempty" validate:"optional"`
+	Actions      []string `json:"actions,omitempty" validate:"optional"`
+	Privacy      []string `json:"privacy,omitempty" validate:"optional"`
+	Sources      []string `json:"sources,omitempty" validate:"optional"`
+	Transports   []string `json:"transports,omitempty" validate:"optional"`
+	Properties   []string `json:"properties,omitempty" validate:"optional"`
+	Kinds        []string `json:"kinds,omitempty" validate:"optional"`
+	Groups       []string `json:"groups,omitempty" validate:"optional"`
+}
+
+func flag(b bool) *bool { return &b }
 
 // handleActivity returns activity events visible to the caller, honoring each
 // author's privacy setting.
@@ -88,7 +122,7 @@ func (h *Handler) handleCapabilities(w http.ResponseWriter, r *http.Request) {
 // @Tags         activity
 // @Security     BearerAuth
 // @Produce      json
-// @Success      200  {array}  ActivityEventDTO
+// @Success      200  {array}  activityEventView
 // @Failure      401  {object}  errorResponse
 // @Failure      500  {object}  errorResponse
 // @Router       /activity [get]
@@ -110,13 +144,27 @@ func (h *Handler) handleActivity(w http.ResponseWriter, r *http.Request) {
 // about the item it references (title, artist, cover, …).
 type activityEventView struct {
 	models.ActivityEvent
-	Item map[string]any `json:"item,omitempty" validate:"optional"`
+	Item *activityItemView `json:"item,omitempty" validate:"optional"`
+}
+
+// activityItemView is the display detail of the item an event references:
+// a title for every type, plus the fields that type has (artist for an album,
+// album and duration for a track, ...).
+type activityItemView struct {
+	Title    string `json:"title"`
+	Artist   string `json:"artist,omitempty" validate:"optional"`
+	Album    string `json:"album,omitempty" validate:"optional"`
+	AlbumID  string `json:"albumId,omitempty" validate:"optional"`
+	ArtistID string `json:"artistId,omitempty" validate:"optional"`
+	CoverArt string `json:"coverArt,omitempty" validate:"optional"`
+	Duration int    `json:"duration,omitempty" validate:"optional"`
+	Year     int    `json:"year,omitempty" validate:"optional"`
 }
 
 // activityItem resolves display details for the item an event references. Returns
 // nil when the item can't be resolved (e.g. a remote favorite never downloaded,
 // or a deleted item) — the event still carries its ids.
-func (h *Handler) activityItem(ctx context.Context, e models.ActivityEvent) map[string]any {
+func (h *Handler) activityItem(ctx context.Context, e models.ActivityEvent) *activityItemView {
 	switch e.ItemType {
 	case models.ItemTrack:
 		if h.Catalog == nil {
@@ -137,14 +185,9 @@ func (h *Handler) activityItem(ctx context.Context, e models.ActivityEvent) map[
 		if cover == "" {
 			cover = t.AlbumID
 		}
-		return map[string]any{
-			"title":    t.Title,
-			"artist":   t.ArtistName,
-			"album":    t.AlbumName,
-			"albumId":  t.AlbumID,
-			"artistId": t.ArtistID,
-			"coverArt": cover,
-			"duration": t.Duration,
+		return &activityItemView{
+			Title: t.Title, Artist: t.ArtistName, Album: t.AlbumName, AlbumID: t.AlbumID,
+			ArtistID: t.ArtistID, CoverArt: cover, Duration: t.Duration,
 		}
 	case models.ItemAlbum:
 		if h.Catalog == nil {
@@ -158,7 +201,7 @@ func (h *Handler) activityItem(ctx context.Context, e models.ActivityEvent) map[
 		if cover == "" {
 			cover = a.ID
 		}
-		return map[string]any{"title": a.Name, "artist": a.ArtistName, "artistId": a.ArtistID, "coverArt": cover, "year": a.Year}
+		return &activityItemView{Title: a.Name, Artist: a.ArtistName, ArtistID: a.ArtistID, CoverArt: cover, Year: a.Year}
 	case models.ItemArtist:
 		if h.Catalog == nil {
 			return nil
@@ -167,13 +210,13 @@ func (h *Handler) activityItem(ctx context.Context, e models.ActivityEvent) map[
 		if err != nil {
 			return nil
 		}
-		return map[string]any{"title": a.Name}
+		return &activityItemView{Title: a.Name}
 	case models.ItemPlaylist:
 		p, err := h.Playlists.Get(ctx, e.ItemID)
 		if err != nil {
 			return nil
 		}
-		return map[string]any{"title": p.Name}
+		return &activityItemView{Title: p.Name}
 	}
 	return nil
 }
@@ -188,7 +231,7 @@ func (h *Handler) activityItem(ctx context.Context, e models.ActivityEvent) map[
 // @Tags         users
 // @Security     BearerAuth
 // @Produce      json
-// @Success      200  {object}  map[string][]UserSummaryDTO
+// @Success      200  {object}  userListView
 // @Failure      401  {object}  errorResponse
 // @Failure      500  {object}  errorResponse
 // @Router       /users [get]
@@ -198,11 +241,22 @@ func (h *Handler) handleListPublicUsers(w http.ResponseWriter, r *http.Request) 
 		writeInternal(w, err)
 		return
 	}
-	out := make([]UserSummaryDTO, 0, len(users))
+	out := make([]userSummaryView, 0, len(users))
 	for _, u := range users {
-		out = append(out, UserSummaryDTO{ID: u.ID, Username: u.Username, DisplayName: u.DisplayName})
+		out = append(out, userSummaryView{ID: u.ID, Username: u.Username, DisplayName: u.DisplayName})
 	}
-	writeResource(w, http.StatusOK, map[string]any{"users": out})
+	writeResource(w, http.StatusOK, userListView{Users: out})
+}
+
+// userSummaryView is a user's public identity.
+type userSummaryView struct {
+	ID          string `json:"id"`
+	Username    string `json:"username"`
+	DisplayName string `json:"displayName,omitempty" validate:"optional"`
+}
+
+type userListView struct {
+	Users []userSummaryView `json:"users" validate:"required"`
 }
 
 // resolveProfileUser resolves the {username} path param used by profile and
@@ -228,7 +282,7 @@ func (h *Handler) resolveProfileUser(r *http.Request) (models.User, error) {
 // @Security     BearerAuth
 // @Produce      json
 // @Param        username  path  string  true  "Target username, or 'me' for the caller"
-// @Success      200  {object}  ProfileDTO
+// @Success      200  {object}  profileView
 // @Failure      401  {object}  errorResponse
 // @Failure      404  {object}  errorResponse
 // @Failure      500  {object}  errorResponse
@@ -260,22 +314,17 @@ func (h *Handler) handleProfile(w http.ResponseWriter, r *http.Request) {
 		writeInternal(w, err)
 		return
 	}
-	playlists := make([]map[string]any, 0, len(lists))
+	playlists := make([]profilePlaylistView, 0, len(lists))
 	for _, p := range lists {
-		playlists = append(playlists, map[string]any{
-			"id":        p.ID,
-			"name":      p.Name,
-			"comment":   p.Comment,
-			"songCount": p.SongCount,
-			"duration":  p.Duration,
-			"coverArt":  p.CoverArt,
-			"coverArts": p.CoverArts,
+		playlists = append(playlists, profilePlaylistView{
+			ID: p.ID, Name: p.Name, Comment: p.Comment, SongCount: p.SongCount,
+			Duration: p.Duration, CoverArt: p.CoverArt, CoverArts: p.CoverArts,
 		})
 	}
 
 	isSelf := target.ID == caller.ID
 
-	stats := ProfileStatsDTO{Playlists: len(playlists)}
+	stats := profileStatsView{Playlists: len(playlists)}
 	if h.Wrapped != nil {
 		if plays, seconds, err := h.Wrapped.Totals(r.Context(), target.ID); err == nil {
 			stats.Plays = plays
@@ -283,17 +332,12 @@ func (h *Handler) handleProfile(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	resp := map[string]any{
-		"user": map[string]any{
-			"id":          target.ID,
-			"username":    target.Username,
-			"displayName": target.DisplayName,
-			"isAdmin":     target.IsAdmin,
-		},
-		"isSelf":    isSelf,
-		"activity":  activity,
-		"playlists": playlists,
-		"stats":     stats,
+	resp := profileView{
+		User:      profileUserView{ID: target.ID, Username: target.Username, DisplayName: target.DisplayName, IsAdmin: target.IsAdmin},
+		IsSelf:    isSelf,
+		Activity:  activity,
+		Playlists: playlists,
+		Stats:     stats,
 	}
 
 	// The top of the target's Hall of Fame, omitted entirely when it's empty
@@ -304,14 +348,52 @@ func (h *Handler) handleProfile(w http.ResponseWriter, r *http.Request) {
 			if len(top) > 3 {
 				top = top[:3]
 			}
-			resp["hallOfFame"] = map[string]any{
-				"top":   hallOfFameEntriesToSongViews(top),
-				"total": len(d.Entries),
-			}
+			resp.HallOfFame = &profileHallOfFameView{Top: hallOfFameEntriesToSongViews(top), Total: len(d.Entries)}
 		}
 	}
 
 	writeResource(w, http.StatusOK, resp)
+}
+
+// profileView is a user's public profile.
+type profileView struct {
+	User      profileUserView       `json:"user"`
+	IsSelf    bool                  `json:"isSelf"`
+	Activity  []activityEventView   `json:"activity" validate:"required"`
+	Playlists []profilePlaylistView `json:"playlists" validate:"required"`
+	Stats     profileStatsView      `json:"stats"`
+	// HallOfFame is the top 3 of the user's Hall of Fame, absent when empty.
+	HallOfFame *profileHallOfFameView `json:"hallOfFame,omitempty" validate:"optional"`
+}
+
+type profileUserView struct {
+	ID          string `json:"id"`
+	Username    string `json:"username"`
+	DisplayName string `json:"displayName"`
+	IsAdmin     bool   `json:"isAdmin"`
+}
+
+// profilePlaylistView is one of the user's public playlists.
+type profilePlaylistView struct {
+	ID        string   `json:"id"`
+	Name      string   `json:"name"`
+	Comment   string   `json:"comment"`
+	SongCount int      `json:"songCount"`
+	Duration  int      `json:"duration"`
+	CoverArt  string   `json:"coverArt"`
+	CoverArts []string `json:"coverArts,omitempty" validate:"optional"`
+}
+
+// profileStatsView is the profile's all-time listening totals.
+type profileStatsView struct {
+	Plays         int   `json:"plays"`
+	ListenSeconds int64 `json:"listenSeconds"`
+	Playlists     int   `json:"playlists"`
+}
+
+type profileHallOfFameView struct {
+	Top   []songView `json:"top" validate:"required"`
+	Total int        `json:"total"`
 }
 
 // addCollaboratorBody is the body for POST /playlists/{id}/collaborators.
@@ -329,7 +411,7 @@ type addCollaboratorBody struct {
 // @Produce      json
 // @Param        id    path  string               true  "Playlist id"
 // @Param        body  body  addCollaboratorBody  true  "User to grant edit rights"
-// @Success      201  {object}  apiError  "added"
+// @Success      201  {object}  collaboratorView  "added"
 // @Failure      400  {object}  errorResponse
 // @Failure      401  {object}  errorResponse
 // @Failure      403  {object}  errorResponse
@@ -370,5 +452,10 @@ func (h *Handler) handleAddCollaborator(w http.ResponseWriter, r *http.Request) 
 		writeInternal(w, err)
 		return
 	}
-	writeResource(w, http.StatusCreated, map[string]any{"collaborator": collaborator.Username})
+	writeResource(w, http.StatusCreated, collaboratorView{Collaborator: collaborator.Username})
+}
+
+// collaboratorView names the user just granted edit rights.
+type collaboratorView struct {
+	Collaborator string `json:"collaborator"`
 }

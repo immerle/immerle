@@ -10,7 +10,7 @@ import { Button, Card, EmptyState, Field, Loading, SectionHeader } from '../../s
 import { Ionicon } from '../../src/components/Ionicon';
 import { CoverArt } from '../../src/components/CoverArt';
 import { colorFor } from '../../src/components/AdminUI';
-import { ActivityEventDTO, UserSummaryDTO } from '../../src/api/immerleApi';
+import { ActivityEventView, UserSummaryView } from '../../src/api/immerleApi';
 import { useColors } from '../../src/theme/colors';
 import { formatRelativeTime } from '../../src/utils/format';
 import { useT } from '../../src/i18n/store';
@@ -32,7 +32,7 @@ function activityStyle(type?: string): { icon: string; color: string } {
   }
 }
 
-function activityVerb(e: ActivityEventDTO, t: (key: string) => string): string {
+function activityVerb(e: ActivityEventView, t: (key: string) => string): string {
   switch (e.type) {
     case 'listen':
     case 'scrobble':
@@ -265,7 +265,7 @@ export default function Social() {
 
 /** One row of the member directory: avatar initial, display name/handle, tap
  * to open their profile. */
-function MemberRow({ user, first, isSelf }: { user: UserSummaryDTO; first: boolean; isSelf: boolean }) {
+function MemberRow({ user, first, isSelf }: { user: UserSummaryView; first: boolean; isSelf: boolean }) {
   const t = useT();
   const colors = useColors();
   const name = user.displayName || user.username || t('social.profile.fallbackName');
@@ -295,7 +295,7 @@ function MemberRow({ user, first, isSelf }: { user: UserSummaryDTO; first: boole
   );
 }
 
-function ActivityRow({ event, first }: { event: ActivityEventDTO; first: boolean }) {
+function ActivityRow({ event, first }: { event: ActivityEventView; first: boolean }) {
   const t = useT();
   const { icon, color } = activityStyle(event.type);
   const item = event.item;

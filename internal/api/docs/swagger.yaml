@@ -1,58 +1,5 @@
 components:
   schemas:
-    immerle.ActivityEventDTO:
-      properties:
-        createdAt:
-          example: "2026-06-15T09:00:00Z"
-          type: string
-        displayName:
-          example: Bob Marley
-          type: string
-        id:
-          type: string
-        item:
-          $ref: '#/components/schemas/immerle.ActivityItemDTO'
-        itemId:
-          type: string
-        itemType:
-          example: track
-          type: string
-        privacy:
-          example: public
-          type: string
-        type:
-          example: listen
-          type: string
-        userId:
-          type: string
-        username:
-          example: bob
-          type: string
-      type: object
-    immerle.ActivityItemDTO:
-      properties:
-        album:
-          example: Discovery
-          type: string
-        albumId:
-          type: string
-        artist:
-          example: Daft Punk
-          type: string
-        artistId:
-          type: string
-        coverArt:
-          type: string
-        duration:
-          example: 320
-          type: integer
-        title:
-          example: One More Time
-          type: string
-        year:
-          example: 2001
-          type: integer
-      type: object
     immerle.AutoDJRequestDTO:
       properties:
         ids:
@@ -188,25 +135,6 @@ components:
           type: boolean
       required:
       - connected
-      type: object
-    immerle.CapabilitiesDTO:
-      properties:
-        capabilities:
-          additionalProperties:
-            $ref: '#/components/schemas/immerle.CapabilityDTO'
-          type: object
-        protocolVersion:
-          example: 1.0.0
-          type: string
-        server:
-          example: immerle
-          type: string
-      type: object
-    immerle.CapabilityDTO:
-      properties:
-        version:
-          example: 1
-          type: integer
       type: object
     immerle.ChartsSyncDTO:
       properties:
@@ -441,90 +369,6 @@ components:
         ok:
           example: true
           type: boolean
-      type: object
-    immerle.ProfileDTO:
-      properties:
-        activity:
-          items:
-            $ref: '#/components/schemas/immerle.ActivityEventDTO'
-          type: array
-          uniqueItems: false
-        hallOfFame:
-          $ref: '#/components/schemas/immerle.ProfileHallOfFameDTO'
-        isSelf:
-          example: false
-          type: boolean
-        playlists:
-          items:
-            $ref: '#/components/schemas/immerle.ProfilePlaylistDTO'
-          type: array
-          uniqueItems: false
-        stats:
-          $ref: '#/components/schemas/immerle.ProfileStatsDTO'
-        user:
-          properties:
-            displayName:
-              example: Bob Marley
-              type: string
-            id:
-              type: string
-            isAdmin:
-              example: false
-              type: boolean
-            username:
-              example: bob
-              type: string
-          type: object
-      type: object
-    immerle.ProfileHallOfFameDTO:
-      properties:
-        top:
-          items:
-            $ref: '#/components/schemas/immerle.songView'
-          type: array
-          uniqueItems: false
-        total:
-          example: 12
-          type: integer
-      type: object
-    immerle.ProfilePlaylistDTO:
-      properties:
-        comment:
-          type: string
-        coverArt:
-          type: string
-        coverArts:
-          items:
-            type: string
-          type: array
-          uniqueItems: false
-        duration:
-          example: 5400
-          type: integer
-        id:
-          type: string
-        name:
-          example: Summer vibes
-          type: string
-        songCount:
-          example: 24
-          type: integer
-      type: object
-    immerle.ProfileStatsDTO:
-      properties:
-        listenSeconds:
-          example: 432000
-          type: integer
-        playlists:
-          example: 5
-          type: integer
-        plays:
-          example: 1234
-          type: integer
-      required:
-      - listenSeconds
-      - playlists
-      - plays
       type: object
     immerle.ProviderCapabilityDTO:
       properties:
@@ -908,20 +752,6 @@ components:
           example: kilian
           type: string
       type: object
-    immerle.UserSummaryDTO:
-      properties:
-        displayName:
-          example: Bob Marley
-          type: string
-        id:
-          type: string
-        username:
-          example: bob
-          type: string
-      required:
-      - id
-      - username
-      type: object
     immerle.WrappedCountDTO:
       properties:
         name:
@@ -1006,6 +836,64 @@ components:
       - language
       - listenBrainzToken
       - username
+      type: object
+    immerle.activityEventView:
+      properties:
+        createdAt:
+          type: string
+        displayName:
+          description: |-
+            DisplayName is the author's free-text UI name (empty → client falls back to
+            Username).
+          type: string
+        id:
+          type: string
+        item:
+          $ref: '#/components/schemas/immerle.activityItemView'
+        itemId:
+          type: string
+        itemType:
+          $ref: '#/components/schemas/models.ItemType'
+        privacy:
+          description: Privacy is "public" or "private".
+          type: string
+        type:
+          description: Type is "listen", "add", "favorite", etc.
+          type: string
+        userId:
+          type: string
+        username:
+          type: string
+      required:
+      - createdAt
+      - id
+      - itemId
+      - itemType
+      - privacy
+      - type
+      - userId
+      - username
+      type: object
+    immerle.activityItemView:
+      properties:
+        album:
+          type: string
+        albumId:
+          type: string
+        artist:
+          type: string
+        artistId:
+          type: string
+        coverArt:
+          type: string
+        duration:
+          type: integer
+        title:
+          type: string
+        year:
+          type: integer
+      required:
+      - title
       type: object
     immerle.addCollaboratorBody:
       properties:
@@ -1199,6 +1087,88 @@ components:
         itemType:
           type: string
       type: object
+    immerle.capabilitiesView:
+      properties:
+        capabilities:
+          additionalProperties:
+            $ref: '#/components/schemas/immerle.capabilityView'
+          type: object
+        protocolVersion:
+          type: string
+        server:
+          type: string
+      required:
+      - capabilities
+      - protocolVersion
+      - server
+      type: object
+    immerle.capabilityView:
+      properties:
+        actions:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+        admin:
+          description: Admin marks a feature with admin-only controls.
+          type: boolean
+        auth:
+          type: string
+        enabled:
+          description: |-
+            Enabled is the live on/off state of an admin-togglable feature (or of a
+            configured integration); absent for the always-on ones.
+          type: boolean
+        fields:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+        groups:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+        kinds:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+        needed:
+          description: Needed (setup) is true until the first administrator is provisioned.
+          type: boolean
+        privacy:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+        properties:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+        selfEditable:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+        sources:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+        subscribe:
+          type: boolean
+        transports:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+        version:
+          type: integer
+      required:
+      - version
+      type: object
     immerle.channelListView:
       properties:
         channels:
@@ -1242,6 +1212,13 @@ components:
       properties:
         enabled:
           type: boolean
+      type: object
+    immerle.collaboratorView:
+      properties:
+        collaborator:
+          type: string
+      required:
+      - collaborator
       type: object
     immerle.commandView:
       description: |-
@@ -2010,6 +1987,104 @@ components:
       - source
       - title
       type: object
+    immerle.profileHallOfFameView:
+      description: HallOfFame is the top 3 of the user's Hall of Fame, absent when
+        empty.
+      properties:
+        top:
+          items:
+            $ref: '#/components/schemas/immerle.songView'
+          type: array
+          uniqueItems: false
+        total:
+          type: integer
+      required:
+      - top
+      - total
+      type: object
+    immerle.profilePlaylistView:
+      properties:
+        comment:
+          type: string
+        coverArt:
+          type: string
+        coverArts:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+        duration:
+          type: integer
+        id:
+          type: string
+        name:
+          type: string
+        songCount:
+          type: integer
+      required:
+      - comment
+      - coverArt
+      - duration
+      - id
+      - name
+      - songCount
+      type: object
+    immerle.profileStatsView:
+      properties:
+        listenSeconds:
+          type: integer
+        playlists:
+          type: integer
+        plays:
+          type: integer
+      required:
+      - listenSeconds
+      - playlists
+      - plays
+      type: object
+    immerle.profileUserView:
+      properties:
+        displayName:
+          type: string
+        id:
+          type: string
+        isAdmin:
+          type: boolean
+        username:
+          type: string
+      required:
+      - displayName
+      - id
+      - isAdmin
+      - username
+      type: object
+    immerle.profileView:
+      properties:
+        activity:
+          items:
+            $ref: '#/components/schemas/immerle.activityEventView'
+          type: array
+          uniqueItems: false
+        hallOfFame:
+          $ref: '#/components/schemas/immerle.profileHallOfFameView'
+        isSelf:
+          type: boolean
+        playlists:
+          items:
+            $ref: '#/components/schemas/immerle.profilePlaylistView'
+          type: array
+          uniqueItems: false
+        stats:
+          $ref: '#/components/schemas/immerle.profileStatsView'
+        user:
+          $ref: '#/components/schemas/immerle.profileUserView'
+      required:
+      - activity
+      - isSelf
+      - playlists
+      - stats
+      - user
+      type: object
     immerle.publicPlaylistView:
       properties:
         autoPlaylistKind:
@@ -2547,6 +2622,40 @@ components:
         name:
           type: string
       type: object
+    immerle.userListView:
+      properties:
+        users:
+          items:
+            $ref: '#/components/schemas/immerle.userSummaryView'
+          type: array
+          uniqueItems: false
+      required:
+      - users
+      type: object
+    immerle.userSummaryView:
+      properties:
+        displayName:
+          type: string
+        id:
+          type: string
+        username:
+          type: string
+      required:
+      - id
+      - username
+      type: object
+    models.ItemType:
+      enum:
+      - artist
+      - album
+      - track
+      - playlist
+      type: string
+      x-enum-varnames:
+      - ItemArtist
+      - ItemAlbum
+      - ItemTrack
+      - ItemPlaylist
     models.JamInvite:
       properties:
         createdAt:
@@ -2737,7 +2846,7 @@ paths:
             application/json:
               schema:
                 items:
-                  $ref: '#/components/schemas/immerle.ActivityEventDTO'
+                  $ref: '#/components/schemas/immerle.activityEventView'
                 type: array
           description: OK
         "401":
@@ -5253,7 +5362,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.CapabilitiesDTO'
+                $ref: '#/components/schemas/immerle.capabilitiesView'
           description: OK
       summary: Capability discovery
       tags:
@@ -7396,7 +7505,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.apiError'
+                $ref: '#/components/schemas/immerle.collaboratorView'
           description: added
         "400":
           content:
@@ -9142,11 +9251,7 @@ paths:
           content:
             application/json:
               schema:
-                additionalProperties:
-                  items:
-                    $ref: '#/components/schemas/immerle.UserSummaryDTO'
-                  type: array
-                type: object
+                $ref: '#/components/schemas/immerle.userListView'
           description: OK
         "401":
           content:
@@ -9183,7 +9288,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.ProfileDTO'
+                $ref: '#/components/schemas/immerle.profileView'
           description: OK
         "401":
           content:

@@ -27,7 +27,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ActivityEventDTO"][];
+                        "application/json": components["schemas"]["immerle.activityEventView"][];
                     };
                 };
                 /** @description Unauthorized */
@@ -4037,7 +4037,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.CapabilitiesDTO"];
+                        "application/json": components["schemas"]["immerle.capabilitiesView"];
                     };
                 };
             };
@@ -7606,7 +7606,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.apiError"];
+                        "application/json": components["schemas"]["immerle.collaboratorView"];
                     };
                 };
                 /** @description Bad Request */
@@ -10342,9 +10342,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            [key: string]: components["schemas"]["immerle.UserSummaryDTO"][];
-                        };
+                        "application/json": components["schemas"]["immerle.userListView"];
                     };
                 };
                 /** @description Unauthorized */
@@ -10404,7 +10402,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ProfileDTO"];
+                        "application/json": components["schemas"]["immerle.profileView"];
                     };
                 };
                 /** @description Unauthorized */
@@ -10565,39 +10563,6 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        "immerle.ActivityEventDTO": {
-            /** @example 2026-06-15T09:00:00Z */
-            createdAt?: string;
-            /** @example Bob Marley */
-            displayName?: string;
-            id?: string;
-            item?: components["schemas"]["immerle.ActivityItemDTO"];
-            itemId?: string;
-            /** @example track */
-            itemType?: string;
-            /** @example public */
-            privacy?: string;
-            /** @example listen */
-            type?: string;
-            userId?: string;
-            /** @example bob */
-            username?: string;
-        };
-        "immerle.ActivityItemDTO": {
-            /** @example Discovery */
-            album?: string;
-            albumId?: string;
-            /** @example Daft Punk */
-            artist?: string;
-            artistId?: string;
-            coverArt?: string;
-            /** @example 320 */
-            duration?: number;
-            /** @example One More Time */
-            title?: string;
-            /** @example 2001 */
-            year?: number;
-        };
         "immerle.AutoDJRequestDTO": {
             /**
              * @description IDs are the track ids to order (a playlist, or the queue from the
@@ -10661,19 +10626,6 @@ export interface components {
             /** @example 2026-07-18T21:42:00Z */
             lastSyncedAt?: string;
             needsReconnect?: boolean;
-        };
-        "immerle.CapabilitiesDTO": {
-            capabilities?: {
-                [key: string]: components["schemas"]["immerle.CapabilityDTO"];
-            };
-            /** @example 1.0.0 */
-            protocolVersion?: string;
-            /** @example immerle */
-            server?: string;
-        };
-        "immerle.CapabilityDTO": {
-            /** @example 1 */
-            version?: number;
         };
         "immerle.ChartsSyncDTO": {
             /** @example 6 */
@@ -10813,48 +10765,6 @@ export interface components {
         "immerle.OkResponse": {
             /** @example true */
             ok?: boolean;
-        };
-        "immerle.ProfileDTO": {
-            activity?: components["schemas"]["immerle.ActivityEventDTO"][];
-            hallOfFame?: components["schemas"]["immerle.ProfileHallOfFameDTO"];
-            /** @example false */
-            isSelf?: boolean;
-            playlists?: components["schemas"]["immerle.ProfilePlaylistDTO"][];
-            stats?: components["schemas"]["immerle.ProfileStatsDTO"];
-            user?: {
-                /** @example Bob Marley */
-                displayName?: string;
-                id?: string;
-                /** @example false */
-                isAdmin?: boolean;
-                /** @example bob */
-                username?: string;
-            };
-        };
-        "immerle.ProfileHallOfFameDTO": {
-            top?: components["schemas"]["immerle.songView"][];
-            /** @example 12 */
-            total?: number;
-        };
-        "immerle.ProfilePlaylistDTO": {
-            comment?: string;
-            coverArt?: string;
-            coverArts?: string[];
-            /** @example 5400 */
-            duration?: number;
-            id?: string;
-            /** @example Summer vibes */
-            name?: string;
-            /** @example 24 */
-            songCount?: number;
-        };
-        "immerle.ProfileStatsDTO": {
-            /** @example 432000 */
-            listenSeconds: number;
-            /** @example 5 */
-            playlists: number;
-            /** @example 1234 */
-            plays: number;
         };
         "immerle.ProviderCapabilityDTO": {
             /** @example true */
@@ -11105,13 +11015,6 @@ export interface components {
             /** @example kilian */
             username?: string;
         };
-        "immerle.UserSummaryDTO": {
-            /** @example Bob Marley */
-            displayName?: string;
-            id: string;
-            /** @example bob */
-            username: string;
-        };
         "immerle.WrappedCountDTO": {
             /** @example Daft Punk */
             name?: string;
@@ -11152,6 +11055,34 @@ export interface components {
              */
             listenBrainzToken: string;
             username: string;
+        };
+        "immerle.activityEventView": {
+            createdAt: string;
+            /**
+             * @description DisplayName is the author's free-text UI name (empty → client falls back to
+             *     Username).
+             */
+            displayName?: string;
+            id: string;
+            item?: components["schemas"]["immerle.activityItemView"];
+            itemId: string;
+            itemType: components["schemas"]["models.ItemType"];
+            /** @description Privacy is "public" or "private". */
+            privacy: string;
+            /** @description Type is "listen", "add", "favorite", etc. */
+            type: string;
+            userId: string;
+            username: string;
+        };
+        "immerle.activityItemView": {
+            album?: string;
+            albumId?: string;
+            artist?: string;
+            artistId?: string;
+            coverArt?: string;
+            duration?: number;
+            title: string;
+            year?: number;
         };
         "immerle.addCollaboratorBody": {
             username?: string;
@@ -11234,6 +11165,36 @@ export interface components {
             itemTitle?: string;
             itemType?: string;
         };
+        "immerle.capabilitiesView": {
+            capabilities: {
+                [key: string]: components["schemas"]["immerle.capabilityView"];
+            };
+            protocolVersion: string;
+            server: string;
+        };
+        "immerle.capabilityView": {
+            actions?: string[];
+            /** @description Admin marks a feature with admin-only controls. */
+            admin?: boolean;
+            auth?: string;
+            /**
+             * @description Enabled is the live on/off state of an admin-togglable feature (or of a
+             *     configured integration); absent for the always-on ones.
+             */
+            enabled?: boolean;
+            fields?: string[];
+            groups?: string[];
+            kinds?: string[];
+            /** @description Needed (setup) is true until the first administrator is provisioned. */
+            needed?: boolean;
+            privacy?: string[];
+            properties?: string[];
+            selfEditable?: string[];
+            sources?: string[];
+            subscribe?: boolean;
+            transports?: string[];
+            version: number;
+        };
         "immerle.channelListView": {
             channels: components["schemas"]["immerle.channelView"][];
         };
@@ -11249,6 +11210,9 @@ export interface components {
         };
         "immerle.cleanupUpdateRequest": {
             enabled?: boolean;
+        };
+        "immerle.collaboratorView": {
+            collaborator: string;
         };
         /**
          * @description PendingCommand is a spectator's remote-control command for the active
@@ -11614,6 +11578,39 @@ export interface components {
             source: string;
             title: string;
         };
+        /** @description HallOfFame is the top 3 of the user's Hall of Fame, absent when empty. */
+        "immerle.profileHallOfFameView": {
+            top: components["schemas"]["immerle.songView"][];
+            total: number;
+        };
+        "immerle.profilePlaylistView": {
+            comment: string;
+            coverArt: string;
+            coverArts?: string[];
+            duration: number;
+            id: string;
+            name: string;
+            songCount: number;
+        };
+        "immerle.profileStatsView": {
+            listenSeconds: number;
+            playlists: number;
+            plays: number;
+        };
+        "immerle.profileUserView": {
+            displayName: string;
+            id: string;
+            isAdmin: boolean;
+            username: string;
+        };
+        "immerle.profileView": {
+            activity: components["schemas"]["immerle.activityEventView"][];
+            hallOfFame?: components["schemas"]["immerle.profileHallOfFameView"];
+            isSelf: boolean;
+            playlists: components["schemas"]["immerle.profilePlaylistView"][];
+            stats: components["schemas"]["immerle.profileStatsView"];
+            user: components["schemas"]["immerle.profileUserView"];
+        };
         "immerle.publicPlaylistView": {
             /**
              * @description AutoPlaylistKind identifies a server-generated playlist's stable kind
@@ -11873,6 +11870,16 @@ export interface components {
             kind?: string;
             name?: string;
         };
+        "immerle.userListView": {
+            users: components["schemas"]["immerle.userSummaryView"][];
+        };
+        "immerle.userSummaryView": {
+            displayName?: string;
+            id: string;
+            username: string;
+        };
+        /** @enum {string} */
+        "models.ItemType": "artist" | "album" | "track" | "playlist";
         "models.JamInvite": {
             createdAt: string;
             id: string;

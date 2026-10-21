@@ -12,7 +12,7 @@ import { Ionicon } from '../../src/components/Ionicon';
 import { usePlayer } from '../../src/audio/store';
 import { useAuth } from '../../src/auth/store';
 import { useJam } from '../../src/jam/store';
-import { ActivityEventDTO, ProfilePlaylistDTO } from '../../src/api/immerleApi';
+import { ActivityEventView, ProfilePlaylistView } from '../../src/api/immerleApi';
 import { Song } from '../../src/api/subsonic/types';
 import { formatRelativeTime, formatDuration } from '../../src/utils/format';
 import { ScrollRow } from '../../src/components/ScrollRow';
@@ -21,12 +21,12 @@ import { useWebTitle } from '../../src/utils/documentTitle';
 
 /** Listen-type events double as the "Recent plays" rail; the "Recent activity"
  * list below only shows the rest (add/like/playlist updates). */
-function isPlayEvent(e: ActivityEventDTO): boolean {
+function isPlayEvent(e: ActivityEventView): boolean {
   return e.type === 'listen' || e.type === 'scrobble';
 }
 
 /** First play of each distinct track, in feed order (most recent first). */
-function recentPlaySongs(activity: ActivityEventDTO[]): Song[] {
+function recentPlaySongs(activity: ActivityEventView[]): Song[] {
   const seen = new Set<string>();
   const out: Song[] = [];
   for (const e of activity) {
@@ -230,7 +230,7 @@ export default function Profile() {
   );
 }
 
-function ActivityItem({ event, first }: { event: ActivityEventDTO; first: boolean }) {
+function ActivityItem({ event, first }: { event: ActivityEventView; first: boolean }) {
   const t = useT();
   const { icon, color } = activityStyle(event.type);
   const item = event.item;
@@ -271,7 +271,7 @@ function ActivityItem({ event, first }: { event: ActivityEventDTO; first: boolea
   );
 }
 
-function PlaylistRow({ playlist, onPress }: { playlist: ProfilePlaylistDTO; onPress: () => void }) {
+function PlaylistRow({ playlist, onPress }: { playlist: ProfilePlaylistView; onPress: () => void }) {
   const t = useT();
   const songCount = playlist.songCount ?? 0;
   return (

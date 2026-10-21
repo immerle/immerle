@@ -28,7 +28,7 @@ import {
   toSubsonicUser,
 } from './catalog';
 import {
-  ActivityEventDTO,
+  ActivityEventView,
   APITokenView,
   ApiError,
   AccountView,
@@ -45,9 +45,8 @@ import {
   ImportDTO,
   ImportItemDTO,
   ImportSourceDTO,
-  ProfileHallOfFameDTO,
-  ProfileStatsDTO,
-  ProfilePlaylistDTO,
+  ProfileHallOfFameView,
+  ProfilePlaylistView,
   ProfileResponse,
   ProviderDTO,
   PublicPlaylistView,
@@ -55,7 +54,7 @@ import {
   SonicStatusDTO,
   SongSonicDTO,
   ThemeSettings,
-  UserSummaryDTO,
+  UserSummaryView,
 } from '../immerleApi';
 import {
   BandcampCollectionItem,
@@ -128,14 +127,9 @@ function toSmartPlaylist(v: SmartPlaylistView): SmartPlaylist {
 
 /** Maps a profile's embedded Hall-of-Fame-top-3 DTO, `undefined` when the
  * user's Hall of Fame is empty (the field is omitted server-side). */
-function toProfileHallOfFame(dto?: ProfileHallOfFameDTO): { top: Song[]; total: number } | undefined {
+function toProfileHallOfFame(dto?: ProfileHallOfFameView): { top: Song[]; total: number } | undefined {
   if (!dto) return undefined;
-  return { top: (dto.top ?? []).map(toSong), total: dto.total ?? 0 };
-}
-
-/** Maps the profile page's all-time stat row (plays, listening time, playlist count). */
-function toProfileStats(dto?: ProfileStatsDTO): { plays: number; listenSeconds: number; playlists: number } {
-  return { plays: dto?.plays ?? 0, listenSeconds: dto?.listenSeconds ?? 0, playlists: dto?.playlists ?? 0 };
+  return { top: dto.top.map(toSong), total: dto.total };
 }
 
 /** Normalize a provider DTO (all fields optional) into a complete {@link Provider}. */
@@ -1286,9 +1280,9 @@ export class ImmerleClient {
 
   // --- Social: activity (typed via OpenAPI) ---------------------------------
 
-  async getActivity(signal?: AbortSignal): Promise<ActivityEventDTO[]> {
+  async getActivity(signal?: AbortSignal): Promise<ActivityEventView[]> {
     const { data, error, response } = await this.api.GET('/activity', { signal });
-    if (error || !data) throw apiErr(error, 'activity_failed', response);
+    if (error) throw apiErr(error, 'activity_failed', response);
     return data;
   }
 
@@ -1425,23 +1419,16 @@ export class ImmerleClient {
       params: { path: { username: username ?? 'me' } },
       signal,
     });
-    if (error || !data) throw apiErr(error, 'profile_failed', response);
-    return {
-      user: data.user ?? {},
-      isSelf: data.isSelf ?? false,
-      activity: data.activity ?? [],
-      playlists: data.playlists ?? [],
-      stats: toProfileStats(data.stats),
-      hallOfFame: toProfileHallOfFame(data.hallOfFame),
-    };
+    if (error) throw apiErr(error, 'profile_failed', response);
+    return { ...data, hallOfFame: toProfileHallOfFame(data.hallOfFame) };
   }
 
   /** Every user's public identity (id, username, display name) — the member
    * directory, for browsing to a profile. */
-  async listUsers(signal?: AbortSignal): Promise<UserSummaryDTO[]> {
+  async listUsers(signal?: AbortSignal): Promise<UserSummaryView[]> {
     const { data, error, response } = await this.api.GET('/users', { signal });
-    if (error || !data) throw apiErr(error, 'users_failed', response);
-    return data.users ?? [];
+    if (error) throw apiErr(error, 'users_failed', response);
+    return data.users;
   }
 
   /** A user's full Hall of Fame (read-only unless it's the caller's own — see
@@ -1797,8 +1784,8 @@ export interface Account {
 export interface ProfileResult {
   user: NonNullable<ProfileResponse['user']>;
   isSelf: boolean;
-  activity: ActivityEventDTO[];
-  playlists: ProfilePlaylistDTO[];
+  activity: ActivityEventView[];
+  playlists: ProfilePlaylistView[];
   /** All-time listening stats + public playlist count. */
   stats: { plays: number; listenSeconds: number; playlists: number };
   /** Top 3 tracks + total count, omitted when the user's Hall of Fame is empty. */

@@ -1,15 +1,13 @@
 import { adaptCapabilities, probeCapabilities, SUBSONIC_ONLY_CAPABILITIES } from './capabilities';
-import type { CapabilitiesResponse } from '../immerleApi';
 
 describe('adaptCapabilities', () => {
   it('maps an empty capability map to the conservative feature set', () => {
-    const caps = adaptCapabilities({ ok: true, capabilities: {} } as CapabilitiesResponse);
+    const caps = adaptCapabilities({ server: 'immerle', protocolVersion: '1.0.0', capabilities: {} });
     expect(caps.features).toEqual(SUBSONIC_ONLY_CAPABILITIES.features);
   });
 
   it('enables only the features the server advertises, masking the rest', () => {
     const caps = adaptCapabilities({
-      ok: true,
       server: 'immerle',
       protocolVersion: '1.0.0',
       capabilities: {
@@ -18,7 +16,7 @@ describe('adaptCapabilities', () => {
         activityFeed: { version: 1 },
         collaborativePlaylists: { version: 1 },
       },
-    } as CapabilitiesResponse);
+    });
 
     expect(caps.version).toBe('1.0.0');
     expect(caps.features.federation).toBe(true);
@@ -34,9 +32,10 @@ describe('adaptCapabilities', () => {
 
   it('treats activityFeed or shares as social too', () => {
     const caps = adaptCapabilities({
-      ok: true,
+      server: 'immerle',
+      protocolVersion: '1.0.0',
       capabilities: { activityFeed: { version: 1 } },
-    } as CapabilitiesResponse);
+    });
     expect(caps.features.social).toBe(true);
   });
 
@@ -45,24 +44,26 @@ describe('adaptCapabilities', () => {
     // entry (isFeatureEnabled), without breaking the admin toggle UI, which
     // needs the feature to stay "supported" (has) so it can be switched back on.
     const caps = adaptCapabilities({
-      ok: true,
+      server: 'immerle',
+      protocolVersion: '1.0.0',
       capabilities: { hallOfFame: { version: 1, admin: true, enabled: false } },
-    } as CapabilitiesResponse);
+    });
     expect(caps.features.hallOfFame).toBe(true);
     expect(caps.toggles.hallOfFame).toBe(false);
   });
 
   it('reports a togglable feature enabled when the server says so', () => {
     const caps = adaptCapabilities({
-      ok: true,
+      server: 'immerle',
+      protocolVersion: '1.0.0',
       capabilities: { hallOfFame: { version: 1, admin: true, enabled: true } },
-    } as CapabilitiesResponse);
+    });
     expect(caps.features.hallOfFame).toBe(true);
     expect(caps.toggles.hallOfFame).toBe(true);
   });
 
   it('leaves toggles empty for an unadvertised feature', () => {
-    const caps = adaptCapabilities({ ok: true, capabilities: {} } as CapabilitiesResponse);
+    const caps = adaptCapabilities({ server: 'immerle', protocolVersion: '1.0.0', capabilities: {} });
     expect(caps.toggles.hallOfFame).toBeUndefined();
   });
 });

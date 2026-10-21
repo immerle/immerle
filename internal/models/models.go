@@ -790,7 +790,7 @@ type ActivityEvent struct {
 	Username string `json:"username"`
 	// DisplayName is the author's free-text UI name (empty → client falls back to
 	// Username).
-	DisplayName string `json:"displayName,omitempty"`
+	DisplayName string `json:"displayName,omitempty" validate:"optional"`
 	// Type is "listen", "add", "favorite", etc.
 	Type     string   `json:"type"`
 	ItemType ItemType `json:"itemType"`
