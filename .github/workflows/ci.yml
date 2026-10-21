@@ -16,21 +16,6 @@ permissions:
 jobs:
   build-test:
     runs-on: ubuntu-latest
-    # Throwaway Postgres so TestMigrate checks the migrations on both dialects.
-    services:
-      postgres:
-        image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
-        env:
-          POSTGRES_PASSWORD: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 2s
-          --health-timeout 5s
-          --health-retries 15
-    env:
-      IMMERLE_TEST_POSTGRES_DSN: postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
@@ -51,16 +36,54 @@ jobs:
       - name: Vet
         run: go vet ./...
 
-      - name: Test
-        run: go test -race ./...
-
-      - name: Test (Postgres)
+      # No -race here: the SQLite driver is pure Go, so the race detector would
+      # instrument the whole SQL engine (~10x slower). Race checks run in the
+      # Postgres job, where only our code and pgx are instrumented.
+      - name: Test (SQLite)
         run: go test ./...
-        env:
-          IMMERLE_TEST_DB_DSN: ${{ env.IMMERLE_TEST_POSTGRES_DSN }}
 
       - name: Build
         run: CGO_ENABLED=0 go build -o bin/immerle ./cmd/immerle
+
+  test-postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 15
+    env:
+      # TestMigrate checks the migrations on Postgres; IMMERLE_TEST_DB_DSN runs
+      # the whole suite against it.
+      IMMERLE_TEST_POSTGRES_DSN: postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable
+      IMMERLE_TEST_DB_DSN: postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Set up Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version: "1.27.3"
+          cache: true
+
+      # Throwaway server: durability only costs fsyncs on every test commit.
+      - name: Tune Postgres for tests
+        run: >-
+          psql "$IMMERLE_TEST_DB_DSN"
+          -c "ALTER SYSTEM SET fsync = off"
+          -c "ALTER SYSTEM SET synchronous_commit = off"
+          -c "ALTER SYSTEM SET full_page_writes = off"
+          -c "SELECT pg_reload_conf()"
+
+      - name: Test (Postgres, race)
+        run: go test -race ./...
 
   build-cli:
     # Cross-compiles the iml terminal client for every release target. oto/v3

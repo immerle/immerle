@@ -5,9 +5,12 @@ package db
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
 	"embed"
+	"encoding/hex"
 	"fmt"
+	"io/fs"
 	"strconv"
 	"time"
 
@@ -88,6 +91,25 @@ func (db *DB) Migrate(ctx context.Context) error {
 		return fmt.Errorf("apply migrations: %w", err)
 	}
 	return nil
+}
+
+// MigrationsFingerprint identifies the embedded SQL migration set. Tests key
+// their cached, pre-migrated Postgres template on it.
+func MigrationsFingerprint() string {
+	h := sha256.New()
+	_ = fs.WalkDir(migrationFS, "migrations", func(path string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return err
+		}
+		b, err := migrationFS.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		h.Write([]byte(path))
+		h.Write(b)
+		return nil
+	})
+	return hex.EncodeToString(h.Sum(nil))[:12]
 }
 
 // Rebind converts '?' placeholders to the dialect's positional form. SQLite uses
