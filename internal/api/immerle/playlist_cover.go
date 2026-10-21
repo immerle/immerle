@@ -17,6 +17,19 @@ import (
 // handlePlaylistCover replaces a playlist's cover with an uploaded image
 // (multipart field "file"). Owner-only. Mirrors handleTrackCover; bypasses the
 // typed client like all cover uploads.
+//
+// @Summary      Upload a playlist cover
+// @Tags         playlists
+// @Security     BearerAuth
+// @Accept       multipart/form-data
+// @Produce      json
+// @Param        id    path      string  true  "Playlist id"
+// @Param        file  formData  file    true  "Cover image (jpeg/png/gif/webp)"
+// @Success      200  {object}  playlistView
+// @Failure      400  {object}  errorResponse
+// @Failure      403  {object}  errorResponse
+// @Failure      404  {object}  errorResponse
+// @Router       /playlists/{id}/cover [put]
 func (h *Handler) handlePlaylistCover(w http.ResponseWriter, r *http.Request) {
 	p, ok := h.coverTarget(w, r)
 	if !ok {
@@ -32,6 +45,20 @@ func (h *Handler) handlePlaylistCover(w http.ResponseWriter, r *http.Request) {
 // handlePlaylistCoverGenerate renders a cover from a JSON spec (multipart field
 // "spec", covergen.Spec) plus an optional background image (field "file").
 // Owner-only.
+//
+// @Summary      Generate a playlist cover
+// @Tags         playlists
+// @Security     BearerAuth
+// @Accept       multipart/form-data
+// @Produce      json
+// @Param        id    path      string  true   "Playlist id"
+// @Param        spec  formData  string  true   "Cover spec (JSON, covergen.Spec)"
+// @Param        file  formData  file    false  "Background image"
+// @Success      200  {object}  playlistView
+// @Failure      400  {object}  errorResponse
+// @Failure      403  {object}  errorResponse
+// @Failure      404  {object}  errorResponse
+// @Router       /playlists/{id}/cover/generate [post]
 func (h *Handler) handlePlaylistCoverGenerate(w http.ResponseWriter, r *http.Request) {
 	p, ok := h.coverTarget(w, r)
 	if !ok {

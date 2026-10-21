@@ -1068,48 +1068,6 @@
                 },
                 "type": "object"
             },
-            "immerle.PublicPlaylistDTO": {
-                "properties": {
-                    "autoPlaylistKind": {
-                        "description": "AutoPlaylistKind identifies a server-generated playlist's stable kind —\n\"Tendances de la semaine\" (autoplaylists.AutoPlaylistKinds) or a kworb\nchart (charts.SourceInstanceID) — for clients to render a translated\nlabel instead of the (French-only) stored Name. Empty for every other\npublic playlist.",
-                        "type": "string"
-                    },
-                    "comment": {
-                        "type": "string"
-                    },
-                    "coverArt": {
-                        "type": "string"
-                    },
-                    "coverArts": {
-                        "items": {
-                            "type": "string"
-                        },
-                        "type": "array",
-                        "uniqueItems": false
-                    },
-                    "duration": {
-                        "type": "integer"
-                    },
-                    "id": {
-                        "type": "string"
-                    },
-                    "name": {
-                        "example": "Editorial Picks",
-                        "type": "string"
-                    },
-                    "owner": {
-                        "example": "alice",
-                        "type": "string"
-                    },
-                    "songCount": {
-                        "type": "integer"
-                    },
-                    "subscribed": {
-                        "type": "boolean"
-                    }
-                },
-                "type": "object"
-            },
             "immerle.RuntimeSettingsDTO": {
                 "properties": {
                     "auth": {
@@ -2555,6 +2513,21 @@
                 },
                 "type": "object"
             },
+            "immerle.playlistListView": {
+                "properties": {
+                    "playlists": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.playlistView"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "required": [
+                    "playlists"
+                ],
+                "type": "object"
+            },
             "immerle.playlistTracksRequest": {
                 "properties": {
                     "ids": {
@@ -2811,6 +2784,58 @@
                 ],
                 "type": "object"
             },
+            "immerle.publicPlaylistView": {
+                "properties": {
+                    "autoPlaylistKind": {
+                        "description": "AutoPlaylistKind identifies a server-generated playlist's stable kind\n(see playlistView.AutoPlaylistKind). Empty for every other playlist.",
+                        "type": "string"
+                    },
+                    "comment": {
+                        "type": "string"
+                    },
+                    "coverArt": {
+                        "type": "string"
+                    },
+                    "coverArts": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "duration": {
+                        "type": "integer"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "owner": {
+                        "type": "string"
+                    },
+                    "songCount": {
+                        "type": "integer"
+                    },
+                    "subscribed": {
+                        "description": "Subscribed reports whether the caller already subscribes to it.",
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "autoPlaylistKind",
+                    "comment",
+                    "coverArt",
+                    "duration",
+                    "id",
+                    "name",
+                    "owner",
+                    "songCount",
+                    "subscribed"
+                ],
+                "type": "object"
+            },
             "immerle.queueEntryRequest": {
                 "properties": {
                     "album": {
@@ -2991,6 +3016,21 @@
                 },
                 "type": "object"
             },
+            "immerle.shareListView": {
+                "properties": {
+                    "shares": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.shareView"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "required": [
+                    "shares"
+                ],
+                "type": "object"
+            },
             "immerle.shareUpdateRequest": {
                 "properties": {
                     "description": {
@@ -3032,6 +3072,7 @@
                 },
                 "required": [
                     "createdAt",
+                    "entries",
                     "id",
                     "url",
                     "viewCount"
@@ -9649,13 +9690,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "additionalProperties": {
-                                        "items": {
-                                            "$ref": "#/components/schemas/immerle.playlistView"
-                                        },
-                                        "type": "array"
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/immerle.playlistListView"
                                 }
                             }
                         },
@@ -9691,13 +9726,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "additionalProperties": {
-                                        "items": {
-                                            "$ref": "#/components/schemas/immerle.playlistView"
-                                        },
-                                        "type": "array"
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/immerle.playlistListView"
                                 }
                             }
                         },
@@ -10717,13 +10746,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "additionalProperties": {
-                                        "items": {
-                                            "$ref": "#/components/schemas/immerle.playlistView"
-                                        },
-                                        "type": "array"
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/immerle.playlistListView"
                                 }
                             }
                         },
@@ -10823,7 +10846,7 @@
                             "application/json": {
                                 "schema": {
                                     "items": {
-                                        "$ref": "#/components/schemas/immerle.PublicPlaylistDTO"
+                                        "$ref": "#/components/schemas/immerle.publicPlaylistView"
                                     },
                                     "type": "array"
                                 }
@@ -11166,6 +11189,179 @@
                     }
                 ],
                 "summary": "Add a playlist collaborator",
+                "tags": [
+                    "playlists"
+                ]
+            }
+        },
+        "/playlists/{id}/cover": {
+            "put": {
+                "parameters": [
+                    {
+                        "description": "Playlist id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "title": "file",
+                                "type": "file"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "description": "Cover image (jpeg/png/gif/webp)",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.playlistView"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Upload a playlist cover",
+                "tags": [
+                    "playlists"
+                ]
+            }
+        },
+        "/playlists/{id}/cover/generate": {
+            "post": {
+                "parameters": [
+                    {
+                        "description": "Playlist id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "title": "spec",
+                                        "type": "string"
+                                    },
+                                    {
+                                        "title": "file",
+                                        "type": "file"
+                                    }
+                                ]
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "description": "Cover spec (JSON, covergen.Spec) | Background image"
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.playlistView"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Generate a playlist cover",
                 "tags": [
                     "playlists"
                 ]
@@ -12088,13 +12284,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "additionalProperties": {
-                                        "items": {
-                                            "$ref": "#/components/schemas/immerle.shareView"
-                                        },
-                                        "type": "array"
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/immerle.shareListView"
                                 }
                             }
                         },
