@@ -9355,6 +9355,15 @@ export interface paths {
                         "application/json": components["schemas"]["immerle.errorResponse"];
                     };
                 };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
             };
         };
         put?: never;
