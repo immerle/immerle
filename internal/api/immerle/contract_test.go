@@ -84,7 +84,9 @@ func checkOptionalFields(t *testing.T, fset *token.FileSet, typ ast.Expr) {
 			}
 			nilable := false
 			switch ty := fld.Type.(type) {
-			case *ast.StarExpr, *ast.ArrayType, *ast.MapType, *ast.InterfaceType:
+			case *ast.ArrayType:
+				nilable = ty.Len == nil // a fixed-size array ([12]int) is never null
+			case *ast.StarExpr, *ast.MapType, *ast.InterfaceType:
 				nilable = true
 			case *ast.Ident:
 				nilable = ty.Name == "any"

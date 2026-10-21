@@ -7,7 +7,7 @@ import { Badge, Button, Card, EmptyState, Field, Loading, SectionHeader } from '
 import { AdminHeader, AdminScroll, CardTitle } from '../src/components/AdminUI';
 import { PlaylistMosaic } from '../src/components/PlaylistMosaic';
 import { Ionicon } from '../src/components/Ionicon';
-import { ImportDTO } from '../src/api/immerleApi';
+import { PlaylistImport } from '../src/api/immerleApi';
 import { useT } from '../src/i18n/store';
 
 const SOURCE_LABELS: Record<string, string> = { spotify: 'Spotify', deezer: 'Deezer' };
@@ -111,7 +111,7 @@ export default function ImportScreen() {
   );
 }
 
-function ImportRow({ imp, covers, onPress }: { imp: ImportDTO; covers: string[]; onPress: () => void }) {
+function ImportRow({ imp, covers, onPress }: { imp: PlaylistImport; covers: string[]; onPress: () => void }) {
   const t = useT();
   const STATUS_LABELS: Record<string, string> = {
     pending: t('tools.import.statusPending'),

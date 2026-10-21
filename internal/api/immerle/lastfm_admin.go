@@ -9,12 +9,12 @@ import (
 // lastFmStatus is the admin view of Last.fm scrobbling config. The API
 // key/secret themselves are write-only (see redactSettings) — this only
 // reports whether they're set.
-func (h *Handler) lastFmStatus() LastFmAdminDTO {
+func (h *Handler) lastFmStatus() lastFmAdminView {
 	cfg := models.LastFmRuntime{}
 	if h.Settings != nil {
 		cfg = h.Settings.Get().LastFm
 	}
-	return LastFmAdminDTO{Enabled: cfg.Enabled, Configured: cfg.APIKey != "" && cfg.APISecret != ""}
+	return lastFmAdminView{Enabled: cfg.Enabled, Configured: cfg.APIKey != "" && cfg.APISecret != ""}
 }
 
 // handleLastFmAdmin reports the Last.fm scrobbling feature state.
@@ -23,7 +23,7 @@ func (h *Handler) lastFmStatus() LastFmAdminDTO {
 // @Tags     admin
 // @Security BearerAuth
 // @Produce  json
-// @Success  200  {object}  LastFmAdminDTO
+// @Success  200  {object}  lastFmAdminView
 // @Router   /admin/lastfm [get]
 func (h *Handler) handleLastFmAdmin(w http.ResponseWriter, r *http.Request) {
 	if !h.requireAdmin(w, r) {
@@ -51,7 +51,7 @@ type lastFmUpdateRequest struct {
 // @Accept   json
 // @Produce  json
 // @Param    body  body  lastFmUpdateRequest  true  "Fields to change"
-// @Success  200  {object}  LastFmAdminDTO
+// @Success  200  {object}  lastFmAdminView
 // @Failure  400  {object}  errorResponse
 // @Router   /admin/lastfm [put]
 func (h *Handler) handleLastFmAdminUpdate(w http.ResponseWriter, r *http.Request) {
@@ -82,4 +82,11 @@ func (h *Handler) handleLastFmAdminUpdate(w http.ResponseWriter, r *http.Request
 	}
 	h.Logger.Info("lastfm settings updated", "enabled", next.LastFm.Enabled, "by", userFrom(r.Context()).Username)
 	writeResource(w, http.StatusOK, h.lastFmStatus())
+}
+
+// lastFmAdminView is the admin view of Last.fm scrobbling config. The API
+// key/secret are write-only — this only reports whether they're set.
+type lastFmAdminView struct {
+	Enabled    bool `json:"enabled" example:"false"`
+	Configured bool `json:"configured" example:"false"`
 }

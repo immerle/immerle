@@ -382,14 +382,14 @@ type TrackSonic struct {
 type Concert struct {
 	ID            string     `json:"id"`
 	UserID        string     `json:"-"`
-	Source        string     `json:"source"` // "ticketmaster" | "skiddle"
+	Source        string     `json:"source" enums:"ticketmaster,skiddle"`
 	SourceEventID string     `json:"-"`
 	ArtistName    string     `json:"artistName"`
 	EventName     string     `json:"eventName"`
-	Venue         string     `json:"venue,omitempty"`
-	City          string     `json:"city,omitempty"`
+	Venue         string     `json:"venue,omitempty" validate:"optional"`
+	City          string     `json:"city,omitempty" validate:"optional"`
 	StartTime     time.Time  `json:"startTime"`
-	URL           string     `json:"url,omitempty"`
+	URL           string     `json:"url,omitempty" validate:"optional"`
 	DismissedAt   *time.Time `json:"-"`
 	CreatedAt     time.Time  `json:"-"`
 }
@@ -458,9 +458,9 @@ type Wrapped struct {
 	Year         int            `json:"year"`
 	TotalPlays   int            `json:"totalPlays"`
 	TotalSeconds int64          `json:"totalSeconds"`
-	TopTracks    []WrappedTrack `json:"topTracks"`
-	TopArtists   []WrappedCount `json:"topArtists"`
-	TopGenres    []WrappedCount `json:"topGenres"`
+	TopTracks    []WrappedTrack `json:"topTracks" validate:"required"`
+	TopArtists   []WrappedCount `json:"topArtists" validate:"required"`
+	TopGenres    []WrappedCount `json:"topGenres" validate:"required"`
 	// ByMonth is plays per calendar month, index 0 = January .. 11 = December.
 	ByMonth [12]int `json:"byMonth"`
 }
@@ -954,20 +954,20 @@ type Import struct {
 	// SourceRef is the source playlist identifier/URL supplied by the user.
 	SourceRef string `json:"sourceRef"`
 	// SourcePlaylistName is the playlist name as seen at the source.
-	SourcePlaylistName string `json:"sourcePlaylistName,omitempty"`
+	SourcePlaylistName string `json:"sourcePlaylistName,omitempty" validate:"optional"`
 	// PlaylistID is the immerle playlist created for this import.
-	PlaylistID string       `json:"playlistId,omitempty"`
+	PlaylistID string       `json:"playlistId,omitempty" validate:"optional"`
 	Status     ImportStatus `json:"status"`
 	Total      int          `json:"total"`
 	Matched    int          `json:"matched"`
 	Doubtful   int          `json:"doubtful"`
 	Missing    int          `json:"missing"`
 	Failed     int          `json:"failed"`
-	Error      string       `json:"error,omitempty"`
+	Error      string       `json:"error,omitempty" validate:"optional"`
 	CreatedAt  time.Time    `json:"createdAt"`
 	UpdatedAt  time.Time    `json:"updatedAt"`
 	// Items is populated only on a detail fetch.
-	Items []ImportItem `json:"items,omitempty"`
+	Items []ImportItem `json:"items,omitempty" validate:"optional"`
 }
 
 // ImportItem is one source track and the outcome of resolving it against the
@@ -978,25 +978,25 @@ type ImportItem struct {
 	Position     int              `json:"position"`
 	SourceTitle  string           `json:"sourceTitle"`
 	SourceArtist string           `json:"sourceArtist"`
-	SourceAlbum  string           `json:"sourceAlbum,omitempty"`
+	SourceAlbum  string           `json:"sourceAlbum,omitempty" validate:"optional"`
 	Status       ImportItemStatus `json:"status"`
 	// MatchedTrackID is the local track added to the playlist (matched items).
-	MatchedTrackID string `json:"matchedTrackId,omitempty"`
+	MatchedTrackID string `json:"matchedTrackId,omitempty" validate:"optional"`
 	// CandidateID is the provider (remote) track id of the best candidate found
 	// while resolving. For a doubtful item it lets the client preview/play the
 	// candidate (the stream endpoint accepts remote ids) and validate it without
 	// re-searching.
-	CandidateID string `json:"candidateTrackId,omitempty"`
+	CandidateID string `json:"candidateTrackId,omitempty" validate:"optional"`
 	// CandidateCoverArt is the candidate's cover-art id (a remote cover id usable
 	// directly with getCoverArt), so a doubtful item can show artwork.
-	CandidateCoverArt string `json:"candidateCoverArt,omitempty"`
+	CandidateCoverArt string `json:"candidateCoverArt,omitempty" validate:"optional"`
 	// ResolvedTitle/ResolvedArtist describe the chosen content-provider candidate.
-	ResolvedTitle  string `json:"resolvedTitle,omitempty"`
-	ResolvedArtist string `json:"resolvedArtist,omitempty"`
+	ResolvedTitle  string `json:"resolvedTitle,omitempty" validate:"optional"`
+	ResolvedArtist string `json:"resolvedArtist,omitempty" validate:"optional"`
 	// Confidence is the 0..1 string similarity of the chosen candidate to the
 	// source track (artist + title).
 	Confidence float64   `json:"confidence"`
-	Note       string    `json:"note,omitempty"`
+	Note       string    `json:"note,omitempty" validate:"optional"`
 	CreatedAt  time.Time `json:"createdAt"`
 	UpdatedAt  time.Time `json:"updatedAt"`
 }

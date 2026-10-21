@@ -15,8 +15,8 @@ func (h *Handler) hallOfFameEnabled() bool {
 }
 
 // hallOfFameStatus is the admin view of the feature toggle.
-func (h *Handler) hallOfFameStatus() map[string]any {
-	return map[string]any{"enabled": h.hallOfFameEnabled()}
+func (h *Handler) hallOfFameStatus() featureStatusView {
+	return featureStatusView{Enabled: h.hallOfFameEnabled()}
 }
 
 // handleHallOfFameAdmin reports whether the Hall of Fame feature is enabled.
@@ -25,7 +25,7 @@ func (h *Handler) hallOfFameStatus() map[string]any {
 // @Tags     admin
 // @Security BearerAuth
 // @Produce  json
-// @Success  200  {object}  map[string]bool
+// @Success  200  {object}  featureStatusView
 // @Router   /admin/hall-of-fame [get]
 func (h *Handler) handleHallOfFameAdmin(w http.ResponseWriter, r *http.Request) {
 	if !h.requireAdmin(w, r) {
@@ -42,7 +42,7 @@ func (h *Handler) handleHallOfFameAdmin(w http.ResponseWriter, r *http.Request) 
 // @Accept   json
 // @Produce  json
 // @Param    body  body  toggleRequest  true  "Enable or disable"
-// @Success  200  {object}  map[string]bool
+// @Success  200  {object}  featureStatusView
 // @Failure  400  {object}  errorResponse
 // @Router   /admin/hall-of-fame [put]
 func (h *Handler) handleHallOfFameToggle(w http.ResponseWriter, r *http.Request) {

@@ -15,7 +15,7 @@ import (
 // @Description  Unauthenticated. Reports whether the server still needs its first admin and whether a setup token is required.
 // @Tags         setup
 // @Produce      json
-// @Success      200  {object}  SetupStatusDTO
+// @Success      200  {object}  setupStatusView
 // @Failure      500  {object}  errorResponse
 // @Router       /setup [get]
 func (h *Handler) handleSetupStatus(w http.ResponseWriter, r *http.Request) {
@@ -24,21 +24,40 @@ func (h *Handler) handleSetupStatus(w http.ResponseWriter, r *http.Request) {
 		writeInternal(w, err)
 		return
 	}
-	writeResource(w, http.StatusOK, map[string]any{
-		"initialized":        initialized,
-		"needsSetup":         !initialized,
-		"userCount":          count,
-		"setupTokenRequired": !initialized && h.Setup.TokenRequired(),
+	writeResource(w, http.StatusOK, setupStatusView{
+		Initialized:        initialized,
+		NeedsSetup:         !initialized,
+		UserCount:          count,
+		SetupTokenRequired: !initialized && h.Setup.TokenRequired(),
 	})
+}
+
+// setupStatusView reports the first-run setup state.
+type setupStatusView struct {
+	Initialized bool `json:"initialized"`
+	NeedsSetup  bool `json:"needsSetup"`
+	UserCount   int  `json:"userCount"`
+	// SetupTokenRequired is true when POST /setup needs the token printed in
+	// the server logs.
+	SetupTokenRequired bool `json:"setupTokenRequired"`
+}
+
+// setupAdminView is the administrator POST /setup just created.
+type setupAdminView struct {
+	ID          string `json:"id"`
+	Username    string `json:"username"`
+	DisplayName string `json:"displayName"`
+	IsAdmin     bool   `json:"isAdmin"`
 }
 
 // setupInitRequest is the body accepted by POST /setup.
 type setupInitRequest struct {
 	Username    string `json:"username"`
 	Password    string `json:"password"`
-	Email       string `json:"email"`
-	DisplayName string `json:"displayName"`
-	SetupToken  string `json:"setupToken"`
+	Email       string `json:"email" validate:"optional"`
+	DisplayName string `json:"displayName" validate:"optional"`
+	// SetupToken is required only when GET /setup says setupTokenRequired.
+	SetupToken string `json:"setupToken" validate:"optional"`
 }
 
 // handleSetupInit creates the first admin account. It is public but self-locks
@@ -49,8 +68,8 @@ type setupInitRequest struct {
 // @Tags         setup
 // @Accept       json
 // @Produce      json
-// @Param        body  body  SetupInitRequest  true  "Initial admin credentials"
-// @Success      201  {object}  UserDTO
+// @Param        body  body  setupInitRequest  true  "Initial admin credentials"
+// @Success      201  {object}  setupAdminView
 // @Failure      400  {object}  errorResponse  "validation"
 // @Failure      401  {object}  errorResponse  "invalid_setup_token"
 // @Failure      409  {object}  errorResponse  "already_initialized"
@@ -66,12 +85,7 @@ func (h *Handler) handleSetupInit(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case err == nil:
 		h.Logger.Info("first admin created via setup", "username", user.Username)
-		writeResource(w, http.StatusCreated, map[string]any{
-			"id":          user.ID,
-			"username":    user.Username,
-			"displayName": user.DisplayName,
-			"isAdmin":     true,
-		})
+		writeResource(w, http.StatusCreated, setupAdminView{ID: user.ID, Username: user.Username, DisplayName: user.DisplayName, IsAdmin: true})
 	case errors.Is(err, core.ErrAlreadyInitialized):
 		writeError(w, http.StatusConflict, "already_initialized", "server is already initialized")
 	case errors.Is(err, core.ErrInvalidSetupToken):
