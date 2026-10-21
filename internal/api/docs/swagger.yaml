@@ -2493,6 +2493,11 @@ components:
       - total
       - tracks
       type: object
+    immerle.trackTitleRequest:
+      properties:
+        title:
+          type: string
+      type: object
     immerle.trackUpdateRequest:
       properties:
         discNo:
@@ -6119,6 +6124,26 @@ paths:
       summary: Get the caller's hosted Jam session
       tags:
       - jam
+  /library/local:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.songListView'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: List my uploaded tracks
+      tags:
+      - library
   /library/stats:
     get:
       description: 'Returns library-wide analytics: artist/album/track counts, total
@@ -6140,6 +6165,185 @@ paths:
       security:
       - BearerAuth: []
       summary: Library analytics
+      tags:
+      - library
+  /library/tracks/{id}:
+    delete:
+      parameters:
+      - description: Track id
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      responses:
+        "204":
+          description: No Content
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: not uploaded by the caller
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Not Found
+      security:
+      - BearerAuth: []
+      summary: Delete one of my uploaded tracks
+      tags:
+      - library
+    patch:
+      parameters:
+      - description: Track id
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/immerle.trackTitleRequest'
+                description: New title
+                summary: body
+        description: New title
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.songView'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Bad Request
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: not uploaded by the caller
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Not Found
+      security:
+      - BearerAuth: []
+      summary: Rename one of my uploaded tracks
+      tags:
+      - library
+  /library/tracks/{id}/cover:
+    put:
+      parameters:
+      - description: Track id
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              title: file
+              type: file
+          multipart/form-data:
+            schema:
+              type: object
+        description: Cover image
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.songView'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Bad Request
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: not uploaded by the caller
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Not Found
+        "415":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: not an image
+      security:
+      - BearerAuth: []
+      summary: Replace the cover of one of my uploaded tracks
+      tags:
+      - library
+  /library/uploads:
+    post:
+      description: Ingests one audio file (max 200 MiB) into the catalog, owned by
+        the caller.
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              title: file
+              type: file
+          multipart/form-data:
+            schema:
+              type: object
+        description: Audio file
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.songView'
+          description: Created
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: missing file or unreadable audio
+        "415":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: unsupported audio format
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: uploads not configured
+      security:
+      - BearerAuth: []
+      summary: Upload an audio file
       tags:
       - library
   /me:

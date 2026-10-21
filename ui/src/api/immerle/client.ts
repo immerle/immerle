@@ -33,6 +33,7 @@ import {
   ApiError,
   ErrorResponse,
   SmartPlaylistView,
+  SongView,
   createAuthedImmerleApi,
   CreateTokenResponse,
   fetchWithTimeout,
@@ -1660,32 +1661,36 @@ export class ImmerleClient {
 
   /** The tracks the caller uploaded ("local" virtual playlist), newest first. */
   async listLocalSongs(signal?: AbortSignal): Promise<Song[]> {
-    const data = await this.request<{ songs?: Song[] }>('GET', 'library/local', undefined, signal);
-    return data.songs ?? [];
+    const { data, error } = await this.api.GET('/library/local', { signal });
+    if (error) throw apiErr(error, 'library.local');
+    return data.songs.map(toSong);
   }
 
   /** Upload an audio file; returns the ingested track. Web: pass a File. */
   async uploadTrack(file: File, signal?: AbortSignal): Promise<Song> {
     const form = new FormData();
     form.append('file', file, file.name);
-    return this.uploadForm<Song>('POST', 'library/uploads', form, signal);
+    return toSong(await this.uploadForm<SongView>('POST', 'library/uploads', form, signal));
   }
 
   /** Rename one of the caller's uploaded tracks. */
   async renameTrack(id: string, title: string): Promise<Song> {
-    return this.request<Song>('PATCH', `library/tracks/${encodeURIComponent(id)}`, { title });
+    const { data, error } = await this.api.PATCH('/library/tracks/{id}', { params: { path: { id } }, body: { title } });
+    if (error) throw apiErr(error, 'library.renameTrack');
+    return toSong(data);
   }
 
   /** Replace the cover art of one of the caller's uploaded tracks. */
   async setTrackCover(id: string, image: File): Promise<Song> {
     const form = new FormData();
     form.append('file', image, image.name);
-    return this.uploadForm<Song>('PUT', `library/tracks/${encodeURIComponent(id)}/cover`, form);
+    return toSong(await this.uploadForm<SongView>('PUT', `library/tracks/${encodeURIComponent(id)}/cover`, form));
   }
 
   /** Delete one of the caller's uploaded tracks (catalog row + file). */
   async deleteTrack(id: string): Promise<void> {
-    await this.request<void>('DELETE', `library/tracks/${encodeURIComponent(id)}`);
+    const { error } = await this.api.DELETE('/library/tracks/{id}', { params: { path: { id } } });
+    if (error) throw apiErr(error, 'library.deleteTrack');
   }
 
   /**

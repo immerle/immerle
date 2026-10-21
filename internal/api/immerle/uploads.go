@@ -112,6 +112,14 @@ func toSongView(t models.Track) songView {
 }
 
 // handleLocalSongs lists the tracks the caller uploaded, newest first.
+//
+// @Summary      List my uploaded tracks
+// @Tags         library
+// @Security     BearerAuth
+// @Produce      json
+// @Success      200  {object}  songListView
+// @Failure      401  {object}  errorResponse
+// @Router       /library/local [get]
 func (h *Handler) handleLocalSongs(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
 	tracks, err := h.Catalog.ListUploadedBy(r.Context(), user.ID)
@@ -123,11 +131,24 @@ func (h *Handler) handleLocalSongs(w http.ResponseWriter, r *http.Request) {
 	for _, t := range tracks {
 		songs = append(songs, toSongView(t))
 	}
-	writeResource(w, http.StatusOK, map[string]any{"songs": songs})
+	writeResource(w, http.StatusOK, songList(songs))
 }
 
 // handleUpload ingests a single uploaded audio file into the catalog and marks
 // the caller as its owner.
+//
+// @Summary      Upload an audio file
+// @Description  Ingests one audio file (max 200 MiB) into the catalog, owned by the caller.
+// @Tags         library
+// @Security     BearerAuth
+// @Accept       multipart/form-data
+// @Produce      json
+// @Param        file  formData  file  true  "Audio file"
+// @Success      201  {object}  songView
+// @Failure      400  {object}  errorResponse  "missing file or unreadable audio"
+// @Failure      415  {object}  errorResponse  "unsupported audio format"
+// @Failure      503  {object}  errorResponse  "uploads not configured"
+// @Router       /library/uploads [post]
 func (h *Handler) handleUpload(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
 	if h.Scanner == nil {
@@ -183,6 +204,19 @@ type trackTitleRequest struct {
 }
 
 // handleTrackUpdate renames a track the caller uploaded.
+//
+// @Summary      Rename one of my uploaded tracks
+// @Tags         library
+// @Security     BearerAuth
+// @Accept       json
+// @Produce      json
+// @Param        id    path  string             true  "Track id"
+// @Param        body  body  trackTitleRequest  true  "New title"
+// @Success      200  {object}  songView
+// @Failure      400  {object}  errorResponse
+// @Failure      403  {object}  errorResponse  "not uploaded by the caller"
+// @Failure      404  {object}  errorResponse
+// @Router       /library/tracks/{id} [patch]
 func (h *Handler) handleTrackUpdate(w http.ResponseWriter, r *http.Request) {
 	t, ok := h.ownedTrack(w, r)
 	if !ok {
@@ -212,6 +246,20 @@ func (h *Handler) handleTrackUpdate(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleTrackCover replaces the cover art of a track the caller uploaded.
+//
+// @Summary      Replace the cover of one of my uploaded tracks
+// @Tags         library
+// @Security     BearerAuth
+// @Accept       multipart/form-data
+// @Produce      json
+// @Param        id    path      string  true  "Track id"
+// @Param        file  formData  file    true  "Cover image"
+// @Success      200  {object}  songView
+// @Failure      400  {object}  errorResponse
+// @Failure      403  {object}  errorResponse  "not uploaded by the caller"
+// @Failure      404  {object}  errorResponse
+// @Failure      415  {object}  errorResponse  "not an image"
+// @Router       /library/tracks/{id}/cover [put]
 func (h *Handler) handleTrackCover(w http.ResponseWriter, r *http.Request) {
 	t, ok := h.ownedTrack(w, r)
 	if !ok {
@@ -279,6 +327,15 @@ func (h *Handler) saveCustomCover(ctx context.Context, t models.Track, data []by
 
 // handleTrackDelete removes a track the caller uploaded: its catalog row, the
 // audio file on disk (so a rescan won't re-ingest it), and any custom cover.
+//
+// @Summary      Delete one of my uploaded tracks
+// @Tags         library
+// @Security     BearerAuth
+// @Param        id  path  string  true  "Track id"
+// @Success      204
+// @Failure      403  {object}  errorResponse  "not uploaded by the caller"
+// @Failure      404  {object}  errorResponse
+// @Router       /library/tracks/{id} [delete]
 func (h *Handler) handleTrackDelete(w http.ResponseWriter, r *http.Request) {
 	t, ok := h.ownedTrack(w, r)
 	if !ok {
@@ -303,8 +360,12 @@ func (h *Handler) handleTrackDelete(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) ownedTrack(w http.ResponseWriter, r *http.Request) (models.Track, bool) {
 	user := userFrom(r.Context())
 	t, err := h.Catalog.GetTrack(r.Context(), pathParam(r, "id"))
-	if err != nil {
+	if isNotFound(err) {
 		writeError(w, http.StatusNotFound, "not_found", "track not found")
+		return models.Track{}, false
+	}
+	if err != nil {
+		writeInternal(w, err)
 		return models.Track{}, false
 	}
 	if t.UploadedBy == "" || t.UploadedBy != user.ID {
