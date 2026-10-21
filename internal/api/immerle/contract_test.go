@@ -17,6 +17,8 @@ import (
 // validate:"optional" to opt out (it ignores omitempty). A field of a spec type
 // that can be absent (omitempty) or null (pointer, slice, map, interface)
 // without that tag would be typed as always present in the generated TS client.
+// A slice or map the handler always builds non-nil may say validate:"required"
+// instead, which keeps it non-null in the client.
 func TestOptionalWireFieldsAreMarkedOptional(t *testing.T) {
 	raw, err := os.ReadFile("../docs/swagger.json")
 	if err != nil {
@@ -87,7 +89,9 @@ func checkOptionalFields(t *testing.T, fset *token.FileSet, typ ast.Expr) {
 			case *ast.Ident:
 				mayBeMissing = mayBeMissing || ty.Name == "any"
 			}
-			if mayBeMissing && tag.Get("validate") != "optional" {
+			// validate:"required" is a deliberate opt-in for a slice/map the
+			// handler always builds non-nil.
+			if v := tag.Get("validate"); mayBeMissing && v != "optional" && v != "required" {
 				t.Errorf("%s: field %q can be absent or null but lacks validate:\"optional\"", fset.Position(fld.Pos()), name)
 			}
 		}

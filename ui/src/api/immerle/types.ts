@@ -1,4 +1,5 @@
 import type { Song } from '../subsonic/types';
+import type { StationView } from '../immerleApi';
 
 /**
  * Immerle-specific data model — everything that lives beyond the Subsonic
@@ -220,23 +221,8 @@ export interface SmartPlaylist {
 
 // --- Internet radio --------------------------------------------------------
 
-export interface RadioStation {
-  id: string;
-  name: string;
-  streamUrl: string;
-  homepageUrl: string;
-  builtin: boolean;
-  /** False for built-ins (editable but not removable). */
-  deletable: boolean;
-  /** True when the station has a logo (served by the cover endpoint). */
-  hasCover?: boolean;
-  /** Logo source URL (for prefilling the admin edit form). */
-  coverUrl?: string;
-  /** Country group code (e.g. "fr", "gb", "int"). */
-  country?: string;
-  /** True when the caller has favorited this station. */
-  liked?: boolean;
-}
+/** A station as served by GET /radio (generated from the spec). */
+export type RadioStation = StationView;
 
 // --- Wrapped (year-in-review) ----------------------------------------------
 

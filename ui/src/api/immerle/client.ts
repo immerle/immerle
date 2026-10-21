@@ -93,6 +93,8 @@ function apiErr(error: ErrorResponse | undefined, fallbackCode: string): Immerle
   return new ImmerleApiError(0, e?.message ?? fallbackCode, e?.code ?? fallbackCode, e?.params);
 }
 
+type RadioStationBody = { name: string; streamUrl: string; homepageUrl?: string; coverUrl?: string };
+
 /** Maps a generated smart-playlist view into the domain type (the spec marks every field optional). */
 function toSmartPlaylist(v: SmartPlaylistView): SmartPlaylist {
   const r = v.rules;
@@ -1013,8 +1015,9 @@ export class ImmerleClient {
   // --- Internet radio -----------------------------------------------------
 
   async listRadioStations(signal?: AbortSignal): Promise<RadioStation[]> {
-    const r = await this.request<{ stations?: RadioStation[] }>('GET', 'radio', undefined, signal);
-    return r.stations ?? [];
+    const { data, error } = await this.api.GET('/radio', { signal });
+    if (error) throw apiErr(error, 'radio.list');
+    return data.stations;
   }
 
   /** Public URL of a station's locally-cached logo (no auth needed). The id can
@@ -1024,31 +1027,42 @@ export class ImmerleClient {
     return `${this.serverUrl}/api/v1/radio/stations/${id}/cover`;
   }
 
-  async createRadioStation(body: { name: string; streamUrl: string; homepageUrl?: string; coverUrl?: string }): Promise<RadioStation> {
-    return this.request<RadioStation>('POST', 'admin/radio/stations', body);
+  async createRadioStation(body: RadioStationBody): Promise<RadioStation> {
+    const { data, error } = await this.api.POST('/admin/radio/stations', { body });
+    if (error) throw apiErr(error, 'radio.create');
+    return data;
   }
 
-  async updateRadioStation(id: string, body: { name: string; streamUrl: string; homepageUrl?: string; coverUrl?: string }): Promise<RadioStation> {
-    return this.request<RadioStation>('PUT', `admin/radio/stations/${id}`, body);
+  async updateRadioStation(id: string, body: RadioStationBody): Promise<RadioStation> {
+    const { data, error } = await this.api.PUT('/admin/radio/stations/{id}', { params: { path: { id } }, body });
+    if (error) throw apiErr(error, 'radio.update');
+    return data;
   }
 
   async deleteRadioStation(id: string): Promise<void> {
-    await this.request<void>('DELETE', `admin/radio/stations/${id}`);
+    const { error } = await this.api.DELETE('/admin/radio/stations/{id}', { params: { path: { id } } });
+    if (error) throw apiErr(error, 'radio.delete');
   }
 
   /** Favorite / unfavorite a station (kept separate from track stars). */
   async setRadioLiked(id: string, liked: boolean): Promise<void> {
-    await this.request<void>(liked ? 'PUT' : 'DELETE', `radio/stations/${id}/like`);
+    const params = { params: { path: { id } } };
+    const { error } = liked
+      ? await this.api.PUT('/radio/stations/{id}/like', params)
+      : await this.api.DELETE('/radio/stations/{id}/like', params);
+    if (error) throw apiErr(error, 'radio.like');
   }
 
   async getRadioEnabled(signal?: AbortSignal): Promise<boolean> {
-    const r = await this.request<{ enabled: boolean }>('GET', 'admin/radio', undefined, signal);
-    return !!r.enabled;
+    const { data, error } = await this.api.GET('/admin/radio', { signal });
+    if (error) throw apiErr(error, 'radio.admin');
+    return data.enabled;
   }
 
   async setRadioEnabled(enabled: boolean): Promise<boolean> {
-    const r = await this.request<{ enabled: boolean }>('PUT', 'admin/radio', { enabled });
-    return !!r.enabled;
+    const { data, error } = await this.api.PUT('/admin/radio', { body: { enabled } });
+    if (error) throw apiErr(error, 'radio.toggle');
+    return data.enabled;
   }
 
   // --- Wrapped (year-in-review) -------------------------------------------

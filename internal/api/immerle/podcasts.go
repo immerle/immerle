@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/immerle/immerle/internal/api/httputil"
+	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 )
@@ -56,6 +57,63 @@ func toChannelView(c models.PodcastChannel) channelView {
 	return v
 }
 
+// The list wrappers below are always built from make()'d slices, so their
+// arrays are never null: validate:"required" tells the spec so.
+
+type channelListView struct {
+	Channels []channelView `json:"channels" validate:"required"`
+}
+
+type episodeListView struct {
+	Episodes []episodeView `json:"episodes" validate:"required"`
+}
+
+// podcastProviderView is one directory adapter's admin view.
+type podcastProviderView struct {
+	Name        string                   `json:"name"`
+	DisplayName string                   `json:"displayName"`
+	Enabled     bool                     `json:"enabled"`
+	Fields      []podcastConfigFieldView `json:"fields" validate:"required"`
+	Config      map[string]string        `json:"config" validate:"optional"`
+	Configured  bool                     `json:"configured"`
+}
+
+// podcastConfigFieldView is a credential an adapter needs from the admin.
+type podcastConfigFieldView struct {
+	Key      string `json:"key"`
+	Label    string `json:"label"`
+	Required bool   `json:"required"`
+	Secret   bool   `json:"secret"`
+}
+
+type podcastProviderListView struct {
+	Providers []podcastProviderView `json:"providers" validate:"required"`
+}
+
+// podcastSearchResultView is one directory hit; feedUrl feeds POST /admin/podcasts.
+type podcastSearchResultView struct {
+	Title   string `json:"title"`
+	Author  string `json:"author"`
+	FeedURL string `json:"feedUrl"`
+	Image   string `json:"image"`
+	Source  string `json:"source"`
+}
+
+type podcastSearchListView struct {
+	Results []podcastSearchResultView `json:"results" validate:"required"`
+}
+
+func toPodcastProviderView(p core.ProviderStatus) podcastProviderView {
+	fields := make([]podcastConfigFieldView, 0, len(p.Fields))
+	for _, f := range p.Fields {
+		fields = append(fields, podcastConfigFieldView{Key: f.Key, Label: f.Label, Required: f.Required, Secret: f.Secret})
+	}
+	return podcastProviderView{
+		Name: p.Name, DisplayName: p.DisplayName, Enabled: p.Enabled,
+		Fields: fields, Config: p.Config, Configured: p.Configured,
+	}
+}
+
 func (h *Handler) podcastsReady(w http.ResponseWriter) bool {
 	if h.Podcasts == nil {
 		writeError(w, http.StatusServiceUnavailable, "unavailable", "podcasts not available")
@@ -70,7 +128,7 @@ func (h *Handler) podcastsReady(w http.ResponseWriter) bool {
 // @Tags         podcasts
 // @Security     BearerAuth
 // @Produce      json
-// @Success      200  {object}  map[string]interface{}
+// @Success      200  {object}  channelListView
 // @Router       /podcasts [get]
 func (h *Handler) handlePodcastList(w http.ResponseWriter, r *http.Request) {
 	if !h.podcastsReady(w) {
@@ -85,7 +143,7 @@ func (h *Handler) handlePodcastList(w http.ResponseWriter, r *http.Request) {
 	for _, c := range chans {
 		views = append(views, toChannelView(c))
 	}
-	writeResource(w, http.StatusOK, map[string]any{"channels": views})
+	writeResource(w, http.StatusOK, channelListView{Channels: views})
 }
 
 // handlePodcastGet returns one channel with its episodes.
@@ -114,7 +172,8 @@ func (h *Handler) handlePodcastGet(w http.ResponseWriter, r *http.Request) {
 // @Summary      Newest podcast episodes
 // @Tags         podcasts
 // @Security     BearerAuth
-// @Success      200  {object}  map[string]interface{}
+// @Param        count  query  int  false  "Max episodes (default 20)"
+// @Success      200  {object}  episodeListView
 // @Router       /podcasts/episodes/newest [get]
 func (h *Handler) handlePodcastNewest(w http.ResponseWriter, r *http.Request) {
 	if !h.podcastsReady(w) {
@@ -133,7 +192,7 @@ func (h *Handler) handlePodcastNewest(w http.ResponseWriter, r *http.Request) {
 	for _, e := range eps {
 		views = append(views, toEpisodeView(e))
 	}
-	writeResource(w, http.StatusOK, map[string]any{"episodes": views})
+	writeResource(w, http.StatusOK, episodeListView{Episodes: views})
 }
 
 // handlePodcastEpisode returns one episode.
@@ -184,7 +243,7 @@ func (h *Handler) handlePodcastStream(w http.ResponseWriter, r *http.Request) {
 // @Tags         podcasts
 // @Security     BearerAuth
 // @Param        id  path  string  true  "Episode id"
-// @Success      202  {object}  episodeView
+// @Success      200  {object}  episodeView
 // @Failure      404  {object}  errorResponse
 // @Router       /podcasts/episodes/{id}/download [post]
 func (h *Handler) handlePodcastDownload(w http.ResponseWriter, r *http.Request) {
@@ -314,7 +373,7 @@ func (h *Handler) handlePodcastDeleteEpisode(w http.ResponseWriter, r *http.Requ
 // @Tags         admin
 // @Security     BearerAuth
 // @Produce      json
-// @Success      200  {object}  map[string]interface{}
+// @Success      200  {object}  podcastProviderListView
 // @Router       /admin/podcasts/providers [get]
 func (h *Handler) handlePodcastProviders(w http.ResponseWriter, r *http.Request) {
 	if !h.requireAdmin(w, r) || !h.podcastsReady(w) {
@@ -325,7 +384,11 @@ func (h *Handler) handlePodcastProviders(w http.ResponseWriter, r *http.Request)
 		writeInternal(w, err)
 		return
 	}
-	writeResource(w, http.StatusOK, map[string]any{"providers": provs})
+	views := make([]podcastProviderView, 0, len(provs))
+	for _, p := range provs {
+		views = append(views, toPodcastProviderView(p))
+	}
+	writeResource(w, http.StatusOK, podcastProviderListView{Providers: views})
 }
 
 // podcastProviderRequest toggles a provider and (optionally) sets its credentials.
@@ -373,7 +436,7 @@ func (h *Handler) handlePodcastProviderUpdate(w http.ResponseWriter, r *http.Req
 // @Tags         admin
 // @Security     BearerAuth
 // @Param        q  query  string  true  "Search terms"
-// @Success      200  {object}  map[string]interface{}
+// @Success      200  {object}  podcastSearchListView
 // @Router       /admin/podcasts/search [get]
 func (h *Handler) handlePodcastSearch(w http.ResponseWriter, r *http.Request) {
 	if !h.requireAdmin(w, r) || !h.podcastsReady(w) {
@@ -385,7 +448,11 @@ func (h *Handler) handlePodcastSearch(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "validation", "podcast search failed")
 		return
 	}
-	writeResource(w, http.StatusOK, map[string]any{"results": results})
+	views := make([]podcastSearchResultView, 0, len(results))
+	for _, res := range results {
+		views = append(views, podcastSearchResultView{Title: res.Title, Author: res.Author, FeedURL: res.FeedURL, Image: res.Image, Source: res.Source})
+	}
+	writeResource(w, http.StatusOK, podcastSearchListView{Results: views})
 }
 
 // isNotFound reports a repo ErrNotFound.
