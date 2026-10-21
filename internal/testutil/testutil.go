@@ -167,6 +167,7 @@ func withDatabase(t *testing.T, dsn, name string) string {
 	return u.String()
 }
 
+// NewStore returns a persistence store backed by NewDB.
 func NewStore(t *testing.T) *persistence.Store {
 	t.Helper()
 	return persistence.New(NewDB(t))
