@@ -411,7 +411,7 @@ type SmartRules struct {
 	// Match is "all" (AND) or "any" (OR) across Conditions. Defaults to "all".
 	Match string `json:"match" enums:"all,any"`
 	// Conditions are the filters; an empty list matches the whole library.
-	Conditions []SmartCondition `json:"conditions" validate:"optional"`
+	Conditions []SmartCondition `json:"conditions,omitempty" validate:"optional"`
 	// Sort is a whitelisted sort key (e.g. "random", "playCount", "recentlyAdded").
 	Sort string `json:"sort"`
 	// Order is "asc" or "desc" (ignored for "random").
@@ -809,7 +809,7 @@ type JamSession struct {
 	PositionMs     int64  `json:"position"`
 	// State is "playing" or "paused".
 	State     string    `json:"state"`
-	TrackIDs  []string  `json:"trackIds" validate:"optional"`
+	TrackIDs  []string  `json:"trackIds,omitempty" validate:"optional"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }

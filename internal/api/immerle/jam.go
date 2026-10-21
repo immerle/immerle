@@ -92,7 +92,7 @@ func jamInviteList(invites []models.JamInvite) jamInviteListView {
 // createJamRequest is the body for POST /jam.
 type createJamRequest struct {
 	Name     string   `json:"name" validate:"optional"`
-	TrackIDs []string `json:"trackIds" validate:"optional"`
+	TrackIDs []string `json:"trackIds,omitempty" validate:"optional"`
 }
 
 // handleJamCreate starts a synchronized listening session hosted by the caller.
@@ -344,10 +344,10 @@ func (h *Handler) handleJamState(w http.ResponseWriter, r *http.Request) {
 // updateJamRequest is a partial playback update (host only). Pointer fields
 // distinguish "omitted" from a zero value.
 type updateJamRequest struct {
-	CurrentTrackID *string   `json:"currentTrackId" validate:"optional"`
-	Position       *int64    `json:"position" validate:"optional"`
-	State          *string   `json:"state" validate:"optional"`
-	TrackIDs       *[]string `json:"trackIds" validate:"optional"`
+	CurrentTrackID *string   `json:"currentTrackId,omitempty" validate:"optional"`
+	Position       *int64    `json:"position,omitempty" validate:"optional"`
+	State          *string   `json:"state,omitempty" validate:"optional"`
+	TrackIDs       *[]string `json:"trackIds,omitempty" validate:"optional"`
 }
 
 // handleJamUpdate updates shared playback. Only the host may drive playback.

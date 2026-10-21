@@ -73,7 +73,7 @@ func (h *Handler) handleHallOfFameToggle(w http.ResponseWriter, r *http.Request)
 
 // hallOfFameView is the REST representation of a Hall of Fame.
 type hallOfFameView struct {
-	Tracks    []songView `json:"tracks" validate:"optional"`
+	Tracks    []songView `json:"tracks" validate:"required"`
 	CreatedAt time.Time  `json:"createdAt"`
 	ChangedAt time.Time  `json:"changedAt"`
 }
@@ -158,7 +158,7 @@ func (h *Handler) handleUserHallOfFame(w http.ResponseWriter, r *http.Request) {
 
 // hallOfFameOrderRequest is the body for PUT /hall-of-fame/tracks.
 type hallOfFameOrderRequest struct {
-	IDs []string `json:"ids" validate:"optional"`
+	IDs []string `json:"ids,omitempty" validate:"optional"`
 }
 
 // handleSetHallOfFameOrder replaces the caller's full ranked track list

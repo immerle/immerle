@@ -35,9 +35,9 @@ func (h *Handler) handleLastFmAdmin(w http.ResponseWriter, r *http.Request) {
 // lastFmUpdateRequest is a partial update of Last.fm settings; pointer fields
 // distinguish "omitted" (keep current) from "" (clear).
 type lastFmUpdateRequest struct {
-	Enabled   *bool   `json:"enabled" validate:"optional"`
-	APIKey    *string `json:"apiKey" validate:"optional"`
-	APISecret *string `json:"apiSecret" validate:"optional"`
+	Enabled   *bool   `json:"enabled,omitempty" validate:"optional"`
+	APIKey    *string `json:"apiKey,omitempty" validate:"optional"`
+	APISecret *string `json:"apiSecret,omitempty" validate:"optional"`
 }
 
 // handleLastFmAdminUpdate changes Last.fm scrobbling settings: enable/disable

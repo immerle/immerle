@@ -125,10 +125,10 @@ func (h *Handler) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 // adminUserUpdateRequest is the body for PATCH /admin/users/{username}. nil
 // fields are left unchanged; a non-empty password is applied.
 type adminUserUpdateRequest struct {
-	Email             *string `json:"email" validate:"optional"`
-	DisplayName       *string `json:"displayName" validate:"optional"`
-	Admin             *bool   `json:"admin" validate:"optional"`
-	ScrobblingEnabled *bool   `json:"scrobblingEnabled" validate:"optional"`
+	Email             *string `json:"email,omitempty" validate:"optional"`
+	DisplayName       *string `json:"displayName,omitempty" validate:"optional"`
+	Admin             *bool   `json:"admin,omitempty" validate:"optional"`
+	ScrobblingEnabled *bool   `json:"scrobblingEnabled,omitempty" validate:"optional"`
 	Password          string  `json:"password" validate:"optional"`
 }
 

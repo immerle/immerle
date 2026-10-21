@@ -36,7 +36,7 @@ type smartPlaylistView struct {
 
 // smartPlaylistListView is the GET /smart-playlists body.
 type smartPlaylistListView struct {
-	Playlists []smartPlaylistView `json:"playlists" validate:"optional"`
+	Playlists []smartPlaylistView `json:"playlists" validate:"required"`
 }
 
 func toSmartView(sp models.SmartPlaylist) smartPlaylistView {
@@ -284,5 +284,5 @@ func (h *Handler) handleSmartPlaylistsToggle(w http.ResponseWriter, r *http.Requ
 
 // smartToggleRequest is the admin on/off body.
 type smartToggleRequest struct {
-	Enabled *bool `json:"enabled" validate:"optional"`
+	Enabled *bool `json:"enabled,omitempty" validate:"optional"`
 }

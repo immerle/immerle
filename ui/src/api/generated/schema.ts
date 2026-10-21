@@ -10611,7 +10611,7 @@ export interface components {
             keepFirst?: boolean;
         };
         "immerle.AutoDJResponseDTO": {
-            ids?: string[];
+            ids: string[];
         };
         "immerle.BandcampCollectionDTO": {
             items?: components["schemas"]["immerle.BandcampCollectionItemDTO"][];
@@ -11069,7 +11069,7 @@ export interface components {
             mode: string;
         };
         "immerle.SonicDuplicatesDTO": {
-            groups?: components["schemas"]["immerle.songView"][][];
+            groups: components["schemas"]["immerle.songView"][][];
         };
         "immerle.SonicStatusDTO": {
             /** @example 4210 */
@@ -11199,7 +11199,7 @@ export interface components {
             fields?: components["schemas"]["immerle.fieldError"][];
             message: string;
             /** @description i18n interpolation values; always present ({} when none) */
-            params?: {
+            params: {
                 [key: string]: unknown;
             };
         };
@@ -11333,9 +11333,9 @@ export interface components {
             error: components["schemas"]["immerle.apiError"];
         };
         "immerle.favoritesView": {
-            albums?: components["schemas"]["immerle.albumView"][];
-            artists?: components["schemas"]["immerle.artistView"][];
-            songs?: components["schemas"]["immerle.songView"][];
+            albums: components["schemas"]["immerle.albumView"][];
+            artists: components["schemas"]["immerle.artistView"][];
+            songs: components["schemas"]["immerle.songView"][];
         };
         "immerle.featureStatusView": {
             enabled: boolean;
@@ -11364,7 +11364,7 @@ export interface components {
         "immerle.hallOfFameView": {
             changedAt: string;
             createdAt: string;
-            tracks?: components["schemas"]["immerle.songView"][];
+            tracks: components["schemas"]["immerle.songView"][];
         };
         "immerle.jamInviteListView": {
             invites: components["schemas"]["models.JamInvite"][];
@@ -11411,7 +11411,7 @@ export interface components {
             text: string;
         };
         "immerle.lyricsView": {
-            lines?: components["schemas"]["immerle.lyricLine"][];
+            lines: components["schemas"]["immerle.lyricLine"][];
             synced: boolean;
         };
         "immerle.nowPlayingListView": {
@@ -11491,7 +11491,7 @@ export interface components {
             changedBy?: string;
             commandSeq?: number;
             current?: string;
-            entries?: components["schemas"]["immerle.songView"][];
+            entries: components["schemas"]["immerle.songView"][];
             pendingCommand?: components["schemas"]["immerle.commandView"];
             /**
              * @description Playing reports whether Current was playing (vs paused) as of
@@ -11595,7 +11595,7 @@ export interface components {
             enabled?: boolean;
         };
         "immerle.podcastProviderView": {
-            config?: {
+            config: {
                 [key: string]: string;
             };
             configured: boolean;
@@ -11675,7 +11675,7 @@ export interface components {
             type: string;
         };
         "immerle.searchView": {
-            results?: components["schemas"]["immerle.searchHitView"][];
+            results: components["schemas"]["immerle.searchHitView"][];
         };
         "immerle.setEnabledRequest": {
             enabled?: boolean;
@@ -11709,7 +11709,7 @@ export interface components {
             viewCount: number;
         };
         "immerle.smartPlaylistListView": {
-            playlists?: components["schemas"]["immerle.smartPlaylistView"][];
+            playlists: components["schemas"]["immerle.smartPlaylistView"][];
         };
         "immerle.smartPlaylistView": {
             createdAt: string;

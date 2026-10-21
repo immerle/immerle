@@ -45,3 +45,33 @@ func TestSearchPublicMatchesNameAndRespectsVisibility(t *testing.T) {
 		t.Fatalf("SearchPublic = %+v, want only %q", got, "Road Trip Hits")
 	}
 }
+
+func TestSubscribedIDs(t *testing.T) {
+	store := testutil.NewStore(t)
+	ctx := context.Background()
+	now := time.Now()
+	owner := models.User{ID: uuid.NewString(), Username: "owner", PasswordHash: "x", CreatedAt: now}
+	fan := models.User{ID: uuid.NewString(), Username: "fan", PasswordHash: "x", CreatedAt: now}
+	for _, u := range []models.User{owner, fan} {
+		if err := store.Users.Create(ctx, u); err != nil {
+			t.Fatal(err)
+		}
+	}
+	a := models.Playlist{ID: uuid.NewString(), Name: "A", OwnerID: owner.ID, Public: true, CreatedAt: now, UpdatedAt: now}
+	b := models.Playlist{ID: uuid.NewString(), Name: "B", OwnerID: owner.ID, Public: true, CreatedAt: now, UpdatedAt: now}
+	for _, p := range []models.Playlist{a, b} {
+		if err := store.Playlists.Create(ctx, p); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := store.Playlists.Subscribe(ctx, a.ID, fan.ID); err != nil {
+		t.Fatal(err)
+	}
+	got, err := store.Playlists.SubscribedIDs(ctx, fan.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !got[a.ID] || got[b.ID] || len(got) != 1 {
+		t.Fatalf("SubscribedIDs = %v, want only %s", got, a.ID)
+	}
+}

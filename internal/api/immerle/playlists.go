@@ -16,7 +16,7 @@ type publicPlaylistView struct {
 	SongCount int      `json:"songCount"`
 	Duration  int      `json:"duration"`
 	CoverArt  string   `json:"coverArt"`
-	CoverArts []string `json:"coverArts" validate:"optional"`
+	CoverArts []string `json:"coverArts,omitempty" validate:"optional"`
 	// Subscribed reports whether the caller already subscribes to it.
 	Subscribed bool `json:"subscribed"`
 	// AutoPlaylistKind identifies a server-generated playlist's stable kind
@@ -42,13 +42,17 @@ func (h *Handler) handlePublicPlaylists(w http.ResponseWriter, r *http.Request) 
 		writeInternal(w, err)
 		return
 	}
+	subscribed, err := h.Playlists.SubscribedIDs(r.Context(), user.ID)
+	if err != nil {
+		writeInternal(w, err)
+		return
+	}
 	out := make([]publicPlaylistView, 0, len(lists))
 	for _, p := range lists {
-		subscribed, _ := h.Playlists.IsSubscribed(r.Context(), p.ID, user.ID)
 		out = append(out, publicPlaylistView{
 			ID: p.ID, Name: p.Name, Owner: p.OwnerName, Comment: p.Comment,
 			SongCount: p.SongCount, Duration: p.Duration, CoverArt: p.CoverArt, CoverArts: p.CoverArts,
-			Subscribed: subscribed, AutoPlaylistKind: autoPlaylistKind(p.SourceInstanceID, p.SourceExternalID),
+			Subscribed: subscribed[p.ID], AutoPlaylistKind: autoPlaylistKind(p.SourceInstanceID, p.SourceExternalID),
 		})
 	}
 	writeResource(w, http.StatusOK, out)

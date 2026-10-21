@@ -104,6 +104,9 @@
                         "uniqueItems": false
                     }
                 },
+                "required": [
+                    "ids"
+                ],
                 "type": "object"
             },
             "immerle.BandcampCollectionDTO": {
@@ -1180,6 +1183,9 @@
                         "uniqueItems": false
                     }
                 },
+                "required": [
+                    "groups"
+                ],
                 "type": "object"
             },
             "immerle.SonicStatusDTO": {
@@ -1549,7 +1555,8 @@
                 },
                 "required": [
                     "code",
-                    "message"
+                    "message",
+                    "params"
                 ],
                 "type": "object"
             },
@@ -1974,6 +1981,11 @@
                         "uniqueItems": false
                     }
                 },
+                "required": [
+                    "albums",
+                    "artists",
+                    "songs"
+                ],
                 "type": "object"
             },
             "immerle.featureStatusView": {
@@ -2082,7 +2094,8 @@
                 },
                 "required": [
                     "changedAt",
-                    "createdAt"
+                    "createdAt",
+                    "tracks"
                 ],
                 "type": "object"
             },
@@ -2248,6 +2261,7 @@
                     }
                 },
                 "required": [
+                    "lines",
                     "synced"
                 ],
                 "type": "object"
@@ -2438,6 +2452,7 @@
                     }
                 },
                 "required": [
+                    "entries",
                     "playing",
                     "position",
                     "shuffle",
@@ -2699,6 +2714,7 @@
                     }
                 },
                 "required": [
+                    "config",
                     "configured",
                     "displayName",
                     "enabled",
@@ -2948,6 +2964,9 @@
                         "uniqueItems": false
                     }
                 },
+                "required": [
+                    "results"
+                ],
                 "type": "object"
             },
             "immerle.setEnabledRequest": {
@@ -3054,6 +3073,9 @@
                         "uniqueItems": false
                     }
                 },
+                "required": [
+                    "playlists"
+                ],
                 "type": "object"
             },
             "immerle.smartPlaylistView": {

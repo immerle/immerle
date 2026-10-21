@@ -68,11 +68,11 @@ type trackListView struct {
 // trackUpdateRequest is the body for PATCH /admin/tracks/{id}. All fields are
 // optional; omitted fields keep their current value.
 type trackUpdateRequest struct {
-	Title   *string `json:"title" validate:"optional"`
-	Genre   *string `json:"genre" validate:"optional"`
-	Year    *int    `json:"year" validate:"optional"`
-	TrackNo *int    `json:"trackNo" validate:"optional"`
-	DiscNo  *int    `json:"discNo" validate:"optional"`
+	Title   *string `json:"title,omitempty" validate:"optional"`
+	Genre   *string `json:"genre,omitempty" validate:"optional"`
+	Year    *int    `json:"year,omitempty" validate:"optional"`
+	TrackNo *int    `json:"trackNo,omitempty" validate:"optional"`
+	DiscNo  *int    `json:"discNo,omitempty" validate:"optional"`
 }
 
 // handleAdminTrackUpdate edits a track's simple metadata.

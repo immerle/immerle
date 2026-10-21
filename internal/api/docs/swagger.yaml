@@ -75,6 +75,8 @@ components:
             type: string
           type: array
           uniqueItems: false
+      required:
+      - ids
       type: object
     immerle.BandcampCollectionDTO:
       properties:
@@ -851,6 +853,8 @@ components:
             type: array
           type: array
           uniqueItems: false
+      required:
+      - groups
       type: object
     immerle.SonicStatusDTO:
       properties:
@@ -1117,6 +1121,7 @@ components:
       required:
       - code
       - message
+      - params
       type: object
     immerle.apiTokenView:
       properties:
@@ -1424,6 +1429,10 @@ components:
             $ref: '#/components/schemas/immerle.songView'
           type: array
           uniqueItems: false
+      required:
+      - albums
+      - artists
+      - songs
       type: object
     immerle.featureStatusView:
       properties:
@@ -1497,6 +1506,7 @@ components:
       required:
       - changedAt
       - createdAt
+      - tracks
       type: object
     immerle.jamInviteListView:
       properties:
@@ -1608,6 +1618,7 @@ components:
         synced:
           type: boolean
       required:
+      - lines
       - synced
       type: object
     immerle.nowPlayingListView:
@@ -1770,6 +1781,7 @@ components:
             sending a command that would never be applied.
           type: boolean
       required:
+      - entries
       - playing
       - position
       - shuffle
@@ -1962,6 +1974,7 @@ components:
         name:
           type: string
       required:
+      - config
       - configured
       - displayName
       - enabled
@@ -2137,6 +2150,8 @@ components:
             $ref: '#/components/schemas/immerle.searchHitView'
           type: array
           uniqueItems: false
+      required:
+      - results
       type: object
     immerle.setEnabledRequest:
       properties:
@@ -2210,6 +2225,8 @@ components:
             $ref: '#/components/schemas/immerle.smartPlaylistView'
           type: array
           uniqueItems: false
+      required:
+      - playlists
       type: object
     immerle.smartPlaylistView:
       properties:

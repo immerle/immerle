@@ -24,7 +24,7 @@ type fieldError struct {
 type apiError struct {
 	Code    string         `json:"code"`
 	Message string         `json:"message"`
-	Params  map[string]any `json:"params" validate:"optional"` // i18n interpolation values; always present ({} when none)
+	Params  map[string]any `json:"params" validate:"required"` // i18n interpolation values; always present ({} when none)
 	Fields  []fieldError   `json:"fields,omitempty" validate:"optional"`
 }
 

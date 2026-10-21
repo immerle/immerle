@@ -39,7 +39,7 @@ type createTokenRequest struct {
 	Name string `json:"name" validate:"optional"`
 	// ExpiresAt is an optional RFC3339 timestamp; omit or null for a token that
 	// never expires.
-	ExpiresAt *time.Time `json:"expiresAt" validate:"optional"`
+	ExpiresAt *time.Time `json:"expiresAt,omitempty" validate:"optional"`
 	// Device marks this token as an app login session (one per installed
 	// client) rather than a manually-created personal/CLI token — only
 	// device tokens are offered as playback-transfer targets.
@@ -81,8 +81,8 @@ type apiTokenView struct {
 	Name       string     `json:"name"`
 	Prefix     string     `json:"prefix"`
 	CreatedAt  time.Time  `json:"createdAt"`
-	LastUsedAt *time.Time `json:"lastUsedAt" validate:"optional"`
-	ExpiresAt  *time.Time `json:"expiresAt" validate:"optional"`
+	LastUsedAt *time.Time `json:"lastUsedAt,omitempty" validate:"optional"`
+	ExpiresAt  *time.Time `json:"expiresAt,omitempty" validate:"optional"`
 	// IsDevice marks an app login session rather than a personal/CLI token.
 	IsDevice bool `json:"isDevice"`
 	// Connected is true if the token was used within the last few minutes.

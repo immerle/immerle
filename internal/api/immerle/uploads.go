@@ -200,7 +200,7 @@ func (h *Handler) handleUpload(w http.ResponseWriter, r *http.Request) {
 
 // trackTitleRequest renames a track.
 type trackTitleRequest struct {
-	Title *string `json:"title" validate:"optional"`
+	Title *string `json:"title,omitempty" validate:"optional"`
 }
 
 // handleTrackUpdate renames a track the caller uploaded.

@@ -25,7 +25,7 @@ type playQueueView struct {
 	Playing   bool       `json:"playing"`
 	ChangedBy string     `json:"changedBy,omitempty" validate:"optional"`
 	ChangedAt *time.Time `json:"changedAt,omitempty" validate:"optional"`
-	Entries   []songView `json:"entries" validate:"optional"`
+	Entries   []songView `json:"entries" validate:"required"`
 	// TargetDeviceID, when set, is the sole device that should be actively
 	// playing this queue — every other device should pause. Empty means
 	// unrestricted (default): each device plays independently.
@@ -233,7 +233,7 @@ type queueEntryRequest struct {
 
 // playQueueRequest is the body for PUT /play-queue.
 type playQueueRequest struct {
-	IDs      []string `json:"ids" validate:"optional"`
+	IDs      []string `json:"ids,omitempty" validate:"optional"`
 	Current  string   `json:"current" validate:"optional"`
 	Position int64    `json:"position" validate:"optional"`
 	// Playing reports whether Current is playing (vs paused). A spectator
@@ -378,7 +378,7 @@ type playQueueCommandRequest struct {
 	// the queue — a hint only, never the primary lookup.
 	QueueIndex int `json:"queueIndex" validate:"optional"`
 	// TrackIDs are the tracks to insert for a "playNext"/"enqueue" command.
-	TrackIDs []string `json:"trackIds" validate:"optional"`
+	TrackIDs []string `json:"trackIds,omitempty" validate:"optional"`
 	// ToIndex is the destination of a "move" command (TrackID/QueueIndex
 	// identify the moved track, like "skipTo"; "removeAt" uses those alone).
 	ToIndex int `json:"toIndex" validate:"optional"`
@@ -452,10 +452,20 @@ type nowPlayingListView struct {
 func (h *Handler) handleNowPlaying(w http.ResponseWriter, r *http.Request) {
 	out := make([]nowPlayingView, 0)
 	if h.NowPlaying != nil {
-		for _, e := range h.NowPlaying.List() {
-			track, err := h.Catalog.GetTrack(r.Context(), e.TrackID)
-			if err != nil {
-				continue
+		entries := h.NowPlaying.List()
+		ids := make([]string, 0, len(entries))
+		for _, e := range entries {
+			ids = append(ids, e.TrackID)
+		}
+		tracks, err := h.Catalog.TracksByIDs(r.Context(), ids)
+		if err != nil {
+			writeInternal(w, err)
+			return
+		}
+		for _, e := range entries {
+			track, ok := tracks[e.TrackID]
+			if !ok {
+				continue // removed from the catalog since
 			}
 			out = append(out, nowPlayingView{
 				Song:       toSongView(track),

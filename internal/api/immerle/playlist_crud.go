@@ -142,7 +142,7 @@ func (h *Handler) handleGetPlaylist(w http.ResponseWriter, r *http.Request) {
 // playlistCreateRequest is the body for POST /playlists.
 type playlistCreateRequest struct {
 	Name string   `json:"name" validate:"optional"`
-	IDs  []string `json:"ids" validate:"optional"`
+	IDs  []string `json:"ids,omitempty" validate:"optional"`
 }
 
 // handleCreatePlaylist creates a playlist owned by the caller.
@@ -177,11 +177,11 @@ func (h *Handler) handleCreatePlaylist(w http.ResponseWriter, r *http.Request) {
 // playlistUpdateRequest is the body for PATCH /playlists/{id}. nil fields are
 // left unchanged.
 type playlistUpdateRequest struct {
-	Name          *string  `json:"name" validate:"optional"`
-	Comment       *string  `json:"comment" validate:"optional"`
-	Public        *bool    `json:"public" validate:"optional"`
-	AddIDs        []string `json:"addIds" validate:"optional"`
-	RemoveIndexes []int    `json:"removeIndexes" validate:"optional"`
+	Name          *string  `json:"name,omitempty" validate:"optional"`
+	Comment       *string  `json:"comment,omitempty" validate:"optional"`
+	Public        *bool    `json:"public,omitempty" validate:"optional"`
+	AddIDs        []string `json:"addIds,omitempty" validate:"optional"`
+	RemoveIndexes []int    `json:"removeIndexes,omitempty" validate:"optional"`
 }
 
 // handleUpdatePlaylist edits a playlist's metadata and tracks.
@@ -220,7 +220,7 @@ func (h *Handler) handleUpdatePlaylist(w http.ResponseWriter, r *http.Request) {
 
 // playlistTracksRequest is the body for PUT /playlists/{id}/tracks.
 type playlistTracksRequest struct {
-	IDs []string `json:"ids" validate:"optional"`
+	IDs []string `json:"ids,omitempty" validate:"optional"`
 }
 
 // handleReplacePlaylistTracks overwrites a playlist's tracklist.
