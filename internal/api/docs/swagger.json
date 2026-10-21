@@ -2630,6 +2630,22 @@
                 },
                 "type": "object"
             },
+            "immerle.scanStatusView": {
+                "properties": {
+                    "count": {
+                        "description": "Count is the number of tracks indexed so far (it grows during a scan).",
+                        "type": "integer"
+                    },
+                    "scanning": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "count",
+                    "scanning"
+                ],
+                "type": "object"
+            },
             "immerle.scrobbleRequest": {
                 "properties": {
                     "ids": {
@@ -5405,6 +5421,84 @@
                     }
                 ],
                 "summary": "Update Last.fm scrobbling settings",
+                "tags": [
+                    "admin"
+                ]
+            }
+        },
+        "/admin/library/scan": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.scanStatusView"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Library scan state",
+                "tags": [
+                    "admin"
+                ]
+            },
+            "post": {
+                "responses": {
+                    "202": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.scanStatusView"
+                                }
+                            }
+                        },
+                        "description": "Accepted"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "503": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "no scanner or no library path"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Start a library scan",
                 "tags": [
                     "admin"
                 ]

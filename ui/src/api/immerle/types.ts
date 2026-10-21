@@ -116,15 +116,8 @@ export interface TrackEdit {
   discNo?: number;
 }
 
-export interface ScanProgress {
-  scanning: boolean;
-  /** Items processed so far. */
-  count: number;
-  /** Total items if known (incremental scans may not report one). */
-  total?: number;
-  phase?: 'scanning' | 'cleaning' | 'analyzing' | 'idle';
-  startedAt?: string;
-}
+/** Library scan state (GET/POST /admin/library/scan). */
+export type { ScanProgress } from '../immerleApi';
 
 // --- Admin: dynamic providers ----------------------------------------------
 
@@ -168,28 +161,6 @@ export interface ProviderLog {
   action: string;
   message: string;
   createdAt: string;
-}
-
-export type DownloadJobStatus =
-  | 'queued'
-  | 'running'
-  | 'completed'
-  | 'failed'
-  | 'cancelled';
-
-export interface DownloadJob {
-  id: string;
-  providerId: string;
-  query: string;
-  title?: string;
-  artist?: string;
-  status: DownloadJobStatus;
-  /** 0..1 */
-  progress: number;
-  error?: string;
-  createdAt: string;
-  /** Resulting Subsonic song id once imported. */
-  resultSongId?: string;
 }
 
 // Federation is configured through the runtime settings (RuntimeSettingsDTO.federation)

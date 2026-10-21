@@ -137,6 +137,9 @@ export type ProviderView = components['schemas']['immerle.providerView'];
 // Federation hub instances (discovery search + subscriptions).
 export type InstanceSummary = components['schemas']['immerle.instanceView'];
 
+// Library scan state.
+export type ScanProgress = components['schemas']['immerle.scanStatusView'];
+
 // Runtime settings + downloads cleanup (admin).
 export type RuntimeSettingsDTO = components['schemas']['immerle.RuntimeSettingsDTO'];
 export type SonicStatusView = components['schemas']['immerle.sonicStatusView'];

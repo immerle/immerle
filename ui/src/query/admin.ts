@@ -47,7 +47,7 @@ export function useStartScan() {
   const client = useAuth((s) => s.client);
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (full: boolean) => client!.startScan(full),
+    mutationFn: () => client!.startScan(),
     onSuccess: () => qc.invalidateQueries({ queryKey: qk.scanProgress }),
   });
 }
@@ -165,41 +165,6 @@ export function useProviderLogs(name: string | null) {
     enabled: !!client && !!name,
     queryFn: ({ signal }) => client!.getProviderLogs(name!, signal),
   });
-}
-
-export function useDownloadJobs() {
-  const client = useAuth((s) => s.client);
-  return useQuery({
-    queryKey: qk.jobs,
-    enabled: !!client && !!client.has('onDemandCatalog'),
-    queryFn: ({ signal }) => client!.getDownloadJobs(signal),
-    refetchInterval: (q) =>
-      (q.state.data ?? []).some((j) => j.status === 'running' || j.status === 'queued')
-        ? 1500
-        : false,
-  });
-}
-
-export function useJobMutations() {
-  const client = useAuth((s) => s.client);
-  const qc = useQueryClient();
-  const invalidate = () => qc.invalidateQueries({ queryKey: qk.jobs });
-  const retry = useMutation({
-    mutationFn: (id: string) => client!.retryDownloadJob(id),
-    onSuccess: invalidate,
-  });
-  const cancel = useMutation({
-    mutationFn: (id: string) => client!.cancelDownloadJob(id),
-    onSuccess: invalidate,
-  });
-  const purge = useMutation({
-    mutationFn: () => client!.purgeCache(),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: qk.jobs });
-      qc.invalidateQueries({ queryKey: qk.libraryStats });
-    },
-  });
-  return { retry, cancel, purge };
 }
 
 // --- Runtime settings (admin) ----------------------------------------------

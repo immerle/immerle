@@ -63,7 +63,6 @@ import {
   Capabilities,
   Concert,
   ConcertsAdminStatus,
-  DownloadJob,
   HallOfFame,
   ImmerleApiError,
   ImmerleSession,
@@ -775,13 +774,17 @@ export class ImmerleClient {
     };
   }
 
-  /** Trigger a scan. `full=false` requests an incremental scan when supported. */
-  async startScan(full = false): Promise<ScanProgress> {
-    return this.request<ScanProgress>('POST', 'admin/library/scan', { full });
+  /** Start a library scan in the background (a no-op while one runs). */
+  async startScan(): Promise<ScanProgress> {
+    const { data, error, response } = await this.api.POST('/admin/library/scan');
+    if (error) throw apiErr(error, 'scan.start', response);
+    return data;
   }
 
   async getScanProgress(signal?: AbortSignal): Promise<ScanProgress> {
-    return this.request<ScanProgress>('GET', 'admin/library/scan', undefined, signal);
+    const { data, error, response } = await this.api.GET('/admin/library/scan', { signal });
+    if (error) throw apiErr(error, 'scan.status', response);
+    return data;
   }
 
   // --- Admin: library tracks (manage ANY track) ---------------------------
@@ -1196,29 +1199,6 @@ export class ImmerleClient {
     const { data, error, response } = await this.api.POST('/admin/concerts/sync', {});
     if (error || !data) throw apiErr(error, 'concerts_sync_failed', response);
     return data.synced ?? 0;
-  }
-
-  // --- Admin: on-demand catalog (download jobs, legacy) -------------------
-
-  async getDownloadJobs(signal?: AbortSignal): Promise<DownloadJob[]> {
-    return this.request<DownloadJob[]>('GET', 'admin/jobs', undefined, signal);
-  }
-
-  async retryDownloadJob(id: string): Promise<DownloadJob> {
-    return this.request<DownloadJob>('POST', `admin/jobs/${id}/retry`);
-  }
-
-  async cancelDownloadJob(id: string): Promise<void> {
-    await this.request<void>('POST', `admin/jobs/${id}/cancel`);
-  }
-
-  async purgeCache(): Promise<{ freedBytes: number }> {
-    return this.request<{ freedBytes: number }>('POST', 'admin/cache/purge');
-  }
-
-  /** Request a track be fetched on demand (used by W5 search-and-download). */
-  async requestDownload(providerId: string, query: string): Promise<DownloadJob> {
-    return this.request<DownloadJob>('POST', 'catalog/download', { providerId, query });
   }
 
   // --- Admin: federation ---------------------------------------------------

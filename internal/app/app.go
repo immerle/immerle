@@ -571,6 +571,7 @@ func New(cfg config.Config) (*App, error) {
 		Imports:          importSvc,
 		SpotifyPlaylists: spotifyPlaylistsSvc,
 		Scanner:          scan,
+		LibraryPaths:     scanPaths,
 		UploadsDir:       filepath.Join(downloadDir, "uploads"),
 		CoversDir:        coversDir,
 		Logger:           logger,
