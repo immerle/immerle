@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Song } from '../api/subsonic/types';
 import { useAuth } from '../auth/store';
 import { usePlayer } from '../audio/store';
@@ -80,4 +81,16 @@ export function useAutoDj() {
     });
 
   return { available, busy, play, reorderQueue };
+}
+
+/** A track's audio analysis (tempo, key, energy), null when not analyzed. */
+export function useSongSonic(song: Song | null) {
+  const client = useAuth((s) => s.client);
+  const enabled = !!song && !song.remote && !song.unresolved && !!client?.isFeatureEnabled('sonicAnalysis');
+  return useQuery({
+    queryKey: ['songs', song?.id, 'sonic'] as const,
+    enabled,
+    staleTime: 60 * 60 * 1000, // only changes when the file is re-analyzed
+    queryFn: ({ signal }) => client!.getSongSonic(song!.id, signal),
+  });
 }

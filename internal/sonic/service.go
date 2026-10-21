@@ -70,6 +70,16 @@ func (s *Service) Wake() {
 	}
 }
 
+// Features returns a track's stored analysis; ok is false when the track
+// isn't analyzed (or its analysis failed).
+func (s *Service) Features(ctx context.Context, trackID string) (models.TrackSonic, bool) {
+	f, err := s.repo.Get(ctx, trackID)
+	if err != nil || f.Error != "" {
+		return f, false
+	}
+	return f, true
+}
+
 // Stats returns the analysis progress over the local library.
 func (s *Service) Stats(ctx context.Context) (persistence.SonicStats, error) {
 	return s.repo.Stats(ctx, AlgoVersion)

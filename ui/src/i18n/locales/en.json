@@ -1142,6 +1142,7 @@
       "playNext": "Play next",
       "addToQueue": "Add to queue",
       "startRadio": "Start radio",
+      "energy": "Energy {{percent}}%",
       "addToPlaylist": "Add to a playlist",
       "addToHallOfFame": "Add to Hall of Fame",
       "addedToHallOfFame": "Added to your Hall of Fame",

@@ -22,6 +22,9 @@ playlist, in the app or over Subsonic, nothing special to configure):
   *On Repeat* (last 30 days), *Forgotten favorites* (starred tracks unplayed
   for 90+ days or never played), and a random 30-track shuffle. Any list with
   zero tracks is simply skipped.
+- **Mood playlists** (Calm, Focus, Melancholy, Energy, Party, Workout):
+  public, picked from the [sonic analysis](./sonic.md#mood-playlists) when an
+  admin turns them on.
 - **Weekly trending**: public, the most-scrobbled tracks across all users in
   the last 7 days.
 - **Chart playlists**: a worldwide chart plus five major markets (FR, US, GB,

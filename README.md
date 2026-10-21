@@ -51,6 +51,11 @@ self-hosted server, for music, that sings: **Immerle**. ✨
   you" lists, recommendation mixes (ReccoBeats, ListenBrainz Daily/Weekly Jams,
   a Last.fm similarity mix), a hand-curated Hall of Fame and a yearly
   *Wrapped*.
+- 🎛️ **Sonic analysis (opt-in)**: Immerle listens to your library itself
+  (tempo, key, energy, timbre, all local) to power a track radio and Subsonic
+  instant mix, endless queues, mood playlists, Auto-DJ, smart playlist rules
+  on BPM and key, and duplicate detection.
+- 🎚️ **Crossfade**: blend each track into the next (4 s by default).
 - 📻 **Internet radio & 🎙️ podcasts**: curated built-in stations per country,
   plus podcast subscriptions searchable from Apple Podcasts, Podcast Index,
   fyyd and more.

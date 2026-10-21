@@ -51,6 +51,7 @@ import {
   PublicPlaylistDTO,
   RuntimeSettingsDTO,
   SonicStatusDTO,
+  SongSonicDTO,
   ThemeDTO,
   UserSummaryDTO,
 } from '../immerleApi';
@@ -300,6 +301,14 @@ export class ImmerleClient {
     const { data, error } = await this.api.GET('/songs', { params: { query: { genre, count } }, signal });
     if (error) throw apiErr(error, 'browse.songsByGenre');
     return (data.songs ?? []).map(toSong);
+  }
+
+  /** A track's audio analysis, or null when it isn't analyzed (or the analysis is off). */
+  async getSongSonic(id: string, signal?: AbortSignal): Promise<SongSonicDTO | null> {
+    const { data, error, response } = await this.api.GET('/songs/{id}/sonic', { params: { path: { id } }, signal });
+    if (response.status === 404) return null;
+    if (error) throw apiErr(error, 'browse.songSonic');
+    return data;
   }
 
   /** Tracks that sound like the seeds (track, album or artist ids). */
