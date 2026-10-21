@@ -32,7 +32,7 @@ type loginRequest struct {
 // @Accept       json
 // @Produce      json
 // @Param        body  body  loginRequest  true  "Credentials"
-// @Success      201  {object}  LoginDTO
+// @Success      201  {object}  loginView
 // @Failure      400  {object}  errorResponse
 // @Failure      401  {object}  errorResponse
 // @Failure      429  {object}  errorResponse
@@ -66,14 +66,35 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.Logger.Info("user logged in", "username", req.Username, "device", dev.Name, "remote", r.RemoteAddr)
-	writeResource(w, http.StatusCreated, map[string]any{
-		"token": token, // the JWT — store it
-		"device": map[string]any{
-			"id":        dev.ID,
-			"name":      dev.Name,
-			"expiresAt": dev.ExpiresAt,
-		},
+	writeResource(w, http.StatusCreated, loginView{
+		Token:  token,
+		Device: loginDeviceView{ID: dev.ID, Name: dev.Name, ExpiresAt: dev.ExpiresAt},
 	})
+}
+
+// loginView is a new device session: the JWT to store and its device.
+type loginView struct {
+	Token  string          `json:"token"`
+	Device loginDeviceView `json:"device"`
+}
+
+type loginDeviceView struct {
+	ID        string     `json:"id"`
+	Name      string     `json:"name"`
+	ExpiresAt *time.Time `json:"expiresAt" validate:"optional"`
+}
+
+// deviceView is one of the caller's device sessions.
+type deviceView struct {
+	ID        string     `json:"id"`
+	Name      string     `json:"name"`
+	UserAgent string     `json:"userAgent"`
+	LastSeen  *time.Time `json:"lastSeen" validate:"optional"`
+	LastIP    string     `json:"lastIp"`
+	CreatedAt time.Time  `json:"createdAt"`
+	ExpiresAt *time.Time `json:"expiresAt" validate:"optional"`
+	// Connected is true if the device was seen within the last few minutes.
+	Connected bool `json:"connected"`
 }
 
 // handleDevices lists the caller's active device sessions.
@@ -83,7 +104,7 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 // @Tags         devices
 // @Security     BearerAuth
 // @Produce      json
-// @Success      200  {array}  DeviceDTO
+// @Success      200  {array}  deviceView
 // @Failure      401  {object}  errorResponse
 // @Failure      500  {object}  errorResponse
 // @Router       /devices [get]
@@ -94,17 +115,12 @@ func (h *Handler) handleDevices(w http.ResponseWriter, r *http.Request) {
 		writeInternal(w, err)
 		return
 	}
-	out := make([]map[string]any, 0, len(devices))
+	out := make([]deviceView, 0, len(devices))
 	for _, d := range devices {
-		out = append(out, map[string]any{
-			"id":        d.ID,
-			"name":      d.Name,
-			"userAgent": d.UserAgent,
-			"lastSeen":  d.LastSeenAt,
-			"lastIp":    d.LastIP,
-			"createdAt": d.CreatedAt,
-			"expiresAt": d.ExpiresAt,
-			"connected": d.LastSeenAt != nil && time.Since(*d.LastSeenAt) < deviceOnlineWindow,
+		out = append(out, deviceView{
+			ID: d.ID, Name: d.Name, UserAgent: d.UserAgent, LastSeen: d.LastSeenAt, LastIP: d.LastIP,
+			CreatedAt: d.CreatedAt, ExpiresAt: d.ExpiresAt,
+			Connected: d.LastSeenAt != nil && time.Since(*d.LastSeenAt) < deviceOnlineWindow,
 		})
 	}
 	writeResource(w, http.StatusOK, out)

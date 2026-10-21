@@ -287,17 +287,7 @@ export interface ConcertsAdminStatus {
   skiddleConfigured: boolean;
 }
 
-/** The caller's Last.fm connection state. */
-export interface LastFmStatus {
-  connected: boolean;
-  username?: string;
-}
-
-/** Admin view of Last.fm scrobbling config — the API key/secret are write-only. */
-export interface LastFmAdminStatus {
-  enabled: boolean;
-  configured: boolean;
-}
+export type { LastFmStatus, LastFmAdminStatus } from '../immerleApi';
 
 /** The caller's Bandcamp connection state. The cookie is write-only. */
 export interface BandcampStatus {

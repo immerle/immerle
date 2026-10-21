@@ -3973,7 +3973,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.LoginDTO"];
+                        "application/json": components["schemas"]["immerle.loginView"];
                     };
                 };
                 /** @description Bad Request */
@@ -4153,7 +4153,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.DeviceDTO"][];
+                        "application/json": components["schemas"]["immerle.deviceView"][];
                     };
                 };
                 /** @description Unauthorized */
@@ -5915,7 +5915,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.AccountDTO"];
+                        "application/json": components["schemas"]["immerle.accountView"];
                     };
                 };
                 /** @description Unauthorized */
@@ -5967,7 +5967,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.AccountDTO"];
+                        "application/json": components["schemas"]["immerle.accountView"];
                     };
                 };
                 /** @description Bad Request */
@@ -10047,7 +10047,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ThemeDTO"];
+                        "application/json": components["schemas"]["models.ThemeSettings"];
                     };
                 };
                 /** @description Unauthorized */
@@ -10099,7 +10099,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ThemeDTO"];
+                        "application/json": components["schemas"]["models.ThemeSettings"];
                     };
                 };
                 /** @description Bad Request */
@@ -10159,7 +10159,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.APITokenDTO"][];
+                        "application/json": components["schemas"]["immerle.apiTokenView"][];
                     };
                 };
                 /** @description Unauthorized */
@@ -10207,7 +10207,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.CreateTokenDTO"];
+                        "application/json": components["schemas"]["immerle.createdTokenView"];
                     };
                 };
                 /** @description Bad Request */
@@ -10558,46 +10558,6 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        "immerle.APITokenDTO": {
-            /**
-             * @description Connected is true if the token was used within the last few minutes.
-             *     Only meaningful for device tokens (IsDevice).
-             */
-            connected?: boolean;
-            /** @example 2026-06-15T09:00:00Z */
-            createdAt?: string;
-            expiresAt?: string;
-            id?: string;
-            /**
-             * @description IsDevice marks an app login session rather than a manually-created
-             *     personal/CLI token.
-             */
-            isDevice?: boolean;
-            lastUsedAt?: string;
-            /** @example my-cli */
-            name?: string;
-            /** @example gsk_AbC12 */
-            prefix?: string;
-        };
-        "immerle.AccountDTO": {
-            /** @example Bob Marley */
-            displayName?: string;
-            /** @example bob@example.com */
-            email?: string;
-            id?: string;
-            /** @example false */
-            isAdmin?: boolean;
-            /** @example fr */
-            language?: string;
-            /**
-             * @description ListenBrainzToken is the caller's personal ListenBrainz API token, when
-             *     set (empty means ListenBrainz scrobbling is off).
-             * @example 00000000-0000-0000-0000-000000000000
-             */
-            listenBrainzToken?: string;
-            /** @example bob */
-            username?: string;
-        };
         "immerle.ActivityEventDTO": {
             /** @example 2026-06-15T09:00:00Z */
             createdAt?: string;
@@ -10758,27 +10718,6 @@ export interface components {
             /** @example false */
             ticketmasterConfigured: boolean;
         };
-        "immerle.CreateTokenDTO": {
-            id?: string;
-            /** @example my-cli */
-            name?: string;
-            /** @example gsk_AbC12 */
-            prefix?: string;
-            /** @example gsk_AbC12...full-secret */
-            token?: string;
-        };
-        "immerle.DeviceDTO": {
-            /** @description Connected is true if the device was seen within the last few minutes. */
-            connected?: boolean;
-            createdAt?: string;
-            expiresAt?: string;
-            id?: string;
-            lastIp?: string;
-            lastSeen?: string;
-            /** @example Pixel 8 */
-            name?: string;
-            userAgent?: string;
-        };
         "immerle.FederationInstancesDTO": {
             instances?: components["schemas"]["immerle.InstanceSummaryDTO"][];
         };
@@ -10901,11 +10840,6 @@ export interface components {
             connected: boolean;
             /** @example bob */
             username?: string;
-        };
-        "immerle.LoginDTO": {
-            device?: components["schemas"]["immerle.DeviceDTO"];
-            /** @example eyJhbGciOiJIUzI1Ni... */
-            token?: string;
         };
         "immerle.OkResponse": {
             /** @example true */
@@ -11193,10 +11127,6 @@ export interface components {
             /** @example other-node */
             sqid?: string;
         };
-        "immerle.ThemeDTO": {
-            /** @example #3b82f6 */
-            accentColor?: string;
-        };
         "immerle.UserDTO": {
             /** @example Kilian Smiti */
             displayName?: string;
@@ -11239,6 +11169,20 @@ export interface components {
             plays?: number;
             /** @example One More Time */
             title?: string;
+        };
+        "immerle.accountView": {
+            displayName: string;
+            email: string;
+            id: string;
+            isAdmin: boolean;
+            /** @description Language is the UI language ("en", "fr"), empty to follow the device. */
+            language: string;
+            /**
+             * @description ListenBrainzToken is the caller's ListenBrainz API token, empty when
+             *     ListenBrainz scrobbling is off.
+             */
+            listenBrainzToken: string;
+            username: string;
         };
         "immerle.addCollaboratorBody": {
             username?: string;
@@ -11289,6 +11233,18 @@ export interface components {
             params?: {
                 [key: string]: unknown;
             };
+        };
+        "immerle.apiTokenView": {
+            /** @description Connected is true if the token was used within the last few minutes. */
+            connected: boolean;
+            createdAt: string;
+            expiresAt?: string;
+            id: string;
+            /** @description IsDevice marks an app login session rather than a personal/CLI token. */
+            isDevice: boolean;
+            lastUsedAt?: string;
+            name: string;
+            prefix: string;
         };
         "immerle.artistListView": {
             artists: components["schemas"]["immerle.artistView"][];
@@ -11370,6 +11326,23 @@ export interface components {
             expiresAt?: string;
             name?: string;
         };
+        "immerle.createdTokenView": {
+            id: string;
+            name: string;
+            prefix: string;
+            token: string;
+        };
+        "immerle.deviceView": {
+            /** @description Connected is true if the device was seen within the last few minutes. */
+            connected: boolean;
+            createdAt: string;
+            expiresAt?: string;
+            id: string;
+            lastIp: string;
+            lastSeen?: string;
+            name: string;
+            userAgent: string;
+        };
         "immerle.episodeListView": {
             episodes: components["schemas"]["immerle.episodeView"][];
         };
@@ -11439,6 +11412,11 @@ export interface components {
             apiSecret?: string;
             enabled?: boolean;
         };
+        "immerle.loginDeviceView": {
+            expiresAt?: string;
+            id: string;
+            name: string;
+        };
         "immerle.loginRequest": {
             /** @description Device is an optional human label for the session (defaults to the username). */
             device?: string;
@@ -11447,6 +11425,10 @@ export interface components {
             /** @description Token + Salt allow Subsonic-style token auth instead of a raw password. */
             token?: string;
             username?: string;
+        };
+        "immerle.loginView": {
+            device: components["schemas"]["immerle.loginDeviceView"];
+            token: string;
         };
         "immerle.lyricLine": {
             startMs?: number;
@@ -11945,6 +11927,13 @@ export interface components {
             order: "asc" | "desc";
             /** @description Sort is a whitelisted sort key (e.g. "random", "playCount", "recentlyAdded"). */
             sort: string;
+        };
+        "models.ThemeSettings": {
+            /**
+             * @description AccentColor is a CSS hex colour (e.g. "#3b82f6"). Empty means the client
+             *     should fall back to its own default.
+             */
+            accentColor?: string;
         };
     };
     responses: never;

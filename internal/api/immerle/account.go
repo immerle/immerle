@@ -25,15 +25,23 @@ func validEmail(s string) bool {
 var supportedLanguages = map[string]bool{"en": true, "fr": true}
 
 // accountView is the caller's own account (includes the private email).
-func accountView(u models.User) map[string]any {
-	return map[string]any{
-		"id":                u.ID,
-		"username":          u.Username,
-		"displayName":       u.DisplayName,
-		"email":             u.Email,
-		"isAdmin":           u.IsAdmin,
-		"language":          u.Language,
-		"listenBrainzToken": u.ListenBrainzToken,
+type accountView struct {
+	ID          string `json:"id"`
+	Username    string `json:"username"`
+	DisplayName string `json:"displayName"`
+	Email       string `json:"email"`
+	IsAdmin     bool   `json:"isAdmin"`
+	// Language is the UI language ("en", "fr"), empty to follow the device.
+	Language string `json:"language"`
+	// ListenBrainzToken is the caller's ListenBrainz API token, empty when
+	// ListenBrainz scrobbling is off.
+	ListenBrainzToken string `json:"listenBrainzToken"`
+}
+
+func toAccountView(u models.User) accountView {
+	return accountView{
+		ID: u.ID, Username: u.Username, DisplayName: u.DisplayName, Email: u.Email,
+		IsAdmin: u.IsAdmin, Language: u.Language, ListenBrainzToken: u.ListenBrainzToken,
 	}
 }
 
@@ -45,7 +53,7 @@ func accountView(u models.User) map[string]any {
 // @Tags         users
 // @Security     BearerAuth
 // @Produce      json
-// @Success      200  {object}  AccountDTO
+// @Success      200  {object}  accountView
 // @Failure      401  {object}  errorResponse
 // @Failure      500  {object}  errorResponse
 // @Router       /me [get]
@@ -56,7 +64,7 @@ func (h *Handler) handleAccount(w http.ResponseWriter, r *http.Request) {
 		writeInternal(w, err)
 		return
 	}
-	writeResource(w, http.StatusOK, accountView(user))
+	writeResource(w, http.StatusOK, toAccountView(user))
 }
 
 // updateAccountRequest is a partial account update; pointer fields distinguish
@@ -81,7 +89,7 @@ const validateTokenTimeout = 5 * time.Second
 // @Accept       json
 // @Produce      json
 // @Param        body  body  updateAccountRequest  true  "Account fields to change"
-// @Success      200  {object}  AccountDTO
+// @Success      200  {object}  accountView
 // @Failure      400  {object}  errorResponse
 // @Failure      401  {object}  errorResponse
 // @Failure      500  {object}  errorResponse
@@ -139,5 +147,5 @@ func (h *Handler) handleAccountUpdate(w http.ResponseWriter, r *http.Request) {
 		writeInternal(w, err)
 		return
 	}
-	writeResource(w, http.StatusOK, accountView(user))
+	writeResource(w, http.StatusOK, toAccountView(user))
 }

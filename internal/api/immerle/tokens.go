@@ -12,7 +12,7 @@ import (
 // @Tags         tokens
 // @Security     BearerAuth
 // @Produce      json
-// @Success      200  {array}  APITokenDTO
+// @Success      200  {array}  apiTokenView
 // @Failure      401  {object}  errorResponse
 // @Failure      500  {object}  errorResponse
 // @Router       /tokens [get]
@@ -23,17 +23,12 @@ func (h *Handler) handleTokens(w http.ResponseWriter, r *http.Request) {
 		writeInternal(w, err)
 		return
 	}
-	out := make([]map[string]any, 0, len(tokens))
+	out := make([]apiTokenView, 0, len(tokens))
 	for _, t := range tokens {
-		out = append(out, map[string]any{
-			"id":         t.ID,
-			"name":       t.Name,
-			"prefix":     t.Prefix,
-			"createdAt":  t.CreatedAt,
-			"lastUsedAt": t.LastUsedAt,
-			"expiresAt":  t.ExpiresAt,
-			"isDevice":   t.IsDevice,
-			"connected":  t.LastUsedAt != nil && time.Since(*t.LastUsedAt) < deviceOnlineWindow,
+		out = append(out, apiTokenView{
+			ID: t.ID, Name: t.Name, Prefix: t.Prefix, CreatedAt: t.CreatedAt,
+			LastUsedAt: t.LastUsedAt, ExpiresAt: t.ExpiresAt, IsDevice: t.IsDevice,
+			Connected: t.LastUsedAt != nil && time.Since(*t.LastUsedAt) < deviceOnlineWindow,
 		})
 	}
 	writeResource(w, http.StatusOK, out)
@@ -60,7 +55,7 @@ type createTokenRequest struct {
 // @Accept       json
 // @Produce      json
 // @Param        body  body  createTokenRequest  true  "Token name and optional expiry"
-// @Success      201  {object}  CreateTokenDTO
+// @Success      201  {object}  createdTokenView
 // @Failure      400  {object}  errorResponse
 // @Failure      401  {object}  errorResponse
 // @Failure      500  {object}  errorResponse
@@ -77,12 +72,29 @@ func (h *Handler) handleCreateToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.Logger.Info("API token created", "user", user.Username, "name", tok.Name, "tokenId", tok.ID)
-	writeResource(w, http.StatusCreated, map[string]any{
-		"token":  secret, // shown once
-		"id":     tok.ID,
-		"name":   tok.Name,
-		"prefix": tok.Prefix,
-	})
+	writeResource(w, http.StatusCreated, createdTokenView{Token: secret, ID: tok.ID, Name: tok.Name, Prefix: tok.Prefix})
+}
+
+// apiTokenView is one of the caller's API tokens (never the secret).
+type apiTokenView struct {
+	ID         string     `json:"id"`
+	Name       string     `json:"name"`
+	Prefix     string     `json:"prefix"`
+	CreatedAt  time.Time  `json:"createdAt"`
+	LastUsedAt *time.Time `json:"lastUsedAt" validate:"optional"`
+	ExpiresAt  *time.Time `json:"expiresAt" validate:"optional"`
+	// IsDevice marks an app login session rather than a personal/CLI token.
+	IsDevice bool `json:"isDevice"`
+	// Connected is true if the token was used within the last few minutes.
+	Connected bool `json:"connected"`
+}
+
+// createdTokenView is a freshly minted token: the only time the secret is shown.
+type createdTokenView struct {
+	Token  string `json:"token"`
+	ID     string `json:"id"`
+	Name   string `json:"name"`
+	Prefix string `json:"prefix"`
 }
 
 // handleRevokeToken revokes one of the caller's tokens.

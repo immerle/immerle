@@ -91,7 +91,8 @@ export type StationView = components['schemas']['immerle.stationView'];
 export type PlayQueueView = components['schemas']['immerle.playQueueView'];
 
 // Session creation (device login).
-export type LoginResponse = components['schemas']['immerle.LoginDTO'];
+export type LoginResponse = components['schemas']['immerle.loginView'];
+export type AccountView = components['schemas']['immerle.accountView'];
 
 // Social / Jam DTOs.
 export type ActivityEventDTO = components['schemas']['immerle.ActivityEventDTO'];
@@ -101,8 +102,8 @@ export type JamInviteDTO = components['schemas']['immerle.JamInviteDTO'];
 
 // API tokens (personal access tokens). Device-flagged ones (isDevice) back
 // the "Connected devices" screen — see APITokenRepo.ListDeviceSessions.
-export type APITokenDTO = components['schemas']['immerle.APITokenDTO'];
-export type CreateTokenResponse = components['schemas']['immerle.CreateTokenDTO'];
+export type APITokenView = components['schemas']['immerle.apiTokenView'];
+export type CreateTokenResponse = components['schemas']['immerle.createdTokenView'];
 
 // Public playlists (discovery + opt-in subscription).
 export type PublicPlaylistView = components['schemas']['immerle.publicPlaylistView'];
@@ -122,7 +123,11 @@ export type ImportItemDTO = components['schemas']['immerle.ImportItemDTO'];
 export type ImportSourceDTO = components['schemas']['immerle.ImportSourceDTO'];
 
 // Per-account UI theme.
-export type ThemeDTO = components['schemas']['immerle.ThemeDTO'];
+export type ThemeSettings = components['schemas']['models.ThemeSettings'];
+
+// Last.fm scrobbling: the caller's connection, and the admin config state.
+export type LastFmStatus = components['schemas']['immerle.LastFmStatusDTO'];
+export type LastFmAdminStatus = components['schemas']['immerle.LastFmAdminDTO'];
 
 // Admin-managed dynamic providers.
 export type ProviderDTO = components['schemas']['immerle.ProviderDTO'];
