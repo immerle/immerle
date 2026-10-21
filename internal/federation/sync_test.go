@@ -79,13 +79,23 @@ type syncStub struct {
 	conn        *websocket.Conn // set once the client has connected
 }
 
-func (st *syncStub) lastUpsert() stream.Frame {
-	st.mu.Lock()
-	defer st.mu.Unlock()
-	if st.upsert == nil {
-		return stream.Frame{}
+// lastUpsert waits for a playlist.upsert frame: it travels over the socket, so
+// it can land after the syncer's handle call has returned.
+func (st *syncStub) lastUpsert(t *testing.T) stream.Frame {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Second)
+	for {
+		st.mu.Lock()
+		f := st.upsert
+		st.mu.Unlock()
+		if f != nil {
+			return *f
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("no playlist.upsert frame received")
+		}
+		time.Sleep(time.Millisecond)
 	}
-	return *st.upsert
 }
 
 func (st *syncStub) numUpserts() int {
@@ -249,7 +259,7 @@ func TestOutboxWorkerSyncsAndDeletesPublicPlaylist(t *testing.T) {
 	}
 
 	wantHash := func() string { s := sha256.Sum256([]byte("JPEGDATA")); return hex.EncodeToString(s[:]) }()
-	upsert := st.lastUpsert()
+	upsert := st.lastUpsert(t)
 	if upsert.ExternalID != plID {
 		t.Fatalf("upsert externalId = %q, want %s", upsert.ExternalID, plID)
 	}
@@ -347,7 +357,7 @@ func TestPlaylistSyncComposesMosaicWhenNoCustomCover(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	image := st.lastUpsert().Image
+	image := st.lastUpsert(t).Image
 	if !strings.HasPrefix(image, "/api/v1/covers/") {
 		t.Fatalf("expected a composed mosaic cover url, got %q", image)
 	}
@@ -403,7 +413,7 @@ func TestPlaylistSyncKeepsCustomCoverOverMosaic(t *testing.T) {
 		sum := sha256.Sum256(covers.byID["custom-cover"])
 		return hex.EncodeToString(sum[:])
 	}()
-	if image := st.lastUpsert().Image; image != "/api/v1/covers/"+wantHash {
+	if image := st.lastUpsert(t).Image; image != "/api/v1/covers/"+wantHash {
 		t.Fatalf("expected the custom cover, not a mosaic, got image=%q", image)
 	}
 }
