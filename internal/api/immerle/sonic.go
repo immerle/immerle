@@ -5,8 +5,8 @@ import (
 	"strings"
 )
 
-// SonicStatusDTO is the local audio-analysis state and progress.
-type SonicStatusDTO struct {
+// sonicStatusView is the local audio-analysis state and progress.
+type sonicStatusView struct {
 	// Available is false when ffmpeg is missing: analysis can't run at all.
 	Available bool `json:"available" example:"true"`
 	Enabled   bool `json:"enabled" example:"true"`
@@ -24,7 +24,7 @@ type SonicStatusDTO struct {
 // @Tags         admin
 // @Security     BearerAuth
 // @Produce      json
-// @Success      200  {object}  SonicStatusDTO
+// @Success      200  {object}  sonicStatusView
 // @Failure      401  {object}  errorResponse
 // @Failure      403  {object}  errorResponse
 // @Failure      500  {object}  errorResponse
@@ -43,7 +43,7 @@ func (h *Handler) handleSonicStatus(w http.ResponseWriter, r *http.Request) {
 		writeInternal(w, err)
 		return
 	}
-	writeResource(w, http.StatusOK, SonicStatusDTO{
+	writeResource(w, http.StatusOK, sonicStatusView{
 		Available: h.Sonic.Available(),
 		Enabled:   h.Sonic.Enabled(),
 		Total:     st.Total,
@@ -94,8 +94,8 @@ func (h *Handler) handleSonicRadio(w http.ResponseWriter, r *http.Request) {
 // maxAutoDJTracks bounds an Auto-DJ request (the ordering is quadratic).
 const maxAutoDJTracks = 500
 
-// AutoDJRequestDTO is the body of POST /songs/autodj.
-type AutoDJRequestDTO struct {
+// autoDJRequest is the body of POST /songs/autodj.
+type autoDJRequest struct {
 	// IDs are the track ids to order (a playlist, or the queue from the
 	// current track on). Duplicates are kept.
 	IDs []string `json:"ids,omitempty" validate:"optional"`
@@ -103,8 +103,8 @@ type AutoDJRequestDTO struct {
 	KeepFirst bool `json:"keepFirst" example:"true" validate:"optional"`
 }
 
-// AutoDJResponseDTO is the same ids, reordered.
-type AutoDJResponseDTO struct {
+// autoDJView is the same ids, reordered.
+type autoDJView struct {
 	IDs []string `json:"ids" validate:"required"`
 }
 
@@ -116,8 +116,8 @@ type AutoDJResponseDTO struct {
 // @Security     BearerAuth
 // @Accept       json
 // @Produce      json
-// @Param        body  body  AutoDJRequestDTO  true  "Tracks to order"
-// @Success      200  {object}  AutoDJResponseDTO
+// @Param        body  body  autoDJRequest  true  "Tracks to order"
+// @Success      200  {object}  autoDJView
 // @Failure      400  {object}  errorResponse
 // @Failure      401  {object}  errorResponse
 // @Failure      404  {object}  errorResponse
@@ -128,7 +128,7 @@ func (h *Handler) handleAutoDJ(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "not_found", "Auto-DJ is disabled")
 		return
 	}
-	var req AutoDJRequestDTO
+	var req autoDJRequest
 	if !decodeJSON(w, r, &req) {
 		return
 	}
@@ -144,11 +144,11 @@ func (h *Handler) handleAutoDJ(w http.ResponseWriter, r *http.Request) {
 	if ids == nil {
 		ids = []string{}
 	}
-	writeResource(w, http.StatusOK, AutoDJResponseDTO{IDs: ids})
+	writeResource(w, http.StatusOK, autoDJView{IDs: ids})
 }
 
-// SonicDuplicatesDTO lists groups of tracks that sound identical.
-type SonicDuplicatesDTO struct {
+// sonicDuplicatesView lists groups of tracks that sound identical.
+type sonicDuplicatesView struct {
 	Groups [][]songView `json:"groups" validate:"required"`
 }
 
@@ -159,7 +159,7 @@ type SonicDuplicatesDTO struct {
 // @Tags         admin
 // @Security     BearerAuth
 // @Produce      json
-// @Success      200  {object}  SonicDuplicatesDTO
+// @Success      200  {object}  sonicDuplicatesView
 // @Failure      401  {object}  errorResponse
 // @Failure      403  {object}  errorResponse
 // @Failure      404  {object}  errorResponse
@@ -187,7 +187,7 @@ func (h *Handler) handleSonicDuplicates(w http.ResponseWriter, r *http.Request) 
 		writeInternal(w, err)
 		return
 	}
-	out := SonicDuplicatesDTO{Groups: [][]songView{}}
+	out := sonicDuplicatesView{Groups: [][]songView{}}
 	for _, g := range groups {
 		var views []songView
 		for _, id := range g {
@@ -202,8 +202,8 @@ func (h *Handler) handleSonicDuplicates(w http.ResponseWriter, r *http.Request) 
 	writeResource(w, http.StatusOK, out)
 }
 
-// SongSonicDTO is a track's audio analysis.
-type SongSonicDTO struct {
+// songSonicView is a track's audio analysis.
+type songSonicView struct {
 	BPM          float64 `json:"bpm" example:"127.6"`
 	Key          string  `json:"key" example:"A"`
 	Mode         string  `json:"mode" example:"minor"`
@@ -220,7 +220,7 @@ type SongSonicDTO struct {
 // @Security     BearerAuth
 // @Produce      json
 // @Param        id  path  string  true  "Track id"
-// @Success      200  {object}  SongSonicDTO
+// @Success      200  {object}  songSonicView
 // @Failure      401  {object}  errorResponse
 // @Failure      404  {object}  errorResponse
 // @Router       /songs/{id}/sonic [get]
@@ -234,7 +234,7 @@ func (h *Handler) handleSongSonic(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "not_found", "track not analyzed")
 		return
 	}
-	writeResource(w, http.StatusOK, SongSonicDTO{
+	writeResource(w, http.StatusOK, songSonicView{
 		BPM: f.BPM, Key: f.Key, Mode: f.Mode, Camelot: f.Camelot, Energy: f.Energy, Danceability: f.Danceability,
 	})
 }

@@ -1,269 +1,6 @@
 {
     "components": {
         "schemas": {
-            "immerle.AutoDJRequestDTO": {
-                "properties": {
-                    "ids": {
-                        "description": "IDs are the track ids to order (a playlist, or the queue from the\ncurrent track on). Duplicates are kept.",
-                        "items": {
-                            "type": "string"
-                        },
-                        "type": "array",
-                        "uniqueItems": false
-                    },
-                    "keepFirst": {
-                        "description": "KeepFirst pins ids[0], e.g. the track playing now.",
-                        "example": true,
-                        "type": "boolean"
-                    }
-                },
-                "type": "object"
-            },
-            "immerle.AutoDJResponseDTO": {
-                "properties": {
-                    "ids": {
-                        "items": {
-                            "type": "string"
-                        },
-                        "type": "array",
-                        "uniqueItems": false
-                    }
-                },
-                "required": [
-                    "ids"
-                ],
-                "type": "object"
-            },
-            "immerle.BandcampCollectionDTO": {
-                "properties": {
-                    "items": {
-                        "items": {
-                            "$ref": "#/components/schemas/immerle.BandcampCollectionItemDTO"
-                        },
-                        "type": "array",
-                        "uniqueItems": false
-                    }
-                },
-                "type": "object"
-            },
-            "immerle.BandcampCollectionItemDTO": {
-                "properties": {
-                    "artUrl": {
-                        "type": "string"
-                    },
-                    "artistName": {
-                        "type": "string"
-                    },
-                    "itemTitle": {
-                        "type": "string"
-                    },
-                    "itemType": {
-                        "example": "album",
-                        "type": "string"
-                    },
-                    "jobId": {
-                        "type": "string"
-                    },
-                    "jobStatus": {
-                        "example": "completed",
-                        "type": "string"
-                    },
-                    "purchased": {
-                        "example": "2021-01-01T10:00:00Z",
-                        "type": "string"
-                    },
-                    "saleItemId": {
-                        "example": "123456789",
-                        "type": "string"
-                    },
-                    "saleItemType": {
-                        "example": "p",
-                        "type": "string"
-                    }
-                },
-                "required": [
-                    "artistName",
-                    "itemTitle",
-                    "itemType",
-                    "purchased",
-                    "saleItemId",
-                    "saleItemType"
-                ],
-                "type": "object"
-            },
-            "immerle.BandcampJobDTO": {
-                "properties": {
-                    "artistName": {
-                        "type": "string"
-                    },
-                    "attempts": {
-                        "type": "integer"
-                    },
-                    "createdAt": {
-                        "example": "2026-07-18T21:42:00Z",
-                        "type": "string"
-                    },
-                    "error": {
-                        "type": "string"
-                    },
-                    "format": {
-                        "example": "flac",
-                        "type": "string"
-                    },
-                    "id": {
-                        "type": "string"
-                    },
-                    "itemTitle": {
-                        "type": "string"
-                    },
-                    "itemType": {
-                        "example": "album",
-                        "type": "string"
-                    },
-                    "saleItemId": {
-                        "type": "string"
-                    },
-                    "saleItemType": {
-                        "type": "string"
-                    },
-                    "status": {
-                        "example": "completed",
-                        "type": "string"
-                    },
-                    "trackIds": {
-                        "items": {
-                            "type": "string"
-                        },
-                        "type": "array",
-                        "uniqueItems": false
-                    },
-                    "updatedAt": {
-                        "example": "2026-07-18T21:43:00Z",
-                        "type": "string"
-                    }
-                },
-                "required": [
-                    "artistName",
-                    "attempts",
-                    "createdAt",
-                    "id",
-                    "itemTitle",
-                    "itemType",
-                    "saleItemId",
-                    "saleItemType",
-                    "status",
-                    "updatedAt"
-                ],
-                "type": "object"
-            },
-            "immerle.BandcampJobsDTO": {
-                "properties": {
-                    "jobs": {
-                        "items": {
-                            "$ref": "#/components/schemas/immerle.BandcampJobDTO"
-                        },
-                        "type": "array",
-                        "uniqueItems": false
-                    }
-                },
-                "type": "object"
-            },
-            "immerle.BandcampStatusDTO": {
-                "properties": {
-                    "connected": {
-                        "type": "boolean"
-                    },
-                    "fanId": {
-                        "type": "string"
-                    },
-                    "lastSyncedAt": {
-                        "example": "2026-07-18T21:42:00Z",
-                        "type": "string"
-                    },
-                    "needsReconnect": {
-                        "type": "boolean"
-                    }
-                },
-                "required": [
-                    "connected"
-                ],
-                "type": "object"
-            },
-            "immerle.ConcertDTO": {
-                "properties": {
-                    "artistName": {
-                        "example": "Daft Punk",
-                        "type": "string"
-                    },
-                    "city": {
-                        "example": "Paris",
-                        "type": "string"
-                    },
-                    "eventName": {
-                        "example": "Daft Punk World Tour",
-                        "type": "string"
-                    },
-                    "id": {
-                        "type": "string"
-                    },
-                    "source": {
-                        "example": "ticketmaster",
-                        "type": "string"
-                    },
-                    "startTime": {
-                        "example": "2026-09-12T19:00:00Z",
-                        "type": "string"
-                    },
-                    "url": {
-                        "example": "https://www.ticketmaster.com/event/...",
-                        "type": "string"
-                    },
-                    "venue": {
-                        "example": "Accor Arena",
-                        "type": "string"
-                    }
-                },
-                "type": "object"
-            },
-            "immerle.ConcertsDTO": {
-                "properties": {
-                    "concerts": {
-                        "items": {
-                            "$ref": "#/components/schemas/immerle.ConcertDTO"
-                        },
-                        "type": "array",
-                        "uniqueItems": false
-                    }
-                },
-                "type": "object"
-            },
-            "immerle.ConcertsStatusDTO": {
-                "properties": {
-                    "country": {
-                        "description": "Country is an ISO 3166-1 alpha-2 code (e.g. \"FR\"), picked from a fixed\ndropdown in the admin UI — not a secret, returned as-is.",
-                        "example": "FR",
-                        "type": "string"
-                    },
-                    "enabled": {
-                        "example": false,
-                        "type": "boolean"
-                    },
-                    "skiddleConfigured": {
-                        "example": false,
-                        "type": "boolean"
-                    },
-                    "ticketmasterConfigured": {
-                        "example": false,
-                        "type": "boolean"
-                    }
-                },
-                "required": [
-                    "enabled",
-                    "skiddleConfigured",
-                    "ticketmasterConfigured"
-                ],
-                "type": "object"
-            },
             "immerle.FederationUpdateDTO": {
                 "properties": {
                     "name": {
@@ -275,155 +12,6 @@
                         "type": "string"
                     }
                 },
-                "type": "object"
-            },
-            "immerle.ImportDTO": {
-                "properties": {
-                    "doubtful": {
-                        "example": 2,
-                        "type": "integer"
-                    },
-                    "error": {
-                        "type": "string"
-                    },
-                    "failed": {
-                        "example": 0,
-                        "type": "integer"
-                    },
-                    "id": {
-                        "type": "string"
-                    },
-                    "items": {
-                        "items": {
-                            "$ref": "#/components/schemas/immerle.ImportItemDTO"
-                        },
-                        "type": "array",
-                        "uniqueItems": false
-                    },
-                    "matched": {
-                        "example": 38,
-                        "type": "integer"
-                    },
-                    "missing": {
-                        "example": 2,
-                        "type": "integer"
-                    },
-                    "playlistId": {
-                        "type": "string"
-                    },
-                    "source": {
-                        "example": "spotify",
-                        "type": "string"
-                    },
-                    "sourcePlaylistName": {
-                        "type": "string"
-                    },
-                    "sourceRef": {
-                        "type": "string"
-                    },
-                    "status": {
-                        "example": "completed",
-                        "type": "string"
-                    },
-                    "total": {
-                        "example": 42,
-                        "type": "integer"
-                    }
-                },
-                "type": "object"
-            },
-            "immerle.ImportItemDTO": {
-                "properties": {
-                    "candidateCoverArt": {
-                        "type": "string"
-                    },
-                    "candidateTrackId": {
-                        "description": "CandidateTrackID / CandidateCoverArt let a client preview a doubtful item:\nplay the candidate (stream accepts the remote track id) and show its cover.",
-                        "type": "string"
-                    },
-                    "confidence": {
-                        "example": 0.62,
-                        "type": "number"
-                    },
-                    "id": {
-                        "type": "string"
-                    },
-                    "matchedTrackId": {
-                        "type": "string"
-                    },
-                    "note": {
-                        "type": "string"
-                    },
-                    "position": {
-                        "type": "integer"
-                    },
-                    "resolvedArtist": {
-                        "type": "string"
-                    },
-                    "resolvedTitle": {
-                        "type": "string"
-                    },
-                    "sourceAlbum": {
-                        "type": "string"
-                    },
-                    "sourceArtist": {
-                        "example": "Daft Punk",
-                        "type": "string"
-                    },
-                    "sourceTitle": {
-                        "example": "Da Funk",
-                        "type": "string"
-                    },
-                    "status": {
-                        "example": "matched",
-                        "type": "string"
-                    }
-                },
-                "type": "object"
-            },
-            "immerle.ImportSourceDTO": {
-                "properties": {
-                    "configured": {
-                        "example": true,
-                        "type": "boolean"
-                    },
-                    "name": {
-                        "example": "spotify",
-                        "type": "string"
-                    }
-                },
-                "type": "object"
-            },
-            "immerle.LastFmAdminDTO": {
-                "properties": {
-                    "configured": {
-                        "example": false,
-                        "type": "boolean"
-                    },
-                    "enabled": {
-                        "example": false,
-                        "type": "boolean"
-                    }
-                },
-                "required": [
-                    "configured",
-                    "enabled"
-                ],
-                "type": "object"
-            },
-            "immerle.LastFmStatusDTO": {
-                "properties": {
-                    "connected": {
-                        "type": "boolean"
-                    },
-                    "username": {
-                        "example": "bob",
-                        "type": "string"
-                    }
-                },
-                "required": [
-                    "connected"
-                ],
                 "type": "object"
             },
             "immerle.RuntimeSettingsDTO": {
@@ -667,240 +255,6 @@
                     },
                     "settings": {
                         "$ref": "#/components/schemas/immerle.RuntimeSettingsDTO"
-                    }
-                },
-                "type": "object"
-            },
-            "immerle.SetupInitRequest": {
-                "properties": {
-                    "displayName": {
-                        "description": "DisplayName is an optional free-text name shown in the UI (falls back to\nthe username when empty).",
-                        "example": "Kilian Smiti",
-                        "type": "string"
-                    },
-                    "email": {
-                        "example": "me@example.com",
-                        "type": "string"
-                    },
-                    "password": {
-                        "example": "a-strong-password",
-                        "type": "string"
-                    },
-                    "setupToken": {
-                        "description": "SetupToken is required only when the server was started with\nauth.require_setup_token=true.",
-                        "type": "string"
-                    },
-                    "username": {
-                        "example": "kilian",
-                        "type": "string"
-                    }
-                },
-                "type": "object"
-            },
-            "immerle.SetupStatusDTO": {
-                "properties": {
-                    "initialized": {
-                        "example": false,
-                        "type": "boolean"
-                    },
-                    "needsSetup": {
-                        "example": true,
-                        "type": "boolean"
-                    },
-                    "setupTokenRequired": {
-                        "example": false,
-                        "type": "boolean"
-                    },
-                    "userCount": {
-                        "example": 0,
-                        "type": "integer"
-                    }
-                },
-                "type": "object"
-            },
-            "immerle.SongSonicDTO": {
-                "properties": {
-                    "bpm": {
-                        "example": 127.6,
-                        "type": "number"
-                    },
-                    "camelot": {
-                        "example": "8A",
-                        "type": "string"
-                    },
-                    "danceability": {
-                        "example": 0.64,
-                        "type": "number"
-                    },
-                    "energy": {
-                        "example": 0.82,
-                        "type": "number"
-                    },
-                    "key": {
-                        "example": "A",
-                        "type": "string"
-                    },
-                    "mode": {
-                        "example": "minor",
-                        "type": "string"
-                    }
-                },
-                "required": [
-                    "bpm",
-                    "camelot",
-                    "danceability",
-                    "energy",
-                    "key",
-                    "mode"
-                ],
-                "type": "object"
-            },
-            "immerle.SonicDuplicatesDTO": {
-                "properties": {
-                    "groups": {
-                        "items": {
-                            "items": {
-                                "$ref": "#/components/schemas/immerle.songView"
-                            },
-                            "type": "array"
-                        },
-                        "type": "array",
-                        "uniqueItems": false
-                    }
-                },
-                "required": [
-                    "groups"
-                ],
-                "type": "object"
-            },
-            "immerle.SonicStatusDTO": {
-                "properties": {
-                    "analyzed": {
-                        "example": 4210,
-                        "type": "integer"
-                    },
-                    "available": {
-                        "description": "Available is false when ffmpeg is missing: analysis can't run at all.",
-                        "example": true,
-                        "type": "boolean"
-                    },
-                    "enabled": {
-                        "example": true,
-                        "type": "boolean"
-                    },
-                    "failed": {
-                        "example": 3,
-                        "type": "integer"
-                    },
-                    "total": {
-                        "description": "Total counts local tracks; Analyzed and Failed those processed with the\ncurrent algorithm.",
-                        "example": 12000,
-                        "type": "integer"
-                    }
-                },
-                "required": [
-                    "analyzed",
-                    "available",
-                    "enabled",
-                    "failed",
-                    "total"
-                ],
-                "type": "object"
-            },
-            "immerle.UserDTO": {
-                "properties": {
-                    "displayName": {
-                        "example": "Kilian Smiti",
-                        "type": "string"
-                    },
-                    "id": {
-                        "type": "string"
-                    },
-                    "isAdmin": {
-                        "example": true,
-                        "type": "boolean"
-                    },
-                    "username": {
-                        "example": "kilian",
-                        "type": "string"
-                    }
-                },
-                "type": "object"
-            },
-            "immerle.WrappedCountDTO": {
-                "properties": {
-                    "name": {
-                        "example": "Daft Punk",
-                        "type": "string"
-                    },
-                    "plays": {
-                        "example": 120,
-                        "type": "integer"
-                    }
-                },
-                "type": "object"
-            },
-            "immerle.WrappedDTO": {
-                "properties": {
-                    "byMonth": {
-                        "items": {
-                            "type": "integer"
-                        },
-                        "type": "array",
-                        "uniqueItems": false
-                    },
-                    "topArtists": {
-                        "items": {
-                            "$ref": "#/components/schemas/immerle.WrappedCountDTO"
-                        },
-                        "type": "array",
-                        "uniqueItems": false
-                    },
-                    "topGenres": {
-                        "items": {
-                            "$ref": "#/components/schemas/immerle.WrappedCountDTO"
-                        },
-                        "type": "array",
-                        "uniqueItems": false
-                    },
-                    "topTracks": {
-                        "items": {
-                            "$ref": "#/components/schemas/immerle.WrappedTrackDTO"
-                        },
-                        "type": "array",
-                        "uniqueItems": false
-                    },
-                    "totalPlays": {
-                        "example": 1234,
-                        "type": "integer"
-                    },
-                    "totalSeconds": {
-                        "example": 987654,
-                        "type": "integer"
-                    },
-                    "year": {
-                        "example": 2025,
-                        "type": "integer"
-                    }
-                },
-                "type": "object"
-            },
-            "immerle.WrappedTrackDTO": {
-                "properties": {
-                    "artist": {
-                        "example": "Daft Punk",
-                        "type": "string"
-                    },
-                    "id": {
-                        "type": "string"
-                    },
-                    "plays": {
-                        "example": 42,
-                        "type": "integer"
-                    },
-                    "title": {
-                        "example": "One More Time",
-                        "type": "string"
                     }
                 },
                 "type": "object"
@@ -1293,6 +647,106 @@
                 ],
                 "type": "object"
             },
+            "immerle.autoDJRequest": {
+                "properties": {
+                    "ids": {
+                        "description": "IDs are the track ids to order (a playlist, or the queue from the\ncurrent track on). Duplicates are kept.",
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "keepFirst": {
+                        "description": "KeepFirst pins ids[0], e.g. the track playing now.",
+                        "example": true,
+                        "type": "boolean"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.autoDJView": {
+                "properties": {
+                    "ids": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "required": [
+                    "ids"
+                ],
+                "type": "object"
+            },
+            "immerle.bandcampCollectionItemView": {
+                "properties": {
+                    "artUrl": {
+                        "type": "string"
+                    },
+                    "artistName": {
+                        "type": "string"
+                    },
+                    "itemTitle": {
+                        "type": "string"
+                    },
+                    "itemType": {
+                        "enum": [
+                            "album",
+                            "track"
+                        ],
+                        "example": "album",
+                        "type": "string"
+                    },
+                    "jobId": {
+                        "type": "string"
+                    },
+                    "jobStatus": {
+                        "enum": [
+                            "queued",
+                            "running",
+                            "completed",
+                            "failed"
+                        ],
+                        "example": "completed",
+                        "type": "string"
+                    },
+                    "purchased": {
+                        "example": "2021-01-01T10:00:00Z",
+                        "type": "string"
+                    },
+                    "saleItemId": {
+                        "example": "123456789",
+                        "type": "string"
+                    },
+                    "saleItemType": {
+                        "example": "p",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "artistName",
+                    "itemTitle",
+                    "itemType",
+                    "purchased",
+                    "saleItemId",
+                    "saleItemType"
+                ],
+                "type": "object"
+            },
+            "immerle.bandcampCollectionView": {
+                "properties": {
+                    "items": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.bandcampCollectionItemView"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "type": "object"
+            },
             "immerle.bandcampConnectRequest": {
                 "properties": {
                     "cookie": {
@@ -1313,6 +767,114 @@
                         "type": "string"
                     }
                 },
+                "type": "object"
+            },
+            "immerle.bandcampJobView": {
+                "properties": {
+                    "artistName": {
+                        "type": "string"
+                    },
+                    "attempts": {
+                        "type": "integer"
+                    },
+                    "createdAt": {
+                        "example": "2026-07-18T21:42:00Z",
+                        "type": "string"
+                    },
+                    "error": {
+                        "type": "string"
+                    },
+                    "format": {
+                        "example": "flac",
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "itemTitle": {
+                        "type": "string"
+                    },
+                    "itemType": {
+                        "enum": [
+                            "album",
+                            "track"
+                        ],
+                        "example": "album",
+                        "type": "string"
+                    },
+                    "saleItemId": {
+                        "type": "string"
+                    },
+                    "saleItemType": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "enum": [
+                            "queued",
+                            "running",
+                            "completed",
+                            "failed"
+                        ],
+                        "example": "completed",
+                        "type": "string"
+                    },
+                    "trackIds": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "updatedAt": {
+                        "example": "2026-07-18T21:43:00Z",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "artistName",
+                    "attempts",
+                    "createdAt",
+                    "id",
+                    "itemTitle",
+                    "itemType",
+                    "saleItemId",
+                    "saleItemType",
+                    "status",
+                    "updatedAt"
+                ],
+                "type": "object"
+            },
+            "immerle.bandcampJobsView": {
+                "properties": {
+                    "jobs": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.bandcampJobView"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.bandcampStatusView": {
+                "properties": {
+                    "connected": {
+                        "type": "boolean"
+                    },
+                    "fanId": {
+                        "type": "string"
+                    },
+                    "lastSyncedAt": {
+                        "example": "2026-07-18T21:42:00Z",
+                        "type": "string"
+                    },
+                    "needsReconnect": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "connected"
+                ],
                 "type": "object"
             },
             "immerle.capabilitiesView": {
@@ -1568,6 +1130,49 @@
                 },
                 "required": [
                     "type"
+                ],
+                "type": "object"
+            },
+            "immerle.concertListView": {
+                "properties": {
+                    "concerts": {
+                        "items": {
+                            "$ref": "#/components/schemas/models.Concert"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "required": [
+                    "concerts"
+                ],
+                "type": "object"
+            },
+            "immerle.concertsStatusView": {
+                "properties": {
+                    "country": {
+                        "description": "Country is an ISO 3166-1 alpha-2 code (e.g. \"FR\"), picked from a fixed\ndropdown in the admin UI — not a secret, returned as-is.",
+                        "example": "FR",
+                        "type": "string"
+                    },
+                    "enabled": {
+                        "example": false,
+                        "type": "boolean"
+                    },
+                    "skiddleConfigured": {
+                        "example": false,
+                        "type": "boolean"
+                    },
+                    "ticketmasterConfigured": {
+                        "example": false,
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "country",
+                    "enabled",
+                    "skiddleConfigured",
+                    "ticketmasterConfigured"
                 ],
                 "type": "object"
             },
@@ -1901,6 +1506,21 @@
                 ],
                 "type": "object"
             },
+            "immerle.importSourceView": {
+                "properties": {
+                    "configured": {
+                        "type": "boolean"
+                    },
+                    "name": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "configured",
+                    "name"
+                ],
+                "type": "object"
+            },
             "immerle.instanceListView": {
                 "properties": {
                     "instances": {
@@ -1984,6 +1604,23 @@
                 ],
                 "type": "object"
             },
+            "immerle.lastFmAdminView": {
+                "properties": {
+                    "configured": {
+                        "example": false,
+                        "type": "boolean"
+                    },
+                    "enabled": {
+                        "example": false,
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "configured",
+                    "enabled"
+                ],
+                "type": "object"
+            },
             "immerle.lastFmConnectFinishRequest": {
                 "properties": {
                     "token": {
@@ -2004,6 +1641,21 @@
                 "required": [
                     "authUrl",
                     "token"
+                ],
+                "type": "object"
+            },
+            "immerle.lastFmStatusView": {
+                "properties": {
+                    "connected": {
+                        "type": "boolean"
+                    },
+                    "username": {
+                        "example": "bob",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "connected"
                 ],
                 "type": "object"
             },
@@ -3058,6 +2710,78 @@
                 },
                 "type": "object"
             },
+            "immerle.setupAdminView": {
+                "properties": {
+                    "displayName": {
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "isAdmin": {
+                        "type": "boolean"
+                    },
+                    "username": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "displayName",
+                    "id",
+                    "isAdmin",
+                    "username"
+                ],
+                "type": "object"
+            },
+            "immerle.setupInitRequest": {
+                "properties": {
+                    "displayName": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string"
+                    },
+                    "password": {
+                        "type": "string"
+                    },
+                    "setupToken": {
+                        "description": "SetupToken is required only when GET /setup says setupTokenRequired.",
+                        "type": "string"
+                    },
+                    "username": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "password",
+                    "username"
+                ],
+                "type": "object"
+            },
+            "immerle.setupStatusView": {
+                "properties": {
+                    "initialized": {
+                        "type": "boolean"
+                    },
+                    "needsSetup": {
+                        "type": "boolean"
+                    },
+                    "setupTokenRequired": {
+                        "description": "SetupTokenRequired is true when POST /setup needs the token printed in\nthe server logs.",
+                        "type": "boolean"
+                    },
+                    "userCount": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "initialized",
+                    "needsSetup",
+                    "setupTokenRequired",
+                    "userCount"
+                ],
+                "type": "object"
+            },
             "immerle.shareCreateRequest": {
                 "properties": {
                     "description": {
@@ -3225,6 +2949,43 @@
                 ],
                 "type": "object"
             },
+            "immerle.songSonicView": {
+                "properties": {
+                    "bpm": {
+                        "example": 127.6,
+                        "type": "number"
+                    },
+                    "camelot": {
+                        "example": "8A",
+                        "type": "string"
+                    },
+                    "danceability": {
+                        "example": 0.64,
+                        "type": "number"
+                    },
+                    "energy": {
+                        "example": 0.82,
+                        "type": "number"
+                    },
+                    "key": {
+                        "example": "A",
+                        "type": "string"
+                    },
+                    "mode": {
+                        "example": "minor",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "bpm",
+                    "camelot",
+                    "danceability",
+                    "energy",
+                    "key",
+                    "mode"
+                ],
+                "type": "object"
+            },
             "immerle.songView": {
                 "properties": {
                     "album": {
@@ -3338,6 +3099,58 @@
                     "duration",
                     "id",
                     "title"
+                ],
+                "type": "object"
+            },
+            "immerle.sonicDuplicatesView": {
+                "properties": {
+                    "groups": {
+                        "items": {
+                            "items": {
+                                "$ref": "#/components/schemas/immerle.songView"
+                            },
+                            "type": "array"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "required": [
+                    "groups"
+                ],
+                "type": "object"
+            },
+            "immerle.sonicStatusView": {
+                "properties": {
+                    "analyzed": {
+                        "example": 4210,
+                        "type": "integer"
+                    },
+                    "available": {
+                        "description": "Available is false when ffmpeg is missing: analysis can't run at all.",
+                        "example": true,
+                        "type": "boolean"
+                    },
+                    "enabled": {
+                        "example": true,
+                        "type": "boolean"
+                    },
+                    "failed": {
+                        "example": 3,
+                        "type": "integer"
+                    },
+                    "total": {
+                        "description": "Total counts local tracks; Analyzed and Failed those processed with the\ncurrent algorithm.",
+                        "example": 12000,
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "analyzed",
+                    "available",
+                    "enabled",
+                    "failed",
+                    "total"
                 ],
                 "type": "object"
             },
@@ -3659,6 +3472,229 @@
                 ],
                 "type": "object"
             },
+            "models.Concert": {
+                "properties": {
+                    "artistName": {
+                        "type": "string"
+                    },
+                    "city": {
+                        "type": "string"
+                    },
+                    "eventName": {
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "source": {
+                        "enum": [
+                            "ticketmaster",
+                            "skiddle"
+                        ],
+                        "type": "string"
+                    },
+                    "startTime": {
+                        "type": "string"
+                    },
+                    "url": {
+                        "type": "string"
+                    },
+                    "venue": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "artistName",
+                    "eventName",
+                    "id",
+                    "source",
+                    "startTime"
+                ],
+                "type": "object"
+            },
+            "models.Import": {
+                "properties": {
+                    "createdAt": {
+                        "type": "string"
+                    },
+                    "doubtful": {
+                        "type": "integer"
+                    },
+                    "error": {
+                        "type": "string"
+                    },
+                    "failed": {
+                        "type": "integer"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "items": {
+                        "description": "Items is populated only on a detail fetch.",
+                        "items": {
+                            "$ref": "#/components/schemas/models.ImportItem"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "matched": {
+                        "type": "integer"
+                    },
+                    "missing": {
+                        "type": "integer"
+                    },
+                    "playlistId": {
+                        "description": "PlaylistID is the immerle playlist created for this import.",
+                        "type": "string"
+                    },
+                    "source": {
+                        "description": "Source is the import-source name (e.g. \"spotify\").",
+                        "type": "string"
+                    },
+                    "sourcePlaylistName": {
+                        "description": "SourcePlaylistName is the playlist name as seen at the source.",
+                        "type": "string"
+                    },
+                    "sourceRef": {
+                        "description": "SourceRef is the source playlist identifier/URL supplied by the user.",
+                        "type": "string"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/models.ImportStatus"
+                    },
+                    "total": {
+                        "type": "integer"
+                    },
+                    "updatedAt": {
+                        "type": "string"
+                    },
+                    "userId": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "createdAt",
+                    "doubtful",
+                    "failed",
+                    "id",
+                    "matched",
+                    "missing",
+                    "source",
+                    "sourceRef",
+                    "status",
+                    "total",
+                    "updatedAt",
+                    "userId"
+                ],
+                "type": "object"
+            },
+            "models.ImportItem": {
+                "properties": {
+                    "candidateCoverArt": {
+                        "description": "CandidateCoverArt is the candidate's cover-art id (a remote cover id usable\ndirectly with getCoverArt), so a doubtful item can show artwork.",
+                        "type": "string"
+                    },
+                    "candidateTrackId": {
+                        "description": "CandidateID is the provider (remote) track id of the best candidate found\nwhile resolving. For a doubtful item it lets the client preview/play the\ncandidate (the stream endpoint accepts remote ids) and validate it without\nre-searching.",
+                        "type": "string"
+                    },
+                    "confidence": {
+                        "description": "Confidence is the 0..1 string similarity of the chosen candidate to the\nsource track (artist + title).",
+                        "type": "number"
+                    },
+                    "createdAt": {
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "importId": {
+                        "type": "string"
+                    },
+                    "matchedTrackId": {
+                        "description": "MatchedTrackID is the local track added to the playlist (matched items).",
+                        "type": "string"
+                    },
+                    "note": {
+                        "type": "string"
+                    },
+                    "position": {
+                        "type": "integer"
+                    },
+                    "resolvedArtist": {
+                        "type": "string"
+                    },
+                    "resolvedTitle": {
+                        "description": "ResolvedTitle/ResolvedArtist describe the chosen content-provider candidate.",
+                        "type": "string"
+                    },
+                    "sourceAlbum": {
+                        "type": "string"
+                    },
+                    "sourceArtist": {
+                        "type": "string"
+                    },
+                    "sourceTitle": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/models.ImportItemStatus"
+                    },
+                    "updatedAt": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "confidence",
+                    "createdAt",
+                    "id",
+                    "importId",
+                    "position",
+                    "sourceArtist",
+                    "sourceTitle",
+                    "status",
+                    "updatedAt"
+                ],
+                "type": "object"
+            },
+            "models.ImportItemStatus": {
+                "enum": [
+                    "pending",
+                    "matched",
+                    "doubtful",
+                    "missing",
+                    "failed"
+                ],
+                "type": "string",
+                "x-enum-comments": {
+                    "ImportItemDoubtful": "a candidate was found but below the confidence threshold; not added",
+                    "ImportItemFailed": "an error occurred while searching or downloading",
+                    "ImportItemMatched": "confidently matched and added to the playlist",
+                    "ImportItemMissing": "no candidate found at the content providers"
+                },
+                "x-enum-varnames": [
+                    "ImportItemPending",
+                    "ImportItemMatched",
+                    "ImportItemDoubtful",
+                    "ImportItemMissing",
+                    "ImportItemFailed"
+                ]
+            },
+            "models.ImportStatus": {
+                "enum": [
+                    "queued",
+                    "running",
+                    "completed",
+                    "failed"
+                ],
+                "type": "string",
+                "x-enum-varnames": [
+                    "ImportQueued",
+                    "ImportRunning",
+                    "ImportCompleted",
+                    "ImportFailed"
+                ]
+            },
             "models.ItemType": {
                 "enum": [
                     "artist",
@@ -3914,6 +3950,96 @@
                         "type": "string"
                     }
                 },
+                "type": "object"
+            },
+            "models.Wrapped": {
+                "properties": {
+                    "byMonth": {
+                        "description": "ByMonth is plays per calendar month, index 0 = January .. 11 = December.",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "topArtists": {
+                        "items": {
+                            "$ref": "#/components/schemas/models.WrappedCount"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "topGenres": {
+                        "items": {
+                            "$ref": "#/components/schemas/models.WrappedCount"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "topTracks": {
+                        "items": {
+                            "$ref": "#/components/schemas/models.WrappedTrack"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "totalPlays": {
+                        "type": "integer"
+                    },
+                    "totalSeconds": {
+                        "type": "integer"
+                    },
+                    "year": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "byMonth",
+                    "topArtists",
+                    "topGenres",
+                    "topTracks",
+                    "totalPlays",
+                    "totalSeconds",
+                    "year"
+                ],
+                "type": "object"
+            },
+            "models.WrappedCount": {
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "plays": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "name",
+                    "plays"
+                ],
+                "type": "object"
+            },
+            "models.WrappedTrack": {
+                "properties": {
+                    "artist": {
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "plays": {
+                        "type": "integer"
+                    },
+                    "title": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "artist",
+                    "id",
+                    "plays",
+                    "title"
+                ],
                 "type": "object"
             }
         },
@@ -4345,7 +4471,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.ConcertsStatusDTO"
+                                    "$ref": "#/components/schemas/immerle.concertsStatusView"
                                 }
                             }
                         },
@@ -4389,7 +4515,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.ConcertsStatusDTO"
+                                    "$ref": "#/components/schemas/immerle.concertsStatusView"
                                 }
                             }
                         },
@@ -5134,10 +5260,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "additionalProperties": {
-                                        "type": "boolean"
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/immerle.featureStatusView"
                                 }
                             }
                         },
@@ -5180,10 +5303,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "additionalProperties": {
-                                        "type": "boolean"
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/immerle.featureStatusView"
                                 }
                             }
                         },
@@ -5218,7 +5338,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.LastFmAdminDTO"
+                                    "$ref": "#/components/schemas/immerle.lastFmAdminView"
                                 }
                             }
                         },
@@ -5262,7 +5382,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.LastFmAdminDTO"
+                                    "$ref": "#/components/schemas/immerle.lastFmAdminView"
                                 }
                             }
                         },
@@ -6762,7 +6882,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.SonicStatusDTO"
+                                    "$ref": "#/components/schemas/immerle.sonicStatusView"
                                 }
                             }
                         },
@@ -6828,7 +6948,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.SonicDuplicatesDTO"
+                                    "$ref": "#/components/schemas/immerle.sonicDuplicatesView"
                                 }
                             }
                         },
@@ -7582,10 +7702,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "additionalProperties": {
-                                        "type": "boolean"
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/immerle.featureStatusView"
                                 }
                             }
                         },
@@ -7628,10 +7745,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "additionalProperties": {
-                                        "type": "boolean"
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/immerle.featureStatusView"
                                 }
                             }
                         },
@@ -8670,7 +8784,7 @@
                             "application/json": {
                                 "schema": {
                                     "items": {
-                                        "$ref": "#/components/schemas/immerle.ImportDTO"
+                                        "$ref": "#/components/schemas/models.Import"
                                     },
                                     "type": "array"
                                 }
@@ -8736,7 +8850,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.ImportDTO"
+                                    "$ref": "#/components/schemas/models.Import"
                                 }
                             }
                         },
@@ -8793,7 +8907,7 @@
                             "application/json": {
                                 "schema": {
                                     "items": {
-                                        "$ref": "#/components/schemas/immerle.ImportSourceDTO"
+                                        "$ref": "#/components/schemas/immerle.importSourceView"
                                     },
                                     "type": "array"
                                 }
@@ -8842,7 +8956,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.ImportDTO"
+                                    "$ref": "#/components/schemas/models.Import"
                                 }
                             }
                         },
@@ -8947,7 +9061,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.ImportItemDTO"
+                                    "$ref": "#/components/schemas/models.ImportItem"
                                 }
                             }
                         },
@@ -10208,7 +10322,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.ConcertsDTO"
+                                    "$ref": "#/components/schemas/immerle.concertListView"
                                 }
                             }
                         },
@@ -10457,7 +10571,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.LastFmStatusDTO"
+                                    "$ref": "#/components/schemas/immerle.lastFmStatusView"
                                 }
                             }
                         },
@@ -10523,7 +10637,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.LastFmStatusDTO"
+                                    "$ref": "#/components/schemas/immerle.lastFmStatusView"
                                 }
                             }
                         },
@@ -10719,7 +10833,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.BandcampStatusDTO"
+                                    "$ref": "#/components/schemas/immerle.bandcampStatusView"
                                 }
                             }
                         },
@@ -10755,7 +10869,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.BandcampCollectionDTO"
+                                    "$ref": "#/components/schemas/immerle.bandcampCollectionView"
                                 }
                             }
                         },
@@ -10831,7 +10945,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.BandcampStatusDTO"
+                                    "$ref": "#/components/schemas/immerle.bandcampStatusView"
                                 }
                             }
                         },
@@ -10926,7 +11040,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.BandcampJobDTO"
+                                    "$ref": "#/components/schemas/immerle.bandcampJobView"
                                 }
                             }
                         },
@@ -10981,7 +11095,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.BandcampJobsDTO"
+                                    "$ref": "#/components/schemas/immerle.bandcampJobsView"
                                 }
                             }
                         },
@@ -12798,7 +12912,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.SetupStatusDTO"
+                                    "$ref": "#/components/schemas/immerle.setupStatusView"
                                 }
                             }
                         },
@@ -12831,7 +12945,7 @@
                                         "type": "object"
                                     },
                                     {
-                                        "$ref": "#/components/schemas/immerle.SetupInitRequest",
+                                        "$ref": "#/components/schemas/immerle.setupInitRequest",
                                         "summary": "body",
                                         "description": "Initial admin credentials"
                                     }
@@ -12847,7 +12961,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.UserDTO"
+                                    "$ref": "#/components/schemas/immerle.setupAdminView"
                                 }
                             }
                         },
@@ -13472,7 +13586,7 @@
                                         "type": "object"
                                     },
                                     {
-                                        "$ref": "#/components/schemas/immerle.AutoDJRequestDTO",
+                                        "$ref": "#/components/schemas/immerle.autoDJRequest",
                                         "summary": "body",
                                         "description": "Tracks to order"
                                     }
@@ -13488,7 +13602,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.AutoDJResponseDTO"
+                                    "$ref": "#/components/schemas/immerle.autoDJView"
                                 }
                             }
                         },
@@ -13980,7 +14094,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.SongSonicDTO"
+                                    "$ref": "#/components/schemas/immerle.songSonicView"
                                 }
                             }
                         },
@@ -14775,7 +14889,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.WrappedDTO"
+                                    "$ref": "#/components/schemas/models.Wrapped"
                                 }
                             }
                         },

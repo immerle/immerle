@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth/store';
-import { ImportDTO } from '../api/immerleApi';
+import { PlaylistImport } from '../api/immerleApi';
 import { qk } from './keys';
 
 /** Playlist-import hooks, gated by the `playlistImport` capability. */
@@ -29,7 +29,7 @@ export function useImports() {
     queryFn: ({ signal }) => client!.listImports(signal),
     // Poll while an import is still running.
     refetchInterval: (q) =>
-      ((q.state.data as ImportDTO[] | undefined) ?? []).some((i) => RUNNING.has(i.status ?? '')) ? 2000 : false,
+      ((q.state.data as PlaylistImport[] | undefined) ?? []).some((i) => RUNNING.has(i.status ?? '')) ? 2000 : false,
   });
 }
 
@@ -40,7 +40,7 @@ export function useImportStatus(id: string) {
     queryKey: ['imports', 'status', id] as const,
     enabled: !!client && !!id && !!client.has('playlistImport'),
     queryFn: ({ signal }) => client!.getImportStatus(id, signal),
-    refetchInterval: (q) => (RUNNING.has((q.state.data as ImportDTO | undefined)?.status ?? '') ? 2000 : false),
+    refetchInterval: (q) => (RUNNING.has((q.state.data as PlaylistImport | undefined)?.status ?? '') ? 2000 : false),
   });
 }
 

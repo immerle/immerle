@@ -29,13 +29,13 @@ func (h *Handler) concertsEnabled() bool {
 // @Tags         concerts
 // @Security     BearerAuth
 // @Produce      json
-// @Success      200  {object}  ConcertsDTO
+// @Success      200  {object}  concertListView
 // @Failure      401  {object}  errorResponse
 // @Failure      500  {object}  errorResponse
 // @Router       /me/concerts [get]
 func (h *Handler) handleMyConcerts(w http.ResponseWriter, r *http.Request) {
 	if !h.concertsEnabled() || h.Concerts == nil {
-		writeResource(w, http.StatusOK, map[string]any{"concerts": []models.Concert{}})
+		writeResource(w, http.StatusOK, concertListView{Concerts: []models.Concert{}})
 		return
 	}
 	list, err := h.Concerts.ListActive(r.Context(), userFrom(r.Context()).ID, time.Now(), maxActiveConcerts)
@@ -46,7 +46,12 @@ func (h *Handler) handleMyConcerts(w http.ResponseWriter, r *http.Request) {
 	if list == nil {
 		list = []models.Concert{}
 	}
-	writeResource(w, http.StatusOK, map[string]any{"concerts": list})
+	writeResource(w, http.StatusOK, concertListView{Concerts: list})
+}
+
+// concertListView is the caller's upcoming concert matches.
+type concertListView struct {
+	Concerts []models.Concert `json:"concerts" validate:"required"`
 }
 
 // handleDismissConcert closes a concert match for the caller — it stays
@@ -81,12 +86,12 @@ func (h *Handler) handleDismissConcert(w http.ResponseWriter, r *http.Request) {
 // concertsStatus is the admin view of concert-discovery config. The API keys
 // themselves are write-only (see redactSettings) — this only reports whether
 // one is set, never its value.
-func (h *Handler) concertsStatus() ConcertsStatusDTO {
+func (h *Handler) concertsStatus() concertsStatusView {
 	cfg := models.ConcertsRuntime{}
 	if h.Settings != nil {
 		cfg = h.Settings.ConcertsConfig()
 	}
-	return ConcertsStatusDTO{
+	return concertsStatusView{
 		Enabled:                cfg.Enabled,
 		Country:                cfg.Country,
 		TicketmasterConfigured: cfg.TicketmasterAPIKey != "",
@@ -100,7 +105,7 @@ func (h *Handler) concertsStatus() ConcertsStatusDTO {
 // @Tags     admin
 // @Security BearerAuth
 // @Produce  json
-// @Success  200  {object}  ConcertsStatusDTO
+// @Success  200  {object}  concertsStatusView
 // @Router   /admin/concerts [get]
 func (h *Handler) handleConcertsAdmin(w http.ResponseWriter, r *http.Request) {
 	if !h.requireAdmin(w, r) {
@@ -131,7 +136,7 @@ type concertsUpdateRequest struct {
 // @Accept   json
 // @Produce  json
 // @Param    body  body  concertsUpdateRequest  true  "Fields to change"
-// @Success  200  {object}  ConcertsStatusDTO
+// @Success  200  {object}  concertsStatusView
 // @Failure  400  {object}  errorResponse
 // @Router   /admin/concerts [put]
 func (h *Handler) handleConcertsUpdate(w http.ResponseWriter, r *http.Request) {
@@ -209,4 +214,15 @@ func (h *Handler) handleConcertsSync(w http.ResponseWriter, r *http.Request) {
 	}
 	h.Logger.Info("concerts synced on demand", "synced", synced, "by", userFrom(r.Context()).Username)
 	writeResource(w, http.StatusCreated, syncResultView{Synced: synced})
+}
+
+// concertsStatusView is the admin view of concert-discovery config. The API
+// keys themselves are write-only — this only reports whether one is set.
+type concertsStatusView struct {
+	Enabled bool `json:"enabled" example:"false"`
+	// Country is an ISO 3166-1 alpha-2 code (e.g. "FR"), picked from a fixed
+	// dropdown in the admin UI — not a secret, returned as-is.
+	Country                string `json:"country" example:"FR"`
+	TicketmasterConfigured bool   `json:"ticketmasterConfigured" example:"false"`
+	SkiddleConfigured      bool   `json:"skiddleConfigured" example:"false"`
 }

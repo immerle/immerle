@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/immerle/immerle/internal/models"
 )
 
 // wrappedEnabled reports whether the year-in-review feature is on (defaults to
@@ -21,7 +23,7 @@ func (h *Handler) wrappedEnabled() bool {
 // @Security     BearerAuth
 // @Produce      json
 // @Param        year  query  int  false  "Calendar year (default: current)"
-// @Success      200  {object}  WrappedDTO
+// @Success      200  {object}  models.Wrapped
 // @Failure      404  {object}  errorResponse
 // @Failure      500  {object}  errorResponse
 // @Router       /wrapped [get]
@@ -41,12 +43,22 @@ func (h *Handler) handleWrapped(w http.ResponseWriter, r *http.Request) {
 		writeInternal(w, err)
 		return
 	}
+	// A year without plays has no charts: send [] rather than null.
+	if data.TopTracks == nil {
+		data.TopTracks = []models.WrappedTrack{}
+	}
+	if data.TopArtists == nil {
+		data.TopArtists = []models.WrappedCount{}
+	}
+	if data.TopGenres == nil {
+		data.TopGenres = []models.WrappedCount{}
+	}
 	writeResource(w, http.StatusOK, data)
 }
 
 // wrappedStatus is the admin view of the feature toggle.
-func (h *Handler) wrappedStatus() map[string]any {
-	return map[string]any{"enabled": h.wrappedEnabled()}
+func (h *Handler) wrappedStatus() featureStatusView {
+	return featureStatusView{Enabled: h.wrappedEnabled()}
 }
 
 // handleWrappedAdmin reports whether the feature is enabled.
@@ -55,7 +67,7 @@ func (h *Handler) wrappedStatus() map[string]any {
 // @Tags         admin
 // @Security     BearerAuth
 // @Produce      json
-// @Success      200  {object}  map[string]bool
+// @Success      200  {object}  featureStatusView
 // @Router       /admin/wrapped [get]
 func (h *Handler) handleWrappedAdmin(w http.ResponseWriter, r *http.Request) {
 	if !h.requireAdmin(w, r) {
@@ -72,7 +84,7 @@ func (h *Handler) handleWrappedAdmin(w http.ResponseWriter, r *http.Request) {
 // @Accept       json
 // @Produce      json
 // @Param        body  body  toggleRequest  true  "Enable or disable"
-// @Success      200  {object}  map[string]bool
+// @Success      200  {object}  featureStatusView
 // @Failure      400  {object}  errorResponse
 // @Router       /admin/wrapped [put]
 func (h *Handler) handleWrappedUpdate(w http.ResponseWriter, r *http.Request) {

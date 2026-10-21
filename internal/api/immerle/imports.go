@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 )
 
@@ -15,15 +16,23 @@ import (
 // @Tags         imports
 // @Security     BearerAuth
 // @Produce      json
-// @Success      200  {array}  ImportSourceDTO
+// @Success      200  {array}  importSourceView
 // @Failure      401  {object}  errorResponse
 // @Router       /imports/sources [get]
 func (h *Handler) handleImportSources(w http.ResponseWriter, r *http.Request) {
-	if h.Imports == nil {
-		writeResource(w, http.StatusOK, []any{})
-		return
+	out := []importSourceView{}
+	if h.Imports != nil {
+		for _, s := range h.Imports.Sources() {
+			out = append(out, importSourceView{Name: s.Name, Configured: s.Configured})
+		}
 	}
-	writeResource(w, http.StatusOK, h.Imports.Sources())
+	writeResource(w, http.StatusOK, out)
+}
+
+// importSourceView is a playlist-import source and whether it is configured.
+type importSourceView struct {
+	Name       string `json:"name"`
+	Configured bool   `json:"configured"`
 }
 
 // handleImports lists the caller's imports (without items).
@@ -33,13 +42,13 @@ func (h *Handler) handleImportSources(w http.ResponseWriter, r *http.Request) {
 // @Tags         imports
 // @Security     BearerAuth
 // @Produce      json
-// @Success      200  {array}  ImportDTO
+// @Success      200  {array}  models.Import
 // @Failure      401  {object}  errorResponse
 // @Failure      500  {object}  errorResponse
 // @Router       /imports [get]
 func (h *Handler) handleImports(w http.ResponseWriter, r *http.Request) {
 	if h.Imports == nil {
-		writeResource(w, http.StatusOK, []any{})
+		writeResource(w, http.StatusOK, []models.Import{})
 		return
 	}
 	user := userFrom(r.Context())
@@ -47,6 +56,9 @@ func (h *Handler) handleImports(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		writeInternal(w, err)
 		return
+	}
+	if list == nil {
+		list = []models.Import{}
 	}
 	writeResource(w, http.StatusOK, list)
 }
@@ -66,7 +78,7 @@ type startImportRequest struct {
 // @Accept       json
 // @Produce      json
 // @Param        body  body  startImportRequest  true  "Import source + reference"
-// @Success      201  {object}  ImportDTO
+// @Success      201  {object}  models.Import
 // @Failure      400  {object}  errorResponse
 // @Failure      401  {object}  errorResponse
 // @Failure      503  {object}  errorResponse
@@ -107,7 +119,7 @@ type resolveItemRequest struct {
 // @Param        id      path  string              true   "Import id"
 // @Param        itemId  path  string              true   "Import item id"
 // @Param        body    body  resolveItemRequest  false  "Optional corrected 'artist title' search"
-// @Success      200  {object}  ImportItemDTO
+// @Success      200  {object}  models.ImportItem
 // @Failure      400  {object}  errorResponse
 // @Failure      401  {object}  errorResponse
 // @Failure      404  {object}  errorResponse
@@ -150,7 +162,7 @@ func (h *Handler) handleImportItemResolve(w http.ResponseWriter, r *http.Request
 // @Security     BearerAuth
 // @Produce      json
 // @Param        id  path  string  true  "Import id"
-// @Success      200  {object}  ImportDTO
+// @Success      200  {object}  models.Import
 // @Failure      401  {object}  errorResponse
 // @Failure      404  {object}  errorResponse
 // @Failure      500  {object}  errorResponse

@@ -38,21 +38,20 @@ import {
   createAuthedImmerleApi,
   CreateTokenResponse,
   fetchWithTimeout,
-  HallOfFameView,
   ImmerleApi,
   JamInvite,
   JamResult,
-  ImportDTO,
-  ImportItemDTO,
-  ImportSourceDTO,
+  PlaylistImport,
+  PlaylistImportItem,
+  ImportSource,
   ProfileHallOfFameView,
   ProfilePlaylistView,
   ProfileResponse,
   ProviderView,
   PublicPlaylistView,
   RuntimeSettingsDTO,
-  SonicStatusDTO,
-  SongSonicDTO,
+  SonicStatusView,
+  SongSonicView,
   ThemeSettings,
   UserSummaryView,
 } from '../immerleApi';
@@ -333,7 +332,7 @@ export class ImmerleClient {
   }
 
   /** A track's audio analysis, or null when it isn't analyzed (or the analysis is off). */
-  async getSongSonic(id: string, signal?: AbortSignal): Promise<SongSonicDTO | null> {
+  async getSongSonic(id: string, signal?: AbortSignal): Promise<SongSonicView | null> {
     const { data, error, response } = await this.api.GET('/songs/{id}/sonic', { params: { path: { id } }, signal });
     if (response.status === 404) return null;
     if (error) throw apiErr(error, 'browse.songSonic', response);
@@ -1071,20 +1070,23 @@ export class ImmerleClient {
 
   /** The caller's year-in-review (defaults to the current year server-side). */
   async getWrapped(year?: number, signal?: AbortSignal): Promise<Wrapped> {
-    const path = year ? `wrapped?year=${year}` : 'wrapped';
-    return this.request<Wrapped>('GET', path, undefined, signal);
+    const { data, error, response } = await this.api.GET('/wrapped', { params: { query: { year } }, signal });
+    if (error) throw apiErr(error, 'wrapped', response);
+    return data;
   }
 
   /** Admin: whether the Wrapped feature is enabled. */
   async getWrappedEnabled(signal?: AbortSignal): Promise<boolean> {
-    const r = await this.request<{ enabled: boolean }>('GET', 'admin/wrapped', undefined, signal);
-    return !!r.enabled;
+    const { data, error, response } = await this.api.GET('/admin/wrapped', { signal });
+    if (error) throw apiErr(error, 'wrapped.admin', response);
+    return data.enabled;
   }
 
   /** Admin: turn the Wrapped feature on or off. */
   async setWrappedEnabled(enabled: boolean): Promise<boolean> {
-    const r = await this.request<{ enabled: boolean }>('PUT', 'admin/wrapped', { enabled });
-    return !!r.enabled;
+    const { data, error, response } = await this.api.PUT('/admin/wrapped', { body: { enabled } });
+    if (error) throw apiErr(error, 'wrapped.toggle', response);
+    return data.enabled;
   }
 
   /** Admin: whether offline downloads are enabled. */
@@ -1105,41 +1107,52 @@ export class ImmerleClient {
 
   /** The caller's Hall of Fame, auto-created on first access. */
   async getHallOfFame(signal?: AbortSignal): Promise<HallOfFame> {
-    const data = await this.request<HallOfFameView>('GET', 'hall-of-fame', undefined, signal);
+    const { data, error, response } = await this.api.GET('/hall-of-fame', { signal });
+    if (error) throw apiErr(error, 'halloffame', response);
     return toHallOfFame(data);
   }
 
   /** Replaces the full ranked track list (reorder, add and remove all go through this). */
   async setHallOfFameOrder(ids: string[]): Promise<HallOfFame> {
-    const data = await this.request<HallOfFameView>('PUT', 'hall-of-fame/tracks', { ids });
+    const { data, error, response } = await this.api.PUT('/hall-of-fame/tracks', { body: { ids } });
+    if (error) throw apiErr(error, 'halloffame.order', response);
     return toHallOfFame(data);
   }
 
   /** Appends one track (the "Add to Hall of Fame" track-menu action). */
   async addToHallOfFame(trackId: string): Promise<void> {
-    await this.request<void>('POST', 'hall-of-fame/tracks', { id: trackId });
+    const { error, response } = await this.api.POST('/hall-of-fame/tracks', { body: { id: trackId } });
+    if (error) throw apiErr(error, 'halloffame.add', response);
   }
 
   /** Sets (or, given an empty comment, clears) a track's nostalgia note. */
   async setHallOfFameNote(trackId: string, comment: string): Promise<void> {
-    await this.request<void>('PATCH', `hall-of-fame/tracks/${trackId}/note`, { comment });
+    const { error, response } = await this.api.PATCH('/hall-of-fame/tracks/{trackId}/note', {
+      params: { path: { trackId } },
+      body: { comment },
+    });
+    if (error) throw apiErr(error, 'halloffame.note', response);
   }
 
   /** Admin: whether the Hall of Fame feature is enabled. */
   async getHallOfFameEnabled(signal?: AbortSignal): Promise<boolean> {
-    const r = await this.request<{ enabled: boolean }>('GET', 'admin/hall-of-fame', undefined, signal);
-    return !!r.enabled;
+    const { data, error, response } = await this.api.GET('/admin/hall-of-fame', { signal });
+    if (error) throw apiErr(error, 'halloffame.admin', response);
+    return data.enabled;
   }
 
   /** Admin: turn the Hall of Fame feature on or off. */
   async setHallOfFameEnabled(enabled: boolean): Promise<boolean> {
-    const r = await this.request<{ enabled: boolean }>('PUT', 'admin/hall-of-fame', { enabled });
-    return !!r.enabled;
+    const { data, error, response } = await this.api.PUT('/admin/hall-of-fame', { body: { enabled } });
+    if (error) throw apiErr(error, 'halloffame.toggle', response);
+    return data.enabled;
   }
 
   /** Admin: local audio-analysis availability and progress. */
-  async getSonicStatus(signal?: AbortSignal): Promise<SonicStatusDTO> {
-    return this.request<SonicStatusDTO>('GET', 'admin/sonic', undefined, signal);
+  async getSonicStatus(signal?: AbortSignal): Promise<SonicStatusView> {
+    const { data, error, response } = await this.api.GET('/admin/sonic', { signal });
+    if (error) throw apiErr(error, 'sonic.status', response);
+    return data;
   }
 
   // --- Admin: downloads cleanup (eviction sweep) --------------------------
@@ -1315,23 +1328,29 @@ export class ImmerleClient {
 
   /** Your upcoming, non-dismissed concert matches, soonest first. */
   async getConcerts(signal?: AbortSignal): Promise<Concert[]> {
-    const r = await this.request<{ concerts?: Concert[] }>('GET', 'me/concerts', undefined, signal);
-    return r.concerts ?? [];
+    const { data, error, response } = await this.api.GET('/me/concerts', { signal });
+    if (error) throw apiErr(error, 'concerts', response);
+    return data.concerts;
   }
 
   /** Closes a concert match — stays dismissed even after the next daily sync. */
   async dismissConcert(id: string): Promise<void> {
-    await this.request<void>('PUT', `me/concerts/${encodeURIComponent(id)}/dismiss`);
+    const { error, response } = await this.api.PUT('/me/concerts/{id}/dismiss', { params: { path: { id } } });
+    if (error) throw apiErr(error, 'concerts.dismiss', response);
   }
 
   /** Admin: concert-discovery config state (API keys are write-only). */
   async getConcertsStatus(signal?: AbortSignal): Promise<ConcertsAdminStatus> {
-    return this.request<ConcertsAdminStatus>('GET', 'admin/concerts', undefined, signal);
+    const { data, error, response } = await this.api.GET('/admin/concerts', { signal });
+    if (error) throw apiErr(error, 'concerts.admin', response);
+    return data;
   }
 
   /** Admin: enable/disable concert discovery, set the country to search near, and/or set the Ticketmaster/Skiddle API keys (partial). */
   async updateConcertsConfig(patch: { enabled?: boolean; country?: string; ticketmasterApiKey?: string; skiddleApiKey?: string }): Promise<ConcertsAdminStatus> {
-    return this.request<ConcertsAdminStatus>('PUT', 'admin/concerts', patch);
+    const { data, error, response } = await this.api.PUT('/admin/concerts', { body: patch });
+    if (error) throw apiErr(error, 'concerts.adminUpdate', response);
+    return data;
   }
 
   // --- Last.fm scrobbling ----------------------------------------------------
@@ -1381,38 +1400,46 @@ export class ImmerleClient {
 
   /** The caller's Bandcamp connection state. */
   async getBandcampStatus(signal?: AbortSignal): Promise<BandcampStatus> {
-    return this.request<BandcampStatus>('GET', 'me/purchases/bandcamp', undefined, signal);
+    const { data, error, response } = await this.api.GET('/me/purchases/bandcamp', { signal });
+    if (error) throw apiErr(error, 'bandcamp.status', response);
+    return data;
   }
 
   /** Connects a Bandcamp account by validating and storing the pasted session cookie (encrypted). */
   async connectBandcamp(cookie: string): Promise<BandcampStatus> {
-    return this.request<BandcampStatus>('POST', 'me/purchases/bandcamp/connect', { cookie });
+    const { data, error, response } = await this.api.POST('/me/purchases/bandcamp/connect', { body: { cookie } });
+    if (error) throw apiErr(error, 'bandcamp.connect', response);
+    return data;
   }
 
   /** Disconnects the caller's Bandcamp account. */
   async disconnectBandcamp(): Promise<void> {
-    await this.request<void>('DELETE', 'me/purchases/bandcamp');
+    const { error, response } = await this.api.DELETE('/me/purchases/bandcamp');
+    if (error) throw apiErr(error, 'bandcamp.disconnect', response);
   }
 
   /** The caller's Bandcamp purchase collection, fetched live, each item annotated with its import job status. */
   async getBandcampCollection(signal?: AbortSignal): Promise<BandcampCollectionItem[]> {
-    const r = await this.request<{ items?: BandcampCollectionItem[] }>('GET', 'me/purchases/bandcamp/collection', undefined, signal);
-    return r.items ?? [];
+    const { data, error, response } = await this.api.GET('/me/purchases/bandcamp/collection', { signal });
+    if (error) throw apiErr(error, 'bandcamp.collection', response);
+    return data.items ?? [];
   }
 
   /** Queues one purchased Bandcamp item for download+ingest. Idempotent. */
   async importBandcampItem(item: BandcampCollectionItem): Promise<BandcampJob> {
-    return this.request<BandcampJob>(
-      'POST',
-      `me/purchases/bandcamp/items/${encodeURIComponent(item.saleItemType)}/${encodeURIComponent(item.saleItemId)}/import`,
-      { itemType: item.itemType, artistName: item.artistName, itemTitle: item.itemTitle },
-    );
+    const { data, error, response } = await this.api.POST('/me/purchases/bandcamp/items/{saleItemType}/{saleItemId}/import', {
+      params: { path: { saleItemType: item.saleItemType, saleItemId: item.saleItemId } },
+      body: { itemType: item.itemType, artistName: item.artistName, itemTitle: item.itemTitle },
+    });
+    if (error) throw apiErr(error, 'bandcamp.import', response);
+    return data;
   }
 
   /** The caller's Bandcamp import jobs, most recent first. */
   async getBandcampJobs(signal?: AbortSignal): Promise<BandcampJob[]> {
-    const r = await this.request<{ jobs?: BandcampJob[] }>('GET', 'me/purchases/bandcamp/jobs', undefined, signal);
-    return r.jobs ?? [];
+    const { data, error, response } = await this.api.GET('/me/purchases/bandcamp/jobs', { signal });
+    if (error) throw apiErr(error, 'bandcamp.jobs', response);
+    return data.jobs ?? [];
   }
 
   /** A user's profile: identity, recent activity, public playlists and (when
@@ -1439,7 +1466,8 @@ export class ImmerleClient {
    * `getHallOfFame`/`setHallOfFameOrder` for editing). Backs the profile
    * page's "see all" link. */
   async getUserHallOfFame(username: string, signal?: AbortSignal): Promise<HallOfFame> {
-    const data = await this.request<HallOfFameView>('GET', `users/${username}/hall-of-fame`, undefined, signal);
+    const { data, error, response } = await this.api.GET('/users/{username}/hall-of-fame', { params: { path: { username } }, signal });
+    if (error) throw apiErr(error, 'halloffame.user', response);
     return toHallOfFame(data);
   }
 
@@ -1572,21 +1600,21 @@ export class ImmerleClient {
   // --- Playlist imports (external platforms) ------------------------------
 
   /** Available import sources and whether each is configured server-side. */
-  async listImportSources(signal?: AbortSignal): Promise<ImportSourceDTO[]> {
+  async listImportSources(signal?: AbortSignal): Promise<ImportSource[]> {
     const { data, error, response } = await this.api.GET('/imports/sources', { signal });
     if (error || !data) throw apiErr(error, 'import_sources_failed', response);
     return data;
   }
 
   /** The caller's playlist imports, most recent first (no per-track items). */
-  async listImports(signal?: AbortSignal): Promise<ImportDTO[]> {
+  async listImports(signal?: AbortSignal): Promise<PlaylistImport[]> {
     const { data, error, response } = await this.api.GET('/imports', { signal });
     if (error || !data) throw apiErr(error, 'imports_failed', response);
     return data;
   }
 
   /** Queue an import of an external playlist by `source` + `ref` (id or URL). */
-  async startImport(source: string, ref: string): Promise<ImportDTO> {
+  async startImport(source: string, ref: string): Promise<PlaylistImport> {
     const { data, error, response } = await this.api.POST('/imports', { body: { source, ref } });
     if (error || !data) throw apiErr(error, 'import_start_failed', response);
     return data;
@@ -1597,7 +1625,7 @@ export class ImmerleClient {
    * flagged candidate as-is; with a `query` ("artist title"), re-searches the
    * providers and uses the best result. Flips the item to "matched".
    */
-  async resolveImportItem(importId: string, itemId: string, query?: string): Promise<ImportItemDTO> {
+  async resolveImportItem(importId: string, itemId: string, query?: string): Promise<PlaylistImportItem> {
     const { data, error, response } = await this.api.POST('/imports/{id}/items/{itemId}/resolve', {
       params: { path: { id: importId, itemId } },
       body: query ? { query } : {},
@@ -1607,7 +1635,7 @@ export class ImmerleClient {
   }
 
   /** One import with its per-track items, for a progress view. */
-  async getImportStatus(id: string, signal?: AbortSignal): Promise<ImportDTO> {
+  async getImportStatus(id: string, signal?: AbortSignal): Promise<PlaylistImport> {
     const { data, error, response } = await this.api.GET('/imports/{id}', {
       params: { path: { id } },
       signal,

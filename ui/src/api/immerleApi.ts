@@ -66,8 +66,8 @@ export function createAuthedImmerleApi(serverUrl: string, token: string): Immerl
 // Re-export the generated DTOs that callers consume, under friendly names.
 export type SetupStatus =
   paths['/setup']['get']['responses']['200']['content']['application/json'];
-export type SetupInitRequest = components['schemas']['immerle.SetupInitRequest'];
-export type SetupInitResponse = components['schemas']['immerle.UserDTO'];
+export type SetupInitRequest = components['schemas']['immerle.setupInitRequest'];
+export type SetupInitResponse = components['schemas']['immerle.setupAdminView'];
 export type FieldErrorDTO = components['schemas']['immerle.fieldError'];
 export type ApiError = components['schemas']['immerle.apiError'];
 /** The `{error:{code,message,params}}` envelope returned on every non-2xx. */
@@ -120,16 +120,16 @@ export type ProfileStatsView = components['schemas']['immerle.profileStatsView']
 export type UserSummaryView = components['schemas']['immerle.userSummaryView'];
 
 // Playlist imports from external platforms.
-export type ImportDTO = components['schemas']['immerle.ImportDTO'];
-export type ImportItemDTO = components['schemas']['immerle.ImportItemDTO'];
-export type ImportSourceDTO = components['schemas']['immerle.ImportSourceDTO'];
+export type PlaylistImport = components['schemas']['models.Import'];
+export type PlaylistImportItem = components['schemas']['models.ImportItem'];
+export type ImportSource = components['schemas']['immerle.importSourceView'];
 
 // Per-account UI theme.
 export type ThemeSettings = components['schemas']['models.ThemeSettings'];
 
 // Last.fm scrobbling: the caller's connection, and the admin config state.
-export type LastFmStatus = components['schemas']['immerle.LastFmStatusDTO'];
-export type LastFmAdminStatus = components['schemas']['immerle.LastFmAdminDTO'];
+export type LastFmStatus = components['schemas']['immerle.lastFmStatusView'];
+export type LastFmAdminStatus = components['schemas']['immerle.lastFmAdminView'];
 
 // Admin-managed dynamic providers.
 export type ProviderView = components['schemas']['immerle.providerView'];
@@ -139,5 +139,5 @@ export type InstanceSummary = components['schemas']['immerle.instanceView'];
 
 // Runtime settings + downloads cleanup (admin).
 export type RuntimeSettingsDTO = components['schemas']['immerle.RuntimeSettingsDTO'];
-export type SonicStatusDTO = components['schemas']['immerle.SonicStatusDTO'];
-export type SongSonicDTO = components['schemas']['immerle.SongSonicDTO'];
+export type SonicStatusView = components['schemas']['immerle.sonicStatusView'];
+export type SongSonicView = components['schemas']['immerle.songSonicView'];

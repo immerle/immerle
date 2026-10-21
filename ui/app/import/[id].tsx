@@ -7,7 +7,7 @@ import { AdminHeader, AdminScroll } from '../../src/components/AdminUI';
 import { CoverArt } from '../../src/components/CoverArt';
 import { Ionicon } from '../../src/components/Ionicon';
 import { usePlayer } from '../../src/audio/store';
-import { ImportItemDTO } from '../../src/api/immerleApi';
+import { PlaylistImportItem } from '../../src/api/immerleApi';
 import { useColors } from '../../src/theme/colors';
 import { useT } from '../../src/i18n/store';
 import { useWebTitle } from '../../src/utils/documentTitle';
@@ -125,7 +125,7 @@ export default function ImportDetail() {
   );
 }
 
-function ItemRow({ importId, item, first }: { importId: string; item: ImportItemDTO; first: boolean }) {
+function ItemRow({ importId, item, first }: { importId: string; item: PlaylistImportItem; first: boolean }) {
   const t = useT();
   const colors = useColors();
   const status = item.status ?? '';

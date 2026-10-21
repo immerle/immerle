@@ -445,7 +445,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ConcertsStatusDTO"];
+                        "application/json": components["schemas"]["immerle.concertsStatusView"];
                     };
                 };
             };
@@ -474,7 +474,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ConcertsStatusDTO"];
+                        "application/json": components["schemas"]["immerle.concertsStatusView"];
                     };
                 };
                 /** @description Bad Request */
@@ -1215,9 +1215,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            [key: string]: boolean;
-                        };
+                        "application/json": components["schemas"]["immerle.featureStatusView"];
                     };
                 };
             };
@@ -1243,9 +1241,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            [key: string]: boolean;
-                        };
+                        "application/json": components["schemas"]["immerle.featureStatusView"];
                     };
                 };
                 /** @description Bad Request */
@@ -1289,7 +1285,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.LastFmAdminDTO"];
+                        "application/json": components["schemas"]["immerle.lastFmAdminView"];
                     };
                 };
             };
@@ -1318,7 +1314,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.LastFmAdminDTO"];
+                        "application/json": components["schemas"]["immerle.lastFmAdminView"];
                     };
                 };
                 /** @description Bad Request */
@@ -2756,7 +2752,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.SonicStatusDTO"];
+                        "application/json": components["schemas"]["immerle.sonicStatusView"];
                     };
                 };
                 /** @description Unauthorized */
@@ -2831,7 +2827,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.SonicDuplicatesDTO"];
+                        "application/json": components["schemas"]["immerle.sonicDuplicatesView"];
                     };
                 };
                 /** @description Unauthorized */
@@ -3503,9 +3499,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            [key: string]: boolean;
-                        };
+                        "application/json": components["schemas"]["immerle.featureStatusView"];
                     };
                 };
             };
@@ -3531,9 +3525,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            [key: string]: boolean;
-                        };
+                        "application/json": components["schemas"]["immerle.featureStatusView"];
                     };
                 };
                 /** @description Bad Request */
@@ -4546,7 +4538,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ImportDTO"][];
+                        "application/json": components["schemas"]["models.Import"][];
                     };
                 };
                 /** @description Unauthorized */
@@ -4594,7 +4586,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ImportDTO"];
+                        "application/json": components["schemas"]["models.Import"];
                     };
                 };
                 /** @description Bad Request */
@@ -4658,7 +4650,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ImportSourceDTO"][];
+                        "application/json": components["schemas"]["immerle.importSourceView"][];
                     };
                 };
                 /** @description Unauthorized */
@@ -4709,7 +4701,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ImportDTO"];
+                        "application/json": components["schemas"]["models.Import"];
                     };
                 };
                 /** @description Unauthorized */
@@ -4796,7 +4788,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ImportItemDTO"];
+                        "application/json": components["schemas"]["models.ImportItem"];
                     };
                 };
                 /** @description Bad Request */
@@ -6023,7 +6015,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ConcertsDTO"];
+                        "application/json": components["schemas"]["immerle.concertListView"];
                     };
                 };
                 /** @description Unauthorized */
@@ -6288,7 +6280,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.LastFmStatusDTO"];
+                        "application/json": components["schemas"]["immerle.lastFmStatusView"];
                     };
                 };
                 /** @description Unauthorized */
@@ -6388,7 +6380,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.LastFmStatusDTO"];
+                        "application/json": components["schemas"]["immerle.lastFmStatusView"];
                     };
                 };
                 /** @description Bad Request */
@@ -6575,7 +6567,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.BandcampStatusDTO"];
+                        "application/json": components["schemas"]["immerle.bandcampStatusView"];
                     };
                 };
                 /** @description Unauthorized */
@@ -6650,7 +6642,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.BandcampCollectionDTO"];
+                        "application/json": components["schemas"]["immerle.bandcampCollectionView"];
                     };
                 };
                 /** @description Bad Request */
@@ -6723,7 +6715,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.BandcampStatusDTO"];
+                        "application/json": components["schemas"]["immerle.bandcampStatusView"];
                     };
                 };
                 /** @description Bad Request */
@@ -6796,7 +6788,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.BandcampJobDTO"];
+                        "application/json": components["schemas"]["immerle.bandcampJobView"];
                     };
                 };
                 /** @description Bad Request */
@@ -6857,7 +6849,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.BandcampJobsDTO"];
+                        "application/json": components["schemas"]["immerle.bandcampJobsView"];
                     };
                 };
                 /** @description Unauthorized */
@@ -8631,7 +8623,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.SetupStatusDTO"];
+                        "application/json": components["schemas"]["immerle.setupStatusView"];
                     };
                 };
                 /** @description Internal Server Error */
@@ -8660,7 +8652,7 @@ export interface paths {
             /** @description Initial admin credentials */
             requestBody: {
                 content: {
-                    "application/json": Record<string, never> | components["schemas"]["immerle.SetupInitRequest"];
+                    "application/json": Record<string, never> | components["schemas"]["immerle.setupInitRequest"];
                 };
             };
             responses: {
@@ -8670,7 +8662,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.UserDTO"];
+                        "application/json": components["schemas"]["immerle.setupAdminView"];
                     };
                 };
                 /** @description validation */
@@ -9233,7 +9225,7 @@ export interface paths {
             /** @description Tracks to order */
             requestBody: {
                 content: {
-                    "application/json": Record<string, never> | components["schemas"]["immerle.AutoDJRequestDTO"];
+                    "application/json": Record<string, never> | components["schemas"]["immerle.autoDJRequest"];
                 };
             };
             responses: {
@@ -9243,7 +9235,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.AutoDJResponseDTO"];
+                        "application/json": components["schemas"]["immerle.autoDJView"];
                     };
                 };
                 /** @description Bad Request */
@@ -9723,7 +9715,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.SongSonicDTO"];
+                        "application/json": components["schemas"]["immerle.songSonicView"];
                     };
                 };
                 /** @description Unauthorized */
@@ -10526,7 +10518,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.WrappedDTO"];
+                        "application/json": components["schemas"]["models.Wrapped"];
                     };
                 };
                 /** @description Not Found */
@@ -10561,171 +10553,11 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        "immerle.AutoDJRequestDTO": {
-            /**
-             * @description IDs are the track ids to order (a playlist, or the queue from the
-             *     current track on). Duplicates are kept.
-             */
-            ids?: string[];
-            /**
-             * @description KeepFirst pins ids[0], e.g. the track playing now.
-             * @example true
-             */
-            keepFirst?: boolean;
-        };
-        "immerle.AutoDJResponseDTO": {
-            ids: string[];
-        };
-        "immerle.BandcampCollectionDTO": {
-            items?: components["schemas"]["immerle.BandcampCollectionItemDTO"][];
-        };
-        "immerle.BandcampCollectionItemDTO": {
-            artUrl?: string;
-            artistName: string;
-            itemTitle: string;
-            /** @example album */
-            itemType: string;
-            jobId?: string;
-            /** @example completed */
-            jobStatus?: string;
-            /** @example 2021-01-01T10:00:00Z */
-            purchased: string;
-            /** @example 123456789 */
-            saleItemId: string;
-            /** @example p */
-            saleItemType: string;
-        };
-        "immerle.BandcampJobDTO": {
-            artistName: string;
-            attempts: number;
-            /** @example 2026-07-18T21:42:00Z */
-            createdAt: string;
-            error?: string;
-            /** @example flac */
-            format?: string;
-            id: string;
-            itemTitle: string;
-            /** @example album */
-            itemType: string;
-            saleItemId: string;
-            saleItemType: string;
-            /** @example completed */
-            status: string;
-            trackIds?: string[];
-            /** @example 2026-07-18T21:43:00Z */
-            updatedAt: string;
-        };
-        "immerle.BandcampJobsDTO": {
-            jobs?: components["schemas"]["immerle.BandcampJobDTO"][];
-        };
-        "immerle.BandcampStatusDTO": {
-            connected: boolean;
-            fanId?: string;
-            /** @example 2026-07-18T21:42:00Z */
-            lastSyncedAt?: string;
-            needsReconnect?: boolean;
-        };
-        "immerle.ConcertDTO": {
-            /** @example Daft Punk */
-            artistName?: string;
-            /** @example Paris */
-            city?: string;
-            /** @example Daft Punk World Tour */
-            eventName?: string;
-            id?: string;
-            /** @example ticketmaster */
-            source?: string;
-            /** @example 2026-09-12T19:00:00Z */
-            startTime?: string;
-            /** @example https://www.ticketmaster.com/event/... */
-            url?: string;
-            /** @example Accor Arena */
-            venue?: string;
-        };
-        "immerle.ConcertsDTO": {
-            concerts?: components["schemas"]["immerle.ConcertDTO"][];
-        };
-        "immerle.ConcertsStatusDTO": {
-            /**
-             * @description Country is an ISO 3166-1 alpha-2 code (e.g. "FR"), picked from a fixed
-             *     dropdown in the admin UI — not a secret, returned as-is.
-             * @example FR
-             */
-            country?: string;
-            /** @example false */
-            enabled: boolean;
-            /** @example false */
-            skiddleConfigured: boolean;
-            /** @example false */
-            ticketmasterConfigured: boolean;
-        };
         "immerle.FederationUpdateDTO": {
             /** @example My living-room immerle */
             name?: string;
             /** @example my-node */
             sqid?: string;
-        };
-        "immerle.ImportDTO": {
-            /** @example 2 */
-            doubtful?: number;
-            error?: string;
-            /** @example 0 */
-            failed?: number;
-            id?: string;
-            items?: components["schemas"]["immerle.ImportItemDTO"][];
-            /** @example 38 */
-            matched?: number;
-            /** @example 2 */
-            missing?: number;
-            playlistId?: string;
-            /** @example spotify */
-            source?: string;
-            sourcePlaylistName?: string;
-            sourceRef?: string;
-            /** @example completed */
-            status?: string;
-            /** @example 42 */
-            total?: number;
-        };
-        "immerle.ImportItemDTO": {
-            candidateCoverArt?: string;
-            /**
-             * @description CandidateTrackID / CandidateCoverArt let a client preview a doubtful item:
-             *     play the candidate (stream accepts the remote track id) and show its cover.
-             */
-            candidateTrackId?: string;
-            /** @example 0.62 */
-            confidence?: number;
-            id?: string;
-            matchedTrackId?: string;
-            note?: string;
-            position?: number;
-            resolvedArtist?: string;
-            resolvedTitle?: string;
-            sourceAlbum?: string;
-            /** @example Daft Punk */
-            sourceArtist?: string;
-            /** @example Da Funk */
-            sourceTitle?: string;
-            /** @example matched */
-            status?: string;
-        };
-        "immerle.ImportSourceDTO": {
-            /** @example true */
-            configured?: boolean;
-            /** @example spotify */
-            name?: string;
-        };
-        "immerle.LastFmAdminDTO": {
-            /** @example false */
-            configured: boolean;
-            /** @example false */
-            enabled: boolean;
-        };
-        "immerle.LastFmStatusDTO": {
-            connected: boolean;
-            /** @example bob */
-            username?: string;
         };
         "immerle.RuntimeSettingsDTO": {
             auth?: {
@@ -10842,107 +10674,6 @@ export interface components {
             /** @example false */
             restartRequired?: boolean;
             settings?: components["schemas"]["immerle.RuntimeSettingsDTO"];
-        };
-        "immerle.SetupInitRequest": {
-            /**
-             * @description DisplayName is an optional free-text name shown in the UI (falls back to
-             *     the username when empty).
-             * @example Kilian Smiti
-             */
-            displayName?: string;
-            /** @example me@example.com */
-            email?: string;
-            /** @example a-strong-password */
-            password?: string;
-            /**
-             * @description SetupToken is required only when the server was started with
-             *     auth.require_setup_token=true.
-             */
-            setupToken?: string;
-            /** @example kilian */
-            username?: string;
-        };
-        "immerle.SetupStatusDTO": {
-            /** @example false */
-            initialized?: boolean;
-            /** @example true */
-            needsSetup?: boolean;
-            /** @example false */
-            setupTokenRequired?: boolean;
-            /** @example 0 */
-            userCount?: number;
-        };
-        "immerle.SongSonicDTO": {
-            /** @example 127.6 */
-            bpm: number;
-            /** @example 8A */
-            camelot: string;
-            /** @example 0.64 */
-            danceability: number;
-            /** @example 0.82 */
-            energy: number;
-            /** @example A */
-            key: string;
-            /** @example minor */
-            mode: string;
-        };
-        "immerle.SonicDuplicatesDTO": {
-            groups: components["schemas"]["immerle.songView"][][];
-        };
-        "immerle.SonicStatusDTO": {
-            /** @example 4210 */
-            analyzed: number;
-            /**
-             * @description Available is false when ffmpeg is missing: analysis can't run at all.
-             * @example true
-             */
-            available: boolean;
-            /** @example true */
-            enabled: boolean;
-            /** @example 3 */
-            failed: number;
-            /**
-             * @description Total counts local tracks; Analyzed and Failed those processed with the
-             *     current algorithm.
-             * @example 12000
-             */
-            total: number;
-        };
-        "immerle.UserDTO": {
-            /** @example Kilian Smiti */
-            displayName?: string;
-            id?: string;
-            /** @example true */
-            isAdmin?: boolean;
-            /** @example kilian */
-            username?: string;
-        };
-        "immerle.WrappedCountDTO": {
-            /** @example Daft Punk */
-            name?: string;
-            /** @example 120 */
-            plays?: number;
-        };
-        "immerle.WrappedDTO": {
-            byMonth?: number[];
-            topArtists?: components["schemas"]["immerle.WrappedCountDTO"][];
-            topGenres?: components["schemas"]["immerle.WrappedCountDTO"][];
-            topTracks?: components["schemas"]["immerle.WrappedTrackDTO"][];
-            /** @example 1234 */
-            totalPlays?: number;
-            /** @example 987654 */
-            totalSeconds?: number;
-            /** @example 2025 */
-            year?: number;
-        };
-        "immerle.WrappedTrackDTO": {
-            /** @example Daft Punk */
-            artist?: string;
-            id?: string;
-            /** @example 42 */
-            plays?: number;
-            /** @example One More Time */
-            title?: string;
         };
         "immerle.accountView": {
             displayName: string;
@@ -11062,6 +10793,46 @@ export interface components {
             name: string;
             starred?: string;
         };
+        "immerle.autoDJRequest": {
+            /**
+             * @description IDs are the track ids to order (a playlist, or the queue from the
+             *     current track on). Duplicates are kept.
+             */
+            ids?: string[];
+            /**
+             * @description KeepFirst pins ids[0], e.g. the track playing now.
+             * @example true
+             */
+            keepFirst?: boolean;
+        };
+        "immerle.autoDJView": {
+            ids: string[];
+        };
+        "immerle.bandcampCollectionItemView": {
+            artUrl?: string;
+            artistName: string;
+            itemTitle: string;
+            /**
+             * @example album
+             * @enum {string}
+             */
+            itemType: "album" | "track";
+            jobId?: string;
+            /**
+             * @example completed
+             * @enum {string}
+             */
+            jobStatus?: "queued" | "running" | "completed" | "failed";
+            /** @example 2021-01-01T10:00:00Z */
+            purchased: string;
+            /** @example 123456789 */
+            saleItemId: string;
+            /** @example p */
+            saleItemType: string;
+        };
+        "immerle.bandcampCollectionView": {
+            items?: components["schemas"]["immerle.bandcampCollectionItemView"][];
+        };
         "immerle.bandcampConnectRequest": {
             cookie?: string;
         };
@@ -11069,6 +10840,42 @@ export interface components {
             artistName?: string;
             itemTitle?: string;
             itemType?: string;
+        };
+        "immerle.bandcampJobView": {
+            artistName: string;
+            attempts: number;
+            /** @example 2026-07-18T21:42:00Z */
+            createdAt: string;
+            error?: string;
+            /** @example flac */
+            format?: string;
+            id: string;
+            itemTitle: string;
+            /**
+             * @example album
+             * @enum {string}
+             */
+            itemType: "album" | "track";
+            saleItemId: string;
+            saleItemType: string;
+            /**
+             * @example completed
+             * @enum {string}
+             */
+            status: "queued" | "running" | "completed" | "failed";
+            trackIds?: string[];
+            /** @example 2026-07-18T21:43:00Z */
+            updatedAt: string;
+        };
+        "immerle.bandcampJobsView": {
+            jobs?: components["schemas"]["immerle.bandcampJobView"][];
+        };
+        "immerle.bandcampStatusView": {
+            connected: boolean;
+            fanId?: string;
+            /** @example 2026-07-18T21:42:00Z */
+            lastSyncedAt?: string;
+            needsReconnect?: boolean;
         };
         "immerle.capabilitiesView": {
             capabilities: {
@@ -11142,6 +10949,23 @@ export interface components {
             trackId?: string;
             trackIds?: string[];
             type: string;
+        };
+        "immerle.concertListView": {
+            concerts: components["schemas"]["models.Concert"][];
+        };
+        "immerle.concertsStatusView": {
+            /**
+             * @description Country is an ISO 3166-1 alpha-2 code (e.g. "FR"), picked from a fixed
+             *     dropdown in the admin UI — not a secret, returned as-is.
+             * @example FR
+             */
+            country: string;
+            /** @example false */
+            enabled: boolean;
+            /** @example false */
+            skiddleConfigured: boolean;
+            /** @example false */
+            ticketmasterConfigured: boolean;
         };
         "immerle.concertsUpdateRequest": {
             /**
@@ -11243,6 +11067,10 @@ export interface components {
             createdAt: string;
             tracks: components["schemas"]["immerle.songView"][];
         };
+        "immerle.importSourceView": {
+            configured: boolean;
+            name: string;
+        };
         "immerle.instanceListView": {
             instances: components["schemas"]["immerle.instanceView"][];
         };
@@ -11263,12 +11091,23 @@ export interface components {
             participants: components["schemas"]["models.JamParticipant"][];
             session: components["schemas"]["models.JamSession"];
         };
+        "immerle.lastFmAdminView": {
+            /** @example false */
+            configured: boolean;
+            /** @example false */
+            enabled: boolean;
+        };
         "immerle.lastFmConnectFinishRequest": {
             token?: string;
         };
         "immerle.lastFmConnectStartResponse": {
             authUrl: string;
             token: string;
+        };
+        "immerle.lastFmStatusView": {
+            connected: boolean;
+            /** @example bob */
+            username?: string;
         };
         "immerle.lastFmUpdateRequest": {
             apiKey?: string;
@@ -11638,6 +11477,30 @@ export interface components {
              */
             deviceId?: string;
         };
+        "immerle.setupAdminView": {
+            displayName: string;
+            id: string;
+            isAdmin: boolean;
+            username: string;
+        };
+        "immerle.setupInitRequest": {
+            displayName?: string;
+            email?: string;
+            password: string;
+            /** @description SetupToken is required only when GET /setup says setupTokenRequired. */
+            setupToken?: string;
+            username: string;
+        };
+        "immerle.setupStatusView": {
+            initialized: boolean;
+            needsSetup: boolean;
+            /**
+             * @description SetupTokenRequired is true when POST /setup needs the token printed in
+             *     the server logs.
+             */
+            setupTokenRequired: boolean;
+            userCount: number;
+        };
         "immerle.shareCreateRequest": {
             description?: string;
             expiresAt?: number;
@@ -11682,6 +11545,20 @@ export interface components {
         "immerle.songLocalStatusView": {
             local: boolean;
             song?: components["schemas"]["immerle.songView"];
+        };
+        "immerle.songSonicView": {
+            /** @example 127.6 */
+            bpm: number;
+            /** @example 8A */
+            camelot: string;
+            /** @example 0.64 */
+            danceability: number;
+            /** @example 0.82 */
+            energy: number;
+            /** @example A */
+            key: string;
+            /** @example minor */
+            mode: string;
         };
         "immerle.songView": {
             album: string;
@@ -11734,6 +11611,28 @@ export interface components {
             unresolved?: boolean;
             work?: string;
             year?: number;
+        };
+        "immerle.sonicDuplicatesView": {
+            groups: components["schemas"]["immerle.songView"][][];
+        };
+        "immerle.sonicStatusView": {
+            /** @example 4210 */
+            analyzed: number;
+            /**
+             * @description Available is false when ffmpeg is missing: analysis can't run at all.
+             * @example true
+             */
+            available: boolean;
+            /** @example true */
+            enabled: boolean;
+            /** @example 3 */
+            failed: number;
+            /**
+             * @description Total counts local tracks; Analyzed and Failed those processed with the
+             *     current algorithm.
+             * @example 12000
+             */
+            total: number;
         };
         /**
          * @description Spotify is a public Spotify playlist (type spotifyPlaylist): selecting it
@@ -11842,6 +11741,78 @@ export interface components {
             id: string;
             username: string;
         };
+        "models.Concert": {
+            artistName: string;
+            city?: string;
+            eventName: string;
+            id: string;
+            /** @enum {string} */
+            source: "ticketmaster" | "skiddle";
+            startTime: string;
+            url?: string;
+            venue?: string;
+        };
+        "models.Import": {
+            createdAt: string;
+            doubtful: number;
+            error?: string;
+            failed: number;
+            id: string;
+            /** @description Items is populated only on a detail fetch. */
+            items?: components["schemas"]["models.ImportItem"][];
+            matched: number;
+            missing: number;
+            /** @description PlaylistID is the immerle playlist created for this import. */
+            playlistId?: string;
+            /** @description Source is the import-source name (e.g. "spotify"). */
+            source: string;
+            /** @description SourcePlaylistName is the playlist name as seen at the source. */
+            sourcePlaylistName?: string;
+            /** @description SourceRef is the source playlist identifier/URL supplied by the user. */
+            sourceRef: string;
+            status: components["schemas"]["models.ImportStatus"];
+            total: number;
+            updatedAt: string;
+            userId: string;
+        };
+        "models.ImportItem": {
+            /**
+             * @description CandidateCoverArt is the candidate's cover-art id (a remote cover id usable
+             *     directly with getCoverArt), so a doubtful item can show artwork.
+             */
+            candidateCoverArt?: string;
+            /**
+             * @description CandidateID is the provider (remote) track id of the best candidate found
+             *     while resolving. For a doubtful item it lets the client preview/play the
+             *     candidate (the stream endpoint accepts remote ids) and validate it without
+             *     re-searching.
+             */
+            candidateTrackId?: string;
+            /**
+             * @description Confidence is the 0..1 string similarity of the chosen candidate to the
+             *     source track (artist + title).
+             */
+            confidence: number;
+            createdAt: string;
+            id: string;
+            importId: string;
+            /** @description MatchedTrackID is the local track added to the playlist (matched items). */
+            matchedTrackId?: string;
+            note?: string;
+            position: number;
+            resolvedArtist?: string;
+            /** @description ResolvedTitle/ResolvedArtist describe the chosen content-provider candidate. */
+            resolvedTitle?: string;
+            sourceAlbum?: string;
+            sourceArtist: string;
+            sourceTitle: string;
+            status: components["schemas"]["models.ImportItemStatus"];
+            updatedAt: string;
+        };
+        /** @enum {string} */
+        "models.ImportItemStatus": "pending" | "matched" | "doubtful" | "missing" | "failed";
+        /** @enum {string} */
+        "models.ImportStatus": "queued" | "running" | "completed" | "failed";
         /** @enum {string} */
         "models.ItemType": "artist" | "album" | "track" | "playlist";
         "models.JamInvite": {
@@ -11919,6 +11890,26 @@ export interface components {
              *     should fall back to its own default.
              */
             accentColor?: string;
+        };
+        "models.Wrapped": {
+            /** @description ByMonth is plays per calendar month, index 0 = January .. 11 = December. */
+            byMonth: number[];
+            topArtists: components["schemas"]["models.WrappedCount"][];
+            topGenres: components["schemas"]["models.WrappedCount"][];
+            topTracks: components["schemas"]["models.WrappedTrack"][];
+            totalPlays: number;
+            totalSeconds: number;
+            year: number;
+        };
+        "models.WrappedCount": {
+            name: string;
+            plays: number;
+        };
+        "models.WrappedTrack": {
+            artist: string;
+            id: string;
+            plays: number;
+            title: string;
         };
     };
     responses: never;

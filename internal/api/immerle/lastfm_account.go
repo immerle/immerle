@@ -18,8 +18,8 @@ func (h *Handler) lastFmConfigured() bool {
 	return cfg.Enabled && cfg.APIKey != "" && cfg.APISecret != ""
 }
 
-func lastFmStatusView(username string) LastFmStatusDTO {
-	return LastFmStatusDTO{Connected: username != "", Username: username}
+func toLastFmStatus(username string) lastFmStatusView {
+	return lastFmStatusView{Connected: username != "", Username: username}
 }
 
 // handleLastFmStatus reports the caller's Last.fm connection state.
@@ -29,7 +29,7 @@ func lastFmStatusView(username string) LastFmStatusDTO {
 // @Tags         users
 // @Security     BearerAuth
 // @Produce      json
-// @Success      200  {object}  LastFmStatusDTO
+// @Success      200  {object}  lastFmStatusView
 // @Failure      401  {object}  errorResponse
 // @Failure      500  {object}  errorResponse
 // @Router       /me/lastfm [get]
@@ -39,7 +39,7 @@ func (h *Handler) handleLastFmStatus(w http.ResponseWriter, r *http.Request) {
 		writeInternal(w, err)
 		return
 	}
-	writeResource(w, http.StatusOK, lastFmStatusView(user.LastFmUsername))
+	writeResource(w, http.StatusOK, toLastFmStatus(user.LastFmUsername))
 }
 
 // lastFmConnectStartResponse carries the auth token and the URL the caller
@@ -91,7 +91,7 @@ type lastFmConnectFinishRequest struct {
 // @Accept       json
 // @Produce      json
 // @Param        body  body  lastFmConnectFinishRequest  true  "Approved auth token"
-// @Success      200  {object}  LastFmStatusDTO
+// @Success      200  {object}  lastFmStatusView
 // @Failure      400  {object}  errorResponse
 // @Failure      401  {object}  errorResponse
 // @Failure      503  {object}  errorResponse
@@ -131,7 +131,7 @@ func (h *Handler) handleLastFmConnectFinish(w http.ResponseWriter, r *http.Reque
 		writeInternal(w, err)
 		return
 	}
-	writeResource(w, http.StatusOK, lastFmStatusView(user.LastFmUsername))
+	writeResource(w, http.StatusOK, toLastFmStatus(user.LastFmUsername))
 }
 
 // handleLastFmDisconnect removes the caller's Last.fm connection.
@@ -156,4 +156,10 @@ func (h *Handler) handleLastFmDisconnect(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// lastFmStatusView is the caller's Last.fm connection state.
+type lastFmStatusView struct {
+	Connected bool   `json:"connected"`
+	Username  string `json:"username,omitempty" example:"bob" validate:"optional"`
 }
