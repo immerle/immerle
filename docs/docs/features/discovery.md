@@ -46,6 +46,30 @@ providers), so even a small library gets a populated list.
 | **Découvertes** | [ReccoBeats](https://reccobeats.com/), seeded from your top tracks | nothing, keyless |
 | **Daily Jams**, **Weekly Jams**, **Weekly Exploration** | ListenBrainz's own generated playlists | the user's ListenBrainz token, see [Scrobbling](./scrobbling.md#listenbrainz) |
 | **Mix Last.fm** | Last.fm track/artist similarity, seeded from your top tracks | the admin-configured Last.fm API key, see [Scrobbling](./scrobbling.md#lastfm); no per-user connection needed |
+| **Mix discover** + up to 5 curated playlists | [immerle discover](#immerle-discover), from your last 90 days of plays | nothing, on by default |
+
+## immerle discover
+
+[discover.immerle.com](https://discover.immerle.com/swagger/index.html) is a
+shared music catalog fed by charts and popular editorial playlists. It is on
+by default: the server registers itself on first use (no account), and users
+are only ever sent as anonymous references, never names or emails.
+
+An admin can turn it off entirely from **Admin > Settings > immerle discover**,
+or switch off each feature separately:
+
+- **Scrobbles**: completed plays of users who have scrobbling enabled. The
+  suggestions below learn from them.
+- **Discover Mix**: the personal *Mix discover* playlist.
+- **Curated playlists for you**: the editorial playlists that overlap most
+  with what each user listens to (never charts), in their own Home section.
+- **Similar tracks**: backs Subsonic `getSimilarSongs` with library tracks
+  discover finds similar, when the [sonic radio](./sonic.md) is off or the
+  track is not analyzed.
+
+A playlist whose feature is switched off is removed at the next daily sync.
+Deleting a user also deletes their plays from discover, even while it is
+switched off.
 
 ## Wrapped
 

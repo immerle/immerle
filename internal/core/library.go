@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/immerle/immerle/internal/discover"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 	"github.com/immerle/immerle/internal/sonic"
@@ -29,6 +30,14 @@ type LibraryService struct {
 	// sonic powers the sonic radio; nil (or switched off) falls back to the
 	// genre heuristic.
 	sonic *sonic.Service
+	// discover backs SimilarSongs when the sonic radio can't; optional.
+	discover *discover.Client
+}
+
+// WithDiscover plugs immerle discover in, for similar tracks.
+func (s *LibraryService) WithDiscover(c *discover.Client) *LibraryService {
+	s.discover = c
+	return s
 }
 
 // WithSonic plugs the local audio analysis in, for the sonic radio.

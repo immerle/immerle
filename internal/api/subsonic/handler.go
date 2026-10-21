@@ -14,6 +14,7 @@ import (
 	"github.com/immerle/immerle/internal/api/httputil"
 	"github.com/immerle/immerle/internal/api/media"
 	"github.com/immerle/immerle/internal/core"
+	"github.com/immerle/immerle/internal/discover"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 	"github.com/immerle/immerle/internal/scanner"
@@ -51,6 +52,10 @@ type Deps struct {
 	Logger  *slog.Logger
 	// Sonic backs getSimilarSongs with the sonic radio when switched on. Optional.
 	Sonic *sonic.Service
+	// Discover backs getSimilarSongs when the sonic radio can't. Optional.
+	Discover *discover.Client
+	// UserForgetter drops deleted users' data from immerle discover. Optional.
+	UserForgetter core.UserForgetter
 }
 
 // Handler implements the Subsonic REST API.
@@ -72,10 +77,10 @@ type Handler struct {
 func NewHandler(d Deps) *Handler {
 	return &Handler{
 		Deps:         d,
-		library:      core.NewLibraryService(d.Catalog, d.Annotations, d.Playlists, d.OnDemand).WithSonic(d.Sonic),
+		library:      core.NewLibraryService(d.Catalog, d.Annotations, d.Playlists, d.OnDemand).WithSonic(d.Sonic).WithDiscover(d.Discover),
 		playback:     core.NewPlaybackService(d.Catalog, d.Annotations, d.Scrobbles, d.OnDemand, d.Activity, d.NowPlaying, d.ScrobbleSync),
 		playlistSvc:  core.NewPlaylistService(d.Playlists, d.Annotations, d.Activity, d.PlaylistSync, d.OnDemand),
-		userSvc:      core.NewUserService(d.Users, d.Auth),
+		userSvc:      core.NewUserService(d.Users, d.Auth).WithForgetter(d.UserForgetter),
 		shareSvc:     core.NewShareService(d.Shares, d.Catalog, d.Playlists),
 		playQueueSvc: core.NewPlayQueueService(d.PlayQueues, d.Catalog, d.Annotations, d.Logger),
 		media:        media.NewServer(d.Catalog, d.Streamer, d.Cover, d.OnDemand, d.NowPlaying, d.Logger, ""),

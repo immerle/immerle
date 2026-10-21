@@ -36,13 +36,21 @@ const RESTART_LABEL_KEYS: Record<string, string> = {
   'scan.watch': 'admin.settings.restartScanWatch',
 };
 
-type SectionKey = 'auth' | 'ldap' | 'server' | 'transcode' | 'cleanup' | 'charts' | 'concerts' | 'lastfm' | 'logs' | 'features' | 'sonic';
+type SectionKey = 'auth' | 'ldap' | 'server' | 'transcode' | 'cleanup' | 'charts' | 'concerts' | 'lastfm' | 'logs' | 'features' | 'sonic' | 'discover';
+
+/** immerle discover feature toggles, each with a `<label>Help` text. */
+const DISCOVER_FEATURES = [
+  ['scrobble', 'discoverScrobble'],
+  ['madeForYou', 'discoverMadeForYou'],
+  ['curatedPlaylists', 'discoverCurated'],
+  ['similarTracks', 'discoverSimilar'],
+] as const;
 
 /** Sections grouped by theme, in display order. */
 const GROUPS: { titleKey: string; keys: SectionKey[] }[] = [
   { titleKey: 'admin.settings.groupAccess', keys: ['auth', 'ldap', 'server'] },
   { titleKey: 'admin.settings.groupPlayback', keys: ['transcode'] },
-  { titleKey: 'admin.settings.groupContent', keys: ['features', 'sonic', 'charts', 'concerts'] },
+  { titleKey: 'admin.settings.groupContent', keys: ['features', 'sonic', 'discover', 'charts', 'concerts'] },
   { titleKey: 'admin.settings.groupIntegrations', keys: ['lastfm'] },
   { titleKey: 'admin.settings.groupMaintenance', keys: ['cleanup', 'logs'] },
 ];
@@ -139,6 +147,7 @@ export default function AdminSettings() {
     { key: 'lastfm', icon: 'disc', color: '#eab308', title: t('admin.settings.lastFmTitle'), subtitle: t('admin.settings.lastFmSubtitle') },
     { key: 'logs', icon: 'document-text', color: '#f59e0b', title: t('admin.settings.logsTitle'), subtitle: t('admin.settings.logsSubtitle') },
     { key: 'sonic', icon: 'pulse', color: '#14b8a6', title: t('admin.settings.sonicTitle'), subtitle: t('admin.settings.sonicSubtitle') },
+    { key: 'discover', icon: 'compass', color: '#6366f1', title: t('admin.settings.discoverTitle'), subtitle: t('admin.settings.discoverSubtitle') },
     { key: 'features', icon: 'sparkles', color: '#8b5cf6', title: t('admin.settings.featuresTitle'), subtitle: t('admin.settings.featuresSubtitle') },
   ];
 
@@ -164,6 +173,7 @@ export default function AdminSettings() {
   const save = (patch: RuntimeSettingsDTO, onSuccess?: () => void) => update.mutate(patch, { onSuccess });
 
   const pending = q.data?.pendingRestart ?? [];
+  const discover = q.data?.settings.discover;
   const profiles = q.data?.settings.transcode?.profiles ?? [];
   const visible = (key: SectionKey) => {
     if (key === 'cleanup') return !!cleanup.data;
@@ -394,6 +404,29 @@ export default function AdminSettings() {
                 ) : null}
               </View>
             ) : null}
+          </>
+        ) : null}
+
+        {sheet === 'discover' ? (
+          <>
+            <Text className="text-xs text-muted">{t('admin.settings.discoverDescription')}</Text>
+            <ToggleRow
+              label={t('admin.settings.discoverEnabled')}
+              value={discover?.enabled ?? true}
+              onChange={(v) => save({ discover: { enabled: v } })}
+            />
+            <Text className="pt-2 text-xs font-semibold uppercase tracking-wider text-muted">{t('admin.settings.discoverFeatures')}</Text>
+            {DISCOVER_FEATURES.map(([field, label]) => (
+              <View key={field}>
+                <ToggleRow
+                  label={t(`admin.settings.${label}`)}
+                  hint={discover?.enabled === false ? t('admin.settings.discoverNeedsEnabled') : undefined}
+                  value={discover?.[field] ?? true}
+                  onChange={(v) => save({ discover: { [field]: v } })}
+                />
+                <Text className="text-xs text-muted">{t(`admin.settings.${label}Help`)}</Text>
+              </View>
+            ))}
           </>
         ) : null}
 

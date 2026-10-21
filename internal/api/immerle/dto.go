@@ -91,6 +91,14 @@ type RuntimeSettingsDTO struct {
 		AutoDJ     bool `json:"autoDj" example:"false"`
 		Duplicates bool `json:"duplicates" example:"false"`
 	} `json:"sonic"`
+	Discover struct {
+		Enabled          bool   `json:"enabled" example:"true"`
+		Scrobble         bool   `json:"scrobble" example:"true"`
+		MadeForYou       bool   `json:"madeForYou" example:"true"`
+		CuratedPlaylists bool   `json:"curatedPlaylists" example:"true"`
+		SimilarTracks    bool   `json:"similarTracks" example:"true"`
+		InstanceID       string `json:"instanceId,omitempty" example:"6f1c2a4e-0d2b-4c55-9a51-2b8f3c1d9e07"`
+	} `json:"discover"`
 }
 
 // FederationUpdateDTO is the body of PATCH /admin/federation: the instance

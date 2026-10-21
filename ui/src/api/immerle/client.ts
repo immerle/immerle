@@ -415,6 +415,13 @@ export class ImmerleClient {
     return (data.playlists ?? []).map(toPlaylist);
   }
 
+  /** Playlists made by people that immerle discover matches to the caller's listening. */
+  async getDiscoverPlaylists(signal?: AbortSignal): Promise<Playlist[]> {
+    const { data, error } = await this.api.GET('/me/discover-playlists', { signal });
+    if (error) throw apiErr(error, 'playlist.discover');
+    return (data.playlists ?? []).map(toPlaylist);
+  }
+
   async getPlaylist(id: string, signal?: AbortSignal): Promise<PlaylistWithSongs> {
     const { data, error } = await this.api.GET('/playlists/{id}', { params: { path: { id } }, signal });
     if (error) throw apiErr(error, 'playlist.get');

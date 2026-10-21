@@ -4,6 +4,7 @@ import (
 	"context"
 	"sort"
 
+	"github.com/immerle/immerle/internal/discover"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 )
@@ -68,7 +69,8 @@ func (s *LibraryService) TopSongs(ctx context.Context, userID, artistName string
 
 // SimilarSongs returns tracks that sound like the seed (a track, album or
 // artist id) when the sonic radio is on and the seed is analyzed. Otherwise it
-// falls back to random tracks sharing the seed track's genre.
+// asks immerle discover for tracks similar to a seed track (keeping the ones in
+// the library), then falls back to random tracks sharing its genre.
 func (s *LibraryService) SimilarSongs(ctx context.Context, userID, seedID string, count int) []TrackEntry {
 	if s.sonic.RadioEnabled() {
 		if tracks, ok := s.SonicRadio(ctx, userID, []string{seedID}, nil, count); ok {
@@ -78,12 +80,46 @@ func (s *LibraryService) SimilarSongs(ctx context.Context, userID, seedID string
 	genre := ""
 	if t, err := s.catalog.GetTrack(ctx, seedID); err == nil {
 		genre = t.Genre
+		if tracks := s.discoverSimilar(ctx, t, count); len(tracks) > 0 {
+			return s.annotateTracks(ctx, userID, tracks)
+		}
 	}
 	tracks, err := s.catalog.RandomTracks(ctx, count, genre, 0, 0)
 	if err != nil {
 		return nil
 	}
 	return s.annotateTracks(ctx, userID, tracks)
+}
+
+// discoverFetchSize over-asks discover: most of its global catalog isn't in a
+// given library.
+const discoverFetchSize = 100
+
+// discoverSimilar returns up to count library tracks discover finds similar to
+// seed, nil when it's off or unreachable.
+func (s *LibraryService) discoverSimilar(ctx context.Context, seed models.Track, count int) []models.Track {
+	if s.discover == nil || !s.discover.SimilarTracksEnabled() {
+		return nil
+	}
+	ref := discover.Track{Artist: seed.ArtistName, Title: seed.Title}
+	if seed.MBID != "" {
+		ref.IDs = []string{"mbid:" + seed.MBID}
+	}
+	similar, err := s.discover.SimilarTracks(ctx, []discover.Track{ref}, discoverFetchSize)
+	if err != nil {
+		return nil
+	}
+	var out []models.Track
+	for _, t := range similar {
+		if len(out) >= count {
+			break
+		}
+		// ponytail: one lookup per candidate (up to discoverFetchSize), batch it if getSimilarSongs gets slow.
+		if local, ok, err := s.catalog.FindByArtistTitle(ctx, t.Artist, t.Title); err == nil && ok && local.ID != seed.ID {
+			out = append(out, local)
+		}
+	}
+	return out
 }
 
 // StarredResult is the caller's starred catalog. No annotations are attached:

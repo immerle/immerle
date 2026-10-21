@@ -330,6 +330,7 @@
       "mostPlayed": "Les plus écoutés",
       "favorites": "Vos favoris",
       "customPlaylists": "Faites pour vous",
+      "discoverPlaylists": "Sélections pour vous",
       "random": "Au hasard",
       "offlineTitle": "Serveur injoignable",
       "retry": "Réessayer",
@@ -695,6 +696,20 @@
       "sonicAutoDjHelp": "Permet de lire une playlist, ou de réordonner sa file d'attente, pour des enchaînements fluides : tempos proches, tonalités compatibles, énergie sans à-coups.",
       "sonicDuplicates": "Doublons sonores",
       "sonicDuplicatesHelp": "Liste, dans Admin > Bibliothèque, les morceaux qui sonnent à l'identique : le même enregistrement sous d'autres tags ou dans un autre format. Rien n'est supprimé automatiquement.",
+      "discoverTitle": "immerle discover",
+      "discoverSubtitle": "Catalogue partagé, scrobbles et suggestions",
+      "discoverDescription": "Connecte ce serveur à discover.immerle.com, un catalogue musical partagé alimenté par les charts et les playlists populaires. Aucun compte requis : le serveur s'enregistre tout seul. Les auditeurs sont envoyés sous forme de références anonymes, jamais de nom ni d'email.",
+      "discoverEnabled": "Activer immerle discover",
+      "discoverFeatures": "Fonctionnalités",
+      "discoverNeedsEnabled": "Nécessite immerle discover",
+      "discoverScrobble": "Scrobbles",
+      "discoverScrobbleHelp": "Envoie les écoutes terminées des utilisateurs qui ont le scrobbling activé. Les suggestions ci-dessous s'en servent.",
+      "discoverMadeForYou": "Mix discover",
+      "discoverMadeForYouHelp": "Une playlist personnelle par utilisateur, choisie selon ce qu'il écoute.",
+      "discoverCurated": "Playlists éditoriales pour vous",
+      "discoverCuratedHelp": "Propose à chaque utilisateur les playlists éditoriales qui correspondent le mieux à ce qu'il écoute.",
+      "discoverSimilar": "Titres similaires",
+      "discoverSimilarHelp": "Suggère des titres de votre bibliothèque proches de celui en cours (utilisé quand la radio sonique est coupée ou que le titre n'est pas analysé).",
       "save": "Enregistrer"
     },
     "users": {
@@ -862,6 +877,7 @@
         "listenBrainzWeeklyJams": "Weekly Jams",
         "listenBrainzWeeklyExploration": "Weekly Exploration",
         "lastfmSimilarMix": "Mix Last.fm",
+        "discoverMix": "Mix discover",
         "moodCalm": "Calme",
         "moodFocus": "Focus",
         "moodMelancholy": "Mélancolie",
@@ -878,7 +894,8 @@
       "source": {
         "reccobeats": "Généré via ReccoBeats",
         "listenbrainz": "Généré via ListenBrainz",
-        "lastfm": "Généré via Last.fm"
+        "lastfm": "Généré via Last.fm",
+        "discover": "Généré via immerle discover"
       },
       "cover": {
         "title": "Créer une pochette",

@@ -5751,7 +5751,57 @@ export interface paths {
         };
         /**
          * Custom auto-generated playlists
-         * @description Returns the caller's personal auto-generated playlists (top of the month, on repeat, forgotten favorites, random, recommended) that currently have at least one track, followed by the shared mood playlists when the sonic moods setting is on.
+         * @description Returns the caller's personal auto-generated playlists (top of the month, on repeat, forgotten favorites, random, recommended, made for you) that currently have at least one track, followed by the shared mood playlists when the sonic moods setting is on.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            [key: string]: components["schemas"]["immerle.playlistView"][];
+                        };
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/discover-playlists": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Curated playlists for the caller
+         * @description Returns the playlists made by people (not charts) that immerle discover matches to the caller's recent listening, refreshed daily. Empty when the admin turned the feature off.
          */
         get: {
             parameters: {
@@ -10470,6 +10520,20 @@ export interface components {
                 intervalSeconds?: number;
                 /** @example 2592000 */
                 maxAgeSeconds?: number;
+            };
+            discover?: {
+                /** @example true */
+                curatedPlaylists?: boolean;
+                /** @example true */
+                enabled?: boolean;
+                /** @example 6f1c2a4e-0d2b-4c55-9a51-2b8f3c1d9e07 */
+                instanceId?: string;
+                /** @example true */
+                madeForYou?: boolean;
+                /** @example true */
+                scrobble?: boolean;
+                /** @example true */
+                similarTracks?: boolean;
             };
             federation?: {
                 exportScrobbles?: boolean;
