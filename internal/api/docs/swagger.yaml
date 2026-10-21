@@ -412,75 +412,6 @@ components:
           example: other-node
           type: string
       type: object
-    immerle.JamDTO:
-      properties:
-        participants:
-          items:
-            $ref: '#/components/schemas/immerle.JamParticipantDTO'
-          type: array
-          uniqueItems: false
-        session:
-          $ref: '#/components/schemas/immerle.JamSessionDTO'
-      type: object
-    immerle.JamInviteDTO:
-      properties:
-        createdAt:
-          example: "2026-06-15T09:00:00Z"
-          type: string
-        id:
-          type: string
-        inviteeId:
-          type: string
-        inviterDisplayName:
-          example: Bob Marley
-          type: string
-        inviterId:
-          type: string
-        inviterUsername:
-          example: bob
-          type: string
-        sessionId:
-          type: string
-        sessionName:
-          example: Friday Night
-          type: string
-      type: object
-    immerle.JamParticipantDTO:
-      properties:
-        joinedAt:
-          example: "2026-06-15T09:00:00Z"
-          type: string
-        sessionId:
-          type: string
-        userId:
-          type: string
-        username:
-          example: bob
-          type: string
-      type: object
-    immerle.JamSessionDTO:
-      properties:
-        currentTrackId:
-          type: string
-        hostId:
-          type: string
-        id:
-          type: string
-        name:
-          example: Friday Night
-          type: string
-        position:
-          example: 42000
-          type: integer
-        state:
-          example: playing
-          type: string
-        trackIds:
-          items:
-            type: string
-          type: array
-          uniqueItems: false
-      type: object
     immerle.LastFmAdminDTO:
       properties:
         configured:
@@ -1567,10 +1498,33 @@ components:
       - changedAt
       - createdAt
       type: object
+    immerle.jamInviteListView:
+      properties:
+        invites:
+          items:
+            $ref: '#/components/schemas/models.JamInvite'
+          type: array
+          uniqueItems: false
+      required:
+      - invites
+      type: object
     immerle.jamInviteRequest:
       properties:
         username:
           type: string
+      type: object
+    immerle.jamView:
+      properties:
+        participants:
+          items:
+            $ref: '#/components/schemas/models.JamParticipant'
+          type: array
+          uniqueItems: false
+        session:
+          $ref: '#/components/schemas/models.JamSession'
+      required:
+      - participants
+      - session
       type: object
     immerle.lastFmConnectFinishRequest:
       properties:
@@ -2575,6 +2529,82 @@ components:
           type: string
         name:
           type: string
+      type: object
+    models.JamInvite:
+      properties:
+        createdAt:
+          type: string
+        id:
+          type: string
+        inviteeId:
+          type: string
+        inviterDisplayName:
+          type: string
+        inviterId:
+          type: string
+        inviterUsername:
+          type: string
+        sessionId:
+          type: string
+        sessionName:
+          type: string
+      required:
+      - createdAt
+      - id
+      - inviteeId
+      - inviterId
+      - inviterUsername
+      - sessionId
+      - sessionName
+      type: object
+    models.JamParticipant:
+      properties:
+        joinedAt:
+          type: string
+        sessionId:
+          type: string
+        userId:
+          type: string
+        username:
+          type: string
+      required:
+      - joinedAt
+      - sessionId
+      - userId
+      - username
+      type: object
+    models.JamSession:
+      properties:
+        createdAt:
+          type: string
+        currentTrackId:
+          type: string
+        hostId:
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+        position:
+          type: integer
+        state:
+          description: State is "playing" or "paused".
+          type: string
+        trackIds:
+          items:
+            type: string
+          type: array
+          uniqueItems: false
+        updatedAt:
+          type: string
+      required:
+      - createdAt
+      - hostId
+      - id
+      - name
+      - position
+      - state
+      - updatedAt
       type: object
     models.LibraryStats:
       properties:
@@ -5750,7 +5780,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.JamDTO'
+                $ref: '#/components/schemas/immerle.jamView'
           description: Created
         "400":
           content:
@@ -5824,7 +5854,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.JamDTO'
+                $ref: '#/components/schemas/immerle.jamView'
           description: OK
         "401":
           content:
@@ -5869,7 +5899,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.JamDTO'
+                $ref: '#/components/schemas/immerle.jamView'
           description: OK
         "400":
           content:
@@ -6015,7 +6045,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.JamDTO'
+                $ref: '#/components/schemas/immerle.jamView'
           description: Created
         "401":
           content:
@@ -6105,11 +6135,7 @@ paths:
           content:
             application/json:
               schema:
-                additionalProperties:
-                  items:
-                    $ref: '#/components/schemas/immerle.JamInviteDTO'
-                  type: array
-                type: object
+                $ref: '#/components/schemas/immerle.jamInviteListView'
           description: OK
         "401":
           content:
@@ -6135,7 +6161,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.JamDTO'
+                $ref: '#/components/schemas/immerle.jamView'
           description: OK
         "401":
           content:

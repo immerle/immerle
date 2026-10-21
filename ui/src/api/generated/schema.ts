@@ -4875,7 +4875,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.JamDTO"];
+                        "application/json": components["schemas"]["immerle.jamView"];
                     };
                 };
                 /** @description Bad Request */
@@ -4936,9 +4936,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            [key: string]: components["schemas"]["immerle.JamInviteDTO"][];
-                        };
+                        "application/json": components["schemas"]["immerle.jamInviteListView"];
                     };
                 };
                 /** @description Unauthorized */
@@ -5047,7 +5045,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.JamDTO"];
+                        "application/json": components["schemas"]["immerle.jamView"];
                     };
                 };
                 /** @description Unauthorized */
@@ -5104,7 +5102,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.JamDTO"];
+                        "application/json": components["schemas"]["immerle.jamView"];
                     };
                 };
                 /** @description Unauthorized */
@@ -5210,7 +5208,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.JamDTO"];
+                        "application/json": components["schemas"]["immerle.jamView"];
                     };
                 };
                 /** @description Bad Request */
@@ -5440,7 +5438,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.JamDTO"];
+                        "application/json": components["schemas"]["immerle.jamView"];
                     };
                 };
                 /** @description Unauthorized */
@@ -10792,44 +10790,6 @@ export interface components {
             /** @example other-node */
             sqid?: string;
         };
-        "immerle.JamDTO": {
-            participants?: components["schemas"]["immerle.JamParticipantDTO"][];
-            session?: components["schemas"]["immerle.JamSessionDTO"];
-        };
-        "immerle.JamInviteDTO": {
-            /** @example 2026-06-15T09:00:00Z */
-            createdAt?: string;
-            id?: string;
-            inviteeId?: string;
-            /** @example Bob Marley */
-            inviterDisplayName?: string;
-            inviterId?: string;
-            /** @example bob */
-            inviterUsername?: string;
-            sessionId?: string;
-            /** @example Friday Night */
-            sessionName?: string;
-        };
-        "immerle.JamParticipantDTO": {
-            /** @example 2026-06-15T09:00:00Z */
-            joinedAt?: string;
-            sessionId?: string;
-            userId?: string;
-            /** @example bob */
-            username?: string;
-        };
-        "immerle.JamSessionDTO": {
-            currentTrackId?: string;
-            hostId?: string;
-            id?: string;
-            /** @example Friday Night */
-            name?: string;
-            /** @example 42000 */
-            position?: number;
-            /** @example playing */
-            state?: string;
-            trackIds?: string[];
-        };
         "immerle.LastFmAdminDTO": {
             /** @example false */
             configured: boolean;
@@ -11397,8 +11357,15 @@ export interface components {
             createdAt: string;
             tracks?: components["schemas"]["immerle.songView"][];
         };
+        "immerle.jamInviteListView": {
+            invites: components["schemas"]["models.JamInvite"][];
+        };
         "immerle.jamInviteRequest": {
             username?: string;
+        };
+        "immerle.jamView": {
+            participants: components["schemas"]["models.JamParticipant"][];
+            session: components["schemas"]["models.JamSession"];
         };
         "immerle.lastFmConnectFinishRequest": {
             token?: string;
@@ -11896,6 +11863,34 @@ export interface components {
             endpoint?: string;
             kind?: string;
             name?: string;
+        };
+        "models.JamInvite": {
+            createdAt: string;
+            id: string;
+            inviteeId: string;
+            inviterDisplayName?: string;
+            inviterId: string;
+            inviterUsername: string;
+            sessionId: string;
+            sessionName: string;
+        };
+        "models.JamParticipant": {
+            joinedAt: string;
+            sessionId: string;
+            userId: string;
+            username: string;
+        };
+        "models.JamSession": {
+            createdAt: string;
+            currentTrackId?: string;
+            hostId: string;
+            id: string;
+            name: string;
+            position: number;
+            /** @description State is "playing" or "paused". */
+            state: string;
+            trackIds?: string[];
+            updatedAt: string;
         };
         "models.LibraryStats": {
             albums: number;

@@ -1,9 +1,9 @@
 import { create } from 'zustand';
 import { useAuth } from '../auth/store';
 import { usePlayer } from '../audio/store';
-import { JamParticipantDTO, JamSessionDTO } from '../api/immerleApi';
+import { JamParticipant, JamSession } from '../api/immerleApi';
 
-type Session = JamSessionDTO & { updatedAt?: string };
+type Session = JamSession;
 
 /**
  * Real-time Jam sync. Host is the source of truth: pushes `{currentTrackId,
@@ -16,7 +16,7 @@ interface JamStore {
   sessionId: string | null;
   isHost: boolean;
   session: Session | null;
-  participants: JamParticipantDTO[];
+  participants: JamParticipant[];
   active: boolean;
   start: (sessionId: string, isHost: boolean) => void;
   stop: () => Promise<void>;
@@ -78,7 +78,7 @@ async function applySession(session: Session | null) {
   }
 }
 
-function handleSnapshot(session: Session | null, participants: JamParticipantDTO[], isHost: boolean) {
+function handleSnapshot(session: Session | null, participants: JamParticipant[], isHost: boolean) {
   if (!useJam.getState().active) return;
   useJam.setState({ session: session ?? null, participants: participants ?? [] });
   if (!isHost) void applySession(session);
@@ -123,7 +123,7 @@ function connect(sessionId: string, isHost: boolean) {
     const es = new ES(client.jamEventsUrl(sessionId));
     es.addEventListener('state', (e: { data: string }) => {
       try {
-        const d = JSON.parse(e.data) as { session?: Session; participants?: JamParticipantDTO[] };
+        const d = JSON.parse(e.data) as { session?: Session; participants?: JamParticipant[] };
         handleSnapshot(d.session ?? null, d.participants ?? [], isHost);
       } catch {
         /* ignore malformed events */

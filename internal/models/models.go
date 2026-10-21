@@ -805,11 +805,11 @@ type JamSession struct {
 	ID             string `json:"id"`
 	HostID         string `json:"hostId"`
 	Name           string `json:"name"`
-	CurrentTrackID string `json:"currentTrackId,omitempty"`
+	CurrentTrackID string `json:"currentTrackId,omitempty" validate:"optional"`
 	PositionMs     int64  `json:"position"`
 	// State is "playing" or "paused".
 	State     string    `json:"state"`
-	TrackIDs  []string  `json:"trackIds"`
+	TrackIDs  []string  `json:"trackIds" validate:"optional"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }
@@ -833,7 +833,7 @@ type JamInvite struct {
 	SessionName        string    `json:"sessionName"`
 	InviterID          string    `json:"inviterId"`
 	InviterUsername    string    `json:"inviterUsername"`
-	InviterDisplayName string    `json:"inviterDisplayName,omitempty"`
+	InviterDisplayName string    `json:"inviterDisplayName,omitempty" validate:"optional"`
 	InviteeID          string    `json:"inviteeId"`
 	CreatedAt          time.Time `json:"createdAt"`
 }

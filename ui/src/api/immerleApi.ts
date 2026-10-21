@@ -96,9 +96,11 @@ export type AccountView = components['schemas']['immerle.accountView'];
 
 // Social / Jam DTOs.
 export type ActivityEventDTO = components['schemas']['immerle.ActivityEventDTO'];
-export type JamSessionDTO = components['schemas']['immerle.JamSessionDTO'];
-export type JamParticipantDTO = components['schemas']['immerle.JamParticipantDTO'];
-export type JamInviteDTO = components['schemas']['immerle.JamInviteDTO'];
+export type JamSession = components['schemas']['models.JamSession'];
+export type JamParticipant = components['schemas']['models.JamParticipant'];
+export type JamInvite = components['schemas']['models.JamInvite'];
+/** A Jam session plus its participants (REST responses and the SSE "state" event). */
+export type JamResult = components['schemas']['immerle.jamView'];
 
 // API tokens (personal access tokens). Device-flagged ones (isDevice) back
 // the "Connected devices" screen — see APITokenRepo.ListDeviceSessions.

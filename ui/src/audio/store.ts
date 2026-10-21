@@ -3,9 +3,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../auth/store';
 import { queryClient } from '../query/queryClient';
 import { setResolvedPlaylistTrack } from '../query/playlists';
-import { ImmerleClient, toJamInvite } from '../api/immerle/client';
+import { ImmerleClient } from '../api/immerle/client';
 import { toPlayQueueSnapshot } from '../api/immerle/catalog';
-import { JamInviteDTO, PlayQueueView } from '../api/immerleApi';
+import { JamInvite, PlayQueueView } from '../api/immerleApi';
 import { PlayQueueCommand, PlayQueueSnapshot, Song } from '../api/subsonic/types';
 import { ImmerleApiError } from '../api/immerle/types';
 import { offlinePlayableUrl } from '../offline/store';
@@ -776,8 +776,8 @@ function connectPlayQueueLive(get: () => AudioState, set: (partial: Partial<Audi
     es.addEventListener('invites', (e: { data?: string }) => {
       if (!e.data) return;
       try {
-        const parsed = JSON.parse(e.data) as { invites?: JamInviteDTO[] };
-        queryClient.setQueryData(['jam', 'invites', 'mine'], (parsed.invites ?? []).map(toJamInvite));
+        const parsed = JSON.parse(e.data) as { invites?: JamInvite[] };
+        queryClient.setQueryData(['jam', 'invites', 'mine'], parsed.invites ?? []);
       } catch {
         /* ignore malformed events */
       }
