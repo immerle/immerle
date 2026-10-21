@@ -46,17 +46,19 @@ providers), so even a small library gets a populated list.
 | **Découvertes** | [ReccoBeats](https://reccobeats.com/), seeded from your top tracks | nothing, keyless |
 | **Daily Jams**, **Weekly Jams**, **Weekly Exploration** | ListenBrainz's own generated playlists | the user's ListenBrainz token, see [Scrobbling](./scrobbling.md#listenbrainz) |
 | **Mix Last.fm** | Last.fm track/artist similarity, seeded from your top tracks | the admin-configured Last.fm API key, see [Scrobbling](./scrobbling.md#lastfm); no per-user connection needed |
-| **Mix discover** + up to 5 curated playlists | [immerle discover](#immerle-discover), from your last 90 days of plays | nothing, on by default |
+| **Mix discover** + up to 5 curated playlists | [immerle discover](#immerle-discover), from your last 90 days of plays | an admin opting in |
 
 ## immerle discover
 
 [discover.immerle.com](https://discover.immerle.com/swagger/index.html) is a
-shared music catalog fed by charts and popular editorial playlists. It is on
-by default: the server registers itself on first use (no account), and users
-are only ever sent as anonymous references, never names or emails.
+shared music catalog fed by charts and popular editorial playlists. It is off
+by default and nothing is sent to it until an admin turns it on from
+**Admin > Settings > immerle discover**. The server then registers itself (no
+account), and users are only ever sent as anonymous references, never names
+or emails.
 
-An admin can turn it off entirely from **Admin > Settings > immerle discover**,
-or switch off each feature separately:
+Once it is on, every feature below is on too, and each can be switched off
+separately:
 
 - **Scrobbles**: completed plays of users who have scrobbling enabled. The
   suggestions below learn from them.
