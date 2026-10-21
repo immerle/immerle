@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -47,11 +48,18 @@ func (s *ShareService) List(ctx context.Context, userID string) ([]ShareWithEntr
 }
 
 // Create mints a share for itemID (its type is classified), owned by the user.
-func (s *ShareService) Create(ctx context.Context, userID, itemID, description string, expiresAt *time.Time) (ShareWithEntries, error) {
+// Create makes a public link to a track, album or playlist the user can see.
+// Returns persistence.ErrNotFound for an unknown item and ErrForbidden for a
+// playlist the user cannot view (a share would expose its tracks).
+func (s *ShareService) Create(ctx context.Context, user models.User, itemID, description string, expiresAt *time.Time) (ShareWithEntries, error) {
+	itemType, err := s.classify(ctx, user, itemID)
+	if err != nil {
+		return ShareWithEntries{}, err
+	}
 	share := models.Share{
 		ID:          uuid.NewString(),
-		UserID:      userID,
-		ItemType:    s.classify(ctx, itemID),
+		UserID:      user.ID,
+		ItemType:    itemType,
 		ItemID:      itemID,
 		Secret:      randomShareSecret(),
 		Description: description,
@@ -95,14 +103,26 @@ func (s *ShareService) entries(ctx context.Context, share models.Share) []models
 }
 
 // classify determines whether an id is an album, playlist or (default) track.
-func (s *ShareService) classify(ctx context.Context, id string) models.ItemType {
+// classify resolves what id points to, checking the user may share it. Tracks
+// and albums are the shared catalog, readable by every user.
+func (s *ShareService) classify(ctx context.Context, user models.User, id string) (models.ItemType, error) {
 	if _, err := s.catalog.GetAlbum(ctx, id); err == nil {
-		return models.ItemAlbum
+		return models.ItemAlbum, nil
+	} else if !errors.Is(err, persistence.ErrNotFound) {
+		return "", err
 	}
-	if _, err := s.playlists.Get(ctx, id); err == nil {
-		return models.ItemPlaylist
+	if p, err := s.playlists.Get(ctx, id); err == nil {
+		if !canViewPlaylist(ctx, s.playlists, p, user) {
+			return "", ErrForbidden
+		}
+		return models.ItemPlaylist, nil
+	} else if !errors.Is(err, persistence.ErrNotFound) {
+		return "", err
 	}
-	return models.ItemTrack
+	if _, err := s.catalog.GetTrack(ctx, id); err != nil {
+		return "", err
+	}
+	return models.ItemTrack, nil
 }
 
 func randomShareSecret() string {

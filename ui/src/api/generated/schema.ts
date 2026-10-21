@@ -8493,6 +8493,24 @@ export interface paths {
                         "application/json": components["schemas"]["immerle.errorResponse"];
                     };
                 };
+                /** @description playlist not viewable by the caller */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description unknown item */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
             };
         };
         delete?: never;
