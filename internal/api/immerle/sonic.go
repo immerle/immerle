@@ -193,3 +193,40 @@ func (h *Handler) handleSonicDuplicates(w http.ResponseWriter, r *http.Request) 
 	}
 	writeResource(w, http.StatusOK, out)
 }
+
+// SongSonicDTO is a track's audio analysis.
+type SongSonicDTO struct {
+	BPM          float64 `json:"bpm" example:"127.6"`
+	Key          string  `json:"key" example:"A"`
+	Mode         string  `json:"mode" example:"minor"`
+	Camelot      string  `json:"camelot" example:"8A"`
+	Energy       float64 `json:"energy" example:"0.82"`
+	Danceability float64 `json:"danceability" example:"0.64"`
+}
+
+// handleSongSonic returns a track's audio analysis.
+//
+// @Summary      Track audio analysis
+// @Description  The tempo, key and energy the local audio analysis measured for a track (energy and danceability from 0 to 1). 404 when the analysis is switched off or the track isn't analyzed yet.
+// @Tags         browse
+// @Security     BearerAuth
+// @Produce      json
+// @Param        id  path  string  true  "Track id"
+// @Success      200  {object}  SongSonicDTO
+// @Failure      401  {object}  errorResponse
+// @Failure      404  {object}  errorResponse
+// @Router       /songs/{id}/sonic [get]
+func (h *Handler) handleSongSonic(w http.ResponseWriter, r *http.Request) {
+	if !h.Sonic.Enabled() {
+		writeError(w, http.StatusNotFound, "not_found", "audio analysis is disabled")
+		return
+	}
+	f, ok := h.Sonic.Features(r.Context(), pathParam(r, "id"))
+	if !ok {
+		writeError(w, http.StatusNotFound, "not_found", "track not analyzed")
+		return
+	}
+	writeResource(w, http.StatusOK, SongSonicDTO{
+		BPM: f.BPM, Key: f.Key, Mode: f.Mode, Camelot: f.Camelot, Energy: f.Energy, Danceability: f.Danceability,
+	})
+}

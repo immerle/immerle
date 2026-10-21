@@ -9,7 +9,8 @@ import { Field } from './ui';
 import { usePlayer } from '../audio/store';
 import { useAddToPlaylist, useCreatePlaylist, usePlaylists } from '../query/playlists';
 import { useAddToHallOfFame } from '../query/hallOfFame';
-import { useStartRadio } from '../query/sonic';
+import { useSongSonic, useStartRadio } from '../query/sonic';
+import { sonicSummary } from '../utils/sonic';
 import { useAuth } from '../auth/store';
 import { useDownloads } from '../offline/store';
 import { isSupported as offlineSupported } from '../offline/fs';
@@ -73,6 +74,7 @@ export function TrackMenu() {
   const canHallOfFame = useAuth((s) => s.client?.isFeatureEnabled('hallOfFame') ?? false);
   const addToHallOfFame = useAddToHallOfFame();
   const radio = useStartRadio();
+  const sonic = useSongSonic(song);
   const downloaded = useDownloads((s) => (song ? !!s.entries[song.id] : false));
   const downloading = useDownloads((s) => (song ? s.progress[song.id] != null : false));
   const [picker, setPicker] = useState(false);
@@ -104,6 +106,11 @@ export function TrackMenu() {
               <Text numberOfLines={1} className="text-sm text-muted">
                 {song.artist}
               </Text>
+              {sonic.data ? (
+                <Text numberOfLines={1} className="pt-0.5 text-xs text-muted">
+                  {sonicSummary(t, sonic.data)}
+                </Text>
+              ) : null}
             </View>
           </View>
 

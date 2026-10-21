@@ -9120,6 +9120,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/songs/{id}/sonic": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Track audio analysis
+         * @description The tempo, key and energy the local audio analysis measured for a track (energy and danceability from 0 to 1). 404 when the analysis is switched off or the track isn't analyzed yet.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Track id */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.SongSonicDTO"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/songs/{id}/star": {
         parameters: {
             query?: never;
@@ -10562,6 +10622,20 @@ export interface components {
             order?: string;
             /** @example playCount */
             sort?: string;
+        };
+        "immerle.SongSonicDTO": {
+            /** @example 127.6 */
+            bpm?: number;
+            /** @example 8A */
+            camelot?: string;
+            /** @example 0.64 */
+            danceability?: number;
+            /** @example 0.82 */
+            energy?: number;
+            /** @example A */
+            key?: string;
+            /** @example minor */
+            mode?: string;
         };
         "immerle.SonicDuplicatesDTO": {
             groups?: components["schemas"]["immerle.songView"][][];

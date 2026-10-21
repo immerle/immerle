@@ -1417,6 +1417,35 @@
                 },
                 "type": "object"
             },
+            "immerle.SongSonicDTO": {
+                "properties": {
+                    "bpm": {
+                        "example": 127.6,
+                        "type": "number"
+                    },
+                    "camelot": {
+                        "example": "8A",
+                        "type": "string"
+                    },
+                    "danceability": {
+                        "example": 0.64,
+                        "type": "number"
+                    },
+                    "energy": {
+                        "example": 0.82,
+                        "type": "number"
+                    },
+                    "key": {
+                        "example": "A",
+                        "type": "string"
+                    },
+                    "mode": {
+                        "example": "minor",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "immerle.SonicDuplicatesDTO": {
                 "properties": {
                     "groups": {
@@ -12482,6 +12511,63 @@
                 "summary": "Rate an item",
                 "tags": [
                     "ratings"
+                ]
+            }
+        },
+        "/songs/{id}/sonic": {
+            "get": {
+                "description": "The tempo, key and energy the local audio analysis measured for a track (energy and danceability from 0 to 1). 404 when the analysis is switched off or the track isn't analyzed yet.",
+                "parameters": [
+                    {
+                        "description": "Track id",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.SongSonicDTO"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Track audio analysis",
+                "tags": [
+                    "browse"
                 ]
             }
         },

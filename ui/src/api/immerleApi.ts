@@ -129,3 +129,4 @@ export type ProviderDTO = components['schemas']['immerle.ProviderDTO'];
 // Runtime settings + downloads cleanup (admin).
 export type RuntimeSettingsDTO = components['schemas']['immerle.RuntimeSettingsDTO'];
 export type SonicStatusDTO = components['schemas']['immerle.SonicStatusDTO'];
+export type SongSonicDTO = components['schemas']['immerle.SongSonicDTO'];

@@ -50,6 +50,15 @@ doubling audio), and the picking device keeps play/pause/skip/seek control
 over it remotely, same idea as Spotify Connect. Pick "Everywhere" to go back
 to every device playing independently.
 
+### Crossfade
+
+Under **Settings → Playback quality**, each listener picks how long one track
+blends into the next: off, or 2 to 12 seconds (4 by default, remembered per
+device). On web and desktop the two tracks overlap; on iOS and Android, where
+the player handles one track at a time, the end fades out and the next track
+fades in. Only a track ending on its own blends: skipping, seeking or
+pausing cuts the fade.
+
 ## `iml`: terminal client
 
 A UI-less TUI: search songs/albums/playlists and play them without ever

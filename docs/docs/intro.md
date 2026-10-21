@@ -34,6 +34,10 @@ you outgrow it). Drop in your music, hit play.
   playlists, personal "made for you" lists, recommendation mixes (ReccoBeats,
   ListenBrainz, Last.fm), a hand-curated top-tracks ranking and a yearly
   *Wrapped*.
+- 🎛️ **Sonic analysis (opt-in)**: Immerle listens to your library itself
+  (tempo, key, energy, timbre, all local) to power a track radio and Subsonic
+  instant mix, endless queues, mood playlists, Auto-DJ, smart playlist rules
+  on BPM and key, and duplicate detection.
 - 📻 **Radio & podcasts**: curated internet radio stations per country, and
   podcast feeds an admin subscribes from Apple Podcasts, Podcast Index and
   other directories.
@@ -66,6 +70,7 @@ you outgrow it). Drop in your music, hit play.
 - [Connecting clients](./clients/index.md): the app, `iml`, or any Subsonic client.
 - [On-demand catalog](./features/on-demand-providers.md): enable built-in providers, add your own, cleanup.
 - [Discovery & Hall of Fame](./features/discovery.md): auto-generated playlists and the top-tracks ranking.
+- [Sonic analysis](./features/sonic.md): track radio, autoplay, mood playlists, Auto-DJ and duplicates from a local audio analysis.
 - [Radio & podcasts](./features/radio-podcasts.md): internet radio stations and podcast subscriptions.
 - [Scrobbling](./features/scrobbling.md): push plays to ListenBrainz and/or Last.fm.
 - [Social features](./features/social.md): activity, sharing, Jam sessions.
