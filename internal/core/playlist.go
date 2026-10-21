@@ -264,10 +264,16 @@ func (s *PlaylistService) detail(ctx context.Context, id string) (PlaylistDetail
 }
 
 func (s *PlaylistService) canView(ctx context.Context, p models.Playlist, user models.User) bool {
+	return canViewPlaylist(ctx, s.playlists, p, user)
+}
+
+// canViewPlaylist is the playlist read rule: owner, public, admin or
+// collaborator. Shared by playlist reads and share-link creation.
+func canViewPlaylist(ctx context.Context, playlists *persistence.PlaylistRepo, p models.Playlist, user models.User) bool {
 	if p.OwnerID == user.ID || p.Public || user.IsAdmin {
 		return true
 	}
-	collab, _ := s.playlists.IsCollaborator(ctx, p.ID, user.ID)
+	collab, _ := playlists.IsCollaborator(ctx, p.ID, user.ID)
 	return collab
 }
 

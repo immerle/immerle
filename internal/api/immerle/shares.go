@@ -88,7 +88,8 @@ type shareCreateRequest struct {
 	ExpiresAt   int64  `json:"expiresAt" validate:"optional"`
 }
 
-// handleCreateShare creates a share link for a track, album or playlist.
+// handleCreateShare creates a share link for a track, album or playlist the
+// caller can see.
 //
 // @Summary  Create share
 // @Tags     shares
@@ -99,6 +100,8 @@ type shareCreateRequest struct {
 // @Success  201  {object}  shareView
 // @Failure  400  {object}  errorResponse
 // @Failure  401  {object}  errorResponse
+// @Failure  403  {object}  errorResponse  "playlist not viewable by the caller"
+// @Failure  404  {object}  errorResponse  "unknown item"
 // @Router   /shares [post]
 func (h *Handler) handleCreateShare(w http.ResponseWriter, r *http.Request) {
 	var req shareCreateRequest
@@ -110,7 +113,7 @@ func (h *Handler) handleCreateShare(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	user := userFrom(r.Context())
-	swe, err := h.shareSvc.Create(r.Context(), user.ID, req.ItemID, req.Description, shareExpiry(req.ExpiresAt))
+	swe, err := h.shareSvc.Create(r.Context(), user, req.ItemID, req.Description, shareExpiry(req.ExpiresAt))
 	if err != nil {
 		writeServiceError(w, err)
 		return

@@ -7891,6 +7891,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/immerle.errorResponse'
           description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: playlist not viewable by the caller
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: unknown item
       security:
       - BearerAuth: []
       summary: Create share

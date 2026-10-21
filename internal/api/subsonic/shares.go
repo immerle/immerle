@@ -63,9 +63,9 @@ func (h *Handler) handleCreateShare(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, ErrMissingParameter, "Required parameter id is missing")
 		return
 	}
-	swe, err := h.shareSvc.Create(r.Context(), userFrom(r.Context()).ID, ids[0], param(r, "description"), shareExpiry(r))
+	swe, err := h.shareSvc.Create(r.Context(), userFrom(r.Context()), ids[0], param(r, "description"), shareExpiry(r))
 	if err != nil {
-		h.failInternal(w, r, err)
+		h.writeServiceError(w, r, err, "Item not found")
 		return
 	}
 	resp := newResponse()
