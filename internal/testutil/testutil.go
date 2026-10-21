@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
@@ -25,18 +26,25 @@ func NewLogger() *slog.Logger {
 
 // NewDB opens an isolated, migrated SQLite database in a temp directory. Set
 // IMMERLE_TEST_DB_DSN to a Postgres DSN to run against Postgres instead, each
-// test getting its own schema.
+// test getting its own database cloned from a migrated template.
 func NewDB(t *testing.T) *db.DB {
 	t.Helper()
 	driver, dsn := "sqlite", filepath.Join(t.TempDir(), "test.db")
 	if pg := os.Getenv("IMMERLE_TEST_DB_DSN"); pg != "" {
-		driver, dsn = "postgres", newPostgresSchema(t, pg)
+		driver, dsn = "postgres", newPostgresDB(t, pg)
 	}
 	database, err := db.Open(driver, dsn)
 	if err != nil {
 		t.Fatalf("open db: %v", err)
 	}
 	t.Cleanup(func() { _ = database.Close() })
+	if database.Dialect == "sqlite" {
+		// A throwaway test DB needs no crash durability: skipping the fsync on
+		// every commit is what makes the suite fast on Linux CI runners.
+		if _, err := database.Exec("PRAGMA synchronous = OFF"); err != nil {
+			t.Fatalf("disable sqlite sync: %v", err)
+		}
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -47,34 +55,118 @@ func NewDB(t *testing.T) *db.DB {
 }
 
 // NewStore returns a store over a fresh database.
-func newPostgresSchema(t *testing.T, dsn string) string {
+// newPostgresDB clones a fresh database from a pre-migrated template: copying
+// it is several times faster than replaying every migration per test.
+func newPostgresDB(t *testing.T, dsn string) string {
 	t.Helper()
+	tmpl, err := postgresTemplate(dsn)
+	if err != nil {
+		t.Fatalf("postgres template: %v", err)
+	}
 	admin, err := sql.Open("pgx", dsn)
 	if err != nil {
 		t.Fatalf("open postgres: %v", err)
 	}
 	defer func() { _ = admin.Close() }()
-	schema := fmt.Sprintf("test_%d", time.Now().UnixNano())
-	if _, err := admin.Exec("CREATE SCHEMA " + schema); err != nil {
-		t.Fatalf("create schema: %v", err)
+	name := fmt.Sprintf("test_%d_%d", os.Getpid(), time.Now().UnixNano())
+	if _, err := admin.Exec("CREATE DATABASE " + name + " TEMPLATE " + tmpl); err != nil {
+		t.Fatalf("create database: %v", err)
 	}
+	// Registered before NewDB's Close cleanup, so it runs after it.
 	t.Cleanup(func() {
 		if c, err := sql.Open("pgx", dsn); err == nil {
-			_, _ = c.Exec("DROP SCHEMA " + schema + " CASCADE")
+			_, _ = c.Exec("DROP DATABASE IF EXISTS " + name + " WITH (FORCE)")
 			_ = c.Close()
 		}
 	})
+	return withDatabase(t, dsn, name)
+}
+
+var pgTemplate struct {
+	once sync.Once
+	name string
+	err  error
+}
+
+// postgresTemplate returns a database holding the migrated schema, shared by
+// every test package (they run as parallel processes) and kept across runs:
+// its name carries the migrations fingerprint, so a migration change builds a
+// new one. ponytail: Go migrations are not fingerprinted; drop the immerle_tmpl_*
+// databases after editing one in place.
+func postgresTemplate(dsn string) (string, error) {
+	pgTemplate.once.Do(func() {
+		pgTemplate.name, pgTemplate.err = buildPostgresTemplate(dsn)
+	})
+	return pgTemplate.name, pgTemplate.err
+}
+
+func buildPostgresTemplate(dsn string) (string, error) {
+	name := "immerle_tmpl_" + db.MigrationsFingerprint()
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+	admin, err := sql.Open("pgx", dsn)
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = admin.Close() }()
+	conn, err := admin.Conn(ctx) // advisory locks are per session
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = conn.Close() }()
+	if _, err := conn.ExecContext(ctx, "SELECT pg_advisory_lock(hashtext('immerle_test_template'))"); err != nil {
+		return "", err
+	}
+	defer func() {
+		_, _ = conn.ExecContext(context.Background(), "SELECT pg_advisory_unlock(hashtext('immerle_test_template'))")
+	}()
+
+	var exists bool
+	if err := conn.QueryRowContext(ctx, "SELECT EXISTS (SELECT 1 FROM pg_database WHERE datname = $1)", name).Scan(&exists); err != nil {
+		return "", err
+	}
+	if exists {
+		return name, nil
+	}
+	// Migrate under a scratch name and rename at the end, so an interrupted
+	// run never leaves a half-migrated template behind.
+	building := name + "_building"
+	if _, err := conn.ExecContext(ctx, "DROP DATABASE IF EXISTS "+building+" WITH (FORCE)"); err != nil {
+		return "", err
+	}
+	if _, err := conn.ExecContext(ctx, "CREATE DATABASE "+building); err != nil {
+		return "", err
+	}
+	u, err := url.Parse(dsn)
+	if err != nil {
+		return "", err
+	}
+	u.Path = "/" + building
+	tmpl, err := db.Open("postgres", u.String())
+	if err != nil {
+		return "", err
+	}
+	err = tmpl.Migrate(ctx)
+	_ = tmpl.Close()
+	if err != nil {
+		return "", err
+	}
+	if _, err := conn.ExecContext(ctx, "ALTER DATABASE "+building+" RENAME TO "+name); err != nil {
+		return "", err
+	}
+	return name, nil
+}
+
+func withDatabase(t *testing.T, dsn, name string) string {
+	t.Helper()
 	u, err := url.Parse(dsn)
 	if err != nil {
 		t.Fatalf("parse postgres dsn: %v", err)
 	}
-	q := u.Query()
-	q.Set("search_path", schema)
-	u.RawQuery = q.Encode()
+	u.Path = "/" + name
 	return u.String()
 }
 
-// NewStore returns a persistence store backed by NewDB.
 func NewStore(t *testing.T) *persistence.Store {
 	t.Helper()
 	return persistence.New(NewDB(t))
