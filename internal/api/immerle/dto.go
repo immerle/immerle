@@ -9,32 +9,6 @@ package immerle
 // Responses carry the resource directly (no envelope). Errors use the apiError
 // shape declared in respond.go.
 
-// ProviderDTO is a managed on-demand provider (built-in or dynamic).
-type ProviderDTO struct {
-	Name      string `json:"name" example:"manual" validate:"optional"`
-	Kind      string `json:"kind" example:"http" validate:"optional"`
-	Endpoint  string `json:"endpoint" example:"https://my-service.internal" validate:"optional"`
-	Config    string `json:"config" example:"{\"headers\":{\"Authorization\":\"Bearer x\"}}" validate:"optional"`
-	Enabled   bool   `json:"enabled" example:"true" validate:"optional"`
-	Active    bool   `json:"active" example:"true" validate:"optional"`
-	Builtin   bool   `json:"builtin" example:"false" validate:"optional"`
-	Deletable bool   `json:"deletable" example:"true" validate:"optional"`
-	SortOrder int    `json:"sortOrder" example:"3" validate:"optional"`
-	// Version is the remote's live protocol version (HTTP providers), null when
-	// unknown or for built-ins.
-	Version *int `json:"version,omitempty" example:"1" validate:"optional"`
-	// Capabilities lists what the provider declares, each with whether the
-	// admin left it on. Empty when the provider can't be reached.
-	Capabilities []ProviderCapabilityDTO `json:"capabilities,omitempty" validate:"optional"`
-}
-
-// ProviderCapabilityDTO is one capability a provider declares.
-type ProviderCapabilityDTO struct {
-	// Key is one of trackSearch, artists, playlists, playlistSearch.
-	Key     string `json:"key" example:"trackSearch"`
-	Enabled bool   `json:"enabled" example:"true"`
-}
-
 // RuntimeSettingsDTO mirrors the admin-managed runtime settings.
 type RuntimeSettingsDTO struct {
 	Server struct {
@@ -111,70 +85,11 @@ type FederationUpdateDTO struct {
 	Sqid string `json:"sqid" example:"my-node" validate:"optional"`
 }
 
-// InstanceSummaryDTO is a federated instance surfaced by discovery/subscriptions
-// (no sensitive fields).
-type InstanceSummaryDTO struct {
-	ID         string `json:"id" example:"3f1c2d4e-5a6b-7c8d-9e0f-1a2b3c4d5e6f" validate:"optional"`
-	Sqid       string `json:"sqid" example:"other-node" validate:"optional"`
-	Name       string `json:"name" example:"A friend's immerle" validate:"optional"`
-	Region     string `json:"region" example:"eu" validate:"optional"`
-	LastSeenAt string `json:"lastSeenAt,omitempty" validate:"optional"`
-}
-
-// FederationInstancesDTO is the discovery result list.
-type FederationInstancesDTO struct {
-	Instances []InstanceSummaryDTO `json:"instances,omitempty" validate:"optional"`
-}
-
-// FederationSubscriptionsDTO is the list of followed instances.
-type FederationSubscriptionsDTO struct {
-	Subscriptions []InstanceSummaryDTO `json:"subscriptions,omitempty" validate:"optional"`
-}
-
-// SubscribeRequestDTO is the body of POST /admin/federation/subscriptions: the
-// target instance id (UUID) or sqid handle.
-type SubscribeRequestDTO struct {
-	InstanceID string `json:"instanceId" example:"3f1c2d4e-5a6b-7c8d-9e0f-1a2b3c4d5e6f" validate:"optional"`
-	Sqid       string `json:"sqid" example:"other-node" validate:"optional"`
-}
-
-// OkResponse is a minimal success acknowledgement.
-type OkResponse struct {
-	Ok bool `json:"ok" example:"true" validate:"optional"`
-}
-
 // SettingsDTO returns the runtime settings and restart state.
 type SettingsDTO struct {
 	Settings        RuntimeSettingsDTO `json:"settings" validate:"optional"`
 	RestartRequired bool               `json:"restartRequired" example:"false" validate:"optional"`
 	PendingRestart  []string           `json:"pendingRestart,omitempty" validate:"optional"`
-}
-
-// ProviderLogDTO is a persisted warn/error event from a provider action.
-type ProviderLogDTO struct {
-	ID        string `json:"id" validate:"optional"`
-	Provider  string `json:"provider" example:"free-music-archive" validate:"optional"`
-	Level     string `json:"level" example:"error" validate:"optional"`
-	Action    string `json:"action" example:"download" validate:"optional"`
-	Message   string `json:"message" example:"unexpected status 404" validate:"optional"`
-	CreatedAt string `json:"createdAt" example:"2026-06-18T20:00:00Z" validate:"optional"`
-}
-
-// CleanupStatusDTO reports the provider-download eviction sweep state.
-type CleanupStatusDTO struct {
-	Enabled         bool  `json:"enabled" example:"true" validate:"optional"`
-	MaxAgeSeconds   int64 `json:"maxAgeSeconds" example:"2592000" validate:"optional"`
-	IntervalSeconds int64 `json:"intervalSeconds" example:"21600" validate:"optional"`
-}
-
-// CleanupRunDTO reports the result of an on-demand eviction sweep.
-type CleanupRunDTO struct {
-	Removed int `json:"removed" example:"3" validate:"optional"`
-}
-
-// ChartsSyncDTO reports the result of an on-demand curated chart-playlist sync.
-type ChartsSyncDTO struct {
-	Synced int `json:"synced" example:"6" validate:"optional"`
 }
 
 // WrappedTrackDTO is one entry in the Wrapped top-tracks chart.

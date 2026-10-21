@@ -86,7 +86,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ChartsSyncDTO"];
+                        "application/json": components["schemas"]["immerle.syncResultView"];
                     };
                 };
                 /** @description Unauthorized */
@@ -161,7 +161,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ChartsSyncDTO"];
+                        "application/json": components["schemas"]["immerle.syncResultView"];
                     };
                 };
                 /** @description Unauthorized */
@@ -234,7 +234,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.CleanupStatusDTO"];
+                        "application/json": components["schemas"]["immerle.cleanupStatusView"];
                     };
                 };
                 /** @description Unauthorized */
@@ -290,7 +290,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.CleanupStatusDTO"];
+                        "application/json": components["schemas"]["immerle.cleanupStatusView"];
                     };
                 };
                 /** @description Bad Request */
@@ -375,7 +375,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.CleanupRunDTO"];
+                        "application/json": components["schemas"]["immerle.cleanupRunView"];
                     };
                 };
                 /** @description Unauthorized */
@@ -523,7 +523,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ChartsSyncDTO"];
+                        "application/json": components["schemas"]["immerle.syncResultView"];
                     };
                 };
                 /** @description Unauthorized */
@@ -824,7 +824,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.FederationInstancesDTO"];
+                        "application/json": components["schemas"]["immerle.instanceListView"];
                     };
                 };
                 /** @description Unauthorized */
@@ -974,7 +974,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.FederationSubscriptionsDTO"];
+                        "application/json": components["schemas"]["immerle.subscriptionListView"];
                     };
                 };
                 /** @description Unauthorized */
@@ -1030,7 +1030,7 @@ export interface paths {
             /** @description Target instance id or sqid */
             requestBody: {
                 content: {
-                    "application/json": Record<string, never> | components["schemas"]["immerle.SubscribeRequestDTO"];
+                    "application/json": Record<string, never> | components["schemas"]["immerle.subscribeRequest"];
                 };
             };
             responses: {
@@ -1040,7 +1040,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.OkResponse"];
+                        "application/json": components["schemas"]["immerle.okView"];
                     };
                 };
                 /** @description Bad Request */
@@ -1137,7 +1137,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.OkResponse"];
+                        "application/json": components["schemas"]["immerle.okView"];
                     };
                 };
                 /** @description Unauthorized */
@@ -1776,7 +1776,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ProviderDTO"][];
+                        "application/json": components["schemas"]["immerle.providerView"][];
                     };
                 };
                 /** @description Unauthorized */
@@ -1842,7 +1842,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ProviderDTO"];
+                        "application/json": components["schemas"]["immerle.providerView"];
                     };
                 };
                 /** @description Bad Request */
@@ -1921,7 +1921,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ProviderDTO"][];
+                        "application/json": components["schemas"]["immerle.providerView"][];
                     };
                 };
                 /** @description Bad Request */
@@ -2100,7 +2100,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ProviderDTO"];
+                        "application/json": components["schemas"]["immerle.providerView"];
                     };
                 };
                 /** @description Bad Request */
@@ -2192,7 +2192,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ProviderDTO"];
+                        "application/json": components["schemas"]["immerle.providerView"];
                     };
                 };
                 /** @description Bad Request */
@@ -2278,7 +2278,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.ProviderLogDTO"][];
+                        "application/json": components["schemas"]["models.ProviderLog"][];
                     };
                 };
                 /** @description Unauthorized */
@@ -3230,9 +3230,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            [key: string]: components["schemas"]["immerle.adminUserView"][];
-                        };
+                        "application/json": components["schemas"]["immerle.adminUserListView"];
                     };
                 };
                 /** @description Unauthorized */
@@ -10627,22 +10625,6 @@ export interface components {
             lastSyncedAt?: string;
             needsReconnect?: boolean;
         };
-        "immerle.ChartsSyncDTO": {
-            /** @example 6 */
-            synced?: number;
-        };
-        "immerle.CleanupRunDTO": {
-            /** @example 3 */
-            removed?: number;
-        };
-        "immerle.CleanupStatusDTO": {
-            /** @example true */
-            enabled?: boolean;
-            /** @example 21600 */
-            intervalSeconds?: number;
-            /** @example 2592000 */
-            maxAgeSeconds?: number;
-        };
         "immerle.ConcertDTO": {
             /** @example Daft Punk */
             artistName?: string;
@@ -10676,12 +10658,6 @@ export interface components {
             skiddleConfigured: boolean;
             /** @example false */
             ticketmasterConfigured: boolean;
-        };
-        "immerle.FederationInstancesDTO": {
-            instances?: components["schemas"]["immerle.InstanceSummaryDTO"][];
-        };
-        "immerle.FederationSubscriptionsDTO": {
-            subscriptions?: components["schemas"]["immerle.InstanceSummaryDTO"][];
         };
         "immerle.FederationUpdateDTO": {
             /** @example My living-room immerle */
@@ -10740,17 +10716,6 @@ export interface components {
             /** @example spotify */
             name?: string;
         };
-        "immerle.InstanceSummaryDTO": {
-            /** @example 3f1c2d4e-5a6b-7c8d-9e0f-1a2b3c4d5e6f */
-            id?: string;
-            lastSeenAt?: string;
-            /** @example A friend's immerle */
-            name?: string;
-            /** @example eu */
-            region?: string;
-            /** @example other-node */
-            sqid?: string;
-        };
         "immerle.LastFmAdminDTO": {
             /** @example false */
             configured: boolean;
@@ -10761,63 +10726,6 @@ export interface components {
             connected: boolean;
             /** @example bob */
             username?: string;
-        };
-        "immerle.OkResponse": {
-            /** @example true */
-            ok?: boolean;
-        };
-        "immerle.ProviderCapabilityDTO": {
-            /** @example true */
-            enabled: boolean;
-            /**
-             * @description Key is one of trackSearch, artists, playlists, playlistSearch.
-             * @example trackSearch
-             */
-            key: string;
-        };
-        "immerle.ProviderDTO": {
-            /** @example true */
-            active?: boolean;
-            /** @example false */
-            builtin?: boolean;
-            /**
-             * @description Capabilities lists what the provider declares, each with whether the
-             *     admin left it on. Empty when the provider can't be reached.
-             */
-            capabilities?: components["schemas"]["immerle.ProviderCapabilityDTO"][];
-            /** @example {"headers":{"Authorization":"Bearer x"}} */
-            config?: string;
-            /** @example true */
-            deletable?: boolean;
-            /** @example true */
-            enabled?: boolean;
-            /** @example https://my-service.internal */
-            endpoint?: string;
-            /** @example http */
-            kind?: string;
-            /** @example manual */
-            name?: string;
-            /** @example 3 */
-            sortOrder?: number;
-            /**
-             * @description Version is the remote's live protocol version (HTTP providers), null when
-             *     unknown or for built-ins.
-             * @example 1
-             */
-            version?: number;
-        };
-        "immerle.ProviderLogDTO": {
-            /** @example download */
-            action?: string;
-            /** @example 2026-06-18T20:00:00Z */
-            createdAt?: string;
-            id?: string;
-            /** @example error */
-            level?: string;
-            /** @example unexpected status 404 */
-            message?: string;
-            /** @example free-music-archive */
-            provider?: string;
         };
         "immerle.RuntimeSettingsDTO": {
             auth?: {
@@ -11000,12 +10908,6 @@ export interface components {
              */
             total: number;
         };
-        "immerle.SubscribeRequestDTO": {
-            /** @example 3f1c2d4e-5a6b-7c8d-9e0f-1a2b3c4d5e6f */
-            instanceId?: string;
-            /** @example other-node */
-            sqid?: string;
-        };
         "immerle.UserDTO": {
             /** @example Kilian Smiti */
             displayName?: string;
@@ -11093,6 +10995,9 @@ export interface components {
             email?: string;
             password?: string;
             username?: string;
+        };
+        "immerle.adminUserListView": {
+            users: components["schemas"]["immerle.adminUserView"][];
         };
         "immerle.adminUserUpdateRequest": {
             admin?: boolean;
@@ -11207,6 +11112,14 @@ export interface components {
             status: string;
             title: string;
             url: string;
+        };
+        "immerle.cleanupRunView": {
+            removed: number;
+        };
+        "immerle.cleanupStatusView": {
+            enabled: boolean;
+            intervalSeconds: number;
+            maxAgeSeconds: number;
         };
         "immerle.cleanupUpdateRequest": {
             enabled?: boolean;
@@ -11330,6 +11243,16 @@ export interface components {
             createdAt: string;
             tracks: components["schemas"]["immerle.songView"][];
         };
+        "immerle.instanceListView": {
+            instances: components["schemas"]["immerle.instanceView"][];
+        };
+        "immerle.instanceView": {
+            id: string;
+            lastSeenAt?: string;
+            name: string;
+            region: string;
+            sqid: string;
+        };
         "immerle.jamInviteListView": {
             invites: components["schemas"]["models.JamInvite"][];
         };
@@ -11385,6 +11308,9 @@ export interface components {
             minutesAgo: number;
             song: components["schemas"]["immerle.songView"];
             username: string;
+        };
+        "immerle.okView": {
+            ok: boolean;
         };
         "immerle.participantView": {
             name: string;
@@ -11611,6 +11537,34 @@ export interface components {
             stats: components["schemas"]["immerle.profileStatsView"];
             user: components["schemas"]["immerle.profileUserView"];
         };
+        "immerle.providerCapabilityView": {
+            enabled: boolean;
+            /** @description Key is one of trackSearch, artists, playlists, playlistSearch. */
+            key: string;
+        };
+        "immerle.providerView": {
+            active: boolean;
+            builtin: boolean;
+            /**
+             * @description Capabilities lists what the provider declares, each with whether the
+             *     admin left it on. Empty when the provider can't be reached.
+             */
+            capabilities: components["schemas"]["immerle.providerCapabilityView"][];
+            config: string;
+            createdAt: string;
+            deletable: boolean;
+            enabled: boolean;
+            endpoint: string;
+            kind: string;
+            name: string;
+            sortOrder: number;
+            updatedAt: string;
+            /**
+             * @description Version is the remote's live protocol version (HTTP providers), absent
+             *     when unknown and for built-ins.
+             */
+            version?: number;
+        };
         "immerle.publicPlaylistView": {
             /**
              * @description AutoPlaylistKind identifies a server-generated playlist's stable kind
@@ -11829,6 +11783,16 @@ export interface components {
             download: string;
             stream: string;
         };
+        "immerle.subscribeRequest": {
+            instanceId?: string;
+            sqid?: string;
+        };
+        "immerle.subscriptionListView": {
+            subscriptions: components["schemas"]["immerle.instanceView"][];
+        };
+        "immerle.syncResultView": {
+            synced: number;
+        };
         "immerle.toggleRequest": {
             enabled?: boolean;
         };
@@ -11915,6 +11879,16 @@ export interface components {
             totalSize: number;
             tracks: number;
             updatedAt: string;
+        };
+        "models.ProviderLog": {
+            /** @description "search" | "resolve" | "download" */
+            action: string;
+            createdAt: string;
+            id: string;
+            /** @description "warn" | "error" */
+            level: string;
+            message: string;
+            provider: string;
         };
         "models.SmartCondition": {
             field: string;

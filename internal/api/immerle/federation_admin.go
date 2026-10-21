@@ -15,7 +15,7 @@ import (
 // @Security     BearerAuth
 // @Produce      json
 // @Param        q  query  string  true  "Search query (sqid or name)"
-// @Success      200  {object}  FederationInstancesDTO
+// @Success      200  {object}  instanceListView
 // @Failure      401  {object}  errorResponse
 // @Failure      403  {object}  errorResponse
 // @Failure      502  {object}  errorResponse
@@ -34,7 +34,7 @@ func (h *Handler) handleFederationSearch(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusBadGateway, "search_failed", err.Error())
 		return
 	}
-	writeResource(w, http.StatusOK, map[string]any{"instances": nonNil(results)})
+	writeResource(w, http.StatusOK, instanceListView{Instances: toInstanceViews(results)})
 }
 
 // handleFederationSubscriptions lists the instances this one follows.
@@ -44,7 +44,7 @@ func (h *Handler) handleFederationSearch(w http.ResponseWriter, r *http.Request)
 // @Tags         admin
 // @Security     BearerAuth
 // @Produce      json
-// @Success      200  {object}  FederationSubscriptionsDTO
+// @Success      200  {object}  subscriptionListView
 // @Failure      401  {object}  errorResponse
 // @Failure      403  {object}  errorResponse
 // @Failure      502  {object}  errorResponse
@@ -63,7 +63,7 @@ func (h *Handler) handleFederationSubscriptions(w http.ResponseWriter, r *http.R
 		writeError(w, http.StatusBadGateway, "subscriptions_failed", err.Error())
 		return
 	}
-	writeResource(w, http.StatusOK, map[string]any{"subscriptions": nonNil(subs)})
+	writeResource(w, http.StatusOK, subscriptionListView{Subscriptions: toInstanceViews(subs)})
 }
 
 // handleFederationSubscribe follows a target instance.
@@ -74,8 +74,8 @@ func (h *Handler) handleFederationSubscriptions(w http.ResponseWriter, r *http.R
 // @Security     BearerAuth
 // @Accept       json
 // @Produce      json
-// @Param        body  body  SubscribeRequestDTO  true  "Target instance id or sqid"
-// @Success      200  {object}  OkResponse
+// @Param        body  body  subscribeRequest  true  "Target instance id or sqid"
+// @Success      200  {object}  okView
 // @Failure      400  {object}  errorResponse
 // @Failure      401  {object}  errorResponse
 // @Failure      403  {object}  errorResponse
@@ -91,10 +91,7 @@ func (h *Handler) handleFederationSubscribe(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusServiceUnavailable, "unavailable", "federation unavailable")
 		return
 	}
-	var body struct {
-		InstanceID string `json:"instanceId"`
-		Sqid       string `json:"sqid"`
-	}
+	var body subscribeRequest
 	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		writeErrorParams(w, http.StatusBadRequest, "invalid_body", "invalid JSON: "+err.Error(), map[string]any{"detail": err.Error()})
@@ -104,7 +101,7 @@ func (h *Handler) handleFederationSubscribe(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusBadGateway, "subscribe_failed", err.Error())
 		return
 	}
-	writeResource(w, http.StatusOK, map[string]any{"ok": true})
+	writeResource(w, http.StatusOK, okView{Ok: true})
 }
 
 // handleFederationUnsubscribe stops following an instance.
@@ -115,7 +112,7 @@ func (h *Handler) handleFederationSubscribe(w http.ResponseWriter, r *http.Reque
 // @Security     BearerAuth
 // @Produce      json
 // @Param        id  path  string  true  "Target instance id (UUID)"
-// @Success      200  {object}  OkResponse
+// @Success      200  {object}  okView
 // @Failure      401  {object}  errorResponse
 // @Failure      403  {object}  errorResponse
 // @Failure      404  {object}  errorResponse
@@ -134,13 +131,42 @@ func (h *Handler) handleFederationUnsubscribe(w http.ResponseWriter, r *http.Req
 		writeError(w, http.StatusBadGateway, "unsubscribe_failed", err.Error())
 		return
 	}
-	writeResource(w, http.StatusOK, map[string]any{"ok": true})
+	writeResource(w, http.StatusOK, okView{Ok: true})
 }
 
-// nonNil returns a non-nil slice so the JSON renders [] instead of null.
-func nonNil(s []federation.InstanceSummary) []federation.InstanceSummary {
-	if s == nil {
-		return []federation.InstanceSummary{}
+// instanceView is a federation hub instance (search result or subscription).
+type instanceView struct {
+	ID         string `json:"id"`
+	Sqid       string `json:"sqid"`
+	Name       string `json:"name"`
+	Region     string `json:"region"`
+	LastSeenAt string `json:"lastSeenAt,omitempty" validate:"optional"`
+}
+
+type instanceListView struct {
+	Instances []instanceView `json:"instances" validate:"required"`
+}
+
+type subscriptionListView struct {
+	Subscriptions []instanceView `json:"subscriptions" validate:"required"`
+}
+
+// subscribeRequest targets an instance by id or by sqid.
+type subscribeRequest struct {
+	InstanceID string `json:"instanceId" validate:"optional"`
+	Sqid       string `json:"sqid" validate:"optional"`
+}
+
+// okView acknowledges a federation action.
+type okView struct {
+	Ok bool `json:"ok"`
+}
+
+// toInstanceViews maps hub instances, never returning a nil slice.
+func toInstanceViews(in []federation.InstanceSummary) []instanceView {
+	out := make([]instanceView, 0, len(in))
+	for _, s := range in {
+		out = append(out, instanceView{ID: s.ID, Sqid: s.Sqid, Name: s.Name, Region: s.Region, LastSeenAt: s.LastSeenAt})
 	}
-	return s
+	return out
 }

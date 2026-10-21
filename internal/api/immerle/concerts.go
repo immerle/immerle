@@ -188,7 +188,7 @@ func (h *Handler) handleConcertsUpdate(w http.ResponseWriter, r *http.Request) {
 // @Tags         admin
 // @Security     BearerAuth
 // @Produce      json
-// @Success      201  {object}  ChartsSyncDTO
+// @Success      201  {object}  syncResultView
 // @Failure      401  {object}  errorResponse
 // @Failure      403  {object}  errorResponse
 // @Failure      500  {object}  errorResponse
@@ -208,5 +208,5 @@ func (h *Handler) handleConcertsSync(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.Logger.Info("concerts synced on demand", "synced", synced, "by", userFrom(r.Context()).Username)
-	writeResource(w, http.StatusCreated, map[string]any{"synced": synced})
+	writeResource(w, http.StatusCreated, syncResultView{Synced: synced})
 }

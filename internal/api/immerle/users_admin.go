@@ -39,7 +39,7 @@ func toAdminUserView(u models.User) adminUserView {
 // @Tags     admin
 // @Security BearerAuth
 // @Produce  json
-// @Success  200  {object}  map[string][]adminUserView
+// @Success  200  {object}  adminUserListView
 // @Failure  401  {object}  errorResponse
 // @Failure  403  {object}  errorResponse
 // @Router   /admin/users [get]
@@ -53,7 +53,11 @@ func (h *Handler) handleListUsers(w http.ResponseWriter, r *http.Request) {
 	for _, u := range users {
 		out = append(out, toAdminUserView(u))
 	}
-	writeResource(w, http.StatusOK, map[string]any{"users": out})
+	writeResource(w, http.StatusOK, adminUserListView{Users: out})
+}
+
+type adminUserListView struct {
+	Users []adminUserView `json:"users" validate:"required"`
 }
 
 // handleGetUser returns a user by name (self or admin).
