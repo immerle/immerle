@@ -22,7 +22,7 @@ import (
 // the current line (karaoke).
 type lyricsView struct {
 	Synced bool        `json:"synced"`
-	Lines  []lyricLine `json:"lines" validate:"optional"`
+	Lines  []lyricLine `json:"lines" validate:"required"`
 }
 
 // lyricLine is one lyrics line; StartMs is omitted for unsynced lyrics.
@@ -428,7 +428,7 @@ type spotifyPlaylistView struct {
 // albums, songs, public playlists and radio stations alike — in one list,
 // ranked by relevance to the query rather than grouped by type.
 type searchView struct {
-	Results []searchHitView `json:"results" validate:"optional"`
+	Results []searchHitView `json:"results" validate:"required"`
 }
 
 // maxSearchRadio caps the radio stations returned by a global search.
@@ -579,9 +579,9 @@ func (h *Handler) handleSearch(w http.ResponseWriter, r *http.Request) {
 
 // favoritesView is the caller's starred catalog.
 type favoritesView struct {
-	Artists []artistView `json:"artists" validate:"optional"`
-	Albums  []albumView  `json:"albums" validate:"optional"`
-	Songs   []songView   `json:"songs" validate:"optional"`
+	Artists []artistView `json:"artists" validate:"required"`
+	Albums  []albumView  `json:"albums" validate:"required"`
+	Songs   []songView   `json:"songs" validate:"required"`
 }
 
 // handleFavorites returns the items the caller has starred.

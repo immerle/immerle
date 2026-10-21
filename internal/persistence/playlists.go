@@ -294,6 +294,25 @@ func (r *PlaylistRepo) IsSubscribed(ctx context.Context, playlistID, userID stri
 	return n > 0, err
 }
 
+// SubscribedIDs returns the ids of every playlist userID subscribes to, so a
+// list can flag them in one query instead of one IsSubscribed per playlist.
+func (r *PlaylistRepo) SubscribedIDs(ctx context.Context, userID string) (map[string]bool, error) {
+	rows, err := r.query(ctx, `SELECT playlist_id FROM playlist_subscriptions WHERE user_id=?`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+	out := map[string]bool{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		out[id] = true
+	}
+	return out, rows.Err()
+}
+
 // Tracks returns a playlist's tracks in order. A federated entry not yet
 // resolved to a local track (or whose local track was since removed, nulling
 // track_id via ON DELETE SET NULL) comes back as an unresolved stub carrying

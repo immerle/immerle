@@ -144,8 +144,8 @@ func (h *Handler) handleClearRating(w http.ResponseWriter, r *http.Request) {
 // scrobbleRequest is the body for POST /scrobbles. submission defaults to true;
 // playedAt (epoch millis) defaults to now.
 type scrobbleRequest struct {
-	IDs        []string `json:"ids" validate:"optional"`
-	Submission *bool    `json:"submission" validate:"optional"`
+	IDs        []string `json:"ids,omitempty" validate:"optional"`
+	Submission *bool    `json:"submission,omitempty" validate:"optional"`
 	PlayedAt   int64    `json:"playedAt" validate:"optional"`
 }
 

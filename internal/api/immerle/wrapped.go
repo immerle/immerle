@@ -103,5 +103,5 @@ func (h *Handler) handleWrappedUpdate(w http.ResponseWriter, r *http.Request) {
 
 // toggleRequest is a generic admin on/off body, shared by feature toggles.
 type toggleRequest struct {
-	Enabled *bool `json:"enabled" validate:"optional"`
+	Enabled *bool `json:"enabled,omitempty" validate:"optional"`
 }

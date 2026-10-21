@@ -46,7 +46,7 @@ func (h *Handler) handleTheme(w http.ResponseWriter, r *http.Request) {
 // updateThemeRequest is a partial theme update; pointer fields distinguish
 // "omitted" (keep) from "" (clear).
 type updateThemeRequest struct {
-	AccentColor *string `json:"accentColor" validate:"optional"`
+	AccentColor *string `json:"accentColor,omitempty" validate:"optional"`
 }
 
 // handleThemeUpdate partially updates the caller's UI theme (accent colour only).

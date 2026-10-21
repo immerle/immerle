@@ -81,7 +81,7 @@ type loginView struct {
 type loginDeviceView struct {
 	ID        string     `json:"id"`
 	Name      string     `json:"name"`
-	ExpiresAt *time.Time `json:"expiresAt" validate:"optional"`
+	ExpiresAt *time.Time `json:"expiresAt,omitempty" validate:"optional"`
 }
 
 // deviceView is one of the caller's device sessions.
@@ -89,10 +89,10 @@ type deviceView struct {
 	ID        string     `json:"id"`
 	Name      string     `json:"name"`
 	UserAgent string     `json:"userAgent"`
-	LastSeen  *time.Time `json:"lastSeen" validate:"optional"`
+	LastSeen  *time.Time `json:"lastSeen,omitempty" validate:"optional"`
 	LastIP    string     `json:"lastIp"`
 	CreatedAt time.Time  `json:"createdAt"`
-	ExpiresAt *time.Time `json:"expiresAt" validate:"optional"`
+	ExpiresAt *time.Time `json:"expiresAt,omitempty" validate:"optional"`
 	// Connected is true if the device was seen within the last few minutes.
 	Connected bool `json:"connected"`
 }

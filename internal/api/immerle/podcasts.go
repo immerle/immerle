@@ -74,7 +74,7 @@ type podcastProviderView struct {
 	DisplayName string                   `json:"displayName"`
 	Enabled     bool                     `json:"enabled"`
 	Fields      []podcastConfigFieldView `json:"fields" validate:"required"`
-	Config      map[string]string        `json:"config" validate:"optional"`
+	Config      map[string]string        `json:"config" validate:"required"`
 	Configured  bool                     `json:"configured"`
 }
 
@@ -108,9 +108,13 @@ func toPodcastProviderView(p core.ProviderStatus) podcastProviderView {
 	for _, f := range p.Fields {
 		fields = append(fields, podcastConfigFieldView{Key: f.Key, Label: f.Label, Required: f.Required, Secret: f.Secret})
 	}
+	config := p.Config
+	if config == nil {
+		config = map[string]string{}
+	}
 	return podcastProviderView{
 		Name: p.Name, DisplayName: p.DisplayName, Enabled: p.Enabled,
-		Fields: fields, Config: p.Config, Configured: p.Configured,
+		Fields: fields, Config: config, Configured: p.Configured,
 	}
 }
 
@@ -398,7 +402,7 @@ func (h *Handler) handlePodcastProviders(w http.ResponseWriter, r *http.Request)
 // podcastProviderRequest toggles a provider and (optionally) sets its credentials.
 type podcastProviderRequest struct {
 	Enabled bool              `json:"enabled" validate:"optional"`
-	Config  map[string]string `json:"config" validate:"optional"`
+	Config  map[string]string `json:"config,omitempty" validate:"optional"`
 }
 
 // handlePodcastProviderUpdate enables/disables a directory adapter and stores

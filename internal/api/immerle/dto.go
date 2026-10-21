@@ -22,10 +22,10 @@ type ProviderDTO struct {
 	SortOrder int    `json:"sortOrder" example:"3" validate:"optional"`
 	// Version is the remote's live protocol version (HTTP providers), null when
 	// unknown or for built-ins.
-	Version *int `json:"version" example:"1" validate:"optional"`
+	Version *int `json:"version,omitempty" example:"1" validate:"optional"`
 	// Capabilities lists what the provider declares, each with whether the
 	// admin left it on. Empty when the provider can't be reached.
-	Capabilities []ProviderCapabilityDTO `json:"capabilities" validate:"optional"`
+	Capabilities []ProviderCapabilityDTO `json:"capabilities,omitempty" validate:"optional"`
 }
 
 // ProviderCapabilityDTO is one capability a provider declares.
@@ -38,7 +38,7 @@ type ProviderCapabilityDTO struct {
 // RuntimeSettingsDTO mirrors the admin-managed runtime settings.
 type RuntimeSettingsDTO struct {
 	Server struct {
-		CORSAllowedOrigins []string `json:"corsAllowedOrigins" example:"*" validate:"optional"`
+		CORSAllowedOrigins []string `json:"corsAllowedOrigins,omitempty" example:"*" validate:"optional"`
 	} `json:"server" validate:"optional"`
 	Auth struct {
 		DeviceTokenTTLSeconds int `json:"deviceTokenTtlSeconds" example:"2592000" validate:"optional"`
@@ -56,7 +56,7 @@ type RuntimeSettingsDTO struct {
 			Format     string `json:"format" example:"mp3" validate:"optional"`
 			BitRate    int    `json:"bitRate" example:"192" validate:"optional"`
 			FFmpegArgs string `json:"ffmpegArgs,omitempty" validate:"optional"`
-		} `json:"profiles" validate:"optional"`
+		} `json:"profiles,omitempty" validate:"optional"`
 	} `json:"transcode" validate:"optional"`
 	Providers struct {
 		AutoDownloadOnPlay   bool `json:"autoDownloadOnPlay" example:"true" validate:"optional"`
@@ -123,12 +123,12 @@ type InstanceSummaryDTO struct {
 
 // FederationInstancesDTO is the discovery result list.
 type FederationInstancesDTO struct {
-	Instances []InstanceSummaryDTO `json:"instances" validate:"optional"`
+	Instances []InstanceSummaryDTO `json:"instances,omitempty" validate:"optional"`
 }
 
 // FederationSubscriptionsDTO is the list of followed instances.
 type FederationSubscriptionsDTO struct {
-	Subscriptions []InstanceSummaryDTO `json:"subscriptions" validate:"optional"`
+	Subscriptions []InstanceSummaryDTO `json:"subscriptions,omitempty" validate:"optional"`
 }
 
 // SubscribeRequestDTO is the body of POST /admin/federation/subscriptions: the
@@ -147,7 +147,7 @@ type OkResponse struct {
 type SettingsDTO struct {
 	Settings        RuntimeSettingsDTO `json:"settings" validate:"optional"`
 	RestartRequired bool               `json:"restartRequired" example:"false" validate:"optional"`
-	PendingRestart  []string           `json:"pendingRestart" validate:"optional"`
+	PendingRestart  []string           `json:"pendingRestart,omitempty" validate:"optional"`
 }
 
 // ProviderLogDTO is a persisted warn/error event from a provider action.
@@ -196,10 +196,10 @@ type WrappedDTO struct {
 	Year         int               `json:"year" example:"2025" validate:"optional"`
 	TotalPlays   int               `json:"totalPlays" example:"1234" validate:"optional"`
 	TotalSeconds int64             `json:"totalSeconds" example:"987654" validate:"optional"`
-	TopTracks    []WrappedTrackDTO `json:"topTracks" validate:"optional"`
-	TopArtists   []WrappedCountDTO `json:"topArtists" validate:"optional"`
-	TopGenres    []WrappedCountDTO `json:"topGenres" validate:"optional"`
-	ByMonth      []int             `json:"byMonth" validate:"optional"`
+	TopTracks    []WrappedTrackDTO `json:"topTracks,omitempty" validate:"optional"`
+	TopArtists   []WrappedCountDTO `json:"topArtists,omitempty" validate:"optional"`
+	TopGenres    []WrappedCountDTO `json:"topGenres,omitempty" validate:"optional"`
+	ByMonth      []int             `json:"byMonth,omitempty" validate:"optional"`
 }
 
 // CapabilityDTO describes one supported capability.
@@ -211,7 +211,7 @@ type CapabilityDTO struct {
 type CapabilitiesDTO struct {
 	Server          string                   `json:"server" example:"immerle" validate:"optional"`
 	ProtocolVersion string                   `json:"protocolVersion" example:"1.0.0" validate:"optional"`
-	Capabilities    map[string]CapabilityDTO `json:"capabilities" validate:"optional"`
+	Capabilities    map[string]CapabilityDTO `json:"capabilities,omitempty" validate:"optional"`
 }
 
 // SetupStatusDTO reports first-run setup state.
@@ -257,7 +257,7 @@ type ConcertDTO struct {
 
 // ConcertsDTO wraps the caller's upcoming concert matches.
 type ConcertsDTO struct {
-	Concerts []ConcertDTO `json:"concerts" validate:"optional"`
+	Concerts []ConcertDTO `json:"concerts,omitempty" validate:"optional"`
 }
 
 // ConcertsStatusDTO is the admin view of concert-discovery config. The API
@@ -309,7 +309,7 @@ type BandcampCollectionItemDTO struct {
 
 // BandcampCollectionDTO wraps the caller's live Bandcamp purchase collection.
 type BandcampCollectionDTO struct {
-	Items []BandcampCollectionItemDTO `json:"items" validate:"optional"`
+	Items []BandcampCollectionItemDTO `json:"items,omitempty" validate:"optional"`
 }
 
 // BandcampJobDTO is one queued/running/completed/failed Bandcamp import.
@@ -331,7 +331,7 @@ type BandcampJobDTO struct {
 
 // BandcampJobsDTO wraps the caller's Bandcamp import job history.
 type BandcampJobsDTO struct {
-	Jobs []BandcampJobDTO `json:"jobs" validate:"optional"`
+	Jobs []BandcampJobDTO `json:"jobs,omitempty" validate:"optional"`
 }
 
 // ActivityItemDTO carries resolved, human-readable details about the item an
@@ -417,7 +417,7 @@ type ProfilePlaylistDTO struct {
 // ProfileHallOfFameDTO is the top of a user's Hall of Fame, shown on their
 // profile — omitted entirely when the user's Hall of Fame is empty.
 type ProfileHallOfFameDTO struct {
-	Top   []songView `json:"top" validate:"optional"`
+	Top   []songView `json:"top,omitempty" validate:"optional"`
 	Total int        `json:"total" example:"12" validate:"optional"`
 }
 
@@ -449,8 +449,8 @@ type ProfileDTO struct {
 		IsAdmin     bool   `json:"isAdmin" example:"false" validate:"optional"`
 	} `json:"user" validate:"optional"`
 	IsSelf     bool                  `json:"isSelf" example:"false" validate:"optional"`
-	Activity   []ActivityEventDTO    `json:"activity" validate:"optional"`
-	Playlists  []ProfilePlaylistDTO  `json:"playlists" validate:"optional"`
+	Activity   []ActivityEventDTO    `json:"activity,omitempty" validate:"optional"`
+	Playlists  []ProfilePlaylistDTO  `json:"playlists,omitempty" validate:"optional"`
 	Stats      ProfileStatsDTO       `json:"stats" validate:"optional"`
 	HallOfFame *ProfileHallOfFameDTO `json:"hallOfFame,omitempty" validate:"optional"`
 }

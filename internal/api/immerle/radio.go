@@ -430,5 +430,5 @@ func (h *Handler) handleRadioToggle(w http.ResponseWriter, r *http.Request) {
 
 // radioToggleRequest is the admin on/off body.
 type radioToggleRequest struct {
-	Enabled *bool `json:"enabled" validate:"optional"`
+	Enabled *bool `json:"enabled,omitempty" validate:"optional"`
 }

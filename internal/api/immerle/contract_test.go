@@ -82,17 +82,24 @@ func checkOptionalFields(t *testing.T, fset *token.FileSet, typ ast.Expr) {
 			if name == "-" || tag.Get("json") == "" {
 				continue
 			}
-			mayBeMissing := strings.Contains(opts, "omitempty")
+			nilable := false
 			switch ty := fld.Type.(type) {
 			case *ast.StarExpr, *ast.ArrayType, *ast.MapType, *ast.InterfaceType:
-				mayBeMissing = true
+				nilable = true
 			case *ast.Ident:
-				mayBeMissing = mayBeMissing || ty.Name == "any"
+				nilable = ty.Name == "any"
 			}
+			mayBeMissing := nilable || strings.Contains(opts, "omitempty")
 			// validate:"required" is a deliberate opt-in for a slice/map the
 			// handler always builds non-nil.
-			if v := tag.Get("validate"); mayBeMissing && v != "optional" && v != "required" {
+			v := tag.Get("validate")
+			if mayBeMissing && v != "optional" && v != "required" {
 				t.Errorf("%s: field %q can be absent or null but lacks validate:\"optional\"", fset.Position(fld.Pos()), name)
+			}
+			// An optional field must be absent, never null: the generated TS
+			// types it `?: T`, which does not include null.
+			if nilable && v == "optional" && !strings.Contains(opts, "omitempty") {
+				t.Errorf("%s: optional field %q can serialize as null; add omitempty (or build it non-nil and mark it required)", fset.Position(fld.Pos()), name)
 			}
 		}
 		return true
