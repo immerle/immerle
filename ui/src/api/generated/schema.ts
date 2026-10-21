@@ -1580,9 +1580,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            [key: string]: unknown;
-                        };
+                        "application/json": components["schemas"]["immerle.podcastProviderListView"];
                     };
                 };
             };
@@ -1706,9 +1704,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            [key: string]: unknown;
-                        };
+                        "application/json": components["schemas"]["immerle.podcastSearchListView"];
                     };
                 };
             };
@@ -2349,9 +2345,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            [key: string]: boolean;
-                        };
+                        "application/json": components["schemas"]["immerle.featureStatusView"];
                     };
                 };
             };
@@ -2377,9 +2371,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            [key: string]: boolean;
-                        };
+                        "application/json": components["schemas"]["immerle.featureStatusView"];
                     };
                 };
                 /** @description Bad Request */
@@ -7662,9 +7654,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            [key: string]: unknown;
-                        };
+                        "application/json": components["schemas"]["immerle.channelListView"];
                     };
                 };
             };
@@ -7687,7 +7677,10 @@ export interface paths {
         /** Newest podcast episodes */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @description Max episodes (default 20) */
+                    count?: number;
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -7700,9 +7693,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            [key: string]: unknown;
-                        };
+                        "application/json": components["schemas"]["immerle.episodeListView"];
                     };
                 };
             };
@@ -7785,8 +7776,8 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Accepted */
-                202: {
+                /** @description OK */
+                200: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -7928,9 +7919,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            [key: string]: unknown;
-                        };
+                        "application/json": components["schemas"]["immerle.stationListView"];
                     };
                 };
                 /** @description Not Found */
@@ -10938,6 +10927,9 @@ export interface components {
             itemTitle?: string;
             itemType?: string;
         };
+        "immerle.channelListView": {
+            channels: components["schemas"]["immerle.channelView"][];
+        };
         "immerle.channelView": {
             description: string;
             episodes?: components["schemas"]["immerle.episodeView"][];
@@ -10995,6 +10987,9 @@ export interface components {
              */
             expiresAt?: string;
             name?: string;
+        };
+        "immerle.episodeListView": {
+            episodes: components["schemas"]["immerle.episodeView"][];
         };
         "immerle.episodeView": {
             channelId: string;
@@ -11232,14 +11227,43 @@ export interface components {
             subscribed: boolean;
             tracks?: components["schemas"]["immerle.songView"][];
         };
+        "immerle.podcastConfigFieldView": {
+            key: string;
+            label: string;
+            required: boolean;
+            secret: boolean;
+        };
         "immerle.podcastCreateRequest": {
             url?: string;
+        };
+        "immerle.podcastProviderListView": {
+            providers: components["schemas"]["immerle.podcastProviderView"][];
         };
         "immerle.podcastProviderRequest": {
             config?: {
                 [key: string]: string;
             };
             enabled?: boolean;
+        };
+        "immerle.podcastProviderView": {
+            config?: {
+                [key: string]: string;
+            };
+            configured: boolean;
+            displayName: string;
+            enabled: boolean;
+            fields: components["schemas"]["immerle.podcastConfigFieldView"][];
+            name: string;
+        };
+        "immerle.podcastSearchListView": {
+            results: components["schemas"]["immerle.podcastSearchResultView"][];
+        };
+        "immerle.podcastSearchResultView": {
+            author: string;
+            feedUrl: string;
+            image: string;
+            source: string;
+            title: string;
         };
         "immerle.queueEntryRequest": {
             album: string;
@@ -11412,8 +11436,12 @@ export interface components {
             ref?: string;
             source?: string;
         };
+        "immerle.stationListView": {
+            stations: components["schemas"]["immerle.stationView"][];
+        };
         "immerle.stationView": {
             builtin: boolean;
+            /** @description Country is the station group code (e.g. "fr", "gb", "int"). */
             country: string;
             /**
              * @description CoverURL is the external logo source URL (for prefilling the admin edit

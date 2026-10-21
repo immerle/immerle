@@ -1946,6 +1946,21 @@
                 },
                 "type": "object"
             },
+            "immerle.channelListView": {
+                "properties": {
+                    "channels": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.channelView"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "required": [
+                    "channels"
+                ],
+                "type": "object"
+            },
             "immerle.channelView": {
                 "properties": {
                     "description": {
@@ -2079,6 +2094,21 @@
                         "type": "string"
                     }
                 },
+                "type": "object"
+            },
+            "immerle.episodeListView": {
+                "properties": {
+                    "episodes": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.episodeView"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "required": [
+                    "episodes"
+                ],
                 "type": "object"
             },
             "immerle.episodeView": {
@@ -2692,12 +2722,50 @@
                 ],
                 "type": "object"
             },
+            "immerle.podcastConfigFieldView": {
+                "properties": {
+                    "key": {
+                        "type": "string"
+                    },
+                    "label": {
+                        "type": "string"
+                    },
+                    "required": {
+                        "type": "boolean"
+                    },
+                    "secret": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "key",
+                    "label",
+                    "required",
+                    "secret"
+                ],
+                "type": "object"
+            },
             "immerle.podcastCreateRequest": {
                 "properties": {
                     "url": {
                         "type": "string"
                     }
                 },
+                "type": "object"
+            },
+            "immerle.podcastProviderListView": {
+                "properties": {
+                    "providers": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.podcastProviderView"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "required": [
+                    "providers"
+                ],
                 "type": "object"
             },
             "immerle.podcastProviderRequest": {
@@ -2712,6 +2780,85 @@
                         "type": "boolean"
                     }
                 },
+                "type": "object"
+            },
+            "immerle.podcastProviderView": {
+                "properties": {
+                    "config": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "type": "object"
+                    },
+                    "configured": {
+                        "type": "boolean"
+                    },
+                    "displayName": {
+                        "type": "string"
+                    },
+                    "enabled": {
+                        "type": "boolean"
+                    },
+                    "fields": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.podcastConfigFieldView"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "name": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "configured",
+                    "displayName",
+                    "enabled",
+                    "fields",
+                    "name"
+                ],
+                "type": "object"
+            },
+            "immerle.podcastSearchListView": {
+                "properties": {
+                    "results": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.podcastSearchResultView"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "required": [
+                    "results"
+                ],
+                "type": "object"
+            },
+            "immerle.podcastSearchResultView": {
+                "properties": {
+                    "author": {
+                        "type": "string"
+                    },
+                    "feedUrl": {
+                        "type": "string"
+                    },
+                    "image": {
+                        "type": "string"
+                    },
+                    "source": {
+                        "type": "string"
+                    },
+                    "title": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "author",
+                    "feedUrl",
+                    "image",
+                    "source",
+                    "title"
+                ],
                 "type": "object"
             },
             "immerle.queueEntryRequest": {
@@ -3178,12 +3325,28 @@
                 },
                 "type": "object"
             },
+            "immerle.stationListView": {
+                "properties": {
+                    "stations": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.stationView"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "required": [
+                    "stations"
+                ],
+                "type": "object"
+            },
             "immerle.stationView": {
                 "properties": {
                     "builtin": {
                         "type": "boolean"
                     },
                     "country": {
+                        "description": "Country is the station group code (e.g. \"fr\", \"gb\", \"int\").",
                         "type": "string"
                     },
                     "coverUrl": {
@@ -4995,8 +5158,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "additionalProperties": {},
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/immerle.podcastProviderListView"
                                 }
                             }
                         },
@@ -5109,8 +5271,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "additionalProperties": {},
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/immerle.podcastSearchListView"
                                 }
                             }
                         },
@@ -5789,10 +5950,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "additionalProperties": {
-                                        "type": "boolean"
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/immerle.featureStatusView"
                                 }
                             }
                         },
@@ -5835,10 +5993,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "additionalProperties": {
-                                        "type": "boolean"
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/immerle.featureStatusView"
                                 }
                             }
                         },
@@ -11321,8 +11476,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "additionalProperties": {},
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/immerle.channelListView"
                                 }
                             }
                         },
@@ -11342,13 +11496,22 @@
         },
         "/podcasts/episodes/newest": {
             "get": {
+                "parameters": [
+                    {
+                        "description": "Max episodes (default 20)",
+                        "in": "query",
+                        "name": "count",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "additionalProperties": {},
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/immerle.episodeListView"
                                 }
                             }
                         },
@@ -11426,7 +11589,7 @@
                     }
                 ],
                 "responses": {
-                    "202": {
+                    "200": {
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -11434,7 +11597,7 @@
                                 }
                             }
                         },
-                        "description": "Accepted"
+                        "description": "OK"
                     },
                     "404": {
                         "content": {
@@ -11550,8 +11713,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "additionalProperties": {},
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/immerle.stationListView"
                                 }
                             }
                         },

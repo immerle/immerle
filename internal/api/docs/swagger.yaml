@@ -1400,6 +1400,16 @@ components:
         itemType:
           type: string
       type: object
+    immerle.channelListView:
+      properties:
+        channels:
+          items:
+            $ref: '#/components/schemas/immerle.channelView'
+          type: array
+          uniqueItems: false
+      required:
+      - channels
+      type: object
     immerle.channelView:
       properties:
         description:
@@ -1503,6 +1513,16 @@ components:
           type: string
         name:
           type: string
+      type: object
+    immerle.episodeListView:
+      properties:
+        episodes:
+          items:
+            $ref: '#/components/schemas/immerle.episodeView'
+          type: array
+          uniqueItems: false
+      required:
+      - episodes
       type: object
     immerle.episodeView:
       properties:
@@ -1969,10 +1989,36 @@ components:
       - songCount
       - subscribed
       type: object
+    immerle.podcastConfigFieldView:
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        required:
+          type: boolean
+        secret:
+          type: boolean
+      required:
+      - key
+      - label
+      - required
+      - secret
+      type: object
     immerle.podcastCreateRequest:
       properties:
         url:
           type: string
+      type: object
+    immerle.podcastProviderListView:
+      properties:
+        providers:
+          items:
+            $ref: '#/components/schemas/immerle.podcastProviderView'
+          type: array
+          uniqueItems: false
+      required:
+      - providers
       type: object
     immerle.podcastProviderRequest:
       properties:
@@ -1982,6 +2028,61 @@ components:
           type: object
         enabled:
           type: boolean
+      type: object
+    immerle.podcastProviderView:
+      properties:
+        config:
+          additionalProperties:
+            type: string
+          type: object
+        configured:
+          type: boolean
+        displayName:
+          type: string
+        enabled:
+          type: boolean
+        fields:
+          items:
+            $ref: '#/components/schemas/immerle.podcastConfigFieldView'
+          type: array
+          uniqueItems: false
+        name:
+          type: string
+      required:
+      - configured
+      - displayName
+      - enabled
+      - fields
+      - name
+      type: object
+    immerle.podcastSearchListView:
+      properties:
+        results:
+          items:
+            $ref: '#/components/schemas/immerle.podcastSearchResultView'
+          type: array
+          uniqueItems: false
+      required:
+      - results
+      type: object
+    immerle.podcastSearchResultView:
+      properties:
+        author:
+          type: string
+        feedUrl:
+          type: string
+        image:
+          type: string
+        source:
+          type: string
+        title:
+          type: string
+      required:
+      - author
+      - feedUrl
+      - image
+      - source
+      - title
       type: object
     immerle.queueEntryRequest:
       properties:
@@ -2315,11 +2416,22 @@ components:
         source:
           type: string
       type: object
+    immerle.stationListView:
+      properties:
+        stations:
+          items:
+            $ref: '#/components/schemas/immerle.stationView'
+          type: array
+          uniqueItems: false
+      required:
+      - stations
+      type: object
     immerle.stationView:
       properties:
         builtin:
           type: boolean
         country:
+          description: Country is the station group code (e.g. "fr", "gb", "int").
           type: string
         coverUrl:
           description: |-
@@ -3466,8 +3578,7 @@ paths:
           content:
             application/json:
               schema:
-                additionalProperties: {}
-                type: object
+                $ref: '#/components/schemas/immerle.podcastProviderListView'
           description: OK
       security:
       - BearerAuth: []
@@ -3532,8 +3643,7 @@ paths:
           content:
             application/json:
               schema:
-                additionalProperties: {}
-                type: object
+                $ref: '#/components/schemas/immerle.podcastSearchListView'
           description: OK
       security:
       - BearerAuth: []
@@ -3927,9 +4037,7 @@ paths:
           content:
             application/json:
               schema:
-                additionalProperties:
-                  type: boolean
-                type: object
+                $ref: '#/components/schemas/immerle.featureStatusView'
           description: OK
       security:
       - BearerAuth: []
@@ -3953,9 +4061,7 @@ paths:
           content:
             application/json:
               schema:
-                additionalProperties:
-                  type: boolean
-                type: object
+                $ref: '#/components/schemas/immerle.featureStatusView'
           description: OK
         "400":
           content:
@@ -7256,8 +7362,7 @@ paths:
           content:
             application/json:
               schema:
-                additionalProperties: {}
-                type: object
+                $ref: '#/components/schemas/immerle.channelListView'
           description: OK
       security:
       - BearerAuth: []
@@ -7328,12 +7433,12 @@ paths:
         schema:
           type: string
       responses:
-        "202":
+        "200":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/immerle.episodeView'
-          description: Accepted
+          description: OK
         "404":
           content:
             application/json:
@@ -7370,13 +7475,18 @@ paths:
       - podcasts
   /podcasts/episodes/newest:
     get:
+      parameters:
+      - description: Max episodes (default 20)
+        in: query
+        name: count
+        schema:
+          type: integer
       responses:
         "200":
           content:
             application/json:
               schema:
-                additionalProperties: {}
-                type: object
+                $ref: '#/components/schemas/immerle.episodeListView'
           description: OK
       security:
       - BearerAuth: []
@@ -7390,8 +7500,7 @@ paths:
           content:
             application/json:
               schema:
-                additionalProperties: {}
-                type: object
+                $ref: '#/components/schemas/immerle.stationListView'
           description: OK
         "404":
           content:

@@ -45,6 +45,7 @@ type stationView struct {
 	Name        string `json:"name"`
 	StreamURL   string `json:"streamUrl"`
 	HomepageURL string `json:"homepageUrl"`
+	// Country is the station group code (e.g. "fr", "gb", "int").
 	Country     string `json:"country"`
 	Builtin     bool   `json:"builtin"`
 	// Deletable is false for built-in stations (they can be edited, not removed).
@@ -56,6 +57,11 @@ type stationView struct {
 	CoverURL string `json:"coverUrl"`
 	// Liked is true when the caller has favorited this station.
 	Liked bool `json:"liked"`
+}
+
+// stationListView is the GET /radio body (stations is never null).
+type stationListView struct {
+	Stations []stationView `json:"stations" validate:"required"`
 }
 
 func toStationView(s models.RadioStation) stationView {
@@ -76,7 +82,7 @@ func toStationView(s models.RadioStation) stationView {
 // @Tags         radio
 // @Security     BearerAuth
 // @Produce      json
-// @Success      200  {object}  map[string]interface{}
+// @Success      200  {object}  stationListView
 // @Failure      404  {object}  errorResponse
 // @Router       /radio [get]
 func (h *Handler) handleRadioList(w http.ResponseWriter, r *http.Request) {
@@ -93,7 +99,7 @@ func (h *Handler) handleRadioList(w http.ResponseWriter, r *http.Request) {
 	for _, s := range stations {
 		views = append(views, toStationView(s))
 	}
-	writeResource(w, http.StatusOK, map[string]any{"stations": views})
+	writeResource(w, http.StatusOK, stationListView{Stations: views})
 }
 
 // handleRadioLike favorites a station for the caller.
@@ -366,7 +372,9 @@ func fetchRadioCover(ctx context.Context, url string) ([]byte, string, error) {
 
 // --- feature toggle ---
 
-func (h *Handler) radioStatus() map[string]any { return map[string]any{"enabled": h.radioEnabled()} }
+func (h *Handler) radioStatus() featureStatusView {
+	return featureStatusView{Enabled: h.radioEnabled()}
+}
 
 // handleRadioAdmin reports whether the radio feature is enabled.
 //
@@ -374,7 +382,7 @@ func (h *Handler) radioStatus() map[string]any { return map[string]any{"enabled"
 // @Tags         admin
 // @Security     BearerAuth
 // @Produce      json
-// @Success      200  {object}  map[string]bool
+// @Success      200  {object}  featureStatusView
 // @Router       /admin/radio [get]
 func (h *Handler) handleRadioAdmin(w http.ResponseWriter, r *http.Request) {
 	if !h.requireAdmin(w, r) {
@@ -391,7 +399,7 @@ func (h *Handler) handleRadioAdmin(w http.ResponseWriter, r *http.Request) {
 // @Accept       json
 // @Produce      json
 // @Param        body  body  radioToggleRequest  true  "Enable or disable"
-// @Success      200  {object}  map[string]bool
+// @Success      200  {object}  featureStatusView
 // @Failure      400  {object}  errorResponse
 // @Router       /admin/radio [put]
 func (h *Handler) handleRadioToggle(w http.ResponseWriter, r *http.Request) {

@@ -10,7 +10,6 @@ import type {
   PlayQueueView,
   SearchView,
   SongView,
-  StationView,
 } from '../immerleApi';
 import type {
   Album,
@@ -169,7 +168,7 @@ export function toSearchResult(v: SearchView): SearchHit[] {
     else if (r.type === 'album' && r.album) hits.push({ type: 'album', album: toAlbum(r.album) });
     else if (r.type === 'song' && r.song) hits.push({ type: 'song', song: toSong(r.song) });
     else if (r.type === 'playlist' && r.playlist) hits.push({ type: 'playlist', playlist: toPlaylist(r.playlist) });
-    else if (r.type === 'radio' && r.radio) hits.push({ type: 'radio', radio: toStation(r.radio) });
+    else if (r.type === 'radio' && r.radio) hits.push({ type: 'radio', radio: r.radio });
     else if (r.type === 'spotifyPlaylist' && r.spotifyPlaylist?.id)
       hits.push({
         type: 'spotifyPlaylist',
@@ -177,21 +176,6 @@ export function toSearchResult(v: SearchView): SearchHit[] {
       });
   }
   return hits;
-}
-
-export function toStation(v: StationView): RadioStation {
-  return {
-    id: v.id ?? '',
-    name: v.name ?? '',
-    streamUrl: v.streamUrl ?? '',
-    homepageUrl: v.homepageUrl ?? '',
-    builtin: v.builtin ?? false,
-    deletable: v.deletable ?? false,
-    hasCover: v.hasCover,
-    coverUrl: v.coverUrl,
-    country: v.country,
-    liked: v.liked,
-  };
 }
 
 export function toPlaylist(v: PlaylistView): Playlist {
