@@ -45,11 +45,7 @@ func (s *Scrobbler) EnqueueScrobble(ctx context.Context, user models.User, track
 	if !user.ScrobbleEnabled || !s.client.ScrobbleEnabled() {
 		return
 	}
-	play := Play{Artist: track.ArtistName, Title: track.Title, Album: track.AlbumName, PlayedAt: at.UTC().Format(time.RFC3339)}
-	if track.MBID != "" {
-		play.IDs = []string{"mbid:" + track.MBID}
-	}
-	payload, err := json.Marshal(scrobblePayload{UserID: user.ID, Play: play})
+	payload, err := json.Marshal(scrobblePayload{UserID: user.ID, Play: newPlay(track, at)})
 	if err != nil {
 		s.logger.Warn("discover: marshal scrobble payload failed", "error", err)
 		return
@@ -59,7 +55,19 @@ func (s *Scrobbler) EnqueueScrobble(ctx context.Context, user models.User, track
 	}
 }
 
-// handle drops the job when scrobbling was switched off since it was queued.
+// newPlay maps a track to a discover play. discover rejects a play without an
+// id; local: is a stable reference it never matches on, so it gets the track id
+// rather than a file path that would leak the library layout.
+func newPlay(track models.Track, at time.Time) Play {
+	play := Play{IDs: []string{"local:" + track.ID}, Artist: track.ArtistName, Title: track.Title, Album: track.AlbumName, PlayedAt: at.UTC().Format(time.RFC3339)}
+	if track.MBID != "" {
+		play.IDs = append(play.IDs, "mbid:"+track.MBID)
+	}
+	return play
+}
+
+// handle drops the job when scrobbling was switched off since it was queued,
+// or when it was queued without an id (discover rejects those for good).
 func (s *Scrobbler) handle(ctx context.Context, job persistence.OutboxJob) error {
 	if !s.client.ScrobbleEnabled() {
 		return nil
@@ -67,6 +75,9 @@ func (s *Scrobbler) handle(ctx context.Context, job persistence.OutboxJob) error
 	var p scrobblePayload
 	if err := json.Unmarshal([]byte(job.Payload), &p); err != nil {
 		return fmt.Errorf("discover: bad job payload: %w", err)
+	}
+	if len(p.Play.IDs) == 0 {
+		return nil
 	}
 	return s.client.Scrobble(ctx, p.UserID, []Play{p.Play})
 }
