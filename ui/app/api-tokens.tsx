@@ -6,7 +6,7 @@ import { Badge, Button, Card, EmptyState, ErrorState, Field, IconButton, Loading
 import { Chip } from '../src/components/ui';
 import { AdminHeader, AdminScroll, CardTitle } from '../src/components/AdminUI';
 import { Ionicon } from '../src/components/Ionicon';
-import { APITokenDTO } from '../src/api/immerleApi';
+import { APITokenView } from '../src/api/immerleApi';
 import { useColors } from '../src/theme/colors';
 import { useT } from '../src/i18n/store';
 
@@ -121,14 +121,14 @@ export default function ApiTokens() {
         ) : !q.data?.length ? (
           <EmptyState icon="key-outline" title={t('tools.tokens.emptyTitle')} subtitle={t('tools.tokens.emptySubtitle')} />
         ) : (
-          q.data.map((t: APITokenDTO) => <TokenRow key={t.id} token={t} onRevoke={() => confirmRevoke(t.id!, t.name || t.prefix || '')} loading={revoke.isPending} />)
+          q.data.map((t: APITokenView) => <TokenRow key={t.id} token={t} onRevoke={() => confirmRevoke(t.id!, t.name || t.prefix || '')} loading={revoke.isPending} />)
         )}
       </AdminScroll>
     </>
   );
 }
 
-function TokenRow({ token, onRevoke, loading }: { token: APITokenDTO; onRevoke: () => void; loading: boolean }) {
+function TokenRow({ token, onRevoke, loading }: { token: APITokenView; onRevoke: () => void; loading: boolean }) {
   const t = useT();
   const colors = useColors();
   const expired = token.expiresAt ? new Date(token.expiresAt).getTime() < Date.now() : false;

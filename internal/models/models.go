@@ -38,7 +38,7 @@ type User struct {
 type ThemeSettings struct {
 	// AccentColor is a CSS hex colour (e.g. "#3b82f6"). Empty means the client
 	// should fall back to its own default.
-	AccentColor string `json:"accentColor,omitempty"`
+	AccentColor string `json:"accentColor,omitempty" validate:"optional"`
 }
 
 // ProviderConfig is an admin-managed, runtime-configurable on-demand provider.

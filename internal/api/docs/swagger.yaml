@@ -1,59 +1,5 @@
 components:
   schemas:
-    immerle.APITokenDTO:
-      properties:
-        connected:
-          description: |-
-            Connected is true if the token was used within the last few minutes.
-            Only meaningful for device tokens (IsDevice).
-          type: boolean
-        createdAt:
-          example: "2026-06-15T09:00:00Z"
-          type: string
-        expiresAt:
-          type: string
-        id:
-          type: string
-        isDevice:
-          description: |-
-            IsDevice marks an app login session rather than a manually-created
-            personal/CLI token.
-          type: boolean
-        lastUsedAt:
-          type: string
-        name:
-          example: my-cli
-          type: string
-        prefix:
-          example: gsk_AbC12
-          type: string
-      type: object
-    immerle.AccountDTO:
-      properties:
-        displayName:
-          example: Bob Marley
-          type: string
-        email:
-          example: bob@example.com
-          type: string
-        id:
-          type: string
-        isAdmin:
-          example: false
-          type: boolean
-        language:
-          example: fr
-          type: string
-        listenBrainzToken:
-          description: |-
-            ListenBrainzToken is the caller's personal ListenBrainz API token, when
-            set (empty means ListenBrainz scrobbling is off).
-          example: 00000000-0000-0000-0000-000000000000
-          type: string
-        username:
-          example: bob
-          type: string
-      type: object
     immerle.ActivityEventDTO:
       properties:
         createdAt:
@@ -340,42 +286,6 @@ components:
       - skiddleConfigured
       - ticketmasterConfigured
       type: object
-    immerle.CreateTokenDTO:
-      properties:
-        id:
-          type: string
-        name:
-          example: my-cli
-          type: string
-        prefix:
-          example: gsk_AbC12
-          type: string
-        token:
-          example: gsk_AbC12...full-secret
-          type: string
-      type: object
-    immerle.DeviceDTO:
-      properties:
-        connected:
-          description: Connected is true if the device was seen within the last few
-            minutes.
-          type: boolean
-        createdAt:
-          type: string
-        expiresAt:
-          type: string
-        id:
-          type: string
-        lastIp:
-          type: string
-        lastSeen:
-          type: string
-        name:
-          example: Pixel 8
-          type: string
-        userAgent:
-          type: string
-      type: object
     immerle.FederationInstancesDTO:
       properties:
         instances:
@@ -592,14 +502,6 @@ components:
           type: string
       required:
       - connected
-      type: object
-    immerle.LoginDTO:
-      properties:
-        device:
-          $ref: '#/components/schemas/immerle.DeviceDTO'
-        token:
-          example: eyJhbGciOiJIUzI1Ni...
-          type: string
       type: object
     immerle.OkResponse:
       properties:
@@ -1057,12 +959,6 @@ components:
           example: other-node
           type: string
       type: object
-    immerle.ThemeDTO:
-      properties:
-        accentColor:
-          example: '#3b82f6'
-          type: string
-      type: object
     immerle.UserDTO:
       properties:
         displayName:
@@ -1145,6 +1041,36 @@ components:
         title:
           example: One More Time
           type: string
+      type: object
+    immerle.accountView:
+      properties:
+        displayName:
+          type: string
+        email:
+          type: string
+        id:
+          type: string
+        isAdmin:
+          type: boolean
+        language:
+          description: Language is the UI language ("en", "fr"), empty to follow the
+            device.
+          type: string
+        listenBrainzToken:
+          description: |-
+            ListenBrainzToken is the caller's ListenBrainz API token, empty when
+            ListenBrainz scrobbling is off.
+          type: string
+        username:
+          type: string
+      required:
+      - displayName
+      - email
+      - id
+      - isAdmin
+      - language
+      - listenBrainzToken
+      - username
       type: object
     immerle.addCollaboratorBody:
       properties:
@@ -1260,6 +1186,36 @@ components:
       required:
       - code
       - message
+      type: object
+    immerle.apiTokenView:
+      properties:
+        connected:
+          description: Connected is true if the token was used within the last few
+            minutes.
+          type: boolean
+        createdAt:
+          type: string
+        expiresAt:
+          type: string
+        id:
+          type: string
+        isDevice:
+          description: IsDevice marks an app login session rather than a personal/CLI
+            token.
+          type: boolean
+        lastUsedAt:
+          type: string
+        name:
+          type: string
+        prefix:
+          type: string
+      required:
+      - connected
+      - createdAt
+      - id
+      - isDevice
+      - name
+      - prefix
       type: object
     immerle.artistListView:
       properties:
@@ -1420,6 +1376,50 @@ components:
           type: string
         name:
           type: string
+      type: object
+    immerle.createdTokenView:
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        prefix:
+          type: string
+        token:
+          type: string
+      required:
+      - id
+      - name
+      - prefix
+      - token
+      type: object
+    immerle.deviceView:
+      properties:
+        connected:
+          description: Connected is true if the device was seen within the last few
+            minutes.
+          type: boolean
+        createdAt:
+          type: string
+        expiresAt:
+          type: string
+        id:
+          type: string
+        lastIp:
+          type: string
+        lastSeen:
+          type: string
+        name:
+          type: string
+        userAgent:
+          type: string
+      required:
+      - connected
+      - createdAt
+      - id
+      - lastIp
+      - name
+      - userAgent
       type: object
     immerle.episodeListView:
       properties:
@@ -1596,6 +1596,18 @@ components:
         enabled:
           type: boolean
       type: object
+    immerle.loginDeviceView:
+      properties:
+        expiresAt:
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+      required:
+      - id
+      - name
+      type: object
     immerle.loginRequest:
       properties:
         device:
@@ -1612,6 +1624,16 @@ components:
           type: string
         username:
           type: string
+      type: object
+    immerle.loginView:
+      properties:
+        device:
+          $ref: '#/components/schemas/immerle.loginDeviceView'
+        token:
+          type: string
+      required:
+      - device
+      - token
       type: object
     immerle.lyricLine:
       properties:
@@ -2623,6 +2645,14 @@ components:
       - match
       - order
       - sort
+      type: object
+    models.ThemeSettings:
+      properties:
+        accentColor:
+          description: |-
+            AccentColor is a CSS hex colour (e.g. "#3b82f6"). Empty means the client
+            should fall back to its own default.
+          type: string
       type: object
   securitySchemes:
     BearerAuth:
@@ -5144,7 +5174,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.LoginDTO'
+                $ref: '#/components/schemas/immerle.loginView'
           description: Created
         "400":
           content:
@@ -5271,7 +5301,7 @@ paths:
             application/json:
               schema:
                 items:
-                  $ref: '#/components/schemas/immerle.DeviceDTO'
+                  $ref: '#/components/schemas/immerle.deviceView'
                 type: array
           description: OK
         "401":
@@ -6355,7 +6385,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.AccountDTO'
+                $ref: '#/components/schemas/immerle.accountView'
           description: OK
         "401":
           content:
@@ -6393,7 +6423,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.AccountDTO'
+                $ref: '#/components/schemas/immerle.accountView'
           description: OK
         "400":
           content:
@@ -8883,7 +8913,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.ThemeDTO'
+                $ref: '#/components/schemas/models.ThemeSettings'
           description: OK
         "401":
           content:
@@ -8921,7 +8951,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.ThemeDTO'
+                $ref: '#/components/schemas/models.ThemeSettings'
           description: OK
         "400":
           content:
@@ -8955,7 +8985,7 @@ paths:
             application/json:
               schema:
                 items:
-                  $ref: '#/components/schemas/immerle.APITokenDTO'
+                  $ref: '#/components/schemas/immerle.apiTokenView'
                 type: array
           description: OK
         "401":
@@ -8994,7 +9024,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/immerle.CreateTokenDTO'
+                $ref: '#/components/schemas/immerle.createdTokenView'
           description: Created
         "400":
           content:

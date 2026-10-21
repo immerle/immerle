@@ -29,7 +29,7 @@ func (h *Handler) loadTheme(r *http.Request, userID string) (models.ThemeSetting
 // @Tags         theme
 // @Security     BearerAuth
 // @Produce      json
-// @Success      200  {object}  ThemeDTO
+// @Success      200  {object}  models.ThemeSettings
 // @Failure      401  {object}  errorResponse
 // @Failure      500  {object}  errorResponse
 // @Router       /theme [get]
@@ -58,7 +58,7 @@ type updateThemeRequest struct {
 // @Accept       json
 // @Produce      json
 // @Param        body  body  updateThemeRequest  true  "Theme fields to change"
-// @Success      200  {object}  ThemeDTO
+// @Success      200  {object}  models.ThemeSettings
 // @Failure      400  {object}  errorResponse
 // @Failure      401  {object}  errorResponse
 // @Failure      500  {object}  errorResponse

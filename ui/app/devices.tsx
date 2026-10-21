@@ -4,7 +4,7 @@ import { useDevices, useTokenMutations } from '../src/query/account';
 import { Badge, Card, EmptyState, ErrorState, IconButton, Loading } from '../src/components/ui';
 import { AdminHeader, AdminScroll } from '../src/components/AdminUI';
 import { Ionicon } from '../src/components/Ionicon';
-import { APITokenDTO } from '../src/api/immerleApi';
+import { APITokenView } from '../src/api/immerleApi';
 import { useColors } from '../src/theme/colors';
 import { useT } from '../src/i18n/store';
 
@@ -53,7 +53,7 @@ export default function Devices() {
   );
 }
 
-function DeviceRow({ device, onRevoke }: { device: APITokenDTO; onRevoke: () => void }) {
+function DeviceRow({ device, onRevoke }: { device: APITokenView; onRevoke: () => void }) {
   const t = useT();
   const colors = useColors();
   const fmt = (d?: string) => (d ? new Date(d).toLocaleString() : t('tools.devices.neverSeen'));

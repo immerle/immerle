@@ -29,8 +29,9 @@ import {
 } from './catalog';
 import {
   ActivityEventDTO,
-  APITokenDTO,
+  APITokenView,
   ApiError,
+  AccountView,
   ErrorResponse,
   SmartPlaylistView,
   SongView,
@@ -54,7 +55,7 @@ import {
   RuntimeSettingsDTO,
   SonicStatusDTO,
   SongSonicDTO,
-  ThemeDTO,
+  ThemeSettings,
   UserSummaryDTO,
 } from '../immerleApi';
 import {
@@ -95,6 +96,18 @@ function apiErr(error: ErrorResponse | undefined, fallbackCode: string): Immerle
 }
 
 type RadioStationBody = { name: string; streamUrl: string; homepageUrl?: string; coverUrl?: string };
+
+/** Maps the caller's account view into the domain type. */
+function toAccount(v: AccountView): Account {
+  return {
+    username: v.username,
+    displayName: v.displayName,
+    email: v.email,
+    isAdmin: v.isAdmin,
+    language: v.language as AccountLanguage,
+    listenBrainzToken: v.listenBrainzToken,
+  };
+}
 
 /** Maps a generated smart-playlist view into the domain type (the spec marks every field optional). */
 function toSmartPlaylist(v: SmartPlaylistView): SmartPlaylist {
@@ -1284,15 +1297,8 @@ export class ImmerleClient {
 
   async getAccount(signal?: AbortSignal): Promise<Account> {
     const { data, error } = await this.api.GET('/me', { signal });
-    if (error || !data) throw apiErr(error, 'account_failed');
-    return {
-      username: data.username ?? this.username,
-      displayName: data.displayName ?? '',
-      email: data.email ?? '',
-      isAdmin: data.isAdmin ?? false,
-      language: (data.language ?? '') as AccountLanguage,
-      listenBrainzToken: data.listenBrainzToken ?? '',
-    };
+    if (error) throw apiErr(error, 'account_failed');
+    return toAccount(data);
   }
 
   /** Update the caller's own display name / email / language / ListenBrainz token (partial). */
@@ -1303,16 +1309,9 @@ export class ImmerleClient {
     listenBrainzToken?: string;
   }): Promise<Account> {
     const { data, error } = await this.api.PATCH('/me', { body: patch });
-    if (error || !data) throw apiErr(error, 'account_update_failed');
+    if (error) throw apiErr(error, 'account_update_failed');
     this.setDisplayName(data.displayName);
-    return {
-      username: data.username ?? this.username,
-      displayName: data.displayName ?? '',
-      email: data.email ?? '',
-      isAdmin: data.isAdmin ?? false,
-      language: (data.language ?? '') as AccountLanguage,
-      listenBrainzToken: data.listenBrainzToken ?? '',
-    };
+    return toAccount(data);
   }
 
   // --- Concert discovery ---------------------------------------------------
@@ -1342,32 +1341,43 @@ export class ImmerleClient {
 
   /** The caller's Last.fm connection state. */
   async getLastFmStatus(signal?: AbortSignal): Promise<LastFmStatus> {
-    return this.request<LastFmStatus>('GET', 'me/lastfm', undefined, signal);
+    const { data, error } = await this.api.GET('/me/lastfm', { signal });
+    if (error) throw apiErr(error, 'lastfm.status');
+    return data;
   }
 
   /** Starts the Last.fm desktop-auth handshake: mints a token and its approval URL. */
   async startLastFmConnect(): Promise<{ token: string; authUrl: string }> {
-    return this.request<{ token: string; authUrl: string }>('POST', 'me/lastfm/connect/start');
+    const { data, error } = await this.api.POST('/me/lastfm/connect/start');
+    if (error) throw apiErr(error, 'lastfm.connectStart');
+    return data;
   }
 
   /** Finishes the handshake: exchanges an approved token for a session key. */
   async finishLastFmConnect(token: string): Promise<LastFmStatus> {
-    return this.request<LastFmStatus>('POST', 'me/lastfm/connect/finish', { token });
+    const { data, error } = await this.api.POST('/me/lastfm/connect/finish', { body: { token } });
+    if (error) throw apiErr(error, 'lastfm.connectFinish');
+    return data;
   }
 
   /** Disconnects the caller's Last.fm account. */
   async disconnectLastFm(): Promise<void> {
-    await this.request<void>('DELETE', 'me/lastfm');
+    const { error } = await this.api.DELETE('/me/lastfm');
+    if (error) throw apiErr(error, 'lastfm.disconnect');
   }
 
   /** Admin: Last.fm scrobbling config state (API key/secret are write-only). */
   async getLastFmAdminStatus(signal?: AbortSignal): Promise<LastFmAdminStatus> {
-    return this.request<LastFmAdminStatus>('GET', 'admin/lastfm', undefined, signal);
+    const { data, error } = await this.api.GET('/admin/lastfm', { signal });
+    if (error) throw apiErr(error, 'lastfm.admin');
+    return data;
   }
 
   /** Admin: enable/disable Last.fm scrobbling and/or set the API key/shared secret (partial). */
   async updateLastFmAdminConfig(patch: { enabled?: boolean; apiKey?: string; apiSecret?: string }): Promise<LastFmAdminStatus> {
-    return this.request<LastFmAdminStatus>('PUT', 'admin/lastfm', patch);
+    const { data, error } = await this.api.PUT('/admin/lastfm', { body: patch });
+    if (error) throw apiErr(error, 'lastfm.adminUpdate');
+    return data;
   }
 
   // --- Bandcamp purchase import ---------------------------------------------
@@ -1618,9 +1628,9 @@ export class ImmerleClient {
 
   // --- Personal API tokens -------------------------------------------------
 
-  async listTokens(signal?: AbortSignal): Promise<APITokenDTO[]> {
+  async listTokens(signal?: AbortSignal): Promise<APITokenView[]> {
     const { data, error } = await this.api.GET('/tokens', { signal });
-    if (error || !data) throw apiErr(error, 'tokens_failed');
+    if (error) throw apiErr(error, 'tokens_failed');
     return data;
   }
 
@@ -1629,7 +1639,7 @@ export class ImmerleClient {
    * (one per install) rather than a personal/CLI token — see listPlaybackTargets. */
   async createToken(name?: string, expiresAt?: string, device?: boolean): Promise<CreateTokenResponse> {
     const { data, error } = await this.api.POST('/tokens', { body: { name, expiresAt, device } });
-    if (error || !data) throw apiErr(error, 'token_create_failed');
+    if (error) throw apiErr(error, 'token_create_failed');
     return data;
   }
 
@@ -1641,9 +1651,9 @@ export class ImmerleClient {
   // --- Per-account UI theme ------------------------------------------------
 
   /** The caller's stored theme (accent colour, etc.). */
-  async getTheme(signal?: AbortSignal): Promise<ThemeDTO> {
+  async getTheme(signal?: AbortSignal): Promise<ThemeSettings> {
     const { data, error } = await this.api.GET('/theme', { signal });
-    if (error || !data) throw apiErr(error, 'theme_failed');
+    if (error) throw apiErr(error, 'theme_failed');
     return data;
   }
 
@@ -1651,9 +1661,9 @@ export class ImmerleClient {
    * Persist the caller's accent colour. Pass a CSS hex (e.g. `#3b82f6`), or an
    * empty string to clear it (server falls back to the client default).
    */
-  async setTheme(accentColor: string): Promise<ThemeDTO> {
+  async setTheme(accentColor: string): Promise<ThemeSettings> {
     const { data, error } = await this.api.PATCH('/theme', { body: { accentColor } });
-    if (error || !data) throw apiErr(error, 'theme_update_failed');
+    if (error) throw apiErr(error, 'theme_update_failed');
     return data;
   }
 
