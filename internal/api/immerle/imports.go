@@ -53,8 +53,8 @@ func (h *Handler) handleImports(w http.ResponseWriter, r *http.Request) {
 
 // startImportRequest is the body for POST /imports.
 type startImportRequest struct {
-	Source string `json:"source"`
-	Ref    string `json:"ref"`
+	Source string `json:"source" validate:"optional"`
+	Ref    string `json:"ref" validate:"optional"`
 }
 
 // handleImportStart queues a playlist import.
@@ -92,7 +92,7 @@ func (h *Handler) handleImportStart(w http.ResponseWriter, r *http.Request) {
 
 // resolveItemRequest is the body for resolving an import item.
 type resolveItemRequest struct {
-	Query string `json:"query"`
+	Query string `json:"query" validate:"optional"`
 }
 
 // handleImportItemResolve validates or modifies a not-yet-matched import item:

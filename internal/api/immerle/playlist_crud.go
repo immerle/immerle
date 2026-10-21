@@ -22,7 +22,7 @@ import (
 type playlistView struct {
 	ID            string `json:"id"`
 	Name          string `json:"name"`
-	Comment       string `json:"comment,omitempty"`
+	Comment       string `json:"comment,omitempty" validate:"optional"`
 	Owner         string `json:"owner"`
 	Public        bool   `json:"public"`
 	Collaborative bool   `json:"collaborative"`
@@ -36,8 +36,8 @@ type playlistView struct {
 	Subscribed bool      `json:"subscribed"`
 	SongCount  int       `json:"songCount"`
 	Duration   int       `json:"duration"`
-	CoverArt   string    `json:"coverArt,omitempty"`
-	CoverArts  []string  `json:"coverArts,omitempty"`
+	CoverArt   string    `json:"coverArt,omitempty" validate:"optional"`
+	CoverArts  []string  `json:"coverArts,omitempty" validate:"optional"`
 	CreatedAt  time.Time `json:"createdAt"`
 	ChangedAt  time.Time `json:"changedAt"`
 	// AutoPlaylistKind identifies a server-generated playlist's stable kind —
@@ -46,8 +46,8 @@ type playlistView struct {
 	// "global_weekly"...) — for clients to render a translated label instead
 	// of the (French-only) stored Name. Empty for every other playlist
 	// (user-created, genre/decade, hub-imported).
-	AutoPlaylistKind string     `json:"autoPlaylistKind,omitempty"`
-	Tracks           []songView `json:"tracks,omitempty"`
+	AutoPlaylistKind string     `json:"autoPlaylistKind,omitempty" validate:"optional"`
+	Tracks           []songView `json:"tracks,omitempty" validate:"optional"`
 }
 
 func toPlaylistView(p models.Playlist, tracks []songView) playlistView {
@@ -136,8 +136,8 @@ func (h *Handler) handleGetPlaylist(w http.ResponseWriter, r *http.Request) {
 
 // playlistCreateRequest is the body for POST /playlists.
 type playlistCreateRequest struct {
-	Name string   `json:"name"`
-	IDs  []string `json:"ids"`
+	Name string   `json:"name" validate:"optional"`
+	IDs  []string `json:"ids" validate:"optional"`
 }
 
 // handleCreatePlaylist creates a playlist owned by the caller.
@@ -172,11 +172,11 @@ func (h *Handler) handleCreatePlaylist(w http.ResponseWriter, r *http.Request) {
 // playlistUpdateRequest is the body for PATCH /playlists/{id}. nil fields are
 // left unchanged.
 type playlistUpdateRequest struct {
-	Name          *string  `json:"name"`
-	Comment       *string  `json:"comment"`
-	Public        *bool    `json:"public"`
-	AddIDs        []string `json:"addIds"`
-	RemoveIndexes []int    `json:"removeIndexes"`
+	Name          *string  `json:"name" validate:"optional"`
+	Comment       *string  `json:"comment" validate:"optional"`
+	Public        *bool    `json:"public" validate:"optional"`
+	AddIDs        []string `json:"addIds" validate:"optional"`
+	RemoveIndexes []int    `json:"removeIndexes" validate:"optional"`
 }
 
 // handleUpdatePlaylist edits a playlist's metadata and tracks.
@@ -215,7 +215,7 @@ func (h *Handler) handleUpdatePlaylist(w http.ResponseWriter, r *http.Request) {
 
 // playlistTracksRequest is the body for PUT /playlists/{id}/tracks.
 type playlistTracksRequest struct {
-	IDs []string `json:"ids"`
+	IDs []string `json:"ids" validate:"optional"`
 }
 
 // handleReplacePlaylistTracks overwrites a playlist's tracklist.

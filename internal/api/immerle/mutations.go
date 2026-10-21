@@ -95,7 +95,7 @@ func (h *Handler) handleUnstarArtist(w http.ResponseWriter, r *http.Request) {
 
 // ratingRequest is the body for setting an item's rating (0–5).
 type ratingRequest struct {
-	Rating int `json:"rating"`
+	Rating int `json:"rating" validate:"optional"`
 }
 
 // handleSetRating rates the item at {id}. The item type (song/album/artist) is
@@ -144,9 +144,9 @@ func (h *Handler) handleClearRating(w http.ResponseWriter, r *http.Request) {
 // scrobbleRequest is the body for POST /scrobbles. submission defaults to true;
 // playedAt (epoch millis) defaults to now.
 type scrobbleRequest struct {
-	IDs        []string `json:"ids"`
-	Submission *bool    `json:"submission"`
-	PlayedAt   int64    `json:"playedAt"`
+	IDs        []string `json:"ids" validate:"optional"`
+	Submission *bool    `json:"submission" validate:"optional"`
+	PlayedAt   int64    `json:"playedAt" validate:"optional"`
 }
 
 // handleScrobble registers playback for the given tracks: it sets the now-playing

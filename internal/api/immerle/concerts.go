@@ -112,13 +112,13 @@ func (h *Handler) handleConcertsAdmin(w http.ResponseWriter, r *http.Request) {
 // concertsUpdateRequest is a partial update of concert-discovery settings;
 // pointer fields distinguish "omitted" (keep current) from "" (clear).
 type concertsUpdateRequest struct {
-	Enabled *bool `json:"enabled"`
+	Enabled *bool `json:"enabled" validate:"optional"`
 	// Country is an ISO 3166-1 alpha-2 code (e.g. "FR") from the admin UI's
 	// fixed dropdown — the single instance-wide location concert discovery
 	// searches near (there is no per-user location).
-	Country            *string `json:"country"`
-	TicketmasterAPIKey *string `json:"ticketmasterApiKey"`
-	SkiddleAPIKey      *string `json:"skiddleApiKey"`
+	Country            *string `json:"country" validate:"optional"`
+	TicketmasterAPIKey *string `json:"ticketmasterApiKey" validate:"optional"`
+	SkiddleAPIKey      *string `json:"skiddleApiKey" validate:"optional"`
 }
 
 // handleConcertsUpdate changes concert-discovery settings: enable/disable and

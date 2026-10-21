@@ -18,18 +18,18 @@ import (
 
 // playQueueView is the caller's saved play queue resolved into its tracks.
 type playQueueView struct {
-	Current  string `json:"current,omitempty"`
+	Current  string `json:"current,omitempty" validate:"optional"`
 	Position int64  `json:"position"`
 	// Playing reports whether Current was playing (vs paused) as of
 	// ChangedAt — see playQueueRequest.Playing.
 	Playing   bool       `json:"playing"`
-	ChangedBy string     `json:"changedBy,omitempty"`
-	ChangedAt *time.Time `json:"changedAt,omitempty"`
-	Entries   []songView `json:"entries"`
+	ChangedBy string     `json:"changedBy,omitempty" validate:"optional"`
+	ChangedAt *time.Time `json:"changedAt,omitempty" validate:"optional"`
+	Entries   []songView `json:"entries" validate:"optional"`
 	// TargetDeviceID, when set, is the sole device that should be actively
 	// playing this queue — every other device should pause. Empty means
 	// unrestricted (default): each device plays independently.
-	TargetDeviceID string `json:"targetDeviceId,omitempty"`
+	TargetDeviceID string `json:"targetDeviceId,omitempty" validate:"optional"`
 	// TargetOnline reports whether TargetDeviceID is currently connected. When
 	// it isn't, nobody is playing: a spectator resumes locally instead of
 	// sending a command that would never be applied.
@@ -38,24 +38,24 @@ type playQueueView struct {
 	// device to apply (see POST /play-queue/commands). CommandSeq increases
 	// on every new command, so a receiver can tell a new one from one it
 	// already applied.
-	PendingCommand *commandView `json:"pendingCommand,omitempty"`
-	CommandSeq     int64        `json:"commandSeq,omitempty"`
+	PendingCommand *commandView `json:"pendingCommand,omitempty" validate:"optional"`
+	CommandSeq     int64        `json:"commandSeq,omitempty" validate:"optional"`
 	// Shuffle/Repeat mirror the saving device's transport mode, so any device
 	// that mirrors or takes over this queue shows/resumes the same mode.
 	Shuffle bool   `json:"shuffle"`
-	Repeat  string `json:"repeat,omitempty"`
+	Repeat  string `json:"repeat,omitempty" validate:"optional"`
 }
 
 // commandView mirrors models.CommandEnvelope for the wire.
 type commandView struct {
 	Type       string   `json:"type"`
-	PositionMs int64    `json:"positionMs,omitempty"`
-	TrackID    string   `json:"trackId,omitempty"`
-	QueueIndex int      `json:"queueIndex,omitempty"`
-	TrackIDs   []string `json:"trackIds,omitempty"`
-	ToIndex    int      `json:"toIndex,omitempty"`
-	ForTarget  string   `json:"forTarget,omitempty"`
-	IssuedBy   string   `json:"issuedBy,omitempty"`
+	PositionMs int64    `json:"positionMs,omitempty" validate:"optional"`
+	TrackID    string   `json:"trackId,omitempty" validate:"optional"`
+	QueueIndex int      `json:"queueIndex,omitempty" validate:"optional"`
+	TrackIDs   []string `json:"trackIds,omitempty" validate:"optional"`
+	ToIndex    int      `json:"toIndex,omitempty" validate:"optional"`
+	ForTarget  string   `json:"forTarget,omitempty" validate:"optional"`
+	IssuedBy   string   `json:"issuedBy,omitempty" validate:"optional"`
 }
 
 func toPlayQueueView(res core.PlayQueueResult) playQueueView {
@@ -233,25 +233,25 @@ type queueEntryRequest struct {
 
 // playQueueRequest is the body for PUT /play-queue.
 type playQueueRequest struct {
-	IDs      []string `json:"ids"`
-	Current  string   `json:"current"`
-	Position int64    `json:"position"`
+	IDs      []string `json:"ids" validate:"optional"`
+	Current  string   `json:"current" validate:"optional"`
+	Position int64    `json:"position" validate:"optional"`
 	// Playing reports whether Current is playing (vs paused). A spectator
 	// device (see TargetDeviceID) can also use this write to push a
 	// play/pause/skip command — the active device applies it once it
 	// notices Current/Playing changed on its next poll.
-	Playing bool   `json:"playing"`
-	Client  string `json:"client"`
+	Playing bool   `json:"playing" validate:"optional"`
+	Client  string `json:"client" validate:"optional"`
 	// Entries carries display metadata per id as a fallback when a track
 	// can't be resolved via the local catalog (typically a not-yet-
 	// downloaded remote track), so it still shows correctly when this
 	// queue is mirrored on another device. Optional.
-	Entries []queueEntryRequest `json:"entries,omitempty"`
+	Entries []queueEntryRequest `json:"entries,omitempty" validate:"optional"`
 	// Shuffle/Repeat mirror this device's transport mode (see
 	// models.PlayQueue.Shuffle/Repeat) — carried through so another device
 	// that mirrors or takes over this queue shows/resumes the same mode.
-	Shuffle bool   `json:"shuffle"`
-	Repeat  string `json:"repeat"`
+	Shuffle bool   `json:"shuffle" validate:"optional"`
+	Repeat  string `json:"repeat" validate:"optional"`
 }
 
 // handleSavePlayQueue persists the caller's play queue.
@@ -297,7 +297,7 @@ func (h *Handler) handleSavePlayQueue(w http.ResponseWriter, r *http.Request) {
 type playbackTargetView struct {
 	ID         string     `json:"id"`
 	Name       string     `json:"name"`
-	LastUsedAt *time.Time `json:"lastUsedAt,omitempty"`
+	LastUsedAt *time.Time `json:"lastUsedAt,omitempty" validate:"optional"`
 }
 
 // handleListPlaybackTargets lists the caller's recently-active app installs —
@@ -328,7 +328,7 @@ func (h *Handler) handleListPlaybackTargets(w http.ResponseWriter, r *http.Reque
 type setPlaybackTargetRequest struct {
 	// DeviceID is the device to make the sole active player; empty clears the
 	// restriction so every device plays independently again.
-	DeviceID string `json:"deviceId"`
+	DeviceID string `json:"deviceId" validate:"optional"`
 }
 
 // handleSetPlaybackTarget assigns or clears the caller's active playback
@@ -369,24 +369,24 @@ var commandTypes = map[string]bool{
 type playQueueCommandRequest struct {
 	// Type is one of "toggle", "next", "previous", "seekTo", "skipTo",
 	// "toggleShuffle", "cycleRepeat", "playNext", "enqueue", "removeAt", "move".
-	Type string `json:"type"`
+	Type string `json:"type" validate:"optional"`
 	// PositionMs is the target position for a "seekTo" command.
-	PositionMs int64 `json:"positionMs"`
+	PositionMs int64 `json:"positionMs" validate:"optional"`
 	// TrackID is the track to jump to for a "skipTo" command.
-	TrackID string `json:"trackId"`
+	TrackID string `json:"trackId" validate:"optional"`
 	// QueueIndex disambiguates "skipTo" if TrackID appears more than once in
 	// the queue — a hint only, never the primary lookup.
-	QueueIndex int `json:"queueIndex"`
+	QueueIndex int `json:"queueIndex" validate:"optional"`
 	// TrackIDs are the tracks to insert for a "playNext"/"enqueue" command.
-	TrackIDs []string `json:"trackIds"`
+	TrackIDs []string `json:"trackIds" validate:"optional"`
 	// ToIndex is the destination of a "move" command (TrackID/QueueIndex
 	// identify the moved track, like "skipTo"; "removeAt" uses those alone).
-	ToIndex int `json:"toIndex"`
+	ToIndex int `json:"toIndex" validate:"optional"`
 	// ForTarget is the sender's view of the current active device id — the
 	// receiver ignores this command if it isn't (or is no longer) that device.
-	ForTarget string `json:"forTarget"`
+	ForTarget string `json:"forTarget" validate:"optional"`
 	// IssuedBy is the sending device's id.
-	IssuedBy string `json:"issuedBy"`
+	IssuedBy string `json:"issuedBy" validate:"optional"`
 }
 
 // handleSendPlayQueueCommand records a spectator's remote-control command

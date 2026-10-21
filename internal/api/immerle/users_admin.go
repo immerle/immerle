@@ -16,8 +16,8 @@ import (
 type adminUserView struct {
 	ID                string `json:"id"`
 	Username          string `json:"username"`
-	Email             string `json:"email,omitempty"`
-	DisplayName       string `json:"displayName,omitempty"`
+	Email             string `json:"email,omitempty" validate:"optional"`
+	DisplayName       string `json:"displayName,omitempty" validate:"optional"`
 	Admin             bool   `json:"admin"`
 	ScrobblingEnabled bool   `json:"scrobblingEnabled"`
 }
@@ -79,11 +79,11 @@ func (h *Handler) handleGetUser(w http.ResponseWriter, r *http.Request) {
 
 // adminUserCreateRequest is the body for POST /admin/users.
 type adminUserCreateRequest struct {
-	Username    string `json:"username"`
-	Password    string `json:"password"`
-	Email       string `json:"email"`
-	DisplayName string `json:"displayName"`
-	Admin       bool   `json:"admin"`
+	Username    string `json:"username" validate:"optional"`
+	Password    string `json:"password" validate:"optional"`
+	Email       string `json:"email" validate:"optional"`
+	DisplayName string `json:"displayName" validate:"optional"`
+	Admin       bool   `json:"admin" validate:"optional"`
 }
 
 // handleCreateUser creates a user (admin only).
@@ -125,11 +125,11 @@ func (h *Handler) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 // adminUserUpdateRequest is the body for PATCH /admin/users/{username}. nil
 // fields are left unchanged; a non-empty password is applied.
 type adminUserUpdateRequest struct {
-	Email             *string `json:"email"`
-	DisplayName       *string `json:"displayName"`
-	Admin             *bool   `json:"admin"`
-	ScrobblingEnabled *bool   `json:"scrobblingEnabled"`
-	Password          string  `json:"password"`
+	Email             *string `json:"email" validate:"optional"`
+	DisplayName       *string `json:"displayName" validate:"optional"`
+	Admin             *bool   `json:"admin" validate:"optional"`
+	ScrobblingEnabled *bool   `json:"scrobblingEnabled" validate:"optional"`
+	Password          string  `json:"password" validate:"optional"`
 }
 
 // handleUpdateUser edits a user (admin only).
@@ -190,7 +190,7 @@ func (h *Handler) handleDeleteUser(w http.ResponseWriter, r *http.Request) {
 
 // passwordRequest is the body for PUT /me/password.
 type passwordRequest struct {
-	Password string `json:"password"`
+	Password string `json:"password" validate:"optional"`
 }
 
 // handleChangePassword changes the caller's own password.

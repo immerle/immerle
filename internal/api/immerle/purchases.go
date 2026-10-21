@@ -42,7 +42,7 @@ func (h *Handler) handleBandcampStatus(w http.ResponseWriter, r *http.Request) {
 
 // bandcampConnectRequest carries the user's pasted Bandcamp session cookie.
 type bandcampConnectRequest struct {
-	Cookie string `json:"cookie"`
+	Cookie string `json:"cookie" validate:"optional"`
 }
 
 // handleBandcampConnect validates and stores the caller's Bandcamp session
@@ -162,9 +162,9 @@ func (h *Handler) handleBandcampCollection(w http.ResponseWriter, r *http.Reques
 // imported (the caller already has them from the collection listing) — the
 // server re-derives everything else (redownload URL, format) at job time.
 type bandcampImportRequest struct {
-	ItemType   string `json:"itemType"`
-	ArtistName string `json:"artistName"`
-	ItemTitle  string `json:"itemTitle"`
+	ItemType   string `json:"itemType" validate:"optional"`
+	ArtistName string `json:"artistName" validate:"optional"`
+	ItemTitle  string `json:"itemTitle" validate:"optional"`
 }
 
 // handleBandcampImport queues one purchased item for download+ingest.

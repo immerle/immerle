@@ -35,45 +35,45 @@ type songView struct {
 	ArtistID        string            `json:"artistId"`
 	CoverArt        string            `json:"coverArt"`
 	Duration        int               `json:"duration"`
-	BitRate         int               `json:"bitRate,omitempty"`
-	Track           int               `json:"track,omitempty"`
-	Year            int               `json:"year,omitempty"`
-	Composer        string            `json:"composer,omitempty"`
-	Genre           string            `json:"genre,omitempty"`
-	BPM             int               `json:"bpm,omitempty"`
-	ReplayGainTrack float64           `json:"replayGainTrack,omitempty"`
-	ReplayGainAlbum float64           `json:"replayGainAlbum,omitempty"`
-	TitleSort       string            `json:"titleSort,omitempty"`
-	Work            string            `json:"work,omitempty"`
-	MovementName    string            `json:"movementName,omitempty"`
-	MovementNo      int               `json:"movementNumber,omitempty"`
-	Lyrics          string            `json:"lyrics,omitempty"`
-	Participants    []participantView `json:"participants,omitempty"`
-	Suffix          string            `json:"suffix,omitempty"`
-	ContentType     string            `json:"contentType,omitempty"`
-	Size            int64             `json:"size,omitempty"`
+	BitRate         int               `json:"bitRate,omitempty" validate:"optional"`
+	Track           int               `json:"track,omitempty" validate:"optional"`
+	Year            int               `json:"year,omitempty" validate:"optional"`
+	Composer        string            `json:"composer,omitempty" validate:"optional"`
+	Genre           string            `json:"genre,omitempty" validate:"optional"`
+	BPM             int               `json:"bpm,omitempty" validate:"optional"`
+	ReplayGainTrack float64           `json:"replayGainTrack,omitempty" validate:"optional"`
+	ReplayGainAlbum float64           `json:"replayGainAlbum,omitempty" validate:"optional"`
+	TitleSort       string            `json:"titleSort,omitempty" validate:"optional"`
+	Work            string            `json:"work,omitempty" validate:"optional"`
+	MovementName    string            `json:"movementName,omitempty" validate:"optional"`
+	MovementNo      int               `json:"movementNumber,omitempty" validate:"optional"`
+	Lyrics          string            `json:"lyrics,omitempty" validate:"optional"`
+	Participants    []participantView `json:"participants,omitempty" validate:"optional"`
+	Suffix          string            `json:"suffix,omitempty" validate:"optional"`
+	ContentType     string            `json:"contentType,omitempty" validate:"optional"`
+	Size            int64             `json:"size,omitempty" validate:"optional"`
 	// Per-user annotation state, populated only on catalog reads (album/artist/
 	// song/search/playlist). Absent on upload/admin views, where it is not loaded.
-	Starred   *time.Time `json:"starred,omitempty"`
-	Rating    int        `json:"rating,omitempty"`
-	PlayCount int        `json:"playCount,omitempty"`
+	Starred   *time.Time `json:"starred,omitempty" validate:"optional"`
+	Rating    int        `json:"rating,omitempty" validate:"optional"`
+	PlayCount int        `json:"playCount,omitempty" validate:"optional"`
 	// Unresolved marks a federated-playlist entry not yet matched to a local
 	// track: id is empty and only title/artist/album are populated. Resolve it
 	// via POST /playlists/{id}/tracks/{position}/resolve before playing.
-	Unresolved bool `json:"unresolved,omitempty"`
+	Unresolved bool `json:"unresolved,omitempty" validate:"optional"`
 	// Remote marks a track not yet downloaded (an on-demand provider result,
 	// not a row in the local catalog). Playing it streams progressively — the
 	// server can't yet serve byte ranges for it, so seeking isn't available
 	// until the background download finishes and it's replayed.
-	Remote bool `json:"remote,omitempty"`
+	Remote bool `json:"remote,omitempty" validate:"optional"`
 	// Comment is a personal nostalgia note on this track (e.g. "listened to
 	// this in college"). Only populated on Hall of Fame entries.
-	Comment string `json:"comment,omitempty"`
+	Comment string `json:"comment,omitempty" validate:"optional"`
 }
 
 // songListView is the {"songs": [...]} body shared by every track-list endpoint.
 type songListView struct {
-	Songs []songView `json:"songs"`
+	Songs []songView `json:"songs" validate:"optional"`
 }
 
 // participantView mirrors models.Participant locally so the OpenAPI generator
@@ -171,7 +171,7 @@ func (h *Handler) handleUpload(w http.ResponseWriter, r *http.Request) {
 
 // trackTitleRequest renames a track.
 type trackTitleRequest struct {
-	Title *string `json:"title"`
+	Title *string `json:"title" validate:"optional"`
 }
 
 // handleTrackUpdate renames a track the caller uploaded.

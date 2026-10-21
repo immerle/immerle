@@ -15,13 +15,13 @@ const deviceOnlineWindow = 5 * time.Minute
 
 // loginRequest is the body for POST /auth/sessions.
 type loginRequest struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Username string `json:"username" validate:"optional"`
+	Password string `json:"password" validate:"optional"`
 	// Token + Salt allow Subsonic-style token auth instead of a raw password.
-	Token string `json:"token"`
-	Salt  string `json:"salt"`
+	Token string `json:"token" validate:"optional"`
+	Salt  string `json:"salt" validate:"optional"`
 	// Device is an optional human label for the session (defaults to the username).
-	Device string `json:"device"`
+	Device string `json:"device" validate:"optional"`
 }
 
 // handleLogin exchanges credentials for a device-session JWT.

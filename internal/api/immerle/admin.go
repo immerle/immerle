@@ -48,7 +48,7 @@ func (h *Handler) handleCleanup(w http.ResponseWriter, r *http.Request) {
 
 // cleanupUpdateRequest is the body for PUT /admin/cleanup.
 type cleanupUpdateRequest struct {
-	Enabled *bool `json:"enabled"`
+	Enabled *bool `json:"enabled" validate:"optional"`
 }
 
 // handleCleanupUpdate turns the background sweep on or off at runtime.

@@ -62,10 +62,10 @@ func (h *Handler) handleAccount(w http.ResponseWriter, r *http.Request) {
 // updateAccountRequest is a partial account update; pointer fields distinguish
 // "omitted" (keep) from "" (clear).
 type updateAccountRequest struct {
-	DisplayName       *string `json:"displayName"`
-	Email             *string `json:"email"`
-	Language          *string `json:"language"`
-	ListenBrainzToken *string `json:"listenBrainzToken"`
+	DisplayName       *string `json:"displayName" validate:"optional"`
+	Email             *string `json:"email" validate:"optional"`
+	Language          *string `json:"language" validate:"optional"`
+	ListenBrainzToken *string `json:"listenBrainzToken" validate:"optional"`
 }
 
 // validateTokenTimeout bounds the live ListenBrainz check so a slow/unreachable

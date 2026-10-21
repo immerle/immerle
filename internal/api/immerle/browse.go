@@ -22,12 +22,12 @@ import (
 // the current line (karaoke).
 type lyricsView struct {
 	Synced bool        `json:"synced"`
-	Lines  []lyricLine `json:"lines"`
+	Lines  []lyricLine `json:"lines" validate:"optional"`
 }
 
 // lyricLine is one lyrics line; StartMs is omitted for unsynced lyrics.
 type lyricLine struct {
-	StartMs int64  `json:"startMs,omitempty"`
+	StartMs int64  `json:"startMs,omitempty" validate:"optional"`
 	Text    string `json:"text"`
 }
 
@@ -60,9 +60,9 @@ type artistView struct {
 	ID         string      `json:"id"`
 	Name       string      `json:"name"`
 	AlbumCount int         `json:"albumCount"`
-	CoverArt   string      `json:"coverArt,omitempty"`
-	Starred    *time.Time  `json:"starred,omitempty"`
-	Albums     []albumView `json:"albums,omitempty"`
+	CoverArt   string      `json:"coverArt,omitempty" validate:"optional"`
+	Starred    *time.Time  `json:"starred,omitempty" validate:"optional"`
+	Albums     []albumView `json:"albums,omitempty" validate:"optional"`
 }
 
 // albumView is the REST representation of an album. Tracks is populated on the
@@ -72,13 +72,13 @@ type albumView struct {
 	Name      string     `json:"name"`
 	Artist    string     `json:"artist"`
 	ArtistID  string     `json:"artistId"`
-	CoverArt  string     `json:"coverArt,omitempty"`
+	CoverArt  string     `json:"coverArt,omitempty" validate:"optional"`
 	SongCount int        `json:"songCount"`
 	Duration  int        `json:"duration"`
-	Year      int        `json:"year,omitempty"`
-	Genre     string     `json:"genre,omitempty"`
-	Starred   *time.Time `json:"starred,omitempty"`
-	Tracks    []songView `json:"tracks,omitempty"`
+	Year      int        `json:"year,omitempty" validate:"optional"`
+	Genre     string     `json:"genre,omitempty" validate:"optional"`
+	Starred   *time.Time `json:"starred,omitempty" validate:"optional"`
+	Tracks    []songView `json:"tracks,omitempty" validate:"optional"`
 }
 
 func toArtistView(a models.Artist, ann *models.Annotation, albums []albumView) artistView {
@@ -258,7 +258,7 @@ func (h *Handler) handleGetSong(w http.ResponseWriter, r *http.Request) {
 // downloading in the background, with the resolved local song when it has.
 type songLocalStatusView struct {
 	Local bool      `json:"local"`
-	Song  *songView `json:"song,omitempty"`
+	Song  *songView `json:"song,omitempty" validate:"optional"`
 }
 
 // handleGetSongLocalStatus reports whether a remote track has finished
@@ -390,31 +390,31 @@ func (h *Handler) handleGetGenres(w http.ResponseWriter, r *http.Request) {
 // Song/Playlist/Radio is set, per Type.
 type searchHitView struct {
 	Type     string        `json:"type"` // artist|album|song|playlist|radio|spotifyPlaylist
-	Artist   *artistView   `json:"artist,omitempty"`
-	Album    *albumView    `json:"album,omitempty"`
-	Song     *songView     `json:"song,omitempty"`
-	Playlist *playlistView `json:"playlist,omitempty"`
-	Radio    *stationView  `json:"radio,omitempty"`
+	Artist   *artistView   `json:"artist,omitempty" validate:"optional"`
+	Album    *albumView    `json:"album,omitempty" validate:"optional"`
+	Song     *songView     `json:"song,omitempty" validate:"optional"`
+	Playlist *playlistView `json:"playlist,omitempty" validate:"optional"`
+	Radio    *stationView  `json:"radio,omitempty" validate:"optional"`
 	// Spotify is a public Spotify playlist (type spotifyPlaylist): selecting it
 	// opens it on demand (POST /spotify-playlists/{spotifyId}/open).
-	Spotify *spotifyPlaylistView `json:"spotifyPlaylist,omitempty"`
+	Spotify *spotifyPlaylistView `json:"spotifyPlaylist,omitempty" validate:"optional"`
 }
 
 // spotifyPlaylistView is a public Spotify playlist found by global search.
 type spotifyPlaylistView struct {
 	ID    string `json:"id" example:"37i9dQZF1DZ06evO2CNgSk"`
 	Name  string `json:"name" example:"This Is Daft Punk"`
-	Owner string `json:"owner,omitempty" example:"Spotify"`
+	Owner string `json:"owner,omitempty" example:"Spotify" validate:"optional"`
 	// CoverArt is a cover id served by GET /cover/{id} (fetched and cached
 	// server-side), so clients never call Spotify directly.
-	CoverArt string `json:"coverArt,omitempty"`
+	CoverArt string `json:"coverArt,omitempty" validate:"optional"`
 }
 
 // searchView is the result of a catalog search: every match — artists,
 // albums, songs, public playlists and radio stations alike — in one list,
 // ranked by relevance to the query rather than grouped by type.
 type searchView struct {
-	Results []searchHitView `json:"results"`
+	Results []searchHitView `json:"results" validate:"optional"`
 }
 
 // maxSearchRadio caps the radio stations returned by a global search.
@@ -565,9 +565,9 @@ func (h *Handler) handleSearch(w http.ResponseWriter, r *http.Request) {
 
 // favoritesView is the caller's starred catalog.
 type favoritesView struct {
-	Artists []artistView `json:"artists"`
-	Albums  []albumView  `json:"albums"`
-	Songs   []songView   `json:"songs"`
+	Artists []artistView `json:"artists" validate:"optional"`
+	Albums  []albumView  `json:"albums" validate:"optional"`
+	Songs   []songView   `json:"songs" validate:"optional"`
 }
 
 // handleFavorites returns the items the caller has starred.
