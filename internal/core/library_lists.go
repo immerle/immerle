@@ -115,7 +115,7 @@ func (s *LibraryService) discoverSimilar(ctx context.Context, seed models.Track,
 			break
 		}
 		// ponytail: one lookup per candidate (up to discoverFetchSize), batch it if getSimilarSongs gets slow.
-		if local, ok, err := s.catalog.FindByArtistTitle(ctx, t.Artist, t.Title); err == nil && ok && local.ID != seed.ID {
+		if local, ok, err := s.catalog.FindByArtistTitle(ctx, t.MainArtist(), t.Title); err == nil && ok && local.ID != seed.ID {
 			out = append(out, local)
 		}
 	}

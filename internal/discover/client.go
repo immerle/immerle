@@ -56,6 +56,16 @@ func (t Track) MBID() string {
 	return ""
 }
 
+// MainArtist is the first credited artist. Artist joins the featurings
+// ("Aya Nakamura feat. La Rvfleuze"), which misses the library and on-demand
+// lookups that file a track under its main artist.
+func (t Track) MainArtist() string {
+	if len(t.Artists) > 0 && t.Artists[0].Name != "" {
+		return t.Artists[0].Name
+	}
+	return t.Artist
+}
+
 // Playlist is an ingested playlist: a chart (Kind "chart") or one made by
 // people (Kind "playlist").
 type Playlist struct {
