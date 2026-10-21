@@ -2601,9 +2601,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            [key: string]: boolean;
-                        };
+                        "application/json": components["schemas"]["immerle.featureStatusView"];
                     };
                 };
             };
@@ -2629,9 +2627,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            [key: string]: boolean;
-                        };
+                        "application/json": components["schemas"]["immerle.featureStatusView"];
                     };
                 };
                 /** @description Bad Request */
@@ -8411,9 +8407,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            [key: string]: unknown;
-                        };
+                        "application/json": components["schemas"]["immerle.smartPlaylistListView"];
                     };
                 };
             };
@@ -8430,7 +8424,7 @@ export interface paths {
             /** @description Name + rules */
             requestBody: {
                 content: {
-                    "application/json": Record<string, never> | components["schemas"]["immerle.SmartPlaylistRequestDTO"];
+                    "application/json": Record<string, never> | components["schemas"]["immerle.smartRequest"];
                 };
             };
             responses: {
@@ -8440,7 +8434,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.SmartPlaylistDTO"];
+                        "application/json": components["schemas"]["immerle.smartPlaylistView"];
                     };
                 };
                 /** @description Bad Request */
@@ -8480,7 +8474,7 @@ export interface paths {
             /** @description Rules to preview */
             requestBody: {
                 content: {
-                    "application/json": Record<string, never> | components["schemas"]["immerle.SmartPlaylistRequestDTO"];
+                    "application/json": Record<string, never> | components["schemas"]["immerle.smartRequest"];
                 };
             };
             responses: {
@@ -8490,9 +8484,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            [key: string]: unknown;
-                        };
+                        "application/json": components["schemas"]["immerle.songListView"];
                     };
                 };
             };
@@ -8525,7 +8517,7 @@ export interface paths {
             /** @description Name + rules */
             requestBody: {
                 content: {
-                    "application/json": Record<string, never> | components["schemas"]["immerle.SmartPlaylistRequestDTO"];
+                    "application/json": Record<string, never> | components["schemas"]["immerle.smartRequest"];
                 };
             };
             responses: {
@@ -8535,7 +8527,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.SmartPlaylistDTO"];
+                        "application/json": components["schemas"]["immerle.smartPlaylistView"];
                     };
                 };
                 /** @description Not Found */
@@ -8603,9 +8595,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            [key: string]: unknown;
-                        };
+                        "application/json": components["schemas"]["immerle.songListView"];
                     };
                 };
                 /** @description Not Found */
@@ -10657,36 +10647,6 @@ export interface components {
             /** @example 0 */
             userCount?: number;
         };
-        "immerle.SmartConditionDTO": {
-            /** @example genre */
-            field?: string;
-            /** @example is */
-            op?: string;
-            /** @example House */
-            value?: string;
-        };
-        "immerle.SmartPlaylistDTO": {
-            id?: string;
-            /** @example Heavy rotation */
-            name?: string;
-            rules?: components["schemas"]["immerle.SmartRulesDTO"];
-        };
-        "immerle.SmartPlaylistRequestDTO": {
-            /** @example Heavy rotation */
-            name?: string;
-            rules?: components["schemas"]["immerle.SmartRulesDTO"];
-        };
-        "immerle.SmartRulesDTO": {
-            conditions?: components["schemas"]["immerle.SmartConditionDTO"][];
-            /** @example 100 */
-            limit?: number;
-            /** @example all */
-            match?: string;
-            /** @example desc */
-            order?: string;
-            /** @example playCount */
-            sort?: string;
-        };
         "immerle.SongSonicDTO": {
             /** @example 127.6 */
             bpm?: number;
@@ -10953,6 +10913,9 @@ export interface components {
             albums?: components["schemas"]["immerle.albumView"][];
             artists?: components["schemas"]["immerle.artistView"][];
             songs?: components["schemas"]["immerle.songView"][];
+        };
+        "immerle.featureStatusView": {
+            enabled?: boolean;
         };
         "immerle.fieldError": {
             field?: string;
@@ -11248,8 +11211,25 @@ export interface components {
             url?: string;
             viewCount?: number;
         };
+        "immerle.smartPlaylistListView": {
+            playlists?: components["schemas"]["immerle.smartPlaylistView"][];
+        };
+        "immerle.smartPlaylistView": {
+            createdAt?: string;
+            id?: string;
+            name?: string;
+            rules?: components["schemas"]["models.SmartRules"];
+            updatedAt?: string;
+        };
+        "immerle.smartRequest": {
+            name?: string;
+            rules?: components["schemas"]["models.SmartRules"];
+        };
         "immerle.smartToggleRequest": {
             enabled?: boolean;
+        };
+        "immerle.songListView": {
+            songs?: components["schemas"]["immerle.songView"][];
         };
         "immerle.songLocalStatusView": {
             local?: boolean;
@@ -11382,6 +11362,29 @@ export interface components {
             endpoint?: string;
             kind?: string;
             name?: string;
+        };
+        "models.SmartCondition": {
+            field?: string;
+            op?: string;
+            value?: string;
+        };
+        "models.SmartRules": {
+            /** @description Conditions are the filters; an empty list matches the whole library. */
+            conditions?: components["schemas"]["models.SmartCondition"][];
+            /** @description Limit caps the result (clamped 1..500). */
+            limit?: number;
+            /**
+             * @description Match is "all" (AND) or "any" (OR) across Conditions. Defaults to "all".
+             * @enum {string}
+             */
+            match?: "all" | "any";
+            /**
+             * @description Order is "asc" or "desc" (ignored for "random").
+             * @enum {string}
+             */
+            order?: "asc" | "desc";
+            /** @description Sort is a whitelisted sort key (e.g. "random", "playCount", "recentlyAdded"). */
+            sort?: string;
         };
     };
     responses: never;

@@ -32,6 +32,7 @@ import {
   APITokenDTO,
   ApiError,
   ErrorResponse,
+  SmartPlaylistView,
   createAuthedImmerleApi,
   CreateTokenResponse,
   fetchWithTimeout,
@@ -90,6 +91,24 @@ import { i18n } from '../../i18n';
 function apiErr(error: ErrorResponse | undefined, fallbackCode: string): ImmerleApiError {
   const e = error?.error;
   return new ImmerleApiError(0, e?.message ?? fallbackCode, e?.code ?? fallbackCode, e?.params);
+}
+
+/** Maps a generated smart-playlist view into the domain type (the spec marks every field optional). */
+function toSmartPlaylist(v: SmartPlaylistView): SmartPlaylist {
+  const r = v.rules;
+  return {
+    id: v.id ?? '',
+    name: v.name ?? '',
+    rules: {
+      match: r?.match ?? 'all',
+      conditions: (r?.conditions ?? []).map((c) => ({ field: c.field ?? '', op: c.op ?? '', value: c.value ?? '' })),
+      sort: r?.sort ?? '',
+      order: r?.order ?? 'desc',
+      limit: r?.limit ?? 0,
+    },
+    createdAt: v.createdAt,
+    updatedAt: v.updatedAt,
+  };
 }
 
 /** Maps a profile's embedded Hall-of-Fame-top-3 DTO, `undefined` when the
@@ -929,42 +948,55 @@ export class ImmerleClient {
   // --- Smart playlists (rule-based) ---------------------------------------
 
   async listSmartPlaylists(signal?: AbortSignal): Promise<SmartPlaylist[]> {
-    const r = await this.request<{ playlists?: SmartPlaylist[] }>('GET', 'smart-playlists', undefined, signal);
-    return r.playlists ?? [];
+    const { data, error } = await this.api.GET('/smart-playlists', { signal });
+    if (error) throw apiErr(error, 'smartPlaylists.list');
+    return (data.playlists ?? []).map(toSmartPlaylist);
   }
 
   async createSmartPlaylist(name: string, rules: SmartRules): Promise<SmartPlaylist> {
-    return this.request<SmartPlaylist>('POST', 'smart-playlists', { name, rules });
+    const { data, error } = await this.api.POST('/smart-playlists', { body: { name, rules } });
+    if (error) throw apiErr(error, 'smartPlaylists.create');
+    return toSmartPlaylist(data);
   }
 
   async updateSmartPlaylist(id: string, name: string, rules: SmartRules): Promise<SmartPlaylist> {
-    return this.request<SmartPlaylist>('PUT', `smart-playlists/${id}`, { name, rules });
+    const { data, error } = await this.api.PUT('/smart-playlists/{id}', {
+      params: { path: { id } },
+      body: { name, rules },
+    });
+    if (error) throw apiErr(error, 'smartPlaylists.update');
+    return toSmartPlaylist(data);
   }
 
   async deleteSmartPlaylist(id: string): Promise<void> {
-    await this.request<void>('DELETE', `smart-playlists/${id}`);
+    const { error } = await this.api.DELETE('/smart-playlists/{id}', { params: { path: { id } } });
+    if (error) throw apiErr(error, 'smartPlaylists.delete');
   }
 
   /** Resolve a saved smart playlist to its current tracks (ready to enqueue). */
   async getSmartPlaylistTracks(id: string, signal?: AbortSignal): Promise<Song[]> {
-    const r = await this.request<{ songs?: Song[] }>('GET', `smart-playlists/${id}/tracks`, undefined, signal);
-    return r.songs ?? [];
+    const { data, error } = await this.api.GET('/smart-playlists/{id}/tracks', { params: { path: { id } }, signal });
+    if (error) throw apiErr(error, 'smartPlaylists.tracks');
+    return (data.songs ?? []).map(toSong);
   }
 
   /** Preview ad-hoc rules without saving (for the editor). */
   async previewSmartPlaylist(rules: SmartRules, signal?: AbortSignal): Promise<Song[]> {
-    const r = await this.request<{ songs?: Song[] }>('POST', 'smart-playlists/preview', { rules }, signal);
-    return r.songs ?? [];
+    const { data, error } = await this.api.POST('/smart-playlists/preview', { body: { rules }, signal });
+    if (error) throw apiErr(error, 'smartPlaylists.preview');
+    return (data.songs ?? []).map(toSong);
   }
 
   async getSmartPlaylistsEnabled(signal?: AbortSignal): Promise<boolean> {
-    const r = await this.request<{ enabled: boolean }>('GET', 'admin/smart-playlists', undefined, signal);
-    return !!r.enabled;
+    const { data, error } = await this.api.GET('/admin/smart-playlists', { signal });
+    if (error) throw apiErr(error, 'smartPlaylists.admin');
+    return !!data.enabled;
   }
 
   async setSmartPlaylistsEnabled(enabled: boolean): Promise<boolean> {
-    const r = await this.request<{ enabled: boolean }>('PUT', 'admin/smart-playlists', { enabled });
-    return !!r.enabled;
+    const { data, error } = await this.api.PUT('/admin/smart-playlists', { body: { enabled } });
+    if (error) throw apiErr(error, 'smartPlaylists.toggle');
+    return !!data.enabled;
   }
 
   // --- Internet radio -----------------------------------------------------

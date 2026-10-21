@@ -34,6 +34,11 @@ type errorResponse struct {
 	Error apiError `json:"error"`
 }
 
+// featureStatusView is the {"enabled": bool} body of the admin feature toggles.
+type featureStatusView struct {
+	Enabled bool `json:"enabled"`
+}
+
 // writeResource writes v as JSON with the given status. A nil v (e.g. 204) sends
 // no body.
 func writeResource(w http.ResponseWriter, status int, v any) {

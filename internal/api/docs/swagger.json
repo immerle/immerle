@@ -1374,78 +1374,6 @@
                 },
                 "type": "object"
             },
-            "immerle.SmartConditionDTO": {
-                "properties": {
-                    "field": {
-                        "example": "genre",
-                        "type": "string"
-                    },
-                    "op": {
-                        "example": "is",
-                        "type": "string"
-                    },
-                    "value": {
-                        "example": "House",
-                        "type": "string"
-                    }
-                },
-                "type": "object"
-            },
-            "immerle.SmartPlaylistDTO": {
-                "properties": {
-                    "id": {
-                        "type": "string"
-                    },
-                    "name": {
-                        "example": "Heavy rotation",
-                        "type": "string"
-                    },
-                    "rules": {
-                        "$ref": "#/components/schemas/immerle.SmartRulesDTO"
-                    }
-                },
-                "type": "object"
-            },
-            "immerle.SmartPlaylistRequestDTO": {
-                "properties": {
-                    "name": {
-                        "example": "Heavy rotation",
-                        "type": "string"
-                    },
-                    "rules": {
-                        "$ref": "#/components/schemas/immerle.SmartRulesDTO"
-                    }
-                },
-                "type": "object"
-            },
-            "immerle.SmartRulesDTO": {
-                "properties": {
-                    "conditions": {
-                        "items": {
-                            "$ref": "#/components/schemas/immerle.SmartConditionDTO"
-                        },
-                        "type": "array",
-                        "uniqueItems": false
-                    },
-                    "limit": {
-                        "example": 100,
-                        "type": "integer"
-                    },
-                    "match": {
-                        "example": "all",
-                        "type": "string"
-                    },
-                    "order": {
-                        "example": "desc",
-                        "type": "string"
-                    },
-                    "sort": {
-                        "example": "playCount",
-                        "type": "string"
-                    }
-                },
-                "type": "object"
-            },
             "immerle.SongSonicDTO": {
                 "properties": {
                     "bpm": {
@@ -2112,6 +2040,14 @@
                         },
                         "type": "array",
                         "uniqueItems": false
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.featureStatusView": {
+                "properties": {
+                    "enabled": {
+                        "type": "boolean"
                     }
                 },
                 "type": "object"
@@ -2803,10 +2739,65 @@
                 },
                 "type": "object"
             },
+            "immerle.smartPlaylistListView": {
+                "properties": {
+                    "playlists": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.smartPlaylistView"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.smartPlaylistView": {
+                "properties": {
+                    "createdAt": {
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "rules": {
+                        "$ref": "#/components/schemas/models.SmartRules"
+                    },
+                    "updatedAt": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.smartRequest": {
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "rules": {
+                        "$ref": "#/components/schemas/models.SmartRules"
+                    }
+                },
+                "type": "object"
+            },
             "immerle.smartToggleRequest": {
                 "properties": {
                     "enabled": {
                         "type": "boolean"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.songListView": {
+                "properties": {
+                    "songs": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.songView"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
                     }
                 },
                 "type": "object"
@@ -3100,6 +3091,57 @@
                         "type": "string"
                     },
                     "name": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "models.SmartCondition": {
+                "properties": {
+                    "field": {
+                        "type": "string"
+                    },
+                    "op": {
+                        "type": "string"
+                    },
+                    "value": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "models.SmartRules": {
+                "properties": {
+                    "conditions": {
+                        "description": "Conditions are the filters; an empty list matches the whole library.",
+                        "items": {
+                            "$ref": "#/components/schemas/models.SmartCondition"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "limit": {
+                        "description": "Limit caps the result (clamped 1..500).",
+                        "type": "integer"
+                    },
+                    "match": {
+                        "description": "Match is \"all\" (AND) or \"any\" (OR) across Conditions. Defaults to \"all\".",
+                        "enum": [
+                            "all",
+                            "any"
+                        ],
+                        "type": "string"
+                    },
+                    "order": {
+                        "description": "Order is \"asc\" or \"desc\" (ignored for \"random\").",
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string"
+                    },
+                    "sort": {
+                        "description": "Sort is a whitelisted sort key (e.g. \"random\", \"playCount\", \"recentlyAdded\").",
                         "type": "string"
                     }
                 },
@@ -5770,10 +5812,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "additionalProperties": {
-                                        "type": "boolean"
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/immerle.featureStatusView"
                                 }
                             }
                         },
@@ -5816,10 +5855,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "additionalProperties": {
-                                        "type": "boolean"
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/immerle.featureStatusView"
                                 }
                             }
                         },
@@ -11750,8 +11786,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "additionalProperties": {},
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/immerle.smartPlaylistListView"
                                 }
                             }
                         },
@@ -11778,7 +11813,7 @@
                                         "type": "object"
                                     },
                                     {
-                                        "$ref": "#/components/schemas/immerle.SmartPlaylistRequestDTO",
+                                        "$ref": "#/components/schemas/immerle.smartRequest",
                                         "summary": "body",
                                         "description": "Name + rules"
                                     }
@@ -11794,7 +11829,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.SmartPlaylistDTO"
+                                    "$ref": "#/components/schemas/immerle.smartPlaylistView"
                                 }
                             }
                         },
@@ -11833,7 +11868,7 @@
                                         "type": "object"
                                     },
                                     {
-                                        "$ref": "#/components/schemas/immerle.SmartPlaylistRequestDTO",
+                                        "$ref": "#/components/schemas/immerle.smartRequest",
                                         "summary": "body",
                                         "description": "Rules to preview"
                                     }
@@ -11849,8 +11884,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "additionalProperties": {},
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/immerle.songListView"
                                 }
                             }
                         },
@@ -11917,7 +11951,7 @@
                                         "type": "object"
                                     },
                                     {
-                                        "$ref": "#/components/schemas/immerle.SmartPlaylistRequestDTO",
+                                        "$ref": "#/components/schemas/immerle.smartRequest",
                                         "summary": "body",
                                         "description": "Name + rules"
                                     }
@@ -11933,7 +11967,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.SmartPlaylistDTO"
+                                    "$ref": "#/components/schemas/immerle.smartPlaylistView"
                                 }
                             }
                         },
@@ -11979,8 +12013,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "additionalProperties": {},
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/immerle.songListView"
                                 }
                             }
                         },

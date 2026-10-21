@@ -34,6 +34,11 @@ type smartPlaylistView struct {
 	UpdatedAt time.Time         `json:"updatedAt"`
 }
 
+// smartPlaylistListView is the GET /smart-playlists body.
+type smartPlaylistListView struct {
+	Playlists []smartPlaylistView `json:"playlists"`
+}
+
 func toSmartView(sp models.SmartPlaylist) smartPlaylistView {
 	return smartPlaylistView{ID: sp.ID, Name: sp.Name, Rules: sp.Rules, CreatedAt: sp.CreatedAt, UpdatedAt: sp.UpdatedAt}
 }
@@ -50,7 +55,7 @@ type smartRequest struct {
 // @Tags         smartPlaylists
 // @Security     BearerAuth
 // @Produce      json
-// @Success      200  {object}  map[string]interface{}
+// @Success      200  {object}  smartPlaylistListView
 // @Router       /smart-playlists [get]
 func (h *Handler) handleSmartPlaylists(w http.ResponseWriter, r *http.Request) {
 	if h.smartUnavailable(w) {
@@ -65,7 +70,7 @@ func (h *Handler) handleSmartPlaylists(w http.ResponseWriter, r *http.Request) {
 	for _, sp := range list {
 		views = append(views, toSmartView(sp))
 	}
-	writeResource(w, http.StatusOK, map[string]any{"playlists": views})
+	writeResource(w, http.StatusOK, smartPlaylistListView{Playlists: views})
 }
 
 // handleSmartPlaylistCreate creates a smart playlist.
@@ -75,8 +80,8 @@ func (h *Handler) handleSmartPlaylists(w http.ResponseWriter, r *http.Request) {
 // @Security     BearerAuth
 // @Accept       json
 // @Produce      json
-// @Param        body  body  SmartPlaylistRequestDTO  true  "Name + rules"
-// @Success      201  {object}  SmartPlaylistDTO
+// @Param        body  body  smartRequest  true  "Name + rules"
+// @Success      201  {object}  smartPlaylistView
 // @Failure      400  {object}  errorResponse
 // @Router       /smart-playlists [post]
 func (h *Handler) handleSmartPlaylistCreate(w http.ResponseWriter, r *http.Request) {
@@ -111,8 +116,8 @@ func (h *Handler) handleSmartPlaylistCreate(w http.ResponseWriter, r *http.Reque
 // @Accept       json
 // @Produce      json
 // @Param        id    path  string        true  "Smart playlist id"
-// @Param        body  body  SmartPlaylistRequestDTO  true  "Name + rules"
-// @Success      200  {object}  SmartPlaylistDTO
+// @Param        body  body  smartRequest  true  "Name + rules"
+// @Success      200  {object}  smartPlaylistView
 // @Failure      404  {object}  errorResponse
 // @Router       /smart-playlists/{id} [put]
 func (h *Handler) handleSmartPlaylistUpdate(w http.ResponseWriter, r *http.Request) {
@@ -168,7 +173,7 @@ func (h *Handler) handleSmartPlaylistDelete(w http.ResponseWriter, r *http.Reque
 // @Security     BearerAuth
 // @Produce      json
 // @Param        id  path  string  true  "Smart playlist id"
-// @Success      200  {object}  map[string]interface{}
+// @Success      200  {object}  songListView
 // @Failure      404  {object}  errorResponse
 // @Router       /smart-playlists/{id}/tracks [get]
 func (h *Handler) handleSmartPlaylistTracks(w http.ResponseWriter, r *http.Request) {
@@ -192,8 +197,8 @@ func (h *Handler) handleSmartPlaylistTracks(w http.ResponseWriter, r *http.Reque
 // @Security     BearerAuth
 // @Accept       json
 // @Produce      json
-// @Param        body  body  SmartPlaylistRequestDTO  true  "Rules to preview"
-// @Success      200  {object}  map[string]interface{}
+// @Param        body  body  smartRequest  true  "Rules to preview"
+// @Success      200  {object}  songListView
 // @Router       /smart-playlists/preview [post]
 func (h *Handler) handleSmartPlaylistPreview(w http.ResponseWriter, r *http.Request) {
 	if h.smartUnavailable(w) {
@@ -216,12 +221,14 @@ func (h *Handler) writeSmartTracks(w http.ResponseWriter, r *http.Request, rules
 	for _, t := range tracks {
 		songs = append(songs, toSongView(t))
 	}
-	writeResource(w, http.StatusOK, map[string]any{"songs": songs})
+	writeResource(w, http.StatusOK, songListView{Songs: songs})
 }
 
 // --- admin toggle ---
 
-func (h *Handler) smartStatus() map[string]any { return map[string]any{"enabled": h.smartEnabled()} }
+func (h *Handler) smartStatus() featureStatusView {
+	return featureStatusView{Enabled: h.smartEnabled()}
+}
 
 // handleSmartPlaylistsAdmin reports whether the feature is enabled.
 //
@@ -229,7 +236,7 @@ func (h *Handler) smartStatus() map[string]any { return map[string]any{"enabled"
 // @Tags         admin
 // @Security     BearerAuth
 // @Produce      json
-// @Success      200  {object}  map[string]bool
+// @Success      200  {object}  featureStatusView
 // @Router       /admin/smart-playlists [get]
 func (h *Handler) handleSmartPlaylistsAdmin(w http.ResponseWriter, r *http.Request) {
 	if !h.requireAdmin(w, r) {
@@ -246,7 +253,7 @@ func (h *Handler) handleSmartPlaylistsAdmin(w http.ResponseWriter, r *http.Reque
 // @Accept       json
 // @Produce      json
 // @Param        body  body  smartToggleRequest  true  "Enable or disable"
-// @Success      200  {object}  map[string]bool
+// @Success      200  {object}  featureStatusView
 // @Failure      400  {object}  errorResponse
 // @Router       /admin/smart-playlists [put]
 func (h *Handler) handleSmartPlaylistsToggle(w http.ResponseWriter, r *http.Request) {

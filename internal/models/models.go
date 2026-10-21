@@ -414,13 +414,13 @@ type SmartPlaylist struct {
 // SmartRules describes how to select and order tracks for a smart playlist.
 type SmartRules struct {
 	// Match is "all" (AND) or "any" (OR) across Conditions. Defaults to "all".
-	Match string `json:"match"`
+	Match string `json:"match" enums:"all,any"`
 	// Conditions are the filters; an empty list matches the whole library.
 	Conditions []SmartCondition `json:"conditions"`
 	// Sort is a whitelisted sort key (e.g. "random", "playCount", "recentlyAdded").
 	Sort string `json:"sort"`
 	// Order is "asc" or "desc" (ignored for "random").
-	Order string `json:"order"`
+	Order string `json:"order" enums:"asc,desc"`
 	// Limit caps the result (clamped 1..500).
 	Limit int `json:"limit"`
 }
