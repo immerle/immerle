@@ -46,8 +46,8 @@ type stationView struct {
 	StreamURL   string `json:"streamUrl"`
 	HomepageURL string `json:"homepageUrl"`
 	// Country is the station group code (e.g. "fr", "gb", "int").
-	Country     string `json:"country"`
-	Builtin     bool   `json:"builtin"`
+	Country string `json:"country"`
+	Builtin bool   `json:"builtin"`
 	// Deletable is false for built-in stations (they can be edited, not removed).
 	Deletable bool `json:"deletable"`
 	// HasCover tells clients whether to load the station cover endpoint.
