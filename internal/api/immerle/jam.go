@@ -13,17 +13,35 @@ import (
 
 // jamMember reports whether userID is the host or a current participant of the
 // session. Used to gate read access to session state and the SSE event stream.
-func (h *Handler) jamMember(ctx context.Context, session models.JamSession, userID string) bool {
+func (h *Handler) jamMember(ctx context.Context, session models.JamSession, userID string) (bool, error) {
 	if session.HostID == userID {
-		return true
+		return true, nil
 	}
-	participants, _ := h.Jam.Participants(ctx, session.ID)
+	participants, err := h.Jam.Participants(ctx, session.ID)
+	if err != nil {
+		return false, err
+	}
 	for _, p := range participants {
 		if p.UserID == userID {
-			return true
+			return true, nil
 		}
 	}
-	return false
+	return false, nil
+}
+
+// requireJamMember answers 404 (not 403, to not reveal the session) when the
+// user is not a member, and 500 when membership cannot be checked.
+func (h *Handler) requireJamMember(w http.ResponseWriter, r *http.Request, session models.JamSession, userID string) bool {
+	member, err := h.jamMember(r.Context(), session, userID)
+	if err != nil {
+		writeInternal(w, err)
+		return false
+	}
+	if !member {
+		writeError(w, http.StatusNotFound, "not_found", "session not found")
+		return false
+	}
+	return true
 }
 
 // jamView is the wire representation of a session plus its participants. The
@@ -33,12 +51,29 @@ type jamView struct {
 	Participants []models.JamParticipant `json:"participants" validate:"required"`
 }
 
-func (h *Handler) jamView(ctx context.Context, session models.JamSession) jamView {
-	participants, _ := h.Jam.Participants(ctx, session.ID)
+// writeJam answers with the session and its participants.
+func (h *Handler) writeJam(w http.ResponseWriter, r *http.Request, status int, session models.JamSession) {
+	participants, err := h.Jam.Participants(r.Context(), session.ID)
+	if err != nil {
+		writeInternal(w, err)
+		return
+	}
 	if participants == nil {
 		participants = []models.JamParticipant{}
 	}
-	return jamView{Session: session, Participants: participants}
+	writeResource(w, status, jamView{Session: session, Participants: participants})
+}
+
+// writeJamAfterChange re-reads the session after a successful write and
+// answers with it: 404 if it ended meanwhile (e.g. closed by the host from
+// another tab), 500 if it cannot be read.
+func (h *Handler) writeJamAfterChange(w http.ResponseWriter, r *http.Request, status int, id string) {
+	session, err := h.Jam.Get(r.Context(), id)
+	if err != nil {
+		writeLookupError(w, err, "session ended")
+		return
+	}
+	h.writeJam(w, r, status, session)
 }
 
 // jamInviteListView is the caller's pending invites (REST and the SSE
@@ -84,7 +119,7 @@ func (h *Handler) handleJamCreate(w http.ResponseWriter, r *http.Request) {
 		writeInternal(w, err)
 		return
 	}
-	writeResource(w, http.StatusCreated, h.jamView(r.Context(), session))
+	h.writeJam(w, r, http.StatusCreated, session)
 }
 
 // handleJamMine returns the session the caller is currently hosting, if any —
@@ -103,10 +138,10 @@ func (h *Handler) handleJamCreate(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handleJamMine(w http.ResponseWriter, r *http.Request) {
 	session, err := h.Jam.GetByHost(r.Context(), userFrom(r.Context()).ID)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "not_found", "not hosting a session")
+		writeLookupError(w, err, "not hosting a session")
 		return
 	}
-	writeResource(w, http.StatusOK, h.jamView(r.Context(), session))
+	h.writeJam(w, r, http.StatusOK, session)
 }
 
 // handleJamJoin adds the caller as a participant of a session.
@@ -125,15 +160,14 @@ func (h *Handler) handleJamJoin(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
 	id := pathParam(r, "id")
 	if _, err := h.Jam.Get(r.Context(), id); err != nil {
-		writeError(w, http.StatusNotFound, "not_found", "session not found")
+		writeLookupError(w, err, "session not found")
 		return
 	}
 	if err := h.Jam.Join(r.Context(), id, user.ID); err != nil {
 		writeInternal(w, err)
 		return
 	}
-	session, _ := h.Jam.Get(r.Context(), id)
-	writeResource(w, http.StatusCreated, h.jamView(r.Context(), session))
+	h.writeJamAfterChange(w, r, http.StatusCreated, id)
 }
 
 // jamInviteRequest is the body for POST /jam/{id}/invites.
@@ -161,7 +195,7 @@ func (h *Handler) handleJamInvite(w http.ResponseWriter, r *http.Request) {
 	id := pathParam(r, "id")
 	session, err := h.Jam.Get(r.Context(), id)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "not_found", "session not found")
+		writeLookupError(w, err, "session not found")
 		return
 	}
 	if session.HostID != user.ID {
@@ -174,7 +208,7 @@ func (h *Handler) handleJamInvite(w http.ResponseWriter, r *http.Request) {
 	}
 	invitee, err := h.Users.GetByUsername(r.Context(), req.Username)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "not_found", "user not found")
+		writeLookupError(w, err, "user not found")
 		return
 	}
 	if err := h.Jam.Invite(r.Context(), id, user.ID, invitee.ID); err != nil {
@@ -268,7 +302,7 @@ func (h *Handler) handleJamDelete(w http.ResponseWriter, r *http.Request) {
 	id := pathParam(r, "id")
 	session, err := h.Jam.Get(r.Context(), id)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "not_found", "session not found")
+		writeLookupError(w, err, "session not found")
 		return
 	}
 	if session.HostID != userFrom(r.Context()).ID {
@@ -298,14 +332,13 @@ func (h *Handler) handleJamState(w http.ResponseWriter, r *http.Request) {
 	id := pathParam(r, "id")
 	session, err := h.Jam.Get(r.Context(), id)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "not_found", "session not found")
+		writeLookupError(w, err, "session not found")
 		return
 	}
-	if !h.jamMember(r.Context(), session, user.ID) {
-		writeError(w, http.StatusNotFound, "not_found", "session not found")
+	if !h.requireJamMember(w, r, session, user.ID) {
 		return
 	}
-	writeResource(w, http.StatusOK, h.jamView(r.Context(), session))
+	h.writeJam(w, r, http.StatusOK, session)
 }
 
 // updateJamRequest is a partial playback update (host only). Pointer fields
@@ -339,7 +372,7 @@ func (h *Handler) handleJamUpdate(w http.ResponseWriter, r *http.Request) {
 	id := pathParam(r, "id")
 	session, err := h.Jam.Get(r.Context(), id)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "not_found", "session not found")
+		writeLookupError(w, err, "session not found")
 		return
 	}
 	if session.HostID != user.ID {
@@ -372,8 +405,7 @@ func (h *Handler) handleJamUpdate(w http.ResponseWriter, r *http.Request) {
 		writeInternal(w, err)
 		return
 	}
-	updated, _ := h.Jam.Get(r.Context(), id)
-	writeResource(w, http.StatusOK, h.jamView(r.Context(), updated))
+	h.writeJamAfterChange(w, r, http.StatusOK, id)
 }
 
 // handleJamEvents streams jam state changes to a participant over Server-Sent
@@ -395,11 +427,10 @@ func (h *Handler) handleJamEvents(w http.ResponseWriter, r *http.Request) {
 	id := pathParam(r, "id")
 	session, err := h.Jam.Get(r.Context(), id)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "not_found", "session not found")
+		writeLookupError(w, err, "session not found")
 		return
 	}
-	if !h.jamMember(r.Context(), session, user.ID) {
-		writeError(w, http.StatusNotFound, "not_found", "session not found")
+	if !h.requireJamMember(w, r, session, user.ID) {
 		return
 	}
 
@@ -422,7 +453,11 @@ func (h *Handler) handleJamEvents(w http.ResponseWriter, r *http.Request) {
 	setDeadline := func() { _ = rc.SetWriteDeadline(time.Now().Add(10 * time.Second)) }
 
 	// Send the current snapshot immediately so a late joiner is in sync.
-	participants, _ := h.Jam.Participants(r.Context(), id)
+	participants, err := h.Jam.Participants(r.Context(), id)
+	if err != nil {
+		h.Logger.Warn("jam snapshot failed", "session", id, "error", err)
+		return
+	}
 	setDeadline()
 	writeEvent(w, flusher, session, participants)
 

@@ -66,6 +66,7 @@ func (h *Handler) handleSonicStatus(w http.ResponseWriter, r *http.Request) {
 // @Failure      400  {object}  errorResponse
 // @Failure      401  {object}  errorResponse
 // @Failure      404  {object}  errorResponse
+// @Failure      500  {object}  errorResponse
 // @Router       /songs/radio [get]
 func (h *Handler) handleSonicRadio(w http.ResponseWriter, r *http.Request) {
 	if !h.Sonic.RadioEnabled() && !h.Sonic.AutoplayEnabled() {
@@ -82,7 +83,11 @@ func (h *Handler) handleSonicRadio(w http.ResponseWriter, r *http.Request) {
 		exclude = strings.Split(raw, ",")
 	}
 	count := min(max(intQuery(r, "count", 50), 1), 200)
-	tracks, _ := h.library.SonicRadio(r.Context(), userFrom(r.Context()).ID, seeds, exclude, count)
+	tracks, _, err := h.library.SonicRadio(r.Context(), userFrom(r.Context()).ID, seeds, exclude, count)
+	if err != nil {
+		writeInternal(w, err)
+		return
+	}
 	writeResource(w, http.StatusOK, songList(trackEntriesToSongViews(tracks)))
 }
 

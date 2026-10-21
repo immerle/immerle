@@ -161,7 +161,7 @@ func (h *Handler) handlePodcastGet(w http.ResponseWriter, r *http.Request) {
 	}
 	ch, err := h.Podcasts.Channel(r.Context(), pathParam(r, "id"))
 	if err != nil {
-		writeError(w, http.StatusNotFound, "not_found", "channel not found")
+		writeLookupError(w, err, "channel not found")
 		return
 	}
 	writeResource(w, http.StatusOK, toChannelView(ch))
@@ -210,7 +210,7 @@ func (h *Handler) handlePodcastEpisode(w http.ResponseWriter, r *http.Request) {
 	}
 	ep, err := h.Podcasts.Episode(r.Context(), pathParam(r, "id"))
 	if err != nil {
-		writeError(w, http.StatusNotFound, "not_found", "episode not found")
+		writeLookupError(w, err, "episode not found")
 		return
 	}
 	writeResource(w, http.StatusOK, toEpisodeView(ep))
@@ -230,6 +230,10 @@ func (h *Handler) handlePodcastStream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ep, err := h.Podcasts.Episode(r.Context(), pathParam(r, "id"))
+	if err != nil && !isNotFound(err) {
+		writeInternal(w, err)
+		return
+	}
 	if err != nil || ep.MediaPath == "" || ep.Status != "completed" {
 		writeError(w, http.StatusNotFound, "not_found", "episode not downloaded")
 		return

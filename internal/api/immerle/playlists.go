@@ -138,7 +138,7 @@ func (h *Handler) handleSubscribePlaylist(w http.ResponseWriter, r *http.Request
 	id := pathParam(r, "id")
 	p, err := h.Playlists.Get(r.Context(), id)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "not_found", "playlist not found")
+		writeLookupError(w, err, "playlist not found")
 		return
 	}
 	// Subscribable when public and not already owned, or when it's the

@@ -168,7 +168,7 @@ func (h *Handler) handleAdminTrackCover(w http.ResponseWriter, r *http.Request) 
 	}
 	t, err := h.Catalog.GetTrack(r.Context(), pathParam(r, "id"))
 	if err != nil {
-		writeError(w, http.StatusNotFound, "not_found", "track not found")
+		writeLookupError(w, err, "track not found")
 		return
 	}
 	data, ok := readCoverUpload(w, r)

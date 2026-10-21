@@ -186,7 +186,10 @@ func (s *JamService) UpdatePlayback(ctx context.Context, sessionID, currentTrack
 	if err := s.repo.UpdatePlayback(ctx, sessionID, currentTrackID, positionMs, state, trackIDs); err != nil {
 		return err
 	}
-	return s.notify(ctx, sessionID, "state")
+	// The update is committed: a failed broadcast must not report it as failed
+	// (participants still resync on their next poll or reconnect).
+	_ = s.notify(ctx, sessionID, "state")
+	return nil
 }
 
 // Close ends a session.
