@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"reflect"
+	"strings"
 
 	"github.com/immerle/immerle/internal/models"
 )
@@ -15,7 +17,7 @@ import (
 // @Tags         admin
 // @Security     BearerAuth
 // @Produce      json
-// @Success      200  {object}  SettingsDTO
+// @Success      200  {object}  settingsView
 // @Failure      401  {object}  errorResponse
 // @Failure      403  {object}  errorResponse
 // @Failure      503  {object}  errorResponse
@@ -35,12 +37,20 @@ func (h *Handler) handleSettings(w http.ResponseWriter, r *http.Request) {
 // private key, the concert-discovery API keys) before serializing settings to
 // an admin client.
 func redactSettings(rs models.RuntimeSettings) models.RuntimeSettings {
+	rs.Import = models.ImportRuntime{} // per-source import credentials
 	rs.Federation.PrivateKey = ""
 	rs.Concerts.TicketmasterAPIKey = ""
 	rs.Concerts.SkiddleAPIKey = ""
 	rs.LastFm.APIKey = ""
 	rs.LastFm.APISecret = ""
 	rs.Discover.PrivateKey = ""
+	// Never send null lists (the spec marks them required).
+	if rs.Server.CORSAllowedOrigins == nil {
+		rs.Server.CORSAllowedOrigins = []string{}
+	}
+	if rs.Transcode.Profiles == nil {
+		rs.Transcode.Profiles = []models.TranscodeProfileRuntime{}
+	}
 	return rs
 }
 
@@ -52,8 +62,8 @@ func redactSettings(rs models.RuntimeSettings) models.RuntimeSettings {
 // @Security     BearerAuth
 // @Accept       json
 // @Produce      json
-// @Param        body  body  RuntimeSettingsDTO  true  "Settings fields to change (partial)"
-// @Success      200  {object}  SettingsDTO
+// @Param        body  body  settingsPatchRequest  true  "Settings fields to change (partial)"
+// @Success      200  {object}  settingsView
 // @Failure      400  {object}  errorResponse
 // @Failure      401  {object}  errorResponse
 // @Failure      403  {object}  errorResponse
@@ -77,32 +87,10 @@ func (h *Handler) handleSettingsUpdate(w http.ResponseWriter, r *http.Request) {
 		writeErrorParams(w, http.StatusBadRequest, "invalid_body", "invalid settings JSON: "+err.Error(), map[string]any{"detail": err.Error()})
 		return
 	}
-	// Mass-assignment guard: copy over only the sections RuntimeSettingsDTO
-	// exposes. Everything else (Import credentials, feature toggles with
-	// their own endpoint, the hub-managed federation identity) keeps its
-	// current value.
+	// Mass-assignment guard: copy over only the fields settingsPatchRequest
+	// declares. Everything else keeps its current value.
 	next := current
-	next.Server = merged.Server
-	next.Auth = merged.Auth
-	next.LDAP = merged.LDAP
-	next.Transcode = merged.Transcode
-	next.Providers = merged.Providers
-	next.Scan = merged.Scan
-	next.Cleanup = merged.Cleanup
-	next.Logs = merged.Logs
-	next.Sonic = merged.Sonic
-	// Discover: only the toggles; the instance id and key come from registration.
-	next.Discover.Enabled = merged.Discover.Enabled
-	next.Discover.Scrobble = merged.Discover.Scrobble
-	next.Discover.MadeForYou = merged.Discover.MadeForYou
-	next.Discover.CuratedPlaylists = merged.Discover.CuratedPlaylists
-	next.Discover.SimilarTracks = merged.Discover.SimilarTracks
-	// Federation: only the operator-editable fields. The instance UUID, sqid, name
-	// and private key come from the hub (bootstrap / /admin/federation), never from
-	// this generic endpoint.
-	next.Federation.UserID = merged.Federation.UserID
-	next.Federation.SyncPlaylists = merged.Federation.SyncPlaylists
-	next.Federation.ExportScrobbles = merged.Federation.ExportScrobbles
+	copyDeclared(reflect.TypeOf(settingsPatchRequest{}), reflect.ValueOf(&next).Elem(), reflect.ValueOf(merged))
 	saved, pending, err := h.Settings.Update(next)
 	if err != nil {
 		writeInternal(w, err)
@@ -136,7 +124,7 @@ func (h *Handler) handleSettingsUpdate(w http.ResponseWriter, r *http.Request) {
 // @Tags         admin
 // @Security     BearerAuth
 // @Produce      json
-// @Success      200  {object}  SettingsDTO
+// @Success      200  {object}  settingsView
 // @Failure      401  {object}  errorResponse
 // @Failure      403  {object}  errorResponse
 // @Failure      502  {object}  errorResponse
@@ -165,7 +153,7 @@ func (h *Handler) handleFederationRegister(w http.ResponseWriter, r *http.Reques
 // @Tags         admin
 // @Security     BearerAuth
 // @Produce      json
-// @Success      200  {object}  SettingsDTO
+// @Success      200  {object}  settingsView
 // @Failure      401  {object}  errorResponse
 // @Failure      403  {object}  errorResponse
 // @Failure      409  {object}  errorResponse
@@ -194,7 +182,7 @@ func (h *Handler) handleFederationProfile(w http.ResponseWriter, r *http.Request
 // @Tags         admin
 // @Security     BearerAuth
 // @Produce      json
-// @Success      200  {object}  SettingsDTO
+// @Success      200  {object}  settingsView
 // @Failure      401  {object}  errorResponse
 // @Failure      403  {object}  errorResponse
 // @Failure      500  {object}  errorResponse
@@ -223,8 +211,8 @@ func (h *Handler) handleFederationUnlink(w http.ResponseWriter, r *http.Request)
 // @Security     BearerAuth
 // @Accept       json
 // @Produce      json
-// @Param        body  body  FederationUpdateDTO  true  "Instance name and sqid"
-// @Success      200  {object}  SettingsDTO
+// @Param        body  body  federationUpdateRequest  true  "Instance name and sqid"
+// @Success      200  {object}  settingsView
 // @Failure      400  {object}  errorResponse
 // @Failure      401  {object}  errorResponse
 // @Failure      403  {object}  errorResponse
@@ -240,10 +228,7 @@ func (h *Handler) handleFederationUpdate(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusServiceUnavailable, "unavailable", "federation unavailable")
 		return
 	}
-	var body struct {
-		Name string `json:"name"`
-		Sqid string `json:"sqid"`
-	}
+	var body federationUpdateRequest
 	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		writeErrorParams(w, http.StatusBadRequest, "invalid_body", "invalid JSON: "+err.Error(), map[string]any{"detail": err.Error()})
@@ -256,13 +241,127 @@ func (h *Handler) handleFederationUpdate(w http.ResponseWriter, r *http.Request)
 	writeResource(w, http.StatusOK, settingsBody(redactSettings(h.Settings.Get()), h.Settings.PendingRestart()))
 }
 
-func settingsBody(settings any, pending []string) map[string]any {
+// settingsView is the (redacted) runtime settings plus the restart status.
+type settingsView struct {
+	Settings        models.RuntimeSettings `json:"settings"`
+	RestartRequired bool                   `json:"restartRequired"`
+	// PendingRestart lists the changed settings that apply after a restart.
+	PendingRestart []string `json:"pendingRestart" validate:"required"`
+}
+
+func settingsBody(settings models.RuntimeSettings, pending []string) settingsView {
 	if pending == nil {
 		pending = []string{}
 	}
-	return map[string]any{
-		"settings":        settings,
-		"restartRequired": len(pending) > 0,
-		"pendingRestart":  pending,
+	return settingsView{Settings: settings, RestartRequired: len(pending) > 0, PendingRestart: pending}
+}
+
+// federationUpdateRequest is the PATCH /admin/federation body.
+type federationUpdateRequest struct {
+	Name string `json:"name" example:"My living-room immerle" validate:"optional"`
+	Sqid string `json:"sqid" example:"my-node" validate:"optional"`
+}
+
+// settingsPatchRequest is the PATCH /admin/settings body: every field is
+// optional (omitted fields keep their value), and it lists exactly the fields
+// the endpoint writes. The handler copies those, and only those, from the
+// decoded body (see copyDeclared), so the documented and the writable fields
+// cannot drift apart. Feature toggles with their own endpoint, import
+// credentials and the hub-managed identities are not in it.
+type settingsPatchRequest struct {
+	Server struct {
+		CORSAllowedOrigins []string `json:"corsAllowedOrigins,omitempty" example:"*" validate:"optional"`
+	} `json:"server" validate:"optional"`
+	Auth struct {
+		DeviceTokenTTLSeconds int `json:"deviceTokenTtlSeconds" example:"2592000" validate:"optional"`
+	} `json:"auth" validate:"optional"`
+	LDAP struct {
+		Enabled        bool   `json:"enabled" example:"false" validate:"optional"`
+		URL            string `json:"url" example:"ldaps://ldap.example.com:636" validate:"optional"`
+		BindDNTemplate string `json:"bindDnTemplate" example:"uid=%s,ou=people,dc=example,dc=com" validate:"optional"`
+	} `json:"ldap" validate:"optional"`
+	Transcode struct {
+		FFmpegPath  string `json:"ffmpegPath" example:"ffmpeg" validate:"optional"`
+		FFprobePath string `json:"ffprobePath" example:"ffprobe" validate:"optional"`
+		Profiles    []struct {
+			Name       string `json:"name" example:"mp3" validate:"optional"`
+			Format     string `json:"format" example:"mp3" validate:"optional"`
+			BitRate    int    `json:"bitRate" example:"192" validate:"optional"`
+			FFmpegArgs string `json:"ffmpegArgs,omitempty" validate:"optional"`
+		} `json:"profiles,omitempty" validate:"optional"`
+	} `json:"transcode" validate:"optional"`
+	Providers struct {
+		AutoDownloadOnPlay   bool `json:"autoDownloadOnPlay" example:"true" validate:"optional"`
+		SearchTimeoutSeconds int  `json:"searchTimeoutSeconds" example:"3" validate:"optional"`
+	} `json:"providers" validate:"optional"`
+	Scan struct {
+		IntervalSeconds int  `json:"intervalSeconds" example:"3600" validate:"optional"`
+		Watch           bool `json:"watch" example:"true" validate:"optional"`
+	} `json:"scan" validate:"optional"`
+	Cleanup struct {
+		Enabled         bool `json:"enabled" example:"true" validate:"optional"`
+		MaxAgeSeconds   int  `json:"maxAgeSeconds" example:"2592000" validate:"optional"`
+		IntervalSeconds int  `json:"intervalSeconds" example:"21600" validate:"optional"`
+	} `json:"cleanup" validate:"optional"`
+	Federation struct {
+		// Federation is active whenever linked; the instance identity is managed
+		// through PATCH /admin/federation.
+		UserID          string `json:"userId" example:"6f1c2b8e-1f0a-4f9b-9c3a-1e2d3c4b5a6f" validate:"optional"`
+		SyncPlaylists   bool   `json:"syncPlaylists" validate:"optional"`
+		ExportScrobbles bool   `json:"exportScrobbles" validate:"optional"`
+	} `json:"federation" validate:"optional"`
+	Logs struct {
+		RetentionDays int `json:"retentionDays" example:"30" validate:"optional"`
+	} `json:"logs" validate:"optional"`
+	Sonic struct {
+		Enabled    bool `json:"enabled" example:"false" validate:"optional"`
+		Workers    int  `json:"workers" example:"1" validate:"optional"`
+		Radio      bool `json:"radio" example:"false" validate:"optional"`
+		Autoplay   bool `json:"autoplay" example:"false" validate:"optional"`
+		Moods      bool `json:"moods" example:"false" validate:"optional"`
+		AutoDJ     bool `json:"autoDj" example:"false" validate:"optional"`
+		Duplicates bool `json:"duplicates" example:"false" validate:"optional"`
+	} `json:"sonic" validate:"optional"`
+	Discover struct {
+		Enabled          bool `json:"enabled" example:"true" validate:"optional"`
+		Scrobble         bool `json:"scrobble" example:"true" validate:"optional"`
+		MadeForYou       bool `json:"madeForYou" example:"true" validate:"optional"`
+		CuratedPlaylists bool `json:"curatedPlaylists" example:"true" validate:"optional"`
+		SimilarTracks    bool `json:"similarTracks" example:"true" validate:"optional"`
+	} `json:"discover" validate:"optional"`
+}
+
+// copyDeclared copies from src into dst every field that the patch type
+// declares, matched by json name and recursing into nested structs; a declared
+// slice or scalar is copied whole. dst and src are the same struct type. It
+// panics on a declared field dst lacks, which the settings tests catch.
+func copyDeclared(patch reflect.Type, dst, src reflect.Value) {
+	for i := 0; i < patch.NumField(); i++ {
+		pf := patch.Field(i)
+		name := jsonName(pf)
+		j := fieldIndexByJSON(dst.Type(), name)
+		if j < 0 {
+			panic("settings patch field " + name + " has no runtime-settings counterpart in " + dst.Type().Name())
+		}
+		df, sf := dst.Field(j), src.Field(j)
+		if pf.Type.Kind() == reflect.Struct && df.Kind() == reflect.Struct {
+			copyDeclared(pf.Type, df, sf)
+			continue
+		}
+		df.Set(sf)
 	}
+}
+
+func jsonName(f reflect.StructField) string {
+	name, _, _ := strings.Cut(f.Tag.Get("json"), ",")
+	return name
+}
+
+func fieldIndexByJSON(t reflect.Type, name string) int {
+	for i := 0; i < t.NumField(); i++ {
+		if jsonName(t.Field(i)) == name {
+			return i
+		}
+	}
+	return -1
 }

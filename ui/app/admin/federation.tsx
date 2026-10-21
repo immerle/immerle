@@ -12,7 +12,7 @@ import {
   useSubscriptions,
   useSubscriptionMutations,
 } from '../../src/query/admin';
-import { RuntimeSettingsDTO } from '../../src/api/immerleApi';
+import { RuntimeSettings, RuntimeSettingsPatch } from '../../src/api/immerleApi';
 import { InstanceSummary } from '../../src/api/immerle/types';
 import { Button, Card, ErrorState, Field, Loading } from '../../src/components/ui';
 import { AdminHeader, AdminScroll } from '../../src/components/AdminUI';
@@ -29,7 +29,7 @@ interface Form {
   exportScrobbles: boolean;
 }
 
-function toForm(s: RuntimeSettingsDTO): Form {
+function toForm(s: RuntimeSettings): Form {
   return {
     userId: s.federation?.userId ?? '',
     name: s.federation?.instanceName ?? '',
@@ -64,7 +64,7 @@ export default function AdminFederation() {
   if (q.isError) return <ErrorState message={t('admin.federation.loadError')} onRetry={q.refetch} />;
 
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setForm((f) => (f ? { ...f, [k]: v } : f));
-  const save = (patch: RuntimeSettingsDTO, onSuccess?: () => void) => update.mutate(patch, { onSuccess });
+  const save = (patch: RuntimeSettingsPatch, onSuccess?: () => void) => update.mutate(patch, { onSuccess });
 
   return (
     <>

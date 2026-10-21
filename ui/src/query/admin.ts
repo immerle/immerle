@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth/store';
-import { RuntimeSettingsDTO } from '../api/immerleApi';
+import { RuntimeSettingsPatch } from '../api/immerleApi';
 import { invalidateCatalog, qk } from './keys';
 
 // --- Library stats & scan --------------------------------------------------
@@ -182,7 +182,7 @@ export function useUpdateSettings() {
   const client = useAuth((s) => s.client);
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (patch: RuntimeSettingsDTO) => client!.updateSettings(patch),
+    mutationFn: (patch: RuntimeSettingsPatch) => client!.updateSettings(patch),
     // The response carries the fresh full settings + pending-restart state.
     onSuccess: (res) => qc.setQueryData(qk.settings, res),
   });
