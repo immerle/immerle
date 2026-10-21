@@ -106,9 +106,10 @@ type RuntimeSettings struct {
 }
 
 // DiscoverRuntime configures immerle-discover (hot-reloadable), the shared
-// catalog fed by charts and popular playlists. On by default; each feature has
-// its own toggle on top of Enabled. The instance registers itself on first
-// use, no account needed.
+// catalog fed by charts and popular playlists. Off until an admin opts in (no
+// data leaves the server before that); each feature has its own toggle on top
+// of Enabled, all on once it is. The instance registers itself on first use,
+// no account needed.
 type DiscoverRuntime struct {
 	Enabled bool `json:"enabled"`
 	// Scrobble sends completed plays (under an opaque per-user reference, never
@@ -357,7 +358,7 @@ func DefaultRuntimeSettings() RuntimeSettings {
 		HallOfFame:     HallOfFameRuntime{Enabled: true},
 		Concerts:       ConcertsRuntime{Enabled: false},
 		Sonic:          SonicRuntime{Enabled: false, Workers: 1},
-		Discover:       DiscoverRuntime{Enabled: true, Scrobble: true, MadeForYou: true, CuratedPlaylists: true, SimilarTracks: true},
+		Discover:       DiscoverRuntime{Scrobble: true, MadeForYou: true, CuratedPlaylists: true, SimilarTracks: true},
 	}
 }
 
