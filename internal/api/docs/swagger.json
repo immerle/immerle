@@ -957,6 +957,20 @@
                 },
                 "type": "object"
             },
+            "immerle.ProviderCapabilityDTO": {
+                "properties": {
+                    "enabled": {
+                        "example": true,
+                        "type": "boolean"
+                    },
+                    "key": {
+                        "description": "Key is one of trackSearch, artists, playlists, playlistSearch.",
+                        "example": "trackSearch",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "immerle.ProviderDTO": {
                 "properties": {
                     "active": {
@@ -966,6 +980,14 @@
                     "builtin": {
                         "example": false,
                         "type": "boolean"
+                    },
+                    "capabilities": {
+                        "description": "Capabilities lists what the provider declares, each with whether the\nadmin left it on. Empty when the provider can't be reached.",
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.ProviderCapabilityDTO"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
                     },
                     "config": {
                         "example": "{\"headers\":{\"Authorization\":\"Bearer x\"}}",
@@ -1255,15 +1277,6 @@
                             "workers": {
                                 "example": 1,
                                 "type": "integer"
-                            }
-                        },
-                        "type": "object"
-                    },
-                    "spotifySearch": {
-                        "properties": {
-                            "enabled": {
-                                "example": false,
-                                "type": "boolean"
                             }
                         },
                         "type": "object"
@@ -5231,6 +5244,122 @@
                     }
                 ],
                 "summary": "Delete a provider",
+                "tags": [
+                    "admin"
+                ]
+            }
+        },
+        "/admin/providers/{name}/capabilities/{capability}": {
+            "put": {
+                "description": "Admin only. Switches one capability (trackSearch, artists, playlists, playlistSearch) of a provider on or off, applied to the live registry immediately. A disabled capability is never called: e.g. with trackSearch off, global search sends no request to that provider.",
+                "parameters": [
+                    {
+                        "description": "Provider name",
+                        "in": "path",
+                        "name": "name",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Capability key",
+                        "in": "path",
+                        "name": "capability",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/immerle.setEnabledRequest",
+                                        "summary": "body",
+                                        "description": "Enabled flag"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "description": "Enabled flag",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.ProviderDTO"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "503": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/immerle.errorResponse"
+                                }
+                            }
+                        },
+                        "description": "Service Unavailable"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Enable or disable a provider capability",
                 "tags": [
                     "admin"
                 ]
@@ -11379,7 +11508,7 @@
         },
         "/search": {
             "get": {
-                "description": "Searches artists, albums, songs, public playlists and radio stations (merging remote-provider results when enabled, plus public Spotify playlists when the spotifySearch setting is on), returned as one list ranked by relevance to the query. `type` scopes the search server-side to just that result type.",
+                "description": "Searches artists, albums, songs, public playlists and radio stations (merging remote-provider results when enabled, plus public Spotify playlists when the built-in spotify-playlist provider is enabled), returned as one list ranked by relevance to the query. `type` scopes the search server-side to just that result type.",
                 "parameters": [
                     {
                         "description": "Search query",
@@ -12879,7 +13008,7 @@
         },
         "/spotify-playlists/{spotifyId}/open": {
             "post": {
-                "description": "Returns the local on-demand mirror of a public Spotify playlist (fetched from Spotify when missing or older than a week). Its tracks resolve lazily at play time like any federated playlist; subscribe to it to keep it in the library, refreshed weekly. 404 when the spotifySearch setting is off.",
+                "description": "Returns the local on-demand mirror of a public Spotify playlist (fetched from Spotify when missing or older than a week). Its tracks resolve lazily at play time like any federated playlist; subscribe to it to keep it in the library, refreshed weekly. 404 when the built-in spotify-playlist provider is disabled.",
                 "parameters": [
                     {
                         "description": "Spotify playlist id",

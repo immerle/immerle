@@ -8,15 +8,34 @@ import (
 	"github.com/immerle/immerle/internal/providers"
 )
 
-// searchProvider returns the single provider used for remote search: the first
-// one by admin-controlled order. Search intentionally does NOT fan out to every
-// provider (that multiplies network latency); it targets one provider only.
-func (s *CatalogService) searchProvider() (providers.Provider, bool) {
-	all := s.state.registry.All()
-	if len(all) == 0 {
-		return nil, false
+// searchProvider returns the single provider used for a one-provider lookup:
+// the first one, by admin-controlled order, whose capability key is enabled.
+// These lookups intentionally do NOT fan out to every provider (that
+// multiplies network latency); they target one provider only.
+func (s *CatalogService) searchProvider(ctx context.Context, key string) (providers.Provider, bool) {
+	for _, prov := range s.state.registry.All() {
+		if s.capable(ctx, prov, key) {
+			return prov, true
+		}
 	}
-	return all[0], true
+	return nil, false
+}
+
+// capable reports whether prov's effective capabilities (declared, minus the
+// ones the admin switched off) include key.
+func (s *CatalogService) capable(ctx context.Context, prov providers.Provider, key string) bool {
+	return s.cachedCapabilities(ctx, prov).Has(key)
+}
+
+// providerAs returns prov as T when it implements T and capability key is
+// enabled for it: the single gate in front of every optional provider call.
+func providerAs[T any](ctx context.Context, s *CatalogService, prov providers.Provider, key string) (T, bool) {
+	t, ok := prov.(T)
+	if !ok || !s.capable(ctx, prov, key) {
+		var zero T
+		return zero, false
+	}
+	return t, true
 }
 
 // searchCtx derives a bounded context for a remote search so a slow provider
@@ -51,6 +70,9 @@ func (s *CatalogService) cachePut(key string, val any) {
 // concurrent identical lookups (e.g. the song and artist passes of one request)
 // via singleflight so the provider is hit at most once per query.
 func (s *CatalogService) cachedTrackSearch(ctx context.Context, prov providers.Provider, query string, limit int) ([]providers.Result, error) {
+	if !s.capable(ctx, prov, providers.CapTrackSearch) {
+		return nil, nil
+	}
 	key := "t|" + prov.Name() + "|" + strings.ToLower(query)
 	if v, ok := s.cacheGet(key); ok {
 		return v.([]providers.Result), nil
@@ -69,14 +91,17 @@ func (s *CatalogService) cachedTrackSearch(ctx context.Context, prov providers.P
 	return v.([]providers.Result), nil
 }
 
-// cachedCapabilities fetches a provider's live /capabilities through the same
-// TTL cache, so checking what a provider supports (e.g. playlist browsing)
-// doesn't cost a network round trip on every search. Providers that don't
-// expose capabilities (built-ins) report the zero value.
+// cachedCapabilities returns prov's effective capabilities: what it declares
+// (cached; DefaultCapabilities when it can't say) minus the keys the admin
+// switched off.
 func (s *CatalogService) cachedCapabilities(ctx context.Context, prov providers.Provider) providers.Capabilities {
+	return s.declaredCapabilities(ctx, prov).Without(s.state.registry.DisabledCapabilities(prov.Name()))
+}
+
+func (s *CatalogService) declaredCapabilities(ctx context.Context, prov providers.Provider) providers.Capabilities {
 	cp, ok := prov.(providers.CapabilityProvider)
 	if !ok {
-		return providers.Capabilities{}
+		return providers.DefaultCapabilities()
 	}
 	key := "caps|" + prov.Name()
 	if v, ok := s.cacheGet(key); ok {
@@ -85,13 +110,13 @@ func (s *CatalogService) cachedCapabilities(ctx context.Context, prov providers.
 	v, err, _ := s.state.searchSF.Do(key, func() (any, error) {
 		caps, err := cp.Capabilities(ctx)
 		if err != nil {
-			return providers.Capabilities{}, err
+			return nil, err
 		}
 		s.cachePut(key, caps)
 		return caps, nil
 	})
 	if err != nil {
-		return providers.Capabilities{}
+		return providers.DefaultCapabilities() // fail open: keep searching a provider whose /capabilities flaps
 	}
 	return v.(providers.Capabilities)
 }

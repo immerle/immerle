@@ -152,11 +152,24 @@ func (p *Provider) Playlists(ctx context.Context, limit int) ([]providers.Provid
 	if limit <= 0 {
 		limit = 20
 	}
-	q := url.Values{"limit": {strconv.Itoa(limit)}}
+	return p.playlistsAt(ctx, playlistsPath, url.Values{"limit": {strconv.Itoa(limit)}})
+}
+
+// SearchPlaylists implements providers.PlaylistSearcher.
+//
+//	GET {searchPlaylistsPath}?q=&limit= → {"playlists":[<playlist>]}
+func (p *Provider) SearchPlaylists(ctx context.Context, query string, limit int) ([]providers.ProviderPlaylist, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	return p.playlistsAt(ctx, searchPlaylistsPath, url.Values{"q": {query}, "limit": {strconv.Itoa(limit)}})
+}
+
+func (p *Provider) playlistsAt(ctx context.Context, path string, q url.Values) ([]providers.ProviderPlaylist, error) {
 	var body struct {
 		Playlists []playlistWire `json:"playlists"`
 	}
-	if err := p.getJSON(ctx, playlistsPath, q, &body); err != nil {
+	if err := p.getJSON(ctx, path, q, &body); err != nil {
 		if errors.Is(err, errUnsupported) {
 			return nil, nil
 		}

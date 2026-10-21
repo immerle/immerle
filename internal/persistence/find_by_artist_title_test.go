@@ -58,3 +58,34 @@ func TestFindByArtistTitleDeprioritizesAlternateVersions(t *testing.T) {
 		t.Fatalf("expected the original (non-Gospel) track, got %+v", track)
 	}
 }
+
+// A track filed under its main artist matches a full credit, and a mere title
+// collision under another artist does not.
+func TestFindByArtistTitleMatchesArtistCredit(t *testing.T) {
+	store := testutil.NewStore(t)
+	ctx := context.Background()
+	now := time.Now()
+
+	artistID, err := store.Catalog.UpsertArtist(ctx, models.Artist{ID: uuid.NewString(), Name: "Sindika", CreatedAt: now})
+	if err != nil {
+		t.Fatal(err)
+	}
+	albumID, err := store.Catalog.UpsertAlbum(ctx, models.Album{ID: uuid.NewString(), Name: "Single", ArtistID: artistID, CreatedAt: now})
+	if err != nil {
+		t.Fatal(err)
+	}
+	title := "Nouchi in Paris (feat. TRK. & Ameka Zrai)"
+	if _, err := store.Catalog.UpsertTrack(ctx, models.Track{
+		ID: uuid.NewString(), Title: title, AlbumID: albumID, ArtistID: artistID,
+		Path: "/music/nouchi.mp3", CreatedAt: now, UpdatedAt: now,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, found, err := store.Catalog.FindByArtistTitle(ctx, "Sindika, TRK., Ameka Zrai", title); err != nil || !found {
+		t.Fatalf("full credit should match the main artist: found=%v err=%v", found, err)
+	}
+	if _, found, _ := store.Catalog.FindByArtistTitle(ctx, "Someone Else", title); found {
+		t.Fatal("same title under another artist must not match")
+	}
+}

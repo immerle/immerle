@@ -484,7 +484,7 @@ func searchCounts(r *http.Request) (artistCount, albumCount, songCount, playlist
 // remote-provider results), ranked together by relevance to the query.
 //
 // @Summary      Search the catalog
-// @Description  Searches artists, albums, songs, public playlists and radio stations (merging remote-provider results when enabled, plus public Spotify playlists when the spotifySearch setting is on), returned as one list ranked by relevance to the query. `type` scopes the search server-side to just that result type.
+// @Description  Searches artists, albums, songs, public playlists and radio stations (merging remote-provider results when enabled, plus public Spotify playlists when the built-in spotify-playlist provider is enabled), returned as one list ranked by relevance to the query. `type` scopes the search server-side to just that result type.
 // @Tags         catalog
 // @Security     BearerAuth
 // @Produce      json
@@ -631,7 +631,7 @@ func (h *Handler) handleSongsByGenre(w http.ResponseWriter, r *http.Request) {
 // an on-demand, read-only playlist (nothing is imported).
 //
 // @Summary      Open a Spotify playlist
-// @Description  Returns the local on-demand mirror of a public Spotify playlist (fetched from Spotify when missing or older than a week). Its tracks resolve lazily at play time like any federated playlist; subscribe to it to keep it in the library, refreshed weekly. 404 when the spotifySearch setting is off.
+// @Description  Returns the local on-demand mirror of a public Spotify playlist (fetched from Spotify when missing or older than a week). Its tracks resolve lazily at play time like any federated playlist; subscribe to it to keep it in the library, refreshed weekly. 404 when the built-in spotify-playlist provider is disabled.
 // @Tags         playlists
 // @Security     BearerAuth
 // @Produce      json

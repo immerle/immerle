@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -94,6 +95,9 @@ func builtinProviderDefs() []core.BuiltinDef {
 		// Needs a free API key → seeded disabled with a token placeholder to fill
 		// in via the admin UI before enabling.
 		{Name: "jamendo", DefaultConfig: `{"params":{"client_id":"<JAMENDO_TOKEN>","audioformat":"mp32"}}`, DefaultEnabled: false},
+		// Public Spotify playlists in search (no tracks of its own). Off by
+		// default: it calls Spotify on every search.
+		{Name: "spotify-playlist", DefaultConfig: `{}`, DefaultEnabled: false},
 	}
 	out := make([]core.BuiltinDef, 0, len(all))
 	for _, d := range all {
@@ -440,8 +444,14 @@ func New(cfg config.Config) (*App, error) {
 	chartsSvc.SetOwnerResolver(func(ctx context.Context) (string, error) { return firstAdmin(ctx, store.Users) })
 
 	// Public Spotify playlists surfaced in search, opened on demand as
-	// federated playlists (same owner resolution as chartsSvc above).
-	spotifyPlaylistsSvc := spotifyplaylists.New(spotifyweb.NewClient(), store.Playlists, store.Catalog, coverSvc, settingsSvc.SpotifySearchEnabled,
+	// federated playlists (same owner resolution as chartsSvc above). On while
+	// the built-in "spotify-playlist" provider is enabled with its
+	// playlistSearch capability on.
+	spotifyEnabled := func() bool {
+		_, ok := registry.Get("spotify-playlist")
+		return ok && !slices.Contains(registry.DisabledCapabilities("spotify-playlist"), providers.CapPlaylistSearch)
+	}
+	spotifyPlaylistsSvc := spotifyplaylists.New(spotifyweb.NewClient(), store.Playlists, store.Catalog, coverSvc, spotifyEnabled,
 		func(ctx context.Context) (string, error) { return firstAdmin(ctx, store.Users) }, logger)
 
 	// Genre/decade playlists ("Rock", "Rap", "1990s"...) and personal listening

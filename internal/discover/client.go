@@ -44,6 +44,8 @@ type Track struct {
 	Artist  string   `json:"artist"`
 	Artists []Artist `json:"artists,omitempty"`
 	Title   string   `json:"title"`
+	// Cover is a square cover URL on discover's CDN, "" when it has none.
+	Cover string `json:"cover,omitempty"`
 }
 
 // MBID returns the track's MusicBrainz id, "" when discover has none.
@@ -73,6 +75,7 @@ type Playlist struct {
 	Kind       string          `json:"kind,omitempty"`
 	Name       string          `json:"name"`
 	Owner      string          `json:"owner,omitempty"`
+	Image      string          `json:"image,omitempty"` // cover URL on discover's CDN
 	TrackCount int             `json:"trackCount"`
 	Tracks     []PlaylistEntry `json:"tracks,omitempty"`
 }

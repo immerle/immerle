@@ -63,7 +63,10 @@ live version in the admin. The response:
     "apikey":        { "type": "string", "where": "params", "required": true },
     "Authorization": { "type": "string", "where": "headers", "required": false }
   },
-  "playlists": true
+  "trackSearch": true,
+  "artists": true,
+  "playlists": true,
+  "playlistSearch": true
 }
 ```
 
@@ -75,9 +78,22 @@ live version in the admin. The response:
   `type` (free-form, e.g. `"string"`), `where` the value travels (`"headers"` or
   `"params"`), and whether it's `required`. Immerle generates the admin's config
   form from this and, on save, rejects a config that's missing any required field.
+- `trackSearch`: optional, defaults to `true`. Set it to `false` if you don't
+  serve [`/search`](#other-required-endpoints) (a playlist-only provider): track
+  searches then never reach you. `/resolve` and `/download` stay required as
+  soon as you return tracks, playlists included.
+- `artists`: optional, defaults to `true`. Set it to `false` if you implement
+  none of the [artist/album endpoints](#optional-endpoints-richer-browsing).
 - `playlists`: optional, defaults to `false`. Set it to `true` if you implement
   [`/playlists`](#optional-endpoints-richer-browsing): that's what tells Immerle
   it's worth surfacing your playlists in search results at all.
+- `playlistSearch`: optional, defaults to `false`. Set it to `true` if you
+  implement [`/playlists/search`](#optional-endpoints-richer-browsing). Immerle
+  then delegates playlist search to you instead of filtering `/playlists` by name.
+
+Every capability you declare shows up as a switch in the provider's admin panel:
+an admin can turn any of them off, and Immerle then never calls the matching
+endpoints.
 
 ### Other required endpoints
 
@@ -166,6 +182,7 @@ out of a capability.
 | Album tracks   | `GET /album/tracks`  | `id`, `limit`| `{"results": [<Track>]}` |
 | Artist image   | `GET /artist/image`  | `name`       | `{"imageUrl": "…"}` |
 | Playlists      | `GET /playlists`     | `limit`      | `{"playlists": [<Playlist>]}` |
+| Search playlists | `GET /playlists/search` | `q`, `limit` | `{"playlists": [<Playlist>]}` |
 
 ```json
 // <Artist>
@@ -180,7 +197,9 @@ out of a capability.
 whatever it hosts) show up in Immerle's search results alongside local ones,
 but only if you also set `"playlists": true` in
 [`/capabilities`](#the-capabilities-endpoint-mandatory); otherwise it's never
-probed. Rows without a `providerPlaylistId`, and tracks within them without a
+probed. If your catalog has more playlists than a single listing can carry,
+implement `/playlists/search` and set `"playlistSearch": true`: search results
+then come straight from your endpoint, ranked as you return them. Rows without a `providerPlaylistId`, and tracks within them without a
 `providerTrackId`, are dropped.
 
 ## A minimal provider service
@@ -237,7 +256,7 @@ app.get('/download', async (req, res) => {
 });
 
 // Opt out of browsing capabilities:
-app.get(['/artists', '/artist/albums', '/artist/tracks', '/album/tracks', '/artist/image', '/playlists'],
+app.get(['/artists', '/artist/albums', '/artist/tracks', '/album/tracks', '/artist/image', '/playlists', '/playlists/search'],
   (_req, res) => res.sendStatus(404));
 
 app.listen(8080);

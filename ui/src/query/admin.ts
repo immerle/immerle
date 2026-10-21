@@ -138,6 +138,12 @@ export function useProviderMutations() {
     onSuccess: invalidate,
   });
 
+  const setCapability = useMutation({
+    mutationFn: (p: { name: string; capability: string; enabled: boolean }) =>
+      client!.setProviderCapability(p.name, p.capability, p.enabled),
+    onSuccess: invalidate,
+  });
+
   const remove = useMutation({
     mutationFn: (name: string) => client!.deleteProvider(name),
     onSuccess: invalidate,
@@ -148,7 +154,7 @@ export function useProviderMutations() {
     onSuccess: invalidate,
   });
 
-  return { upsert, create, setEnabled, remove, reorder };
+  return { upsert, create, setEnabled, setCapability, remove, reorder };
 }
 
 /** Recent warn/error events for one provider; only fetched while the popin is open. */

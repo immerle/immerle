@@ -55,6 +55,11 @@ func init() {
 // Name implements Provider.
 func (p *FreeMusicArchiveProvider) Name() string { return "free-music-archive" }
 
+// Capabilities implements CapabilityProvider: track search only.
+func (p *FreeMusicArchiveProvider) Capabilities(context.Context) (Capabilities, error) {
+	return Capabilities{Version: ProtocolVersion, Name: p.Name(), TrackSearch: true}, nil
+}
+
 // MaxQuality implements Provider. FMA streams are mp3.
 func (p *FreeMusicArchiveProvider) MaxQuality() string { return "mp3" }
 

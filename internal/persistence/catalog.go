@@ -438,7 +438,8 @@ func (r *CatalogRepo) TrackExistsByMBIDOrHash(ctx context.Context, mbid, hash st
 }
 
 // FindByArtistTitle looks up a local, non-remote track by exact
-// (case-insensitive) artist+title match — the same key a federated entry
+// (case-insensitive) title and a full artist match in either direction — the
+// same key a federated entry
 // falls back to when it carries no mbid, so a track already in the catalog
 // (e.g. manually uploaded, tagged without an mbid) is found before resorting
 // to a remote provider search.
@@ -447,27 +448,37 @@ func (r *CatalogRepo) FindByArtistTitle(ctx context.Context, artist, title strin
 	// ("a" + combining grave) while provider/Spotify metadata is NFC ("à"), and
 	// LOWER() compares bytes, so "Fille à Papa" would never match itself.
 	candidates, err := r.listTracks(ctx, trackSelect+` WHERE t.remote=0
-		AND LOWER(ar.name) IN (LOWER(?), LOWER(?)) AND LOWER(t.title) IN (LOWER(?), LOWER(?))`,
-		norm.NFC.String(artist), norm.NFD.String(artist), norm.NFC.String(title), norm.NFD.String(title))
+		AND LOWER(t.title) IN (LOWER(?), LOWER(?))`,
+		norm.NFC.String(title), norm.NFD.String(title))
 	if err != nil {
 		return models.Track{}, false, err
 	}
-	if len(candidates) == 0 {
-		return models.Track{}, false, nil
-	}
+	// The title matches exactly; the artist must match fully in at least one
+	// direction (see matching.ArtistOverlap), so a library filing a track under
+	// its main artist ("Sindika") still matches a full credit ("Sindika, TRK.,
+	// Ameka Zrai"), and the reverse.
+	//
 	// Same artist+title can legitimately exist more than once in a library
 	// (an alternate version scanned alongside the original) — prefer whichever
 	// isn't flagged as one by matching.VersionMarkerPenalty, the same
 	// disambiguation core.ResolveBestRemoteMatch applies to remote candidates,
-	// so a candidate can't dodge it just by already being local.
-	best := candidates[0]
-	bestPenalty := matching.VersionMarkerPenalty(title, best.Title, best.AlbumName)
-	for _, c := range candidates[1:] {
-		if p := matching.VersionMarkerPenalty(title, c.Title, c.AlbumName); p < bestPenalty {
-			best, bestPenalty = c, p
+	// so a candidate can't dodge it just by already being local. An exact
+	// artist match wins a tie.
+	var best models.Track
+	bestScore, found := 0, false
+	for _, c := range candidates {
+		if matching.ArtistOverlap(artist, c.ArtistName) < 1 {
+			continue
+		}
+		score := matching.VersionMarkerPenalty(title, c.Title, c.AlbumName) * 2
+		if !strings.EqualFold(norm.NFC.String(c.ArtistName), norm.NFC.String(artist)) {
+			score++
+		}
+		if !found || score < bestScore {
+			best, bestScore, found = c, score, true
 		}
 	}
-	return best, true, nil
+	return best, found, nil
 }
 
 // GetTrack returns one track.

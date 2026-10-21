@@ -52,7 +52,7 @@ func NewCoverService(catalog *persistence.CatalogRepo, coversDir string, extraHo
 		cacheDir:  filepath.Join(coversDir, "cache"),
 		// scdn.co/spotifycdn.com: Spotify playlist covers (internal/spotifyplaylists),
 		// fetched here server-side so clients never call Spotify themselves.
-		allowHosts: append([]string{"dzcdn.net", "scdn.co", "spotifycdn.com"}, extraHosts...),
+		allowHosts: append([]string{"dzcdn.net", "scdn.co", "spotifycdn.com", "cdn.immerle.com"}, extraHosts...),
 	}
 	// Re-validate every redirect hop against the host allowlist: the initial URL
 	// check is not enough, since an allowlisted host could redirect to a private

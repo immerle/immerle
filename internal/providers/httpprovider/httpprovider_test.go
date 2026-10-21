@@ -246,3 +246,23 @@ func TestHTTPProviderDownloadGivesUpAfterRetries(t *testing.T) {
 		t.Fatalf("expected exactly 2 attempts, got %d", *calls)
 	}
 }
+
+// A v1 remote that omits trackSearch/artists keeps them on; an explicit false
+// is honoured.
+func TestCapabilitiesDefaults(t *testing.T) {
+	for body, wantSearch := range map[string]bool{
+		`{"version":1,"name":"x"}`:                     true,
+		`{"version":1,"name":"x","trackSearch":false}`: false,
+	} {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte(body)) }))
+		p, err := New("x", srv.URL, "{}")
+		if err != nil {
+			t.Fatal(err)
+		}
+		caps, err := p.Capabilities(context.Background())
+		srv.Close()
+		if err != nil || caps.TrackSearch != wantSearch || !caps.Artists {
+			t.Fatalf("%s: got %+v err=%v", body, caps, err)
+		}
+	}
+}

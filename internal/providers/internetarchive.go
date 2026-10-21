@@ -48,6 +48,11 @@ func init() {
 // Name implements Provider.
 func (p *InternetArchiveProvider) Name() string { return "internet-archive" }
 
+// Capabilities implements CapabilityProvider: track search only.
+func (p *InternetArchiveProvider) Capabilities(context.Context) (Capabilities, error) {
+	return Capabilities{Version: ProtocolVersion, Name: p.Name(), TrackSearch: true}, nil
+}
+
 // MaxQuality implements Provider.
 func (p *InternetArchiveProvider) MaxQuality() string { return "original (varies: mp3/flac/ogg)" }
 

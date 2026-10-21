@@ -58,9 +58,12 @@ type ProviderConfig struct {
 	Enabled bool `json:"enabled"`
 	// SortOrder is the provider's priority/position (lower first); it also drives
 	// which provider search falls back to when no explicit default is configured.
-	SortOrder int       `json:"sortOrder"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	SortOrder int `json:"sortOrder"`
+	// DisabledCapabilities lists the capability keys (providers.CapabilityKeys)
+	// the admin switched off for this provider, out of those it declares.
+	DisabledCapabilities []string  `json:"disabledCapabilities"`
+	CreatedAt            time.Time `json:"createdAt"`
+	UpdatedAt            time.Time `json:"updatedAt"`
 }
 
 // Builtin reports whether this is a compile-time/config-file provider (which can
@@ -100,7 +103,6 @@ type RuntimeSettings struct {
 	HallOfFame     HallOfFameRuntime     `json:"hallOfFame"`
 	Concerts       ConcertsRuntime       `json:"concerts"`
 	LastFm         LastFmRuntime         `json:"lastFm"`
-	SpotifySearch  SpotifySearchRuntime  `json:"spotifySearch"`
 	Sonic          SonicRuntime          `json:"sonic"`
 	Discover       DiscoverRuntime       `json:"discover"`
 }
@@ -155,13 +157,6 @@ type SonicRuntime struct {
 // SmartPlaylistsRuntime toggles rule-based "smart" playlists (hot-reloadable).
 // When disabled, the smart-playlist endpoints 404 and clients hide them.
 type SmartPlaylistsRuntime struct {
-	Enabled bool `json:"enabled"`
-}
-
-// SpotifySearchRuntime toggles adding public Spotify playlists to the global
-// search results (hot-reloadable). Off by default: it calls Spotify on every
-// search.
-type SpotifySearchRuntime struct {
 	Enabled bool `json:"enabled"`
 }
 

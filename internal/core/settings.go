@@ -265,10 +265,6 @@ func (s *SettingsService) LogRetention() time.Duration {
 	return time.Duration(s.Get().Logs.RetentionDays) * 24 * time.Hour
 }
 
-// SpotifySearchEnabled reports whether global search also queries Spotify
-// playlists (read live).
-func (s *SettingsService) SpotifySearchEnabled() bool { return s.Get().SpotifySearch.Enabled }
-
 // SmartPlaylistsEnabled reports whether rule-based playlists are on (read live).
 func (s *SettingsService) SmartPlaylistsEnabled() bool { return s.Get().SmartPlaylists.Enabled }
 

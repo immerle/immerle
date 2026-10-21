@@ -47,6 +47,13 @@ func browseService(t *testing.T) *httptest.Server {
 		_, _ = w.Write([]byte(`{"playlists":[{"providerPlaylistId":"p1","name":"Chill","coverImageUrl":"http://img/p",
 			"tracks":[{"providerTrackId":"t1","title":"Song","artist":"Artist","suffix":"mp3"},{"providerTrackId":"","title":"skip me"}]}]}`))
 	})
+	mux.HandleFunc("/playlists/search", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Query().Get("q") != "chill" {
+			_, _ = w.Write([]byte(`{"playlists":[]}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{"playlists":[{"providerPlaylistId":"p1","name":"Chill","tracks":[]},{"providerPlaylistId":"","name":"skip me"}]}`))
+	})
 	// Note: /artist/tracks intentionally NOT implemented → 404 → graceful empty.
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
@@ -109,6 +116,17 @@ func TestHTTPProviderBrowse(t *testing.T) {
 	}
 	if len(pl.Tracks) != 1 || pl.Tracks[0].ProviderTrackID != "t1" { // the empty-id row is dropped
 		t.Fatalf("unexpected playlist tracks: %+v", pl.Tracks)
+	}
+}
+
+func TestHTTPProviderSearchPlaylists(t *testing.T) {
+	p, err := New("deezer", browseService(t).URL, "{}")
+	if err != nil {
+		t.Fatal(err)
+	}
+	found, err := p.SearchPlaylists(context.Background(), "chill", 10)
+	if err != nil || len(found) != 1 || found[0].ProviderPlaylistID != "p1" { // the empty-id row is dropped
+		t.Fatalf("SearchPlaylists: %+v err=%v", found, err)
 	}
 }
 

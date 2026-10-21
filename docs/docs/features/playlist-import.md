@@ -45,9 +45,11 @@ downloaded and appended to the playlist just like a normal match.
 
 ## Spotify playlists in search
 
-If you'd rather browse a Spotify playlist than import it, an admin can turn on
-**Search Spotify playlists** in *Settings → Features* (off by default). Global
-search then also lists public Spotify playlists matching your query.
+If you'd rather browse a Spotify playlist than import it, an admin can enable
+the built-in **spotify-playlist** provider in the
+[provider settings](./on-demand-providers.md#built-in-providers) (disabled by
+default). Global search then also lists public Spotify playlists matching your
+query. The provider only brings playlists: it never serves tracks itself.
 
 Nothing is imported or downloaded up front:
 

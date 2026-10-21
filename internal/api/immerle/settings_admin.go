@@ -90,7 +90,6 @@ func (h *Handler) handleSettingsUpdate(w http.ResponseWriter, r *http.Request) {
 	next.Scan = merged.Scan
 	next.Cleanup = merged.Cleanup
 	next.Logs = merged.Logs
-	next.SpotifySearch = merged.SpotifySearch
 	next.Sonic = merged.Sonic
 	// Discover: only the toggles; the instance id and key come from registration.
 	next.Discover.Enabled = merged.Discover.Enabled

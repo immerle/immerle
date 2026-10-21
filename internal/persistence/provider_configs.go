@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/immerle/immerle/internal/db"
@@ -13,14 +14,18 @@ import (
 // ProviderConfigRepo persists admin-managed, runtime-configurable providers.
 type ProviderConfigRepo struct{ *base }
 
-const providerConfigColumns = `name, kind, endpoint, config, enabled, sort_order, created_at, updated_at`
+const providerConfigColumns = `name, kind, endpoint, config, enabled, sort_order, disabled_capabilities, created_at, updated_at`
 
 func scanProviderConfig(s rowScanner) (models.ProviderConfig, error) {
 	var p models.ProviderConfig
 	var enabled int
 	var created, updated int64
-	if err := s.Scan(&p.Name, &p.Kind, &p.Endpoint, &p.Config, &enabled, &p.SortOrder, &created, &updated); err != nil {
+	var disabled string
+	if err := s.Scan(&p.Name, &p.Kind, &p.Endpoint, &p.Config, &enabled, &p.SortOrder, &disabled, &created, &updated); err != nil {
 		return p, err
+	}
+	if disabled != "" {
+		p.DisabledCapabilities = strings.Split(disabled, ",")
 	}
 	p.Enabled = enabled != 0
 	p.CreatedAt = db.FromMillis(created)
@@ -91,6 +96,20 @@ func (r *ProviderConfigRepo) SetEnabled(ctx context.Context, name string, enable
 func (r *ProviderConfigRepo) SetOrder(ctx context.Context, name string, order int) error {
 	res, err := r.bexec(ctx, r.mel.NewUpdate("provider_configs").
 		Set("sort_order", order).Set("updated_at", db.Millis(time.Now())).Where("name", "=", name))
+	if err != nil {
+		return err
+	}
+	if n, err := res.RowsAffected(); err == nil && n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// SetDisabledCapabilities replaces the capability keys switched off for a
+// provider. Upsert leaves them untouched, so they survive config edits.
+func (r *ProviderConfigRepo) SetDisabledCapabilities(ctx context.Context, name string, keys []string) error {
+	res, err := r.bexec(ctx, r.mel.NewUpdate("provider_configs").
+		Set("disabled_capabilities", strings.Join(keys, ",")).Set("updated_at", db.Millis(time.Now())).Where("name", "=", name))
 	if err != nil {
 		return err
 	}
