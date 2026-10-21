@@ -132,7 +132,7 @@ func (h *Handler) setRadioLike(w http.ResponseWriter, r *http.Request, liked boo
 	}
 	id := radioPathID(r)
 	if _, err := h.Radio.Get(r.Context(), id); err != nil {
-		writeError(w, http.StatusNotFound, "not_found", "station not found")
+		writeLookupError(w, err, "station not found")
 		return
 	}
 	if err := h.Radio.SetLiked(r.Context(), userFrom(r.Context()).ID, id, liked); err != nil {
@@ -214,7 +214,7 @@ func (h *Handler) handleRadioUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 	st, err := h.Radio.Get(r.Context(), radioPathID(r))
 	if err != nil {
-		writeError(w, http.StatusNotFound, "not_found", "station not found")
+		writeLookupError(w, err, "station not found")
 		return
 	}
 	if st.Builtin {
@@ -269,7 +269,7 @@ func (h *Handler) handleRadioDelete(w http.ResponseWriter, r *http.Request) {
 	id := radioPathID(r)
 	st, err := h.Radio.Get(r.Context(), id)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "not_found", "station not found")
+		writeLookupError(w, err, "station not found")
 		return
 	}
 	if st.Builtin {

@@ -34,6 +34,16 @@ type errorResponse struct {
 	Error apiError `json:"error"`
 }
 
+// writeLookupError answers a failed lookup: 404 with msg when the item does not
+// exist, 500 for anything else, so a database failure never reads as "not found".
+func writeLookupError(w http.ResponseWriter, err error, msg string) {
+	if isNotFound(err) {
+		writeError(w, http.StatusNotFound, "not_found", msg)
+		return
+	}
+	writeInternal(w, err)
+}
+
 // featureStatusView is the {"enabled": bool} body of the admin feature toggles.
 type featureStatusView struct {
 	Enabled bool `json:"enabled"`

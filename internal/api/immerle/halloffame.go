@@ -141,6 +141,10 @@ func (h *Handler) handleUserHallOfFame(w http.ResponseWriter, r *http.Request) {
 	}
 	target, err := h.resolveProfileUser(r)
 	if err != nil {
+		if !isNotFound(err) {
+			writeInternal(w, err)
+			return
+		}
 		writeErrorParams(w, http.StatusNotFound, "not_found", "user not found", map[string]any{"username": pathParam(r, "username")})
 		return
 	}

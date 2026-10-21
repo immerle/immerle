@@ -73,7 +73,8 @@ func (s *LibraryService) TopSongs(ctx context.Context, userID, artistName string
 // the library), then falls back to random tracks sharing its genre.
 func (s *LibraryService) SimilarSongs(ctx context.Context, userID, seedID string, count int) []TrackEntry {
 	if s.sonic.RadioEnabled() {
-		if tracks, ok := s.SonicRadio(ctx, userID, []string{seedID}, nil, count); ok {
+		// Best effort: on a failure too, fall back to discover / same genre.
+		if tracks, ok, err := s.SonicRadio(ctx, userID, []string{seedID}, nil, count); err == nil && ok {
 			return tracks
 		}
 	}
@@ -157,19 +158,20 @@ func (s *LibraryService) Starred(ctx context.Context, userID string) StarredResu
 
 // SonicRadio returns up to count tracks that sound like the seeds (track,
 // album or artist ids, mixed freely), excluding the exclude track ids. ok is
-// false when none of the seeds is analyzed. Callers check the feature toggles.
-func (s *LibraryService) SonicRadio(ctx context.Context, userID string, seeds, exclude []string, count int) ([]TrackEntry, bool) {
+// false when none of the seeds is analyzed; err reports a failure (kept apart so
+// it never reads as "nothing analyzed"). Callers check the feature toggles.
+func (s *LibraryService) SonicRadio(ctx context.Context, userID string, seeds, exclude []string, count int) ([]TrackEntry, bool, error) {
 	if s.sonic == nil {
-		return nil, false
+		return nil, false, nil
 	}
 	trackSeeds := s.resolveSeedTracks(ctx, seeds)
 	ids, ok, err := s.sonic.Similar(ctx, trackSeeds, exclude, count)
 	if err != nil || !ok {
-		return nil, false
+		return nil, false, err
 	}
 	byID, err := s.catalog.TracksByIDs(ctx, ids)
 	if err != nil {
-		return nil, false
+		return nil, false, err
 	}
 	tracks := make([]models.Track, 0, len(ids))
 	for _, id := range ids {
@@ -177,7 +179,7 @@ func (s *LibraryService) SonicRadio(ctx context.Context, userID string, seeds, e
 			tracks = append(tracks, t)
 		}
 	}
-	return s.annotateTracks(ctx, userID, tracks), true
+	return s.annotateTracks(ctx, userID, tracks), true, nil
 }
 
 // resolveSeedTracks expands seed ids into local track ids: a track stays as is

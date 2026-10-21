@@ -127,7 +127,7 @@ func (h *Handler) handleSmartPlaylistUpdate(w http.ResponseWriter, r *http.Reque
 	owner := userFrom(r.Context()).ID
 	existing, err := h.SmartPlaylists.Get(r.Context(), pathParam(r, "id"), owner)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "not_found", "smart playlist not found")
+		writeLookupError(w, err, "smart playlist not found")
 		return
 	}
 	var req smartRequest
@@ -183,7 +183,7 @@ func (h *Handler) handleSmartPlaylistTracks(w http.ResponseWriter, r *http.Reque
 	user := userFrom(r.Context())
 	sp, err := h.SmartPlaylists.Get(r.Context(), pathParam(r, "id"), user.ID)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "not_found", "smart playlist not found")
+		writeLookupError(w, err, "smart playlist not found")
 		return
 	}
 	h.writeSmartTracks(w, r, sp.Rules, user.ID)

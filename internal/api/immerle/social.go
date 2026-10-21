@@ -237,6 +237,10 @@ func (h *Handler) handleProfile(w http.ResponseWriter, r *http.Request) {
 	caller := userFrom(r.Context())
 	target, err := h.resolveProfileUser(r)
 	if err != nil {
+		if !isNotFound(err) {
+			writeInternal(w, err)
+			return
+		}
 		writeErrorParams(w, http.StatusNotFound, "not_found", "user not found", map[string]any{"username": pathParam(r, "username")})
 		return
 	}
@@ -342,7 +346,7 @@ func (h *Handler) handleAddCollaborator(w http.ResponseWriter, r *http.Request) 
 
 	p, err := h.Playlists.Get(r.Context(), playlistID)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "not_found", "playlist not found")
+		writeLookupError(w, err, "playlist not found")
 		return
 	}
 	if p.Federated || (p.OwnerID != user.ID && !user.IsAdmin) {
@@ -351,6 +355,10 @@ func (h *Handler) handleAddCollaborator(w http.ResponseWriter, r *http.Request) 
 	}
 	collaborator, err := h.Users.GetByUsername(r.Context(), req.Username)
 	if err != nil {
+		if !isNotFound(err) {
+			writeInternal(w, err)
+			return
+		}
 		writeErrorParams(w, http.StatusNotFound, "not_found", "user not found", map[string]any{"username": req.Username})
 		return
 	}

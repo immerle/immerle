@@ -89,9 +89,9 @@ import { i18n } from '../../i18n';
  * Build an {@link ImmerleApiError} from an openapi-fetch error body, preferring
  * the server's `code`/`params` (for i18n) and falling back to a local code.
  */
-function apiErr(error: ErrorResponse | undefined, fallbackCode: string): ImmerleApiError {
+function apiErr(error: ErrorResponse | undefined, fallbackCode: string, response?: Response): ImmerleApiError {
   const e = error?.error;
-  return new ImmerleApiError(0, e?.message ?? fallbackCode, e?.code ?? fallbackCode, e?.params);
+  return new ImmerleApiError(response?.status ?? 0, e?.message ?? fallbackCode, e?.code ?? fallbackCode, e?.params);
 }
 
 type RadioStationBody = { name: string; streamUrl: string; homepageUrl?: string; coverUrl?: string };
@@ -305,17 +305,17 @@ export class ImmerleClient {
    * for the Subsonic browse methods.
    */
   async getArtist(id: string, signal?: AbortSignal): Promise<ArtistWithAlbums> {
-    const { data, error } = await this.api.GET('/artists/{id}', {
+    const { data, error, response } = await this.api.GET('/artists/{id}', {
       params: { path: { id } },
       signal,
     });
-    if (error) throw apiErr(error, 'browse.artist');
+    if (error) throw apiErr(error, 'browse.artist', response);
     return toArtistWithAlbums(data);
   }
 
   async getAlbum(id: string, signal?: AbortSignal): Promise<AlbumWithSongs> {
-    const { data, error } = await this.api.GET('/albums/{id}', { params: { path: { id } }, signal });
-    if (error) throw apiErr(error, 'browse.album');
+    const { data, error, response } = await this.api.GET('/albums/{id}', { params: { path: { id } }, signal });
+    if (error) throw apiErr(error, 'browse.album', response);
     return toAlbumWithSongs(data);
   }
 
@@ -324,17 +324,17 @@ export class ImmerleClient {
     opts?: { size?: number; offset?: number; genre?: string; fromYear?: number; toYear?: number },
     signal?: AbortSignal,
   ): Promise<Album[]> {
-    const { data, error } = await this.api.GET('/albums', {
+    const { data, error, response } = await this.api.GET('/albums', {
       params: { query: { type, size: opts?.size, offset: opts?.offset, genre: opts?.genre, fromYear: opts?.fromYear, toYear: opts?.toYear } },
       signal,
     });
-    if (error) throw apiErr(error, 'browse.albumList');
+    if (error) throw apiErr(error, 'browse.albumList', response);
     return data.albums.map(toAlbum);
   }
 
   async getSongsByGenre(genre: string, count = 200, signal?: AbortSignal): Promise<Song[]> {
-    const { data, error } = await this.api.GET('/songs', { params: { query: { genre, count } }, signal });
-    if (error) throw apiErr(error, 'browse.songsByGenre');
+    const { data, error, response } = await this.api.GET('/songs', { params: { query: { genre, count } }, signal });
+    if (error) throw apiErr(error, 'browse.songsByGenre', response);
     return data.songs.map(toSong);
   }
 
@@ -342,30 +342,30 @@ export class ImmerleClient {
   async getSongSonic(id: string, signal?: AbortSignal): Promise<SongSonicDTO | null> {
     const { data, error, response } = await this.api.GET('/songs/{id}/sonic', { params: { path: { id } }, signal });
     if (response.status === 404) return null;
-    if (error) throw apiErr(error, 'browse.songSonic');
+    if (error) throw apiErr(error, 'browse.songSonic', response);
     return data;
   }
 
   /** Tracks that sound like the seeds (track, album or artist ids). */
   async getSonicRadio(seeds: string[], opts: { exclude?: string[]; count?: number } = {}, signal?: AbortSignal): Promise<Song[]> {
-    const { data, error } = await this.api.GET('/songs/radio', {
+    const { data, error, response } = await this.api.GET('/songs/radio', {
       params: { query: { seed: seeds, exclude: opts.exclude?.join(',') || undefined, count: opts.count } },
       signal,
     });
-    if (error) throw apiErr(error, 'browse.sonicRadio');
+    if (error) throw apiErr(error, 'browse.sonicRadio', response);
     return data.songs.map(toSong);
   }
 
   /** Track ids reordered for smooth transitions (Auto-DJ). keepFirst pins ids[0]. */
   async autoDjOrder(ids: string[], keepFirst: boolean): Promise<string[]> {
-    const { data, error } = await this.api.POST('/songs/autodj', { body: { ids, keepFirst } });
-    if (error) throw apiErr(error, 'browse.autoDj');
+    const { data, error, response } = await this.api.POST('/songs/autodj', { body: { ids, keepFirst } });
+    if (error) throw apiErr(error, 'browse.autoDj', response);
     return data.ids ?? ids;
   }
 
   async getSong(id: string, signal?: AbortSignal): Promise<Song> {
-    const { data, error } = await this.api.GET('/songs/{id}', { params: { path: { id } }, signal });
-    if (error) throw apiErr(error, 'browse.song');
+    const { data, error, response } = await this.api.GET('/songs/{id}', { params: { path: { id } }, signal });
+    if (error) throw apiErr(error, 'browse.song', response);
     return toSong(data);
   }
 
@@ -375,8 +375,8 @@ export class ImmerleClient {
    * still-progressive-streaming track to the seekable local one once ready.
    */
   async getSongLocalStatus(id: string, signal?: AbortSignal): Promise<{ local: boolean; song?: Song }> {
-    const { data, error } = await this.api.GET('/songs/{id}/local', { params: { path: { id } }, signal });
-    if (error) throw apiErr(error, 'browse.songLocalStatus');
+    const { data, error, response } = await this.api.GET('/songs/{id}/local', { params: { path: { id } }, signal });
+    if (error) throw apiErr(error, 'browse.songLocalStatus', response);
     return { local: !!data.local, song: data.song ? toSong(data.song) : undefined };
   }
 
@@ -398,8 +398,8 @@ export class ImmerleClient {
 
   /** The caller's starred catalog (artists/albums/songs). */
   async getStarred(signal?: AbortSignal): Promise<Starred> {
-    const { data, error } = await this.api.GET('/me/favorites', { signal });
-    if (error) throw apiErr(error, 'browse.favorites');
+    const { data, error, response } = await this.api.GET('/me/favorites', { signal });
+    if (error) throw apiErr(error, 'browse.favorites', response);
     return toStarred(data);
   }
 
@@ -413,8 +413,8 @@ export class ImmerleClient {
     type?: 'artist' | 'album' | 'song' | 'playlist' | 'radio',
     signal?: AbortSignal,
   ): Promise<SearchHit[]> {
-    const { data, error } = await this.api.GET('/search', { params: { query: { q: query, type } }, signal });
-    if (error) throw apiErr(error, 'search');
+    const { data, error, response } = await this.api.GET('/search', { params: { query: { q: query, type } }, signal });
+    if (error) throw apiErr(error, 'search', response);
     return toSearchResult(data);
   }
 
@@ -423,8 +423,8 @@ export class ImmerleClient {
    * read-only playlist (nothing is imported) and returns it; navigate to its id.
    */
   async openSpotifyPlaylist(spotifyId: string): Promise<Playlist> {
-    const { data, error } = await this.api.POST('/spotify-playlists/{spotifyId}/open', { params: { path: { spotifyId } } });
-    if (error) throw apiErr(error, 'spotify.openPlaylist');
+    const { data, error, response } = await this.api.POST('/spotify-playlists/{spotifyId}/open', { params: { path: { spotifyId } } });
+    if (error) throw apiErr(error, 'spotify.openPlaylist', response);
     return toPlaylist(data);
   }
 
@@ -434,8 +434,8 @@ export class ImmerleClient {
    * collaborative playlist ops live in their own native methods below.)
    */
   async getPlaylists(signal?: AbortSignal): Promise<Playlist[]> {
-    const { data, error } = await this.api.GET('/playlists', { signal });
-    if (error) throw apiErr(error, 'playlist.list');
+    const { data, error, response } = await this.api.GET('/playlists', { signal });
+    if (error) throw apiErr(error, 'playlist.list', response);
     return data.playlists.map(toPlaylist);
   }
 
@@ -445,27 +445,27 @@ export class ImmerleClient {
    * looked up directly, independent of subscriptions.
    */
   async getCustomPlaylists(signal?: AbortSignal): Promise<Playlist[]> {
-    const { data, error } = await this.api.GET('/me/custom-playlists', { signal });
-    if (error) throw apiErr(error, 'playlist.custom');
+    const { data, error, response } = await this.api.GET('/me/custom-playlists', { signal });
+    if (error) throw apiErr(error, 'playlist.custom', response);
     return data.playlists.map(toPlaylist);
   }
 
   /** Playlists made by people that immerle discover matches to the caller's listening. */
   async getDiscoverPlaylists(signal?: AbortSignal): Promise<Playlist[]> {
-    const { data, error } = await this.api.GET('/me/discover-playlists', { signal });
-    if (error) throw apiErr(error, 'playlist.discover');
+    const { data, error, response } = await this.api.GET('/me/discover-playlists', { signal });
+    if (error) throw apiErr(error, 'playlist.discover', response);
     return data.playlists.map(toPlaylist);
   }
 
   async getPlaylist(id: string, signal?: AbortSignal): Promise<PlaylistWithSongs> {
-    const { data, error } = await this.api.GET('/playlists/{id}', { params: { path: { id } }, signal });
-    if (error) throw apiErr(error, 'playlist.get');
+    const { data, error, response } = await this.api.GET('/playlists/{id}', { params: { path: { id } }, signal });
+    if (error) throw apiErr(error, 'playlist.get', response);
     return toPlaylistWithSongs(data);
   }
 
   async createPlaylist(name: string, songIds: string[] = []): Promise<void> {
-    const { error } = await this.api.POST('/playlists', { body: { name, ids: songIds } });
-    if (error) throw apiErr(error, 'playlist.create');
+    const { error, response } = await this.api.POST('/playlists', { body: { name, ids: songIds } });
+    if (error) throw apiErr(error, 'playlist.create', response);
   }
 
   async updatePlaylist(
@@ -478,7 +478,7 @@ export class ImmerleClient {
       songIndexToRemove?: number[];
     },
   ): Promise<void> {
-    const { error } = await this.api.PATCH('/playlists/{id}', {
+    const { error, response } = await this.api.PATCH('/playlists/{id}', {
       params: { path: { id } },
       body: {
         name: opts.name,
@@ -488,12 +488,12 @@ export class ImmerleClient {
         removeIndexes: opts.songIndexToRemove,
       },
     });
-    if (error) throw apiErr(error, 'playlist.update');
+    if (error) throw apiErr(error, 'playlist.update', response);
   }
 
   async deletePlaylist(id: string): Promise<void> {
-    const { error } = await this.api.DELETE('/playlists/{id}', { params: { path: { id } } });
-    if (error) throw apiErr(error, 'playlist.delete');
+    const { error, response } = await this.api.DELETE('/playlists/{id}', { params: { path: { id } } });
+    if (error) throw apiErr(error, 'playlist.delete', response);
   }
 
   /**
@@ -503,10 +503,10 @@ export class ImmerleClient {
    * other. Throws (404) if it can't be resolved.
    */
   async resolvePlaylistTrack(playlistId: string, position: number): Promise<Song> {
-    const { data, error } = await this.api.POST('/playlists/{id}/tracks/{position}/resolve', {
+    const { data, error, response } = await this.api.POST('/playlists/{id}/tracks/{position}/resolve', {
       params: { path: { id: playlistId, position } },
     });
-    if (error) throw apiErr(error, 'playlist.resolveTrack');
+    if (error) throw apiErr(error, 'playlist.resolveTrack', response);
     return toSong(data);
   }
 
@@ -539,12 +539,12 @@ export class ImmerleClient {
     } else {
       return;
     }
-    if (res.error) throw apiErr(res.error, 'star');
+    if (res.error) throw apiErr(res.error, 'star', res.response);
   }
 
   async scrobble(id: string, submission: boolean, time?: number): Promise<void> {
-    const { error } = await this.api.POST('/scrobbles', { body: { ids: [id], submission, playedAt: time } });
-    if (error) throw apiErr(error, 'scrobble');
+    const { error, response } = await this.api.POST('/scrobbles', { body: { ids: [id], submission, playedAt: time } });
+    if (error) throw apiErr(error, 'scrobble', response);
   }
 
   /**
@@ -569,7 +569,7 @@ export class ImmerleClient {
     shuffle?: boolean,
     repeat?: string,
   ): Promise<void> {
-    const { error } = await this.api.PUT('/play-queue', {
+    const { error, response } = await this.api.PUT('/play-queue', {
       body: {
         ids: songs.map((s) => s.id),
         entries: songs.map((s) => ({
@@ -589,14 +589,14 @@ export class ImmerleClient {
         repeat: repeat ?? 'off',
       },
     });
-    if (error) throw apiErr(error, 'playqueue.save');
+    if (error) throw apiErr(error, 'playqueue.save', response);
   }
 
   /** The caller's saved cross-device play queue — restore it on launch, or to see what's playing elsewhere. */
   async getPlayQueue(signal?: AbortSignal): Promise<PlayQueueSnapshot> {
     const deviceId = this.session?.deviceId;
-    const { data, error } = await this.api.GET('/play-queue', { signal, params: { query: deviceId ? { deviceId } : {} } });
-    if (error) throw apiErr(error, 'playqueue.get');
+    const { data, error, response } = await this.api.GET('/play-queue', { signal, params: { query: deviceId ? { deviceId } : {} } });
+    if (error) throw apiErr(error, 'playqueue.get', response);
     return toPlayQueueSnapshot(data);
   }
 
@@ -612,15 +612,15 @@ export class ImmerleClient {
 
   /** Recently-active app installs on this account — candidates for "cast to device". */
   async listPlaybackTargets(signal?: AbortSignal): Promise<PlaybackTarget[]> {
-    const { data, error } = await this.api.GET('/play-queue/targets', { signal });
-    if (error) throw apiErr(error, 'playqueue.targets');
+    const { data, error, response } = await this.api.GET('/play-queue/targets', { signal });
+    if (error) throw apiErr(error, 'playqueue.targets', response);
     return (data ?? []).map((d) => ({ id: d.id ?? '', name: d.name ?? '', lastUsedAt: d.lastUsedAt }));
   }
 
   /** Make `deviceId` the sole active player for this account's queue; an empty id clears the restriction. */
   async setPlaybackTarget(deviceId: string): Promise<void> {
-    const { error } = await this.api.PUT('/play-queue/target', { body: { deviceId } });
-    if (error) throw apiErr(error, 'playqueue.setTarget');
+    const { error, response } = await this.api.PUT('/play-queue/target', { body: { deviceId } });
+    if (error) throw apiErr(error, 'playqueue.setTarget', response);
   }
 
   /**
@@ -629,13 +629,13 @@ export class ImmerleClient {
    * PlayQueueCommand and ui/src/audio/store.ts's sendRemoteCommand.
    */
   async sendPlayQueueCommand(cmd: PlayQueueCommand): Promise<void> {
-    const { error } = await this.api.POST('/play-queue/commands', { body: cmd });
-    if (error) throw apiErr(error, 'playqueue.command');
+    const { error, response } = await this.api.POST('/play-queue/commands', { body: cmd });
+    if (error) throw apiErr(error, 'playqueue.command', response);
   }
 
   async getNowPlaying(signal?: AbortSignal): Promise<NowPlayingEntry[]> {
-    const { data, error } = await this.api.GET('/now-playing', { signal });
-    if (error) throw apiErr(error, 'nowplaying');
+    const { data, error, response } = await this.api.GET('/now-playing', { signal });
+    if (error) throw apiErr(error, 'nowplaying', response);
     return data.nowPlaying.map(toNowPlaying);
   }
 
@@ -646,8 +646,8 @@ export class ImmerleClient {
    * native model only distinguishes admins.
    */
   async getUsers(signal?: AbortSignal): Promise<SubsonicUser[]> {
-    const { data, error } = await this.api.GET('/admin/users', { signal });
-    if (error) throw apiErr(error, 'admin.users');
+    const { data, error, response } = await this.api.GET('/admin/users', { signal });
+    if (error) throw apiErr(error, 'admin.users', response);
     return (data.users ?? []).map(toSubsonicUser);
   }
 
@@ -662,7 +662,7 @@ export class ImmerleClient {
     downloadRole?: boolean;
     playlistRole?: boolean;
   }): Promise<void> {
-    const { error } = await this.api.POST('/admin/users', {
+    const { error, response } = await this.api.POST('/admin/users', {
       body: {
         username: params.username,
         password: params.password,
@@ -671,7 +671,7 @@ export class ImmerleClient {
         admin: params.adminRole,
       },
     });
-    if (error) throw apiErr(error, 'admin.createUser');
+    if (error) throw apiErr(error, 'admin.createUser', response);
   }
 
   async updateUser(params: {
@@ -685,7 +685,7 @@ export class ImmerleClient {
     downloadRole?: boolean;
     playlistRole?: boolean;
   }): Promise<void> {
-    const { error } = await this.api.PATCH('/admin/users/{username}', {
+    const { error, response } = await this.api.PATCH('/admin/users/{username}', {
       params: { path: { username: params.username } },
       body: {
         displayName: params.displayName,
@@ -694,20 +694,20 @@ export class ImmerleClient {
         scrobblingEnabled: params.scrobblingEnabled,
       },
     });
-    if (error) throw apiErr(error, 'admin.updateUser');
+    if (error) throw apiErr(error, 'admin.updateUser', response);
   }
 
   async deleteUser(username: string): Promise<void> {
-    const { error } = await this.api.DELETE('/admin/users/{username}', { params: { path: { username } } });
-    if (error) throw apiErr(error, 'admin.deleteUser');
+    const { error, response } = await this.api.DELETE('/admin/users/{username}', { params: { path: { username } } });
+    if (error) throw apiErr(error, 'admin.deleteUser', response);
   }
 
   async changePassword(username: string, password: string): Promise<void> {
-    const { error } = await this.api.PATCH('/admin/users/{username}', {
+    const { error, response } = await this.api.PATCH('/admin/users/{username}', {
       params: { path: { username } },
       body: { password },
     });
-    if (error) throw apiErr(error, 'admin.changePassword');
+    if (error) throw apiErr(error, 'admin.changePassword', response);
   }
 
   /**
@@ -746,8 +746,8 @@ export class ImmerleClient {
     opts?: { maxBitRate?: number; format?: string },
     signal?: AbortSignal,
   ): Promise<string> {
-    const { data, error } = await this.api.GET('/songs/{id}/stream-url', { params: { path: { id } }, signal });
-    if (error) throw apiErr(error, 'stream.url');
+    const { data, error, response } = await this.api.GET('/songs/{id}/stream-url', { params: { path: { id } }, signal });
+    if (error) throw apiErr(error, 'stream.url', response);
     let url = `${this.serverUrl}${data.stream}`; // signed path: /api/v1/songs/{id}/stream?exp=&sig=
     if (opts?.maxBitRate) url += `&maxBitRate=${opts.maxBitRate}`;
     if (opts?.format) url += `&format=${encodeURIComponent(opts.format)}`;
@@ -761,8 +761,8 @@ export class ImmerleClient {
    * directly with expo-file-system. Used by the offline-downloads feature.
    */
   async downloadUrl(id: string, signal?: AbortSignal): Promise<string> {
-    const { data, error } = await this.api.GET('/songs/{id}/stream-url', { params: { path: { id } }, signal });
-    if (error || !data?.download) throw apiErr(error, 'download.url');
+    const { data, error, response } = await this.api.GET('/songs/{id}/stream-url', { params: { path: { id } }, signal });
+    if (error || !data?.download) throw apiErr(error, 'download.url', response);
     return `${this.serverUrl}${data.download}`;
   }
 
@@ -771,8 +771,8 @@ export class ImmerleClient {
    * Falls back to deriving counts from Subsonic on a plain server (no size).
    */
   async getLibraryStats(signal?: AbortSignal): Promise<LibraryStats> {
-    const { data, error } = await this.api.GET('/library/stats', { signal });
-    if (error) throw apiErr(error, 'library.stats');
+    const { data, error, response } = await this.api.GET('/library/stats', { signal });
+    if (error) throw apiErr(error, 'library.stats', response);
     return {
       artistCount: data.artists,
       albumCount: data.albums,
@@ -798,21 +798,21 @@ export class ImmerleClient {
     opts: { query?: string; limit?: number; offset?: number } = {},
     signal?: AbortSignal,
   ): Promise<{ tracks: Song[]; total: number; limit: number; offset: number }> {
-    const { data, error } = await this.api.GET('/admin/tracks', {
+    const { data, error, response } = await this.api.GET('/admin/tracks', {
       params: { query: { query: opts.query, limit: opts.limit, offset: opts.offset } },
       signal,
     });
-    if (error) throw apiErr(error, 'tracks_failed');
+    if (error) throw apiErr(error, 'tracks_failed', response);
     return { tracks: data.tracks.map(toSong), total: data.total, limit: data.limit, offset: data.offset };
   }
 
   /** Edit any track's simple metadata (title/genre/year/track/disc). Admin-only. */
   async adminUpdateTrack(id: string, edit: TrackEdit): Promise<Song> {
-    const { data, error } = await this.api.PATCH('/admin/tracks/{id}', {
+    const { data, error, response } = await this.api.PATCH('/admin/tracks/{id}', {
       params: { path: { id } },
       body: edit,
     });
-    if (error || !data) throw apiErr(error, 'track_update_failed');
+    if (error || !data) throw apiErr(error, 'track_update_failed', response);
     return data as Song;
   }
 
@@ -836,25 +836,25 @@ export class ImmerleClient {
 
   /** Admin: groups of tracks that sound identical (sonic duplicates). */
   async adminSonicDuplicates(signal?: AbortSignal): Promise<Song[][]> {
-    const { data, error } = await this.api.GET('/admin/sonic/duplicates', { signal });
-    if (error) throw apiErr(error, 'sonic_duplicates_failed');
+    const { data, error, response } = await this.api.GET('/admin/sonic/duplicates', { signal });
+    if (error) throw apiErr(error, 'sonic_duplicates_failed', response);
     return (data.groups ?? []).map((g) => g.map(toSong));
   }
 
   /** Delete any track: its file, DB row and references. Admin-only. */
   async adminDeleteTrack(id: string): Promise<void> {
-    const { error } = await this.api.DELETE('/admin/tracks/{id}', {
+    const { error, response } = await this.api.DELETE('/admin/tracks/{id}', {
       params: { path: { id } },
     });
-    if (error) throw apiErr(error, 'track_delete_failed');
+    if (error) throw apiErr(error, 'track_delete_failed', response);
   }
 
   // --- Admin: dynamic providers (typed via OpenAPI) -----------------------
 
   /** List configured providers (with live `enabled`/`active` status). Admin-only. */
   async listProviders(signal?: AbortSignal): Promise<Provider[]> {
-    const { data, error } = await this.api.GET('/admin/providers', { signal });
-    if (error || !data) throw apiErr(error, 'providers_failed');
+    const { data, error, response } = await this.api.GET('/admin/providers', { signal });
+    if (error || !data) throw apiErr(error, 'providers_failed', response);
     return data.map(toProvider);
   }
 
@@ -869,7 +869,7 @@ export class ImmerleClient {
     enabled?: boolean;
     kind?: string;
   }): Promise<Provider[]> {
-    const { error } = await this.api.POST('/admin/providers', {
+    const { error, response } = await this.api.POST('/admin/providers', {
       body: {
         name: p.name,
         endpoint: p.endpoint,
@@ -878,7 +878,7 @@ export class ImmerleClient {
         kind: p.kind,
       },
     });
-    if (error) throw apiErr(error, 'provider_upsert_failed');
+    if (error) throw apiErr(error, 'provider_upsert_failed', response);
     return this.listProviders();
   }
 
@@ -886,37 +886,37 @@ export class ImmerleClient {
    * remote's /capabilities to derive the name and seed the config skeleton; the
    * provider is created disabled. Returns the refreshed list. */
   async createProvider(endpoint: string): Promise<Provider[]> {
-    const { error } = await this.api.POST('/admin/providers', { body: { endpoint } });
-    if (error) throw apiErr(error, 'provider_create_failed');
+    const { error, response } = await this.api.POST('/admin/providers', { body: { endpoint } });
+    if (error) throw apiErr(error, 'provider_create_failed', response);
     return this.listProviders();
   }
 
   /** Toggle a provider on/off; applied to the live registry immediately. */
   async setProviderEnabled(name: string, enabled: boolean): Promise<Provider> {
-    const { data, error } = await this.api.PUT('/admin/providers/{name}/enabled', {
+    const { data, error, response } = await this.api.PUT('/admin/providers/{name}/enabled', {
       params: { path: { name } },
       body: { enabled },
     });
-    if (error || !data) throw apiErr(error, 'provider_enable_failed');
+    if (error || !data) throw apiErr(error, 'provider_enable_failed', response);
     return toProvider(data);
   }
 
   /** Switch one capability of a provider on/off; applied immediately. */
   async setProviderCapability(name: string, capability: string, enabled: boolean): Promise<Provider> {
-    const { data, error } = await this.api.PUT('/admin/providers/{name}/capabilities/{capability}', {
+    const { data, error, response } = await this.api.PUT('/admin/providers/{name}/capabilities/{capability}', {
       params: { path: { name, capability } },
       body: { enabled },
     });
-    if (error || !data) throw apiErr(error, 'provider_capability_failed');
+    if (error || !data) throw apiErr(error, 'provider_capability_failed', response);
     return toProvider(data);
   }
 
   /** Delete a provider config and unregister it. Built-ins are not deletable. */
   async deleteProvider(name: string): Promise<void> {
-    const { error } = await this.api.DELETE('/admin/providers/{name}', {
+    const { error, response } = await this.api.DELETE('/admin/providers/{name}', {
       params: { path: { name } },
     });
-    if (error) throw apiErr(error, 'provider_delete_failed');
+    if (error) throw apiErr(error, 'provider_delete_failed', response);
   }
 
   /**
@@ -924,10 +924,10 @@ export class ImmerleClient {
    * every provider name exactly once. Order also drives the search fallback.
    */
   async reorderProviders(order: string[]): Promise<Provider[]> {
-    const { data, error } = await this.api.PUT('/admin/providers/order', {
+    const { data, error, response } = await this.api.PUT('/admin/providers/order', {
       body: { order },
     });
-    if (error || !data) throw apiErr(error, 'provider_reorder_failed');
+    if (error || !data) throw apiErr(error, 'provider_reorder_failed', response);
     return data.map(toProvider);
   }
 
@@ -969,62 +969,62 @@ export class ImmerleClient {
   // --- Smart playlists (rule-based) ---------------------------------------
 
   async listSmartPlaylists(signal?: AbortSignal): Promise<SmartPlaylist[]> {
-    const { data, error } = await this.api.GET('/smart-playlists', { signal });
-    if (error) throw apiErr(error, 'smartPlaylists.list');
+    const { data, error, response } = await this.api.GET('/smart-playlists', { signal });
+    if (error) throw apiErr(error, 'smartPlaylists.list', response);
     return (data.playlists ?? []).map(toSmartPlaylist);
   }
 
   async createSmartPlaylist(name: string, rules: SmartRules): Promise<SmartPlaylist> {
-    const { data, error } = await this.api.POST('/smart-playlists', { body: { name, rules } });
-    if (error) throw apiErr(error, 'smartPlaylists.create');
+    const { data, error, response } = await this.api.POST('/smart-playlists', { body: { name, rules } });
+    if (error) throw apiErr(error, 'smartPlaylists.create', response);
     return toSmartPlaylist(data);
   }
 
   async updateSmartPlaylist(id: string, name: string, rules: SmartRules): Promise<SmartPlaylist> {
-    const { data, error } = await this.api.PUT('/smart-playlists/{id}', {
+    const { data, error, response } = await this.api.PUT('/smart-playlists/{id}', {
       params: { path: { id } },
       body: { name, rules },
     });
-    if (error) throw apiErr(error, 'smartPlaylists.update');
+    if (error) throw apiErr(error, 'smartPlaylists.update', response);
     return toSmartPlaylist(data);
   }
 
   async deleteSmartPlaylist(id: string): Promise<void> {
-    const { error } = await this.api.DELETE('/smart-playlists/{id}', { params: { path: { id } } });
-    if (error) throw apiErr(error, 'smartPlaylists.delete');
+    const { error, response } = await this.api.DELETE('/smart-playlists/{id}', { params: { path: { id } } });
+    if (error) throw apiErr(error, 'smartPlaylists.delete', response);
   }
 
   /** Resolve a saved smart playlist to its current tracks (ready to enqueue). */
   async getSmartPlaylistTracks(id: string, signal?: AbortSignal): Promise<Song[]> {
-    const { data, error } = await this.api.GET('/smart-playlists/{id}/tracks', { params: { path: { id } }, signal });
-    if (error) throw apiErr(error, 'smartPlaylists.tracks');
+    const { data, error, response } = await this.api.GET('/smart-playlists/{id}/tracks', { params: { path: { id } }, signal });
+    if (error) throw apiErr(error, 'smartPlaylists.tracks', response);
     return (data.songs ?? []).map(toSong);
   }
 
   /** Preview ad-hoc rules without saving (for the editor). */
   async previewSmartPlaylist(rules: SmartRules, signal?: AbortSignal): Promise<Song[]> {
-    const { data, error } = await this.api.POST('/smart-playlists/preview', { body: { rules }, signal });
-    if (error) throw apiErr(error, 'smartPlaylists.preview');
+    const { data, error, response } = await this.api.POST('/smart-playlists/preview', { body: { rules }, signal });
+    if (error) throw apiErr(error, 'smartPlaylists.preview', response);
     return (data.songs ?? []).map(toSong);
   }
 
   async getSmartPlaylistsEnabled(signal?: AbortSignal): Promise<boolean> {
-    const { data, error } = await this.api.GET('/admin/smart-playlists', { signal });
-    if (error) throw apiErr(error, 'smartPlaylists.admin');
+    const { data, error, response } = await this.api.GET('/admin/smart-playlists', { signal });
+    if (error) throw apiErr(error, 'smartPlaylists.admin', response);
     return !!data.enabled;
   }
 
   async setSmartPlaylistsEnabled(enabled: boolean): Promise<boolean> {
-    const { data, error } = await this.api.PUT('/admin/smart-playlists', { body: { enabled } });
-    if (error) throw apiErr(error, 'smartPlaylists.toggle');
+    const { data, error, response } = await this.api.PUT('/admin/smart-playlists', { body: { enabled } });
+    if (error) throw apiErr(error, 'smartPlaylists.toggle', response);
     return !!data.enabled;
   }
 
   // --- Internet radio -----------------------------------------------------
 
   async listRadioStations(signal?: AbortSignal): Promise<RadioStation[]> {
-    const { data, error } = await this.api.GET('/radio', { signal });
-    if (error) throw apiErr(error, 'radio.list');
+    const { data, error, response } = await this.api.GET('/radio', { signal });
+    if (error) throw apiErr(error, 'radio.list', response);
     return data.stations;
   }
 
@@ -1036,40 +1036,40 @@ export class ImmerleClient {
   }
 
   async createRadioStation(body: RadioStationBody): Promise<RadioStation> {
-    const { data, error } = await this.api.POST('/admin/radio/stations', { body });
-    if (error) throw apiErr(error, 'radio.create');
+    const { data, error, response } = await this.api.POST('/admin/radio/stations', { body });
+    if (error) throw apiErr(error, 'radio.create', response);
     return data;
   }
 
   async updateRadioStation(id: string, body: RadioStationBody): Promise<RadioStation> {
-    const { data, error } = await this.api.PUT('/admin/radio/stations/{id}', { params: { path: { id } }, body });
-    if (error) throw apiErr(error, 'radio.update');
+    const { data, error, response } = await this.api.PUT('/admin/radio/stations/{id}', { params: { path: { id } }, body });
+    if (error) throw apiErr(error, 'radio.update', response);
     return data;
   }
 
   async deleteRadioStation(id: string): Promise<void> {
-    const { error } = await this.api.DELETE('/admin/radio/stations/{id}', { params: { path: { id } } });
-    if (error) throw apiErr(error, 'radio.delete');
+    const { error, response } = await this.api.DELETE('/admin/radio/stations/{id}', { params: { path: { id } } });
+    if (error) throw apiErr(error, 'radio.delete', response);
   }
 
   /** Favorite / unfavorite a station (kept separate from track stars). */
   async setRadioLiked(id: string, liked: boolean): Promise<void> {
     const params = { params: { path: { id } } };
-    const { error } = liked
+    const { error, response } = liked
       ? await this.api.PUT('/radio/stations/{id}/like', params)
       : await this.api.DELETE('/radio/stations/{id}/like', params);
-    if (error) throw apiErr(error, 'radio.like');
+    if (error) throw apiErr(error, 'radio.like', response);
   }
 
   async getRadioEnabled(signal?: AbortSignal): Promise<boolean> {
-    const { data, error } = await this.api.GET('/admin/radio', { signal });
-    if (error) throw apiErr(error, 'radio.admin');
+    const { data, error, response } = await this.api.GET('/admin/radio', { signal });
+    if (error) throw apiErr(error, 'radio.admin', response);
     return data.enabled;
   }
 
   async setRadioEnabled(enabled: boolean): Promise<boolean> {
-    const { data, error } = await this.api.PUT('/admin/radio', { body: { enabled } });
-    if (error) throw apiErr(error, 'radio.toggle');
+    const { data, error, response } = await this.api.PUT('/admin/radio', { body: { enabled } });
+    if (error) throw apiErr(error, 'radio.toggle', response);
     return data.enabled;
   }
 
@@ -1095,15 +1095,15 @@ export class ImmerleClient {
 
   /** Admin: whether offline downloads are enabled. */
   async getOfflineEnabled(signal?: AbortSignal): Promise<boolean> {
-    const { data, error } = await this.api.GET('/admin/offline', { signal });
-    if (error) throw apiErr(error, 'offline.admin');
+    const { data, error, response } = await this.api.GET('/admin/offline', { signal });
+    if (error) throw apiErr(error, 'offline.admin', response);
     return data.enabled;
   }
 
   /** Admin: turn offline downloads on or off. */
   async setOfflineEnabled(enabled: boolean): Promise<boolean> {
-    const { data, error } = await this.api.PUT('/admin/offline', { body: { enabled } });
-    if (error) throw apiErr(error, 'offline.toggle');
+    const { data, error, response } = await this.api.PUT('/admin/offline', { body: { enabled } });
+    if (error) throw apiErr(error, 'offline.toggle', response);
     return data.enabled;
   }
 
@@ -1151,8 +1151,8 @@ export class ImmerleClient {
   // --- Admin: downloads cleanup (eviction sweep) --------------------------
 
   async getCleanup(signal?: AbortSignal): Promise<CleanupStatus> {
-    const { data, error } = await this.api.GET('/admin/cleanup', { signal });
-    if (error || !data) throw apiErr(error, 'cleanup_failed');
+    const { data, error, response } = await this.api.GET('/admin/cleanup', { signal });
+    if (error || !data) throw apiErr(error, 'cleanup_failed', response);
     return {
       enabled: data.enabled ?? false,
       intervalSeconds: data.intervalSeconds ?? 0,
@@ -1161,8 +1161,8 @@ export class ImmerleClient {
   }
 
   async setCleanupEnabled(enabled: boolean): Promise<CleanupStatus> {
-    const { data, error } = await this.api.PUT('/admin/cleanup', { body: { enabled } });
-    if (error || !data) throw apiErr(error, 'cleanup_toggle_failed');
+    const { data, error, response } = await this.api.PUT('/admin/cleanup', { body: { enabled } });
+    if (error || !data) throw apiErr(error, 'cleanup_toggle_failed', response);
     return {
       enabled: data.enabled ?? false,
       intervalSeconds: data.intervalSeconds ?? 0,
@@ -1172,22 +1172,22 @@ export class ImmerleClient {
 
   /** Run an eviction sweep now; returns the number of removed downloads. */
   async runCleanup(): Promise<number> {
-    const { data, error } = await this.api.POST('/admin/cleanup/runs', {});
-    if (error || !data) throw apiErr(error, 'cleanup_run_failed');
+    const { data, error, response } = await this.api.POST('/admin/cleanup/runs', {});
+    if (error || !data) throw apiErr(error, 'cleanup_run_failed', response);
     return data.removed ?? 0;
   }
 
   /** Sync curated chart playlists now; returns how many synced successfully. */
   async runChartsSync(): Promise<number> {
-    const { data, error } = await this.api.POST('/admin/charts/sync', {});
-    if (error || !data) throw apiErr(error, 'charts_sync_failed');
+    const { data, error, response } = await this.api.POST('/admin/charts/sync', {});
+    if (error || !data) throw apiErr(error, 'charts_sync_failed', response);
     return data.synced ?? 0;
   }
 
   /** Admin: run concert discovery now; returns how many new matches were found. */
   async runConcertsSync(): Promise<number> {
-    const { data, error } = await this.api.POST('/admin/concerts/sync', {});
-    if (error || !data) throw apiErr(error, 'concerts_sync_failed');
+    const { data, error, response } = await this.api.POST('/admin/concerts/sync', {});
+    if (error || !data) throw apiErr(error, 'concerts_sync_failed', response);
     return data.synced ?? 0;
   }
 
@@ -1287,16 +1287,16 @@ export class ImmerleClient {
   // --- Social: activity (typed via OpenAPI) ---------------------------------
 
   async getActivity(signal?: AbortSignal): Promise<ActivityEventDTO[]> {
-    const { data, error } = await this.api.GET('/activity', { signal });
-    if (error || !data) throw apiErr(error, 'activity_failed');
+    const { data, error, response } = await this.api.GET('/activity', { signal });
+    if (error || !data) throw apiErr(error, 'activity_failed', response);
     return data;
   }
 
   // --- Own account (self-service display name + email) ---------------------
 
   async getAccount(signal?: AbortSignal): Promise<Account> {
-    const { data, error } = await this.api.GET('/me', { signal });
-    if (error) throw apiErr(error, 'account_failed');
+    const { data, error, response } = await this.api.GET('/me', { signal });
+    if (error) throw apiErr(error, 'account_failed', response);
     return toAccount(data);
   }
 
@@ -1307,8 +1307,8 @@ export class ImmerleClient {
     language?: AccountLanguage;
     listenBrainzToken?: string;
   }): Promise<Account> {
-    const { data, error } = await this.api.PATCH('/me', { body: patch });
-    if (error) throw apiErr(error, 'account_update_failed');
+    const { data, error, response } = await this.api.PATCH('/me', { body: patch });
+    if (error) throw apiErr(error, 'account_update_failed', response);
     this.setDisplayName(data.displayName);
     return toAccount(data);
   }
@@ -1340,42 +1340,42 @@ export class ImmerleClient {
 
   /** The caller's Last.fm connection state. */
   async getLastFmStatus(signal?: AbortSignal): Promise<LastFmStatus> {
-    const { data, error } = await this.api.GET('/me/lastfm', { signal });
-    if (error) throw apiErr(error, 'lastfm.status');
+    const { data, error, response } = await this.api.GET('/me/lastfm', { signal });
+    if (error) throw apiErr(error, 'lastfm.status', response);
     return data;
   }
 
   /** Starts the Last.fm desktop-auth handshake: mints a token and its approval URL. */
   async startLastFmConnect(): Promise<{ token: string; authUrl: string }> {
-    const { data, error } = await this.api.POST('/me/lastfm/connect/start');
-    if (error) throw apiErr(error, 'lastfm.connectStart');
+    const { data, error, response } = await this.api.POST('/me/lastfm/connect/start');
+    if (error) throw apiErr(error, 'lastfm.connectStart', response);
     return data;
   }
 
   /** Finishes the handshake: exchanges an approved token for a session key. */
   async finishLastFmConnect(token: string): Promise<LastFmStatus> {
-    const { data, error } = await this.api.POST('/me/lastfm/connect/finish', { body: { token } });
-    if (error) throw apiErr(error, 'lastfm.connectFinish');
+    const { data, error, response } = await this.api.POST('/me/lastfm/connect/finish', { body: { token } });
+    if (error) throw apiErr(error, 'lastfm.connectFinish', response);
     return data;
   }
 
   /** Disconnects the caller's Last.fm account. */
   async disconnectLastFm(): Promise<void> {
-    const { error } = await this.api.DELETE('/me/lastfm');
-    if (error) throw apiErr(error, 'lastfm.disconnect');
+    const { error, response } = await this.api.DELETE('/me/lastfm');
+    if (error) throw apiErr(error, 'lastfm.disconnect', response);
   }
 
   /** Admin: Last.fm scrobbling config state (API key/secret are write-only). */
   async getLastFmAdminStatus(signal?: AbortSignal): Promise<LastFmAdminStatus> {
-    const { data, error } = await this.api.GET('/admin/lastfm', { signal });
-    if (error) throw apiErr(error, 'lastfm.admin');
+    const { data, error, response } = await this.api.GET('/admin/lastfm', { signal });
+    if (error) throw apiErr(error, 'lastfm.admin', response);
     return data;
   }
 
   /** Admin: enable/disable Last.fm scrobbling and/or set the API key/shared secret (partial). */
   async updateLastFmAdminConfig(patch: { enabled?: boolean; apiKey?: string; apiSecret?: string }): Promise<LastFmAdminStatus> {
-    const { data, error } = await this.api.PUT('/admin/lastfm', { body: patch });
-    if (error) throw apiErr(error, 'lastfm.adminUpdate');
+    const { data, error, response } = await this.api.PUT('/admin/lastfm', { body: patch });
+    if (error) throw apiErr(error, 'lastfm.adminUpdate', response);
     return data;
   }
 
@@ -1421,11 +1421,11 @@ export class ImmerleClient {
    * non-empty) their Hall of Fame top 3. Defaults to the caller when
    * `username` is omitted. */
   async getProfile(username?: string, signal?: AbortSignal): Promise<ProfileResult> {
-    const { data, error } = await this.api.GET('/users/{username}', {
+    const { data, error, response } = await this.api.GET('/users/{username}', {
       params: { path: { username: username ?? 'me' } },
       signal,
     });
-    if (error || !data) throw apiErr(error, 'profile_failed');
+    if (error || !data) throw apiErr(error, 'profile_failed', response);
     return {
       user: data.user ?? {},
       isSelf: data.isSelf ?? false,
@@ -1439,8 +1439,8 @@ export class ImmerleClient {
   /** Every user's public identity (id, username, display name) — the member
    * directory, for browsing to a profile. */
   async listUsers(signal?: AbortSignal): Promise<UserSummaryDTO[]> {
-    const { data, error } = await this.api.GET('/users', { signal });
-    if (error || !data) throw apiErr(error, 'users_failed');
+    const { data, error, response } = await this.api.GET('/users', { signal });
+    if (error || !data) throw apiErr(error, 'users_failed', response);
     return data.users ?? [];
   }
 
@@ -1455,25 +1455,25 @@ export class ImmerleClient {
   // --- Jam (real-time listening sessions) ---------------------------------
 
   async jamCreate(name?: string): Promise<JamResult> {
-    const { data, error } = await this.api.POST('/jam', { body: { name } });
-    if (error) throw apiErr(error, 'jam_create_failed');
+    const { data, error, response } = await this.api.POST('/jam', { body: { name } });
+    if (error) throw apiErr(error, 'jam_create_failed', response);
     return data;
   }
 
   async jamJoin(sessionId: string): Promise<JamResult> {
-    const { data, error } = await this.api.POST('/jam/{id}/participants', {
+    const { data, error, response } = await this.api.POST('/jam/{id}/participants', {
       params: { path: { id: sessionId } },
     });
-    if (error) throw apiErr(error, 'jam_join_failed');
+    if (error) throw apiErr(error, 'jam_join_failed', response);
     return data;
   }
 
   async jamState(sessionId: string, signal?: AbortSignal): Promise<JamResult> {
-    const { data, error } = await this.api.GET('/jam/{id}', {
+    const { data, error, response } = await this.api.GET('/jam/{id}', {
       params: { path: { id: sessionId } },
       signal,
     });
-    if (error) throw apiErr(error, 'jam_state_failed');
+    if (error) throw apiErr(error, 'jam_state_failed', response);
     return data;
   }
 
@@ -1482,19 +1482,19 @@ export class ImmerleClient {
     sessionId: string,
     fields: { currentTrackId?: string; position?: number; state?: string; trackIds?: string[] },
   ): Promise<JamResult> {
-    const { data, error } = await this.api.PATCH('/jam/{id}', {
+    const { data, error, response } = await this.api.PATCH('/jam/{id}', {
       params: { path: { id: sessionId } },
       body: fields,
     });
-    if (error) throw apiErr(error, 'jam_update_failed');
+    if (error) throw apiErr(error, 'jam_update_failed', response);
     return data;
   }
 
   async jamLeave(sessionId: string): Promise<void> {
-    const { error } = await this.api.DELETE('/jam/{id}/participants/me', {
+    const { error, response } = await this.api.DELETE('/jam/{id}/participants/me', {
       params: { path: { id: sessionId } },
     });
-    if (error) throw apiErr(error, 'jam_leave_failed');
+    if (error) throw apiErr(error, 'jam_leave_failed', response);
   }
 
   /** The session the caller is currently hosting, or `null` if none — the
@@ -1502,40 +1502,40 @@ export class ImmerleClient {
   async jamMine(signal?: AbortSignal): Promise<JamResult | null> {
     const { data, error, response } = await this.api.GET('/jam/mine', { signal });
     if (response.status === 404) return null;
-    if (error) throw apiErr(error, 'jam_mine_failed');
+    if (error) throw apiErr(error, 'jam_mine_failed', response);
     return data;
   }
 
   /** Host-only. Re-inviting the same user just refreshes the invite. */
   async jamInvite(sessionId: string, username: string): Promise<void> {
-    const { error } = await this.api.POST('/jam/{id}/invites', {
+    const { error, response } = await this.api.POST('/jam/{id}/invites', {
       params: { path: { id: sessionId } },
       body: { username },
     });
-    if (error) throw apiErr(error, 'jam_invite_failed');
+    if (error) throw apiErr(error, 'jam_invite_failed', response);
   }
 
   /** Pending Jam invites addressed to the caller. */
   async jamInvitesMine(signal?: AbortSignal): Promise<JamInvite[]> {
-    const { data, error } = await this.api.GET('/jam/invites/mine', { signal });
-    if (error) throw apiErr(error, 'jam_invites_failed');
+    const { data, error, response } = await this.api.GET('/jam/invites/mine', { signal });
+    if (error) throw apiErr(error, 'jam_invites_failed', response);
     return data.invites;
   }
 
   /** Declines a pending invite (accepting is just joining the session normally). */
   async jamInviteDismiss(id: string): Promise<void> {
-    const { error } = await this.api.DELETE('/jam/invites/{id}', {
+    const { error, response } = await this.api.DELETE('/jam/invites/{id}', {
       params: { path: { id } },
     });
-    if (error) throw apiErr(error, 'jam_invite_dismiss_failed');
+    if (error) throw apiErr(error, 'jam_invite_dismiss_failed', response);
   }
 
   /** Host-only. Ends the session and removes all participants. */
   async jamEnd(sessionId: string): Promise<void> {
-    const { error } = await this.api.DELETE('/jam/{id}', {
+    const { error, response } = await this.api.DELETE('/jam/{id}', {
       params: { path: { id: sessionId } },
     });
-    if (error) throw apiErr(error, 'jam_end_failed');
+    if (error) throw apiErr(error, 'jam_end_failed', response);
   }
 
   /** SSE endpoint URL for live Jam events. EventSource can't set headers, so the
@@ -1548,56 +1548,56 @@ export class ImmerleClient {
   // --- Collaborative playlists --------------------------------------------
 
   async addPlaylistCollaborator(playlistId: string, username: string): Promise<void> {
-    const { error } = await this.api.POST('/playlists/{id}/collaborators', {
+    const { error, response } = await this.api.POST('/playlists/{id}/collaborators', {
       params: { path: { id: playlistId } },
       body: { username },
     });
-    if (error) throw apiErr(error, 'collaborator_add_failed');
+    if (error) throw apiErr(error, 'collaborator_add_failed', response);
   }
 
   // --- Public playlists (discovery + opt-in subscription) -----------------
 
   /** Browse public playlists; each carries a `subscribed` flag for the caller. */
   async getPublicPlaylists(signal?: AbortSignal): Promise<PublicPlaylistView[]> {
-    const { data, error } = await this.api.GET('/playlists/public', { signal });
-    if (error) throw apiErr(error, 'public_playlists_failed');
+    const { data, error, response } = await this.api.GET('/playlists/public', { signal });
+    if (error) throw apiErr(error, 'public_playlists_failed', response);
     return data;
   }
 
   async subscribePlaylist(playlistId: string): Promise<void> {
-    const { error } = await this.api.PUT('/playlists/{id}/subscription', {
+    const { error, response } = await this.api.PUT('/playlists/{id}/subscription', {
       params: { path: { id: playlistId } },
     });
-    if (error) throw apiErr(error, 'subscribe_failed');
+    if (error) throw apiErr(error, 'subscribe_failed', response);
   }
 
   async unsubscribePlaylist(playlistId: string): Promise<void> {
-    const { error } = await this.api.DELETE('/playlists/{id}/subscription', {
+    const { error, response } = await this.api.DELETE('/playlists/{id}/subscription', {
       params: { path: { id: playlistId } },
     });
-    if (error) throw apiErr(error, 'unsubscribe_failed');
+    if (error) throw apiErr(error, 'unsubscribe_failed', response);
   }
 
   // --- Playlist imports (external platforms) ------------------------------
 
   /** Available import sources and whether each is configured server-side. */
   async listImportSources(signal?: AbortSignal): Promise<ImportSourceDTO[]> {
-    const { data, error } = await this.api.GET('/imports/sources', { signal });
-    if (error || !data) throw apiErr(error, 'import_sources_failed');
+    const { data, error, response } = await this.api.GET('/imports/sources', { signal });
+    if (error || !data) throw apiErr(error, 'import_sources_failed', response);
     return data;
   }
 
   /** The caller's playlist imports, most recent first (no per-track items). */
   async listImports(signal?: AbortSignal): Promise<ImportDTO[]> {
-    const { data, error } = await this.api.GET('/imports', { signal });
-    if (error || !data) throw apiErr(error, 'imports_failed');
+    const { data, error, response } = await this.api.GET('/imports', { signal });
+    if (error || !data) throw apiErr(error, 'imports_failed', response);
     return data;
   }
 
   /** Queue an import of an external playlist by `source` + `ref` (id or URL). */
   async startImport(source: string, ref: string): Promise<ImportDTO> {
-    const { data, error } = await this.api.POST('/imports', { body: { source, ref } });
-    if (error || !data) throw apiErr(error, 'import_start_failed');
+    const { data, error, response } = await this.api.POST('/imports', { body: { source, ref } });
+    if (error || !data) throw apiErr(error, 'import_start_failed', response);
     return data;
   }
 
@@ -1607,29 +1607,29 @@ export class ImmerleClient {
    * providers and uses the best result. Flips the item to "matched".
    */
   async resolveImportItem(importId: string, itemId: string, query?: string): Promise<ImportItemDTO> {
-    const { data, error } = await this.api.POST('/imports/{id}/items/{itemId}/resolve', {
+    const { data, error, response } = await this.api.POST('/imports/{id}/items/{itemId}/resolve', {
       params: { path: { id: importId, itemId } },
       body: query ? { query } : {},
     });
-    if (error || !data) throw apiErr(error, 'import_resolve_failed');
+    if (error || !data) throw apiErr(error, 'import_resolve_failed', response);
     return data;
   }
 
   /** One import with its per-track items, for a progress view. */
   async getImportStatus(id: string, signal?: AbortSignal): Promise<ImportDTO> {
-    const { data, error } = await this.api.GET('/imports/{id}', {
+    const { data, error, response } = await this.api.GET('/imports/{id}', {
       params: { path: { id } },
       signal,
     });
-    if (error || !data) throw apiErr(error, 'import_status_failed');
+    if (error || !data) throw apiErr(error, 'import_status_failed', response);
     return data;
   }
 
   // --- Personal API tokens -------------------------------------------------
 
   async listTokens(signal?: AbortSignal): Promise<APITokenView[]> {
-    const { data, error } = await this.api.GET('/tokens', { signal });
-    if (error) throw apiErr(error, 'tokens_failed');
+    const { data, error, response } = await this.api.GET('/tokens', { signal });
+    if (error) throw apiErr(error, 'tokens_failed', response);
     return data;
   }
 
@@ -1637,22 +1637,22 @@ export class ImmerleClient {
    * optional RFC3339 timestamp. `device` marks it as an app login session
    * (one per install) rather than a personal/CLI token — see listPlaybackTargets. */
   async createToken(name?: string, expiresAt?: string, device?: boolean): Promise<CreateTokenResponse> {
-    const { data, error } = await this.api.POST('/tokens', { body: { name, expiresAt, device } });
-    if (error) throw apiErr(error, 'token_create_failed');
+    const { data, error, response } = await this.api.POST('/tokens', { body: { name, expiresAt, device } });
+    if (error) throw apiErr(error, 'token_create_failed', response);
     return data;
   }
 
   async revokeToken(id: string): Promise<void> {
-    const { error } = await this.api.DELETE('/tokens/{id}', { params: { path: { id } } });
-    if (error) throw apiErr(error, 'token_revoke_failed');
+    const { error, response } = await this.api.DELETE('/tokens/{id}', { params: { path: { id } } });
+    if (error) throw apiErr(error, 'token_revoke_failed', response);
   }
 
   // --- Per-account UI theme ------------------------------------------------
 
   /** The caller's stored theme (accent colour, etc.). */
   async getTheme(signal?: AbortSignal): Promise<ThemeSettings> {
-    const { data, error } = await this.api.GET('/theme', { signal });
-    if (error) throw apiErr(error, 'theme_failed');
+    const { data, error, response } = await this.api.GET('/theme', { signal });
+    if (error) throw apiErr(error, 'theme_failed', response);
     return data;
   }
 
@@ -1661,8 +1661,8 @@ export class ImmerleClient {
    * empty string to clear it (server falls back to the client default).
    */
   async setTheme(accentColor: string): Promise<ThemeSettings> {
-    const { data, error } = await this.api.PATCH('/theme', { body: { accentColor } });
-    if (error) throw apiErr(error, 'theme_update_failed');
+    const { data, error, response } = await this.api.PATCH('/theme', { body: { accentColor } });
+    if (error) throw apiErr(error, 'theme_update_failed', response);
     return data;
   }
 
@@ -1670,8 +1670,8 @@ export class ImmerleClient {
 
   /** The tracks the caller uploaded ("local" virtual playlist), newest first. */
   async listLocalSongs(signal?: AbortSignal): Promise<Song[]> {
-    const { data, error } = await this.api.GET('/library/local', { signal });
-    if (error) throw apiErr(error, 'library.local');
+    const { data, error, response } = await this.api.GET('/library/local', { signal });
+    if (error) throw apiErr(error, 'library.local', response);
     return data.songs.map(toSong);
   }
 
@@ -1684,8 +1684,8 @@ export class ImmerleClient {
 
   /** Rename one of the caller's uploaded tracks. */
   async renameTrack(id: string, title: string): Promise<Song> {
-    const { data, error } = await this.api.PATCH('/library/tracks/{id}', { params: { path: { id } }, body: { title } });
-    if (error) throw apiErr(error, 'library.renameTrack');
+    const { data, error, response } = await this.api.PATCH('/library/tracks/{id}', { params: { path: { id } }, body: { title } });
+    if (error) throw apiErr(error, 'library.renameTrack', response);
     return toSong(data);
   }
 
@@ -1698,8 +1698,8 @@ export class ImmerleClient {
 
   /** Delete one of the caller's uploaded tracks (catalog row + file). */
   async deleteTrack(id: string): Promise<void> {
-    const { error } = await this.api.DELETE('/library/tracks/{id}', { params: { path: { id } } });
-    if (error) throw apiErr(error, 'library.deleteTrack');
+    const { error, response } = await this.api.DELETE('/library/tracks/{id}', { params: { path: { id } } });
+    if (error) throw apiErr(error, 'library.deleteTrack', response);
   }
 
   /**
