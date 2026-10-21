@@ -148,6 +148,14 @@ export interface Provider {
   sortOrder: number;
   /** Live protocol version from the remote's /capabilities (HTTP providers). */
   version?: number;
+  /** Capabilities the provider declares, each switchable by the admin. */
+  capabilities: ProviderCapability[];
+}
+
+/** One capability a provider declares (trackSearch, artists, playlists, playlistSearch). */
+export interface ProviderCapability {
+  key: string;
+  enabled: boolean;
 }
 
 /** A persisted warn/error event from a provider action (admin diagnostics). */

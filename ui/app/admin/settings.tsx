@@ -330,12 +330,6 @@ export default function AdminSettings() {
                 onChange={(v) => setHallOfFame.mutate(v)}
               />
             ) : null}
-            <ToggleRow
-              label={t('admin.settings.spotifySearchEnabled')}
-              value={q.data?.settings.spotifySearch?.enabled ?? false}
-              onChange={(v) => save({ spotifySearch: { enabled: v } })}
-            />
-            <Text className="text-xs text-muted">{t('admin.settings.spotifySearchHelp')}</Text>
           </>
         ) : null}
 

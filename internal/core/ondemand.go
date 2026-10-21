@@ -32,11 +32,26 @@ type ProviderRegistry struct {
 	mu        sync.RWMutex
 	providers map[string]providers.Provider
 	order     []string
+	disabled  map[string][]string // capability keys the admin switched off, by provider
 }
 
 // NewProviderRegistry builds an empty registry.
 func NewProviderRegistry() *ProviderRegistry {
-	return &ProviderRegistry{providers: map[string]providers.Provider{}}
+	return &ProviderRegistry{providers: map[string]providers.Provider{}, disabled: map[string][]string{}}
+}
+
+// SetDisabledCapabilities records the capability keys switched off for name.
+func (r *ProviderRegistry) SetDisabledCapabilities(name string, keys []string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.disabled[name] = keys
+}
+
+// DisabledCapabilities returns the capability keys switched off for name.
+func (r *ProviderRegistry) DisabledCapabilities(name string) []string {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return r.disabled[name]
 }
 
 // Register adds or replaces a provider.
@@ -265,7 +280,7 @@ func (s *CatalogService) remoteSearch(ctx context.Context, query string, limit i
 	if limit <= 0 {
 		limit = 20
 	}
-	prov, ok := s.searchProvider()
+	prov, ok := s.searchProvider(ctx, providers.CapTrackSearch)
 	if !ok {
 		return nil, nil
 	}
@@ -299,13 +314,14 @@ func (s *CatalogService) remoteTracksFrom(ctx context.Context, prov providers.Pr
 		// (as the local entry, with its stars/stats) instead of also re-appearing
 		// as a fresh remote pointer: first by MBID, then by a completed download
 		// of this exact provider track (the MBID dedup is a no-op for providers
-		// like Deezer that carry no MBID).
+		// like Deezer that carry no MBID). An evicted download is no longer
+		// local: its result stays, or the track could never be found again.
 		if res.MBID != "" {
 			if _, exists, _ := st.catalog.TrackExistsByMBIDOrHash(ctx, res.MBID, ""); exists {
 				continue
 			}
 		}
-		if job, err := st.downloads.GetByProviderTrack(ctx, prov.Name(), res.ProviderTrackID); err == nil && job.HasTrack() {
+		if job, err := st.downloads.GetByProviderTrack(ctx, prov.Name(), res.ProviderTrackID); err == nil && job.Status == models.DownloadCompleted && job.TrackID != "" {
 			continue
 		}
 		seen[id] = true

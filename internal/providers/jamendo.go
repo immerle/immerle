@@ -52,6 +52,11 @@ func init() {
 // Name implements Provider.
 func (p *JamendoProvider) Name() string { return "jamendo" }
 
+// Capabilities implements CapabilityProvider: track search only.
+func (p *JamendoProvider) Capabilities(context.Context) (Capabilities, error) {
+	return Capabilities{Version: ProtocolVersion, Name: p.Name(), TrackSearch: true}, nil
+}
+
 // MaxQuality implements Provider.
 func (p *JamendoProvider) MaxQuality() string {
 	switch p.audioFormat {

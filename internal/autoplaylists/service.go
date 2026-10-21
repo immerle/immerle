@@ -545,8 +545,12 @@ func (s *Service) syncRecommendedOne(ctx context.Context, userID string) bool {
 // DiscoverPlaylistSlots made by people: charts rank high on overlap.
 const discoverCandidates = 25
 
-// maxDiscoverTracks bounds the "Mix discover" list and each proposed playlist.
+// maxDiscoverTracks bounds the "Mix discover" list.
 const maxDiscoverTracks = 50
+
+// maxDiscoverPlaylistTracks bounds each proposed playlist: discover's own cap,
+// so a playlist comes over whole.
+const maxDiscoverPlaylistTracks = 500
 
 // syncDiscover rebuilds one user's discover lists, removing those whose toggle
 // is off (or that discover has nothing for) rather than leaving them stale.
@@ -589,12 +593,18 @@ func (s *Service) syncDiscover(ctx context.Context, userID string) int {
 			sourceExternalID: DiscoverPlaylistExternalID(userID, slot), icon: notesIcon,
 		}
 		if slot < len(proposals) {
-			p, err := s.discover.Playlist(ctx, proposals[slot].ID(), maxDiscoverTracks)
+			p, err := s.discover.Playlist(ctx, proposals[slot].ID(), maxDiscoverPlaylistTracks)
 			if err != nil {
 				s.logger.Warn("autoplaylists: discover playlist fetch failed", "user", userID, "error", err)
 				continue
 			}
 			spec.name = p.Name
+			// No discover cover: a plain gradient, no text or icon, so it
+			// reads as artwork rather than an auto-generated list.
+			spec.cover = models.RemoteCoverID(p.Image)
+			if spec.cover == "" {
+				spec.cover = models.GeneratorCoverID(gradientParams(p.Name))
+			}
 			for _, e := range p.Tracks {
 				spec.refs = append(spec.refs, discoverRef(e.Track))
 			}
@@ -623,8 +633,12 @@ func (s *Service) syncOrRemove(ctx context.Context, spec playlistSpec) bool {
 	return true
 }
 
+// discoverRef keys an entry by its main artist only, like the Spotify mirrors
+// (internal/spotifyplaylists.trackRef): the library files a track under its
+// main artist, so the full credit ("Sindika, TRK., Ameka Zrai") would make the
+// artist+title lookup miss a track that is already local.
 func discoverRef(t discover.Track) persistence.FederatedTrackRef {
-	return persistence.FederatedTrackRef{MBID: t.MBID(), Artist: t.MainArtist(), Title: t.Title}
+	return persistence.FederatedTrackRef{MBID: t.MBID(), Artist: t.MainArtist(), Title: t.Title, CoverArt: models.RemoteCoverID(t.Cover)}
 }
 
 func discoverRefs(tracks []discover.Track) []persistence.FederatedTrackRef {
@@ -873,6 +887,7 @@ type playlistSpec struct {
 	sourceExternalID string
 	name             string
 	icon             string
+	cover            string // a real cover id; "" falls back to a generated cover
 	public           bool
 	ids              []string
 	refs             []persistence.FederatedTrackRef
@@ -892,7 +907,10 @@ func (s *Service) upsert(ctx context.Context, spec playlistSpec) error {
 	if AutoPlaylistKinds[spec.sourceInstanceID] {
 		title = spec.sourceInstanceID
 	}
-	cover := models.GeneratorCoverID(coverParams(spec.name, title, sourceSubtitleKeys[spec.sourceInstanceID], spec.icon))
+	cover := spec.cover
+	if cover == "" {
+		cover = models.GeneratorCoverID(coverParams(spec.name, title, sourceSubtitleKeys[spec.sourceInstanceID], spec.icon))
+	}
 	existing, err := s.playlists.FindFederated(ctx, spec.sourceInstanceID, spec.sourceExternalID)
 	switch {
 	case err == nil:
@@ -960,22 +978,24 @@ var coverGradients = [][2]string{
 // optional attribution (e.g. "source.reccobeats") rendered smaller below the
 // title; "" omits it.
 func coverParams(name, title, subTitle, icon string) url.Values {
-	sum := 0
-	for _, r := range name {
-		sum += int(r)
-	}
-	g := coverGradients[sum%len(coverGradients)]
-
-	vals := url.Values{}
+	vals := gradientParams(name)
 	vals.Set("icon", icon)
 	vals.Set("title", title)
 	if subTitle != "" {
 		vals.Set("subTitle", subTitle)
 	}
-	vals.Set("color", g[0])
-	vals.Set("color2", g[1])
-	vals.Set("angle", "45")
 	return vals
+}
+
+// gradientParams is a text-less generator cover: the coverGradients entry
+// picked by name.
+func gradientParams(name string) url.Values {
+	sum := 0
+	for _, r := range name {
+		sum += int(r)
+	}
+	g := coverGradients[sum%len(coverGradients)]
+	return url.Values{"color": {g[0]}, "color2": {g[1]}, "angle": {"45"}}
 }
 
 // Run syncs on the configured interval until ctx is cancelled — once

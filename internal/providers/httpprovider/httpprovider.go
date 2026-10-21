@@ -59,16 +59,17 @@ type Provider struct {
 // validated when the provider is created (see Verify); the rest are called at
 // use time.
 const (
-	capabilitiesPath  = "/capabilities"
-	searchPath        = "/search"
-	resolvePath       = "/resolve"
-	downloadPath      = "/download"
-	searchArtistsPath = "/artists"
-	artistAlbumsPath  = "/artist/albums"
-	artistTracksPath  = "/artist/tracks"
-	albumTracksPath   = "/album/tracks"
-	artistImagePath   = "/artist/image"
-	playlistsPath     = "/playlists"
+	capabilitiesPath    = "/capabilities"
+	searchPath          = "/search"
+	resolvePath         = "/resolve"
+	downloadPath        = "/download"
+	searchArtistsPath   = "/artists"
+	artistAlbumsPath    = "/artist/albums"
+	artistTracksPath    = "/artist/tracks"
+	albumTracksPath     = "/album/tracks"
+	artistImagePath     = "/artist/image"
+	playlistsPath       = "/playlists"
+	searchPlaylistsPath = "/playlists/search"
 )
 
 // slugRe constrains the name a remote declares for itself.
@@ -135,7 +136,7 @@ func (p *Provider) Capabilities(ctx context.Context) (providers.Capabilities, er
 	if resp.StatusCode >= 300 {
 		return providers.Capabilities{}, fmt.Errorf("%s: /capabilities returned status %d (a /capabilities endpoint is required)", p.name, resp.StatusCode)
 	}
-	var caps providers.Capabilities
+	caps := providers.DefaultCapabilities() // fields the remote omits keep their v1 default
 	if err := json.NewDecoder(io.LimitReader(resp.Body, providers.MaxMetadataBytes)).Decode(&caps); err != nil {
 		return providers.Capabilities{}, fmt.Errorf("%s: decode capabilities: %w", p.name, err)
 	}

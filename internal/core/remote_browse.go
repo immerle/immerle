@@ -153,7 +153,7 @@ func (s *CatalogService) ResolveBestRemoteMatch(ctx context.Context, artist, tit
 		if titleScore >= 3 {
 			continue // shares nothing with the wanted title: never an acceptable match
 		}
-		score := titleScore*10 + Relevance(artist, t.ArtistName) + matching.VersionMarkerPenalty(title, t.Title, t.AlbumName)*100
+		score := titleScore*10 + matching.ArtistMismatch(artist, t.ArtistName) + matching.VersionMarkerPenalty(title, t.Title, t.AlbumName)*100
 		if bestScore == -1 || score < bestScore {
 			best, bestScore = t, score
 		}
@@ -208,6 +208,9 @@ func (s *CatalogService) RemoteSearch3(ctx context.Context, query string, artist
 	results := make([]provResult, len(provs))
 	var wg sync.WaitGroup
 	for i, prov := range provs {
+		if !s.capable(ctx, prov, providers.CapTrackSearch) && !s.capable(ctx, prov, providers.CapArtists) {
+			continue // e.g. a playlist-only provider: no request at all
+		}
 		wg.Add(1)
 		go func(i int, prov providers.Provider) {
 			defer wg.Done()
@@ -305,8 +308,19 @@ func (s *CatalogService) RemoteSearchPlaylists(ctx context.Context, query string
 // implements PlaylistBrowser and its capabilities say so), keeping only those
 // whose name relates to query, up to limit.
 func (s *CatalogService) remoteProviderPlaylists(ctx context.Context, prov providers.Provider, query string, limit int) []models.Playlist {
-	browser, ok := prov.(providers.PlaylistBrowser)
-	if !ok || !s.cachedCapabilities(ctx, prov).Playlists {
+	if searcher, ok := providerAs[providers.PlaylistSearcher](ctx, s, prov, providers.CapPlaylistSearch); ok {
+		found, err := searcher.SearchPlaylists(ctx, query, limit)
+		if err != nil {
+			return nil
+		}
+		out := make([]models.Playlist, 0, len(found))
+		for _, pl := range found {
+			out = append(out, toRemotePlaylist(prov.Name(), pl))
+		}
+		return out
+	}
+	browser, ok := providerAs[providers.PlaylistBrowser](ctx, s, prov, providers.CapPlaylists)
+	if !ok {
 		return nil
 	}
 	all, err := browser.Playlists(ctx, 100)
@@ -354,7 +368,7 @@ func (s *CatalogService) RemotePlaylist(ctx context.Context, remotePlaylistID st
 	if s == nil || s.state == nil {
 		return models.Playlist{}, nil
 	}
-	provName, providerPlaylistID, _, ok := decodeRemotePlaylistID(remotePlaylistID)
+	provName, providerPlaylistID, name, ok := decodeRemotePlaylistID(remotePlaylistID)
 	if !ok {
 		return models.Playlist{}, nil
 	}
@@ -362,15 +376,24 @@ func (s *CatalogService) RemotePlaylist(ctx context.Context, remotePlaylistID st
 	if !ok {
 		return models.Playlist{}, nil
 	}
-	browser, ok := prov.(providers.PlaylistBrowser)
-	if !ok {
-		return models.Playlist{}, nil
-	}
 	ctx, cancel := s.searchCtx(ctx)
 	defer cancel()
-	all, err := browser.Playlists(ctx, 100)
-	if err != nil {
-		return models.Playlist{}, err
+	var all []providers.ProviderPlaylist
+	if browser, ok := providerAs[providers.PlaylistBrowser](ctx, s, prov, providers.CapPlaylists); ok {
+		listed, err := browser.Playlists(ctx, 100)
+		if err != nil {
+			return models.Playlist{}, err
+		}
+		all = listed
+	}
+	// A playlist surfaced by a server-side search may not be in the listing:
+	// the remote id carries its name, so search it back.
+	if searcher, ok := providerAs[providers.PlaylistSearcher](ctx, s, prov, providers.CapPlaylistSearch); ok && name != "" && !containsPlaylist(all, providerPlaylistID) {
+		found, err := searcher.SearchPlaylists(ctx, name, 20)
+		if err != nil {
+			return models.Playlist{}, err
+		}
+		all = found
 	}
 	for _, pl := range all {
 		if pl.ProviderPlaylistID == providerPlaylistID {
@@ -380,6 +403,15 @@ func (s *CatalogService) RemotePlaylist(ctx context.Context, remotePlaylistID st
 		}
 	}
 	return models.Playlist{}, nil
+}
+
+func containsPlaylist(pls []providers.ProviderPlaylist, id string) bool {
+	for _, pl := range pls {
+		if pl.ProviderPlaylistID == id {
+			return true
+		}
+	}
+	return false
 }
 
 // remoteAlbumsFrom derives remote albums from a single provider's track results,
@@ -440,7 +472,7 @@ func (s *CatalogService) remoteArtistsFrom(ctx context.Context, prov providers.P
 
 	// Preferred: a provider that searches artists directly carries accurate album
 	// counts and images.
-	if as, ok := prov.(providers.ArtistSearcher); ok {
+	if as, ok := providerAs[providers.ArtistSearcher](ctx, s, prov, providers.CapArtists); ok {
 		if arts, err := s.cachedArtistSearch(ctx, as, prov.Name(), query, limit); err == nil {
 			for _, ar := range arts {
 				name := strings.TrimSpace(ar.Name)
@@ -508,7 +540,7 @@ func (s *CatalogService) RemoteArtist(ctx context.Context, remoteArtistID string
 	}
 
 	// Preferred: a provider that lists an artist's discography directly.
-	if lister, ok := prov.(providers.ArtistAlbumLister); ok && artistID != "" {
+	if lister, ok := providerAs[providers.ArtistAlbumLister](ctx, s, prov, providers.CapArtists); ok && artistID != "" {
 		if pas, err := lister.ArtistAlbums(ctx, artistID, 100); err == nil {
 			albums := make([]models.Album, 0, len(pas))
 			for _, pa := range pas {
@@ -573,11 +605,12 @@ func (p providerImageLookup) Available() bool {
 	if p.svc == nil || p.svc.state == nil {
 		return false
 	}
-	prov, ok := p.svc.searchProvider()
+	ctx := context.Background()
+	prov, ok := p.svc.searchProvider(ctx, providers.CapArtists)
 	if !ok {
 		return false
 	}
-	_, ok = prov.(providers.ArtistImageSearcher)
+	_, ok = providerAs[providers.ArtistImageSearcher](ctx, p.svc, prov, providers.CapArtists)
 	return ok
 }
 
@@ -586,11 +619,11 @@ func (p providerImageLookup) Lookup(ctx context.Context, name string) (string, e
 	if p.svc == nil || p.svc.state == nil {
 		return "", nil
 	}
-	prov, ok := p.svc.searchProvider()
+	prov, ok := p.svc.searchProvider(ctx, providers.CapArtists)
 	if !ok {
 		return "", nil
 	}
-	is, ok := prov.(providers.ArtistImageSearcher)
+	is, ok := providerAs[providers.ArtistImageSearcher](ctx, p.svc, prov, providers.CapArtists)
 	if !ok {
 		return "", nil
 	}
@@ -605,12 +638,12 @@ func (s *CatalogService) RemoteAlbumsForArtist(ctx context.Context, artistName s
 	if s == nil || s.state == nil {
 		return nil, nil
 	}
-	prov, ok := s.searchProvider()
+	prov, ok := s.searchProvider(ctx, providers.CapArtists)
 	if !ok {
 		return nil, nil
 	}
-	lister, lok := prov.(providers.ArtistAlbumLister)
-	as, aok := prov.(providers.ArtistSearcher)
+	lister, lok := providerAs[providers.ArtistAlbumLister](ctx, s, prov, providers.CapArtists)
+	as, aok := providerAs[providers.ArtistSearcher](ctx, s, prov, providers.CapArtists)
 	if !lok || !aok {
 		s.state.logger.Debug("artist enrichment skipped: provider lacks browse capability",
 			"provider", prov.Name(), "artistSearcher", aok, "artistAlbumLister", lok)
@@ -675,16 +708,16 @@ func (s *CatalogService) RemoteTracksForAlbum(ctx context.Context, artistName, a
 	if s == nil || s.state == nil || strings.TrimSpace(albumName) == "" {
 		return nil, nil
 	}
-	prov, ok := s.searchProvider()
+	prov, ok := s.searchProvider(ctx, providers.CapTrackSearch)
 	if !ok {
 		return nil, nil
 	}
 	ctx, cancel := s.searchCtx(ctx)
 	defer cancel()
 
-	as, aok := prov.(providers.ArtistSearcher)
-	lister, lok := prov.(providers.ArtistAlbumLister)
-	browser, bok := prov.(providers.AlbumBrowser)
+	as, aok := providerAs[providers.ArtistSearcher](ctx, s, prov, providers.CapArtists)
+	lister, lok := providerAs[providers.ArtistAlbumLister](ctx, s, prov, providers.CapArtists)
+	browser, bok := providerAs[providers.AlbumBrowser](ctx, s, prov, providers.CapArtists)
 	if !aok || !lok || !bok {
 		s.state.logger.Debug("album enrichment: provider lacks browse capability, falling back to search",
 			"provider", prov.Name(), "artistSearcher", aok, "artistAlbumLister", lok, "albumBrowser", bok)
@@ -810,7 +843,7 @@ func (s *CatalogService) remoteAlbumByID(ctx context.Context, remoteAlbumID stri
 	if !ok {
 		return models.Album{}, nil, nil
 	}
-	browser, ok := prov.(providers.AlbumBrowser)
+	browser, ok := providerAs[providers.AlbumBrowser](ctx, s, prov, providers.CapArtists)
 	if !ok {
 		return models.Album{ID: remoteAlbumID, Name: title}, nil, nil
 	}
@@ -851,7 +884,7 @@ func (s *CatalogService) providerArtistTracks(ctx context.Context, provName, art
 		return nil, ""
 	}
 	var results []providers.Result
-	if browser, ok := prov.(providers.ArtistBrowser); ok && artistID != "" {
+	if browser, ok := providerAs[providers.ArtistBrowser](ctx, s, prov, providers.CapArtists); ok && artistID != "" {
 		if r, err := browser.ArtistTracks(ctx, artistID, 100); err == nil {
 			results = r
 		}

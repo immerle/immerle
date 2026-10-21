@@ -232,6 +232,38 @@ function CreateProviderModal({ visible, onClose }: { visible: boolean; onClose: 
 
 /** Per-provider error/warning log, embedded at the bottom of the settings popin
  * (only fetched while the popin is open). */
+// Read from the live list (not the modal's snapshot) so a toggle reflects at once.
+function ProviderCapabilitiesSection({ name }: { name: string }) {
+  const t = useT();
+  const colors = useColors();
+  const { setCapability } = useProviderMutations();
+  const caps = useProviders().data?.find((p) => p.name === name)?.capabilities ?? [];
+  if (!caps.length) return null;
+
+  return (
+    <View className="gap-2 border-t border-border pt-3">
+      <Text className="text-sm font-semibold text-foreground">{t('admin.providers.capabilitiesTitle')}</Text>
+      <Text className="text-xs text-muted">{t('admin.providers.capabilitiesSubtitle')}</Text>
+      {caps.map((c) => (
+        <View key={c.key} className="flex-row items-center justify-between rounded-xl bg-surface-alt px-3 py-2">
+          <Text className="flex-1 pr-2 text-sm text-foreground">{t(`admin.providers.capability.${c.key}`)}</Text>
+          <Switch
+            value={c.enabled}
+            disabled={setCapability.isPending}
+            onValueChange={(v) =>
+              setCapability.mutate(
+                { name, capability: c.key, enabled: v },
+                { onError: (e) => useToast.getState().error(tError(e)) },
+              )
+            }
+            trackColor={{ true: colors.primary, false: colors.border }}
+          />
+        </View>
+      ))}
+    </View>
+  );
+}
+
 function ProviderLogsSection({ name }: { name: string }) {
   const t = useT();
   const q = useProviderLogs(name);
@@ -609,6 +641,8 @@ function ProviderModal({ initial, onClose }: { initial: Provider; onClose: () =>
                 <Button title={t('admin.providers.delete')} icon="trash-outline" variant="danger" onPress={() => setConfirming(true)} />
               )
             ) : null}
+
+            <ProviderCapabilitiesSection name={initial.name} />
 
             <ProviderLogsSection name={initial.name} />
           </ScrollView>

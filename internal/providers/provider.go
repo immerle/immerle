@@ -124,6 +124,12 @@ type PlaylistBrowser interface {
 	Playlists(ctx context.Context, limit int) ([]ProviderPlaylist, error)
 }
 
+// PlaylistSearcher is an optional capability: search a provider's playlists by
+// query, server-side.
+type PlaylistSearcher interface {
+	SearchPlaylists(ctx context.Context, query string, limit int) ([]ProviderPlaylist, error)
+}
+
 // Verifier is an optional capability: validate at registration time that the
 // remote is reachable and correctly configured, so bad config is rejected
 // early instead of failing silently later. HTTP providers verify against the

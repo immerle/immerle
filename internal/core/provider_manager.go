@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"regexp"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -219,6 +220,9 @@ func (m *ProviderManager) Upsert(ctx context.Context, cfg models.ProviderConfig)
 		return cfg, err
 	}
 	if cfg.Enabled {
+		if saved, err := m.repo.Get(ctx, cfg.Name); err == nil {
+			m.registry.SetDisabledCapabilities(cfg.Name, saved.DisabledCapabilities)
+		}
 		m.registry.Register(built)
 		m.logger.Info("provider registered", "provider", cfg.Name, "kind", cfg.Kind)
 	} else {
@@ -251,6 +255,7 @@ func (m *ProviderManager) SetEnabled(ctx context.Context, name string, enabled b
 			return cfg, err
 		}
 		cfg.Enabled = true
+		m.registry.SetDisabledCapabilities(name, cfg.DisabledCapabilities)
 		m.registry.Register(built)
 		m.reorderFromDB(ctx)
 	} else {
@@ -344,24 +349,26 @@ func skeletonConfig(caps providers.Capabilities) string {
 	return string(b)
 }
 
-// Versions fetches each dynamic (HTTP) provider's live protocol version in
-// parallel, best-effort: unreachable providers are simply omitted. Time-bounded
-// so the admin list stays responsive. Does not take the manager lock (read-only
-// introspection, no network call while holding it).
-func (m *ProviderManager) Versions(ctx context.Context) map[string]int {
+// Capabilities returns what each provider declares (live /capabilities for
+// HTTP providers, in code for built-ins), fetched in parallel, best-effort:
+// unreachable providers are simply omitted. Time-bounded so the admin list
+// stays responsive. names restricts it to those providers (all when empty).
+// Does not take the manager lock (read-only introspection, no network call
+// while holding it).
+func (m *ProviderManager) Capabilities(ctx context.Context, names ...string) map[string]providers.Capabilities {
 	configs, err := m.repo.List(ctx)
 	if err != nil {
 		return nil
 	}
+	if len(names) > 0 {
+		configs = slices.DeleteFunc(configs, func(c models.ProviderConfig) bool { return !slices.Contains(names, c.Name) })
+	}
 	ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
 	defer cancel()
-	out := map[string]int{}
+	out := map[string]providers.Capabilities{}
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 	for _, c := range configs {
-		if c.Builtin() {
-			continue
-		}
 		wg.Add(1)
 		go func(c models.ProviderConfig) {
 			defer wg.Done()
@@ -378,7 +385,7 @@ func (m *ProviderManager) Versions(ctx context.Context) map[string]int {
 				return
 			}
 			mu.Lock()
-			out[c.Name] = caps.Version
+			out[c.Name] = caps
 			mu.Unlock()
 		}(c)
 	}
@@ -447,8 +454,33 @@ func (m *ProviderManager) activate(cfg models.ProviderConfig) error {
 	if err != nil {
 		return err
 	}
+	m.registry.SetDisabledCapabilities(cfg.Name, cfg.DisabledCapabilities)
 	m.registry.Register(p)
 	return nil
+}
+
+// SetCapability switches one capability of a provider on or off. Applied to
+// the live registry immediately; the provider stays enabled either way.
+func (m *ProviderManager) SetCapability(ctx context.Context, name, key string, enabled bool) (models.ProviderConfig, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if !slices.Contains(providers.CapabilityKeys, key) {
+		return models.ProviderConfig{}, fmt.Errorf("unknown capability %q", key)
+	}
+	cfg, err := m.repo.Get(ctx, name)
+	if err != nil {
+		return cfg, err
+	}
+	disabled := slices.DeleteFunc(slices.Clone(cfg.DisabledCapabilities), func(k string) bool { return k == key })
+	if !enabled {
+		disabled = append(disabled, key)
+	}
+	if err := m.repo.SetDisabledCapabilities(ctx, name, disabled); err != nil {
+		return cfg, err
+	}
+	m.registry.SetDisabledCapabilities(name, disabled)
+	m.logger.Info("provider capability toggled", "provider", name, "capability", key, "enabled", enabled)
+	return m.repo.Get(ctx, name)
 }
 
 // firstOrder returns one below the current minimum sort order, so a newly added

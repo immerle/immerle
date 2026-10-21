@@ -26,10 +26,23 @@ settings. Credentials for a built-in live in its config there, never in
 | Jamendo | Creative Commons, free authorized downloads | Client ID required | seeded, disabled until configured |
 | Internet Archive | Public domain, CC and artist-sanctioned live recordings | none | enabled |
 | Free Music Archive | freemusicarchive.org CC catalog | none | enabled, first in priority order |
+| Spotify Playlist | Public Spotify playlists in search, no tracks of its own ([details](./playlist-import.md#spotify-playlists-in-search)) | none | disabled |
 
 Providers have a **priority order**, editable from the admin settings: the
 first *enabled* one is the one search and enrichment use. There's no separate
 "default provider" setting; reordering the list is how you choose.
+
+## Capabilities
+
+Each provider declares what it can do: **track search**, **artists & albums**
+(artist search, discographies, album tracklists, artist images),
+**playlists** and **playlist search**. The built-ins declare theirs in code,
+an HTTP provider in its `/capabilities` response.
+
+The provider's settings panel lists the capabilities it declares, each with a
+switch. A disabled capability is never called: with track search off, global
+search sends that provider no request at all, while its playlists (if enabled)
+still show up.
 
 ## Dynamic (HTTP) providers
 

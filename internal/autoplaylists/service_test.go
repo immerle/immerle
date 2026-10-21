@@ -608,7 +608,7 @@ func TestSyncDiscoverPublishesThenRemovesWhenToggledOff(t *testing.T) {
 	}
 	chart := discover.Playlist{IDs: []string{"imlid:c1"}, Kind: "chart", Name: "Top 50", Tracks: []discover.PlaylistEntry{{}}}
 	empty := discover.Playlist{IDs: []string{"imlid:e1"}, Kind: "playlist", Name: "Not ingested yet"}
-	curated := discover.Playlist{IDs: []string{"imlid:p1"}, Kind: "playlist", Name: "Rap FR", Tracks: []discover.PlaylistEntry{
+	curated := discover.Playlist{IDs: []string{"imlid:p1"}, Kind: "playlist", Name: "Rap FR", Image: "https://cdn.immerle.com/playlists/p1.jpg", Tracks: []discover.PlaylistEntry{
 		{Track: discover.Track{IDs: []string{"imlid:x", "mbid:m1"}, Artist: "Vacra feat. La Rvfleuze", Artists: []discover.Artist{{Name: "Vacra"}, {Name: "La Rvfleuze"}}, Title: "Fille à Papa"}},
 	}}
 	fake := &fakeDiscover{
@@ -619,6 +619,15 @@ func TestSyncDiscoverPublishesThenRemovesWhenToggledOff(t *testing.T) {
 	svc := New(store.Catalog, store.Genres, store.Wrapped, store.Annotations, store.Users, store.Playlists, testutil.NewLogger())
 	svc.SetDiscover(fake)
 
+	// Without a discover cover, a curated playlist gets a bare gradient.
+	fake.lists["imlid:p1"] = discover.Playlist{IDs: curated.IDs, Kind: "playlist", Name: curated.Name, Tracks: curated.Tracks}
+	svc.syncDiscover(ctx, user.ID)
+	bare, err := store.Playlists.FindFederated(ctx, SourceDiscoverPlaylist, DiscoverPlaylistExternalID(user.ID, 0))
+	if err != nil || bare.CoverArt != models.GeneratorCoverID(gradientParams(curated.Name)) {
+		t.Fatalf("cover-less curated playlist: %+v, %v (want a bare gradient)", bare.CoverArt, err)
+	}
+	fake.lists["imlid:p1"] = curated
+
 	if n := svc.syncDiscover(ctx, user.ID); n != 2 {
 		t.Fatalf("synced %d, want 2 (made for you + one curated; the chart and the empty one skipped)", n)
 	}
@@ -627,8 +636,8 @@ func TestSyncDiscoverPublishesThenRemovesWhenToggledOff(t *testing.T) {
 		t.Fatalf("made-for-you playlist: %+v, %v", mix, err)
 	}
 	p, err := store.Playlists.FindFederated(ctx, SourceDiscoverPlaylist, DiscoverPlaylistExternalID(user.ID, 0))
-	if err != nil || p.Name != "Rap FR" {
-		t.Fatalf("curated playlist: %+v, %v", p, err)
+	if err != nil || p.Name != "Rap FR" || p.CoverArt != models.RemoteCoverID(curated.Image) {
+		t.Fatalf("curated playlist: %+v, %v (want discover's cover)", p, err)
 	}
 	if got, _ := store.Playlists.Tracks(ctx, p.ID); len(got) != 1 || got[0].MBID != "m1" || got[0].ArtistName != "Vacra" {
 		t.Fatalf("curated tracks = %+v, want the one track with its mbid, under its main artist", got)

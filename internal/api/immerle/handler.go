@@ -69,7 +69,7 @@ type Deps struct {
 	// Imports runs playlist imports from external sources (e.g. Spotify).
 	Imports *importer.Service
 	// SpotifyPlaylists adds public Spotify playlists to the global search when
-	// the spotifySearch setting is on, opened as on-demand federated playlists.
+	// the built-in spotify-playlist provider is enabled, opened as on-demand federated playlists.
 	// Optional.
 	SpotifyPlaylists *spotifyplaylists.Service
 	// Scanner ingests user-uploaded ("local") audio files into the catalog.
@@ -425,6 +425,7 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Post("/admin/providers", h.handleProviderUpsert)
 			r.Put("/admin/providers/order", h.handleProviderReorder)
 			r.Put("/admin/providers/{name}/enabled", h.handleProviderEnable)
+			r.Put("/admin/providers/{name}/capabilities/{capability}", h.handleProviderCapability)
 			r.Delete("/admin/providers/{name}", h.handleProviderDelete)
 			r.Get("/admin/providers/{name}/logs", h.handleProviderLogs)
 

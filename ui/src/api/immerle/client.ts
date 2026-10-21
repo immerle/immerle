@@ -117,6 +117,7 @@ function toProvider(dto: ProviderDTO): Provider {
     deletable: dto.deletable ?? true,
     sortOrder: dto.sortOrder ?? 0,
     version: dto.version ?? undefined,
+    capabilities: (dto.capabilities ?? []).map((c) => ({ key: c.key ?? '', enabled: c.enabled ?? false })),
   };
 }
 
@@ -868,6 +869,16 @@ export class ImmerleClient {
       body: { enabled },
     });
     if (error || !data) throw apiErr(error, 'provider_enable_failed');
+    return toProvider(data);
+  }
+
+  /** Switch one capability of a provider on/off; applied immediately. */
+  async setProviderCapability(name: string, capability: string, enabled: boolean): Promise<Provider> {
+    const { data, error } = await this.api.PUT('/admin/providers/{name}/capabilities/{capability}', {
+      params: { path: { name, capability } },
+      body: { enabled },
+    });
+    if (error || !data) throw apiErr(error, 'provider_capability_failed');
     return toProvider(data);
   }
 

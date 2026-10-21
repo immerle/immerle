@@ -2071,6 +2071,100 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/providers/{name}/capabilities/{capability}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Enable or disable a provider capability
+         * @description Admin only. Switches one capability (trackSearch, artists, playlists, playlistSearch) of a provider on or off, applied to the live registry immediately. A disabled capability is never called: e.g. with trackSearch off, global search sends no request to that provider.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Provider name */
+                    name: string;
+                    /** @description Capability key */
+                    capability: string;
+                };
+                cookie?: never;
+            };
+            /** @description Enabled flag */
+            requestBody: {
+                content: {
+                    "application/json": Record<string, never> | components["schemas"]["immerle.setEnabledRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.ProviderDTO"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/providers/{name}/enabled": {
         parameters: {
             query?: never;
@@ -8046,7 +8140,7 @@ export interface paths {
         };
         /**
          * Search the catalog
-         * @description Searches artists, albums, songs, public playlists and radio stations (merging remote-provider results when enabled, plus public Spotify playlists when the spotifySearch setting is on), returned as one list ranked by relevance to the query. `type` scopes the search server-side to just that result type.
+         * @description Searches artists, albums, songs, public playlists and radio stations (merging remote-provider results when enabled, plus public Spotify playlists when the built-in spotify-playlist provider is enabled), returned as one list ranked by relevance to the query. `type` scopes the search server-side to just that result type.
          */
         get: {
             parameters: {
@@ -9447,7 +9541,7 @@ export interface paths {
         put?: never;
         /**
          * Open a Spotify playlist
-         * @description Returns the local on-demand mirror of a public Spotify playlist (fetched from Spotify when missing or older than a week). Its tracks resolve lazily at play time like any federated playlist; subscribe to it to keep it in the library, refreshed weekly. 404 when the spotifySearch setting is off.
+         * @description Returns the local on-demand mirror of a public Spotify playlist (fetched from Spotify when missing or older than a week). Its tracks resolve lazily at play time like any federated playlist; subscribe to it to keep it in the library, refreshed weekly. 404 when the built-in spotify-playlist provider is disabled.
          */
         post: {
             parameters: {
@@ -10448,11 +10542,25 @@ export interface components {
             /** @example 1234 */
             plays?: number;
         };
+        "immerle.ProviderCapabilityDTO": {
+            /** @example true */
+            enabled?: boolean;
+            /**
+             * @description Key is one of trackSearch, artists, playlists, playlistSearch.
+             * @example trackSearch
+             */
+            key?: string;
+        };
         "immerle.ProviderDTO": {
             /** @example true */
             active?: boolean;
             /** @example false */
             builtin?: boolean;
+            /**
+             * @description Capabilities lists what the provider declares, each with whether the
+             *     admin left it on. Empty when the provider can't be reached.
+             */
+            capabilities?: components["schemas"]["immerle.ProviderCapabilityDTO"][];
             /** @example {"headers":{"Authorization":"Bearer x"}} */
             config?: string;
             /** @example true */
@@ -10601,10 +10709,6 @@ export interface components {
                 radio?: boolean;
                 /** @example 1 */
                 workers?: number;
-            };
-            spotifySearch?: {
-                /** @example false */
-                enabled?: boolean;
             };
             transcode?: {
                 /** @example ffmpeg */

@@ -27,6 +27,16 @@ type ProviderDTO struct {
 	// Version is the remote's live protocol version (HTTP providers), null when
 	// unknown or for built-ins.
 	Version *int `json:"version" example:"1"`
+	// Capabilities lists what the provider declares, each with whether the
+	// admin left it on. Empty when the provider can't be reached.
+	Capabilities []ProviderCapabilityDTO `json:"capabilities"`
+}
+
+// ProviderCapabilityDTO is one capability a provider declares.
+type ProviderCapabilityDTO struct {
+	// Key is one of trackSearch, artists, playlists, playlistSearch.
+	Key     string `json:"key" example:"trackSearch"`
+	Enabled bool   `json:"enabled" example:"true"`
 }
 
 // RuntimeSettingsDTO mirrors the admin-managed runtime settings.
@@ -79,9 +89,6 @@ type RuntimeSettingsDTO struct {
 	Logs struct {
 		RetentionDays int `json:"retentionDays" example:"30"`
 	} `json:"logs"`
-	SpotifySearch struct {
-		Enabled bool `json:"enabled" example:"false"`
-	} `json:"spotifySearch"`
 	Sonic struct {
 		Enabled    bool `json:"enabled" example:"false"`
 		Workers    int  `json:"workers" example:"1"`

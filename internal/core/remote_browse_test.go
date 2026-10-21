@@ -4,6 +4,9 @@ import (
 	"context"
 	"io"
 	"testing"
+	"time"
+
+	"github.com/google/uuid"
 
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/providers"
@@ -54,6 +57,82 @@ func (p *playlistProvider) Capabilities(_ context.Context) (providers.Capabiliti
 
 func (p *playlistProvider) Playlists(_ context.Context, _ int) ([]providers.ProviderPlaylist, error) {
 	return p.playlists, nil
+}
+
+// playlistSearchProvider adds server-side PlaylistSearcher; its /playlists
+// listing is empty so results can only come from the search endpoint.
+type playlistSearchProvider struct {
+	playlistProvider
+	found []providers.ProviderPlaylist
+}
+
+func (p *playlistSearchProvider) Capabilities(_ context.Context) (providers.Capabilities, error) {
+	return providers.Capabilities{Version: providers.ProtocolVersion, Name: p.name, PlaylistSearch: true}, nil
+}
+
+func (p *playlistSearchProvider) SearchPlaylists(_ context.Context, _ string, _ int) ([]providers.ProviderPlaylist, error) {
+	return p.found, nil
+}
+
+func TestRemoteSearchPlaylistsDelegatesToSearcher(t *testing.T) {
+	store := testutil.NewStore(t)
+	registry := NewProviderRegistry()
+	registry.Register(&playlistSearchProvider{
+		playlistProvider: playlistProvider{browsableProvider: browsableProvider{name: "searcher"}},
+		found: []providers.ProviderPlaylist{
+			// Name unrelated to the query: the remote ranked it, so it's kept.
+			{ProviderPlaylistID: "s1", Name: "Late Night",
+				Tracks: []providers.Result{{ProviderTrackID: "t1", Title: "Song", Artist: "Artist"}}},
+		},
+	})
+	svc := NewCatalogService(CatalogServiceConfig{
+		Catalog: store.Catalog, Downloads: store.Downloads, Registry: registry,
+		Settings: StaticProviderSettings{}, Logger: testutil.NewLogger(),
+	})
+
+	ctx := context.Background()
+	playlists := svc.RemoteSearchPlaylists(ctx, "chill", 10)
+	if len(playlists) != 1 || playlists[0].Name != "Late Night" {
+		t.Fatalf("expected the searcher's playlist, got %+v", playlists)
+	}
+	// Not in the /playlists listing: resolution must search it back by name.
+	got, err := svc.RemotePlaylist(ctx, playlists[0].ID)
+	if err != nil || got.Name != "Late Night" || len(got.Tracks) != 1 {
+		t.Fatalf("RemotePlaylist: %+v err=%v", got, err)
+	}
+}
+
+// countingProvider counts track searches.
+type countingProvider struct {
+	browsableProvider
+	searches int
+}
+
+func (c *countingProvider) Search(_ context.Context, _ string, _ int) ([]providers.Result, error) {
+	c.searches++
+	return []providers.Result{{ProviderTrackID: "t1", Title: "Song", Artist: "Artist"}}, nil
+}
+
+func TestRemoteSearch3SkipsDisabledTrackSearch(t *testing.T) {
+	store := testutil.NewStore(t)
+	registry := NewProviderRegistry()
+	on := &countingProvider{browsableProvider: browsableProvider{name: "on"}}
+	off := &countingProvider{browsableProvider: browsableProvider{name: "off"}}
+	registry.Register(on)
+	registry.Register(off)
+	registry.SetDisabledCapabilities("off", []string{providers.CapTrackSearch, providers.CapArtists})
+	svc := NewCatalogService(CatalogServiceConfig{
+		Catalog: store.Catalog, Downloads: store.Downloads, Registry: registry,
+		Settings: StaticProviderSettings{}, Logger: testutil.NewLogger(),
+	})
+
+	_, _, tracks := svc.RemoteSearch3(context.Background(), "song", 10, 10, 10)
+	if len(tracks) != 1 || on.searches == 0 {
+		t.Fatalf("expected results from the enabled provider, got %+v", tracks)
+	}
+	if off.searches != 0 {
+		t.Fatalf("provider with trackSearch off was searched %d times", off.searches)
+	}
 }
 
 func TestRemoteSearch3ArtistAlbumCount(t *testing.T) {
@@ -166,6 +245,66 @@ func TestResolveBestRemoteMatchRejectsUnrelatedResult(t *testing.T) {
 	track, ok := svc.ResolveBestRemoteMatch(context.Background(), "Rap Barbie", "Stuck Up")
 	if ok {
 		t.Fatalf("expected no acceptable match, got %+v", track)
+	}
+}
+
+// A full credit picks the candidate filed under one of its artists, whatever
+// the provider's result order (plain string relevance saw both as unrelated).
+func TestResolveBestRemoteMatchComparesArtistCredits(t *testing.T) {
+	store := testutil.NewStore(t)
+	registry := NewProviderRegistry()
+	registry.Register(&browsableProvider{
+		name: "prov",
+		searchResult: []providers.Result{
+			{ProviderTrackID: "other", Title: "Nouchi in Paris", Artist: "Cover Band"},
+			{ProviderTrackID: "right", Title: "Nouchi in Paris", Artist: "Sindika"},
+		},
+	})
+	svc := NewCatalogService(CatalogServiceConfig{
+		Catalog: store.Catalog, Downloads: store.Downloads, Registry: registry,
+		Settings: StaticProviderSettings{}, Logger: testutil.NewLogger(),
+	})
+
+	track, ok := svc.ResolveBestRemoteMatch(context.Background(), "Sindika, TRK., Ameka Zrai", "Nouchi in Paris")
+	if !ok || track.ArtistName != "Sindika" {
+		t.Fatalf("expected the Sindika candidate, got %+v ok=%v", track, ok)
+	}
+}
+
+// A provider track whose download was evicted is no longer local, so it must
+// still come back from a remote search (else it can never be found again),
+// while a completed download is hidden behind its local entry.
+func TestRemoteSearchKeepsEvictedDownloads(t *testing.T) {
+	store := testutil.NewStore(t)
+	ctx := context.Background()
+	registry := NewProviderRegistry()
+	registry.Register(&browsableProvider{
+		name:         "deezer",
+		searchResult: []providers.Result{{ProviderTrackID: "p1", Title: "AVEC MOI", Artist: "RnBoi"}},
+	})
+	svc := NewCatalogService(CatalogServiceConfig{
+		Catalog: store.Catalog, Downloads: store.Downloads, Registry: registry,
+		Settings: StaticProviderSettings{}, Logger: testutil.NewLogger(),
+	})
+	job, err := store.Downloads.Enqueue(ctx, models.DownloadJob{
+		ID: uuid.NewString(), Provider: "deezer", ProviderTrackID: "p1",
+		Status: models.DownloadQueued, CreatedAt: time.Now(), UpdatedAt: time.Now(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Downloads.Complete(ctx, job.ID, "local-track"); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, _, tracks := svc.RemoteSearch3(ctx, "avec moi", 1, 1, 10); len(tracks) != 0 {
+		t.Fatalf("completed download should be hidden, got %+v", tracks)
+	}
+	if err := store.Downloads.MarkEvicted(ctx, "local-track"); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, tracks := svc.RemoteSearch3(ctx, "avec moi", 1, 1, 10); len(tracks) != 1 {
+		t.Fatalf("evicted download should be found again, got %+v", tracks)
 	}
 }
 
