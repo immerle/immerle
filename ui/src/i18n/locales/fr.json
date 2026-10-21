@@ -783,7 +783,6 @@
       "upToDate": "Bibliothèque à jour",
       "itemsProcessed": "{{value}} éléments traités",
       "idleDescription": "Lancez un scan pour détecter les nouveaux fichiers ou reconstruire l'index complet.",
-      "incremental": "Scan incrémental",
       "full": "Scan complet",
       "autoScan": "Scan automatique",
       "intervalLabel": "Intervalle de scan (s, 0 = jamais)",
@@ -791,19 +790,6 @@
       "restart": "Redémarrage",
       "restartNotice": "Redémarrez l'instance pour appliquer la surveillance.",
       "save": "Enregistrer"
-    },
-    "jobs": {
-      "title": "File de téléchargement",
-      "loadError": "Impossible de charger la file.",
-      "emptyTitle": "File vide",
-      "emptySubtitle": "Aucun téléchargement en cours.",
-      "statusQueued": "En attente",
-      "statusRunning": "En cours",
-      "statusCompleted": "Terminé",
-      "statusFailed": "Échec",
-      "statusCancelled": "Annulé",
-      "retry": "Relancer",
-      "cancel": "Annuler"
     },
     "logs": {
       "title": "Logs",

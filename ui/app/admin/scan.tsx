@@ -32,10 +32,6 @@ export default function AdminScan() {
   const startScan = useStartScan();
 
   const scanning = progress.data?.scanning ?? false;
-  const pct =
-    progress.data?.total && progress.data.total > 0
-      ? Math.min((progress.data.count / progress.data.total) * 100, 100)
-      : null;
 
   return (
     <>
@@ -63,12 +59,10 @@ export default function AdminScan() {
           {scanning ? (
             <View className="gap-1.5">
               <View className="h-2 w-full overflow-hidden rounded-full bg-surface-alt">
-                <View className="h-full rounded-full bg-primary" style={{ width: pct != null ? `${pct}%` : '40%' }} />
+                <View className="h-full rounded-full bg-primary" style={{ width: '40%' }} />
               </View>
               <Text className="text-xs text-muted">
                 {t('admin.scan.itemsProcessed', { value: formatCount(progress.data?.count) })}
-                {pct != null ? ` · ${Math.round(pct)}%` : ''}
-                {progress.data?.phase ? ` · ${progress.data.phase}` : ''}
               </Text>
             </View>
           ) : (
@@ -77,26 +71,14 @@ export default function AdminScan() {
             </Text>
           )}
 
-          <View className="flex-row gap-2 pt-1">
-            <View className="flex-1">
-              <Button
-                title={t('admin.scan.incremental')}
-                icon="refresh"
-                variant="secondary"
-                disabled={scanning}
-                loading={startScan.isPending && !startScan.variables}
-                onPress={() => startScan.mutate(false)}
-              />
-            </View>
-            <View className="flex-1">
-              <Button
-                title={t('admin.scan.full')}
-                icon="refresh-circle"
-                disabled={scanning}
-                loading={startScan.isPending && startScan.variables === true}
-                onPress={() => startScan.mutate(true)}
-              />
-            </View>
+          <View className="pt-1">
+            <Button
+              title={t('admin.scan.full')}
+              icon="refresh-circle"
+              disabled={scanning}
+              loading={startScan.isPending}
+              onPress={() => startScan.mutate()}
+            />
           </View>
         </Card>
 

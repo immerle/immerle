@@ -783,7 +783,6 @@
       "upToDate": "Library up to date",
       "itemsProcessed": "{{value}} items processed",
       "idleDescription": "Run a scan to detect new files or rebuild the full index.",
-      "incremental": "Incremental scan",
       "full": "Full scan",
       "autoScan": "Automatic scan",
       "intervalLabel": "Scan interval (s, 0 = never)",
@@ -791,19 +790,6 @@
       "restart": "Restart",
       "restartNotice": "Restart the instance to apply watching.",
       "save": "Save"
-    },
-    "jobs": {
-      "title": "Download queue",
-      "loadError": "Could not load the queue.",
-      "emptyTitle": "Empty queue",
-      "emptySubtitle": "No download in progress.",
-      "statusQueued": "Queued",
-      "statusRunning": "Running",
-      "statusCompleted": "Completed",
-      "statusFailed": "Failed",
-      "statusCancelled": "Cancelled",
-      "retry": "Retry",
-      "cancel": "Cancel"
     },
     "logs": {
       "title": "Logs",

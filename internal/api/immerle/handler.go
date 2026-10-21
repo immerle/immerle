@@ -72,8 +72,10 @@ type Deps struct {
 	// the built-in spotify-playlist provider is enabled, opened as on-demand federated playlists.
 	// Optional.
 	SpotifyPlaylists *spotifyplaylists.Service
-	// Scanner ingests user-uploaded ("local") audio files into the catalog.
-	Scanner *scanner.Scanner
+	// Scanner ingests user-uploaded ("local") audio files into the catalog and
+	// runs the admin-triggered library scans over LibraryPaths.
+	Scanner      *scanner.Scanner
+	LibraryPaths []string
 	// UploadsDir is where user-uploaded audio files are written (a scanned dir).
 	UploadsDir string
 	// CoversDir holds cover-art files (custom track covers are written here).
@@ -248,6 +250,8 @@ func (h *Handler) Register(mux chi.Router) {
 
 			r.Get("/activity", h.handleActivity)
 			r.Get("/library/stats", h.handleLibraryStats)
+			r.Get("/admin/library/scan", h.handleScanStatus)
+			r.Post("/admin/library/scan", h.handleStartScan)
 
 			// Internet radio stations (list + like for everyone; CRUD is admin).
 			r.Get("/radio", h.handleRadioList)
