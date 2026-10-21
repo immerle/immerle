@@ -48,7 +48,7 @@ import {
   ProfileHallOfFameView,
   ProfilePlaylistView,
   ProfileResponse,
-  ProviderDTO,
+  ProviderView,
   PublicPlaylistView,
   RuntimeSettingsDTO,
   SonicStatusDTO,
@@ -132,20 +132,20 @@ function toProfileHallOfFame(dto?: ProfileHallOfFameView): { top: Song[]; total:
   return { top: dto.top.map(toSong), total: dto.total };
 }
 
-/** Normalize a provider DTO (all fields optional) into a complete {@link Provider}. */
-function toProvider(dto: ProviderDTO): Provider {
+/** Maps a provider view into the domain {@link Provider}. */
+function toProvider(v: ProviderView): Provider {
   return {
-    name: dto.name ?? '',
-    kind: dto.kind ?? 'http',
-    endpoint: dto.endpoint ?? '',
-    config: dto.config ?? '{}',
-    enabled: dto.enabled ?? false,
-    active: dto.active ?? false,
-    builtin: dto.builtin ?? false,
-    deletable: dto.deletable ?? true,
-    sortOrder: dto.sortOrder ?? 0,
-    version: dto.version ?? undefined,
-    capabilities: (dto.capabilities ?? []).map((c) => ({ key: c.key ?? '', enabled: c.enabled ?? false })),
+    name: v.name,
+    kind: v.kind,
+    endpoint: v.endpoint,
+    config: v.config,
+    enabled: v.enabled,
+    active: v.active,
+    builtin: v.builtin,
+    deletable: v.deletable,
+    sortOrder: v.sortOrder,
+    version: v.version,
+    capabilities: v.capabilities,
   };
 }
 
@@ -1258,24 +1258,28 @@ export class ImmerleClient {
 
   /** Discover other instances on the hub (by sqid or name). Server-side. */
   async searchInstances(q: string, signal?: AbortSignal): Promise<InstanceSummary[]> {
-    const r = await this.request<{ instances?: InstanceSummary[] }>('GET', `admin/federation/instances?q=${encodeURIComponent(q)}`, undefined, signal);
-    return r.instances ?? [];
+    const { data, error, response } = await this.api.GET('/admin/federation/instances', { params: { query: { q } }, signal });
+    if (error) throw apiErr(error, 'federation.search', response);
+    return data.instances;
   }
 
   /** List the instances this one follows on the hub. Server-side. */
   async listSubscriptions(signal?: AbortSignal): Promise<InstanceSummary[]> {
-    const r = await this.request<{ subscriptions?: InstanceSummary[] }>('GET', 'admin/federation/subscriptions', undefined, signal);
-    return r.subscriptions ?? [];
+    const { data, error, response } = await this.api.GET('/admin/federation/subscriptions', { signal });
+    if (error) throw apiErr(error, 'federation.subscriptions', response);
+    return data.subscriptions;
   }
 
   /** Follow a target instance by hub id (UUID) or sqid handle. Server-side. */
   async subscribeInstance(target: { instanceId?: string; sqid?: string }): Promise<void> {
-    await this.request<{ ok: boolean }>('POST', 'admin/federation/subscriptions', target);
+    const { error, response } = await this.api.POST('/admin/federation/subscriptions', { body: target });
+    if (error) throw apiErr(error, 'federation.subscribe', response);
   }
 
   /** Stop following the instance with the given hub id (UUID). Server-side. */
   async unsubscribeInstance(id: string): Promise<void> {
-    await this.request<{ ok: boolean }>('DELETE', `admin/federation/subscriptions/${encodeURIComponent(id)}`);
+    const { error, response } = await this.api.DELETE('/admin/federation/subscriptions/{id}', { params: { path: { id } } });
+    if (error) throw apiErr(error, 'federation.unsubscribe', response);
   }
 
   // --- Social: activity (typed via OpenAPI) ---------------------------------

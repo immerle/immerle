@@ -13,14 +13,27 @@ func (h *Handler) requireAdmin(w http.ResponseWriter, r *http.Request) bool {
 	return true
 }
 
+// cleanupStatusView is the provider-download eviction sweep state.
+type cleanupStatusView struct {
+	Enabled         bool `json:"enabled"`
+	MaxAgeSeconds   int  `json:"maxAgeSeconds"`
+	IntervalSeconds int  `json:"intervalSeconds"`
+}
+
+// cleanupRunView reports an on-demand eviction sweep.
+type cleanupRunView struct {
+	Removed int `json:"removed"`
+}
+
+// syncResultView reports an on-demand sync (charts, auto-playlists, concerts).
+type syncResultView struct {
+	Synced int `json:"synced"`
+}
+
 // cleanupStatus builds the current eviction sweep state from the runtime config.
-func (h *Handler) cleanupStatus() map[string]any {
+func (h *Handler) cleanupStatus() cleanupStatusView {
 	c := h.Settings.Get().Cleanup
-	return map[string]any{
-		"enabled":         c.Enabled,
-		"maxAgeSeconds":   c.MaxAgeSeconds,
-		"intervalSeconds": c.IntervalSeconds,
-	}
+	return cleanupStatusView{Enabled: c.Enabled, MaxAgeSeconds: c.MaxAgeSeconds, IntervalSeconds: c.IntervalSeconds}
 }
 
 // handleCleanup reports the provider-download eviction sweep state.
@@ -30,7 +43,7 @@ func (h *Handler) cleanupStatus() map[string]any {
 // @Tags         admin
 // @Security     BearerAuth
 // @Produce      json
-// @Success      200  {object}  CleanupStatusDTO
+// @Success      200  {object}  cleanupStatusView
 // @Failure      401  {object}  errorResponse
 // @Failure      403  {object}  errorResponse
 // @Failure      503  {object}  errorResponse
@@ -60,7 +73,7 @@ type cleanupUpdateRequest struct {
 // @Accept       json
 // @Produce      json
 // @Param        body  body  cleanupUpdateRequest  true  "Enable or disable the sweep"
-// @Success      200  {object}  CleanupStatusDTO
+// @Success      200  {object}  cleanupStatusView
 // @Failure      400  {object}  errorResponse
 // @Failure      401  {object}  errorResponse
 // @Failure      403  {object}  errorResponse
@@ -101,7 +114,7 @@ func (h *Handler) handleCleanupUpdate(w http.ResponseWriter, r *http.Request) {
 // @Tags         admin
 // @Security     BearerAuth
 // @Produce      json
-// @Success      201  {object}  CleanupRunDTO
+// @Success      201  {object}  cleanupRunView
 // @Failure      401  {object}  errorResponse
 // @Failure      403  {object}  errorResponse
 // @Failure      500  {object}  errorResponse
@@ -121,7 +134,7 @@ func (h *Handler) handleCleanupRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.Logger.Info("cleanup sweep run on demand", "removed", removed, "by", userFrom(r.Context()).Username)
-	writeResource(w, http.StatusCreated, map[string]any{"removed": removed})
+	writeResource(w, http.StatusCreated, cleanupRunView{Removed: removed})
 }
 
 // handleChartsSync triggers an immediate curated chart-playlist sync,
@@ -132,7 +145,7 @@ func (h *Handler) handleCleanupRun(w http.ResponseWriter, r *http.Request) {
 // @Tags         admin
 // @Security     BearerAuth
 // @Produce      json
-// @Success      201  {object}  ChartsSyncDTO
+// @Success      201  {object}  syncResultView
 // @Failure      401  {object}  errorResponse
 // @Failure      403  {object}  errorResponse
 // @Failure      500  {object}  errorResponse
@@ -152,7 +165,7 @@ func (h *Handler) handleChartsSync(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.Logger.Info("chart playlists synced on demand", "synced", synced, "by", userFrom(r.Context()).Username)
-	writeResource(w, http.StatusCreated, map[string]any{"synced": synced})
+	writeResource(w, http.StatusCreated, syncResultView{Synced: synced})
 }
 
 // handleAutoPlaylistsSync triggers an immediate genre/decade auto-playlist
@@ -163,7 +176,7 @@ func (h *Handler) handleChartsSync(w http.ResponseWriter, r *http.Request) {
 // @Tags         admin
 // @Security     BearerAuth
 // @Produce      json
-// @Success      201  {object}  ChartsSyncDTO
+// @Success      201  {object}  syncResultView
 // @Failure      401  {object}  errorResponse
 // @Failure      403  {object}  errorResponse
 // @Failure      500  {object}  errorResponse
@@ -183,5 +196,5 @@ func (h *Handler) handleAutoPlaylistsSync(w http.ResponseWriter, r *http.Request
 		return
 	}
 	h.Logger.Info("auto-playlists synced on demand", "synced", synced, "by", userFrom(r.Context()).Username)
-	writeResource(w, http.StatusCreated, map[string]any{"synced": synced})
+	writeResource(w, http.StatusCreated, syncResultView{Synced: synced})
 }

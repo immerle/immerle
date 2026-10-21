@@ -331,13 +331,7 @@ export interface BandcampJob {
 }
 
 /** A federated instance surfaced by discovery / subscriptions (no secrets). */
-export interface InstanceSummary {
-  id: string;
-  sqid: string;
-  name: string;
-  region: string;
-  lastSeenAt?: string;
-}
+export type { InstanceSummary } from '../immerleApi';
 
 /** Thrown when a Immerle REST endpoint returns a non-2xx. */
 export class ImmerleApiError extends Error {

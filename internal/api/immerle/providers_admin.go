@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"slices"
+	"time"
 
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
@@ -14,36 +15,72 @@ import (
 // caps is what the provider declares (nil when unknown): built-ins answer in
 // code, HTTP providers from their /capabilities, which also gives the live
 // protocol version.
-func (h *Handler) providerView(p models.ProviderConfig, caps *providers.Capabilities) map[string]any {
+func (h *Handler) providerView(p models.ProviderConfig, caps *providers.Capabilities) providerView {
 	var version *int
-	capViews := []ProviderCapabilityDTO{}
+	capViews := []providerCapabilityView{}
 	if caps != nil {
 		if !p.Builtin() {
 			version = &caps.Version
 		}
 		for _, k := range caps.Keys() {
-			capViews = append(capViews, ProviderCapabilityDTO{Key: k, Enabled: !slices.Contains(p.DisabledCapabilities, k)})
+			capViews = append(capViews, providerCapabilityView{Key: k, Enabled: !slices.Contains(p.DisabledCapabilities, k)})
 		}
 	}
-	return map[string]any{
-		"name":         p.Name,
-		"kind":         p.Kind,
-		"endpoint":     p.Endpoint,
-		"config":       p.Config,
-		"enabled":      p.Enabled,
-		"active":       h.Providers.Active(p.Name), // currently live in the registry
-		"builtin":      p.Builtin(),
-		"deletable":    !p.Builtin(), // built-ins can be disabled but not removed
-		"sortOrder":    p.SortOrder,
-		"version":      version,
-		"capabilities": capViews,
-		"createdAt":    p.CreatedAt,
-		"updatedAt":    p.UpdatedAt,
+	return providerView{
+		Name: p.Name, Kind: p.Kind, Endpoint: p.Endpoint, Config: p.Config, Enabled: p.Enabled,
+		Active:    h.Providers.Active(p.Name), // currently live in the registry
+		Builtin:   p.Builtin(),
+		Deletable: !p.Builtin(), // built-ins can be disabled but not removed
+		SortOrder: p.SortOrder, Version: version, Capabilities: capViews,
+		CreatedAt: p.CreatedAt, UpdatedAt: p.UpdatedAt,
 	}
 }
 
+// providerView is a managed on-demand provider (built-in or dynamic).
+type providerView struct {
+	Name      string `json:"name"`
+	Kind      string `json:"kind"`
+	Endpoint  string `json:"endpoint"`
+	Config    string `json:"config"`
+	Enabled   bool   `json:"enabled"`
+	Active    bool   `json:"active"`
+	Builtin   bool   `json:"builtin"`
+	Deletable bool   `json:"deletable"`
+	SortOrder int    `json:"sortOrder"`
+	// Version is the remote's live protocol version (HTTP providers), absent
+	// when unknown and for built-ins.
+	Version *int `json:"version,omitempty" validate:"optional"`
+	// Capabilities lists what the provider declares, each with whether the
+	// admin left it on. Empty when the provider can't be reached.
+	Capabilities []providerCapabilityView `json:"capabilities" validate:"required"`
+	CreatedAt    time.Time                `json:"createdAt"`
+	UpdatedAt    time.Time                `json:"updatedAt"`
+}
+
+// providerCapabilityView is one capability a provider declares.
+type providerCapabilityView struct {
+	// Key is one of trackSearch, artists, playlists, playlistSearch.
+	Key     string `json:"key"`
+	Enabled bool   `json:"enabled"`
+}
+
+// providerViews lists the providers with their declared capabilities, fetched
+// in parallel.
+func (h *Handler) providerViews(r *http.Request, list []models.ProviderConfig) []providerView {
+	all := h.Providers.Capabilities(r.Context())
+	out := make([]providerView, 0, len(list))
+	for _, p := range list {
+		var caps *providers.Capabilities
+		if c, ok := all[p.Name]; ok {
+			caps = &c
+		}
+		out = append(out, h.providerView(p, caps))
+	}
+	return out
+}
+
 // providerViewLive is providerView for one provider, fetching its capabilities.
-func (h *Handler) providerViewLive(r *http.Request, p models.ProviderConfig) map[string]any {
+func (h *Handler) providerViewLive(r *http.Request, p models.ProviderConfig) providerView {
 	var caps *providers.Capabilities
 	if c, ok := h.Providers.Capabilities(r.Context(), p.Name)[p.Name]; ok {
 		caps = &c
@@ -67,7 +104,7 @@ func (h *Handler) providersAvailable(w http.ResponseWriter) bool {
 // @Tags         admin
 // @Security     BearerAuth
 // @Produce      json
-// @Success      200  {array}  ProviderDTO
+// @Success      200  {array}  providerView
 // @Failure      401  {object}  errorResponse
 // @Failure      403  {object}  errorResponse
 // @Failure      500  {object}  errorResponse
@@ -82,17 +119,7 @@ func (h *Handler) handleProviders(w http.ResponseWriter, r *http.Request) {
 		writeInternal(w, err)
 		return
 	}
-	// Declared capabilities of every provider, fetched in parallel.
-	all := h.Providers.Capabilities(r.Context())
-	out := make([]map[string]any, 0, len(list))
-	for _, p := range list {
-		var caps *providers.Capabilities
-		if c, ok := all[p.Name]; ok {
-			caps = &c
-		}
-		out = append(out, h.providerView(p, caps))
-	}
-	writeResource(w, http.StatusOK, out)
+	writeResource(w, http.StatusOK, h.providerViews(r, list))
 }
 
 // upsertProviderRequest is the body for POST /admin/providers.
@@ -115,7 +142,7 @@ type upsertProviderRequest struct {
 // @Accept       json
 // @Produce      json
 // @Param        body  body  upsertProviderRequest  true  "Provider config"
-// @Success      200  {object}  ProviderDTO
+// @Success      200  {object}  providerView
 // @Failure      400  {object}  errorResponse
 // @Failure      401  {object}  errorResponse
 // @Failure      403  {object}  errorResponse
@@ -176,7 +203,7 @@ type setEnabledRequest struct {
 // @Produce      json
 // @Param        name  path  string             true  "Provider name"
 // @Param        body  body  setEnabledRequest  true  "Enabled flag"
-// @Success      200  {object}  ProviderDTO
+// @Success      200  {object}  providerView
 // @Failure      400  {object}  errorResponse
 // @Failure      401  {object}  errorResponse
 // @Failure      403  {object}  errorResponse
@@ -216,7 +243,7 @@ func (h *Handler) handleProviderEnable(w http.ResponseWriter, r *http.Request) {
 // @Param        name        path  string             true  "Provider name"
 // @Param        capability  path  string             true  "Capability key"
 // @Param        body        body  setEnabledRequest  true  "Enabled flag"
-// @Success      200  {object}  ProviderDTO
+// @Success      200  {object}  providerView
 // @Failure      400  {object}  errorResponse
 // @Failure      401  {object}  errorResponse
 // @Failure      403  {object}  errorResponse
@@ -286,7 +313,7 @@ type reorderRequest struct {
 // @Accept       json
 // @Produce      json
 // @Param        body  body  reorderRequest  true  "Provider names in the desired order"
-// @Success      200  {array}  ProviderDTO
+// @Success      200  {array}  providerView
 // @Failure      400  {object}  errorResponse
 // @Failure      401  {object}  errorResponse
 // @Failure      403  {object}  errorResponse
@@ -310,17 +337,8 @@ func (h *Handler) handleProviderReorder(w http.ResponseWriter, r *http.Request) 
 		writeInternal(w, err)
 		return
 	}
-	all := h.Providers.Capabilities(r.Context())
-	out := make([]map[string]any, 0, len(list))
-	for _, p := range list {
-		var caps *providers.Capabilities
-		if c, ok := all[p.Name]; ok {
-			caps = &c
-		}
-		out = append(out, h.providerView(p, caps))
-	}
 	h.Logger.Info("providers reordered", "order", req.Order, "by", userFrom(r.Context()).Username)
-	writeResource(w, http.StatusOK, out)
+	writeResource(w, http.StatusOK, h.providerViews(r, list))
 }
 
 // handleProviderLogs lists recent warn/error events for a provider.
@@ -331,7 +349,7 @@ func (h *Handler) handleProviderReorder(w http.ResponseWriter, r *http.Request) 
 // @Security     BearerAuth
 // @Produce      json
 // @Param        name  path  string  true  "Provider name"
-// @Success      200  {array}  ProviderLogDTO
+// @Success      200  {array}  models.ProviderLog
 // @Failure      401  {object}  errorResponse
 // @Failure      403  {object}  errorResponse
 // @Failure      503  {object}  errorResponse

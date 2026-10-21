@@ -189,41 +189,6 @@
                 ],
                 "type": "object"
             },
-            "immerle.ChartsSyncDTO": {
-                "properties": {
-                    "synced": {
-                        "example": 6,
-                        "type": "integer"
-                    }
-                },
-                "type": "object"
-            },
-            "immerle.CleanupRunDTO": {
-                "properties": {
-                    "removed": {
-                        "example": 3,
-                        "type": "integer"
-                    }
-                },
-                "type": "object"
-            },
-            "immerle.CleanupStatusDTO": {
-                "properties": {
-                    "enabled": {
-                        "example": true,
-                        "type": "boolean"
-                    },
-                    "intervalSeconds": {
-                        "example": 21600,
-                        "type": "integer"
-                    },
-                    "maxAgeSeconds": {
-                        "example": 2592000,
-                        "type": "integer"
-                    }
-                },
-                "type": "object"
-            },
             "immerle.ConcertDTO": {
                 "properties": {
                     "artistName": {
@@ -297,30 +262,6 @@
                     "skiddleConfigured",
                     "ticketmasterConfigured"
                 ],
-                "type": "object"
-            },
-            "immerle.FederationInstancesDTO": {
-                "properties": {
-                    "instances": {
-                        "items": {
-                            "$ref": "#/components/schemas/immerle.InstanceSummaryDTO"
-                        },
-                        "type": "array",
-                        "uniqueItems": false
-                    }
-                },
-                "type": "object"
-            },
-            "immerle.FederationSubscriptionsDTO": {
-                "properties": {
-                    "subscriptions": {
-                        "items": {
-                            "$ref": "#/components/schemas/immerle.InstanceSummaryDTO"
-                        },
-                        "type": "array",
-                        "uniqueItems": false
-                    }
-                },
                 "type": "object"
             },
             "immerle.FederationUpdateDTO": {
@@ -453,30 +394,6 @@
                 },
                 "type": "object"
             },
-            "immerle.InstanceSummaryDTO": {
-                "properties": {
-                    "id": {
-                        "example": "3f1c2d4e-5a6b-7c8d-9e0f-1a2b3c4d5e6f",
-                        "type": "string"
-                    },
-                    "lastSeenAt": {
-                        "type": "string"
-                    },
-                    "name": {
-                        "example": "A friend's immerle",
-                        "type": "string"
-                    },
-                    "region": {
-                        "example": "eu",
-                        "type": "string"
-                    },
-                    "sqid": {
-                        "example": "other-node",
-                        "type": "string"
-                    }
-                },
-                "type": "object"
-            },
             "immerle.LastFmAdminDTO": {
                 "properties": {
                     "configured": {
@@ -507,115 +424,6 @@
                 "required": [
                     "connected"
                 ],
-                "type": "object"
-            },
-            "immerle.OkResponse": {
-                "properties": {
-                    "ok": {
-                        "example": true,
-                        "type": "boolean"
-                    }
-                },
-                "type": "object"
-            },
-            "immerle.ProviderCapabilityDTO": {
-                "properties": {
-                    "enabled": {
-                        "example": true,
-                        "type": "boolean"
-                    },
-                    "key": {
-                        "description": "Key is one of trackSearch, artists, playlists, playlistSearch.",
-                        "example": "trackSearch",
-                        "type": "string"
-                    }
-                },
-                "required": [
-                    "enabled",
-                    "key"
-                ],
-                "type": "object"
-            },
-            "immerle.ProviderDTO": {
-                "properties": {
-                    "active": {
-                        "example": true,
-                        "type": "boolean"
-                    },
-                    "builtin": {
-                        "example": false,
-                        "type": "boolean"
-                    },
-                    "capabilities": {
-                        "description": "Capabilities lists what the provider declares, each with whether the\nadmin left it on. Empty when the provider can't be reached.",
-                        "items": {
-                            "$ref": "#/components/schemas/immerle.ProviderCapabilityDTO"
-                        },
-                        "type": "array",
-                        "uniqueItems": false
-                    },
-                    "config": {
-                        "example": "{\"headers\":{\"Authorization\":\"Bearer x\"}}",
-                        "type": "string"
-                    },
-                    "deletable": {
-                        "example": true,
-                        "type": "boolean"
-                    },
-                    "enabled": {
-                        "example": true,
-                        "type": "boolean"
-                    },
-                    "endpoint": {
-                        "example": "https://my-service.internal",
-                        "type": "string"
-                    },
-                    "kind": {
-                        "example": "http",
-                        "type": "string"
-                    },
-                    "name": {
-                        "example": "manual",
-                        "type": "string"
-                    },
-                    "sortOrder": {
-                        "example": 3,
-                        "type": "integer"
-                    },
-                    "version": {
-                        "description": "Version is the remote's live protocol version (HTTP providers), null when\nunknown or for built-ins.",
-                        "example": 1,
-                        "type": "integer"
-                    }
-                },
-                "type": "object"
-            },
-            "immerle.ProviderLogDTO": {
-                "properties": {
-                    "action": {
-                        "example": "download",
-                        "type": "string"
-                    },
-                    "createdAt": {
-                        "example": "2026-06-18T20:00:00Z",
-                        "type": "string"
-                    },
-                    "id": {
-                        "type": "string"
-                    },
-                    "level": {
-                        "example": "error",
-                        "type": "string"
-                    },
-                    "message": {
-                        "example": "unexpected status 404",
-                        "type": "string"
-                    },
-                    "provider": {
-                        "example": "free-music-archive",
-                        "type": "string"
-                    }
-                },
                 "type": "object"
             },
             "immerle.RuntimeSettingsDTO": {
@@ -999,19 +807,6 @@
                 ],
                 "type": "object"
             },
-            "immerle.SubscribeRequestDTO": {
-                "properties": {
-                    "instanceId": {
-                        "example": "3f1c2d4e-5a6b-7c8d-9e0f-1a2b3c4d5e6f",
-                        "type": "string"
-                    },
-                    "sqid": {
-                        "example": "other-node",
-                        "type": "string"
-                    }
-                },
-                "type": "object"
-            },
             "immerle.UserDTO": {
                 "properties": {
                     "displayName": {
@@ -1253,6 +1048,21 @@
                         "type": "string"
                     }
                 },
+                "type": "object"
+            },
+            "immerle.adminUserListView": {
+                "properties": {
+                    "users": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.adminUserView"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "required": [
+                    "users"
+                ],
                 "type": "object"
             },
             "immerle.adminUserUpdateRequest": {
@@ -1675,6 +1485,36 @@
                 ],
                 "type": "object"
             },
+            "immerle.cleanupRunView": {
+                "properties": {
+                    "removed": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "removed"
+                ],
+                "type": "object"
+            },
+            "immerle.cleanupStatusView": {
+                "properties": {
+                    "enabled": {
+                        "type": "boolean"
+                    },
+                    "intervalSeconds": {
+                        "type": "integer"
+                    },
+                    "maxAgeSeconds": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "enabled",
+                    "intervalSeconds",
+                    "maxAgeSeconds"
+                ],
+                "type": "object"
+            },
             "immerle.cleanupUpdateRequest": {
                 "properties": {
                     "enabled": {
@@ -2061,6 +1901,47 @@
                 ],
                 "type": "object"
             },
+            "immerle.instanceListView": {
+                "properties": {
+                    "instances": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.instanceView"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "required": [
+                    "instances"
+                ],
+                "type": "object"
+            },
+            "immerle.instanceView": {
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "lastSeenAt": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "region": {
+                        "type": "string"
+                    },
+                    "sqid": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "id",
+                    "name",
+                    "region",
+                    "sqid"
+                ],
+                "type": "object"
+            },
             "immerle.jamInviteListView": {
                 "properties": {
                     "invites": {
@@ -2259,6 +2140,17 @@
                     "minutesAgo",
                     "song",
                     "username"
+                ],
+                "type": "object"
+            },
+            "immerle.okView": {
+                "properties": {
+                    "ok": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "ok"
                 ],
                 "type": "object"
             },
@@ -2862,6 +2754,86 @@
                     "playlists",
                     "stats",
                     "user"
+                ],
+                "type": "object"
+            },
+            "immerle.providerCapabilityView": {
+                "properties": {
+                    "enabled": {
+                        "type": "boolean"
+                    },
+                    "key": {
+                        "description": "Key is one of trackSearch, artists, playlists, playlistSearch.",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "enabled",
+                    "key"
+                ],
+                "type": "object"
+            },
+            "immerle.providerView": {
+                "properties": {
+                    "active": {
+                        "type": "boolean"
+                    },
+                    "builtin": {
+                        "type": "boolean"
+                    },
+                    "capabilities": {
+                        "description": "Capabilities lists what the provider declares, each with whether the\nadmin left it on. Empty when the provider can't be reached.",
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.providerCapabilityView"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "config": {
+                        "type": "string"
+                    },
+                    "createdAt": {
+                        "type": "string"
+                    },
+                    "deletable": {
+                        "type": "boolean"
+                    },
+                    "enabled": {
+                        "type": "boolean"
+                    },
+                    "endpoint": {
+                        "type": "string"
+                    },
+                    "kind": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "sortOrder": {
+                        "type": "integer"
+                    },
+                    "updatedAt": {
+                        "type": "string"
+                    },
+                    "version": {
+                        "description": "Version is the remote's live protocol version (HTTP providers), absent\nwhen unknown and for built-ins.",
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "active",
+                    "builtin",
+                    "capabilities",
+                    "config",
+                    "createdAt",
+                    "deletable",
+                    "enabled",
+                    "endpoint",
+                    "kind",
+                    "name",
+                    "sortOrder",
+                    "updatedAt"
                 ],
                 "type": "object"
             },
@@ -3488,6 +3460,43 @@
                 ],
                 "type": "object"
             },
+            "immerle.subscribeRequest": {
+                "properties": {
+                    "instanceId": {
+                        "type": "string"
+                    },
+                    "sqid": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.subscriptionListView": {
+                "properties": {
+                    "subscriptions": {
+                        "items": {
+                            "$ref": "#/components/schemas/immerle.instanceView"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "required": [
+                    "subscriptions"
+                ],
+                "type": "object"
+            },
+            "immerle.syncResultView": {
+                "properties": {
+                    "synced": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "synced"
+                ],
+                "type": "object"
+            },
             "immerle.toggleRequest": {
                 "properties": {
                     "enabled": {
@@ -3803,6 +3812,39 @@
                 ],
                 "type": "object"
             },
+            "models.ProviderLog": {
+                "properties": {
+                    "action": {
+                        "description": "\"search\" | \"resolve\" | \"download\"",
+                        "type": "string"
+                    },
+                    "createdAt": {
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "level": {
+                        "description": "\"warn\" | \"error\"",
+                        "type": "string"
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "provider": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "action",
+                    "createdAt",
+                    "id",
+                    "level",
+                    "message",
+                    "provider"
+                ],
+                "type": "object"
+            },
             "models.SmartCondition": {
                 "properties": {
                     "field": {
@@ -3956,7 +3998,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.ChartsSyncDTO"
+                                    "$ref": "#/components/schemas/immerle.syncResultView"
                                 }
                             }
                         },
@@ -4022,7 +4064,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.ChartsSyncDTO"
+                                    "$ref": "#/components/schemas/immerle.syncResultView"
                                 }
                             }
                         },
@@ -4088,7 +4130,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.CleanupStatusDTO"
+                                    "$ref": "#/components/schemas/immerle.cleanupStatusView"
                                 }
                             }
                         },
@@ -4162,7 +4204,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.CleanupStatusDTO"
+                                    "$ref": "#/components/schemas/immerle.cleanupStatusView"
                                 }
                             }
                         },
@@ -4238,7 +4280,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.CleanupRunDTO"
+                                    "$ref": "#/components/schemas/immerle.cleanupRunView"
                                 }
                             }
                         },
@@ -4383,7 +4425,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.ChartsSyncDTO"
+                                    "$ref": "#/components/schemas/immerle.syncResultView"
                                 }
                             }
                         },
@@ -4704,7 +4746,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.FederationInstancesDTO"
+                                    "$ref": "#/components/schemas/immerle.instanceListView"
                                 }
                             }
                         },
@@ -4836,7 +4878,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.FederationSubscriptionsDTO"
+                                    "$ref": "#/components/schemas/immerle.subscriptionListView"
                                 }
                             }
                         },
@@ -4904,7 +4946,7 @@
                                         "type": "object"
                                     },
                                     {
-                                        "$ref": "#/components/schemas/immerle.SubscribeRequestDTO",
+                                        "$ref": "#/components/schemas/immerle.subscribeRequest",
                                         "summary": "body",
                                         "description": "Target instance id or sqid"
                                     }
@@ -4920,7 +4962,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.OkResponse"
+                                    "$ref": "#/components/schemas/immerle.okView"
                                 }
                             }
                         },
@@ -5017,7 +5059,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.OkResponse"
+                                    "$ref": "#/components/schemas/immerle.okView"
                                 }
                             }
                         },
@@ -5632,7 +5674,7 @@
                             "application/json": {
                                 "schema": {
                                     "items": {
-                                        "$ref": "#/components/schemas/immerle.ProviderDTO"
+                                        "$ref": "#/components/schemas/immerle.providerView"
                                     },
                                     "type": "array"
                                 }
@@ -5718,7 +5760,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.ProviderDTO"
+                                    "$ref": "#/components/schemas/immerle.providerView"
                                 }
                             }
                         },
@@ -5805,7 +5847,7 @@
                             "application/json": {
                                 "schema": {
                                     "items": {
-                                        "$ref": "#/components/schemas/immerle.ProviderDTO"
+                                        "$ref": "#/components/schemas/immerle.providerView"
                                     },
                                     "type": "array"
                                 }
@@ -6003,7 +6045,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.ProviderDTO"
+                                    "$ref": "#/components/schemas/immerle.providerView"
                                 }
                             }
                         },
@@ -6110,7 +6152,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.ProviderDTO"
+                                    "$ref": "#/components/schemas/immerle.providerView"
                                 }
                             }
                         },
@@ -6198,7 +6240,7 @@
                             "application/json": {
                                 "schema": {
                                     "items": {
-                                        "$ref": "#/components/schemas/immerle.ProviderLogDTO"
+                                        "$ref": "#/components/schemas/models.ProviderLog"
                                     },
                                     "type": "array"
                                 }
@@ -7222,13 +7264,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "additionalProperties": {
-                                        "items": {
-                                            "$ref": "#/components/schemas/immerle.adminUserView"
-                                        },
-                                        "type": "array"
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/immerle.adminUserListView"
                                 }
                             }
                         },

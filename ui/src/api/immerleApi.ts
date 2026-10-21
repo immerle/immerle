@@ -132,7 +132,10 @@ export type LastFmStatus = components['schemas']['immerle.LastFmStatusDTO'];
 export type LastFmAdminStatus = components['schemas']['immerle.LastFmAdminDTO'];
 
 // Admin-managed dynamic providers.
-export type ProviderDTO = components['schemas']['immerle.ProviderDTO'];
+export type ProviderView = components['schemas']['immerle.providerView'];
+
+// Federation hub instances (discovery search + subscriptions).
+export type InstanceSummary = components['schemas']['immerle.instanceView'];
 
 // Runtime settings + downloads cleanup (admin).
 export type RuntimeSettingsDTO = components['schemas']['immerle.RuntimeSettingsDTO'];
