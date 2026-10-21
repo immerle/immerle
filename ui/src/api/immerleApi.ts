@@ -105,7 +105,7 @@ export type APITokenDTO = components['schemas']['immerle.APITokenDTO'];
 export type CreateTokenResponse = components['schemas']['immerle.CreateTokenDTO'];
 
 // Public playlists (discovery + opt-in subscription).
-export type PublicPlaylistDTO = components['schemas']['immerle.PublicPlaylistDTO'];
+export type PublicPlaylistView = components['schemas']['immerle.publicPlaylistView'];
 
 // User profile (identity + recent activity + public playlists + Hall of Fame top 3).
 export type ProfileResponse = components['schemas']['immerle.ProfileDTO'];

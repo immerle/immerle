@@ -50,6 +50,11 @@ type playlistView struct {
 	Tracks           []songView `json:"tracks,omitempty" validate:"optional"`
 }
 
+// playlistListView is the body of every playlist-list endpoint.
+type playlistListView struct {
+	Playlists []playlistView `json:"playlists" validate:"required"`
+}
+
 func toPlaylistView(p models.Playlist, tracks []songView) playlistView {
 	return playlistView{
 		ID:               p.ID,
@@ -94,7 +99,7 @@ func detailToView(d core.PlaylistDetail) playlistView {
 // @Tags     playlists
 // @Security BearerAuth
 // @Produce  json
-// @Success  200  {object}  map[string][]playlistView
+// @Success  200  {object}  playlistListView
 // @Failure  401  {object}  errorResponse
 // @Router   /playlists [get]
 func (h *Handler) handleListPlaylists(w http.ResponseWriter, r *http.Request) {
@@ -107,7 +112,7 @@ func (h *Handler) handleListPlaylists(w http.ResponseWriter, r *http.Request) {
 	for _, p := range lists {
 		out = append(out, toPlaylistView(p, nil))
 	}
-	writeResource(w, http.StatusOK, map[string]any{"playlists": out})
+	writeResource(w, http.StatusOK, playlistListView{Playlists: out})
 }
 
 // handleGetPlaylist returns a playlist with its tracks.

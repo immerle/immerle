@@ -19,7 +19,12 @@ type shareView struct {
 	ExpiresAt   *time.Time `json:"expiresAt,omitempty" validate:"optional"`
 	CreatedAt   time.Time  `json:"createdAt"`
 	ViewCount   int        `json:"viewCount"`
-	Entries     []songView `json:"entries" validate:"optional"`
+	Entries     []songView `json:"entries" validate:"required"`
+}
+
+// shareListView is the GET /shares body.
+type shareListView struct {
+	Shares []shareView `json:"shares" validate:"required"`
 }
 
 // shareURL builds the absolute public link for a share secret.
@@ -59,7 +64,7 @@ func shareExpiry(ms int64) *time.Time {
 // @Tags     shares
 // @Security BearerAuth
 // @Produce  json
-// @Success  200  {object}  map[string][]shareView
+// @Success  200  {object}  shareListView
 // @Failure  401  {object}  errorResponse
 // @Router   /shares [get]
 func (h *Handler) handleListShares(w http.ResponseWriter, r *http.Request) {
@@ -72,7 +77,7 @@ func (h *Handler) handleListShares(w http.ResponseWriter, r *http.Request) {
 	for _, swe := range shares {
 		out = append(out, h.toShareView(swe))
 	}
-	writeResource(w, http.StatusOK, map[string]any{"shares": out})
+	writeResource(w, http.StatusOK, shareListView{Shares: out})
 }
 
 // shareCreateRequest is the body for POST /shares. expiresAt is epoch millis

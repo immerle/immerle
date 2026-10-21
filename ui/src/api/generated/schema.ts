@@ -5840,9 +5840,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            [key: string]: components["schemas"]["immerle.playlistView"][];
-                        };
+                        "application/json": components["schemas"]["immerle.playlistListView"];
                     };
                 };
                 /** @description Unauthorized */
@@ -5890,9 +5888,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            [key: string]: components["schemas"]["immerle.playlistView"][];
-                        };
+                        "application/json": components["schemas"]["immerle.playlistListView"];
                     };
                 };
                 /** @description Unauthorized */
@@ -6976,9 +6972,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            [key: string]: components["schemas"]["immerle.playlistView"][];
-                        };
+                        "application/json": components["schemas"]["immerle.playlistListView"];
                     };
                 };
                 /** @description Unauthorized */
@@ -7069,7 +7063,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.PublicPlaylistDTO"][];
+                        "application/json": components["schemas"]["immerle.publicPlaylistView"][];
                     };
                 };
                 /** @description Unauthorized */
@@ -7347,6 +7341,150 @@ export interface paths {
                 };
                 /** @description Internal Server Error */
                 500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/playlists/{id}/cover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Upload a playlist cover */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Playlist id */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description Cover image (jpeg/png/gif/webp) */
+            requestBody: {
+                content: {
+                    "application/x-www-form-urlencoded": Record<string, never>;
+                    "multipart/form-data": Record<string, never>;
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.playlistView"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/playlists/{id}/cover/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Generate a playlist cover */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Playlist id */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description Cover spec (JSON, covergen.Spec) | Background image */
+            requestBody?: {
+                content: {
+                    "application/x-www-form-urlencoded": string | Record<string, never>;
+                    "multipart/form-data": Record<string, never>;
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.playlistView"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["immerle.errorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -8298,9 +8436,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            [key: string]: components["schemas"]["immerle.shareView"][];
-                        };
+                        "application/json": components["schemas"]["immerle.shareListView"];
                     };
                 };
                 /** @description Unauthorized */
@@ -10544,27 +10680,6 @@ export interface components {
             /** @example free-music-archive */
             provider?: string;
         };
-        "immerle.PublicPlaylistDTO": {
-            /**
-             * @description AutoPlaylistKind identifies a server-generated playlist's stable kind —
-             *     "Tendances de la semaine" (autoplaylists.AutoPlaylistKinds) or a kworb
-             *     chart (charts.SourceInstanceID) — for clients to render a translated
-             *     label instead of the (French-only) stored Name. Empty for every other
-             *     public playlist.
-             */
-            autoPlaylistKind?: string;
-            comment?: string;
-            coverArt?: string;
-            coverArts?: string[];
-            duration?: number;
-            id?: string;
-            /** @example Editorial Picks */
-            name?: string;
-            /** @example alice */
-            owner?: string;
-            songCount?: number;
-            subscribed?: boolean;
-        };
         "immerle.RuntimeSettingsDTO": {
             auth?: {
                 /** @example 2592000 */
@@ -11128,6 +11243,9 @@ export interface components {
             ids?: string[];
             name?: string;
         };
+        "immerle.playlistListView": {
+            playlists: components["schemas"]["immerle.playlistView"][];
+        };
         "immerle.playlistTracksRequest": {
             ids?: string[];
         };
@@ -11212,6 +11330,23 @@ export interface components {
             source: string;
             title: string;
         };
+        "immerle.publicPlaylistView": {
+            /**
+             * @description AutoPlaylistKind identifies a server-generated playlist's stable kind
+             *     (see playlistView.AutoPlaylistKind). Empty for every other playlist.
+             */
+            autoPlaylistKind: string;
+            comment: string;
+            coverArt: string;
+            coverArts?: string[];
+            duration: number;
+            id: string;
+            name: string;
+            owner: string;
+            songCount: number;
+            /** @description Subscribed reports whether the caller already subscribes to it. */
+            subscribed: boolean;
+        };
         "immerle.queueEntryRequest": {
             album: string;
             artist: string;
@@ -11273,6 +11408,9 @@ export interface components {
             expiresAt?: number;
             itemId?: string;
         };
+        "immerle.shareListView": {
+            shares: components["schemas"]["immerle.shareView"][];
+        };
         "immerle.shareUpdateRequest": {
             description?: string;
             expiresAt?: number;
@@ -11280,7 +11418,7 @@ export interface components {
         "immerle.shareView": {
             createdAt: string;
             description?: string;
-            entries?: components["schemas"]["immerle.songView"][];
+            entries: components["schemas"]["immerle.songView"][];
             expiresAt?: string;
             id: string;
             url: string;

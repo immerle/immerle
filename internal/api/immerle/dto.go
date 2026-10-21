@@ -509,25 +509,6 @@ type JamInviteDTO struct {
 	CreatedAt          string `json:"createdAt" example:"2026-06-15T09:00:00Z" validate:"optional"`
 }
 
-// PublicPlaylistDTO is a public playlist available to subscribe to.
-type PublicPlaylistDTO struct {
-	ID        string   `json:"id" validate:"optional"`
-	Name      string   `json:"name" example:"Editorial Picks" validate:"optional"`
-	Owner     string   `json:"owner" example:"alice" validate:"optional"`
-	Comment   string   `json:"comment,omitempty" validate:"optional"`
-	SongCount int      `json:"songCount" validate:"optional"`
-	Duration  int      `json:"duration" validate:"optional"`
-	CoverArt  string   `json:"coverArt,omitempty" validate:"optional"`
-	CoverArts []string `json:"coverArts,omitempty" validate:"optional"`
-	// AutoPlaylistKind identifies a server-generated playlist's stable kind —
-	// "Tendances de la semaine" (autoplaylists.AutoPlaylistKinds) or a kworb
-	// chart (charts.SourceInstanceID) — for clients to render a translated
-	// label instead of the (French-only) stored Name. Empty for every other
-	// public playlist.
-	AutoPlaylistKind string `json:"autoPlaylistKind,omitempty" validate:"optional"`
-	Subscribed       bool   `json:"subscribed" validate:"optional"`
-}
-
 // LoginDTO is returned by POST /auth/sessions.
 type LoginDTO struct {
 	Token  string    `json:"token" example:"eyJhbGciOiJIUzI1Ni..." validate:"optional"`

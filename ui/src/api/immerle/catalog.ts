@@ -180,8 +180,8 @@ export function toSearchResult(v: SearchView): SearchHit[] {
 
 export function toPlaylist(v: PlaylistView): Playlist {
   return {
-    id: v.id ?? '',
-    name: v.name ?? '',
+    id: v.id,
+    name: v.name,
     comment: v.comment,
     owner: v.owner,
     public: v.public,

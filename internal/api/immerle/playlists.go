@@ -7,6 +7,23 @@ import (
 	"github.com/immerle/immerle/internal/sonic"
 )
 
+// publicPlaylistView is a public playlist offered for subscription.
+type publicPlaylistView struct {
+	ID        string   `json:"id"`
+	Name      string   `json:"name"`
+	Owner     string   `json:"owner"`
+	Comment   string   `json:"comment"`
+	SongCount int      `json:"songCount"`
+	Duration  int      `json:"duration"`
+	CoverArt  string   `json:"coverArt"`
+	CoverArts []string `json:"coverArts" validate:"optional"`
+	// Subscribed reports whether the caller already subscribes to it.
+	Subscribed bool `json:"subscribed"`
+	// AutoPlaylistKind identifies a server-generated playlist's stable kind
+	// (see playlistView.AutoPlaylistKind). Empty for every other playlist.
+	AutoPlaylistKind string `json:"autoPlaylistKind"`
+}
+
 // handlePublicPlaylists lists public playlists the caller can subscribe to.
 //
 // @Summary      Browse public playlists
@@ -14,7 +31,7 @@ import (
 // @Tags         playlists
 // @Security     BearerAuth
 // @Produce      json
-// @Success      200  {array}  PublicPlaylistDTO
+// @Success      200  {array}  publicPlaylistView
 // @Failure      401  {object}  errorResponse
 // @Failure      500  {object}  errorResponse
 // @Router       /playlists/public [get]
@@ -25,20 +42,13 @@ func (h *Handler) handlePublicPlaylists(w http.ResponseWriter, r *http.Request) 
 		writeInternal(w, err)
 		return
 	}
-	out := make([]map[string]any, 0, len(lists))
+	out := make([]publicPlaylistView, 0, len(lists))
 	for _, p := range lists {
 		subscribed, _ := h.Playlists.IsSubscribed(r.Context(), p.ID, user.ID)
-		out = append(out, map[string]any{
-			"id":               p.ID,
-			"name":             p.Name,
-			"owner":            p.OwnerName,
-			"comment":          p.Comment,
-			"songCount":        p.SongCount,
-			"duration":         p.Duration,
-			"coverArt":         p.CoverArt,
-			"coverArts":        p.CoverArts,
-			"subscribed":       subscribed,
-			"autoPlaylistKind": autoPlaylistKind(p.SourceInstanceID, p.SourceExternalID),
+		out = append(out, publicPlaylistView{
+			ID: p.ID, Name: p.Name, Owner: p.OwnerName, Comment: p.Comment,
+			SongCount: p.SongCount, Duration: p.Duration, CoverArt: p.CoverArt, CoverArts: p.CoverArts,
+			Subscribed: subscribed, AutoPlaylistKind: autoPlaylistKind(p.SourceInstanceID, p.SourceExternalID),
 		})
 	}
 	writeResource(w, http.StatusOK, out)
@@ -63,7 +73,7 @@ var customPlaylistSources = []string{
 // @Tags         playlists
 // @Security     BearerAuth
 // @Produce      json
-// @Success      200  {object}  map[string][]playlistView
+// @Success      200  {object}  playlistListView
 // @Failure      401  {object}  errorResponse
 // @Router       /me/custom-playlists [get]
 func (h *Handler) handleCustomPlaylists(w http.ResponseWriter, r *http.Request) {
@@ -84,7 +94,7 @@ func (h *Handler) handleCustomPlaylists(w http.ResponseWriter, r *http.Request) 
 			}
 		}
 	}
-	writeResource(w, http.StatusOK, map[string]any{"playlists": out})
+	writeResource(w, http.StatusOK, playlistListView{Playlists: out})
 }
 
 // handleDiscoverPlaylists returns the playlists made by people that immerle
@@ -95,7 +105,7 @@ func (h *Handler) handleCustomPlaylists(w http.ResponseWriter, r *http.Request) 
 // @Tags         playlists
 // @Security     BearerAuth
 // @Produce      json
-// @Success      200  {object}  map[string][]playlistView
+// @Success      200  {object}  playlistListView
 // @Failure      401  {object}  errorResponse
 // @Router       /me/discover-playlists [get]
 func (h *Handler) handleDiscoverPlaylists(w http.ResponseWriter, r *http.Request) {
@@ -107,7 +117,7 @@ func (h *Handler) handleDiscoverPlaylists(w http.ResponseWriter, r *http.Request
 			out = append(out, toPlaylistView(p, nil))
 		}
 	}
-	writeResource(w, http.StatusOK, map[string]any{"playlists": out})
+	writeResource(w, http.StatusOK, playlistListView{Playlists: out})
 }
 
 // handleSubscribePlaylist subscribes the caller to a public playlist.

@@ -49,7 +49,7 @@ import {
   ProfilePlaylistDTO,
   ProfileResponse,
   ProviderDTO,
-  PublicPlaylistDTO,
+  PublicPlaylistView,
   RuntimeSettingsDTO,
   SonicStatusDTO,
   SongSonicDTO,
@@ -423,7 +423,7 @@ export class ImmerleClient {
   async getPlaylists(signal?: AbortSignal): Promise<Playlist[]> {
     const { data, error } = await this.api.GET('/playlists', { signal });
     if (error) throw apiErr(error, 'playlist.list');
-    return (data.playlists ?? []).map(toPlaylist);
+    return data.playlists.map(toPlaylist);
   }
 
   /**
@@ -434,14 +434,14 @@ export class ImmerleClient {
   async getCustomPlaylists(signal?: AbortSignal): Promise<Playlist[]> {
     const { data, error } = await this.api.GET('/me/custom-playlists', { signal });
     if (error) throw apiErr(error, 'playlist.custom');
-    return (data.playlists ?? []).map(toPlaylist);
+    return data.playlists.map(toPlaylist);
   }
 
   /** Playlists made by people that immerle discover matches to the caller's listening. */
   async getDiscoverPlaylists(signal?: AbortSignal): Promise<Playlist[]> {
     const { data, error } = await this.api.GET('/me/discover-playlists', { signal });
     if (error) throw apiErr(error, 'playlist.discover');
-    return (data.playlists ?? []).map(toPlaylist);
+    return data.playlists.map(toPlaylist);
   }
 
   async getPlaylist(id: string, signal?: AbortSignal): Promise<PlaylistWithSongs> {
@@ -1548,9 +1548,9 @@ export class ImmerleClient {
   // --- Public playlists (discovery + opt-in subscription) -----------------
 
   /** Browse public playlists; each carries a `subscribed` flag for the caller. */
-  async getPublicPlaylists(signal?: AbortSignal): Promise<PublicPlaylistDTO[]> {
+  async getPublicPlaylists(signal?: AbortSignal): Promise<PublicPlaylistView[]> {
     const { data, error } = await this.api.GET('/playlists/public', { signal });
-    if (error || !data) throw apiErr(error, 'public_playlists_failed');
+    if (error) throw apiErr(error, 'public_playlists_failed');
     return data;
   }
 
