@@ -49,7 +49,8 @@ import {
   ProfileResponse,
   ProviderView,
   PublicPlaylistView,
-  RuntimeSettingsDTO,
+  RuntimeSettingsPatch,
+  SettingsResult,
   SonicStatusView,
   SongSonicView,
   ThemeSettings,
@@ -944,22 +945,16 @@ export class ImmerleClient {
 
   /** Current runtime settings, plus whether a restart is pending. */
   async getSettings(signal?: AbortSignal): Promise<SettingsResult> {
-    const data = await this.request<SettingsResponseRaw>('GET', 'admin/settings', undefined, signal);
-    return {
-      settings: data.settings ?? {},
-      restartRequired: data.restartRequired ?? false,
-      pendingRestart: data.pendingRestart ?? [],
-    };
+    const { data, error, response } = await this.api.GET('/admin/settings', { signal });
+    if (error) throw apiErr(error, 'settings', response);
+    return data;
   }
 
   /** Apply a partial settings update (send only the sub-objects that changed). */
-  async updateSettings(patch: RuntimeSettingsDTO): Promise<SettingsResult> {
-    const data = await this.request<SettingsResponseRaw>('PATCH', 'admin/settings', patch);
-    return {
-      settings: data.settings ?? {},
-      restartRequired: data.restartRequired ?? false,
-      pendingRestart: data.pendingRestart ?? [],
-    };
+  async updateSettings(patch: RuntimeSettingsPatch): Promise<SettingsResult> {
+    const { data, error, response } = await this.api.PATCH('/admin/settings', { body: patch });
+    if (error) throw apiErr(error, 'settings.update', response);
+    return data;
   }
 
   // --- Smart playlists (rule-based) ---------------------------------------
@@ -1207,46 +1202,34 @@ export class ImmerleClient {
    * user id and persists the hub-assigned id + private key. The HTTP exchange
    * runs server-side. Returns the refreshed runtime settings. */
   async registerInstance(): Promise<SettingsResult> {
-    const data = await this.request<SettingsResponseRaw>('POST', 'admin/federation/register');
-    return {
-      settings: data.settings ?? {},
-      restartRequired: data.restartRequired ?? false,
-      pendingRestart: data.pendingRestart ?? [],
-    };
+    const { data, error, response } = await this.api.POST('/admin/federation/register');
+    if (error) throw apiErr(error, 'federation.register', response);
+    return data;
   }
 
   /** Fetch this instance's live name/sqid from the hub (the source of truth)
    * and persist them; returns the refreshed runtime settings. */
   async getFederationProfile(): Promise<SettingsResult> {
-    const data = await this.request<SettingsResponseRaw>('GET', 'admin/federation');
-    return {
-      settings: data.settings ?? {},
-      restartRequired: data.restartRequired ?? false,
-      pendingRestart: data.pendingRestart ?? [],
-    };
+    const { data, error, response } = await this.api.GET('/admin/federation');
+    if (error) throw apiErr(error, 'federation.profile', response);
+    return data;
   }
 
   /** Push a name / sqid (editable hub handle) change to the hub. The hub
    * validates sqid uniqueness; a clash surfaces as an error. Returns the
    * refreshed runtime settings with the hub-canonical values. */
   async updateFederationInstance(name: string, sqid: string): Promise<SettingsResult> {
-    const data = await this.request<SettingsResponseRaw>('PATCH', 'admin/federation', { name, sqid });
-    return {
-      settings: data.settings ?? {},
-      restartRequired: data.restartRequired ?? false,
-      pendingRestart: data.pendingRestart ?? [],
-    };
+    const { data, error, response } = await this.api.PATCH('/admin/federation', { body: { name, sqid } });
+    if (error) throw apiErr(error, 'federation.update', response);
+    return data;
   }
 
   /** Unlink this instance from the hub: deletes hub-side data (best-effort) and
    * clears the stored identity. Returns the refreshed runtime settings. */
   async unlinkInstance(): Promise<SettingsResult> {
-    const data = await this.request<SettingsResponseRaw>('DELETE', 'admin/federation');
-    return {
-      settings: data.settings ?? {},
-      restartRequired: data.restartRequired ?? false,
-      pendingRestart: data.pendingRestart ?? [],
-    };
+    const { data, error, response } = await this.api.DELETE('/admin/federation');
+    if (error) throw apiErr(error, 'federation.unlink', response);
+    return data;
   }
 
   /** Discover other instances on the hub (by sqid or name). Server-side. */
@@ -1755,21 +1738,6 @@ export class ImmerleClient {
     }
     return (await res.json()) as T;
   }
-}
-
-/** Raw `/admin/settings` response body. */
-interface SettingsResponseRaw {
-  settings?: RuntimeSettingsDTO;
-  restartRequired?: boolean;
-  pendingRestart?: string[];
-}
-
-/** Runtime settings plus the pending-restart status returned by the server. */
-export interface SettingsResult {
-  settings: RuntimeSettingsDTO;
-  restartRequired: boolean;
-  /** Sub-systems whose change only takes effect after a restart. */
-  pendingRestart: string[];
 }
 
 /** Downloads eviction-sweep status. */

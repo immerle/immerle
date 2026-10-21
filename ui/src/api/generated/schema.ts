@@ -596,7 +596,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.SettingsDTO"];
+                        "application/json": components["schemas"]["immerle.settingsView"];
                     };
                 };
                 /** @description Unauthorized */
@@ -667,7 +667,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.SettingsDTO"];
+                        "application/json": components["schemas"]["immerle.settingsView"];
                     };
                 };
                 /** @description Unauthorized */
@@ -724,7 +724,7 @@ export interface paths {
             /** @description Instance name and sqid */
             requestBody: {
                 content: {
-                    "application/json": Record<string, never> | components["schemas"]["immerle.FederationUpdateDTO"];
+                    "application/json": Record<string, never> | components["schemas"]["immerle.federationUpdateRequest"];
                 };
             };
             responses: {
@@ -734,7 +734,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.SettingsDTO"];
+                        "application/json": components["schemas"]["immerle.settingsView"];
                     };
                 };
                 /** @description Bad Request */
@@ -901,7 +901,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.SettingsDTO"];
+                        "application/json": components["schemas"]["immerle.settingsView"];
                     };
                 };
                 /** @description Unauthorized */
@@ -2626,7 +2626,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.SettingsDTO"];
+                        "application/json": components["schemas"]["immerle.settingsView"];
                     };
                 };
                 /** @description Unauthorized */
@@ -2677,7 +2677,7 @@ export interface paths {
             /** @description Settings fields to change (partial) */
             requestBody: {
                 content: {
-                    "application/json": Record<string, never> | components["schemas"]["immerle.RuntimeSettingsDTO"];
+                    "application/json": Record<string, never> | components["schemas"]["immerle.settingsPatchRequest"];
                 };
             };
             responses: {
@@ -2687,7 +2687,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["immerle.SettingsDTO"];
+                        "application/json": components["schemas"]["immerle.settingsView"];
                     };
                 };
                 /** @description Bad Request */
@@ -10636,128 +10636,6 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        "immerle.FederationUpdateDTO": {
-            /** @example My living-room immerle */
-            name?: string;
-            /** @example my-node */
-            sqid?: string;
-        };
-        "immerle.RuntimeSettingsDTO": {
-            auth?: {
-                /** @example 2592000 */
-                deviceTokenTtlSeconds?: number;
-            };
-            cleanup?: {
-                /** @example true */
-                enabled?: boolean;
-                /** @example 21600 */
-                intervalSeconds?: number;
-                /** @example 2592000 */
-                maxAgeSeconds?: number;
-            };
-            discover?: {
-                /** @example true */
-                curatedPlaylists?: boolean;
-                /** @example true */
-                enabled?: boolean;
-                /** @example 6f1c2a4e-0d2b-4c55-9a51-2b8f3c1d9e07 */
-                instanceId?: string;
-                /** @example true */
-                madeForYou?: boolean;
-                /** @example true */
-                scrobble?: boolean;
-                /** @example true */
-                similarTracks?: boolean;
-            };
-            federation?: {
-                exportScrobbles?: boolean;
-                /**
-                 * @description InstanceID is the hub-assigned fixed UUID (read-only). Sqid is the
-                 *     editable handle. PrivateKey is never returned (redacted server-side).
-                 * @example 3f1c2d4e-5a6b-7c8d-9e0f-1a2b3c4d5e6f
-                 */
-                instanceId?: string;
-                /** @example My living-room immerle */
-                instanceName?: string;
-                /** @example my-node */
-                sqid?: string;
-                syncPlaylists?: boolean;
-                /**
-                 * @description Federation is active whenever linked (instanceId set); no enable flag.
-                 * @example 6f1c2b8e-1f0a-4f9b-9c3a-1e2d3c4b5a6f
-                 */
-                userId?: string;
-            };
-            ldap?: {
-                /** @example uid=%s,ou=people,dc=example,dc=com */
-                bindDnTemplate?: string;
-                /** @example false */
-                enabled?: boolean;
-                /** @example ldaps://ldap.example.com:636 */
-                url?: string;
-            };
-            logs?: {
-                /** @example 30 */
-                retentionDays?: number;
-            };
-            providers?: {
-                /** @example true */
-                autoDownloadOnPlay?: boolean;
-                /** @example 3 */
-                searchTimeoutSeconds?: number;
-            };
-            scan?: {
-                /** @example 3600 */
-                intervalSeconds?: number;
-                /** @example true */
-                watch?: boolean;
-            };
-            server?: {
-                /**
-                 * @example [
-                 *       "*"
-                 *     ]
-                 */
-                corsAllowedOrigins?: string[];
-            };
-            sonic?: {
-                /** @example false */
-                autoDj?: boolean;
-                /** @example false */
-                autoplay?: boolean;
-                /** @example false */
-                duplicates?: boolean;
-                /** @example false */
-                enabled?: boolean;
-                /** @example false */
-                moods?: boolean;
-                /** @example false */
-                radio?: boolean;
-                /** @example 1 */
-                workers?: number;
-            };
-            transcode?: {
-                /** @example ffmpeg */
-                ffmpegPath?: string;
-                /** @example ffprobe */
-                ffprobePath?: string;
-                profiles?: {
-                    /** @example 192 */
-                    bitRate?: number;
-                    ffmpegArgs?: string;
-                    /** @example mp3 */
-                    format?: string;
-                    /** @example mp3 */
-                    name?: string;
-                }[];
-            };
-        };
-        "immerle.SettingsDTO": {
-            pendingRestart?: string[];
-            /** @example false */
-            restartRequired?: boolean;
-            settings?: components["schemas"]["immerle.RuntimeSettingsDTO"];
-        };
         "immerle.accountView": {
             displayName: string;
             email: string;
@@ -11123,6 +11001,12 @@ export interface components {
         };
         "immerle.featureStatusView": {
             enabled: boolean;
+        };
+        "immerle.federationUpdateRequest": {
+            /** @example My living-room immerle */
+            name?: string;
+            /** @example my-node */
+            sqid?: string;
         };
         "immerle.fieldError": {
             field: string;
@@ -11565,6 +11449,111 @@ export interface components {
              */
             deviceId?: string;
         };
+        "immerle.settingsPatchRequest": {
+            auth?: {
+                /** @example 2592000 */
+                deviceTokenTtlSeconds?: number;
+            };
+            cleanup?: {
+                /** @example true */
+                enabled?: boolean;
+                /** @example 21600 */
+                intervalSeconds?: number;
+                /** @example 2592000 */
+                maxAgeSeconds?: number;
+            };
+            discover?: {
+                /** @example true */
+                curatedPlaylists?: boolean;
+                /** @example true */
+                enabled?: boolean;
+                /** @example true */
+                madeForYou?: boolean;
+                /** @example true */
+                scrobble?: boolean;
+                /** @example true */
+                similarTracks?: boolean;
+            };
+            federation?: {
+                exportScrobbles?: boolean;
+                syncPlaylists?: boolean;
+                /**
+                 * @description Federation is active whenever linked; the instance identity is managed
+                 *     through PATCH /admin/federation.
+                 * @example 6f1c2b8e-1f0a-4f9b-9c3a-1e2d3c4b5a6f
+                 */
+                userId?: string;
+            };
+            ldap?: {
+                /** @example uid=%s,ou=people,dc=example,dc=com */
+                bindDnTemplate?: string;
+                /** @example false */
+                enabled?: boolean;
+                /** @example ldaps://ldap.example.com:636 */
+                url?: string;
+            };
+            logs?: {
+                /** @example 30 */
+                retentionDays?: number;
+            };
+            providers?: {
+                /** @example true */
+                autoDownloadOnPlay?: boolean;
+                /** @example 3 */
+                searchTimeoutSeconds?: number;
+            };
+            scan?: {
+                /** @example 3600 */
+                intervalSeconds?: number;
+                /** @example true */
+                watch?: boolean;
+            };
+            server?: {
+                /**
+                 * @example [
+                 *       "*"
+                 *     ]
+                 */
+                corsAllowedOrigins?: string[];
+            };
+            sonic?: {
+                /** @example false */
+                autoDj?: boolean;
+                /** @example false */
+                autoplay?: boolean;
+                /** @example false */
+                duplicates?: boolean;
+                /** @example false */
+                enabled?: boolean;
+                /** @example false */
+                moods?: boolean;
+                /** @example false */
+                radio?: boolean;
+                /** @example 1 */
+                workers?: number;
+            };
+            transcode?: {
+                /** @example ffmpeg */
+                ffmpegPath?: string;
+                /** @example ffprobe */
+                ffprobePath?: string;
+                profiles?: {
+                    /** @example 192 */
+                    bitRate?: number;
+                    ffmpegArgs?: string;
+                    /** @example mp3 */
+                    format?: string;
+                    /** @example mp3 */
+                    name?: string;
+                }[];
+            };
+        };
+        "immerle.settingsView": {
+            /** @description PendingRestart lists the changed settings that apply after a restart. */
+            pendingRestart: string[];
+            restartRequired: boolean;
+            settings: components["schemas"]["models.RuntimeSettings"];
+        };
         "immerle.setupAdminView": {
             displayName: string;
             id: string;
@@ -11829,6 +11818,15 @@ export interface components {
             id: string;
             username: string;
         };
+        "models.AuthRuntime": {
+            /** @description DeviceTokenTTLSeconds is the device-session JWT lifetime (0 = never). */
+            deviceTokenTtlSeconds: number;
+        };
+        "models.CleanupRuntime": {
+            enabled: boolean;
+            intervalSeconds: number;
+            maxAgeSeconds: number;
+        };
         "models.Concert": {
             artistName: string;
             city?: string;
@@ -11839,6 +11837,73 @@ export interface components {
             startTime: string;
             url?: string;
             venue?: string;
+        };
+        "models.ConcertsRuntime": {
+            /**
+             * @description Country is an ISO 3166-1 alpha-2 code (e.g. "FR", "US"), picked from a
+             *     fixed dropdown in the admin UI — see ui/src/utils/countries.ts.
+             */
+            country?: string;
+            enabled: boolean;
+            skiddleApiKey?: string;
+            /**
+             * @description TicketmasterAPIKey and SkiddleAPIKey are write-only: never returned by the
+             *     admin settings API (see redactSettings), only ever set.
+             */
+            ticketmasterApiKey?: string;
+        };
+        "models.DiscoverRuntime": {
+            /**
+             * @description CuratedPlaylists proposes, per user, the editorial playlists that best
+             *     match what they listen to.
+             */
+            curatedPlaylists: boolean;
+            enabled: boolean;
+            /**
+             * @description InstanceID and PrivateKey are returned by discover at registration. Not
+             *     user-editable; PrivateKey is redacted from API responses.
+             */
+            instanceId?: string;
+            /** @description MadeForYou publishes a personal "Mix discover" playlist per user. */
+            madeForYou: boolean;
+            privateKey?: string;
+            /**
+             * @description Scrobble sends completed plays (under an opaque per-user reference, never
+             *     a name or email), which is what the per-listener suggestions learn from.
+             */
+            scrobble: boolean;
+            /** @description SimilarTracks backs getSimilarSongs with discover's similar tracks. */
+            similarTracks: boolean;
+        };
+        "models.FederationRuntime": {
+            exportScrobbles: boolean;
+            /**
+             * @description InstanceID is the hub-assigned fixed UUID (the public key sent as the
+             *     X-Instance-ID header), returned at bootstrap. Immutable; not user-editable.
+             */
+            instanceId: string;
+            /** @description InstanceName is the human-readable instance label shown on the hub (editable). */
+            instanceName: string;
+            /**
+             * @description PrivateKey is the hub-issued secret (Bearer token), returned once at
+             *     bootstrap. Not user-editable and redacted from API responses.
+             */
+            privateKey: string;
+            /** @description Sqid is the editable, unique hub handle (defaults to a sqid at bootstrap). */
+            sqid: string;
+            /**
+             * @description SyncPlaylists opts this instance's public playlists into being pushed to the
+             *     hub (off by default). Hot-reloadable.
+             */
+            syncPlaylists: boolean;
+            /**
+             * @description UserID is the hub owner's UUID. The operator pastes it from the hub to claim
+             *     this instance; the instance then bootstraps itself under that user.
+             */
+            userId: string;
+        };
+        "models.HallOfFameRuntime": {
+            enabled: boolean;
         };
         "models.Import": {
             createdAt: string;
@@ -11899,6 +11964,13 @@ export interface components {
         };
         /** @enum {string} */
         "models.ImportItemStatus": "pending" | "matched" | "doubtful" | "missing" | "failed";
+        "models.ImportRuntime": {
+            sources?: {
+                [key: string]: {
+                    [key: string]: string;
+                };
+            };
+        };
         /** @enum {string} */
         "models.ImportStatus": "queued" | "running" | "completed" | "failed";
         /** @enum {string} */
@@ -11931,6 +12003,25 @@ export interface components {
             trackIds?: string[];
             updatedAt: string;
         };
+        "models.LDAPRuntime": {
+            /**
+             * @description BindDNTemplate builds the bind DN from the username via a single %s,
+             *     e.g. "uid=%s,ou=people,dc=example,dc=com".
+             */
+            bindDnTemplate: string;
+            enabled: boolean;
+            /** @description URL is the directory endpoint, e.g. "ldaps://ldap.example.com:636". */
+            url: string;
+        };
+        "models.LastFmRuntime": {
+            /**
+             * @description APIKey and APISecret are write-only: never returned by the admin
+             *     settings API (see redactSettings), only ever set.
+             */
+            apiKey?: string;
+            apiSecret?: string;
+            enabled: boolean;
+        };
         "models.LibraryStats": {
             albums: number;
             artists: number;
@@ -11938,6 +12029,16 @@ export interface components {
             totalSize: number;
             tracks: number;
             updatedAt: string;
+        };
+        "models.LogsRuntime": {
+            /**
+             * @description RetentionDays is how long persisted logs are kept (default 30). 0 disables
+             *     pruning (keep forever).
+             */
+            retentionDays: number;
+        };
+        "models.OfflineRuntime": {
+            enabled: boolean;
         };
         "models.ProviderLog": {
             /** @description "search" | "resolve" | "download" */
@@ -11949,10 +12050,52 @@ export interface components {
             message: string;
             provider: string;
         };
+        "models.ProviderRuntime": {
+            /** @description AutoDownloadOnPlay downloads a remote result when first streamed. */
+            autoDownloadOnPlay: boolean;
+            /** @description SearchTimeoutSeconds bounds a remote search (default 3). */
+            searchTimeoutSeconds: number;
+        };
+        "models.RadioRuntime": {
+            enabled: boolean;
+        };
+        "models.RuntimeSettings": {
+            auth: components["schemas"]["models.AuthRuntime"];
+            cleanup: components["schemas"]["models.CleanupRuntime"];
+            concerts: components["schemas"]["models.ConcertsRuntime"];
+            discover: components["schemas"]["models.DiscoverRuntime"];
+            federation: components["schemas"]["models.FederationRuntime"];
+            hallOfFame: components["schemas"]["models.HallOfFameRuntime"];
+            import: components["schemas"]["models.ImportRuntime"];
+            lastFm: components["schemas"]["models.LastFmRuntime"];
+            ldap: components["schemas"]["models.LDAPRuntime"];
+            logs: components["schemas"]["models.LogsRuntime"];
+            offline: components["schemas"]["models.OfflineRuntime"];
+            providers: components["schemas"]["models.ProviderRuntime"];
+            radio: components["schemas"]["models.RadioRuntime"];
+            scan: components["schemas"]["models.ScanRuntime"];
+            server: components["schemas"]["models.ServerRuntime"];
+            smartPlaylists: components["schemas"]["models.SmartPlaylistsRuntime"];
+            sonic: components["schemas"]["models.SonicRuntime"];
+            transcode: components["schemas"]["models.TranscodeRuntime"];
+            wrapped: components["schemas"]["models.WrappedRuntime"];
+        };
+        "models.ScanRuntime": {
+            /** @description 0 disables periodic rescan */
+            intervalSeconds: number;
+            watch: boolean;
+        };
+        "models.ServerRuntime": {
+            /** @description CORSAllowedOrigins lists browser origins permitted via CORS ("*" = any). */
+            corsAllowedOrigins: string[];
+        };
         "models.SmartCondition": {
             field: string;
             op: string;
             value: string;
+        };
+        "models.SmartPlaylistsRuntime": {
+            enabled: boolean;
         };
         "models.SmartRules": {
             /** @description Conditions are the filters; an empty list matches the whole library. */
@@ -11972,12 +12115,50 @@ export interface components {
             /** @description Sort is a whitelisted sort key (e.g. "random", "playCount", "recentlyAdded"). */
             sort: string;
         };
+        "models.SonicRuntime": {
+            /**
+             * @description AutoDJ lets listeners reorder a playlist or their queue for smooth
+             *     transitions (tempo, key, energy).
+             */
+            autoDj: boolean;
+            /**
+             * @description Autoplay lets clients extend a queue about to run out with tracks that
+             *     sound like its last ones.
+             */
+            autoplay: boolean;
+            /**
+             * @description Duplicates lists, in the admin library, tracks that sound identical
+             *     (the same recording under other tags or in another format).
+             */
+            duplicates: boolean;
+            enabled: boolean;
+            /**
+             * @description Moods publishes shared mood playlists (calm, focus, party...) picked
+             *     from the analysis, refreshed with the other auto-playlists.
+             */
+            moods: boolean;
+            /** @description Radio turns on the sonic track radio (and sonic getSimilarSongs). */
+            radio: boolean;
+            /** @description Workers is how many tracks are analyzed in parallel (default 1). */
+            workers: number;
+        };
         "models.ThemeSettings": {
             /**
              * @description AccentColor is a CSS hex colour (e.g. "#3b82f6"). Empty means the client
              *     should fall back to its own default.
              */
             accentColor?: string;
+        };
+        "models.TranscodeProfileRuntime": {
+            bitRate: number;
+            ffmpegArgs?: string;
+            format: string;
+            name: string;
+        };
+        "models.TranscodeRuntime": {
+            ffmpegPath: string;
+            ffprobePath: string;
+            profiles: components["schemas"]["models.TranscodeProfileRuntime"][];
         };
         "models.Wrapped": {
             /** @description ByMonth is plays per calendar month, index 0 = January .. 11 = December. */
@@ -11992,6 +12173,9 @@ export interface components {
         "models.WrappedCount": {
             name: string;
             plays: number;
+        };
+        "models.WrappedRuntime": {
+            enabled: boolean;
         };
         "models.WrappedTrack": {
             artist: string;

@@ -126,8 +126,8 @@ type DiscoverRuntime struct {
 	SimilarTracks bool `json:"similarTracks"`
 	// InstanceID and PrivateKey are returned by discover at registration. Not
 	// user-editable; PrivateKey is redacted from API responses.
-	InstanceID string `json:"instanceId,omitempty"`
-	PrivateKey string `json:"privateKey,omitempty"`
+	InstanceID string `json:"instanceId,omitempty" validate:"optional"`
+	PrivateKey string `json:"privateKey,omitempty" validate:"optional"`
 }
 
 // SonicRuntime configures local audio analysis (hot-reloadable). Off by
@@ -196,11 +196,11 @@ type ConcertsRuntime struct {
 	Enabled bool `json:"enabled"`
 	// Country is an ISO 3166-1 alpha-2 code (e.g. "FR", "US"), picked from a
 	// fixed dropdown in the admin UI — see ui/src/utils/countries.ts.
-	Country string `json:"country,omitempty"`
+	Country string `json:"country,omitempty" validate:"optional"`
 	// TicketmasterAPIKey and SkiddleAPIKey are write-only: never returned by the
 	// admin settings API (see redactSettings), only ever set.
-	TicketmasterAPIKey string `json:"ticketmasterApiKey,omitempty"`
-	SkiddleAPIKey      string `json:"skiddleApiKey,omitempty"`
+	TicketmasterAPIKey string `json:"ticketmasterApiKey,omitempty" validate:"optional"`
+	SkiddleAPIKey      string `json:"skiddleApiKey,omitempty" validate:"optional"`
 }
 
 // LastFmRuntime configures Last.fm scrobbling (hot-reloadable): an app-level
@@ -212,8 +212,8 @@ type LastFmRuntime struct {
 	Enabled bool `json:"enabled"`
 	// APIKey and APISecret are write-only: never returned by the admin
 	// settings API (see redactSettings), only ever set.
-	APIKey    string `json:"apiKey,omitempty"`
-	APISecret string `json:"apiSecret,omitempty"`
+	APIKey    string `json:"apiKey,omitempty" validate:"optional"`
+	APISecret string `json:"apiSecret,omitempty" validate:"optional"`
 }
 
 // LogsRuntime configures retention of persisted diagnostic logs (provider logs
@@ -230,7 +230,7 @@ type LogsRuntime struct {
 // directly. Hub-backed sources (e.g. spotify) need no entry here — they use the
 // federation hub, which holds the third-party credentials.
 type ImportRuntime struct {
-	Sources map[string]map[string]string `json:"sources,omitempty"`
+	Sources map[string]map[string]string `json:"sources,omitempty" validate:"optional"`
 }
 
 // CleanupRuntime configures the provider-download eviction sweep. Enabled is
@@ -244,7 +244,7 @@ type CleanupRuntime struct {
 // ServerRuntime holds hot-reloadable server settings.
 type ServerRuntime struct {
 	// CORSAllowedOrigins lists browser origins permitted via CORS ("*" = any).
-	CORSAllowedOrigins []string `json:"corsAllowedOrigins"`
+	CORSAllowedOrigins []string `json:"corsAllowedOrigins" validate:"required"`
 }
 
 // AuthRuntime holds hot-reloadable auth settings.
@@ -270,7 +270,7 @@ type LDAPRuntime struct {
 type TranscodeRuntime struct {
 	FFmpegPath  string                    `json:"ffmpegPath"`
 	FFprobePath string                    `json:"ffprobePath"`
-	Profiles    []TranscodeProfileRuntime `json:"profiles"`
+	Profiles    []TranscodeProfileRuntime `json:"profiles" validate:"required"`
 }
 
 // TranscodeProfileRuntime describes one named output format.
@@ -278,7 +278,7 @@ type TranscodeProfileRuntime struct {
 	Name       string `json:"name"`
 	Format     string `json:"format"`
 	BitRate    int    `json:"bitRate"`
-	FFmpegArgs string `json:"ffmpegArgs,omitempty"`
+	FFmpegArgs string `json:"ffmpegArgs,omitempty" validate:"optional"`
 }
 
 // ProviderRuntime is the on-demand provider behaviour (all hot-reloadable). The

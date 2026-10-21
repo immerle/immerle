@@ -1,264 +1,6 @@
 {
     "components": {
         "schemas": {
-            "immerle.FederationUpdateDTO": {
-                "properties": {
-                    "name": {
-                        "example": "My living-room immerle",
-                        "type": "string"
-                    },
-                    "sqid": {
-                        "example": "my-node",
-                        "type": "string"
-                    }
-                },
-                "type": "object"
-            },
-            "immerle.RuntimeSettingsDTO": {
-                "properties": {
-                    "auth": {
-                        "properties": {
-                            "deviceTokenTtlSeconds": {
-                                "example": 2592000,
-                                "type": "integer"
-                            }
-                        },
-                        "type": "object"
-                    },
-                    "cleanup": {
-                        "properties": {
-                            "enabled": {
-                                "example": true,
-                                "type": "boolean"
-                            },
-                            "intervalSeconds": {
-                                "example": 21600,
-                                "type": "integer"
-                            },
-                            "maxAgeSeconds": {
-                                "example": 2592000,
-                                "type": "integer"
-                            }
-                        },
-                        "type": "object"
-                    },
-                    "discover": {
-                        "properties": {
-                            "curatedPlaylists": {
-                                "example": true,
-                                "type": "boolean"
-                            },
-                            "enabled": {
-                                "example": true,
-                                "type": "boolean"
-                            },
-                            "instanceId": {
-                                "example": "6f1c2a4e-0d2b-4c55-9a51-2b8f3c1d9e07",
-                                "type": "string"
-                            },
-                            "madeForYou": {
-                                "example": true,
-                                "type": "boolean"
-                            },
-                            "scrobble": {
-                                "example": true,
-                                "type": "boolean"
-                            },
-                            "similarTracks": {
-                                "example": true,
-                                "type": "boolean"
-                            }
-                        },
-                        "type": "object"
-                    },
-                    "federation": {
-                        "properties": {
-                            "exportScrobbles": {
-                                "type": "boolean"
-                            },
-                            "instanceId": {
-                                "description": "InstanceID is the hub-assigned fixed UUID (read-only). Sqid is the\neditable handle. PrivateKey is never returned (redacted server-side).",
-                                "example": "3f1c2d4e-5a6b-7c8d-9e0f-1a2b3c4d5e6f",
-                                "type": "string"
-                            },
-                            "instanceName": {
-                                "example": "My living-room immerle",
-                                "type": "string"
-                            },
-                            "sqid": {
-                                "example": "my-node",
-                                "type": "string"
-                            },
-                            "syncPlaylists": {
-                                "type": "boolean"
-                            },
-                            "userId": {
-                                "description": "Federation is active whenever linked (instanceId set); no enable flag.",
-                                "example": "6f1c2b8e-1f0a-4f9b-9c3a-1e2d3c4b5a6f",
-                                "type": "string"
-                            }
-                        },
-                        "type": "object"
-                    },
-                    "ldap": {
-                        "properties": {
-                            "bindDnTemplate": {
-                                "example": "uid=%s,ou=people,dc=example,dc=com",
-                                "type": "string"
-                            },
-                            "enabled": {
-                                "example": false,
-                                "type": "boolean"
-                            },
-                            "url": {
-                                "example": "ldaps://ldap.example.com:636",
-                                "type": "string"
-                            }
-                        },
-                        "type": "object"
-                    },
-                    "logs": {
-                        "properties": {
-                            "retentionDays": {
-                                "example": 30,
-                                "type": "integer"
-                            }
-                        },
-                        "type": "object"
-                    },
-                    "providers": {
-                        "properties": {
-                            "autoDownloadOnPlay": {
-                                "example": true,
-                                "type": "boolean"
-                            },
-                            "searchTimeoutSeconds": {
-                                "example": 3,
-                                "type": "integer"
-                            }
-                        },
-                        "type": "object"
-                    },
-                    "scan": {
-                        "properties": {
-                            "intervalSeconds": {
-                                "example": 3600,
-                                "type": "integer"
-                            },
-                            "watch": {
-                                "example": true,
-                                "type": "boolean"
-                            }
-                        },
-                        "type": "object"
-                    },
-                    "server": {
-                        "properties": {
-                            "corsAllowedOrigins": {
-                                "example": [
-                                    "*"
-                                ],
-                                "items": {
-                                    "type": "string"
-                                },
-                                "type": "array",
-                                "uniqueItems": false
-                            }
-                        },
-                        "type": "object"
-                    },
-                    "sonic": {
-                        "properties": {
-                            "autoDj": {
-                                "example": false,
-                                "type": "boolean"
-                            },
-                            "autoplay": {
-                                "example": false,
-                                "type": "boolean"
-                            },
-                            "duplicates": {
-                                "example": false,
-                                "type": "boolean"
-                            },
-                            "enabled": {
-                                "example": false,
-                                "type": "boolean"
-                            },
-                            "moods": {
-                                "example": false,
-                                "type": "boolean"
-                            },
-                            "radio": {
-                                "example": false,
-                                "type": "boolean"
-                            },
-                            "workers": {
-                                "example": 1,
-                                "type": "integer"
-                            }
-                        },
-                        "type": "object"
-                    },
-                    "transcode": {
-                        "properties": {
-                            "ffmpegPath": {
-                                "example": "ffmpeg",
-                                "type": "string"
-                            },
-                            "ffprobePath": {
-                                "example": "ffprobe",
-                                "type": "string"
-                            },
-                            "profiles": {
-                                "items": {
-                                    "properties": {
-                                        "bitRate": {
-                                            "example": 192,
-                                            "type": "integer"
-                                        },
-                                        "ffmpegArgs": {
-                                            "type": "string"
-                                        },
-                                        "format": {
-                                            "example": "mp3",
-                                            "type": "string"
-                                        },
-                                        "name": {
-                                            "example": "mp3",
-                                            "type": "string"
-                                        }
-                                    },
-                                    "type": "object"
-                                },
-                                "type": "array",
-                                "uniqueItems": false
-                            }
-                        },
-                        "type": "object"
-                    }
-                },
-                "type": "object"
-            },
-            "immerle.SettingsDTO": {
-                "properties": {
-                    "pendingRestart": {
-                        "items": {
-                            "type": "string"
-                        },
-                        "type": "array",
-                        "uniqueItems": false
-                    },
-                    "restartRequired": {
-                        "example": false,
-                        "type": "boolean"
-                    },
-                    "settings": {
-                        "$ref": "#/components/schemas/immerle.RuntimeSettingsDTO"
-                    }
-                },
-                "type": "object"
-            },
             "immerle.accountView": {
                 "properties": {
                     "displayName": {
@@ -1404,6 +1146,19 @@
                 "required": [
                     "enabled"
                 ],
+                "type": "object"
+            },
+            "immerle.federationUpdateRequest": {
+                "properties": {
+                    "name": {
+                        "example": "My living-room immerle",
+                        "type": "string"
+                    },
+                    "sqid": {
+                        "example": "my-node",
+                        "type": "string"
+                    }
+                },
                 "type": "object"
             },
             "immerle.fieldError": {
@@ -2726,6 +2481,239 @@
                 },
                 "type": "object"
             },
+            "immerle.settingsPatchRequest": {
+                "properties": {
+                    "auth": {
+                        "properties": {
+                            "deviceTokenTtlSeconds": {
+                                "example": 2592000,
+                                "type": "integer"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "cleanup": {
+                        "properties": {
+                            "enabled": {
+                                "example": true,
+                                "type": "boolean"
+                            },
+                            "intervalSeconds": {
+                                "example": 21600,
+                                "type": "integer"
+                            },
+                            "maxAgeSeconds": {
+                                "example": 2592000,
+                                "type": "integer"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "discover": {
+                        "properties": {
+                            "curatedPlaylists": {
+                                "example": true,
+                                "type": "boolean"
+                            },
+                            "enabled": {
+                                "example": true,
+                                "type": "boolean"
+                            },
+                            "madeForYou": {
+                                "example": true,
+                                "type": "boolean"
+                            },
+                            "scrobble": {
+                                "example": true,
+                                "type": "boolean"
+                            },
+                            "similarTracks": {
+                                "example": true,
+                                "type": "boolean"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "federation": {
+                        "properties": {
+                            "exportScrobbles": {
+                                "type": "boolean"
+                            },
+                            "syncPlaylists": {
+                                "type": "boolean"
+                            },
+                            "userId": {
+                                "description": "Federation is active whenever linked; the instance identity is managed\nthrough PATCH /admin/federation.",
+                                "example": "6f1c2b8e-1f0a-4f9b-9c3a-1e2d3c4b5a6f",
+                                "type": "string"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "ldap": {
+                        "properties": {
+                            "bindDnTemplate": {
+                                "example": "uid=%s,ou=people,dc=example,dc=com",
+                                "type": "string"
+                            },
+                            "enabled": {
+                                "example": false,
+                                "type": "boolean"
+                            },
+                            "url": {
+                                "example": "ldaps://ldap.example.com:636",
+                                "type": "string"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "logs": {
+                        "properties": {
+                            "retentionDays": {
+                                "example": 30,
+                                "type": "integer"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "providers": {
+                        "properties": {
+                            "autoDownloadOnPlay": {
+                                "example": true,
+                                "type": "boolean"
+                            },
+                            "searchTimeoutSeconds": {
+                                "example": 3,
+                                "type": "integer"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "scan": {
+                        "properties": {
+                            "intervalSeconds": {
+                                "example": 3600,
+                                "type": "integer"
+                            },
+                            "watch": {
+                                "example": true,
+                                "type": "boolean"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "server": {
+                        "properties": {
+                            "corsAllowedOrigins": {
+                                "example": [
+                                    "*"
+                                ],
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array",
+                                "uniqueItems": false
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "sonic": {
+                        "properties": {
+                            "autoDj": {
+                                "example": false,
+                                "type": "boolean"
+                            },
+                            "autoplay": {
+                                "example": false,
+                                "type": "boolean"
+                            },
+                            "duplicates": {
+                                "example": false,
+                                "type": "boolean"
+                            },
+                            "enabled": {
+                                "example": false,
+                                "type": "boolean"
+                            },
+                            "moods": {
+                                "example": false,
+                                "type": "boolean"
+                            },
+                            "radio": {
+                                "example": false,
+                                "type": "boolean"
+                            },
+                            "workers": {
+                                "example": 1,
+                                "type": "integer"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "transcode": {
+                        "properties": {
+                            "ffmpegPath": {
+                                "example": "ffmpeg",
+                                "type": "string"
+                            },
+                            "ffprobePath": {
+                                "example": "ffprobe",
+                                "type": "string"
+                            },
+                            "profiles": {
+                                "items": {
+                                    "properties": {
+                                        "bitRate": {
+                                            "example": 192,
+                                            "type": "integer"
+                                        },
+                                        "ffmpegArgs": {
+                                            "type": "string"
+                                        },
+                                        "format": {
+                                            "example": "mp3",
+                                            "type": "string"
+                                        },
+                                        "name": {
+                                            "example": "mp3",
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                },
+                                "type": "array",
+                                "uniqueItems": false
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "type": "object"
+            },
+            "immerle.settingsView": {
+                "properties": {
+                    "pendingRestart": {
+                        "description": "PendingRestart lists the changed settings that apply after a restart.",
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "restartRequired": {
+                        "type": "boolean"
+                    },
+                    "settings": {
+                        "$ref": "#/components/schemas/models.RuntimeSettings"
+                    }
+                },
+                "required": [
+                    "pendingRestart",
+                    "restartRequired",
+                    "settings"
+                ],
+                "type": "object"
+            },
             "immerle.setupAdminView": {
                 "properties": {
                     "displayName": {
@@ -3488,6 +3476,37 @@
                 ],
                 "type": "object"
             },
+            "models.AuthRuntime": {
+                "properties": {
+                    "deviceTokenTtlSeconds": {
+                        "description": "DeviceTokenTTLSeconds is the device-session JWT lifetime (0 = never).",
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "deviceTokenTtlSeconds"
+                ],
+                "type": "object"
+            },
+            "models.CleanupRuntime": {
+                "properties": {
+                    "enabled": {
+                        "type": "boolean"
+                    },
+                    "intervalSeconds": {
+                        "type": "integer"
+                    },
+                    "maxAgeSeconds": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "enabled",
+                    "intervalSeconds",
+                    "maxAgeSeconds"
+                ],
+                "type": "object"
+            },
             "models.Concert": {
                 "properties": {
                     "artistName": {
@@ -3525,6 +3544,118 @@
                     "id",
                     "source",
                     "startTime"
+                ],
+                "type": "object"
+            },
+            "models.ConcertsRuntime": {
+                "properties": {
+                    "country": {
+                        "description": "Country is an ISO 3166-1 alpha-2 code (e.g. \"FR\", \"US\"), picked from a\nfixed dropdown in the admin UI — see ui/src/utils/countries.ts.",
+                        "type": "string"
+                    },
+                    "enabled": {
+                        "type": "boolean"
+                    },
+                    "skiddleApiKey": {
+                        "type": "string"
+                    },
+                    "ticketmasterApiKey": {
+                        "description": "TicketmasterAPIKey and SkiddleAPIKey are write-only: never returned by the\nadmin settings API (see redactSettings), only ever set.",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "enabled"
+                ],
+                "type": "object"
+            },
+            "models.DiscoverRuntime": {
+                "properties": {
+                    "curatedPlaylists": {
+                        "description": "CuratedPlaylists proposes, per user, the editorial playlists that best\nmatch what they listen to.",
+                        "type": "boolean"
+                    },
+                    "enabled": {
+                        "type": "boolean"
+                    },
+                    "instanceId": {
+                        "description": "InstanceID and PrivateKey are returned by discover at registration. Not\nuser-editable; PrivateKey is redacted from API responses.",
+                        "type": "string"
+                    },
+                    "madeForYou": {
+                        "description": "MadeForYou publishes a personal \"Mix discover\" playlist per user.",
+                        "type": "boolean"
+                    },
+                    "privateKey": {
+                        "type": "string"
+                    },
+                    "scrobble": {
+                        "description": "Scrobble sends completed plays (under an opaque per-user reference, never\na name or email), which is what the per-listener suggestions learn from.",
+                        "type": "boolean"
+                    },
+                    "similarTracks": {
+                        "description": "SimilarTracks backs getSimilarSongs with discover's similar tracks.",
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "curatedPlaylists",
+                    "enabled",
+                    "madeForYou",
+                    "scrobble",
+                    "similarTracks"
+                ],
+                "type": "object"
+            },
+            "models.FederationRuntime": {
+                "properties": {
+                    "exportScrobbles": {
+                        "type": "boolean"
+                    },
+                    "instanceId": {
+                        "description": "InstanceID is the hub-assigned fixed UUID (the public key sent as the\nX-Instance-ID header), returned at bootstrap. Immutable; not user-editable.",
+                        "type": "string"
+                    },
+                    "instanceName": {
+                        "description": "InstanceName is the human-readable instance label shown on the hub (editable).",
+                        "type": "string"
+                    },
+                    "privateKey": {
+                        "description": "PrivateKey is the hub-issued secret (Bearer token), returned once at\nbootstrap. Not user-editable and redacted from API responses.",
+                        "type": "string"
+                    },
+                    "sqid": {
+                        "description": "Sqid is the editable, unique hub handle (defaults to a sqid at bootstrap).",
+                        "type": "string"
+                    },
+                    "syncPlaylists": {
+                        "description": "SyncPlaylists opts this instance's public playlists into being pushed to the\nhub (off by default). Hot-reloadable.",
+                        "type": "boolean"
+                    },
+                    "userId": {
+                        "description": "UserID is the hub owner's UUID. The operator pastes it from the hub to claim\nthis instance; the instance then bootstraps itself under that user.",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "exportScrobbles",
+                    "instanceId",
+                    "instanceName",
+                    "privateKey",
+                    "sqid",
+                    "syncPlaylists",
+                    "userId"
+                ],
+                "type": "object"
+            },
+            "models.HallOfFameRuntime": {
+                "properties": {
+                    "enabled": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "enabled"
                 ],
                 "type": "object"
             },
@@ -3696,6 +3827,20 @@
                     "ImportItemFailed"
                 ]
             },
+            "models.ImportRuntime": {
+                "properties": {
+                    "sources": {
+                        "additionalProperties": {
+                            "additionalProperties": {
+                                "type": "string"
+                            },
+                            "type": "object"
+                        },
+                        "type": "object"
+                    }
+                },
+                "type": "object"
+            },
             "models.ImportStatus": {
                 "enum": [
                     "queued",
@@ -3833,6 +3978,45 @@
                 ],
                 "type": "object"
             },
+            "models.LDAPRuntime": {
+                "properties": {
+                    "bindDnTemplate": {
+                        "description": "BindDNTemplate builds the bind DN from the username via a single %s,\ne.g. \"uid=%s,ou=people,dc=example,dc=com\".",
+                        "type": "string"
+                    },
+                    "enabled": {
+                        "type": "boolean"
+                    },
+                    "url": {
+                        "description": "URL is the directory endpoint, e.g. \"ldaps://ldap.example.com:636\".",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "bindDnTemplate",
+                    "enabled",
+                    "url"
+                ],
+                "type": "object"
+            },
+            "models.LastFmRuntime": {
+                "properties": {
+                    "apiKey": {
+                        "description": "APIKey and APISecret are write-only: never returned by the admin\nsettings API (see redactSettings), only ever set.",
+                        "type": "string"
+                    },
+                    "apiSecret": {
+                        "type": "string"
+                    },
+                    "enabled": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "enabled"
+                ],
+                "type": "object"
+            },
             "models.LibraryStats": {
                 "properties": {
                     "albums": {
@@ -3861,6 +4045,29 @@
                     "totalSize",
                     "tracks",
                     "updatedAt"
+                ],
+                "type": "object"
+            },
+            "models.LogsRuntime": {
+                "properties": {
+                    "retentionDays": {
+                        "description": "RetentionDays is how long persisted logs are kept (default 30). 0 disables\npruning (keep forever).",
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "retentionDays"
+                ],
+                "type": "object"
+            },
+            "models.OfflineRuntime": {
+                "properties": {
+                    "enabled": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "enabled"
                 ],
                 "type": "object"
             },
@@ -3897,6 +4104,149 @@
                 ],
                 "type": "object"
             },
+            "models.ProviderRuntime": {
+                "properties": {
+                    "autoDownloadOnPlay": {
+                        "description": "AutoDownloadOnPlay downloads a remote result when first streamed.",
+                        "type": "boolean"
+                    },
+                    "searchTimeoutSeconds": {
+                        "description": "SearchTimeoutSeconds bounds a remote search (default 3).",
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "autoDownloadOnPlay",
+                    "searchTimeoutSeconds"
+                ],
+                "type": "object"
+            },
+            "models.RadioRuntime": {
+                "properties": {
+                    "enabled": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "enabled"
+                ],
+                "type": "object"
+            },
+            "models.RuntimeSettings": {
+                "properties": {
+                    "auth": {
+                        "$ref": "#/components/schemas/models.AuthRuntime"
+                    },
+                    "cleanup": {
+                        "$ref": "#/components/schemas/models.CleanupRuntime"
+                    },
+                    "concerts": {
+                        "$ref": "#/components/schemas/models.ConcertsRuntime"
+                    },
+                    "discover": {
+                        "$ref": "#/components/schemas/models.DiscoverRuntime"
+                    },
+                    "federation": {
+                        "$ref": "#/components/schemas/models.FederationRuntime"
+                    },
+                    "hallOfFame": {
+                        "$ref": "#/components/schemas/models.HallOfFameRuntime"
+                    },
+                    "import": {
+                        "$ref": "#/components/schemas/models.ImportRuntime"
+                    },
+                    "lastFm": {
+                        "$ref": "#/components/schemas/models.LastFmRuntime"
+                    },
+                    "ldap": {
+                        "$ref": "#/components/schemas/models.LDAPRuntime"
+                    },
+                    "logs": {
+                        "$ref": "#/components/schemas/models.LogsRuntime"
+                    },
+                    "offline": {
+                        "$ref": "#/components/schemas/models.OfflineRuntime"
+                    },
+                    "providers": {
+                        "$ref": "#/components/schemas/models.ProviderRuntime"
+                    },
+                    "radio": {
+                        "$ref": "#/components/schemas/models.RadioRuntime"
+                    },
+                    "scan": {
+                        "$ref": "#/components/schemas/models.ScanRuntime"
+                    },
+                    "server": {
+                        "$ref": "#/components/schemas/models.ServerRuntime"
+                    },
+                    "smartPlaylists": {
+                        "$ref": "#/components/schemas/models.SmartPlaylistsRuntime"
+                    },
+                    "sonic": {
+                        "$ref": "#/components/schemas/models.SonicRuntime"
+                    },
+                    "transcode": {
+                        "$ref": "#/components/schemas/models.TranscodeRuntime"
+                    },
+                    "wrapped": {
+                        "$ref": "#/components/schemas/models.WrappedRuntime"
+                    }
+                },
+                "required": [
+                    "auth",
+                    "cleanup",
+                    "concerts",
+                    "discover",
+                    "federation",
+                    "hallOfFame",
+                    "import",
+                    "lastFm",
+                    "ldap",
+                    "logs",
+                    "offline",
+                    "providers",
+                    "radio",
+                    "scan",
+                    "server",
+                    "smartPlaylists",
+                    "sonic",
+                    "transcode",
+                    "wrapped"
+                ],
+                "type": "object"
+            },
+            "models.ScanRuntime": {
+                "properties": {
+                    "intervalSeconds": {
+                        "description": "0 disables periodic rescan",
+                        "type": "integer"
+                    },
+                    "watch": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "intervalSeconds",
+                    "watch"
+                ],
+                "type": "object"
+            },
+            "models.ServerRuntime": {
+                "properties": {
+                    "corsAllowedOrigins": {
+                        "description": "CORSAllowedOrigins lists browser origins permitted via CORS (\"*\" = any).",
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "required": [
+                    "corsAllowedOrigins"
+                ],
+                "type": "object"
+            },
             "models.SmartCondition": {
                 "properties": {
                     "field": {
@@ -3913,6 +4263,17 @@
                     "field",
                     "op",
                     "value"
+                ],
+                "type": "object"
+            },
+            "models.SmartPlaylistsRuntime": {
+                "properties": {
+                    "enabled": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "enabled"
                 ],
                 "type": "object"
             },
@@ -3959,6 +4320,47 @@
                 ],
                 "type": "object"
             },
+            "models.SonicRuntime": {
+                "properties": {
+                    "autoDj": {
+                        "description": "AutoDJ lets listeners reorder a playlist or their queue for smooth\ntransitions (tempo, key, energy).",
+                        "type": "boolean"
+                    },
+                    "autoplay": {
+                        "description": "Autoplay lets clients extend a queue about to run out with tracks that\nsound like its last ones.",
+                        "type": "boolean"
+                    },
+                    "duplicates": {
+                        "description": "Duplicates lists, in the admin library, tracks that sound identical\n(the same recording under other tags or in another format).",
+                        "type": "boolean"
+                    },
+                    "enabled": {
+                        "type": "boolean"
+                    },
+                    "moods": {
+                        "description": "Moods publishes shared mood playlists (calm, focus, party...) picked\nfrom the analysis, refreshed with the other auto-playlists.",
+                        "type": "boolean"
+                    },
+                    "radio": {
+                        "description": "Radio turns on the sonic track radio (and sonic getSimilarSongs).",
+                        "type": "boolean"
+                    },
+                    "workers": {
+                        "description": "Workers is how many tracks are analyzed in parallel (default 1).",
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "autoDj",
+                    "autoplay",
+                    "duplicates",
+                    "enabled",
+                    "moods",
+                    "radio",
+                    "workers"
+                ],
+                "type": "object"
+            },
             "models.ThemeSettings": {
                 "properties": {
                     "accentColor": {
@@ -3966,6 +4368,51 @@
                         "type": "string"
                     }
                 },
+                "type": "object"
+            },
+            "models.TranscodeProfileRuntime": {
+                "properties": {
+                    "bitRate": {
+                        "type": "integer"
+                    },
+                    "ffmpegArgs": {
+                        "type": "string"
+                    },
+                    "format": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "bitRate",
+                    "format",
+                    "name"
+                ],
+                "type": "object"
+            },
+            "models.TranscodeRuntime": {
+                "properties": {
+                    "ffmpegPath": {
+                        "type": "string"
+                    },
+                    "ffprobePath": {
+                        "type": "string"
+                    },
+                    "profiles": {
+                        "items": {
+                            "$ref": "#/components/schemas/models.TranscodeProfileRuntime"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "required": [
+                    "ffmpegPath",
+                    "ffprobePath",
+                    "profiles"
+                ],
                 "type": "object"
             },
             "models.Wrapped": {
@@ -4032,6 +4479,17 @@
                 "required": [
                     "name",
                     "plays"
+                ],
+                "type": "object"
+            },
+            "models.WrappedRuntime": {
+                "properties": {
+                    "enabled": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "enabled"
                 ],
                 "type": "object"
             },
@@ -4633,7 +5091,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.SettingsDTO"
+                                    "$ref": "#/components/schemas/immerle.settingsView"
                                 }
                             }
                         },
@@ -4697,7 +5155,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.SettingsDTO"
+                                    "$ref": "#/components/schemas/immerle.settingsView"
                                 }
                             }
                         },
@@ -4775,7 +5233,7 @@
                                         "type": "object"
                                     },
                                     {
-                                        "$ref": "#/components/schemas/immerle.FederationUpdateDTO",
+                                        "$ref": "#/components/schemas/immerle.federationUpdateRequest",
                                         "summary": "body",
                                         "description": "Instance name and sqid"
                                     }
@@ -4791,7 +5249,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.SettingsDTO"
+                                    "$ref": "#/components/schemas/immerle.settingsView"
                                 }
                             }
                         },
@@ -4954,7 +5412,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.SettingsDTO"
+                                    "$ref": "#/components/schemas/immerle.settingsView"
                                 }
                             }
                         },
@@ -6748,7 +7206,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.SettingsDTO"
+                                    "$ref": "#/components/schemas/immerle.settingsView"
                                 }
                             }
                         },
@@ -6806,7 +7264,7 @@
                                         "type": "object"
                                     },
                                     {
-                                        "$ref": "#/components/schemas/immerle.RuntimeSettingsDTO",
+                                        "$ref": "#/components/schemas/immerle.settingsPatchRequest",
                                         "summary": "body",
                                         "description": "Settings fields to change (partial)"
                                     }
@@ -6822,7 +7280,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/immerle.SettingsDTO"
+                                    "$ref": "#/components/schemas/immerle.settingsView"
                                 }
                             }
                         },

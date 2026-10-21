@@ -17,7 +17,7 @@ import { useHallOfFameAdmin, useSetHallOfFame } from '../../src/query/hallOfFame
 import { useConcertsAdmin, useUpdateConcertsConfig, useConcertsSyncMutation } from '../../src/query/concerts';
 import { useLastFmAdmin, useUpdateLastFmAdminConfig } from '../../src/query/lastfm';
 import { useAuth } from '../../src/auth/store';
-import { RuntimeSettingsDTO } from '../../src/api/immerleApi';
+import { RuntimeSettings, RuntimeSettingsPatch } from '../../src/api/immerleApi';
 import { Badge, Button, Card, ErrorState, Field, Loading, Select } from '../../src/components/ui';
 import { AdminHeader, AdminScroll } from '../../src/components/AdminUI';
 import { Ionicon } from '../../src/components/Ionicon';
@@ -75,7 +75,7 @@ interface Form {
   sonicWorkers: string;
 }
 
-function toForm(s: RuntimeSettingsDTO): Form {
+function toForm(s: RuntimeSettings): Form {
   return {
     cors: (s.server?.corsAllowedOrigins ?? []).join(', '),
     ttl: String(s.auth?.deviceTokenTtlSeconds ?? 0),
@@ -170,7 +170,7 @@ export default function AdminSettings() {
   if (q.isError) return <ErrorState message={t('admin.settings.loadError')} onRetry={q.refetch} />;
 
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setForm((f) => (f ? { ...f, [k]: v } : f));
-  const save = (patch: RuntimeSettingsDTO, onSuccess?: () => void) => update.mutate(patch, { onSuccess });
+  const save = (patch: RuntimeSettingsPatch, onSuccess?: () => void) => update.mutate(patch, { onSuccess });
 
   const pending = q.data?.pendingRestart ?? [];
   const discover = q.data?.settings.discover;

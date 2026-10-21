@@ -163,7 +163,7 @@ export interface ProviderLog {
   createdAt: string;
 }
 
-// Federation is configured through the runtime settings (RuntimeSettingsDTO.federation)
+// Federation is configured through the runtime settings (RuntimeSettings.federation)
 // and registered via client.registerInstance(); no dedicated state type is needed.
 
 // --- Smart playlists (rule-based) ------------------------------------------

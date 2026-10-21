@@ -141,6 +141,11 @@ export type InstanceSummary = components['schemas']['immerle.instanceView'];
 export type ScanProgress = components['schemas']['immerle.scanStatusView'];
 
 // Runtime settings + downloads cleanup (admin).
-export type RuntimeSettingsDTO = components['schemas']['immerle.RuntimeSettingsDTO'];
+/** The (redacted) runtime settings as read from the server. */
+export type RuntimeSettings = components['schemas']['models.RuntimeSettings'];
+/** A partial settings update: only the fields PATCH /admin/settings writes. */
+export type RuntimeSettingsPatch = components['schemas']['immerle.settingsPatchRequest'];
+/** Runtime settings plus the pending-restart status returned by the server. */
+export type SettingsResult = components['schemas']['immerle.settingsView'];
 export type SonicStatusView = components['schemas']['immerle.sonicStatusView'];
 export type SongSonicView = components['schemas']['immerle.songSonicView'];
