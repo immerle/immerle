@@ -11,7 +11,7 @@ import (
 	"syscall"
 
 	"github.com/immerle/immerle/internal/app"
-	"github.com/immerle/immerle/internal/config"
+	"github.com/immerle/immerle/internal/platform/config"
 )
 
 // version is stamped at build time via -ldflags "-X main.version=...".

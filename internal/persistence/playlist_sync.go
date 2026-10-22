@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/immerle/immerle/internal/db"
+	"github.com/immerle/immerle/internal/platform/db"
 )
 
 // PlaylistSyncRepo tracks the last content hash synced per playlist, so an

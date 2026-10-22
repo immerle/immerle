@@ -10,11 +10,11 @@ import (
 	"time"
 
 	"github.com/immerle/immerle/internal/core"
-	"github.com/immerle/immerle/internal/lrclib"
-	"github.com/immerle/immerle/internal/lyrics"
+	"github.com/immerle/immerle/internal/integrations/lrclib"
+	"github.com/immerle/immerle/internal/integrations/spotifyweb"
+	"github.com/immerle/immerle/internal/lib/lyrics"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
-	"github.com/immerle/immerle/internal/spotifyweb"
 )
 
 // lyricsView is a track's lyrics, plain or synced. When synced, every line

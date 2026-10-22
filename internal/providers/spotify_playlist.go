@@ -11,7 +11,7 @@ import (
 var errSpotifyNoTracks = errors.New("spotify-playlist: playlists only, tracks resolve through the other providers")
 
 // SpotifyProvider is the built-in switch for public Spotify playlists in
-// search (see internal/spotifyplaylists). It contributes no tracks: a mirrored
+// search (see internal/services/spotifyplaylists). It contributes no tracks: a mirrored
 // playlist's tracks resolve at play time through the local catalog and the
 // other providers. Enabling or disabling it turns the feature on or off.
 type SpotifyProvider struct{}

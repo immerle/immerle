@@ -6,11 +6,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/immerle/immerle/internal/autoplaylists"
-	"github.com/immerle/immerle/internal/charts"
 	"github.com/immerle/immerle/internal/core"
-	"github.com/immerle/immerle/internal/federation"
 	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/services/autoplaylists"
+	"github.com/immerle/immerle/internal/services/charts"
+	"github.com/immerle/immerle/internal/services/federation"
 )
 
 // This file exposes the personal playlist CRUD over the shared

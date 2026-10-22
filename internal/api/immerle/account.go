@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/immerle/immerle/internal/core"
-	"github.com/immerle/immerle/internal/listenbrainz"
+	"github.com/immerle/immerle/internal/integrations/listenbrainz"
 	"github.com/immerle/immerle/internal/models"
 )
 

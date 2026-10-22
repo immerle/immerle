@@ -13,11 +13,11 @@ import (
 	chi "github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 
-	"github.com/immerle/immerle/internal/config"
 	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
-	"github.com/immerle/immerle/internal/scanner"
+	"github.com/immerle/immerle/internal/platform/config"
+	"github.com/immerle/immerle/internal/services/scanner"
 	"github.com/immerle/immerle/internal/stream"
 	"github.com/immerle/immerle/internal/testutil"
 )

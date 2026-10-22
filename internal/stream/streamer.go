@@ -16,8 +16,8 @@ import (
 
 	"golang.org/x/sync/singleflight"
 
-	"github.com/immerle/immerle/internal/config"
 	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/platform/config"
 )
 
 // Streamer serves audio files, transcoding on demand via ffmpeg. Transcoded

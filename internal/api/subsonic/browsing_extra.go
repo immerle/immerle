@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/immerle/immerle/internal/lrclib"
-	"github.com/immerle/immerle/internal/lyrics"
+	"github.com/immerle/immerle/internal/integrations/lrclib"
+	"github.com/immerle/immerle/internal/lib/lyrics"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 )

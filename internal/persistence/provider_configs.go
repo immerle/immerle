@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/immerle/immerle/internal/db"
 	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/platform/db"
 )
 
 // ProviderConfigRepo persists admin-managed, runtime-configurable providers.

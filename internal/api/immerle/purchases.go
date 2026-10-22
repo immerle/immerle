@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/immerle/immerle/internal/bandcamp"
+	"github.com/immerle/immerle/internal/integrations/bandcamp"
 	"github.com/immerle/immerle/internal/models"
 )
 

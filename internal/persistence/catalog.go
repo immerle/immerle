@@ -10,9 +10,9 @@ import (
 
 	"golang.org/x/text/unicode/norm"
 
-	"github.com/immerle/immerle/internal/db"
-	"github.com/immerle/immerle/internal/matching"
+	"github.com/immerle/immerle/internal/lib/matching"
 	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/platform/db"
 )
 
 // CatalogRepo persists artists, albums and tracks. It exposes idempotent upsert
@@ -539,7 +539,7 @@ func (r *CatalogRepo) ListTracksByGenre(ctx context.Context, genre string, count
 }
 
 // ListTracksByYearRange returns tracks released in [fromYear, toYear) — powers
-// the decade auto-playlists (internal/autoplaylists).
+// the decade auto-playlists (internal/services/autoplaylists).
 func (r *CatalogRepo) ListTracksByYearRange(ctx context.Context, fromYear, toYear, count, offset int) ([]models.Track, error) {
 	if count <= 0 {
 		count = 10

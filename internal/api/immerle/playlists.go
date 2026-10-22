@@ -3,8 +3,8 @@ package immerle
 import (
 	"net/http"
 
-	"github.com/immerle/immerle/internal/autoplaylists"
-	"github.com/immerle/immerle/internal/sonic"
+	"github.com/immerle/immerle/internal/services/autoplaylists"
+	"github.com/immerle/immerle/internal/services/sonic"
 )
 
 // publicPlaylistView is a public playlist offered for subscription.

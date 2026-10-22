@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/immerle/immerle/internal/covergen"
+	"github.com/immerle/immerle/internal/lib/covergen"
 	"github.com/immerle/immerle/internal/stream"
 )
 

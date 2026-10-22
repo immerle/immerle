@@ -12,7 +12,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/immerle/immerle/internal/models"
-	"github.com/immerle/immerle/internal/scanner"
+	"github.com/immerle/immerle/internal/services/scanner"
 )
 
 // maxUploadBytes caps a single uploaded audio file (200 MiB — lossless album

@@ -1,6 +1,6 @@
-/** Maps a playlist's `autoPlaylistKind` — an internal/autoplaylists.
+/** Maps a playlist's `autoPlaylistKind` — an internal/services/autoplaylists.
  * AutoPlaylistKinds value, or a kworb chart's own sourceExternalID
- * (internal/charts.SourceInstanceID, e.g. "fr_weekly") — to its i18n key
+ * (internal/services/charts.SourceInstanceID, e.g. "fr_weekly") — to its i18n key
  * under media.playlist.autoKind. Kept as a lookup table, not a fixed union,
  * so an unrecognized/future kind falls back to the raw (French-only) stored
  * name instead of throwing. */

@@ -25,7 +25,7 @@ type User struct {
 	// means scrobbling to ListenBrainz is off for this account.
 	ListenBrainzToken string `json:"-"`
 	// LastFmSessionKey is the permanent session key obtained via Last.fm's
-	// desktop-auth handshake (see internal/lastfm). Empty means scrobbling to
+	// desktop-auth handshake (see internal/integrations/lastfm). Empty means scrobbling to
 	// Last.fm is off for this account. LastFmUsername is the connected
 	// account's Last.fm username, for display only.
 	LastFmSessionKey string `json:"-"`
@@ -206,7 +206,7 @@ type ConcertsRuntime struct {
 // LastFmRuntime configures Last.fm scrobbling (hot-reloadable): an app-level
 // API key + shared secret registered on Last.fm's developer site, needed for
 // the desktop-auth handshake each user goes through to connect their own
-// account (see internal/lastfm). Disabled by default — same reasoning as
+// account (see internal/integrations/lastfm). Disabled by default — same reasoning as
 // ConcertsRuntime, it needs credentials to be useful.
 type LastFmRuntime struct {
 	Enabled bool `json:"enabled"`
@@ -357,7 +357,7 @@ func DefaultRuntimeSettings() RuntimeSettings {
 	}
 }
 
-// TrackSonic is a track's locally computed audio features (internal/sonic).
+// TrackSonic is a track's locally computed audio features (internal/services/sonic).
 // Error is set when the analysis failed; the other fields are then zero.
 type TrackSonic struct {
 	TrackID      string
@@ -377,7 +377,7 @@ type TrackSonic struct {
 }
 
 // Concert is one upcoming show found by matching a user's top-listened
-// artists against Ticketmaster/Skiddle near their city (internal/concerts).
+// artists against Ticketmaster/Skiddle near their city (internal/services/concerts).
 // One row per (user, source event) — see migration 00044.
 type Concert struct {
 	ID            string     `json:"id"`

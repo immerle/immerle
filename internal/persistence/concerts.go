@@ -5,12 +5,12 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/immerle/immerle/internal/db"
 	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/platform/db"
 )
 
 // ConcertRepo persists per-user concert-discovery matches (see migration
-// 00044). One row per (user, source, source event) — internal/concerts is the
+// 00044). One row per (user, source, source event) — internal/services/concerts is the
 // only writer.
 type ConcertRepo struct{ *base }
 

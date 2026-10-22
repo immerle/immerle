@@ -25,6 +25,6 @@ config.local.yaml
 .vscode/
 *.swp
 
-# Temp (root-level scratch dirs only; anchored so internal/federation isn't ignored)
+# Temp (root-level scratch dirs only; anchored so internal/services/federation isn't ignored)
 /deezer-http/
 /federation/

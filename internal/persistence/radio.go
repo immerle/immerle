@@ -8,8 +8,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/immerle/immerle/internal/db"
 	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/platform/db"
 	"github.com/immerle/immerle/radio"
 )
 

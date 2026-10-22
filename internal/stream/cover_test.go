@@ -13,9 +13,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/immerle/immerle/internal/charts"
-	"github.com/immerle/immerle/internal/covergen"
+	"github.com/immerle/immerle/internal/lib/covergen"
 	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/services/charts"
 	"github.com/immerle/immerle/internal/testutil"
 )
 

@@ -8,8 +8,8 @@ import (
 
 	melody "github.com/ermos/melody/v2"
 
-	"github.com/immerle/immerle/internal/db"
 	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/platform/db"
 )
 
 // AnnotationRepo persists per-user item state (stars, ratings, play stats).

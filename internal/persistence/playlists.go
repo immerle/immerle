@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/immerle/immerle/internal/db"
 	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/platform/db"
 )
 
 // maxMosaicCovers bounds how many leading track covers a playlist exposes for a
@@ -640,7 +640,7 @@ func (r *PlaylistRepo) DeleteUnsubscribedFederated(ctx context.Context, instance
 }
 
 // SpotifySourceID tags federated playlists mirrored from Spotify (see
-// internal/spotifyplaylists). They're reached on demand from Spotify search,
+// internal/services/spotifyplaylists). They're reached on demand from Spotify search,
 // so ListPublic/SearchPublic leave them out: a user keeps one by subscribing.
 const SpotifySourceID = "spotify"
 

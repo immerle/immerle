@@ -118,7 +118,7 @@ func TestWrappedRepoTopTracksWithCustomWindowAndLimit(t *testing.T) {
 }
 
 // TestWrappedRepoTopArtistsWithCustomWindowAndLimit covers TopArtists (used by
-// internal/concerts to pick which artists to search for nearby shows) — same
+// internal/services/concerts to pick which artists to search for nearby shows) — same
 // window/limit shape as TopTracks above, but grouped by artist.
 func TestWrappedRepoTopArtistsWithCustomWindowAndLimit(t *testing.T) {
 	store := testutil.NewStore(t)
