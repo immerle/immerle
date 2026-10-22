@@ -9,7 +9,7 @@ import (
 
 	melody "github.com/ermos/melody/v2"
 
-	"github.com/immerle/immerle/internal/db"
+	"github.com/immerle/immerle/internal/platform/db"
 )
 
 // ErrNotFound is returned when a lookup matches no row.

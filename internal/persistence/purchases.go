@@ -7,8 +7,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/immerle/immerle/internal/db"
 	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/platform/db"
 )
 
 // BandcampConnectionRepo persists each user's link to their personal Bandcamp

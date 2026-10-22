@@ -7,8 +7,8 @@ import (
 	melody "github.com/ermos/melody/v2"
 	"github.com/google/uuid"
 
-	"github.com/immerle/immerle/internal/db"
 	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/platform/db"
 )
 
 // ProviderLogRepo persists warn/error events from provider actions so the admin

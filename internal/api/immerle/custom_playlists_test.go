@@ -8,8 +8,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/immerle/immerle/internal/autoplaylists"
 	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/services/autoplaylists"
 )
 
 // TestCustomPlaylistsFindsOwnPrivatePlaylistsWithoutSubscribing covers the

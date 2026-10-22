@@ -156,7 +156,7 @@ func (r *WrappedRepo) topArtists(ctx context.Context, userID string, start, end 
 
 // TopArtists returns a user's most-scrobbled artists by name in [start, end)
 // (unix millis), most-played first. Unlike the Wrapped year-in-review chart
-// this takes an explicit limit — used by internal/concerts to pick which
+// this takes an explicit limit — used by internal/services/concerts to pick which
 // artists to search for nearby shows.
 func (r *WrappedRepo) TopArtists(ctx context.Context, userID string, start, end int64, limit int) ([]models.WrappedCount, error) {
 	rows, err := r.query(ctx, `SELECT ar.name, COUNT(*) AS plays

@@ -8,8 +8,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/immerle/immerle/internal/charts"
 	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/services/charts"
 )
 
 func TestPublicPlaylistSubscriptionFlow(t *testing.T) {
@@ -175,7 +175,7 @@ func TestFederatedPlaylistSubscribableByNominalOwner(t *testing.T) {
 
 // TestPrivatePersonalAutoPlaylistIsSubscribableByItsOwner covers a private
 // (Public=false), Federated, genuinely-owned personal auto-playlist (Top du
-// mois, etc. — see internal/autoplaylists): its owner must still be able to
+// mois, etc. — see internal/services/autoplaylists): its owner must still be able to
 // subscribe/"like" it (to pin it into their regular library alongside GET
 // /me/custom-playlists), even though it isn't public.
 func TestPrivatePersonalAutoPlaylistIsSubscribableByItsOwner(t *testing.T) {

@@ -14,11 +14,11 @@ import (
 	"github.com/immerle/immerle/internal/api/httputil"
 	"github.com/immerle/immerle/internal/api/media"
 	"github.com/immerle/immerle/internal/core"
-	"github.com/immerle/immerle/internal/discover"
+	"github.com/immerle/immerle/internal/integrations/discover"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
-	"github.com/immerle/immerle/internal/scanner"
-	"github.com/immerle/immerle/internal/sonic"
+	"github.com/immerle/immerle/internal/services/scanner"
+	"github.com/immerle/immerle/internal/services/sonic"
 	"github.com/immerle/immerle/internal/stream"
 )
 

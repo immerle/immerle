@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/immerle/immerle/internal/config"
 	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/platform/config"
 )
 
 func TestServeProgressiveTranscode(t *testing.T) {

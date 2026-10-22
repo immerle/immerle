@@ -8,8 +8,8 @@ import (
 
 	melody "github.com/ermos/melody/v2"
 
-	"github.com/immerle/immerle/internal/db"
 	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/platform/db"
 )
 
 // DownloadRepo persists the on-demand download job queue.

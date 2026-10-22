@@ -14,33 +14,44 @@ cmd/iml                  terminal client
 radio/                   built-in internet radio stations (embedded)
 ui/                      Expo app (web, Electron desktop, iOS, Android)
 internal/
-  config                 bootstrap config (.env / environment)
-  logging                structured logging (slog)
-  db                     connection pool, goose migrations, dialect helpers
-  models                 domain entities
-  persistence            repositories (one per aggregate) over database/sql
-  scanner                filesystem walk, tag extraction, idempotent upserts
-  stream                 audio streaming (range/seek), ffmpeg transcoding, cover art
-  providers              pluggable on-demand catalog providers (jamendo, internet-archive, free-music-archive, http)
-  core                   business services (auth, annotations, on-demand,
-                         activity, jam, now-playing, settings)
-  autoplaylists          genre/decade/personal/recommendation playlist sync
-  charts, spotifyweb     chart playlists and Spotify public-data access
-  importer               playlist import (Spotify, Deezer) and track matching
-  bandcamp               purchase import
-  matching, musicbrainz  track matching and metadata identification
-  listenbrainz, lastfm   scrobbling and recommendation clients
-  reccobeats             recommendation client
-  concerts               concert discovery, with ticketmaster/skiddle/eventim sources
-  lyrics, lrclib         lyrics reading and lrclib.net fallback
-  podcastsearch          podcast directory adapters
-  covergen               generated playlist covers
-  outbox                 durable async job queue
-  federation             immerle-hub client
+  app                    wiring
   api/subsonic           Subsonic / OpenSubsonic handlers (XML + JSON)
   api/immerle            native immerle extension handlers (JSON + SSE)
-  server                 HTTP server with graceful shutdown
-  app                    wiring
+  core                   business services (auth, annotations, on-demand,
+                         activity, jam, now-playing, settings)
+  models                 domain entities
+  persistence            repositories (one per aggregate) over database/sql
+  providers              pluggable on-demand catalog providers (jamendo, internet-archive, free-music-archive, http)
+  stream                 audio streaming (range/seek), ffmpeg transcoding, cover art
+  platform/
+    config               bootstrap config (.env / environment)
+    logging              structured logging (slog)
+    db                   connection pool, goose migrations, dialect helpers
+    server               HTTP server with graceful shutdown
+  services/              background and feature services
+    scanner              filesystem walk, tag extraction, idempotent upserts
+    autoplaylists        genre/decade/personal/recommendation playlist sync
+    charts               chart playlists
+    spotifyplaylists     on-demand public Spotify playlists
+    importer             playlist import (Spotify, Deezer) and track matching
+    concerts             concert discovery (ticketmaster/skiddle/eventim sources)
+    sonic                local audio features, auto-DJ, moods
+    outbox               durable async job queue
+    federation           immerle-hub client
+  integrations/          clients for external APIs
+    bandcamp             purchase import
+    musicbrainz          metadata identification
+    listenbrainz, lastfm scrobbling and recommendation clients
+    discover             immerle-discover catalog and scrobbles
+    reccobeats           recommendation client
+    spotifyweb           Spotify public-data access
+    ticketmaster, skiddle, eventim  concert sources
+    lrclib               lyrics fallback (lrclib.net)
+    podcastsearch        podcast directory adapters
+  lib/                   small shared helpers
+    matching             track matching heuristics
+    lyrics               lyrics parsing (plain / LRC)
+    covergen             generated playlist covers
 ```
 
 ## How it grew

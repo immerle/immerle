@@ -284,11 +284,11 @@ func (s *SettingsService) HallOfFameEnabled() bool { return s.Get().HallOfFame.E
 func (s *SettingsService) ConcertsEnabled() bool { return s.Get().Concerts.Enabled }
 
 // ConcertsConfig returns the live concert-discovery settings (API keys
-// included) — read fresh on every sync by internal/concerts.Service.
+// included) — read fresh on every sync by internal/services/concerts.Service.
 func (s *SettingsService) ConcertsConfig() models.ConcertsRuntime { return s.Get().Concerts }
 
 // LastFmConfig returns the live Last.fm settings (API key/secret included) —
-// read fresh on every call by internal/lastfm.Client/Scrobbler, so a key
+// read fresh on every call by internal/integrations/lastfm.Client/Scrobbler, so a key
 // rotated from the admin UI applies without a restart.
 func (s *SettingsService) LastFmConfig() models.LastFmRuntime { return s.Get().LastFm }
 

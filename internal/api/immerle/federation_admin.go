@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/immerle/immerle/internal/federation"
+	"github.com/immerle/immerle/internal/services/federation"
 )
 
 // handleFederationSearch discovers other instances on the hub.

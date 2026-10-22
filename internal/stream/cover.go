@@ -24,10 +24,10 @@ import (
 
 	"github.com/dhowden/tag"
 
-	"github.com/immerle/immerle/internal/charts"
-	"github.com/immerle/immerle/internal/covergen"
+	"github.com/immerle/immerle/internal/lib/covergen"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
+	"github.com/immerle/immerle/internal/services/charts"
 )
 
 // CoverService resolves, resizes and caches cover art.
@@ -50,7 +50,7 @@ func NewCoverService(catalog *persistence.CatalogRepo, coversDir string, extraHo
 		catalog:   catalog,
 		coversDir: coversDir,
 		cacheDir:  filepath.Join(coversDir, "cache"),
-		// scdn.co/spotifycdn.com: Spotify playlist covers (internal/spotifyplaylists),
+		// scdn.co/spotifycdn.com: Spotify playlist covers (internal/services/spotifyplaylists),
 		// fetched here server-side so clients never call Spotify themselves.
 		allowHosts: append([]string{"dzcdn.net", "scdn.co", "spotifycdn.com", "cdn.immerle.com"}, extraHosts...),
 	}

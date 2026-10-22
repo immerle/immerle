@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/immerle/immerle/internal/core"
-	"github.com/immerle/immerle/internal/importer"
 	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/services/importer"
 )
 
 // handleCapabilities reports the immerle features this instance supports so

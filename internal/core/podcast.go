@@ -13,9 +13,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/immerle/immerle/internal/integrations/podcastsearch"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
-	"github.com/immerle/immerle/internal/podcastsearch"
 )
 
 // Podcast lifecycle status values (Subsonic semantics).

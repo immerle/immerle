@@ -13,7 +13,7 @@ import (
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 	"github.com/immerle/immerle/internal/providers"
-	"github.com/immerle/immerle/internal/scanner"
+	"github.com/immerle/immerle/internal/services/scanner"
 	"github.com/immerle/immerle/internal/testutil"
 )
 

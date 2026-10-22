@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/immerle/immerle/internal/matching"
+	"github.com/immerle/immerle/internal/lib/matching"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 )

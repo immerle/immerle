@@ -9,7 +9,7 @@ import (
 	chi "github.com/go-chi/chi/v5"
 
 	"github.com/immerle/immerle/internal/core"
-	"github.com/immerle/immerle/internal/importer"
+	"github.com/immerle/immerle/internal/services/importer"
 	"github.com/immerle/immerle/internal/testutil"
 )
 
@@ -33,7 +33,7 @@ func TestImportEndpointsFlow(t *testing.T) {
 
 	token := login(t, srv, "alice")
 
-	// Spotify needs no credentials (fetches public playlists directly, see internal/spotifyweb).
+	// Spotify needs no credentials (fetches public playlists directly, see internal/integrations/spotifyweb).
 	status, sources := doArr(t, srv, http.MethodGet, "/imports/sources", token, nil)
 	if status != http.StatusOK {
 		t.Fatalf("sources status %d", status)

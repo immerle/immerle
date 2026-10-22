@@ -1,7 +1,7 @@
 /** Concert-discovery sources. A `countries` list restricts a source to the
  * markets where it actually has a usable catalog — checked live against
- * every country in COUNTRIES (see internal/ticketmaster, internal/skiddle
- * and internal/eventim's supportedCountries for the same lists and how they
+ * every country in COUNTRIES (see internal/integrations/ticketmaster, internal/integrations/skiddle
+ * and internal/integrations/eventim's supportedCountries for the same lists and how they
  * were measured). Add a source here, nowhere else. */
 export const CONCERT_PROVIDERS: { name: string; countries?: string[] }[] = [
   {

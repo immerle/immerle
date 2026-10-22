@@ -11,8 +11,8 @@ import (
 
 	melody "github.com/ermos/melody/v2"
 
-	"github.com/immerle/immerle/internal/db"
 	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/platform/db"
 )
 
 // SmartPlaylistRepo persists rule-based playlists and evaluates their rules into

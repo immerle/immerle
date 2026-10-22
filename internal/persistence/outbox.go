@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/immerle/immerle/internal/db"
+	"github.com/immerle/immerle/internal/platform/db"
 )
 
 // OutboxRepo is a generic durable job queue drained by a single worker. Jobs are

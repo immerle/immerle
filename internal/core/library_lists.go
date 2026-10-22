@@ -4,7 +4,7 @@ import (
 	"context"
 	"sort"
 
-	"github.com/immerle/immerle/internal/discover"
+	"github.com/immerle/immerle/internal/integrations/discover"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 )

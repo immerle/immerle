@@ -14,10 +14,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/immerle/immerle/internal/bandcamp"
+	"github.com/immerle/immerle/internal/integrations/bandcamp"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
-	"github.com/immerle/immerle/internal/scanner"
+	"github.com/immerle/immerle/internal/services/scanner"
 )
 
 // Ingester turns a downloaded audio file on disk into a catalog track,

@@ -1,0 +1,654 @@
+package autoplaylists
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"testing"
+	"time"
+
+	"github.com/google/uuid"
+
+	"github.com/immerle/immerle/internal/integrations/discover"
+	"github.com/immerle/immerle/internal/integrations/listenbrainz"
+	"github.com/immerle/immerle/internal/integrations/reccobeats"
+	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/persistence"
+	"github.com/immerle/immerle/internal/testutil"
+)
+
+// seedTracks creates n tracks under one artist/album, each tagged with genre
+// (if non-empty) and year (if non-zero) — enough fixture data to cross (or
+// stay under) minTracks for a genre/decade auto-playlist.
+func seedTracks(t *testing.T, store *persistence.Store, n int, genre string, year int) {
+	t.Helper()
+	ctx := context.Background()
+	now := time.Now()
+	artistID, err := store.Catalog.UpsertArtist(ctx, models.Artist{ID: uuid.NewString(), Name: "Artist " + uuid.NewString(), CreatedAt: now})
+	if err != nil {
+		t.Fatal(err)
+	}
+	albumID, err := store.Catalog.UpsertAlbum(ctx, models.Album{ID: uuid.NewString(), Name: "Album", ArtistID: artistID, CreatedAt: now})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < n; i++ {
+		_, err := store.Catalog.UpsertTrack(ctx, models.Track{
+			ID: uuid.NewString(), Title: uuid.NewString(), AlbumID: albumID, ArtistID: artistID,
+			Genre: genre, Year: year, Path: uuid.NewString(), CreatedAt: now, UpdatedAt: now,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func TestSyncNowMaterializesGenreAndDecadePlaylists(t *testing.T) {
+	store := testutil.NewStore(t)
+	ctx := context.Background()
+
+	owner := models.User{ID: uuid.NewString(), Username: "admin", PasswordHash: "x", IsAdmin: true}
+	if err := store.Users.Create(ctx, owner); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.Genres.Upsert(ctx, uuid.NewString(), "Rock"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.Genres.Upsert(ctx, uuid.NewString(), "Jazz"); err != nil {
+		t.Fatal(err)
+	}
+	seedTracks(t, store, minTracks, "Rock", 1995)   // enough for both a genre and a decade playlist
+	seedTracks(t, store, minTracks-1, "Jazz", 1960) // below threshold for either
+
+	svc := New(store.Catalog, store.Genres, store.Wrapped, store.Annotations, store.Users, store.Playlists, testutil.NewLogger())
+	svc.SetOwner(owner.ID)
+
+	n, err := svc.SyncNow(ctx)
+	if err != nil {
+		t.Fatalf("SyncNow: %v", err)
+	}
+	if n != 3 { // Rock + 1990s + the owner's own "Aléatoire" random mix
+		t.Fatalf("expected 3 auto-playlists synced, got %d", n)
+	}
+
+	rock, err := store.Playlists.FindFederated(ctx, sourceGenre, "Rock")
+	if err != nil {
+		t.Fatalf("Rock playlist not created: %v", err)
+	}
+	if !rock.Public || !rock.Federated {
+		t.Fatalf("expected a public, federated playlist, got %+v", rock)
+	}
+	if want := models.GeneratorCoverID(coverParams("Rock", "Rock", "", musicNoteIcon)); rock.CoverArt != want {
+		t.Fatalf("coverArt = %q, want %q", rock.CoverArt, want)
+	}
+	tracks, err := store.Playlists.Tracks(ctx, rock.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(tracks) != minTracks {
+		t.Fatalf("expected %d tracks in the Rock playlist, got %d", minTracks, len(tracks))
+	}
+
+	decade, err := store.Playlists.FindFederated(ctx, sourceDecade, "1990s")
+	if err != nil {
+		t.Fatalf("1990s playlist not created: %v", err)
+	}
+	if !decade.Public || !decade.Federated {
+		t.Fatalf("expected a public, federated playlist, got %+v", decade)
+	}
+
+	if _, err := store.Playlists.FindFederated(ctx, sourceGenre, "Jazz"); err == nil {
+		t.Fatal("Jazz has too few tracks and must not get a playlist")
+	}
+	if _, err := store.Playlists.FindFederated(ctx, sourceDecade, "1960s"); err == nil {
+		t.Fatal("the 1960s has too few tracks and must not get a playlist")
+	}
+
+	// Re-syncing must update in place, not duplicate.
+	if _, err := svc.SyncNow(ctx); err != nil {
+		t.Fatal(err)
+	}
+	visible, err := store.Playlists.ListPublic(ctx, owner.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	count := 0
+	for _, v := range visible {
+		if v.SourceInstanceID == sourceGenre && v.SourceExternalID == "Rock" {
+			count++
+		}
+	}
+	if count != 1 {
+		t.Fatalf("expected 1 Rock playlist after re-sync, got %d", count)
+	}
+}
+
+// TestSyncNowMaterializesPersonalListsAsPrivatePlaylists covers the personal
+// lists (top-month, forgotten favorites, and the activity-independent random
+// mix): real playlists (not a live-computed view), owned by their user,
+// private (not searchable/visible to anyone else), and deliberately not
+// subscribed — found via GET /me/custom-playlists, not the owner's library.
+func TestSyncNowMaterializesPersonalListsAsPrivatePlaylists(t *testing.T) {
+	store := testutil.NewStore(t)
+	ctx := context.Background()
+	now := time.Now()
+
+	admin := models.User{ID: uuid.NewString(), Username: "admin", PasswordHash: "x", IsAdmin: true}
+	if err := store.Users.Create(ctx, admin); err != nil {
+		t.Fatal(err)
+	}
+	listener := models.User{ID: uuid.NewString(), Username: "listener", PasswordHash: "x"}
+	if err := store.Users.Create(ctx, listener); err != nil {
+		t.Fatal(err)
+	}
+	idle := models.User{ID: uuid.NewString(), Username: "idle", PasswordHash: "x"}
+	if err := store.Users.Create(ctx, idle); err != nil {
+		t.Fatal(err)
+	}
+
+	artistID, _ := store.Catalog.UpsertArtist(ctx, models.Artist{ID: uuid.NewString(), Name: "A", CreatedAt: now})
+	albumID, _ := store.Catalog.UpsertAlbum(ctx, models.Album{ID: uuid.NewString(), Name: "Al", ArtistID: artistID, CreatedAt: now})
+	newTrack := func(title string) string {
+		id, _ := store.Catalog.UpsertTrack(ctx, models.Track{ID: uuid.NewString(), Title: title, AlbumID: albumID, ArtistID: artistID, Path: uuid.NewString(), CreatedAt: now, UpdatedAt: now})
+		return id
+	}
+	playedThisMonth := newTrack("Played This Month")
+	forgotten := newTrack("Forgotten Favorite")
+
+	if err := store.Scrobbles.Insert(ctx, models.Scrobble{ID: uuid.NewString(), UserID: listener.ID, TrackID: playedThisMonth, PlayedAt: now, Submitted: true}); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Annotations.SetStarred(ctx, listener.ID, models.ItemTrack, forgotten, true); err != nil {
+		t.Fatal(err)
+	}
+
+	svc := New(store.Catalog, store.Genres, store.Wrapped, store.Annotations, store.Users, store.Playlists, testutil.NewLogger())
+	svc.SetOwner(admin.ID)
+
+	if _, err := svc.SyncNow(ctx); err != nil {
+		t.Fatalf("SyncNow: %v", err)
+	}
+
+	topMonth, err := store.Playlists.FindFederated(ctx, SourceTopMonth, listener.ID)
+	if err != nil {
+		t.Fatalf("top-month playlist not created for listener: %v", err)
+	}
+	if topMonth.Public {
+		t.Fatalf("personal list must be private, got %+v", topMonth)
+	}
+	if !topMonth.Federated {
+		t.Fatalf("personal list must be federated (read-only), got %+v", topMonth)
+	}
+	if topMonth.OwnerID != listener.ID {
+		t.Fatalf("owner = %q, want the listener", topMonth.OwnerID)
+	}
+	tracks, err := store.Playlists.Tracks(ctx, topMonth.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(tracks) != 1 || tracks[0].ID != playedThisMonth {
+		t.Fatalf("expected just the track played this month, got %+v", tracks)
+	}
+
+	// Deliberately NOT subscribed: it must not depend on the subscribe/"like"
+	// mechanism (unsubscribing must never lose access to your own personal
+	// list — see GET /me/custom-playlists, which looks it up directly instead).
+	visible, err := store.Playlists.ListVisible(ctx, listener.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, v := range visible {
+		if v.ID == topMonth.ID {
+			t.Fatalf("personal list must not rely on a subscription to be found, got it in ListVisible: %+v", v)
+		}
+	}
+
+	// Forgotten favorites: the never-played starred track.
+	forgottenList, err := store.Playlists.FindFederated(ctx, SourceForgotten, listener.ID)
+	if err != nil {
+		t.Fatalf("forgotten-favorites playlist not created: %v", err)
+	}
+	forgottenTracks, err := store.Playlists.Tracks(ctx, forgottenList.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(forgottenTracks) != 1 || forgottenTracks[0].ID != forgotten {
+		t.Fatalf("expected just the forgotten favorite, got %+v", forgottenTracks)
+	}
+
+	// The idle user has no listening history at all: no top-month/forgotten
+	// lists (those depend on activity) — but still gets a random mix, since
+	// "Aléatoire" only depends on the catalog having tracks, not on the user.
+	if _, err := store.Playlists.FindFederated(ctx, SourceTopMonth, idle.ID); err == nil {
+		t.Fatal("an inactive user must not get a top-month playlist")
+	}
+	idleRandom, err := store.Playlists.FindFederated(ctx, SourceRandom, idle.ID)
+	if err != nil {
+		t.Fatalf("random playlist not created for the idle user: %v", err)
+	}
+	if idleRandom.Public || !idleRandom.Federated || idleRandom.OwnerID != idle.ID {
+		t.Fatalf("expected a private, federated, idle-owned random playlist, got %+v", idleRandom)
+	}
+	randomTracks, err := store.Playlists.Tracks(ctx, idleRandom.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(randomTracks) != 2 { // only 2 tracks exist in the whole catalog
+		t.Fatalf("expected all 2 catalog tracks in the random mix, got %d", len(randomTracks))
+	}
+}
+
+// TestSyncNowMaterializesWeeklyTrendingChart covers the shared (public,
+// single-instance) community chart: most-scrobbled tracks across every user
+// in the last trendingWindowDays, not any one user's own history.
+func TestSyncNowMaterializesWeeklyTrendingChart(t *testing.T) {
+	store := testutil.NewStore(t)
+	ctx := context.Background()
+	now := time.Now()
+
+	owner := models.User{ID: uuid.NewString(), Username: "admin", PasswordHash: "x", IsAdmin: true}
+	if err := store.Users.Create(ctx, owner); err != nil {
+		t.Fatal(err)
+	}
+	listener := models.User{ID: uuid.NewString(), Username: "listener", PasswordHash: "x"}
+	if err := store.Users.Create(ctx, listener); err != nil {
+		t.Fatal(err)
+	}
+
+	seedTracks(t, store, minTracks, "", 0)
+	tracks, err := store.Catalog.RandomTracks(ctx, minTracks, "", 0, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tr := range tracks {
+		if err := store.Scrobbles.Insert(ctx, models.Scrobble{ID: uuid.NewString(), UserID: listener.ID, TrackID: tr.ID, PlayedAt: now, Submitted: true}); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	svc := New(store.Catalog, store.Genres, store.Wrapped, store.Annotations, store.Users, store.Playlists, testutil.NewLogger())
+	svc.SetOwner(owner.ID)
+
+	if _, err := svc.SyncNow(ctx); err != nil {
+		t.Fatalf("SyncNow: %v", err)
+	}
+
+	trending, err := store.Playlists.FindFederated(ctx, SourceTrending, trendingExternalID)
+	if err != nil {
+		t.Fatalf("trending playlist not created: %v", err)
+	}
+	if !trending.Public || !trending.Federated {
+		t.Fatalf("expected a public, federated playlist, got %+v", trending)
+	}
+	trendingTracks, err := store.Playlists.Tracks(ctx, trending.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(trendingTracks) != minTracks {
+		t.Fatalf("expected %d tracks in the trending chart, got %d", minTracks, len(trendingTracks))
+	}
+}
+
+// fakeRecommender is a Recommender test double: it ignores the seeds it's
+// given and always returns the same fixed set of recommended tracks, so tests
+// control matching/capping behavior without a real ReccoBeats call.
+type fakeRecommender struct {
+	tracks []reccobeats.Track
+}
+
+func (f fakeRecommender) Recommend(context.Context, []reccobeats.Seed, int) ([]reccobeats.Track, error) {
+	return f.tracks, nil
+}
+
+// TestSyncNowMaterializesRecommendedMixAsUnresolvedFederatedTracks covers
+// "Découvertes": recommended tracks are kept as unresolved artist/title
+// references (not required to already be in the local library — a small or
+// niche library would otherwise leave this list permanently empty; they
+// resolve lazily at play time instead, exactly like a kworb chart entry),
+// capped at maxRecommendedTracks, deduped against both each other and the
+// seeds themselves, and a user with no listening history gets no such list
+// (nothing to seed the request with).
+func TestSyncNowMaterializesRecommendedMixAsUnresolvedFederatedTracks(t *testing.T) {
+	store := testutil.NewStore(t)
+	ctx := context.Background()
+	now := time.Now()
+
+	admin := models.User{ID: uuid.NewString(), Username: "admin", PasswordHash: "x", IsAdmin: true}
+	if err := store.Users.Create(ctx, admin); err != nil {
+		t.Fatal(err)
+	}
+	listener := models.User{ID: uuid.NewString(), Username: "listener", PasswordHash: "x"}
+	if err := store.Users.Create(ctx, listener); err != nil {
+		t.Fatal(err)
+	}
+	idle := models.User{ID: uuid.NewString(), Username: "idle", PasswordHash: "x"}
+	if err := store.Users.Create(ctx, idle); err != nil {
+		t.Fatal(err)
+	}
+
+	artistID, _ := store.Catalog.UpsertArtist(ctx, models.Artist{ID: uuid.NewString(), Name: "Seed Artist", CreatedAt: now})
+	albumID, _ := store.Catalog.UpsertAlbum(ctx, models.Album{ID: uuid.NewString(), Name: "Al", ArtistID: artistID, CreatedAt: now})
+	seed := models.Track{ID: uuid.NewString(), Title: "Seed Song", AlbumID: albumID, ArtistID: artistID, Path: uuid.NewString(), CreatedAt: now, UpdatedAt: now}
+	if _, err := store.Catalog.UpsertTrack(ctx, seed); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Scrobbles.Insert(ctx, models.Scrobble{ID: uuid.NewString(), UserID: listener.ID, TrackID: seed.ID, PlayedAt: now, Submitted: true}); err != nil {
+		t.Fatal(err)
+	}
+
+	// One recommended track duplicated (must be deduped to a single entry),
+	// one echoing the seed itself (must be dropped), and enough distinct ones
+	// to cross maxRecommendedTracks (must be capped).
+	var tracks []reccobeats.Track
+	tracks = append(tracks,
+		reccobeats.Track{Artist: "Not In Library", Title: "Brand New Song", ISRC: "X"},
+		reccobeats.Track{Artist: "Not In Library", Title: "Brand New Song", ISRC: "X"}, // duplicate
+		reccobeats.Track{Artist: "Seed Artist", Title: "Seed Song", ISRC: "S"},         // echoes the seed
+	)
+	for i := 0; i < maxRecommendedTracks+10; i++ {
+		tracks = append(tracks, reccobeats.Track{Artist: "Filler Artist", Title: fmt.Sprintf("Filler Song %d", i), ISRC: "F"})
+	}
+	fake := fakeRecommender{tracks: tracks}
+
+	svc := New(store.Catalog, store.Genres, store.Wrapped, store.Annotations, store.Users, store.Playlists, testutil.NewLogger())
+	svc.SetOwner(admin.ID)
+	svc.SetRecommender(fake)
+
+	if _, err := svc.SyncNow(ctx); err != nil {
+		t.Fatalf("SyncNow: %v", err)
+	}
+
+	rec, err := store.Playlists.FindFederated(ctx, SourceRecommended, listener.ID)
+	if err != nil {
+		t.Fatalf("recommended playlist not created for listener: %v", err)
+	}
+	if rec.Public || !rec.Federated || rec.OwnerID != listener.ID {
+		t.Fatalf("expected a private, federated, listener-owned recommended playlist, got %+v", rec)
+	}
+	// The cover's title must be the stable kind ("recommended-mix"), not the
+	// French display name — GET /cover/generator resolves it as an i18n key
+	// (internal/services/charts.labelKeys) in the caller's locale. Its subTitle
+	// attributes ReccoBeats as the recommendation source.
+	if want := models.GeneratorCoverID(coverParams(recommendedName, SourceRecommended, "source.reccobeats", compassIcon)); rec.CoverArt != want {
+		t.Fatalf("coverArt = %q, want %q (kind as title, not the display name)", rec.CoverArt, want)
+	}
+	got, err := store.Playlists.Tracks(ctx, rec.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != maxRecommendedTracks {
+		t.Fatalf("expected exactly maxRecommendedTracks (%d) entries, got %d", maxRecommendedTracks, len(got))
+	}
+	for _, tr := range got {
+		if !tr.Unresolved {
+			t.Fatalf("expected every entry to be unresolved (matched lazily at play time), got %+v", tr)
+		}
+		if tr.ArtistName == "Seed Artist" {
+			t.Fatalf("the seed track must not come back as its own recommendation, got %+v", tr)
+		}
+	}
+	seen := map[string]int{}
+	for _, tr := range got {
+		seen[tr.ArtistName+"|"+tr.Title]++
+	}
+	if seen["Not In Library|Brand New Song"] != 1 {
+		t.Fatalf("expected the duplicated recommendation to appear exactly once, got %d", seen["Not In Library|Brand New Song"])
+	}
+
+	// The idle user has no listening history, so nothing to seed a
+	// recommendation request with: no recommended-mix list at all.
+	if _, err := store.Playlists.FindFederated(ctx, SourceRecommended, idle.ID); err == nil {
+		t.Fatal("an idle user must not get a recommended-mix playlist")
+	}
+}
+
+// TestSyncNowMaterializesLastFmMix covers the Last.fm similarity mix: same
+// unresolved-federated-track treatment and seed/dedupe/cap behavior as
+// "Découvertes" (it shares the seededTrackRefs helper), wired via
+// SetLastFmSimilar instead of SetRecommender, and — unlike ReccoBeats/
+// ListenBrainz — synced for every user regardless of any per-user credential
+// (only the wiring itself gates it).
+func TestSyncNowMaterializesLastFmMix(t *testing.T) {
+	store := testutil.NewStore(t)
+	ctx := context.Background()
+	now := time.Now()
+
+	admin := models.User{ID: uuid.NewString(), Username: "admin", PasswordHash: "x", IsAdmin: true}
+	if err := store.Users.Create(ctx, admin); err != nil {
+		t.Fatal(err)
+	}
+	listener := models.User{ID: uuid.NewString(), Username: "listener", PasswordHash: "x"}
+	if err := store.Users.Create(ctx, listener); err != nil {
+		t.Fatal(err)
+	}
+
+	artistID, _ := store.Catalog.UpsertArtist(ctx, models.Artist{ID: uuid.NewString(), Name: "Seed Artist", CreatedAt: now})
+	albumID, _ := store.Catalog.UpsertAlbum(ctx, models.Album{ID: uuid.NewString(), Name: "Al", ArtistID: artistID, CreatedAt: now})
+	seed := models.Track{ID: uuid.NewString(), Title: "Seed Song", AlbumID: albumID, ArtistID: artistID, Path: uuid.NewString(), CreatedAt: now, UpdatedAt: now}
+	if _, err := store.Catalog.UpsertTrack(ctx, seed); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Scrobbles.Insert(ctx, models.Scrobble{ID: uuid.NewString(), UserID: listener.ID, TrackID: seed.ID, PlayedAt: now, Submitted: true}); err != nil {
+		t.Fatal(err)
+	}
+
+	fake := fakeRecommender{tracks: []reccobeats.Track{{Artist: "Similar Artist", Title: "Similar Song"}}}
+
+	svc := New(store.Catalog, store.Genres, store.Wrapped, store.Annotations, store.Users, store.Playlists, testutil.NewLogger())
+	svc.SetOwner(admin.ID)
+	svc.SetLastFmSimilar(fake)
+
+	if _, err := svc.SyncNow(ctx); err != nil {
+		t.Fatalf("SyncNow: %v", err)
+	}
+
+	mix, err := store.Playlists.FindFederated(ctx, SourceLastFmMix, listener.ID)
+	if err != nil {
+		t.Fatalf("lastfm mix playlist not created for listener: %v", err)
+	}
+	if mix.Public || !mix.Federated || mix.OwnerID != listener.ID {
+		t.Fatalf("expected a private, federated, listener-owned mix playlist, got %+v", mix)
+	}
+	if want := models.GeneratorCoverID(coverParams(lastFmMixName, SourceLastFmMix, "source.lastfm", headphoneIcon)); mix.CoverArt != want {
+		t.Fatalf("coverArt = %q, want %q (kind as title, not the display name)", mix.CoverArt, want)
+	}
+	got, err := store.Playlists.Tracks(ctx, mix.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 || got[0].ArtistName != "Similar Artist" {
+		t.Fatalf("expected exactly the one similar track, got %+v", got)
+	}
+}
+
+// fakeListenBrainzPlaylists is a ListenBrainzPlaylists test double: it
+// ignores the token it's given and always returns the same fixed result, so
+// tests control which kinds are "available" without a real ListenBrainz call.
+type fakeListenBrainzPlaylists struct {
+	byKind map[listenbrainz.RecommendedPlaylistKind][]listenbrainz.RecommendedPlaylistTrack
+	err    error
+}
+
+func (f fakeListenBrainzPlaylists) RecommendedPlaylists(context.Context, string) (map[listenbrainz.RecommendedPlaylistKind][]listenbrainz.RecommendedPlaylistTrack, error) {
+	return f.byKind, f.err
+}
+
+// TestSyncNowMaterializesListenBrainzPlaylists covers Daily Jams/Weekly
+// Jams/Weekly Exploration: only synced for a user with a ListenBrainz token,
+// as unresolved (mbid, artist, title, album) references (same lazy-resolve
+// treatment as "Découvertes"), one kind ListenBrainz hasn't generated yet is
+// simply absent, and a fetch failure for one user doesn't block the rest of
+// the sync.
+func TestSyncNowMaterializesListenBrainzPlaylists(t *testing.T) {
+	store := testutil.NewStore(t)
+	ctx := context.Background()
+
+	admin := models.User{ID: uuid.NewString(), Username: "admin", PasswordHash: "x", IsAdmin: true}
+	if err := store.Users.Create(ctx, admin); err != nil {
+		t.Fatal(err)
+	}
+	connected := models.User{ID: uuid.NewString(), Username: "connected", PasswordHash: "x", ListenBrainzToken: "tok"}
+	if err := store.Users.Create(ctx, connected); err != nil {
+		t.Fatal(err)
+	}
+	notConnected := models.User{ID: uuid.NewString(), Username: "not-connected", PasswordHash: "x"}
+	if err := store.Users.Create(ctx, notConnected); err != nil {
+		t.Fatal(err)
+	}
+
+	fake := fakeListenBrainzPlaylists{byKind: map[listenbrainz.RecommendedPlaylistKind][]listenbrainz.RecommendedPlaylistTrack{
+		listenbrainz.DailyJams: {{MBID: "mbid-1", Artist: "Lana Del Rey", Title: "Diet Mountain Dew", Album: "Born to Die"}},
+		// weekly-jams and weekly-exploration: not generated yet for this user.
+	}}
+
+	svc := New(store.Catalog, store.Genres, store.Wrapped, store.Annotations, store.Users, store.Playlists, testutil.NewLogger())
+	svc.SetOwner(admin.ID)
+	svc.SetListenBrainzPlaylists(fake)
+
+	if _, err := svc.SyncNow(ctx); err != nil {
+		t.Fatalf("SyncNow: %v", err)
+	}
+
+	daily, err := store.Playlists.FindFederated(ctx, SourceListenBrainzDaily, connected.ID)
+	if err != nil {
+		t.Fatalf("Daily Jams playlist not created: %v", err)
+	}
+	if daily.Public || !daily.Federated || daily.OwnerID != connected.ID {
+		t.Fatalf("expected a private, federated, connected-user-owned playlist, got %+v", daily)
+	}
+	// Cover subTitle attributes ListenBrainz as the recommendation source.
+	if want := models.GeneratorCoverID(coverParams("Daily Jams", SourceListenBrainzDaily, "source.listenbrainz", radioIcon)); daily.CoverArt != want {
+		t.Fatalf("coverArt = %q, want %q", daily.CoverArt, want)
+	}
+	tracks, err := store.Playlists.Tracks(ctx, daily.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(tracks) != 1 || tracks[0].ArtistName != "Lana Del Rey" || tracks[0].Title != "Diet Mountain Dew" || !tracks[0].Unresolved {
+		t.Fatalf("unexpected Daily Jams tracks: %+v", tracks)
+	}
+
+	// Not generated for this user -- no playlist at all, not an empty one.
+	if _, err := store.Playlists.FindFederated(ctx, SourceListenBrainzWeeklyJams, connected.ID); err == nil {
+		t.Fatal("weekly-jams should not exist: ListenBrainz never generated one")
+	}
+
+	// A user with no token gets nothing (RecommendedPlaylists never even called
+	// for them -- fake ignores the token anyway, but the sync must still skip).
+	if _, err := store.Playlists.FindFederated(ctx, SourceListenBrainzDaily, notConnected.ID); err == nil {
+		t.Fatal("a user with no ListenBrainz token must not get a Daily Jams playlist")
+	}
+}
+
+func TestSyncListenBrainzPlaylistsFetchErrorIsNonFatal(t *testing.T) {
+	store := testutil.NewStore(t)
+	ctx := context.Background()
+
+	admin := models.User{ID: uuid.NewString(), Username: "admin", PasswordHash: "x", IsAdmin: true}
+	if err := store.Users.Create(ctx, admin); err != nil {
+		t.Fatal(err)
+	}
+	connected := models.User{ID: uuid.NewString(), Username: "connected", PasswordHash: "x", ListenBrainzToken: "bad-token"}
+	if err := store.Users.Create(ctx, connected); err != nil {
+		t.Fatal(err)
+	}
+
+	svc := New(store.Catalog, store.Genres, store.Wrapped, store.Annotations, store.Users, store.Playlists, testutil.NewLogger())
+	svc.SetOwner(admin.ID)
+	svc.SetListenBrainzPlaylists(fakeListenBrainzPlaylists{err: errors.New("token rejected")})
+
+	if _, err := svc.SyncNow(ctx); err != nil {
+		t.Fatalf("SyncNow must not fail the whole sync on one user's fetch error: %v", err)
+	}
+}
+
+func TestDecadesSpansThe1950sToTheCurrentDecade(t *testing.T) {
+	d := decades()
+	if len(d) == 0 || d[0].from != 1950 || d[0].label != "1950s" {
+		t.Fatalf("expected to start at the 1950s, got %+v", d[0])
+	}
+	currentDecade := (time.Now().Year() / 10) * 10
+	last := d[len(d)-1]
+	if last.from != currentDecade {
+		t.Fatalf("expected to end at the current decade (%d), got %+v", currentDecade, last)
+	}
+}
+
+// fakeDiscover is a Discover test double with switchable toggles.
+type fakeDiscover struct {
+	on     bool
+	tracks []discover.Track
+	lists  map[string]discover.Playlist
+}
+
+func (f *fakeDiscover) MadeForYouEnabled() bool       { return f.on }
+func (f *fakeDiscover) CuratedPlaylistsEnabled() bool { return f.on }
+func (f *fakeDiscover) ListenerTracks(context.Context, string, int) ([]discover.Track, error) {
+	return f.tracks, nil
+}
+
+func (f *fakeDiscover) ListenerPlaylists(context.Context, string, int) ([]discover.Playlist, error) {
+	out := make([]discover.Playlist, 0, len(f.lists))
+	for id := range f.lists {
+		out = append(out, discover.Playlist{IDs: []string{id}, Kind: f.lists[id].Kind, TrackCount: len(f.lists[id].Tracks)})
+	}
+	return out, nil
+}
+
+func (f *fakeDiscover) Playlist(_ context.Context, id string, _ int) (discover.Playlist, error) {
+	return f.lists[id], nil
+}
+
+func TestSyncDiscoverPublishesThenRemovesWhenToggledOff(t *testing.T) {
+	store := testutil.NewStore(t)
+	ctx := context.Background()
+	user := models.User{ID: uuid.NewString(), Username: "listener", PasswordHash: "x"}
+	if err := store.Users.Create(ctx, user); err != nil {
+		t.Fatal(err)
+	}
+	chart := discover.Playlist{IDs: []string{"imlid:c1"}, Kind: "chart", Name: "Top 50", Tracks: []discover.PlaylistEntry{{}}}
+	empty := discover.Playlist{IDs: []string{"imlid:e1"}, Kind: "playlist", Name: "Not ingested yet"}
+	curated := discover.Playlist{IDs: []string{"imlid:p1"}, Kind: "playlist", Name: "Rap FR", Image: "https://cdn.immerle.com/playlists/p1.jpg", Tracks: []discover.PlaylistEntry{
+		{Track: discover.Track{IDs: []string{"imlid:x", "mbid:m1"}, Artist: "Vacra feat. La Rvfleuze", Artists: []discover.Artist{{Name: "Vacra"}, {Name: "La Rvfleuze"}}, Title: "Fille à Papa"}},
+	}}
+	fake := &fakeDiscover{
+		on:     true,
+		tracks: []discover.Track{{Artist: "A", Title: "T"}},
+		lists:  map[string]discover.Playlist{"imlid:p1": curated, "imlid:c1": chart, "imlid:e1": empty},
+	}
+	svc := New(store.Catalog, store.Genres, store.Wrapped, store.Annotations, store.Users, store.Playlists, testutil.NewLogger())
+	svc.SetDiscover(fake)
+
+	// Without a discover cover, a curated playlist gets a bare gradient.
+	fake.lists["imlid:p1"] = discover.Playlist{IDs: curated.IDs, Kind: "playlist", Name: curated.Name, Tracks: curated.Tracks}
+	svc.syncDiscover(ctx, user.ID)
+	bare, err := store.Playlists.FindFederated(ctx, SourceDiscoverPlaylist, DiscoverPlaylistExternalID(user.ID, 0))
+	if err != nil || bare.CoverArt != models.GeneratorCoverID(gradientParams(curated.Name)) {
+		t.Fatalf("cover-less curated playlist: %+v, %v (want a bare gradient)", bare.CoverArt, err)
+	}
+	fake.lists["imlid:p1"] = curated
+
+	if n := svc.syncDiscover(ctx, user.ID); n != 2 {
+		t.Fatalf("synced %d, want 2 (made for you + one curated; the chart and the empty one skipped)", n)
+	}
+	mix, err := store.Playlists.FindFederated(ctx, SourceDiscoverMix, user.ID)
+	if err != nil || mix.Public || mix.OwnerID != user.ID {
+		t.Fatalf("made-for-you playlist: %+v, %v", mix, err)
+	}
+	p, err := store.Playlists.FindFederated(ctx, SourceDiscoverPlaylist, DiscoverPlaylistExternalID(user.ID, 0))
+	if err != nil || p.Name != "Rap FR" || p.CoverArt != models.RemoteCoverID(curated.Image) {
+		t.Fatalf("curated playlist: %+v, %v (want discover's cover)", p, err)
+	}
+	if got, _ := store.Playlists.Tracks(ctx, p.ID); len(got) != 1 || got[0].MBID != "m1" || got[0].ArtistName != "Vacra" {
+		t.Fatalf("curated tracks = %+v, want the one track with its mbid, under its main artist", got)
+	}
+
+	fake.on = false
+	svc.syncDiscover(ctx, user.ID)
+	if _, err := store.Playlists.FindFederated(ctx, SourceDiscoverMix, user.ID); !errors.Is(err, persistence.ErrNotFound) {
+		t.Fatalf("made-for-you playlist should be removed, got %v", err)
+	}
+	if _, err := store.Playlists.FindFederated(ctx, SourceDiscoverPlaylist, DiscoverPlaylistExternalID(user.ID, 0)); !errors.Is(err, persistence.ErrNotFound) {
+		t.Fatalf("curated playlist should be removed, got %v", err)
+	}
+}

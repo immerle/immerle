@@ -6,8 +6,8 @@ import (
 	"math"
 	"strings"
 
-	"github.com/immerle/immerle/internal/db"
 	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/platform/db"
 )
 
 // SonicRepo persists the locally computed audio features (track_sonic).

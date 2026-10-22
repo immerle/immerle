@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/immerle/immerle/internal/lastfm"
+	"github.com/immerle/immerle/internal/integrations/lastfm"
 )
 
 // lastFmConfigured reports whether the admin has enabled Last.fm scrobbling

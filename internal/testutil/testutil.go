@@ -15,8 +15,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/immerle/immerle/internal/db"
 	"github.com/immerle/immerle/internal/persistence"
+	"github.com/immerle/immerle/internal/platform/db"
 )
 
 // NewLogger returns a warn-level logger for tests.

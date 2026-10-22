@@ -10,7 +10,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/immerle/immerle/internal/covergen"
+	"github.com/immerle/immerle/internal/lib/covergen"
 	"github.com/immerle/immerle/internal/models"
 )
 

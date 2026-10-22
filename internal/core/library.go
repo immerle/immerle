@@ -7,10 +7,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/immerle/immerle/internal/discover"
+	"github.com/immerle/immerle/internal/integrations/discover"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
-	"github.com/immerle/immerle/internal/sonic"
+	"github.com/immerle/immerle/internal/services/sonic"
 )
 
 // remoteFetchTimeout bounds the provider calls made while assembling an
