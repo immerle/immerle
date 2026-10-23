@@ -5,7 +5,7 @@ import { Platform, useWindowDimensions, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { Stack, usePathname } from 'expo-router';
+import { router, Stack, usePathname } from 'expo-router';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { useColorScheme } from 'nativewind';
 import { queryClient } from '../src/query/queryClient';
@@ -28,6 +28,7 @@ import { MobileDrawer } from '../src/components/MobileDrawer';
 import { useUI } from '../src/stores/ui';
 import { useLocale, useT } from '../src/i18n/store';
 import { useSelfServer } from '../src/api/selfServer';
+import { authRedirectHref, isPublicAuthPath } from '../src/auth/routeGuard';
 import { palette } from '../src/theme/colors';
 import { WIDE_BREAKPOINT } from '../src/theme/layout';
 import { documentTitle } from '../src/utils/documentTitle';
@@ -36,8 +37,8 @@ import { installRouterKeyStripper } from '../src/utils/routerKey';
 /**
  * Root layout: wires global providers (gesture handler, safe area, query
  * client), boots one-time state (theme, persisted session, audio engine), and
- * declares the navigation stack. The auth gate itself lives in `index.tsx`,
- * which redirects based on the restored session.
+ * declares the navigation stack. `index.tsx` handles the entry route; the
+ * root auth gate also protects direct links into authenticated screens.
  */
 export default function RootLayout() {
   const t = useT();
@@ -57,8 +58,17 @@ export default function RootLayout() {
   const hydrateDownloads = useDownloads((s) => s.hydrate);
   const hydrateOfflineCatalog = useOfflineCatalog((s) => s.hydrate);
   const detectSelf = useSelfServer((s) => s.detect);
+  const selfServerChecked = useSelfServer((s) => s.checked);
+  const needsSetup = useSelfServer((s) => s.needsSetup);
   const authStatus = useAuth((s) => s.status);
   const themeHydrated = useTheme((s) => s.hydrated);
+  const publicAuthPath = isPublicAuthPath(pathname);
+  const authPending = !publicAuthPath && (
+    authStatus === 'idle' ||
+    authStatus === 'restoring' ||
+    (authStatus === 'unauthenticated' && !selfServerChecked)
+  );
+  const redirectToAuth = !publicAuthPath && authStatus === 'unauthenticated' && selfServerChecked;
 
   useEffect(() => {
     installRouterKeyStripper();
@@ -95,6 +105,10 @@ export default function RootLayout() {
     if (authStatus === 'authenticated') void syncTheme();
   }, [authStatus, syncTheme]);
 
+  useEffect(() => {
+    if (redirectToAuth) router.replace(authRedirectHref(pathname, needsSetup) as never);
+  }, [needsSetup, pathname, redirectToAuth]);
+
   const colors = colorScheme === 'dark' ? palette.dark : palette.light;
   // The desktop library sidebar shows once authenticated, beside the content —
   // except on the immersive full-screen surfaces (player / queue).
@@ -106,7 +120,7 @@ export default function RootLayout() {
 
   // Hold a themed splash until the persisted theme is applied, so the UI never
   // flashes unthemed (light) content on reload.
-  if (!themeHydrated) {
+  if (!themeHydrated || authPending || redirectToAuth) {
     return (
       <GestureHandlerRootView style={{ flex: 1 }}>
         <LaunchLoading />
