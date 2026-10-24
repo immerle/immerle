@@ -30,3 +30,6 @@ CVE-2026-104849
 # trusted project assets only, never on user input or in a shipped artifact.
 CVE-2025-71329
 CVE-2025-71330
+# Reviewed 2026-10-24. zod 3.x (via @expo/cli): the fix is zod 4, which the
+# expo CLI pins against (^3). CLI tooling only, never in a shipped artifact.
+CVE-2023-54404

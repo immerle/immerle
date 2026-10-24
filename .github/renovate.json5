@@ -7,7 +7,6 @@
   extends: [
     'config:best-practices',
     ':semanticCommits', // match the repo's conventional-commit style
-    ':maintainLockFilesWeekly', // keep transitive deps fresh, not just direct
     'security:openssf-scorecard', // surface supply-chain risk on PRs
     'helpers:pinGitHubActionDigests', // pin actions to immutable SHAs
     'docker:pinDigests', // pin base images to digests
@@ -40,6 +39,13 @@
     schedule: ['at any time'],
     minimumReleaseAge: null,
     prCreation: 'immediate',
+  },
+
+  // Refresh lockfiles daily: it is the only way Renovate picks up fixes for
+  // transitive deps, which vulnerability alerts can't open PRs for.
+  lockFileMaintenance: {
+    enabled: true,
+    schedule: ['before 7am every day'],
   },
 
   automerge: false,
