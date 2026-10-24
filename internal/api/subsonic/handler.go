@@ -14,11 +14,9 @@ import (
 	"github.com/immerle/immerle/internal/api/httputil"
 	"github.com/immerle/immerle/internal/api/media"
 	"github.com/immerle/immerle/internal/core"
-	"github.com/immerle/immerle/internal/integrations/discover"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 	"github.com/immerle/immerle/internal/services/scanner"
-	"github.com/immerle/immerle/internal/services/sonic"
 	"github.com/immerle/immerle/internal/stream"
 )
 
@@ -26,38 +24,25 @@ import (
 // may be nil when the feature is disabled.
 type Deps struct {
 	// Services are the application services shared with the native API handler.
-	Services     *core.Services
-	Auth         *core.AuthService
-	Catalog      *persistence.CatalogRepo
-	Genres       *persistence.GenreRepo
-	Annotations  *persistence.AnnotationRepo
-	Playlists    *persistence.PlaylistRepo
-	PlayQueues   *persistence.PlayQueueRepo
-	Scrobbles    *persistence.ScrobbleRepo
-	Shares       *persistence.ShareRepo
-	Users        *persistence.UserRepo
-	Radio        *persistence.RadioRepo
-	Podcasts     *core.PodcastService
-	Settings     *core.SettingsService
-	Cover        *stream.CoverService
-	Streamer     *stream.Streamer
-	NowPlaying   *core.NowPlayingTracker
-	Scanner      *scanner.Scanner
-	OnDemand     *core.CatalogService
-	Activity     *core.ActivityService
-	PlaylistSync core.PlaylistSyncEnqueuer // optional: enqueue public-playlist hub sync
-	ScrobbleSync core.ScrobbleEnqueuer     // optional: enqueue ListenBrainz scrobbles
+	Services    *core.Services
+	Auth        *core.AuthService
+	Catalog     *persistence.CatalogRepo
+	Genres      *persistence.GenreRepo
+	Annotations *persistence.AnnotationRepo
+	Playlists   *persistence.PlaylistRepo
+	Radio       *persistence.RadioRepo
+	Podcasts    *core.PodcastService
+	Settings    *core.SettingsService
+	Cover       *stream.CoverService
+	Streamer    *stream.Streamer
+	NowPlaying  *core.NowPlayingTracker
+	Scanner     *scanner.Scanner
+	OnDemand    *core.CatalogService
 	// MusicFolderPaths are the configured library roots, exposed as music folders.
 	MusicFolderPaths []string
 	// BaseURL is used to build absolute share links.
 	BaseURL string
 	Logger  *slog.Logger
-	// Sonic backs getSimilarSongs with the sonic radio when switched on. Optional.
-	Sonic *sonic.Service
-	// Discover backs getSimilarSongs when the sonic radio can't. Optional.
-	Discover *discover.Client
-	// UserForgetter drops deleted users' data from immerle discover. Optional.
-	UserForgetter core.UserForgetter
 }
 
 // Handler implements the Subsonic REST API.

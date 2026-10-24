@@ -58,24 +58,20 @@ func newBrowseEnv(t *testing.T) (*httptest.Server, string, *persistence.Store) {
 	})
 	nowPlaying := core.NewNowPlayingTracker(0)
 	h := NewHandler(Deps{
-		Services:    core.NewServices(store, core.ServiceOptions{Auth: auth, OnDemand: onDemand, NowPlaying: nowPlaying, Logger: testutil.NewLogger()}),
-		Auth:        auth,
-		Users:       store.Users,
-		Catalog:     store.Catalog,
-		Annotations: store.Annotations,
-		Genres:      store.Genres,
-		Playlists:   store.Playlists,
-		Scrobbles:   store.Scrobbles,
-		PlayQueues:  store.PlayQueues,
-		NowPlaying:  nowPlaying,
-		OnDemand:    onDemand,
-		Streamer:    stream.NewStreamer(config.TranscodeConfig{FFmpegPath: "ffmpeg", CacheDir: filepath.Join(t.TempDir(), "tc")}, testutil.NewLogger()),
-		Cover:       stream.NewCoverService(store.Catalog, coversDir),
-		Shares:      store.Shares,
-		Radio:       store.Radio,
-		BaseURL:     "https://music.example",
-		SigningKey:  "test-media-secret",
-		Logger:      testutil.NewLogger(),
+		Services:   core.NewServices(store, core.ServiceOptions{Auth: auth, OnDemand: onDemand, NowPlaying: nowPlaying, Logger: testutil.NewLogger()}),
+		Auth:       auth,
+		Users:      store.Users,
+		Catalog:    store.Catalog,
+		Genres:     store.Genres,
+		Playlists:  store.Playlists,
+		NowPlaying: nowPlaying,
+		OnDemand:   onDemand,
+		Streamer:   stream.NewStreamer(config.TranscodeConfig{FFmpegPath: "ffmpeg", CacheDir: filepath.Join(t.TempDir(), "tc")}, testutil.NewLogger()),
+		Cover:      stream.NewCoverService(store.Catalog, coversDir),
+		Radio:      store.Radio,
+		BaseURL:    "https://music.example",
+		SigningKey: "test-media-secret",
+		Logger:     testutil.NewLogger(),
 	})
 	mux := chi.NewRouter()
 	h.Register(mux)

@@ -25,7 +25,7 @@ func TestGetUserReturnsDisplayName(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	h := NewHandler(Deps{Services: core.NewServices(store, core.ServiceOptions{Auth: auth}), Auth: auth, Users: store.Users})
+	h := NewHandler(Deps{Services: core.NewServices(store, core.ServiceOptions{Auth: auth}), Auth: auth})
 
 	getUser := func(username string) User {
 		t.Helper()

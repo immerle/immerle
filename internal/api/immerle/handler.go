@@ -39,7 +39,6 @@ type Deps struct {
 	Activity     *core.ActivityService
 	Playlists    *persistence.PlaylistRepo
 	PlaylistSync core.PlaylistSyncEnqueuer // optional: enqueue public-playlist hub sync
-	ScrobbleSync core.ScrobbleEnqueuer     // optional: enqueue ListenBrainz scrobbles
 	// ListenBrainz validates a token live when a user sets one on their
 	// account (PATCH /me). Optional; nil skips live validation.
 	ListenBrainz *listenbrainz.Client
@@ -51,18 +50,14 @@ type Deps struct {
 	Federation *federation.Service
 	// Catalog and OnDemand enrich activity feed items (titles/cover; OnDemand maps a
 	// remote favorite to its downloaded local track). Both also back catalog browse via LibraryService.
-	Catalog     *persistence.CatalogRepo
-	Annotations *persistence.AnnotationRepo
-	Genres      *persistence.GenreRepo
-	Scrobbles   *persistence.ScrobbleRepo
-	PlayQueues  *persistence.PlayQueueRepo
-	NowPlaying  *core.NowPlayingTracker
-	OnDemand    *core.CatalogService
+	Catalog    *persistence.CatalogRepo
+	Genres     *persistence.GenreRepo
+	NowPlaying *core.NowPlayingTracker
+	OnDemand   *core.CatalogService
 	// Streamer and Cover back the media endpoints (audio stream/download, cover art).
 	Streamer *stream.Streamer
 	Cover    *stream.CoverService
-	// Shares persists share links; BaseURL builds their absolute URLs.
-	Shares  *persistence.ShareRepo
+	// BaseURL builds absolute share-link URLs.
 	BaseURL string
 	// SigningKey signs short-lived media (stream/download) URLs. Empty disables it.
 	SigningKey string
@@ -113,10 +108,8 @@ type Deps struct {
 	Purchases *core.PurchasesService
 	// Sonic runs the local audio analysis (admin progress, capabilities, sonic
 	// radio). Optional; nil hides the features.
-	Sonic *sonic.Service
-	// UserForgetter drops deleted users' data from immerle discover. Optional.
-	UserForgetter core.UserForgetter
-	Logger        *slog.Logger
+	Sonic  *sonic.Service
+	Logger *slog.Logger
 	// LogHub streams live server log lines to the admin log viewer (SSE).
 	LogHub *logging.Hub
 }
