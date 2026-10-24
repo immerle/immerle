@@ -2,12 +2,14 @@ package core
 
 import (
 	"context"
+	"log/slog"
 	"sort"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/immerle/immerle/internal/integrations/discover"
+	"github.com/immerle/immerle/internal/integrations/lrclib"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 	"github.com/immerle/immerle/internal/services/sonic"
@@ -483,4 +485,22 @@ func annPtr(m map[string]models.Annotation, id string) *models.Annotation {
 		return &a
 	}
 	return nil
+}
+
+// Lyrics returns a track's lyrics (plain or LRC). When none are stored they are
+// fetched from lrclib and cached on the track, best effort.
+func (s *LibraryService) Lyrics(ctx context.Context, trackID string) (string, error) {
+	t, err := s.catalog.GetTrack(ctx, trackID)
+	if err != nil || t.Lyrics != "" {
+		return t.Lyrics, err
+	}
+	fetched, err := lrclib.NewClient().Get(ctx, t.ArtistName, t.Title, t.AlbumName, t.Duration)
+	if err != nil || fetched == "" {
+		return "", nil
+	}
+	t.Lyrics = fetched
+	if _, err := s.catalog.UpsertTrack(ctx, t); err != nil {
+		slog.Warn("lrclib: failed to cache fetched lyrics", "track", t.ID, "err", err)
+	}
+	return fetched, nil
 }

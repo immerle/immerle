@@ -290,3 +290,22 @@ func (s *PlaylistService) canEdit(ctx context.Context, p models.Playlist, user m
 	}
 	return false
 }
+
+// AddCollaborator grants collaboratorID edit rights on a playlist, making it
+// collaborative. Only the owner (or an admin) can, and never on a federated one.
+func (s *PlaylistService) AddCollaborator(ctx context.Context, user models.User, playlistID, collaboratorID string) error {
+	p, err := s.playlists.Get(ctx, playlistID)
+	if err != nil {
+		return err
+	}
+	if p.Federated || (p.OwnerID != user.ID && !user.IsAdmin) {
+		return ErrForbidden
+	}
+	if !p.Collaborative {
+		p.Collaborative = true
+		if err := s.playlists.UpdateMeta(ctx, p); err != nil {
+			return err
+		}
+	}
+	return s.playlists.AddCollaborator(ctx, playlistID, collaboratorID)
+}
