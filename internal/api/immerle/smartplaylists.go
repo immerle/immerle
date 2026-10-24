@@ -5,10 +5,27 @@ import (
 	"strings"
 	"time"
 
+	chi "github.com/go-chi/chi/v5"
+
 	"github.com/google/uuid"
 
 	"github.com/immerle/immerle/internal/models"
 )
+
+// smartPlaylistRoutes mounts rule-based "smart" playlists and their admin
+// feature toggle. Admin routes go on admin, which is already under /admin and
+// admin-only.
+func (h *Handler) smartPlaylistRoutes(r, admin chi.Router) {
+	r.Get("/smart-playlists", h.handleSmartPlaylists)
+	r.Post("/smart-playlists", h.handleSmartPlaylistCreate)
+	r.Post("/smart-playlists/preview", h.handleSmartPlaylistPreview)
+	r.Put("/smart-playlists/{id}", h.handleSmartPlaylistUpdate)
+	r.Delete("/smart-playlists/{id}", h.handleSmartPlaylistDelete)
+	r.Get("/smart-playlists/{id}/tracks", h.handleSmartPlaylistTracks)
+
+	admin.Get("/smart-playlists", h.handleSmartPlaylistsAdmin)
+	admin.Put("/smart-playlists", h.handleSmartPlaylistsToggle)
+}
 
 // smartEnabled reports whether rule-based playlists are on (default on when
 // settings are unavailable, e.g. in tests).

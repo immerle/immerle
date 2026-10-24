@@ -6,11 +6,33 @@ import (
 	"strconv"
 	"time"
 
+	chi "github.com/go-chi/chi/v5"
+
 	"github.com/immerle/immerle/internal/api/httputil"
 	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 )
+
+// podcastRoutes mounts podcasts: browse and download for everyone, channel
+// CRUD, refresh and directory providers for admins. Admin routes go on admin,
+// which is already under /admin and admin-only.
+func (h *Handler) podcastRoutes(r, admin chi.Router) {
+	r.Get("/podcasts", h.handlePodcastList)
+	r.Get("/podcasts/episodes/newest", h.handlePodcastNewest)
+	r.Get("/podcasts/episodes/{id}", h.handlePodcastEpisode)
+	r.Get("/podcasts/episodes/{id}/stream", h.handlePodcastStream)
+	r.Post("/podcasts/episodes/{id}/download", h.handlePodcastDownload)
+	r.Get("/podcasts/{id}", h.handlePodcastGet)
+
+	admin.Post("/podcasts", h.handlePodcastCreate)
+	admin.Post("/podcasts/refresh", h.handlePodcastRefresh)
+	admin.Get("/podcasts/search", h.handlePodcastSearch)
+	admin.Get("/podcasts/providers", h.handlePodcastProviders)
+	admin.Put("/podcasts/providers/{name}", h.handlePodcastProviderUpdate)
+	admin.Delete("/podcasts/episodes/{id}", h.handlePodcastDeleteEpisode)
+	admin.Delete("/podcasts/{id}", h.handlePodcastDeleteChannel)
+}
 
 type channelView struct {
 	ID          string        `json:"id"`

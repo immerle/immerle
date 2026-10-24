@@ -5,8 +5,18 @@ import (
 	"strings"
 	"time"
 
+	chi "github.com/go-chi/chi/v5"
+
 	"github.com/immerle/immerle/internal/core"
 )
+
+// shareRoutes mounts share links.
+func (h *Handler) shareRoutes(r, _ chi.Router) {
+	r.Get("/shares", h.handleListShares)
+	r.Post("/shares", h.handleCreateShare)
+	r.Patch("/shares/{id}", h.handleUpdateShare)
+	r.Delete("/shares/{id}", h.handleDeleteShare)
+}
 
 // This file exposes share links over the shared core.ShareService. Ownership is
 // enforced by the repository (updates/deletes are scoped to the caller).

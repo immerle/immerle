@@ -5,9 +5,21 @@ import (
 	"net/http"
 	"time"
 
+	chi "github.com/go-chi/chi/v5"
+
 	"github.com/immerle/immerle/internal/integrations/bandcamp"
 	"github.com/immerle/immerle/internal/models"
 )
+
+// purchasesRoutes mounts the caller's Bandcamp purchase import.
+func (h *Handler) purchasesRoutes(r, _ chi.Router) {
+	r.Get("/me/purchases/bandcamp", h.handleBandcampStatus)
+	r.Post("/me/purchases/bandcamp/connect", h.handleBandcampConnect)
+	r.Delete("/me/purchases/bandcamp", h.handleBandcampDisconnect)
+	r.Get("/me/purchases/bandcamp/collection", h.handleBandcampCollection)
+	r.Post("/me/purchases/bandcamp/items/{saleItemType}/{saleItemId}/import", h.handleBandcampImport)
+	r.Get("/me/purchases/bandcamp/jobs", h.handleBandcampJobs)
+}
 
 // handleBandcampStatus reports the caller's Bandcamp connection state.
 //

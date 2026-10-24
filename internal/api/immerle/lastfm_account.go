@@ -5,8 +5,23 @@ import (
 	"net/http"
 	"strings"
 
+	chi "github.com/go-chi/chi/v5"
+
 	"github.com/immerle/immerle/internal/integrations/lastfm"
 )
+
+// lastFmRoutes mounts the caller's Last.fm link and the admin scrobbling
+// settings. Admin routes go on admin, which is already under /admin and admin-
+// only.
+func (h *Handler) lastFmRoutes(r, admin chi.Router) {
+	r.Get("/me/lastfm", h.handleLastFmStatus)
+	r.Post("/me/lastfm/connect/start", h.handleLastFmConnectStart)
+	r.Post("/me/lastfm/connect/finish", h.handleLastFmConnectFinish)
+	r.Delete("/me/lastfm", h.handleLastFmDisconnect)
+
+	admin.Get("/lastfm", h.handleLastFmAdmin)
+	admin.Put("/lastfm", h.handleLastFmAdminUpdate)
+}
 
 // lastFmConfigured reports whether the admin has enabled Last.fm scrobbling
 // and set both the API key and shared secret.

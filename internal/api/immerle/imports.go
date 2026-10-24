@@ -4,9 +4,20 @@ import (
 	"errors"
 	"net/http"
 
+	chi "github.com/go-chi/chi/v5"
+
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 )
+
+// importRoutes mounts playlist imports from external sources (e.g. Spotify).
+func (h *Handler) importRoutes(r, _ chi.Router) {
+	r.Get("/imports/sources", h.handleImportSources)
+	r.Get("/imports", h.handleImports)
+	r.Post("/imports", h.handleImportStart)
+	r.Get("/imports/{id}", h.handleImportStatus)
+	r.Post("/imports/{id}/items/{itemId}/resolve", h.handleImportItemResolve)
+}
 
 // handleImportSources lists the available import sources and whether each is
 // configured (credentials present).
