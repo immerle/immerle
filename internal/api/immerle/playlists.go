@@ -3,9 +3,36 @@ package immerle
 import (
 	"net/http"
 
+	chi "github.com/go-chi/chi/v5"
+
 	"github.com/immerle/immerle/internal/services/autoplaylists"
 	"github.com/immerle/immerle/internal/services/sonic"
 )
+
+// playlistRoutes mounts playlist CRUD, covers, public and collaborative
+// playlists, plus the admin chart and auto-playlist syncs. Admin routes go on
+// admin, which is already under /admin and admin-only.
+func (h *Handler) playlistRoutes(r, admin chi.Router) {
+	r.Get("/playlists", h.handleListPlaylists)
+	r.Post("/playlists", h.handleCreatePlaylist)
+	r.Get("/playlists/public", h.handlePublicPlaylists)
+	r.Get("/playlists/{id}", h.handleGetPlaylist)
+	r.Patch("/playlists/{id}", h.handleUpdatePlaylist)
+	r.Delete("/playlists/{id}", h.handleDeletePlaylist)
+	r.Put("/playlists/{id}/tracks", h.handleReplacePlaylistTracks)
+	r.Post("/playlists/{id}/tracks/{position}/resolve", h.handleResolvePlaylistTrack)
+	r.Put("/playlists/{id}/cover", h.handlePlaylistCover)
+	r.Post("/playlists/{id}/cover/generate", h.handlePlaylistCoverGenerate)
+	r.Put("/playlists/{id}/subscription", h.handleSubscribePlaylist)
+	r.Delete("/playlists/{id}/subscription", h.handleUnsubscribePlaylist)
+	r.Post("/playlists/{id}/collaborators", h.handleAddCollaborator)
+	r.Post("/spotify-playlists/{spotifyId}/open", h.handleOpenSpotifyPlaylist)
+	r.Get("/me/custom-playlists", h.handleCustomPlaylists)
+	r.Get("/me/discover-playlists", h.handleDiscoverPlaylists)
+
+	admin.Post("/charts/sync", h.handleChartsSync)
+	admin.Post("/autoplaylists/sync", h.handleAutoPlaylistsSync)
+}
 
 // publicPlaylistView is a public playlist offered for subscription.
 type publicPlaylistView struct {

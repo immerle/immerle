@@ -12,11 +12,28 @@ import (
 	"strings"
 	"time"
 
+	chi "github.com/go-chi/chi/v5"
+
 	"github.com/immerle/immerle/internal/api/httputil"
 	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/radio"
 )
+
+// radioRoutes mounts internet radio: listing and likes for everyone, station
+// CRUD and the feature toggle for admins. Admin routes go on admin, which is
+// already under /admin and admin-only.
+func (h *Handler) radioRoutes(r, admin chi.Router) {
+	r.Get("/radio", h.handleRadioList)
+	r.Put("/radio/stations/{id}/like", h.handleRadioLike)
+	r.Delete("/radio/stations/{id}/like", h.handleRadioUnlike)
+
+	admin.Get("/radio", h.handleRadioAdmin)
+	admin.Put("/radio", h.handleRadioToggle)
+	admin.Post("/radio/stations", h.handleRadioCreate)
+	admin.Put("/radio/stations/{id}", h.handleRadioUpdate)
+	admin.Delete("/radio/stations/{id}", h.handleRadioDelete)
+}
 
 // radioCoverClient fetches station logos with a bounded timeout.
 var radioCoverClient = &http.Client{Timeout: 12 * time.Second}

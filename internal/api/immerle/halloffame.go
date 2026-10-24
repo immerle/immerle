@@ -4,9 +4,25 @@ import (
 	"net/http"
 	"time"
 
+	chi "github.com/go-chi/chi/v5"
+
 	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/models"
 )
+
+// hallOfFameRoutes mounts the personal top-tracks ranking and its admin feature
+// toggle. Admin routes go on admin, which is already under /admin and admin-
+// only.
+func (h *Handler) hallOfFameRoutes(r, admin chi.Router) {
+	r.Get("/hall-of-fame", h.handleGetHallOfFame)
+	r.Put("/hall-of-fame/tracks", h.handleSetHallOfFameOrder)
+	r.Post("/hall-of-fame/tracks", h.handleAddHallOfFameTrack)
+	r.Patch("/hall-of-fame/tracks/{trackId}/note", h.handleSetHallOfFameNote)
+	r.Get("/users/{username}/hall-of-fame", h.handleUserHallOfFame)
+
+	admin.Get("/hall-of-fame", h.handleHallOfFameAdmin)
+	admin.Put("/hall-of-fame", h.handleHallOfFameToggle)
+}
 
 // hallOfFameEnabled reports whether the Hall of Fame feature is on (defaults
 // to on when settings are unavailable, e.g. in tests).

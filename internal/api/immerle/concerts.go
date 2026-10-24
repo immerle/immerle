@@ -6,8 +6,22 @@ import (
 	"strings"
 	"time"
 
+	chi "github.com/go-chi/chi/v5"
+
 	"github.com/immerle/immerle/internal/models"
 )
+
+// concertsRoutes mounts concert discovery: the caller's matches and the admin
+// settings and sync. Admin routes go on admin, which is already under /admin
+// and admin-only.
+func (h *Handler) concertsRoutes(r, admin chi.Router) {
+	r.Get("/me/concerts", h.handleMyConcerts)
+	r.Put("/me/concerts/{id}/dismiss", h.handleDismissConcert)
+
+	admin.Get("/concerts", h.handleConcertsAdmin)
+	admin.Put("/concerts", h.handleConcertsUpdate)
+	admin.Post("/concerts/sync", h.handleConcertsSync)
+}
 
 // maxActiveConcerts bounds how many upcoming matches GET /me/concerts
 // returns — plenty for a "next up" banner without unbounded growth.
