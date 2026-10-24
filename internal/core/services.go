@@ -5,6 +5,7 @@ import (
 
 	"github.com/immerle/immerle/internal/integrations/discover"
 	"github.com/immerle/immerle/internal/persistence"
+	"github.com/immerle/immerle/internal/services/ondemand"
 	"github.com/immerle/immerle/internal/services/sonic"
 )
 
@@ -25,7 +26,7 @@ type Services struct {
 // Every field but Auth is optional.
 type ServiceOptions struct {
 	Auth          *AuthService
-	OnDemand      *CatalogService
+	OnDemand      *ondemand.CatalogService
 	Activity      *ActivityService
 	NowPlaying    *NowPlayingTracker
 	ScrobbleSync  ScrobbleEnqueuer

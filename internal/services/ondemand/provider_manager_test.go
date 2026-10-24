@@ -1,4 +1,4 @@
-package core
+package ondemand
 
 import (
 	"context"
@@ -10,8 +10,8 @@ import (
 
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
-	"github.com/immerle/immerle/internal/providers"
-	"github.com/immerle/immerle/internal/providers/httpprovider"
+	"github.com/immerle/immerle/internal/services/ondemand/providers"
+	"github.com/immerle/immerle/internal/services/ondemand/providers/httpprovider"
 	"github.com/immerle/immerle/internal/testutil"
 )
 

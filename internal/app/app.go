@@ -34,13 +34,14 @@ import (
 	"github.com/immerle/immerle/internal/platform/db"
 	"github.com/immerle/immerle/internal/platform/logging"
 	"github.com/immerle/immerle/internal/platform/server"
-	"github.com/immerle/immerle/internal/providers"
-	"github.com/immerle/immerle/internal/providers/httpprovider"
 	"github.com/immerle/immerle/internal/services/autoplaylists"
 	"github.com/immerle/immerle/internal/services/charts"
 	"github.com/immerle/immerle/internal/services/concerts"
 	"github.com/immerle/immerle/internal/services/federation"
 	"github.com/immerle/immerle/internal/services/importer"
+	"github.com/immerle/immerle/internal/services/ondemand"
+	"github.com/immerle/immerle/internal/services/ondemand/providers"
+	"github.com/immerle/immerle/internal/services/ondemand/providers/httpprovider"
 	"github.com/immerle/immerle/internal/services/outbox"
 	"github.com/immerle/immerle/internal/services/scanner"
 	"github.com/immerle/immerle/internal/services/sonic"
@@ -57,13 +58,13 @@ type App struct {
 	store            *persistence.Store
 	scanner          *scanner.Scanner
 	watcher          *scanner.Watcher
-	onDemand         *core.CatalogService
+	onDemand         *ondemand.CatalogService
 	federation       *federation.Service
 	outbox           *outbox.Worker
 	enricher         *core.ArtistImageEnricher
 	mbEnricher       *core.MusicBrainzEnricher
 	sonic            *sonic.Service
-	evictor          *core.Evictor
+	evictor          *ondemand.Evictor
 	charts           *charts.Service
 	spotifyPlaylists *spotifyplaylists.Service
 	autoplaylists    *autoplaylists.Service
@@ -85,8 +86,8 @@ type App struct {
 // builtinProviderDefs declares the compiled-in providers managed via the admin
 // API. Their credentials live in the config JSON (no env vars). Only those with
 // a registered factory are surfaced.
-func builtinProviderDefs() []core.BuiltinDef {
-	all := []core.BuiltinDef{
+func builtinProviderDefs() []ondemand.BuiltinDef {
+	all := []ondemand.BuiltinDef{
 		// CC-licensed; no credentials. First in order (highest search priority) and
 		// enabled by default.
 		{Name: "free-music-archive", DefaultConfig: `{}`, DefaultEnabled: true},
@@ -99,7 +100,7 @@ func builtinProviderDefs() []core.BuiltinDef {
 		// default: it calls Spotify on every search.
 		{Name: "spotify-playlist", DefaultConfig: `{}`, DefaultEnabled: false},
 	}
-	out := make([]core.BuiltinDef, 0, len(all))
+	out := make([]ondemand.BuiltinDef, 0, len(all))
 	for _, d := range all {
 		if providers.HasFactory(d.Name) {
 			out = append(out, d)
@@ -110,7 +111,7 @@ func builtinProviderDefs() []core.BuiltinDef {
 
 // catalogResolver adapts the on-demand CatalogService to importer.ContentResolver:
 // search the content providers, then turn a chosen remote track into a local one.
-type catalogResolver struct{ svc *core.CatalogService }
+type catalogResolver struct{ svc *ondemand.CatalogService }
 
 func (c catalogResolver) SearchTracks(ctx context.Context, query string, limit int) ([]models.Track, error) {
 	return c.svc.RemoteSearch(ctx, query, limit)
@@ -284,7 +285,7 @@ func New(cfg config.Config) (*App, error) {
 	// On-demand catalog (S5): always running, idles with no provider enabled.
 	// Provider config changes are applied to this live registry and the DB
 	// together by the manager — hot, no restart.
-	registry := core.NewProviderRegistry()
+	registry := ondemand.NewProviderRegistry()
 	// Both kinds are configured via the admin API (JSON config). A built-in is a
 	// compiled-in factory whose credentials come from its config JSON; a dynamic
 	// provider is a content-neutral HTTP service.
@@ -298,12 +299,12 @@ func New(cfg config.Config) (*App, error) {
 		}
 		return httpprovider.New(c.Name, c.Endpoint, c.Config)
 	}
-	providerMgr := core.NewProviderManager(store.ProviderConfigs, registry, build, builtinProviderDefs(), logger)
+	providerMgr := ondemand.NewProviderManager(store.ProviderConfigs, registry, build, builtinProviderDefs(), logger)
 	if err := providerMgr.Load(ctx); err != nil {
 		logger.Warn("loading providers failed", "error", err)
 	}
 
-	onDemand := core.NewCatalogService(core.CatalogServiceConfig{
+	onDemand := ondemand.NewCatalogService(ondemand.CatalogServiceConfig{
 		Catalog:      store.Catalog,
 		Downloads:    store.Downloads,
 		Registry:     registry,
@@ -319,7 +320,7 @@ func New(cfg config.Config) (*App, error) {
 
 	// Artist avatars come from the on-demand provider; always on, idles if no
 	// provider exposes the artist-image capability.
-	enricher := core.NewArtistImageEnricher(store.Catalog, core.NewProviderImageLookup(onDemand), coversDir, time.Second, logger)
+	enricher := core.NewArtistImageEnricher(store.Catalog, ondemand.NewProviderImageLookup(onDemand), coversDir, time.Second, logger)
 
 	// Tracks whose tags (or on-demand provider) carried an ISRC but no
 	// MusicBrainz id get one looked up in the background, so ListenBrainz
@@ -434,7 +435,7 @@ func New(cfg config.Config) (*App, error) {
 
 	// Cleanup of unused provider downloads. Enabled state + retention window are
 	// read live from the runtime settings (hot); the cadence is read at boot.
-	evictor := core.NewEvictor(store.Catalog, store.Downloads,
+	evictor := ondemand.NewEvictor(store.Catalog, store.Downloads,
 		settingsSvc.CleanupEnabled, settingsSvc.CleanupMaxAge, settingsSvc.CleanupInterval(), logger)
 
 	// Curated chart playlists (global + a handful of major markets), synced

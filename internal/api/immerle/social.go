@@ -8,6 +8,7 @@ import (
 	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/services/importer"
+	"github.com/immerle/immerle/internal/services/ondemand"
 )
 
 // handleCapabilities reports the immerle features this instance supports so
@@ -173,7 +174,7 @@ func (h *Handler) activityItem(ctx context.Context, e models.ActivityEvent) *act
 		}
 		id := e.ItemID
 		// A remote favorite/listen resolves to its downloaded local copy.
-		if core.IsRemoteID(id) && h.OnDemand != nil {
+		if ondemand.IsRemoteID(id) && h.OnDemand != nil {
 			if local, ok := h.OnDemand.LocalTrackIDForRemote(ctx, id); ok {
 				id = local
 			}

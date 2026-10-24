@@ -16,6 +16,7 @@ import (
 	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
+	"github.com/immerle/immerle/internal/services/ondemand"
 	"github.com/immerle/immerle/internal/services/scanner"
 	"github.com/immerle/immerle/internal/stream"
 )
@@ -37,7 +38,7 @@ type Deps struct {
 	Streamer    *stream.Streamer
 	NowPlaying  *core.NowPlayingTracker
 	Scanner     *scanner.Scanner
-	OnDemand    *core.CatalogService
+	OnDemand    *ondemand.CatalogService
 	// MusicFolderPaths are the configured library roots, exposed as music folders.
 	MusicFolderPaths []string
 	// BaseURL is used to build absolute share links.

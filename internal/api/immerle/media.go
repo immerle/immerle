@@ -9,6 +9,7 @@ import (
 
 	"github.com/immerle/immerle/internal/api/httputil"
 	"github.com/immerle/immerle/internal/core"
+	"github.com/immerle/immerle/internal/services/ondemand"
 	"github.com/immerle/immerle/internal/stream"
 )
 
@@ -60,7 +61,7 @@ func (h *Handler) handleStreamURL(w http.ResponseWriter, r *http.Request) {
 	// reads back via chi.URLParam — signing the decoded id breaks verification for ids needing escaping.
 	id := chi.URLParam(r, "id")
 	decodedID := pathParam(r, "id")
-	if !core.IsRemoteID(decodedID) {
+	if !ondemand.IsRemoteID(decodedID) {
 		if h.Catalog == nil {
 			writeInternal(w, errors.New("catalog unavailable"))
 			return

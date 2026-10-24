@@ -16,7 +16,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/immerle/immerle/internal/providers"
+	"github.com/immerle/immerle/internal/services/ondemand/providers"
 )
 
 const pageSize = 50

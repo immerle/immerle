@@ -15,7 +15,7 @@ import (
 // save from the device it took over from must be rejected, or that stale
 // write gets broadcast and yanks every other device back to the old state.
 func TestPlayQueueSaveFromDeviceRespectsTarget(t *testing.T) {
-	_, store, _ := newOnDemand(t)
+	_, store := newOnDemand(t)
 	ctx := context.Background()
 	user := models.User{ID: uuid.NewString(), Username: "u", PasswordHash: "x", CreatedAt: time.Now()}
 	if err := store.Users.Create(ctx, user); err != nil {

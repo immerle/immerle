@@ -40,7 +40,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/immerle/immerle/internal/providers"
+	"github.com/immerle/immerle/internal/services/ondemand/providers"
 )
 
 // Provider is a generic HTTP-backed provider. Its config uses the shared

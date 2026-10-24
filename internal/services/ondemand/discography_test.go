@@ -1,11 +1,11 @@
-package core
+package ondemand
 
 import (
 	"context"
 	"io"
 	"testing"
 
-	"github.com/immerle/immerle/internal/providers"
+	"github.com/immerle/immerle/internal/services/ondemand/providers"
 	"github.com/immerle/immerle/internal/testutil"
 )
 

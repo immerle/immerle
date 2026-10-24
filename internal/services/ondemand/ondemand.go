@@ -1,4 +1,4 @@
-package core
+package ondemand
 
 import (
 	"context"
@@ -21,7 +21,7 @@ import (
 
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
-	"github.com/immerle/immerle/internal/providers"
+	"github.com/immerle/immerle/internal/services/ondemand/providers"
 )
 
 // ProviderRegistry holds the configured providers, keyed by name. It is safe
@@ -618,9 +618,9 @@ func fetchImage(ctx context.Context, url string) ([]byte, error) {
 
 // destPath builds Artist/Album/NN - Title.suffix under the download dir.
 func (s *CatalogService) destPath(meta providers.Result, suffix string) string {
-	artist := sanitize(firstNonEmpty(meta.AlbumArtist, meta.Artist, "Unknown Artist"))
-	album := sanitize(firstNonEmpty(meta.Album, "Unknown Album"))
-	title := sanitize(firstNonEmpty(meta.Title, "Unknown"))
+	artist := SanitizeName(firstNonEmpty(meta.AlbumArtist, meta.Artist, "Unknown Artist"))
+	album := SanitizeName(firstNonEmpty(meta.Album, "Unknown Album"))
+	title := SanitizeName(firstNonEmpty(meta.Title, "Unknown"))
 	name := title
 	if meta.TrackNo > 0 {
 		name = fmt.Sprintf("%02d - %s", meta.TrackNo, title)
@@ -692,7 +692,8 @@ func (s *CatalogService) AutoDownloadOnPlay() bool {
 	return s != nil && s.state != nil && s.state.settings.AutoDownloadOnPlay()
 }
 
-func sanitize(s string) string {
+// SanitizeName makes s safe as a single path segment ("Unknown" when empty).
+func SanitizeName(s string) string {
 	repl := strings.NewReplacer("/", "_", "\\", "_", ":", "_", "*", "_", "?", "_", "\"", "_", "<", "_", ">", "_", "|", "_")
 	out := strings.TrimSpace(repl.Replace(s))
 	if out == "" {

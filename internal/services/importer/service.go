@@ -15,7 +15,7 @@ import (
 
 // ContentResolver is the slice of the on-demand catalog the importer needs:
 // search the content providers for a free-text query, and turn a (remote) track
-// id into a local track id by downloading/ingesting it. *core.CatalogService is
+// id into a local track id by downloading/ingesting it. *ondemand.CatalogService is
 // adapted to this in the app wiring.
 type ContentResolver interface {
 	SearchTracks(ctx context.Context, query string, limit int) ([]models.Track, error)

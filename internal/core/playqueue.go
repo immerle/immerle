@@ -9,6 +9,7 @@ import (
 
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
+	"github.com/immerle/immerle/internal/services/ondemand"
 )
 
 // PlayQueueEvent is broadcast to a user's connected clients whenever their
@@ -184,7 +185,7 @@ func (s *PlayQueueService) resolveQueue(ctx context.Context, q models.PlayQueue)
 		// when metadata exists. Missing local IDs must be dropped because their
 		// streams cannot be resolved.
 		meta, hasMeta := entryMeta[id]
-		if !IsRemoteID(id) && (!hasMeta || !meta.Remote) {
+		if !ondemand.IsRemoteID(id) && (!hasMeta || !meta.Remote) {
 			continue
 		}
 		trackIDs = append(trackIDs, id)

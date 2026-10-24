@@ -17,11 +17,10 @@ internal/
   app                    wiring
   api/subsonic           Subsonic / OpenSubsonic handlers (XML + JSON)
   api/immerle            native immerle extension handlers (JSON + SSE)
-  core                   business services (auth, annotations, on-demand,
-                         activity, jam, now-playing, settings)
+  core                   business services shared by both APIs (auth, library,
+                         playback, playlists, activity, jam, now-playing, settings)
   models                 domain entities
   persistence            repositories (one per aggregate) over database/sql
-  providers              pluggable on-demand catalog providers (jamendo, internet-archive, free-music-archive, http)
   stream                 audio streaming (range/seek), ffmpeg transcoding, cover art
   platform/
     config               bootstrap config (.env / environment)
@@ -30,6 +29,10 @@ internal/
     server               HTTP server with graceful shutdown
   services/              background and feature services
     scanner              filesystem walk, tag extraction, idempotent upserts
+    ondemand             on-demand catalog: remote search/browse, downloads,
+                         provider manager, download eviction
+      providers          pluggable catalog providers (jamendo, internet-archive,
+                         free-music-archive, http)
     autoplaylists        genre/decade/personal/recommendation playlist sync
     charts               chart playlists
     spotifyplaylists     on-demand public Spotify playlists

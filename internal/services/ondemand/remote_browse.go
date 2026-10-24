@@ -1,4 +1,4 @@
-package core
+package ondemand
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 
 	"github.com/immerle/immerle/internal/lib/matching"
 	"github.com/immerle/immerle/internal/models"
-	"github.com/immerle/immerle/internal/providers"
+	"github.com/immerle/immerle/internal/services/ondemand/providers"
 )
 
 // Remote browse id prefixes. Remote artists/albums surfaced in search are not in
@@ -149,7 +149,7 @@ func (s *CatalogService) ResolveBestRemoteMatch(ctx context.Context, artist, tit
 	var best models.Track
 	bestScore := -1
 	for _, t := range tracks {
-		titleScore := titleOverlap(title, t.Title)
+		titleScore := matching.TitleOverlap(title, t.Title)
 		if titleScore >= 3 {
 			continue // shares nothing with the wanted title: never an acceptable match
 		}
@@ -159,20 +159,6 @@ func (s *CatalogService) ResolveBestRemoteMatch(ctx context.Context, artist, tit
 		}
 	}
 	return best, bestScore != -1
-}
-
-// titleOverlap is relevance checked in both directions and takes the better
-// (lower) score: a hub/federated title routinely carries extra qualifiers a
-// provider's canonical title doesn't ("Get Lucky (Radio Edit - feat. ...)" vs
-// "Get Lucky"), so plain one-directional containment (does the wanted title
-// contain the candidate, or the reverse) misses the common case where one is
-// simply a longer superstring of the other.
-func titleOverlap(wanted, candidate string) int {
-	score := Relevance(wanted, candidate)
-	if r := Relevance(candidate, wanted); r < score {
-		score = r
-	}
-	return score
 }
 
 // RemoteSearch3 gathers remote artists, albums and tracks for search3/search2.
@@ -329,7 +315,7 @@ func (s *CatalogService) remoteProviderPlaylists(ctx context.Context, prov provi
 	}
 	out := make([]models.Playlist, 0, limit)
 	for _, pl := range all {
-		if pl.Name == "" || Relevance(query, pl.Name) >= 3 {
+		if pl.Name == "" || matching.Relevance(query, pl.Name) >= 3 {
 			continue // no textual relation to the query at all
 		}
 		out = append(out, toRemotePlaylist(prov.Name(), pl))
@@ -591,17 +577,17 @@ func (s *CatalogService) RemoteArtist(ctx context.Context, remoteArtistID string
 	return artist, albums, nil
 }
 
-// providerImageLookup is an ArtistImageLookup backed by the on-demand provider
+// ProviderImageLookup is a core.ArtistImageLookup backed by the on-demand provider
 // registry: avatars come from wherever artists do.
-type providerImageLookup struct{ svc *CatalogService }
+type ProviderImageLookup struct{ svc *CatalogService }
 
-// NewProviderImageLookup builds an ArtistImageLookup over the catalog service.
-func NewProviderImageLookup(svc *CatalogService) ArtistImageLookup {
-	return providerImageLookup{svc: svc}
+// NewProviderImageLookup builds a ProviderImageLookup over the catalog service.
+func NewProviderImageLookup(svc *CatalogService) ProviderImageLookup {
+	return ProviderImageLookup{svc: svc}
 }
 
 // Available reports whether the primary provider can supply artist images.
-func (p providerImageLookup) Available() bool {
+func (p ProviderImageLookup) Available() bool {
 	if p.svc == nil || p.svc.state == nil {
 		return false
 	}
@@ -615,7 +601,7 @@ func (p providerImageLookup) Available() bool {
 }
 
 // Lookup resolves an artist's avatar URL via the provider.
-func (p providerImageLookup) Lookup(ctx context.Context, name string) (string, error) {
+func (p ProviderImageLookup) Lookup(ctx context.Context, name string) (string, error) {
 	if p.svc == nil || p.svc.state == nil {
 		return "", nil
 	}

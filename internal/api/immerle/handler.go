@@ -21,6 +21,7 @@ import (
 	"github.com/immerle/immerle/internal/platform/logging"
 	"github.com/immerle/immerle/internal/services/federation"
 	"github.com/immerle/immerle/internal/services/importer"
+	"github.com/immerle/immerle/internal/services/ondemand"
 	"github.com/immerle/immerle/internal/services/scanner"
 	"github.com/immerle/immerle/internal/services/sonic"
 	"github.com/immerle/immerle/internal/services/spotifyplaylists"
@@ -53,7 +54,7 @@ type Deps struct {
 	Catalog    *persistence.CatalogRepo
 	Genres     *persistence.GenreRepo
 	NowPlaying *core.NowPlayingTracker
-	OnDemand   *core.CatalogService
+	OnDemand   *ondemand.CatalogService
 	// Streamer and Cover back the media endpoints (audio stream/download, cover art).
 	Streamer *stream.Streamer
 	Cover    *stream.CoverService
@@ -85,7 +86,7 @@ type Deps struct {
 	AutoPlaylists AutoPlaylistsController
 	// Providers manages runtime-configurable on-demand providers (admin API).
 	// nil when on-demand is disabled; handlers guard with a nil check.
-	Providers *core.ProviderManager
+	Providers *ondemand.ProviderManager
 	// Settings manages the DB-backed runtime settings (admin API). It also supplies
 	// the device-session JWT lifetime (a runtime setting).
 	Settings *core.SettingsService
@@ -124,7 +125,7 @@ func (h *Handler) deviceTokenTTL() time.Duration {
 }
 
 // CleanupController runs an immediate eviction sweep. The enabled/retention
-// state lives in the runtime settings. Implemented by *core.Evictor.
+// state lives in the runtime settings. Implemented by *ondemand.Evictor.
 type CleanupController interface {
 	Sweep(ctx context.Context) (int, error)
 }

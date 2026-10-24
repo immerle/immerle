@@ -6,6 +6,7 @@ import (
 
 	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/services/ondemand"
 )
 
 // localAnn resolves a track's annotation (like/rating/play). When the id is a
@@ -16,7 +17,7 @@ func (h *Handler) localAnn(ctx context.Context, trackAnn map[string]models.Annot
 	if a := annPtr(trackAnn, id); a != nil {
 		return a
 	}
-	if h.OnDemand != nil && core.IsRemoteID(id) {
+	if h.OnDemand != nil && ondemand.IsRemoteID(id) {
 		if localID, ok := h.OnDemand.LocalTrackIDForRemote(ctx, id); ok {
 			return annPtr(trackAnn, localID)
 		}
@@ -39,7 +40,7 @@ func (h *Handler) remoteSongs(r *http.Request, tracks []models.Track) []Child {
 // sub-directories) or a remote album (songs).
 func (h *Handler) remoteMusicDirectory(w http.ResponseWriter, r *http.Request, id string) bool {
 	switch {
-	case core.IsRemoteArtistID(id):
+	case ondemand.IsRemoteArtistID(id):
 		artist, albums, err := h.OnDemand.RemoteArtist(r.Context(), id)
 		if err != nil || artist.Name == "" {
 			writeError(w, r, ErrDataNotFound, "Directory not found")
@@ -53,7 +54,7 @@ func (h *Handler) remoteMusicDirectory(w http.ResponseWriter, r *http.Request, i
 		resp.Directory = &Directory{ID: artist.ID, Name: artist.Name, Child: children}
 		write(w, r, resp)
 		return true
-	case core.IsRemoteAlbumID(id):
+	case ondemand.IsRemoteAlbumID(id):
 		album, tracks, err := h.OnDemand.RemoteAlbum(r.Context(), id)
 		if err != nil || album.Name == "" {
 			writeError(w, r, ErrDataNotFound, "Directory not found")
@@ -71,7 +72,7 @@ func (h *Handler) remoteMusicDirectory(w http.ResponseWriter, r *http.Request, i
 // remotePlaylist serves getPlaylist for a remote (provider) playlist id
 // surfaced in search; it does not exist as a local playlist row.
 func (h *Handler) remotePlaylist(w http.ResponseWriter, r *http.Request, id string) bool {
-	if !core.IsRemotePlaylistID(id) {
+	if !ondemand.IsRemotePlaylistID(id) {
 		return false
 	}
 	pl, err := h.OnDemand.RemotePlaylist(r.Context(), id)

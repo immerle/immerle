@@ -10,8 +10,10 @@ import (
 
 	"github.com/immerle/immerle/internal/integrations/discover"
 	"github.com/immerle/immerle/internal/integrations/lrclib"
+	"github.com/immerle/immerle/internal/lib/matching"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
+	"github.com/immerle/immerle/internal/services/ondemand"
 	"github.com/immerle/immerle/internal/services/sonic"
 )
 
@@ -28,7 +30,7 @@ type LibraryService struct {
 	annotations *persistence.AnnotationRepo
 	playlists   *persistence.PlaylistRepo
 	// onDemand is optional (remote provider integration); may be nil when disabled.
-	onDemand *CatalogService
+	onDemand *ondemand.CatalogService
 	// sonic powers the sonic radio; nil (or switched off) falls back to the
 	// genre heuristic.
 	sonic *sonic.Service
@@ -49,7 +51,7 @@ func (s *LibraryService) WithSonic(svc *sonic.Service) *LibraryService {
 }
 
 // NewLibraryService wires the library application service. onDemand may be nil.
-func NewLibraryService(catalog *persistence.CatalogRepo, annotations *persistence.AnnotationRepo, playlists *persistence.PlaylistRepo, onDemand *CatalogService) *LibraryService {
+func NewLibraryService(catalog *persistence.CatalogRepo, annotations *persistence.AnnotationRepo, playlists *persistence.PlaylistRepo, onDemand *ondemand.CatalogService) *LibraryService {
 	return &LibraryService{catalog: catalog, annotations: annotations, playlists: playlists, onDemand: onDemand}
 }
 
@@ -166,16 +168,16 @@ func (s *LibraryService) Search(ctx context.Context, userID, query string, artis
 	}
 
 	sort.SliceStable(artists, func(i, j int) bool {
-		return Relevance(query, artists[i].Name) < Relevance(query, artists[j].Name)
+		return matching.Relevance(query, artists[i].Name) < matching.Relevance(query, artists[j].Name)
 	})
 	sort.SliceStable(albums, func(i, j int) bool {
-		return Relevance(query, albums[i].Name) < Relevance(query, albums[j].Name)
+		return matching.Relevance(query, albums[i].Name) < matching.Relevance(query, albums[j].Name)
 	})
 	sort.SliceStable(tracks, func(i, j int) bool {
-		return Relevance(query, tracks[i].Title) < Relevance(query, tracks[j].Title)
+		return matching.Relevance(query, tracks[i].Title) < matching.Relevance(query, tracks[j].Title)
 	})
 	sort.SliceStable(playlists, func(i, j int) bool {
-		return Relevance(query, playlists[i].Name) < Relevance(query, playlists[j].Name)
+		return matching.Relevance(query, playlists[i].Name) < matching.Relevance(query, playlists[j].Name)
 	})
 
 	return SearchResults{
@@ -186,23 +188,6 @@ func (s *LibraryService) Search(ctx context.Context, userID, query string, artis
 		AlbumAnnotations: albumAnn,
 		TrackAnnotations: trackAnn,
 	}, nil
-}
-
-// Relevance scores how well s matches the query for search ordering: exact (0),
-// prefix (1), substring (2), otherwise (3). Lower is better; ties keep input
-// order (stable sort).
-func Relevance(query, s string) int {
-	q, x := strings.ToLower(strings.TrimSpace(query)), strings.ToLower(s)
-	switch {
-	case q == "" || x == q:
-		return 0
-	case strings.HasPrefix(x, q):
-		return 1
-	case strings.Contains(x, q):
-		return 2
-	default:
-		return 3
-	}
 }
 
 // capSlice truncates s to at most n elements.
@@ -273,7 +258,7 @@ type AlbumResult struct {
 // local album's tracks are loaded and remote albums fetched concurrently.
 // Returns persistence.ErrNotFound when the artist does not exist.
 func (s *LibraryService) GetArtist(ctx context.Context, userID, id string, includeSongs bool) (ArtistResult, error) {
-	if IsRemoteArtistID(id) && s.onDemand != nil {
+	if ondemand.IsRemoteArtistID(id) && s.onDemand != nil {
 		return s.remoteArtist(ctx, id)
 	}
 
@@ -336,7 +321,7 @@ func (s *LibraryService) fillAlbumSongs(ctx context.Context, userID string, entr
 
 	var remote []int
 	for i := range entries {
-		if IsRemoteAlbumID(entries[i].Album.ID) {
+		if ondemand.IsRemoteAlbumID(entries[i].Album.ID) {
 			remote = append(remote, i)
 			continue
 		}
@@ -378,7 +363,7 @@ func (s *LibraryService) fillAlbumSongs(ctx context.Context, userID string, entr
 // by disc/track. SongCount and Duration reflect the enriched list. Returns
 // persistence.ErrNotFound when the album does not exist.
 func (s *LibraryService) GetAlbum(ctx context.Context, userID, id string) (AlbumResult, error) {
-	if IsRemoteAlbumID(id) && s.onDemand != nil {
+	if ondemand.IsRemoteAlbumID(id) && s.onDemand != nil {
 		return s.remoteAlbum(ctx, userID, id)
 	}
 
@@ -459,7 +444,7 @@ func (s *LibraryService) localAnn(ctx context.Context, trackAnn map[string]model
 	if a := annPtr(trackAnn, id); a != nil {
 		return a
 	}
-	if s.onDemand != nil && IsRemoteID(id) {
+	if s.onDemand != nil && ondemand.IsRemoteID(id) {
 		if localID, ok := s.onDemand.LocalTrackIDForRemote(ctx, id); ok {
 			return annPtr(trackAnn, localID)
 		}
