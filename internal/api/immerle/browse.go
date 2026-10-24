@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	chi "github.com/go-chi/chi/v5"
+
 	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/integrations/spotifyweb"
 	"github.com/immerle/immerle/internal/lib/lyrics"
@@ -16,6 +18,51 @@ import (
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 )
+
+// catalogRoutes mounts catalog browse and search, favorites, ratings,
+// scrobbles, sonic radio and library stats, plus the admin scans and track
+// management. Admin routes go on admin, which is already under /admin and
+// admin-only.
+func (h *Handler) catalogRoutes(r, admin chi.Router) {
+	r.Get("/artists", h.handleListArtists)
+	r.Get("/artists/{id}", h.handleGetArtist)
+	r.Get("/albums", h.handleListAlbums)
+	r.Get("/albums/{id}", h.handleGetAlbum)
+	r.Get("/songs", h.handleSongsByGenre)
+	r.Get("/songs/radio", h.handleSonicRadio)
+	r.Post("/songs/autodj", h.handleAutoDJ)
+	r.Get("/songs/{id}", h.handleGetSong)
+	r.Get("/songs/{id}/sonic", h.handleSongSonic)
+	r.Get("/songs/{id}/local", h.handleGetSongLocalStatus)
+	r.Get("/songs/{id}/lyrics", h.handleGetSongLyrics)
+	r.Get("/songs/{id}/stream-url", h.handleStreamURL)
+	r.Get("/genres", h.handleGetGenres)
+	r.Get("/search", h.handleSearch)
+	r.Get("/me/favorites", h.handleFavorites)
+	r.Put("/songs/{id}/star", h.handleStarSong)
+	r.Delete("/songs/{id}/star", h.handleUnstarSong)
+	r.Put("/albums/{id}/star", h.handleStarAlbum)
+	r.Delete("/albums/{id}/star", h.handleUnstarAlbum)
+	r.Put("/artists/{id}/star", h.handleStarArtist)
+	r.Delete("/artists/{id}/star", h.handleUnstarArtist)
+	r.Put("/songs/{id}/rating", h.handleSetRating)
+	r.Delete("/songs/{id}/rating", h.handleClearRating)
+	r.Put("/albums/{id}/rating", h.handleSetRating)
+	r.Delete("/albums/{id}/rating", h.handleClearRating)
+	r.Put("/artists/{id}/rating", h.handleSetRating)
+	r.Delete("/artists/{id}/rating", h.handleClearRating)
+	r.Post("/scrobbles", h.handleScrobble)
+	r.Get("/library/stats", h.handleLibraryStats)
+
+	admin.Get("/library/scan", h.handleScanStatus)
+	admin.Post("/library/scan", h.handleStartScan)
+	admin.Get("/tracks", h.handleAdminTracks)
+	admin.Patch("/tracks/{id}", h.handleAdminTrackUpdate)
+	admin.Put("/tracks/{id}/cover", h.handleAdminTrackCover)
+	admin.Delete("/tracks/{id}", h.handleAdminTrackDelete)
+	admin.Get("/sonic", h.handleSonicStatus)
+	admin.Get("/sonic/duplicates", h.handleSonicDuplicates)
+}
 
 // lyricsView is a track's lyrics, plain or synced. When synced, every line
 // carries a startMs (playback offset in milliseconds) so a client can highlight

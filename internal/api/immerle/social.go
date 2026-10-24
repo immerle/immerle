@@ -5,11 +5,29 @@ import (
 	"errors"
 	"net/http"
 
+	chi "github.com/go-chi/chi/v5"
+
 	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/services/importer"
 	"github.com/immerle/immerle/internal/services/ondemand"
 )
+
+// socialRoutes mounts the activity feed and synchronized Jam sessions.
+func (h *Handler) socialRoutes(r, _ chi.Router) {
+	r.Get("/activity", h.handleActivity)
+	r.Get("/jam/mine", h.handleJamMine)
+	r.Get("/jam/invites/mine", h.handleJamInvitesMine)
+	r.Delete("/jam/invites/{id}", h.handleJamInviteDismiss)
+	r.Post("/jam", h.handleJamCreate)
+	r.Get("/jam/{id}", h.handleJamState)
+	r.Patch("/jam/{id}", h.handleJamUpdate)
+	r.Get("/jam/{id}/events", h.handleJamEvents)
+	r.Post("/jam/{id}/participants", h.handleJamJoin)
+	r.Delete("/jam/{id}/participants/me", h.handleJamLeave)
+	r.Post("/jam/{id}/invites", h.handleJamInvite)
+	r.Delete("/jam/{id}", h.handleJamDelete)
+}
 
 // handleCapabilities reports the immerle features this instance supports so
 // clients can detect support before using extension endpoints.

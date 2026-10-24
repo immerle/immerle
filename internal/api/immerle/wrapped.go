@@ -5,8 +5,19 @@ import (
 	"strconv"
 	"time"
 
+	chi "github.com/go-chi/chi/v5"
+
 	"github.com/immerle/immerle/internal/models"
 )
+
+// wrappedRoutes mounts the year-in-review and its admin feature toggle. Admin
+// routes go on admin, which is already under /admin and admin-only.
+func (h *Handler) wrappedRoutes(r, admin chi.Router) {
+	r.Get("/wrapped", h.handleWrapped)
+
+	admin.Get("/wrapped", h.handleWrappedAdmin)
+	admin.Put("/wrapped", h.handleWrappedUpdate)
+}
 
 // wrappedEnabled reports whether the year-in-review feature is on (defaults to
 // on when settings are unavailable, e.g. in tests).

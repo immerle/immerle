@@ -9,11 +9,23 @@ import (
 	"strings"
 	"time"
 
+	chi "github.com/go-chi/chi/v5"
+
 	"github.com/google/uuid"
 
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/services/scanner"
 )
+
+// uploadsRoutes mounts the caller's "local" library: tracks uploaded from the
+// web UI.
+func (h *Handler) uploadsRoutes(r, _ chi.Router) {
+	r.Get("/library/local", h.handleLocalSongs)
+	r.Post("/library/uploads", h.handleUpload)
+	r.Patch("/library/tracks/{id}", h.handleTrackUpdate)
+	r.Put("/library/tracks/{id}/cover", h.handleTrackCover)
+	r.Delete("/library/tracks/{id}", h.handleTrackDelete)
+}
 
 // maxUploadBytes caps a single uploaded audio file (200 MiB — lossless album
 // tracks fit comfortably). ponytail: a flat per-request cap, raise it here if

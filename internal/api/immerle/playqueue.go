@@ -8,10 +8,24 @@ import (
 	"net/http"
 	"time"
 
+	chi "github.com/go-chi/chi/v5"
+
 	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 )
+
+// playQueueRoutes mounts the saved cross-device play queue and the now-playing
+// feed.
+func (h *Handler) playQueueRoutes(r, _ chi.Router) {
+	r.Get("/play-queue", h.handleGetPlayQueue)
+	r.Put("/play-queue", h.handleSavePlayQueue)
+	r.Get("/play-queue/events", h.handleStreamPlayQueue)
+	r.Get("/play-queue/targets", h.handleListPlaybackTargets)
+	r.Put("/play-queue/target", h.handleSetPlaybackTarget)
+	r.Post("/play-queue/commands", h.handleSendPlayQueueCommand)
+	r.Get("/now-playing", h.handleNowPlaying)
+}
 
 // This file exposes the saved play queue (cross-device sync) and the now-playing
 // feed over the shared core.PlayQueueService and the now-playing tracker.

@@ -2,7 +2,39 @@ package immerle
 
 import (
 	"net/http"
+
+	chi "github.com/go-chi/chi/v5"
 )
+
+// serverAdminRoutes mounts server operations: download eviction, on-demand
+// providers, runtime settings, offline downloads, the live log stream and the
+// hub link. Admin routes go on admin, which is already under /admin and admin-
+// only.
+func (h *Handler) serverAdminRoutes(_, admin chi.Router) {
+	admin.Get("/cleanup", h.handleCleanup)
+	admin.Put("/cleanup", h.handleCleanupUpdate)
+	admin.Post("/cleanup/runs", h.handleCleanupRun)
+	admin.Get("/providers", h.handleProviders)
+	admin.Post("/providers", h.handleProviderUpsert)
+	admin.Put("/providers/order", h.handleProviderReorder)
+	admin.Put("/providers/{name}/enabled", h.handleProviderEnable)
+	admin.Put("/providers/{name}/capabilities/{capability}", h.handleProviderCapability)
+	admin.Delete("/providers/{name}", h.handleProviderDelete)
+	admin.Get("/providers/{name}/logs", h.handleProviderLogs)
+	admin.Get("/settings", h.handleSettings)
+	admin.Patch("/settings", h.handleSettingsUpdate)
+	admin.Get("/offline", h.handleOfflineAdmin)
+	admin.Put("/offline", h.handleOfflineUpdate)
+	admin.Get("/logs/stream", h.handleStreamLogs)
+	admin.Get("/federation", h.handleFederationProfile)
+	admin.Post("/federation/register", h.handleFederationRegister)
+	admin.Patch("/federation", h.handleFederationUpdate)
+	admin.Delete("/federation", h.handleFederationUnlink)
+	admin.Get("/federation/instances", h.handleFederationSearch)
+	admin.Get("/federation/subscriptions", h.handleFederationSubscriptions)
+	admin.Post("/federation/subscriptions", h.handleFederationSubscribe)
+	admin.Delete("/federation/subscriptions/{id}", h.handleFederationUnsubscribe)
+}
 
 // adminOnly answers 403 unless the authenticated caller is an admin. It guards
 // the whole /admin subtree, so admin handlers never check the role themselves.

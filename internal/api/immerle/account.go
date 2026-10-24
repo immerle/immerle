@@ -8,10 +8,36 @@ import (
 	"strings"
 	"time"
 
+	chi "github.com/go-chi/chi/v5"
+
 	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/integrations/listenbrainz"
 	"github.com/immerle/immerle/internal/models"
 )
+
+// accountRoutes mounts the caller's account, other users' profiles, API tokens,
+// device sessions and UI theme. Admin routes go on admin, which is already
+// under /admin and admin-only.
+func (h *Handler) accountRoutes(r, admin chi.Router) {
+	r.Get("/me", h.handleAccount)
+	r.Patch("/me", h.handleAccountUpdate)
+	r.Put("/me/password", h.handleChangePassword)
+	r.Get("/users", h.handleListPublicUsers)
+	r.Get("/users/{username}", h.handleProfile)
+	r.Get("/tokens", h.handleTokens)
+	r.Post("/tokens", h.handleCreateToken)
+	r.Delete("/tokens/{id}", h.handleRevokeToken)
+	r.Get("/devices", h.handleDevices)
+	r.Delete("/devices/{id}", h.handleRevokeDevice)
+	r.Get("/theme", h.handleTheme)
+	r.Patch("/theme", h.handleThemeUpdate)
+
+	admin.Get("/users", h.handleListUsers)
+	admin.Post("/users", h.handleCreateUser)
+	admin.Get("/users/{username}", h.handleGetUser)
+	admin.Patch("/users/{username}", h.handleUpdateUser)
+	admin.Delete("/users/{username}", h.handleDeleteUser)
+}
 
 // validEmail is a light sanity check (not full RFC 5322): a bare address with no
 // display-name part.
