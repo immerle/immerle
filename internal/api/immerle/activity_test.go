@@ -38,7 +38,8 @@ func TestActivityFeedEnrichesItems(t *testing.T) {
 	}
 
 	h := NewHandler(Deps{
-		Auth: auth, Users: store.Users,
+		Services: core.NewServices(store, core.ServiceOptions{Auth: auth, Activity: activitySvc, Logger: testutil.NewLogger()}),
+		Auth:     auth, Users: store.Users,
 		Activity: activitySvc, Catalog: store.Catalog, Logger: testutil.NewLogger(),
 	})
 	mux := chi.NewRouter()
@@ -108,7 +109,8 @@ func TestProfileEndpoint(t *testing.T) {
 	}
 
 	h := NewHandler(Deps{
-		Auth: auth, Users: store.Users,
+		Services: core.NewServices(store, core.ServiceOptions{Auth: auth, Activity: activitySvc, Logger: testutil.NewLogger()}),
+		Auth:     auth, Users: store.Users,
 		Activity: activitySvc, Playlists: store.Playlists, Catalog: store.Catalog, Logger: testutil.NewLogger(),
 	})
 	mux := chi.NewRouter()
@@ -159,7 +161,7 @@ func TestListPublicUsers(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	h := NewHandler(Deps{Auth: auth, Users: store.Users, Catalog: store.Catalog, Logger: testutil.NewLogger()})
+	h := NewHandler(Deps{Services: core.NewServices(store, core.ServiceOptions{Auth: auth, Logger: testutil.NewLogger()}), Auth: auth, Users: store.Users, Catalog: store.Catalog, Logger: testutil.NewLogger()})
 	mux := chi.NewRouter()
 	h.Register(mux)
 	srv := httptest.NewServer(mux)
@@ -234,9 +236,11 @@ func TestProfileIncludesHallOfFameTop3(t *testing.T) {
 		}
 	}
 
+	activitySvc := core.NewActivityService(store.Activity)
 	h := NewHandler(Deps{
-		Auth: auth, Users: store.Users,
-		Activity:   core.NewActivityService(store.Activity),
+		Services: core.NewServices(store, core.ServiceOptions{Auth: auth, Activity: activitySvc, Logger: testutil.NewLogger()}),
+		Auth:     auth, Users: store.Users,
+		Activity:   activitySvc,
 		Playlists:  store.Playlists,
 		Catalog:    store.Catalog,
 		HallOfFame: store.HallOfFame,

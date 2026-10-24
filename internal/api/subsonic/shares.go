@@ -43,7 +43,7 @@ func shareExpiry(r *http.Request) *time.Time {
 }
 
 func (h *Handler) handleGetShares(w http.ResponseWriter, r *http.Request) {
-	shares, err := h.shareSvc.List(r.Context(), userFrom(r.Context()).ID)
+	shares, err := h.Services.Shares.List(r.Context(), userFrom(r.Context()).ID)
 	if err != nil {
 		h.failInternal(w, r, err)
 		return
@@ -63,7 +63,7 @@ func (h *Handler) handleCreateShare(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, ErrMissingParameter, "Required parameter id is missing")
 		return
 	}
-	swe, err := h.shareSvc.Create(r.Context(), userFrom(r.Context()), ids[0], param(r, "description"), shareExpiry(r))
+	swe, err := h.Services.Shares.Create(r.Context(), userFrom(r.Context()), ids[0], param(r, "description"), shareExpiry(r))
 	if err != nil {
 		h.writeServiceError(w, r, err, "Item not found")
 		return
@@ -79,7 +79,7 @@ func (h *Handler) handleUpdateShare(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, ErrMissingParameter, "Required parameter id is missing")
 		return
 	}
-	if err := h.shareSvc.Update(r.Context(), id, userFrom(r.Context()).ID, param(r, "description"), shareExpiry(r)); err != nil {
+	if err := h.Services.Shares.Update(r.Context(), id, userFrom(r.Context()).ID, param(r, "description"), shareExpiry(r)); err != nil {
 		h.failInternal(w, r, err)
 		return
 	}
@@ -87,7 +87,7 @@ func (h *Handler) handleUpdateShare(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleDeleteShare(w http.ResponseWriter, r *http.Request) {
-	if err := h.shareSvc.Delete(r.Context(), param(r, "id"), userFrom(r.Context()).ID); err != nil {
+	if err := h.Services.Shares.Delete(r.Context(), param(r, "id"), userFrom(r.Context()).ID); err != nil {
 		h.failInternal(w, r, err)
 		return
 	}

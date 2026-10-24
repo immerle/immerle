@@ -20,7 +20,7 @@ func TestAccountSelfEdit(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	h := NewHandler(Deps{Auth: auth, Users: store.Users, Logger: testutil.NewLogger()})
+	h := NewHandler(Deps{Services: core.NewServices(store, core.ServiceOptions{Auth: auth, Logger: testutil.NewLogger()}), Auth: auth, Users: store.Users, Logger: testutil.NewLogger()})
 	mux := chi.NewRouter()
 	h.Register(mux)
 	srv := httptest.NewServer(mux)

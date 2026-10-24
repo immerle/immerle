@@ -35,7 +35,7 @@ func newAdminEnv(t *testing.T) (*httptest.Server, *fakeCleanup) {
 	}
 	settings, _ := core.NewSettingsService(filepath.Join(t.TempDir(), "configuration.yaml"), "", "", testutil.NewLogger())
 	fc := &fakeCleanup{}
-	h := NewHandler(Deps{Auth: auth, Users: store.Users, Settings: settings, Cleanup: fc, Logger: testutil.NewLogger()})
+	h := NewHandler(Deps{Services: core.NewServices(store, core.ServiceOptions{Auth: auth, Logger: testutil.NewLogger()}), Auth: auth, Users: store.Users, Settings: settings, Cleanup: fc, Logger: testutil.NewLogger()})
 	mux := chi.NewRouter()
 	h.Register(mux)
 	srv := httptest.NewServer(mux)

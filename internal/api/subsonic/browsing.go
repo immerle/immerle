@@ -26,7 +26,7 @@ func (h *Handler) handleGetMusicFolders(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *Handler) handleGetIndexes(w http.ResponseWriter, r *http.Request) {
-	artists, _, err := h.library.Artists(r.Context(), userFrom(r.Context()).ID)
+	artists, _, err := h.Services.Library.Artists(r.Context(), userFrom(r.Context()).ID)
 	if err != nil {
 		h.failInternal(w, r, err)
 		return
@@ -39,7 +39,7 @@ func (h *Handler) handleGetIndexes(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleGetArtists(w http.ResponseWriter, r *http.Request) {
-	artists, starred, err := h.library.Artists(r.Context(), userFrom(r.Context()).ID)
+	artists, starred, err := h.Services.Library.Artists(r.Context(), userFrom(r.Context()).ID)
 	if err != nil {
 		h.failInternal(w, r, err)
 		return
@@ -53,7 +53,7 @@ func (h *Handler) handleGetArtists(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) handleGetArtist(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
-	res, err := h.library.GetArtist(r.Context(), user.ID, param(r, "id"), boolParam(r, "includeSongs", false))
+	res, err := h.Services.Library.GetArtist(r.Context(), user.ID, param(r, "id"), boolParam(r, "includeSongs", false))
 	if err != nil {
 		h.writeServiceError(w, r, err, "Artist not found")
 		return
@@ -66,7 +66,7 @@ func (h *Handler) handleGetArtist(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) handleGetAlbum(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
-	res, err := h.library.GetAlbum(r.Context(), user.ID, param(r, "id"))
+	res, err := h.Services.Library.GetAlbum(r.Context(), user.ID, param(r, "id"))
 	if err != nil {
 		h.writeServiceError(w, r, err, "Album not found")
 		return
@@ -102,7 +102,7 @@ func trackEntriesToChildren(entries []core.TrackEntry) []Child {
 
 func (h *Handler) handleGetAlbumList2(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
-	albums, err := h.library.AlbumList(r.Context(), buildAlbumListOptions(r, user.ID))
+	albums, err := h.Services.Library.AlbumList(r.Context(), buildAlbumListOptions(r, user.ID))
 	if err != nil {
 		h.failInternal(w, r, err)
 		return
@@ -113,7 +113,7 @@ func (h *Handler) handleGetAlbumList2(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleGetSong(w http.ResponseWriter, r *http.Request) {
-	te, err := h.library.Song(r.Context(), userFrom(r.Context()).ID, param(r, "id"))
+	te, err := h.Services.Library.Song(r.Context(), userFrom(r.Context()).ID, param(r, "id"))
 	if err != nil {
 		h.writeServiceError(w, r, err, "Song not found")
 		return
@@ -141,7 +141,7 @@ func (h *Handler) handleGetGenres(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) handleGetStarred2(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
-	st := h.library.Starred(r.Context(), user.ID)
+	st := h.Services.Library.Starred(r.Context(), user.ID)
 	out := &Starred2{}
 	for _, a := range st.Artists {
 		out.Artist = append(out.Artist, toArtistID3(a, nil, nil))

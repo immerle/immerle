@@ -31,10 +31,12 @@ func newEnv(t *testing.T) (*httptest.Server, *persistence.Store) {
 			t.Fatal(err)
 		}
 	}
+	activitySvc := core.NewActivityService(store.Activity)
 	h := NewHandler(Deps{
+		Services:    core.NewServices(store, core.ServiceOptions{Auth: auth, Activity: activitySvc, Logger: testutil.NewLogger()}),
 		Auth:        auth,
 		Users:       store.Users,
-		Activity:    core.NewActivityService(store.Activity),
+		Activity:    activitySvc,
 		Playlists:   store.Playlists,
 		Annotations: store.Annotations,
 		PlayQueues:  store.PlayQueues,

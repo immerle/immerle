@@ -103,7 +103,7 @@ func detailToView(d core.PlaylistDetail) playlistView {
 // @Failure  401  {object}  errorResponse
 // @Router   /playlists [get]
 func (h *Handler) handleListPlaylists(w http.ResponseWriter, r *http.Request) {
-	lists, err := h.playlistSvc.List(r.Context(), userFrom(r.Context()).ID)
+	lists, err := h.Services.Playlists.List(r.Context(), userFrom(r.Context()).ID)
 	if err != nil {
 		writeServiceError(w, err)
 		return
@@ -129,7 +129,7 @@ func (h *Handler) handleListPlaylists(w http.ResponseWriter, r *http.Request) {
 // @Router   /playlists/{id} [get]
 func (h *Handler) handleGetPlaylist(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
-	d, err := h.playlistSvc.Get(r.Context(), user, pathParam(r, "id"))
+	d, err := h.Services.Playlists.Get(r.Context(), user, pathParam(r, "id"))
 	if err != nil {
 		writeServiceError(w, err)
 		return
@@ -166,7 +166,7 @@ func (h *Handler) handleCreatePlaylist(w http.ResponseWriter, r *http.Request) {
 		writeValidation(w, []fieldError{{Field: "name", Message: "name is required"}})
 		return
 	}
-	d, err := h.playlistSvc.Create(r.Context(), userFrom(r.Context()), req.Name, req.IDs)
+	d, err := h.Services.Playlists.Create(r.Context(), userFrom(r.Context()), req.Name, req.IDs)
 	if err != nil {
 		writeServiceError(w, err)
 		return
@@ -211,7 +211,7 @@ func (h *Handler) handleUpdatePlaylist(w http.ResponseWriter, r *http.Request) {
 		s := strconv.FormatBool(*req.Public)
 		meta.PublicRaw = &s
 	}
-	if err := h.playlistSvc.Update(r.Context(), userFrom(r.Context()), pathParam(r, "id"), meta, req.AddIDs, req.RemoveIndexes); err != nil {
+	if err := h.Services.Playlists.Update(r.Context(), userFrom(r.Context()), pathParam(r, "id"), meta, req.AddIDs, req.RemoveIndexes); err != nil {
 		writeServiceError(w, err)
 		return
 	}
@@ -242,7 +242,7 @@ func (h *Handler) handleReplacePlaylistTracks(w http.ResponseWriter, r *http.Req
 	if !decodeJSON(w, r, &req) {
 		return
 	}
-	d, err := h.playlistSvc.Replace(r.Context(), userFrom(r.Context()), pathParam(r, "id"), req.IDs)
+	d, err := h.Services.Playlists.Replace(r.Context(), userFrom(r.Context()), pathParam(r, "id"), req.IDs)
 	if err != nil {
 		writeServiceError(w, err)
 		return
@@ -268,7 +268,7 @@ func (h *Handler) handleReplacePlaylistTracks(w http.ResponseWriter, r *http.Req
 // @Router       /playlists/{id}/tracks/{position}/resolve [post]
 func (h *Handler) handleResolvePlaylistTrack(w http.ResponseWriter, r *http.Request) {
 	playlistID := pathParam(r, "id")
-	if _, err := h.playlistSvc.Get(r.Context(), userFrom(r.Context()), playlistID); err != nil {
+	if _, err := h.Services.Playlists.Get(r.Context(), userFrom(r.Context()), playlistID); err != nil {
 		writeServiceError(w, err)
 		return
 	}
@@ -306,7 +306,7 @@ func (h *Handler) handleResolvePlaylistTrack(w http.ResponseWriter, r *http.Requ
 // @Failure  404  {object}  errorResponse
 // @Router   /playlists/{id} [delete]
 func (h *Handler) handleDeletePlaylist(w http.ResponseWriter, r *http.Request) {
-	if err := h.playlistSvc.Delete(r.Context(), userFrom(r.Context()), pathParam(r, "id")); err != nil {
+	if err := h.Services.Playlists.Delete(r.Context(), userFrom(r.Context()), pathParam(r, "id")); err != nil {
 		writeServiceError(w, err)
 		return
 	}

@@ -45,7 +45,7 @@ func (h *Handler) handleGetSongsByGenre(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	user := userFrom(r.Context())
-	tracks, err := h.library.SongsByGenre(r.Context(), user.ID, genre, intParam(r, "count", 10), intParam(r, "offset", 0))
+	tracks, err := h.Services.Library.SongsByGenre(r.Context(), user.ID, genre, intParam(r, "count", 10), intParam(r, "offset", 0))
 	if err != nil {
 		h.failInternal(w, r, err)
 		return
@@ -57,7 +57,7 @@ func (h *Handler) handleGetSongsByGenre(w http.ResponseWriter, r *http.Request) 
 
 func (h *Handler) handleGetRandomSongs(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
-	tracks, err := h.library.RandomSongs(r.Context(), user.ID, intParam(r, "size", 10), param(r, "genre"), intParam(r, "fromYear", 0), intParam(r, "toYear", 0))
+	tracks, err := h.Services.Library.RandomSongs(r.Context(), user.ID, intParam(r, "size", 10), param(r, "genre"), intParam(r, "fromYear", 0), intParam(r, "toYear", 0))
 	if err != nil {
 		h.failInternal(w, r, err)
 		return
@@ -69,7 +69,7 @@ func (h *Handler) handleGetRandomSongs(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) handleGetAlbumList(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
-	albums, err := h.library.AlbumList(r.Context(), buildAlbumListOptions(r, user.ID))
+	albums, err := h.Services.Library.AlbumList(r.Context(), buildAlbumListOptions(r, user.ID))
 	if err != nil {
 		h.failInternal(w, r, err)
 		return
@@ -111,7 +111,7 @@ func (h *Handler) handleGetMusicDirectory(w http.ResponseWriter, r *http.Request
 	}
 
 	// Album directory → songs (local + provider enrichment, same as getAlbum).
-	if res, err := h.library.GetAlbum(ctx, user.ID, id); err == nil {
+	if res, err := h.Services.Library.GetAlbum(ctx, user.ID, id); err == nil {
 		resp := newResponse()
 		resp.Directory = &Directory{
 			ID:     res.Album.ID,
@@ -128,7 +128,7 @@ func (h *Handler) handleGetMusicDirectory(w http.ResponseWriter, r *http.Request
 
 func (h *Handler) handleGetStarred(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
-	st := h.library.Starred(r.Context(), user.ID)
+	st := h.Services.Library.Starred(r.Context(), user.ID)
 	out := &Starred{}
 	for _, a := range st.Artists {
 		out.Artist = append(out.Artist, ArtistItem{ID: a.ID, Name: a.Name})
@@ -150,7 +150,7 @@ func (h *Handler) handleGetStarred(w http.ResponseWriter, r *http.Request) {
 // historical search2 shape.)
 func (h *Handler) handleSearch2(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
-	res, err := h.library.Search(r.Context(), user.ID, param(r, "query"),
+	res, err := h.Services.Library.Search(r.Context(), user.ID, param(r, "query"),
 		intParam(r, "artistCount", 20), intParam(r, "albumCount", 20), intParam(r, "songCount", 20), 0)
 	if err != nil {
 		h.failInternal(w, r, err)
@@ -175,7 +175,7 @@ func (h *Handler) handleSearch2(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) handleGetTopSongs(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
-	tracks := h.library.TopSongs(r.Context(), user.ID, param(r, "artist"), intParam(r, "count", 50))
+	tracks := h.Services.Library.TopSongs(r.Context(), user.ID, param(r, "artist"), intParam(r, "count", 50))
 	resp := newResponse()
 	resp.TopSongs = &Songs{Song: trackEntriesToChildren(tracks)}
 	write(w, r, resp)
@@ -197,7 +197,7 @@ func (h *Handler) handleGetSimilarSongs2(w http.ResponseWriter, r *http.Request)
 
 func (h *Handler) similarSongs(r *http.Request) []Child {
 	user := userFrom(r.Context())
-	tracks := h.library.SimilarSongs(r.Context(), user.ID, param(r, "id"), intParam(r, "count", 50))
+	tracks := h.Services.Library.SimilarSongs(r.Context(), user.ID, param(r, "id"), intParam(r, "count", 50))
 	return trackEntriesToChildren(tracks)
 }
 

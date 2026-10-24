@@ -6,7 +6,7 @@ import (
 
 func (h *Handler) handleGetPlayQueue(w http.ResponseWriter, r *http.Request) {
 	user := userFrom(r.Context())
-	res, err := h.playQueueSvc.Get(r.Context(), user.ID)
+	res, err := h.Services.PlayQueue.Get(r.Context(), user.ID)
 	if err != nil {
 		if isNotFound(err) {
 			writeOK(w, r) // no saved queue
@@ -35,7 +35,7 @@ func (h *Handler) handleSavePlayQueue(w http.ResponseWriter, r *http.Request) {
 	// remote control, cannot provide display metadata for not-yet-downloaded remote
 	// tracks, and resets shuffle/repeat to their defaults (accepted interop
 	// degradation, same as the other two).
-	err := h.playQueueSvc.Save(r.Context(), user.ID, param(r, "current"),
+	err := h.Services.PlayQueue.Save(r.Context(), user.ID, param(r, "current"),
 		int64(intParam(r, "position", 0)), false, param(r, "c"), r.Form["id"], nil, false, "")
 	if err != nil {
 		h.failInternal(w, r, err)

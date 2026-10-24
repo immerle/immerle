@@ -23,7 +23,7 @@ func (h *Handler) setStar(w http.ResponseWriter, r *http.Request, kind string, s
 	case "artist":
 		artists = []string{id}
 	}
-	h.playback.SetStarred(r.Context(), userFrom(r.Context()), tracks, albums, artists, star)
+	h.Services.Playback.SetStarred(r.Context(), userFrom(r.Context()), tracks, albums, artists, star)
 	writeResource(w, http.StatusNoContent, nil)
 }
 
@@ -117,7 +117,7 @@ func (h *Handler) handleSetRating(w http.ResponseWriter, r *http.Request) {
 	if !decodeJSON(w, r, &req) {
 		return
 	}
-	if err := h.playback.SetRating(r.Context(), userFrom(r.Context()).ID, pathParam(r, "id"), req.Rating); err != nil {
+	if err := h.Services.Playback.SetRating(r.Context(), userFrom(r.Context()).ID, pathParam(r, "id"), req.Rating); err != nil {
 		writeServiceError(w, err)
 		return
 	}
@@ -134,7 +134,7 @@ func (h *Handler) handleSetRating(w http.ResponseWriter, r *http.Request) {
 // @Failure  401  {object}  errorResponse
 // @Router   /songs/{id}/rating [delete]
 func (h *Handler) handleClearRating(w http.ResponseWriter, r *http.Request) {
-	if err := h.playback.SetRating(r.Context(), userFrom(r.Context()).ID, pathParam(r, "id"), 0); err != nil {
+	if err := h.Services.Playback.SetRating(r.Context(), userFrom(r.Context()).ID, pathParam(r, "id"), 0); err != nil {
 		writeServiceError(w, err)
 		return
 	}
@@ -180,6 +180,6 @@ func (h *Handler) handleScrobble(w http.ResponseWriter, r *http.Request) {
 	if req.PlayedAt > 0 {
 		at = time.UnixMilli(req.PlayedAt)
 	}
-	h.playback.Scrobble(r.Context(), userFrom(r.Context()), req.IDs, submission, at)
+	h.Services.Playback.Scrobble(r.Context(), userFrom(r.Context()), req.IDs, submission, at)
 	writeResource(w, http.StatusNoContent, nil)
 }

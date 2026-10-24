@@ -23,7 +23,7 @@ func newSettingsEnv(t *testing.T) *httptest.Server {
 	if err != nil {
 		t.Fatal(err)
 	}
-	h := NewHandler(Deps{Auth: auth, Users: store.Users, Settings: settings, Logger: testutil.NewLogger()})
+	h := NewHandler(Deps{Services: core.NewServices(store, core.ServiceOptions{Auth: auth, Logger: testutil.NewLogger()}), Auth: auth, Users: store.Users, Settings: settings, Logger: testutil.NewLogger()})
 	mux := chi.NewRouter()
 	h.Register(mux)
 	srv := httptest.NewServer(mux)

@@ -56,7 +56,8 @@ func newLibraryServer(t *testing.T) (*httptest.Server, *persistence.Store, *core
 	coversDir := t.TempDir()
 	scan := scanner.New(store.Catalog, store.Genres, scanner.NewExtractor("ffprobe"), coversDir, testutil.NewLogger())
 	h := NewHandler(Deps{
-		Auth: auth, Users: store.Users, Catalog: store.Catalog,
+		Services: core.NewServices(store, core.ServiceOptions{Auth: auth, Logger: testutil.NewLogger()}),
+		Auth:     auth, Users: store.Users, Catalog: store.Catalog,
 		Scanner: scan, UploadsDir: t.TempDir(), CoversDir: coversDir, Logger: testutil.NewLogger(),
 	})
 	mux := chi.NewRouter()

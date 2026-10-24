@@ -28,7 +28,7 @@ func toUser(u models.User) User {
 }
 
 func (h *Handler) handleGetUser(w http.ResponseWriter, r *http.Request) {
-	u, err := h.userSvc.GetUser(r.Context(), userFrom(r.Context()), param(r, "username"))
+	u, err := h.Services.Users.GetUser(r.Context(), userFrom(r.Context()), param(r, "username"))
 	if err != nil {
 		h.writeServiceError(w, r, err, "User not found")
 		return
@@ -40,7 +40,7 @@ func (h *Handler) handleGetUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleGetUsers(w http.ResponseWriter, r *http.Request) {
-	users, err := h.userSvc.ListUsers(r.Context(), userFrom(r.Context()))
+	users, err := h.Services.Users.ListUsers(r.Context(), userFrom(r.Context()))
 	if err != nil {
 		h.writeServiceError(w, r, err, "User not found")
 		return
@@ -61,7 +61,7 @@ func (h *Handler) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, ErrMissingParameter, "username and password are required")
 		return
 	}
-	err := h.userSvc.CreateUser(r.Context(), userFrom(r.Context()), username, decodeEncParam(password),
+	err := h.Services.Users.CreateUser(r.Context(), userFrom(r.Context()), username, decodeEncParam(password),
 		param(r, "email"), param(r, "displayName"), boolParam(r, "adminRole", false))
 	if err != nil {
 		h.writeServiceError(w, r, err, "User not found")
@@ -91,7 +91,7 @@ func (h *Handler) handleUpdateUser(w http.ResponseWriter, r *http.Request) {
 	if pw := param(r, "password"); pw != "" {
 		upd.Password = decodeEncParam(pw)
 	}
-	if err := h.userSvc.UpdateUser(r.Context(), userFrom(r.Context()), param(r, "username"), upd); err != nil {
+	if err := h.Services.Users.UpdateUser(r.Context(), userFrom(r.Context()), param(r, "username"), upd); err != nil {
 		h.writeServiceError(w, r, err, "User not found")
 		return
 	}
@@ -99,7 +99,7 @@ func (h *Handler) handleUpdateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleDeleteUser(w http.ResponseWriter, r *http.Request) {
-	if err := h.userSvc.DeleteUser(r.Context(), userFrom(r.Context()), param(r, "username")); err != nil {
+	if err := h.Services.Users.DeleteUser(r.Context(), userFrom(r.Context()), param(r, "username")); err != nil {
 		h.writeServiceError(w, r, err, "User not found")
 		return
 	}
@@ -112,7 +112,7 @@ func (h *Handler) handleChangePassword(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, ErrMissingParameter, "password is required")
 		return
 	}
-	if err := h.userSvc.ChangePassword(r.Context(), userFrom(r.Context()), param(r, "username"), decodeEncParam(password)); err != nil {
+	if err := h.Services.Users.ChangePassword(r.Context(), userFrom(r.Context()), param(r, "username"), decodeEncParam(password)); err != nil {
 		h.writeServiceError(w, r, err, "User not found")
 		return
 	}

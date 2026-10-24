@@ -52,7 +52,7 @@ func newProvidersEnvWith(t *testing.T, build core.ProviderBuilder) *httptest.Ser
 	}
 	reg := core.NewProviderRegistry()
 	mgr := core.NewProviderManager(store.ProviderConfigs, reg, build, nil, testutil.NewLogger())
-	h := NewHandler(Deps{Auth: auth, Users: store.Users, Providers: mgr, Logger: testutil.NewLogger()})
+	h := NewHandler(Deps{Services: core.NewServices(store, core.ServiceOptions{Auth: auth, Logger: testutil.NewLogger()}), Auth: auth, Users: store.Users, Providers: mgr, Logger: testutil.NewLogger()})
 	mux := chi.NewRouter()
 	h.Register(mux)
 	srv := httptest.NewServer(mux)
@@ -171,7 +171,7 @@ func TestProvidersBuiltinAndReorder(t *testing.T) {
 	if err := mgr.Load(ctx); err != nil {
 		t.Fatal(err)
 	}
-	h := NewHandler(Deps{Auth: auth, Users: store.Users, Providers: mgr, Logger: testutil.NewLogger()})
+	h := NewHandler(Deps{Services: core.NewServices(store, core.ServiceOptions{Auth: auth, Logger: testutil.NewLogger()}), Auth: auth, Users: store.Users, Providers: mgr, Logger: testutil.NewLogger()})
 	mux := chi.NewRouter()
 	h.Register(mux)
 	srv := httptest.NewServer(mux)
@@ -226,7 +226,7 @@ func TestProvidersDisabledSubsystem(t *testing.T) {
 	ctx := context.Background()
 	auth, _ := core.NewAuthService(store.Users, store.APITokens, store.Devices, "secret")
 	_, _ = auth.CreateUser(ctx, "admin", "adminpw", "", "", true)
-	h := NewHandler(Deps{Auth: auth, Users: store.Users, Logger: testutil.NewLogger()})
+	h := NewHandler(Deps{Services: core.NewServices(store, core.ServiceOptions{Auth: auth, Logger: testutil.NewLogger()}), Auth: auth, Users: store.Users, Logger: testutil.NewLogger()})
 	mux := chi.NewRouter()
 	h.Register(mux)
 	srv := httptest.NewServer(mux)

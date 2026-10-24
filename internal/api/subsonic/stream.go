@@ -46,7 +46,7 @@ func (h *Handler) handleScrobble(w http.ResponseWriter, r *http.Request) {
 	if t := int64Param(r, "time", 0); t > 0 {
 		at = time.UnixMilli(t)
 	}
-	h.playback.Scrobble(r.Context(), userFrom(r.Context()), ids, boolParam(r, "submission", true), at)
+	h.Services.Playback.Scrobble(r.Context(), userFrom(r.Context()), ids, boolParam(r, "submission", true), at)
 	writeOK(w, r)
 }
 

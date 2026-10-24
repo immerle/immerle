@@ -68,7 +68,7 @@ func shareExpiry(ms int64) *time.Time {
 // @Failure  401  {object}  errorResponse
 // @Router   /shares [get]
 func (h *Handler) handleListShares(w http.ResponseWriter, r *http.Request) {
-	shares, err := h.shareSvc.List(r.Context(), userFrom(r.Context()).ID)
+	shares, err := h.Services.Shares.List(r.Context(), userFrom(r.Context()).ID)
 	if err != nil {
 		writeServiceError(w, err)
 		return
@@ -113,7 +113,7 @@ func (h *Handler) handleCreateShare(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	user := userFrom(r.Context())
-	swe, err := h.shareSvc.Create(r.Context(), user, req.ItemID, req.Description, shareExpiry(req.ExpiresAt))
+	swe, err := h.Services.Shares.Create(r.Context(), user, req.ItemID, req.Description, shareExpiry(req.ExpiresAt))
 	if err != nil {
 		writeServiceError(w, err)
 		return
@@ -146,7 +146,7 @@ func (h *Handler) handleUpdateShare(w http.ResponseWriter, r *http.Request) {
 	if !decodeJSON(w, r, &req) {
 		return
 	}
-	if err := h.shareSvc.Update(r.Context(), pathParam(r, "id"), userFrom(r.Context()).ID, req.Description, shareExpiry(req.ExpiresAt)); err != nil {
+	if err := h.Services.Shares.Update(r.Context(), pathParam(r, "id"), userFrom(r.Context()).ID, req.Description, shareExpiry(req.ExpiresAt)); err != nil {
 		writeServiceError(w, err)
 		return
 	}
@@ -163,7 +163,7 @@ func (h *Handler) handleUpdateShare(w http.ResponseWriter, r *http.Request) {
 // @Failure  401  {object}  errorResponse
 // @Router   /shares/{id} [delete]
 func (h *Handler) handleDeleteShare(w http.ResponseWriter, r *http.Request) {
-	if err := h.shareSvc.Delete(r.Context(), pathParam(r, "id"), userFrom(r.Context()).ID); err != nil {
+	if err := h.Services.Shares.Delete(r.Context(), pathParam(r, "id"), userFrom(r.Context()).ID); err != nil {
 		writeServiceError(w, err)
 		return
 	}

@@ -100,8 +100,8 @@ func toPlayQueueView(res core.PlayQueueResult) playQueueView {
 // @Router   /play-queue [get]
 func (h *Handler) handleGetPlayQueue(w http.ResponseWriter, r *http.Request) {
 	userID := userFrom(r.Context()).ID
-	h.playQueue.Touch(userID, r.URL.Query().Get("deviceId"))
-	res, err := h.playQueue.Get(r.Context(), userID)
+	h.Services.PlayQueue.Touch(userID, r.URL.Query().Get("deviceId"))
+	res, err := h.Services.PlayQueue.Get(r.Context(), userID)
 	if err != nil {
 		if errors.Is(err, persistence.ErrNotFound) {
 			writeResource(w, http.StatusOK, playQueueView{Entries: []songView{}})
@@ -148,7 +148,7 @@ func (h *Handler) handleStreamPlayQueue(w http.ResponseWriter, r *http.Request) 
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 
-	ch, unsubscribe := h.playQueue.Subscribe(user.ID, r.URL.Query().Get("deviceId"))
+	ch, unsubscribe := h.Services.PlayQueue.Subscribe(user.ID, r.URL.Query().Get("deviceId"))
 	defer unsubscribe()
 
 	var inviteCh <-chan []models.JamInvite
@@ -168,7 +168,7 @@ func (h *Handler) handleStreamPlayQueue(w http.ResponseWriter, r *http.Request) 
 
 	// Send the current snapshot immediately so a freshly-opened client is in
 	// sync without waiting on someone else's next change.
-	res, err := h.playQueue.Get(r.Context(), user.ID)
+	res, err := h.Services.PlayQueue.Get(r.Context(), user.ID)
 	if err != nil && !errors.Is(err, persistence.ErrNotFound) {
 		writeInternal(w, err)
 		return
@@ -282,7 +282,7 @@ func (h *Handler) handleSavePlayQueue(w http.ResponseWriter, r *http.Request) {
 			CoverArt: e.CoverArt, Duration: e.Duration, Remote: e.Remote,
 		})
 	}
-	if err := h.playQueue.SaveFromDevice(r.Context(), user.ID, req.Current, req.Position, req.Playing, req.Client, req.IDs, entries, req.Shuffle, req.Repeat); err != nil {
+	if err := h.Services.PlayQueue.SaveFromDevice(r.Context(), user.ID, req.Current, req.Position, req.Playing, req.Client, req.IDs, entries, req.Shuffle, req.Repeat); err != nil {
 		if errors.Is(err, core.ErrNotActiveDevice) {
 			writeError(w, http.StatusConflict, "not_active_device", err.Error())
 			return
@@ -351,7 +351,7 @@ func (h *Handler) handleSetPlaybackTarget(w http.ResponseWriter, r *http.Request
 	}
 	user := userFrom(r.Context())
 	h.Logger.Info("play-queue target set", "user", user.Username, "deviceId", req.DeviceID)
-	if err := h.playQueue.SetTarget(r.Context(), user.ID, req.DeviceID); err != nil {
+	if err := h.Services.PlayQueue.SetTarget(r.Context(), user.ID, req.DeviceID); err != nil {
 		writeServiceError(w, err)
 		return
 	}
@@ -420,7 +420,7 @@ func (h *Handler) handleSendPlayQueueCommand(w http.ResponseWriter, r *http.Requ
 		Type: req.Type, PositionMs: req.PositionMs, TrackID: req.TrackID,
 		QueueIndex: req.QueueIndex, TrackIDs: req.TrackIDs, ToIndex: req.ToIndex, ForTarget: req.ForTarget, IssuedBy: req.IssuedBy,
 	}
-	if err := h.playQueue.SendCommand(r.Context(), user.ID, cmd); err != nil {
+	if err := h.Services.PlayQueue.SendCommand(r.Context(), user.ID, cmd); err != nil {
 		writeServiceError(w, err)
 		return
 	}

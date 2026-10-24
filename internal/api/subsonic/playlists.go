@@ -40,7 +40,7 @@ func playlistCoverArt(p models.Playlist) string {
 }
 
 func (h *Handler) handleGetPlaylists(w http.ResponseWriter, r *http.Request) {
-	lists, err := h.playlistSvc.List(r.Context(), userFrom(r.Context()).ID)
+	lists, err := h.Services.Playlists.List(r.Context(), userFrom(r.Context()).ID)
 	if err != nil {
 		h.failInternal(w, r, err)
 		return
@@ -59,7 +59,7 @@ func (h *Handler) handleGetPlaylist(w http.ResponseWriter, r *http.Request) {
 	if h.OnDemand != nil && h.remotePlaylist(w, r, id) {
 		return
 	}
-	d, err := h.playlistSvc.Get(r.Context(), userFrom(r.Context()), id)
+	d, err := h.Services.Playlists.Get(r.Context(), userFrom(r.Context()), id)
 	if err != nil {
 		h.writeServiceError(w, r, err, "Playlist not found")
 		return
@@ -73,7 +73,7 @@ func (h *Handler) handleCreatePlaylist(w http.ResponseWriter, r *http.Request) {
 
 	// With a playlistId this replaces an existing playlist's tracks.
 	if playlistID := param(r, "playlistId"); playlistID != "" {
-		d, err := h.playlistSvc.Replace(r.Context(), user, playlistID, songIDs)
+		d, err := h.Services.Playlists.Replace(r.Context(), user, playlistID, songIDs)
 		if err != nil {
 			h.writeServiceError(w, r, err, "Playlist not found")
 			return
@@ -87,7 +87,7 @@ func (h *Handler) handleCreatePlaylist(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, ErrMissingParameter, "Required parameter name is missing")
 		return
 	}
-	d, err := h.playlistSvc.Create(r.Context(), user, name, songIDs)
+	d, err := h.Services.Playlists.Create(r.Context(), user, name, songIDs)
 	if err != nil {
 		h.failInternal(w, r, err)
 		return
@@ -122,7 +122,7 @@ func (h *Handler) handleUpdatePlaylist(w http.ResponseWriter, r *http.Request) {
 		meta.PublicRaw = &p
 	}
 
-	if err := h.playlistSvc.Update(r.Context(), userFrom(r.Context()), id, meta, r.Form["songIdToAdd"], removeIndexes); err != nil {
+	if err := h.Services.Playlists.Update(r.Context(), userFrom(r.Context()), id, meta, r.Form["songIdToAdd"], removeIndexes); err != nil {
 		h.writeServiceError(w, r, err, "Playlist not found")
 		return
 	}
@@ -130,7 +130,7 @@ func (h *Handler) handleUpdatePlaylist(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleDeletePlaylist(w http.ResponseWriter, r *http.Request) {
-	if err := h.playlistSvc.Delete(r.Context(), userFrom(r.Context()), param(r, "id")); err != nil {
+	if err := h.Services.Playlists.Delete(r.Context(), userFrom(r.Context()), param(r, "id")); err != nil {
 		h.writeServiceError(w, r, err, "Playlist not found")
 		return
 	}

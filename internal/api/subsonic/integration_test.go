@@ -67,7 +67,9 @@ func newTestEnv(t *testing.T) *testEnv {
 		t.Fatal(err)
 	}
 
+	nowPlaying := core.NewNowPlayingTracker(0)
 	h := NewHandler(Deps{
+		Services:         core.NewServices(store, core.ServiceOptions{Auth: auth, NowPlaying: nowPlaying, Logger: logger}),
 		Auth:             auth,
 		Catalog:          store.Catalog,
 		Genres:           store.Genres,
@@ -79,7 +81,7 @@ func newTestEnv(t *testing.T) *testEnv {
 		Users:            store.Users,
 		Cover:            stream.NewCoverService(store.Catalog, coversDir),
 		Streamer:         stream.NewStreamer(config.TranscodeConfig{FFmpegPath: "ffmpeg", CacheDir: filepath.Join(t.TempDir(), "tc")}, logger),
-		NowPlaying:       core.NewNowPlayingTracker(0),
+		NowPlaying:       nowPlaying,
 		Logger:           logger,
 		MusicFolderPaths: []string{lib},
 	})

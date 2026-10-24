@@ -31,7 +31,8 @@ func newAdminTracksEnv(t *testing.T) (*httptest.Server, *persistence.Store, stri
 	}
 	coversDir := t.TempDir()
 	h := NewHandler(Deps{
-		Auth: auth, Users: store.Users, Catalog: store.Catalog,
+		Services: core.NewServices(store, core.ServiceOptions{Auth: auth, Logger: testutil.NewLogger()}),
+		Auth:     auth, Users: store.Users, Catalog: store.Catalog,
 		CoversDir: coversDir, Logger: testutil.NewLogger(),
 	})
 	mux := chi.NewRouter()

@@ -192,7 +192,7 @@ func writeServiceError(w http.ResponseWriter, err error) {
 // @Failure      401  {object}  errorResponse
 // @Router       /artists [get]
 func (h *Handler) handleListArtists(w http.ResponseWriter, r *http.Request) {
-	artists, starred, err := h.library.Artists(r.Context(), userFrom(r.Context()).ID)
+	artists, starred, err := h.Services.Library.Artists(r.Context(), userFrom(r.Context()).ID)
 	if err != nil {
 		writeServiceError(w, err)
 		return
@@ -218,7 +218,7 @@ func (h *Handler) handleListArtists(w http.ResponseWriter, r *http.Request) {
 // @Failure      404  {object}  errorResponse
 // @Router       /artists/{id} [get]
 func (h *Handler) handleGetArtist(w http.ResponseWriter, r *http.Request) {
-	res, err := h.library.GetArtist(r.Context(), userFrom(r.Context()).ID, pathParam(r, "id"), r.URL.Query().Get("songs") == "true")
+	res, err := h.Services.Library.GetArtist(r.Context(), userFrom(r.Context()).ID, pathParam(r, "id"), r.URL.Query().Get("songs") == "true")
 	if err != nil {
 		writeServiceError(w, err)
 		return
@@ -239,7 +239,7 @@ func (h *Handler) handleGetArtist(w http.ResponseWriter, r *http.Request) {
 // @Failure      404  {object}  errorResponse
 // @Router       /albums/{id} [get]
 func (h *Handler) handleGetAlbum(w http.ResponseWriter, r *http.Request) {
-	res, err := h.library.GetAlbum(r.Context(), userFrom(r.Context()).ID, pathParam(r, "id"))
+	res, err := h.Services.Library.GetAlbum(r.Context(), userFrom(r.Context()).ID, pathParam(r, "id"))
 	if err != nil {
 		writeServiceError(w, err)
 		return
@@ -260,7 +260,7 @@ func (h *Handler) handleGetAlbum(w http.ResponseWriter, r *http.Request) {
 // @Failure      404  {object}  errorResponse
 // @Router       /songs/{id} [get]
 func (h *Handler) handleGetSong(w http.ResponseWriter, r *http.Request) {
-	te, err := h.library.Song(r.Context(), userFrom(r.Context()).ID, pathParam(r, "id"))
+	te, err := h.Services.Library.Song(r.Context(), userFrom(r.Context()).ID, pathParam(r, "id"))
 	if err != nil {
 		writeServiceError(w, err)
 		return
@@ -293,7 +293,7 @@ func (h *Handler) handleGetSongLocalStatus(w http.ResponseWriter, r *http.Reques
 	if h.OnDemand != nil {
 		if localID, ok := h.OnDemand.LocalTrackIDForRemote(r.Context(), pathParam(r, "id")); ok {
 			// An evicted track maps to its row but has no file yet: not seekable.
-			if te, err := h.library.Song(r.Context(), userFrom(r.Context()).ID, localID); err == nil && !te.Track.Remote {
+			if te, err := h.Services.Library.Song(r.Context(), userFrom(r.Context()).ID, localID); err == nil && !te.Track.Remote {
 				view := toSongViewAnnotated(te.Track, te.Annotation)
 				writeResource(w, http.StatusOK, songLocalStatusView{Local: true, Song: &view})
 				return
@@ -354,7 +354,7 @@ func (h *Handler) handleGetSongLyrics(w http.ResponseWriter, r *http.Request) {
 // @Failure      401  {object}  errorResponse
 // @Router       /albums [get]
 func (h *Handler) handleListAlbums(w http.ResponseWriter, r *http.Request) {
-	albums, err := h.library.AlbumList(r.Context(), persistence.AlbumListOptions{
+	albums, err := h.Services.Library.AlbumList(r.Context(), persistence.AlbumListOptions{
 		Type:     r.URL.Query().Get("type"),
 		Size:     intQuery(r, "size", 10),
 		Offset:   intQuery(r, "offset", 0),
@@ -515,7 +515,7 @@ func (h *Handler) handleSearch(w http.ResponseWriter, r *http.Request) {
 	searchType := r.URL.Query().Get("type")
 	artistCount, albumCount, songCount, playlistCount := searchCounts(r)
 	spotifyHits := h.searchSpotify(r, q, searchType)
-	res, err := h.library.Search(r.Context(), userFrom(r.Context()).ID, q, artistCount, albumCount, songCount, playlistCount)
+	res, err := h.Services.Library.Search(r.Context(), userFrom(r.Context()).ID, q, artistCount, albumCount, songCount, playlistCount)
 	if err != nil {
 		writeServiceError(w, err)
 		return
@@ -595,7 +595,7 @@ type favoritesView struct {
 // @Failure  401  {object}  errorResponse
 // @Router   /me/favorites [get]
 func (h *Handler) handleFavorites(w http.ResponseWriter, r *http.Request) {
-	st := h.library.Starred(r.Context(), userFrom(r.Context()).ID)
+	st := h.Services.Library.Starred(r.Context(), userFrom(r.Context()).ID)
 	out := favoritesView{
 		Artists: make([]artistView, 0, len(st.Artists)),
 		Albums:  make([]albumView, 0, len(st.Albums)),
@@ -633,7 +633,7 @@ func (h *Handler) handleSongsByGenre(w http.ResponseWriter, r *http.Request) {
 		writeValidation(w, []fieldError{{Field: "genre", Message: "genre is required"}})
 		return
 	}
-	tracks, err := h.library.SongsByGenre(r.Context(), userFrom(r.Context()).ID, genre, intQuery(r, "count", 200), intQuery(r, "offset", 0))
+	tracks, err := h.Services.Library.SongsByGenre(r.Context(), userFrom(r.Context()).ID, genre, intQuery(r, "count", 200), intQuery(r, "offset", 0))
 	if err != nil {
 		writeServiceError(w, err)
 		return
