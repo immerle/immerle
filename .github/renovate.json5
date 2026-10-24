@@ -1,97 +1,106 @@
 {
   $schema: 'https://docs.renovatebot.com/renovate-schema.json',
-
-  // Strict, security-first baseline. `config:best-practices` pulls in
-  // config:recommended plus digest pinning for Docker and GitHub Actions,
-  // dependency dashboard, and the recommended PR hygiene.
   extends: [
     'config:best-practices',
-    ':semanticCommits', // match the repo's conventional-commit style
-    'security:openssf-scorecard', // surface supply-chain risk on PRs
-    'helpers:pinGitHubActionDigests', // pin actions to immutable SHAs
-    'docker:pinDigests', // pin base images to digests
+    ':semanticCommits',
+    'security:openssf-scorecard',
+    'helpers:pinGitHubActionDigests',
+    'docker:pinDigests',
   ],
-
   timezone: 'Europe/Paris',
-  schedule: ['before 7am on monday'], // batch routine churn into one window
+  schedule: [
+    'before 7am on monday',
+  ],
   semanticCommitType: 'chore',
   semanticCommitScope: 'deps',
   commitMessageLowerCase: 'never',
-  labels: ['dependencies'],
+  labels: [
+    'dependencies',
+  ],
   rebaseWhen: 'behind-base-branch',
-
-  // Throttle noise; the dashboard absorbs the backlog.
   prConcurrentLimit: 8,
   prHourlyLimit: 3,
-
-  // Strict supply-chain posture: never adopt a release on day zero, and let
-  // Renovate's own checks gate merges.
   minimumReleaseAge: '3 days',
   internalChecksFilter: 'strict',
-
-  // Keep go.mod tidy and npm trees deduped after updates.
-  postUpdateOptions: ['gomodTidy', 'gomodUpdateImportPaths', 'npmDedupe'],
-
-  // OSV-backed alerts; fixes bypass the schedule and ship immediately.
+  postUpdateOptions: [
+    'gomodTidy',
+    'gomodUpdateImportPaths',
+    'npmDedupe',
+  ],
   osvVulnerabilityAlerts: true,
   vulnerabilityAlerts: {
-    labels: ['dependencies', 'security'],
-    schedule: ['at any time'],
+    labels: [
+      'dependencies',
+      'security',
+    ],
+    schedule: [
+      'at any time',
+    ],
     minimumReleaseAge: null,
     prCreation: 'immediate',
   },
-
-  // Refresh lockfiles daily: it is the only way Renovate picks up fixes for
-  // transitive deps, which vulnerability alerts can't open PRs for.
   lockFileMaintenance: {
     enabled: true,
-    schedule: ['before 7am every day'],
+    schedule: [
+      'before 7am',
+    ],
   },
-
   automerge: false,
-
-  // Our own image (private on GHCR, tracked as :latest): nothing to bump.
-  ignoreDeps: ['ghcr.io/immerle/immerle'],
-
+  ignoreDeps: [
+    'ghcr.io/immerle/immerle',
+  ],
   packageRules: [
-    // Majors stay one PR per dependency so each one gets a real review.
     {
-      matchUpdateTypes: ['major'],
-      labels: ['dependencies', 'major'],
+      matchUpdateTypes: [
+        'major',
+      ],
+      labels: [
+        'dependencies',
+        'major',
+      ],
       minimumReleaseAge: '7 days',
     },
-
-    // Bulk: every non-breaking update in a single PR. minimumReleaseAge
-    // (3 days, global) + internalChecksFilter strict keep fresh releases out.
     {
-      matchUpdateTypes: ['patch', 'pin', 'digest'],
+      matchUpdateTypes: [
+        'patch',
+        'pin',
+        'digest',
+      ],
       groupName: 'all non-major dependencies',
       groupSlug: 'all-non-major',
     },
     {
-      matchUpdateTypes: ['minor'],
+      matchUpdateTypes: [
+        'minor',
+      ],
       matchCurrentVersion: '!/^v?0\\./',
       groupName: 'all non-major dependencies',
       groupSlug: 'all-non-major',
     },
-    // 0.x minor bumps are breaking under semver: keep them out of the bulk.
     {
-      matchUpdateTypes: ['minor'],
+      matchUpdateTypes: [
+        'minor',
+      ],
       matchCurrentVersion: '/^v?0\\./',
-      labels: ['dependencies', 'breaking'],
+      labels: [
+        'dependencies',
+        'breaking',
+      ],
     },
-
-    // Coupled toolchains: majors land together so a partial bump can't desync.
     {
       groupName: 'docusaurus',
-      matchUpdateTypes: ['major'],
-      matchPackageNames: ['@docusaurus/**', 'redocusaurus'],
+      matchUpdateTypes: [
+        'major',
+      ],
+      matchPackageNames: [
+        '@docusaurus/**',
+        'redocusaurus',
+      ],
     },
-    // The Expo SDK dictates these versions: bumping one alone breaks the app
-    // (see #297). Renovate only proposes the expo major; the rest follows
-    // through `npx expo install --fix`.
     {
-      matchFileNames: ['ui/package.json'],
+      matchFileNames: [
+        'ui/package.json',
+      ],
       matchPackageNames: [
         'expo-**',
         '@expo/**',
@@ -100,7 +109,7 @@
         '@types/react',
         'react-native',
         'react-native-**',
-        '!react-native-draggable-flatlist', // not part of the SDK
+        '!react-native-draggable-flatlist',
         '@react-native/**',
         '@react-native-community/**',
         '@react-native-async-storage/**',
@@ -112,23 +121,41 @@
       enabled: false,
     },
     {
-      matchFileNames: ['ui/package.json'],
-      matchPackageNames: ['expo'],
-      matchUpdateTypes: ['minor', 'patch', 'pin'],
+      matchFileNames: [
+        'ui/package.json',
+      ],
+      matchPackageNames: [
+        'expo',
+      ],
+      matchUpdateTypes: [
+        'minor',
+        'patch',
+        'pin',
+      ],
       enabled: false,
     },
     {
       groupName: 'expo sdk',
-      matchFileNames: ['ui/package.json'],
-      matchPackageNames: ['expo'],
-      matchUpdateTypes: ['major'],
+      matchFileNames: [
+        'ui/package.json',
+      ],
+      matchPackageNames: [
+        'expo',
+      ],
+      matchUpdateTypes: [
+        'major',
+      ],
     },
-
-    // Go itself: track the toolchain but never auto-bump the language major.
     {
-      matchManagers: ['gomod'],
-      matchDepTypes: ['golang'],
-      matchUpdateTypes: ['major'],
+      matchManagers: [
+        'gomod',
+      ],
+      matchDepTypes: [
+        'golang',
+      ],
+      matchUpdateTypes: [
+        'major',
+      ],
       enabled: false,
     },
   ],
