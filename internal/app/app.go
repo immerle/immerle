@@ -499,7 +499,22 @@ func New(cfg config.Config) (*App, error) {
 	// live from the runtime settings; register any future log table here.
 	logPruner := core.NewLogPruner(settingsSvc.LogRetention, 24*time.Hour, logger, store.ProviderLogs)
 
+	// One set of application services backs both the Subsonic and native APIs.
+	services := core.NewServices(store, core.ServiceOptions{
+		Auth:          authSvc,
+		OnDemand:      onDemand,
+		Activity:      activitySvc,
+		NowPlaying:    nowPlaying,
+		ScrobbleSync:  scrobbleSync,
+		PlaylistSync:  playlistSyncer,
+		Sonic:         sonicSvc,
+		Discover:      discoverClient,
+		UserForgetter: discoverScrobbler,
+		Logger:        logger,
+	})
+
 	subHandler := subsonic.NewHandler(subsonic.Deps{
+		Services:         services,
 		Auth:             authSvc,
 		Catalog:          store.Catalog,
 		Genres:           store.Genres,
@@ -529,6 +544,7 @@ func New(cfg config.Config) (*App, error) {
 	})
 
 	gosHandler := immerle.NewHandler(immerle.Deps{
+		Services:         services,
 		Auth:             authSvc,
 		Users:            store.Users,
 		Activity:         activitySvc,

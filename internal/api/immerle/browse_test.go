@@ -56,7 +56,9 @@ func newBrowseEnv(t *testing.T) (*httptest.Server, string, *persistence.Store) {
 	onDemand := core.NewCatalogService(core.CatalogServiceConfig{
 		Catalog: store.Catalog, Downloads: store.Downloads, Registry: core.NewProviderRegistry(), Logger: testutil.NewLogger(),
 	})
+	nowPlaying := core.NewNowPlayingTracker(0)
 	h := NewHandler(Deps{
+		Services:    core.NewServices(store, core.ServiceOptions{Auth: auth, OnDemand: onDemand, NowPlaying: nowPlaying, Logger: testutil.NewLogger()}),
 		Auth:        auth,
 		Users:       store.Users,
 		Catalog:     store.Catalog,
@@ -65,7 +67,7 @@ func newBrowseEnv(t *testing.T) (*httptest.Server, string, *persistence.Store) {
 		Playlists:   store.Playlists,
 		Scrobbles:   store.Scrobbles,
 		PlayQueues:  store.PlayQueues,
-		NowPlaying:  core.NewNowPlayingTracker(0),
+		NowPlaying:  nowPlaying,
 		OnDemand:    onDemand,
 		Streamer:    stream.NewStreamer(config.TranscodeConfig{FFmpegPath: "ffmpeg", CacheDir: filepath.Join(t.TempDir(), "tc")}, testutil.NewLogger()),
 		Cover:       stream.NewCoverService(store.Catalog, coversDir),

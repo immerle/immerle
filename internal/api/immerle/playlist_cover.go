@@ -93,7 +93,7 @@ func (h *Handler) handlePlaylistCoverGenerate(w http.ResponseWriter, r *http.Req
 
 // coverTarget loads the playlist and enforces owner-only cover edits.
 func (h *Handler) coverTarget(w http.ResponseWriter, r *http.Request) (models.Playlist, bool) {
-	p, err := h.playlistSvc.CoverTarget(r.Context(), userFrom(r.Context()), pathParam(r, "id"))
+	p, err := h.Services.Playlists.CoverTarget(r.Context(), userFrom(r.Context()), pathParam(r, "id"))
 	if err != nil {
 		writeServiceError(w, err)
 		return models.Playlist{}, false
@@ -113,7 +113,7 @@ func (h *Handler) storePlaylistCover(w http.ResponseWriter, r *http.Request, p m
 		writeInternal(w, err)
 		return
 	}
-	if err := h.playlistSvc.SaveCover(r.Context(), p.ID, coverID); err != nil {
+	if err := h.Services.Playlists.SaveCover(r.Context(), p.ID, coverID); err != nil {
 		_ = os.Remove(coverPath(h.CoversDir, coverID))
 		writeInternal(w, err)
 		return
@@ -121,7 +121,7 @@ func (h *Handler) storePlaylistCover(w http.ResponseWriter, r *http.Request, p m
 	if p.CoverArt != "" {
 		_ = os.Remove(coverPath(h.CoversDir, p.CoverArt))
 	}
-	d, err := h.playlistSvc.Get(r.Context(), userFrom(r.Context()), p.ID)
+	d, err := h.Services.Playlists.Get(r.Context(), userFrom(r.Context()), p.ID)
 	if err != nil {
 		writeServiceError(w, err)
 		return

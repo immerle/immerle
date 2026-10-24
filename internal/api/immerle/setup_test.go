@@ -21,10 +21,11 @@ func newSetupEnv(t *testing.T, requireToken bool) (*httptest.Server, *core.Setup
 		t.Fatal(err)
 	}
 	h := NewHandler(Deps{
-		Auth:   auth,
-		Users:  store.Users,
-		Setup:  setupSvc,
-		Logger: testutil.NewLogger(),
+		Services: core.NewServices(store, core.ServiceOptions{Auth: auth, Logger: testutil.NewLogger()}),
+		Auth:     auth,
+		Users:    store.Users,
+		Setup:    setupSvc,
+		Logger:   testutil.NewLogger(),
 	})
 	mux := chi.NewRouter()
 	h.Register(mux)

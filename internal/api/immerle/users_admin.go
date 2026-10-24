@@ -44,7 +44,7 @@ func toAdminUserView(u models.User) adminUserView {
 // @Failure  403  {object}  errorResponse
 // @Router   /admin/users [get]
 func (h *Handler) handleListUsers(w http.ResponseWriter, r *http.Request) {
-	users, err := h.userSvc.ListUsers(r.Context(), userFrom(r.Context()))
+	users, err := h.Services.Users.ListUsers(r.Context(), userFrom(r.Context()))
 	if err != nil {
 		writeServiceError(w, err)
 		return
@@ -73,7 +73,7 @@ type adminUserListView struct {
 // @Failure  404  {object}  errorResponse
 // @Router   /admin/users/{username} [get]
 func (h *Handler) handleGetUser(w http.ResponseWriter, r *http.Request) {
-	u, err := h.userSvc.GetUser(r.Context(), userFrom(r.Context()), pathParam(r, "username"))
+	u, err := h.Services.Users.GetUser(r.Context(), userFrom(r.Context()), pathParam(r, "username"))
 	if err != nil {
 		writeServiceError(w, err)
 		return
@@ -113,11 +113,11 @@ func (h *Handler) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	caller := userFrom(r.Context())
-	if err := h.userSvc.CreateUser(r.Context(), caller, req.Username, req.Password, req.Email, req.DisplayName, req.Admin); err != nil {
+	if err := h.Services.Users.CreateUser(r.Context(), caller, req.Username, req.Password, req.Email, req.DisplayName, req.Admin); err != nil {
 		writeServiceError(w, err)
 		return
 	}
-	u, err := h.userSvc.GetUser(r.Context(), caller, req.Username)
+	u, err := h.Services.Users.GetUser(r.Context(), caller, req.Username)
 	if err != nil {
 		writeServiceError(w, err)
 		return
@@ -163,7 +163,7 @@ func (h *Handler) handleUpdateUser(w http.ResponseWriter, r *http.Request) {
 		s := strconv.FormatBool(*req.ScrobblingEnabled)
 		upd.ScrobbleRaw = &s
 	}
-	if err := h.userSvc.UpdateUser(r.Context(), userFrom(r.Context()), pathParam(r, "username"), upd); err != nil {
+	if err := h.Services.Users.UpdateUser(r.Context(), userFrom(r.Context()), pathParam(r, "username"), upd); err != nil {
 		writeServiceError(w, err)
 		return
 	}
@@ -184,7 +184,7 @@ func (h *Handler) handleUpdateUser(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handleDeleteUser(w http.ResponseWriter, r *http.Request) {
 	caller := userFrom(r.Context())
 	username := pathParam(r, "username")
-	if err := h.userSvc.DeleteUser(r.Context(), caller, username); err != nil {
+	if err := h.Services.Users.DeleteUser(r.Context(), caller, username); err != nil {
 		writeServiceError(w, err)
 		return
 	}
@@ -218,7 +218,7 @@ func (h *Handler) handleChangePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	caller := userFrom(r.Context())
-	if err := h.userSvc.ChangePassword(r.Context(), caller, caller.Username, req.Password); err != nil {
+	if err := h.Services.Users.ChangePassword(r.Context(), caller, caller.Username, req.Password); err != nil {
 		writeServiceError(w, err)
 		return
 	}

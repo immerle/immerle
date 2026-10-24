@@ -80,7 +80,7 @@ func (h *Handler) handleSonicRadio(w http.ResponseWriter, r *http.Request) {
 		exclude = strings.Split(raw, ",")
 	}
 	count := min(max(intQuery(r, "count", 50), 1), 200)
-	tracks, _, err := h.library.SonicRadio(r.Context(), userFrom(r.Context()).ID, seeds, exclude, count)
+	tracks, _, err := h.Services.Library.SonicRadio(r.Context(), userFrom(r.Context()).ID, seeds, exclude, count)
 	if err != nil {
 		writeInternal(w, err)
 		return

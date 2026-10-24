@@ -25,6 +25,8 @@ import (
 // Deps holds the dependencies of the Subsonic handler. Optional fields (OnDemand)
 // may be nil when the feature is disabled.
 type Deps struct {
+	// Services are the application services shared with the native API handler.
+	Services     *core.Services
 	Auth         *core.AuthService
 	Catalog      *persistence.CatalogRepo
 	Genres       *persistence.GenreRepo
@@ -61,29 +63,14 @@ type Deps struct {
 // Handler implements the Subsonic REST API.
 type Handler struct {
 	Deps
-	// library holds the shared catalog browsing/search business logic, playback
-	// the shared favorite/rating/scrobble logic. The Subsonic handlers are a
-	// presentation layer over them.
-	library      *core.LibraryService
-	playback     *core.PlaybackService
-	playlistSvc  *core.PlaylistService
-	userSvc      *core.UserService
-	shareSvc     *core.ShareService
-	playQueueSvc *core.PlayQueueService
-	media        *media.Server
+	media *media.Server
 }
 
 // NewHandler builds a Subsonic handler.
 func NewHandler(d Deps) *Handler {
 	return &Handler{
-		Deps:         d,
-		library:      core.NewLibraryService(d.Catalog, d.Annotations, d.Playlists, d.OnDemand).WithSonic(d.Sonic).WithDiscover(d.Discover),
-		playback:     core.NewPlaybackService(d.Catalog, d.Annotations, d.Scrobbles, d.OnDemand, d.Activity, d.NowPlaying, d.ScrobbleSync),
-		playlistSvc:  core.NewPlaylistService(d.Playlists, d.Annotations, d.Activity, d.PlaylistSync, d.OnDemand),
-		userSvc:      core.NewUserService(d.Users, d.Auth).WithForgetter(d.UserForgetter),
-		shareSvc:     core.NewShareService(d.Shares, d.Catalog, d.Playlists),
-		playQueueSvc: core.NewPlayQueueService(d.PlayQueues, d.Catalog, d.Annotations, d.Logger),
-		media:        media.NewServer(d.Catalog, d.Streamer, d.Cover, d.OnDemand, d.NowPlaying, d.Logger, ""),
+		Deps:  d,
+		media: media.NewServer(d.Catalog, d.Streamer, d.Cover, d.OnDemand, d.NowPlaying, d.Logger, ""),
 	}
 }
 

@@ -25,7 +25,7 @@ func TestImportEndpointsFlow(t *testing.T) {
 	cfg := func() map[string]map[string]string { return map[string]map[string]string{} }
 	svc := importer.NewService(store.Imports, store.Playlists, nil, nil, cfg, testutil.NewLogger())
 
-	h := NewHandler(Deps{Auth: auth, Users: store.Users, Imports: svc, Logger: testutil.NewLogger()})
+	h := NewHandler(Deps{Services: core.NewServices(store, core.ServiceOptions{Auth: auth, Logger: testutil.NewLogger()}), Auth: auth, Users: store.Users, Imports: svc, Logger: testutil.NewLogger()})
 	mux := chi.NewRouter()
 	h.Register(mux)
 	srv := httptest.NewServer(mux)

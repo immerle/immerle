@@ -236,7 +236,7 @@ func (h *Handler) activityItem(ctx context.Context, e models.ActivityEvent) *act
 // @Failure      500  {object}  errorResponse
 // @Router       /users [get]
 func (h *Handler) handleListPublicUsers(w http.ResponseWriter, r *http.Request) {
-	users, err := h.userSvc.ListPublicUsers(r.Context())
+	users, err := h.Services.Users.ListPublicUsers(r.Context())
 	if err != nil {
 		writeInternal(w, err)
 		return
@@ -343,7 +343,7 @@ func (h *Handler) handleProfile(w http.ResponseWriter, r *http.Request) {
 	// The top of the target's Hall of Fame, omitted entirely when it's empty
 	// (rather than shipping an empty section the profile page would hide anyway).
 	if h.HallOfFame != nil && h.hallOfFameEnabled() {
-		if d, err := h.hallOfFameSvc.Get(r.Context(), target.ID); err == nil && len(d.Entries) > 0 {
+		if d, err := h.Services.HallOfFame.Get(r.Context(), target.ID); err == nil && len(d.Entries) > 0 {
 			top := d.Entries
 			if len(top) > 3 {
 				top = top[:3]

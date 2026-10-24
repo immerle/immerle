@@ -106,7 +106,7 @@ func (h *Handler) handleGetHallOfFame(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "disabled", "hall of fame is disabled")
 		return
 	}
-	d, err := h.hallOfFameSvc.Get(r.Context(), userFrom(r.Context()).ID)
+	d, err := h.Services.HallOfFame.Get(r.Context(), userFrom(r.Context()).ID)
 	if err != nil {
 		writeServiceError(w, err)
 		return
@@ -142,7 +142,7 @@ func (h *Handler) handleUserHallOfFame(w http.ResponseWriter, r *http.Request) {
 		writeErrorParams(w, http.StatusNotFound, "not_found", "user not found", map[string]any{"username": pathParam(r, "username")})
 		return
 	}
-	d, err := h.hallOfFameSvc.Get(r.Context(), target.ID)
+	d, err := h.Services.HallOfFame.Get(r.Context(), target.ID)
 	if err != nil {
 		writeServiceError(w, err)
 		return
@@ -178,11 +178,11 @@ func (h *Handler) handleSetHallOfFameOrder(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	userID := userFrom(r.Context()).ID
-	if err := h.hallOfFameSvc.SetOrder(r.Context(), userID, req.IDs); err != nil {
+	if err := h.Services.HallOfFame.SetOrder(r.Context(), userID, req.IDs); err != nil {
 		writeServiceError(w, err)
 		return
 	}
-	d, err := h.hallOfFameSvc.Get(r.Context(), userID)
+	d, err := h.Services.HallOfFame.Get(r.Context(), userID)
 	if err != nil {
 		writeServiceError(w, err)
 		return
@@ -221,7 +221,7 @@ func (h *Handler) handleAddHallOfFameTrack(w http.ResponseWriter, r *http.Reques
 		writeValidation(w, []fieldError{{Field: "id", Message: "id is required"}})
 		return
 	}
-	if err := h.hallOfFameSvc.Add(r.Context(), userFrom(r.Context()).ID, req.ID); err != nil {
+	if err := h.Services.HallOfFame.Add(r.Context(), userFrom(r.Context()).ID, req.ID); err != nil {
 		writeServiceError(w, err)
 		return
 	}
@@ -256,7 +256,7 @@ func (h *Handler) handleSetHallOfFameNote(w http.ResponseWriter, r *http.Request
 	if !decodeJSON(w, r, &req) {
 		return
 	}
-	if err := h.hallOfFameSvc.SetNote(r.Context(), userFrom(r.Context()).ID, pathParam(r, "trackId"), req.Comment); err != nil {
+	if err := h.Services.HallOfFame.SetNote(r.Context(), userFrom(r.Context()).ID, pathParam(r, "trackId"), req.Comment); err != nil {
 		writeServiceError(w, err)
 		return
 	}

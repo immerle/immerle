@@ -32,6 +32,8 @@ const ProtocolVersion = "1.0.0"
 
 // Deps holds the immerle handler dependencies.
 type Deps struct {
+	// Services are the application services shared with the Subsonic handler.
+	Services     *core.Services
 	Auth         *core.AuthService
 	Users        *persistence.UserRepo
 	Activity     *core.ActivityService
@@ -155,30 +157,14 @@ type ConcertsController interface {
 // Handler implements the immerle native API.
 type Handler struct {
 	Deps
-	// library and playback back catalog browse and favorite/rating/scrobble
-	// mutations, sharing the same application services as the Subsonic handler.
-	library       *core.LibraryService
-	playback      *core.PlaybackService
-	playQueue     *core.PlayQueueService
-	playlistSvc   *core.PlaylistService
-	hallOfFameSvc *core.HallOfFameService
-	userSvc       *core.UserService
-	shareSvc      *core.ShareService
-	media         *media.Server
+	media *media.Server
 }
 
 // NewHandler builds a immerle Handler.
 func NewHandler(d Deps) *Handler {
 	return &Handler{
-		Deps:          d,
-		library:       core.NewLibraryService(d.Catalog, d.Annotations, d.Playlists, d.OnDemand).WithSonic(d.Sonic),
-		playback:      core.NewPlaybackService(d.Catalog, d.Annotations, d.Scrobbles, d.OnDemand, d.Activity, d.NowPlaying, d.ScrobbleSync),
-		playQueue:     core.NewPlayQueueService(d.PlayQueues, d.Catalog, d.Annotations, d.Logger),
-		playlistSvc:   core.NewPlaylistService(d.Playlists, d.Annotations, d.Activity, d.PlaylistSync, d.OnDemand),
-		hallOfFameSvc: core.NewHallOfFameService(d.HallOfFame, d.OnDemand),
-		userSvc:       core.NewUserService(d.Users, d.Auth).WithForgetter(d.UserForgetter),
-		shareSvc:      core.NewShareService(d.Shares, d.Catalog, d.Playlists),
-		media:         media.NewServer(d.Catalog, d.Streamer, d.Cover, d.OnDemand, d.NowPlaying, d.Logger, d.SigningKey),
+		Deps:  d,
+		media: media.NewServer(d.Catalog, d.Streamer, d.Cover, d.OnDemand, d.NowPlaying, d.Logger, d.SigningKey),
 	}
 }
 
