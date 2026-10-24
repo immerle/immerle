@@ -5695,6 +5695,70 @@ paths:
       summary: Get album
       tags:
       - catalog
+  /albums/{id}/rating:
+    delete:
+      parameters:
+      - description: Item id (song, album or artist)
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Clear an item's rating
+      tags:
+      - ratings
+    put:
+      description: Sets the caller's rating (0–5) on the item. The item type is detected
+        from the id.
+      parameters:
+      - description: Item id (song, album or artist)
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/immerle.ratingRequest'
+                description: Rating
+                summary: body
+        description: Rating
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Rate an item
+      tags:
+      - ratings
   /albums/{id}/star:
     delete:
       parameters:
@@ -5802,6 +5866,70 @@ paths:
       summary: Get artist
       tags:
       - catalog
+  /artists/{id}/rating:
+    delete:
+      parameters:
+      - description: Item id (song, album or artist)
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Clear an item's rating
+      tags:
+      - ratings
+    put:
+      description: Sets the caller's rating (0–5) on the item. The item type is detected
+        from the id.
+      parameters:
+      - description: Item id (song, album or artist)
+        in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/immerle.ratingRequest'
+                description: Rating
+                summary: body
+        description: Rating
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/immerle.errorResponse'
+          description: Unauthorized
+      security:
+      - BearerAuth: []
+      summary: Rate an item
+      tags:
+      - ratings
   /artists/{id}/star:
     delete:
       parameters:
