@@ -22,9 +22,6 @@ func (h *Handler) offlineStatus() featureStatusView {
 // @Success      200  {object}  featureStatusView
 // @Router       /admin/offline [get]
 func (h *Handler) handleOfflineAdmin(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
-		return
-	}
 	writeResource(w, http.StatusOK, h.offlineStatus())
 }
 
@@ -40,9 +37,6 @@ func (h *Handler) handleOfflineAdmin(w http.ResponseWriter, r *http.Request) {
 // @Failure      400  {object}  errorResponse
 // @Router       /admin/offline [put]
 func (h *Handler) handleOfflineUpdate(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
-		return
-	}
 	if h.Settings == nil {
 		writeError(w, http.StatusServiceUnavailable, "unavailable", "settings not available")
 		return

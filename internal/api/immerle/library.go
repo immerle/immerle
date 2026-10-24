@@ -52,9 +52,6 @@ func (h *Handler) scanStatus(r *http.Request) (scanStatusView, error) {
 // @Failure      403  {object}  errorResponse
 // @Router       /admin/library/scan [get]
 func (h *Handler) handleScanStatus(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
-		return
-	}
 	st, err := h.scanStatus(r)
 	if err != nil {
 		writeInternal(w, err)
@@ -76,9 +73,6 @@ func (h *Handler) handleScanStatus(w http.ResponseWriter, r *http.Request) {
 // @Failure      503  {object}  errorResponse  "no scanner or no library path"
 // @Router       /admin/library/scan [post]
 func (h *Handler) handleStartScan(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
-		return
-	}
 	if h.Scanner == nil || len(h.LibraryPaths) == 0 {
 		writeError(w, http.StatusServiceUnavailable, "unavailable", "library scanning is not configured")
 		return

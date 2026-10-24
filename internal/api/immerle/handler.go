@@ -241,27 +241,13 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Get("/users/{username}", h.handleProfile)
 			r.Get("/users/{username}/hall-of-fame", h.handleUserHallOfFame)
 
-			// Admin: user management.
-			r.Get("/admin/users", h.handleListUsers)
-			r.Post("/admin/users", h.handleCreateUser)
-			r.Get("/admin/users/{username}", h.handleGetUser)
-			r.Patch("/admin/users/{username}", h.handleUpdateUser)
-			r.Delete("/admin/users/{username}", h.handleDeleteUser)
-
 			r.Get("/activity", h.handleActivity)
 			r.Get("/library/stats", h.handleLibraryStats)
-			r.Get("/admin/library/scan", h.handleScanStatus)
-			r.Post("/admin/library/scan", h.handleStartScan)
 
 			// Internet radio stations (list + like for everyone; CRUD is admin).
 			r.Get("/radio", h.handleRadioList)
 			r.Put("/radio/stations/{id}/like", h.handleRadioLike)
 			r.Delete("/radio/stations/{id}/like", h.handleRadioUnlike)
-			r.Get("/admin/radio", h.handleRadioAdmin)
-			r.Put("/admin/radio", h.handleRadioToggle)
-			r.Post("/admin/radio/stations", h.handleRadioCreate)
-			r.Put("/admin/radio/stations/{id}", h.handleRadioUpdate)
-			r.Delete("/admin/radio/stations/{id}", h.handleRadioDelete)
 
 			// Podcasts: browse + download for everyone; channel CRUD/refresh is admin.
 			r.Get("/podcasts", h.handlePodcastList)
@@ -270,13 +256,6 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Get("/podcasts/episodes/{id}/stream", h.handlePodcastStream)
 			r.Post("/podcasts/episodes/{id}/download", h.handlePodcastDownload)
 			r.Get("/podcasts/{id}", h.handlePodcastGet)
-			r.Post("/admin/podcasts", h.handlePodcastCreate)
-			r.Post("/admin/podcasts/refresh", h.handlePodcastRefresh)
-			r.Get("/admin/podcasts/search", h.handlePodcastSearch)
-			r.Get("/admin/podcasts/providers", h.handlePodcastProviders)
-			r.Put("/admin/podcasts/providers/{name}", h.handlePodcastProviderUpdate)
-			r.Delete("/admin/podcasts/episodes/{id}", h.handlePodcastDeleteEpisode)
-			r.Delete("/admin/podcasts/{id}", h.handlePodcastDeleteChannel)
 
 			// Catalog browse over the shared library service.
 			r.Get("/artists", h.handleListArtists)
@@ -404,78 +383,112 @@ func (h *Handler) Register(mux chi.Router) {
 			r.Get("/theme", h.handleTheme)
 			r.Patch("/theme", h.handleThemeUpdate)
 
-			// Admin: library track management (list, edit, cover, delete).
-			r.Get("/admin/tracks", h.handleAdminTracks)
-			r.Patch("/admin/tracks/{id}", h.handleAdminTrackUpdate)
-			r.Put("/admin/tracks/{id}/cover", h.handleAdminTrackCover)
-			r.Delete("/admin/tracks/{id}", h.handleAdminTrackDelete)
-
-			// Admin: provider-download eviction sweep.
-			r.Get("/admin/cleanup", h.handleCleanup)
-			r.Put("/admin/cleanup", h.handleCleanupUpdate)
-			r.Post("/admin/cleanup/runs", h.handleCleanupRun)
-
-			// Admin: curated chart-playlist sync (force-run, otherwise weekly).
-			r.Post("/admin/charts/sync", h.handleChartsSync)
-			r.Post("/admin/autoplaylists/sync", h.handleAutoPlaylistsSync)
-			r.Post("/admin/concerts/sync", h.handleConcertsSync)
-
-			// Admin: local audio-analysis progress (toggled via /admin/settings).
-			r.Get("/admin/sonic", h.handleSonicStatus)
-			r.Get("/admin/sonic/duplicates", h.handleSonicDuplicates)
-
-			// Admin: runtime-configurable on-demand providers.
-			r.Get("/admin/providers", h.handleProviders)
-			r.Post("/admin/providers", h.handleProviderUpsert)
-			r.Put("/admin/providers/order", h.handleProviderReorder)
-			r.Put("/admin/providers/{name}/enabled", h.handleProviderEnable)
-			r.Put("/admin/providers/{name}/capabilities/{capability}", h.handleProviderCapability)
-			r.Delete("/admin/providers/{name}", h.handleProviderDelete)
-			r.Get("/admin/providers/{name}/logs", h.handleProviderLogs)
-
-			// Admin: DB-backed runtime settings.
-			r.Get("/admin/settings", h.handleSettings)
-			r.Patch("/admin/settings", h.handleSettingsUpdate)
-
-			// Admin: live server log stream (SSE).
-			r.Get("/admin/logs/stream", h.handleStreamLogs)
-
-			// Admin: hub link lifecycle. GET refreshes the live name/sqid from the
-			// hub; register bootstraps (links) under the configured user id; PATCH
-			// pushes a name/sqid edit; DELETE unlinks (and deletes hub-side data).
-			r.Get("/admin/federation", h.handleFederationProfile)
-			r.Post("/admin/federation/register", h.handleFederationRegister)
-			r.Patch("/admin/federation", h.handleFederationUpdate)
-			r.Delete("/admin/federation", h.handleFederationUnlink)
 			// Discovery + instance→instance subscriptions (proxied to the hub).
-			r.Get("/admin/federation/instances", h.handleFederationSearch)
-			r.Get("/admin/federation/subscriptions", h.handleFederationSubscriptions)
-			r.Post("/admin/federation/subscriptions", h.handleFederationSubscribe)
-			r.Delete("/admin/federation/subscriptions/{id}", h.handleFederationUnsubscribe)
 
-			// Admin: smart-playlists feature toggle.
-			r.Get("/admin/smart-playlists", h.handleSmartPlaylistsAdmin)
-			r.Put("/admin/smart-playlists", h.handleSmartPlaylistsToggle)
+			// Admin API: every route below requires an admin caller.
+			r.Route("/admin", func(r chi.Router) {
+				r.Use(adminOnly)
 
-			// Admin: Wrapped feature toggle.
-			r.Get("/admin/wrapped", h.handleWrappedAdmin)
-			r.Put("/admin/wrapped", h.handleWrappedUpdate)
+				// User management.
+				r.Get("/users", h.handleListUsers)
+				r.Post("/users", h.handleCreateUser)
+				r.Get("/users/{username}", h.handleGetUser)
+				r.Patch("/users/{username}", h.handleUpdateUser)
+				r.Delete("/users/{username}", h.handleDeleteUser)
 
-			// Admin: offline-downloads feature toggle.
-			r.Get("/admin/offline", h.handleOfflineAdmin)
-			r.Put("/admin/offline", h.handleOfflineUpdate)
+				// Library scans.
+				r.Get("/library/scan", h.handleScanStatus)
+				r.Post("/library/scan", h.handleStartScan)
 
-			// Admin: Hall of Fame feature toggle.
-			r.Get("/admin/hall-of-fame", h.handleHallOfFameAdmin)
-			r.Put("/admin/hall-of-fame", h.handleHallOfFameToggle)
+				// Internet radio feature toggle and station CRUD.
+				r.Get("/radio", h.handleRadioAdmin)
+				r.Put("/radio", h.handleRadioToggle)
+				r.Post("/radio/stations", h.handleRadioCreate)
+				r.Put("/radio/stations/{id}", h.handleRadioUpdate)
+				r.Delete("/radio/stations/{id}", h.handleRadioDelete)
 
-			// Admin: concert-discovery settings (enable + API keys).
-			r.Get("/admin/concerts", h.handleConcertsAdmin)
-			r.Put("/admin/concerts", h.handleConcertsUpdate)
+				// Podcast channel CRUD, refresh and directory providers.
+				r.Post("/podcasts", h.handlePodcastCreate)
+				r.Post("/podcasts/refresh", h.handlePodcastRefresh)
+				r.Get("/podcasts/search", h.handlePodcastSearch)
+				r.Get("/podcasts/providers", h.handlePodcastProviders)
+				r.Put("/podcasts/providers/{name}", h.handlePodcastProviderUpdate)
+				r.Delete("/podcasts/episodes/{id}", h.handlePodcastDeleteEpisode)
+				r.Delete("/podcasts/{id}", h.handlePodcastDeleteChannel)
 
-			// Admin: Last.fm scrobbling settings (enable + API key/secret).
-			r.Get("/admin/lastfm", h.handleLastFmAdmin)
-			r.Put("/admin/lastfm", h.handleLastFmAdminUpdate)
+				// Library track management (list, edit, cover, delete).
+				r.Get("/tracks", h.handleAdminTracks)
+				r.Patch("/tracks/{id}", h.handleAdminTrackUpdate)
+				r.Put("/tracks/{id}/cover", h.handleAdminTrackCover)
+				r.Delete("/tracks/{id}", h.handleAdminTrackDelete)
+
+				// Provider-download eviction sweep.
+				r.Get("/cleanup", h.handleCleanup)
+				r.Put("/cleanup", h.handleCleanupUpdate)
+				r.Post("/cleanup/runs", h.handleCleanupRun)
+
+				// Curated chart-playlist sync (force-run, otherwise weekly).
+				r.Post("/charts/sync", h.handleChartsSync)
+				r.Post("/autoplaylists/sync", h.handleAutoPlaylistsSync)
+				r.Post("/concerts/sync", h.handleConcertsSync)
+
+				// Local audio-analysis progress (toggled via /admin/settings).
+				r.Get("/sonic", h.handleSonicStatus)
+				r.Get("/sonic/duplicates", h.handleSonicDuplicates)
+
+				// Runtime-configurable on-demand providers.
+				r.Get("/providers", h.handleProviders)
+				r.Post("/providers", h.handleProviderUpsert)
+				r.Put("/providers/order", h.handleProviderReorder)
+				r.Put("/providers/{name}/enabled", h.handleProviderEnable)
+				r.Put("/providers/{name}/capabilities/{capability}", h.handleProviderCapability)
+				r.Delete("/providers/{name}", h.handleProviderDelete)
+				r.Get("/providers/{name}/logs", h.handleProviderLogs)
+
+				// DB-backed runtime settings.
+				r.Get("/settings", h.handleSettings)
+				r.Patch("/settings", h.handleSettingsUpdate)
+
+				// Live server log stream (SSE).
+				r.Get("/logs/stream", h.handleStreamLogs)
+
+				// Hub link lifecycle. GET refreshes the live name/sqid from the
+				// hub; register bootstraps (links) under the configured user id; PATCH
+				// pushes a name/sqid edit; DELETE unlinks (and deletes hub-side data).
+				r.Get("/federation", h.handleFederationProfile)
+				r.Post("/federation/register", h.handleFederationRegister)
+				r.Patch("/federation", h.handleFederationUpdate)
+				r.Delete("/federation", h.handleFederationUnlink)
+				// Discovery + instance→instance subscriptions (proxied to the hub).
+				r.Get("/federation/instances", h.handleFederationSearch)
+				r.Get("/federation/subscriptions", h.handleFederationSubscriptions)
+				r.Post("/federation/subscriptions", h.handleFederationSubscribe)
+				r.Delete("/federation/subscriptions/{id}", h.handleFederationUnsubscribe)
+
+				// Smart-playlists feature toggle.
+				r.Get("/smart-playlists", h.handleSmartPlaylistsAdmin)
+				r.Put("/smart-playlists", h.handleSmartPlaylistsToggle)
+
+				// Wrapped feature toggle.
+				r.Get("/wrapped", h.handleWrappedAdmin)
+				r.Put("/wrapped", h.handleWrappedUpdate)
+
+				// Offline-downloads feature toggle.
+				r.Get("/offline", h.handleOfflineAdmin)
+				r.Put("/offline", h.handleOfflineUpdate)
+
+				// Hall of Fame feature toggle.
+				r.Get("/hall-of-fame", h.handleHallOfFameAdmin)
+				r.Put("/hall-of-fame", h.handleHallOfFameToggle)
+
+				// Concert-discovery settings (enable + API keys).
+				r.Get("/concerts", h.handleConcertsAdmin)
+				r.Put("/concerts", h.handleConcertsUpdate)
+
+				// Last.fm scrobbling settings (enable + API key/secret).
+				r.Get("/lastfm", h.handleLastFmAdmin)
+				r.Put("/lastfm", h.handleLastFmAdminUpdate)
+			})
 		})
 	})
 }

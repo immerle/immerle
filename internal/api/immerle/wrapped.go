@@ -70,9 +70,6 @@ func (h *Handler) wrappedStatus() featureStatusView {
 // @Success      200  {object}  featureStatusView
 // @Router       /admin/wrapped [get]
 func (h *Handler) handleWrappedAdmin(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
-		return
-	}
 	writeResource(w, http.StatusOK, h.wrappedStatus())
 }
 
@@ -88,9 +85,6 @@ func (h *Handler) handleWrappedAdmin(w http.ResponseWriter, r *http.Request) {
 // @Failure      400  {object}  errorResponse
 // @Router       /admin/wrapped [put]
 func (h *Handler) handleWrappedUpdate(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
-		return
-	}
 	if h.Settings == nil {
 		writeError(w, http.StatusServiceUnavailable, "unavailable", "settings not available")
 		return

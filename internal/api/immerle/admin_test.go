@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"testing"
 
 	chi "github.com/go-chi/chi/v5"
@@ -41,15 +43,34 @@ func newAdminEnv(t *testing.T) (*httptest.Server, *fakeCleanup) {
 	return srv, fc
 }
 
-func TestCleanupRequiresAdmin(t *testing.T) {
+// TestAdminRoutesRequireAdmin walks every route under /admin and checks a
+// non-admin caller is rejected, so a new admin handler can't ship unguarded.
+func TestAdminRoutesRequireAdmin(t *testing.T) {
 	srv, _ := newAdminEnv(t)
 	bob := login(t, srv, "bob")
-	status, body := doMap(t, srv, http.MethodGet, "/admin/cleanup", bob, nil)
-	if status != http.StatusForbidden {
-		t.Fatalf("non-admin should get 403, got %d", status)
+
+	routes := chi.NewRouter()
+	NewHandler(Deps{}).Register(routes)
+	pathParam := regexp.MustCompile(`\{[^}]+\}`)
+	checked := 0
+	err := chi.Walk(routes, func(method, route string, _ http.Handler, _ ...func(http.Handler) http.Handler) error {
+		path, ok := strings.CutPrefix(route, "/api/v1/admin")
+		if !ok {
+			return nil
+		}
+		path = "/admin" + pathParam.ReplaceAllString(path, "x")
+		status, body := doMap(t, srv, method, path, bob, nil)
+		if errObj, _ := body["error"].(map[string]any); status != http.StatusForbidden || errObj["code"] != "forbidden" {
+			t.Errorf("%s %s: non-admin should get 403 forbidden, got %d %+v", method, path, status, body)
+		}
+		checked++
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
-	if errObj, _ := body["error"].(map[string]any); errObj["code"] != "forbidden" {
-		t.Fatalf("expected forbidden error, got %+v", body)
+	if checked == 0 {
+		t.Fatal("no admin routes found")
 	}
 }
 

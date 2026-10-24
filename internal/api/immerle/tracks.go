@@ -30,9 +30,6 @@ import (
 // @Failure      500  {object}  errorResponse
 // @Router       /admin/tracks [get]
 func (h *Handler) handleAdminTracks(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
-		return
-	}
 	query := strings.TrimSpace(r.URL.Query().Get("query"))
 	limit := atoiDefault(r.URL.Query().Get("limit"), 50)
 	if limit > 200 {
@@ -93,9 +90,6 @@ type trackUpdateRequest struct {
 // @Failure      500  {object}  errorResponse
 // @Router       /admin/tracks/{id} [patch]
 func (h *Handler) handleAdminTrackUpdate(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
-		return
-	}
 	id := pathParam(r, "id")
 	var req trackUpdateRequest
 	if !decodeJSON(w, r, &req) {
@@ -163,9 +157,6 @@ func (h *Handler) handleAdminTrackUpdate(w http.ResponseWriter, r *http.Request)
 // @Failure      500  {object}  errorResponse
 // @Router       /admin/tracks/{id}/cover [put]
 func (h *Handler) handleAdminTrackCover(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
-		return
-	}
 	t, err := h.Catalog.GetTrack(r.Context(), pathParam(r, "id"))
 	if err != nil {
 		writeLookupError(w, err, "track not found")
@@ -199,9 +190,6 @@ func (h *Handler) handleAdminTrackCover(w http.ResponseWriter, r *http.Request) 
 // @Failure      500  {object}  errorResponse
 // @Router       /admin/tracks/{id} [delete]
 func (h *Handler) handleAdminTrackDelete(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
-		return
-	}
 	id := pathParam(r, "id")
 	t, err := h.Catalog.GetTrack(r.Context(), id)
 	if errors.Is(err, persistence.ErrNotFound) {

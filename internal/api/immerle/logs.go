@@ -20,9 +20,6 @@ import (
 // @Failure      403  {object}  errorResponse
 // @Router       /admin/logs/stream [get]
 func (h *Handler) handleStreamLogs(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
-		return
-	}
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {

@@ -31,9 +31,6 @@ type sonicStatusView struct {
 // @Failure      503  {object}  errorResponse
 // @Router       /admin/sonic [get]
 func (h *Handler) handleSonicStatus(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
-		return
-	}
 	if h.Sonic == nil {
 		writeError(w, http.StatusServiceUnavailable, "unavailable", "audio analysis not available")
 		return
@@ -166,9 +163,6 @@ type sonicDuplicatesView struct {
 // @Failure      500  {object}  errorResponse
 // @Router       /admin/sonic/duplicates [get]
 func (h *Handler) handleSonicDuplicates(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
-		return
-	}
 	if !h.Sonic.DuplicatesEnabled() {
 		writeError(w, http.StatusNotFound, "not_found", "sonic duplicates are disabled")
 		return

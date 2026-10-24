@@ -4,13 +4,16 @@ import (
 	"net/http"
 )
 
-// requireAdmin writes a 403 and returns false if the caller is not an admin.
-func (h *Handler) requireAdmin(w http.ResponseWriter, r *http.Request) bool {
-	if !userFrom(r.Context()).IsAdmin {
-		writeError(w, http.StatusForbidden, "forbidden", "admin only")
-		return false
-	}
-	return true
+// adminOnly answers 403 unless the authenticated caller is an admin. It guards
+// the whole /admin subtree, so admin handlers never check the role themselves.
+func adminOnly(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !userFrom(r.Context()).IsAdmin {
+			writeError(w, http.StatusForbidden, "forbidden", "admin only")
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 // cleanupStatusView is the provider-download eviction sweep state.
@@ -49,9 +52,6 @@ func (h *Handler) cleanupStatus() cleanupStatusView {
 // @Failure      503  {object}  errorResponse
 // @Router       /admin/cleanup [get]
 func (h *Handler) handleCleanup(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
-		return
-	}
 	if h.Settings == nil {
 		writeError(w, http.StatusServiceUnavailable, "unavailable", "cleanup not available")
 		return
@@ -81,9 +81,6 @@ type cleanupUpdateRequest struct {
 // @Failure      503  {object}  errorResponse
 // @Router       /admin/cleanup [put]
 func (h *Handler) handleCleanupUpdate(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
-		return
-	}
 	if h.Settings == nil {
 		writeError(w, http.StatusServiceUnavailable, "unavailable", "cleanup not available")
 		return
@@ -121,9 +118,6 @@ func (h *Handler) handleCleanupUpdate(w http.ResponseWriter, r *http.Request) {
 // @Failure      503  {object}  errorResponse
 // @Router       /admin/cleanup/runs [post]
 func (h *Handler) handleCleanupRun(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
-		return
-	}
 	if h.Cleanup == nil {
 		writeError(w, http.StatusServiceUnavailable, "unavailable", "cleanup not available")
 		return
@@ -152,9 +146,6 @@ func (h *Handler) handleCleanupRun(w http.ResponseWriter, r *http.Request) {
 // @Failure      503  {object}  errorResponse
 // @Router       /admin/charts/sync [post]
 func (h *Handler) handleChartsSync(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
-		return
-	}
 	if h.Charts == nil {
 		writeError(w, http.StatusServiceUnavailable, "unavailable", "charts sync not available")
 		return
@@ -183,9 +174,6 @@ func (h *Handler) handleChartsSync(w http.ResponseWriter, r *http.Request) {
 // @Failure      503  {object}  errorResponse
 // @Router       /admin/autoplaylists/sync [post]
 func (h *Handler) handleAutoPlaylistsSync(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
-		return
-	}
 	if h.AutoPlaylists == nil {
 		writeError(w, http.StatusServiceUnavailable, "unavailable", "auto-playlist sync not available")
 		return

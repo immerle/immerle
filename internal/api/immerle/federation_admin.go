@@ -22,9 +22,6 @@ import (
 // @Failure      503  {object}  errorResponse
 // @Router       /admin/federation/instances [get]
 func (h *Handler) handleFederationSearch(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
-		return
-	}
 	if h.Federation == nil {
 		writeError(w, http.StatusServiceUnavailable, "unavailable", "federation unavailable")
 		return
@@ -51,9 +48,6 @@ func (h *Handler) handleFederationSearch(w http.ResponseWriter, r *http.Request)
 // @Failure      503  {object}  errorResponse
 // @Router       /admin/federation/subscriptions [get]
 func (h *Handler) handleFederationSubscriptions(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
-		return
-	}
 	if h.Federation == nil {
 		writeError(w, http.StatusServiceUnavailable, "unavailable", "federation unavailable")
 		return
@@ -84,9 +78,6 @@ func (h *Handler) handleFederationSubscriptions(w http.ResponseWriter, r *http.R
 // @Failure      503  {object}  errorResponse
 // @Router       /admin/federation/subscriptions [post]
 func (h *Handler) handleFederationSubscribe(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
-		return
-	}
 	if h.Federation == nil {
 		writeError(w, http.StatusServiceUnavailable, "unavailable", "federation unavailable")
 		return
@@ -120,9 +111,6 @@ func (h *Handler) handleFederationSubscribe(w http.ResponseWriter, r *http.Reque
 // @Failure      503  {object}  errorResponse
 // @Router       /admin/federation/subscriptions/{id} [delete]
 func (h *Handler) handleFederationUnsubscribe(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
-		return
-	}
 	if h.Federation == nil {
 		writeError(w, http.StatusServiceUnavailable, "unavailable", "federation unavailable")
 		return
