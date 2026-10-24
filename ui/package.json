@@ -74,7 +74,7 @@
     "@types/react": "~19.2.10",
     "babel-preset-expo": "~57.0.0",
     "concurrently": "9.2.5",
-    "electron": "41.10.7",
+    "electron": "42.11.16",
     "electron-builder": "25.1.8",
     "eslint": "8.57.1",
     "eslint-config-expo": "~57.0.2",
