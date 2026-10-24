@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/immerle/immerle/internal/providers"
+	"github.com/immerle/immerle/internal/services/ondemand/providers"
 )
 
 const baseURL = "https://api.reccobeats.com"

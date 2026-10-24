@@ -1,11 +1,11 @@
-package core
+package ondemand
 
 import (
 	"context"
 	"strings"
 	"time"
 
-	"github.com/immerle/immerle/internal/providers"
+	"github.com/immerle/immerle/internal/services/ondemand/providers"
 )
 
 // searchProvider returns the single provider used for a one-provider lookup:

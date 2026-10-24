@@ -8,14 +8,11 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/services/ondemand"
 )
 
-// TestHallOfFameAddResolvesRemoteTrack: a "remote:" track id (no row in
-// `tracks` yet) used to fail with an opaque FK constraint error, since
-// hall_of_fame_entries has a foreign key on track_id. Add/SetOrder must
-// resolve such ids first, like PlaylistService already does.
 func TestHallOfFameAddResolvesRemoteTrack(t *testing.T) {
-	onDemand, store, _ := newOnDemand(t)
+	onDemand, store := newOnDemand(t)
 	ctx := context.Background()
 	now := time.Now()
 
@@ -30,7 +27,7 @@ func TestHallOfFameAddResolvesRemoteTrack(t *testing.T) {
 		t.Fatalf("remote search: %v %+v", err, remote)
 	}
 	remoteID := remote[0].ID
-	if !IsRemoteID(remoteID) {
+	if !ondemand.IsRemoteID(remoteID) {
 		t.Fatalf("expected a remote id, got %q", remoteID)
 	}
 
@@ -41,7 +38,7 @@ func TestHallOfFameAddResolvesRemoteTrack(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(d.Entries) != 1 || IsRemoteID(d.Entries[0].Track.ID) || d.Entries[0].Track.ID == "" {
+	if len(d.Entries) != 1 || ondemand.IsRemoteID(d.Entries[0].Track.ID) || d.Entries[0].Track.ID == "" {
 		t.Fatalf("expected the track resolved to a real local id, got %+v", d.Entries)
 	}
 
@@ -54,7 +51,7 @@ func TestHallOfFameAddResolvesRemoteTrack(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(d.Entries) != 1 || IsRemoteID(d.Entries[0].Track.ID) {
+	if len(d.Entries) != 1 || ondemand.IsRemoteID(d.Entries[0].Track.ID) {
 		t.Fatalf("expected SetOrder to resolve the remote id too, got %+v", d.Entries)
 	}
 }

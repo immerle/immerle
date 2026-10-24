@@ -10,6 +10,7 @@ import (
 
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
+	"github.com/immerle/immerle/internal/services/ondemand"
 )
 
 // PlaylistSyncEnqueuer queues a public playlist for federation-hub sync, and can
@@ -27,14 +28,14 @@ type PlaylistSyncEnqueuer interface {
 type PlaylistService struct {
 	playlists   *persistence.PlaylistRepo
 	annotations *persistence.AnnotationRepo
-	activity    *ActivityService     // optional
-	hubSync     PlaylistSyncEnqueuer // optional
-	onDemand    *CatalogService      // optional; resolves remote track ids before they hit playlist_tracks
+	activity    *ActivityService         // optional
+	hubSync     PlaylistSyncEnqueuer     // optional
+	onDemand    *ondemand.CatalogService // optional; resolves remote track ids before they hit playlist_tracks
 }
 
 // NewPlaylistService wires the playlist application service. activity, hubSync
 // and onDemand are optional (pass nil when unused).
-func NewPlaylistService(playlists *persistence.PlaylistRepo, annotations *persistence.AnnotationRepo, activity *ActivityService, hubSync PlaylistSyncEnqueuer, onDemand *CatalogService) *PlaylistService {
+func NewPlaylistService(playlists *persistence.PlaylistRepo, annotations *persistence.AnnotationRepo, activity *ActivityService, hubSync PlaylistSyncEnqueuer, onDemand *ondemand.CatalogService) *PlaylistService {
 	return &PlaylistService{playlists: playlists, annotations: annotations, activity: activity, hubSync: hubSync, onDemand: onDemand}
 }
 
@@ -46,10 +47,10 @@ func NewPlaylistService(playlists *persistence.PlaylistRepo, annotations *persis
 // first id that can't be resolved (no on-demand resolver configured, or the
 // search/download failed), naming it so the caller sees why, instead of adding
 // it half-broken. Shared by PlaylistService and HallOfFameService.
-func resolveTrackIDs(ctx context.Context, onDemand *CatalogService, userID string, ids []string) ([]string, error) {
+func resolveTrackIDs(ctx context.Context, onDemand *ondemand.CatalogService, userID string, ids []string) ([]string, error) {
 	out := make([]string, len(ids))
 	for i, id := range ids {
-		if !IsRemoteID(id) {
+		if !ondemand.IsRemoteID(id) {
 			out[i] = id
 			continue
 		}

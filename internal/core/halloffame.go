@@ -5,6 +5,7 @@ import (
 
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
+	"github.com/immerle/immerle/internal/services/ondemand"
 )
 
 // HallOfFameService holds the Hall of Fame business logic: a user's personal
@@ -13,12 +14,12 @@ import (
 // exactly one Hall of Fame per user.
 type HallOfFameService struct {
 	repo     *persistence.HallOfFameRepo
-	onDemand *CatalogService // optional; resolves remote track ids before they hit hall_of_fame_entries
+	onDemand *ondemand.CatalogService // optional; resolves remote track ids before they hit hall_of_fame_entries
 }
 
 // NewHallOfFameService wires the Hall of Fame application service. onDemand is
 // optional (pass nil when unused).
-func NewHallOfFameService(repo *persistence.HallOfFameRepo, onDemand *CatalogService) *HallOfFameService {
+func NewHallOfFameService(repo *persistence.HallOfFameRepo, onDemand *ondemand.CatalogService) *HallOfFameService {
 	return &HallOfFameService{repo: repo, onDemand: onDemand}
 }
 

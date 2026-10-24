@@ -1,4 +1,4 @@
-package core
+package ondemand
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"golang.org/x/text/unicode/norm"
 
 	"github.com/immerle/immerle/internal/models"
-	"github.com/immerle/immerle/internal/providers"
+	"github.com/immerle/immerle/internal/services/ondemand/providers"
 )
 
 // splitArtists splits a provider artist credit "Main/Feat1/Feat2" into the main

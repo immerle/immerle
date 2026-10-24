@@ -11,8 +11,9 @@ import (
 
 	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/models"
-	"github.com/immerle/immerle/internal/providers"
-	"github.com/immerle/immerle/internal/providers/httpprovider"
+	"github.com/immerle/immerle/internal/services/ondemand"
+	"github.com/immerle/immerle/internal/services/ondemand/providers"
+	"github.com/immerle/immerle/internal/services/ondemand/providers/httpprovider"
 	"github.com/immerle/immerle/internal/testutil"
 )
 
@@ -40,7 +41,7 @@ func newProvidersEnv(t *testing.T) *httptest.Server {
 	})
 }
 
-func newProvidersEnvWith(t *testing.T, build core.ProviderBuilder) *httptest.Server {
+func newProvidersEnvWith(t *testing.T, build ondemand.ProviderBuilder) *httptest.Server {
 	store := testutil.NewStore(t)
 	ctx := context.Background()
 	auth, _ := core.NewAuthService(store.Users, store.APITokens, store.Devices, "secret")
@@ -50,8 +51,8 @@ func newProvidersEnvWith(t *testing.T, build core.ProviderBuilder) *httptest.Ser
 	if _, err := auth.CreateUser(ctx, "bob", "bobpw", "", "", false); err != nil {
 		t.Fatal(err)
 	}
-	reg := core.NewProviderRegistry()
-	mgr := core.NewProviderManager(store.ProviderConfigs, reg, build, nil, testutil.NewLogger())
+	reg := ondemand.NewProviderRegistry()
+	mgr := ondemand.NewProviderManager(store.ProviderConfigs, reg, build, nil, testutil.NewLogger())
 	h := NewHandler(Deps{Services: core.NewServices(store, core.ServiceOptions{Auth: auth, Logger: testutil.NewLogger()}), Auth: auth, Users: store.Users, Providers: mgr, Logger: testutil.NewLogger()})
 	mux := chi.NewRouter()
 	h.Register(mux)
@@ -154,7 +155,7 @@ func TestProvidersBuiltinAndReorder(t *testing.T) {
 	ctx := context.Background()
 	auth, _ := core.NewAuthService(store.Users, store.APITokens, store.Devices, "secret")
 	_, _ = auth.CreateUser(ctx, "admin", "adminpw", "", "", true)
-	reg := core.NewProviderRegistry()
+	reg := ondemand.NewProviderRegistry()
 	build := func(c models.ProviderConfig) (providers.Provider, error) {
 		endpoint := c.Endpoint
 		if c.Builtin() {
@@ -166,8 +167,8 @@ func TestProvidersBuiltinAndReorder(t *testing.T) {
 		return stubProvider{name: c.Name}, nil
 	}
 	// A built-in provider declared with a default config + enabled state.
-	mgr := core.NewProviderManager(store.ProviderConfigs, reg, build,
-		[]core.BuiltinDef{{Name: "jamendo", DefaultEnabled: true}}, testutil.NewLogger())
+	mgr := ondemand.NewProviderManager(store.ProviderConfigs, reg, build,
+		[]ondemand.BuiltinDef{{Name: "jamendo", DefaultEnabled: true}}, testutil.NewLogger())
 	if err := mgr.Load(ctx); err != nil {
 		t.Fatal(err)
 	}

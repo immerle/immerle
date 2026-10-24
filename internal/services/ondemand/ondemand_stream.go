@@ -1,4 +1,4 @@
-package core
+package ondemand
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/immerle/immerle/internal/models"
-	"github.com/immerle/immerle/internal/providers"
+	"github.com/immerle/immerle/internal/services/ondemand/providers"
 )
 
 // PendingDownload is a remote track that is not yet local and must be fetched.

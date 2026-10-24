@@ -12,6 +12,7 @@ import (
 	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
+	"github.com/immerle/immerle/internal/services/ondemand"
 	"github.com/immerle/immerle/internal/stream"
 )
 
@@ -20,7 +21,7 @@ type Server struct {
 	catalog    *persistence.CatalogRepo
 	streamer   *stream.Streamer
 	cover      *stream.CoverService
-	onDemand   *core.CatalogService
+	onDemand   *ondemand.CatalogService
 	nowPlaying *core.NowPlayingTracker
 	logger     *slog.Logger
 	// signKey signs short-lived stream/download URLs so an <audio>/<img> src can
@@ -32,7 +33,7 @@ type Server struct {
 // NewServer wires the media server. onDemand and nowPlaying may be nil. secret,
 // when non-empty, enables signed stream URLs (a per-server key is derived from
 // it, so the raw auth secret is never used directly as the HMAC key).
-func NewServer(catalog *persistence.CatalogRepo, streamer *stream.Streamer, cover *stream.CoverService, onDemand *core.CatalogService, nowPlaying *core.NowPlayingTracker, logger *slog.Logger, secret string) *Server {
+func NewServer(catalog *persistence.CatalogRepo, streamer *stream.Streamer, cover *stream.CoverService, onDemand *ondemand.CatalogService, nowPlaying *core.NowPlayingTracker, logger *slog.Logger, secret string) *Server {
 	var key []byte
 	if secret != "" {
 		key = deriveSignKey(secret)
@@ -47,7 +48,7 @@ func NewServer(catalog *persistence.CatalogRepo, streamer *stream.Streamer, cove
 // failure is logged, not returned).
 func (s *Server) ServeAudio(w http.ResponseWriter, r *http.Request, user models.User, id string, opts stream.Options) error {
 	ctx := r.Context()
-	if core.IsRemoteID(id) && s.onDemand != nil {
+	if ondemand.IsRemoteID(id) && s.onDemand != nil {
 		track, local, pending, err := s.onDemand.PrepareStream(ctx, user.ID, id)
 		if err != nil {
 			return persistence.ErrNotFound
@@ -96,7 +97,7 @@ func (s *Server) serveLocal(w http.ResponseWriter, r *http.Request, user models.
 // listen. It does not transcode (that would force buffering the whole file), so
 // it advertises the content type of the actual bytes and disables seeking; later
 // plays go through the seekable, transcoding local path.
-func (s *Server) streamProgressive(w http.ResponseWriter, r *http.Request, pending *core.PendingDownload) {
+func (s *Server) streamProgressive(w http.ResponseWriter, r *http.Request, pending *ondemand.PendingDownload) {
 	w.Header().Set("Content-Type", audioContentType(pending.Suffix()))
 	w.Header().Set("Accept-Ranges", "none")
 	if err := s.onDemand.StreamPending(r.Context(), pending, w); err != nil && s.logger != nil {

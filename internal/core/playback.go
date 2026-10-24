@@ -8,6 +8,7 @@ import (
 
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
+	"github.com/immerle/immerle/internal/services/ondemand"
 )
 
 // ScrobbleEnqueuer submits a completed play to an external scrobbling service
@@ -39,7 +40,7 @@ type PlaybackService struct {
 	annotations *persistence.AnnotationRepo
 	scrobbles   *persistence.ScrobbleRepo
 	// Optional collaborators; may be nil when the feature is disabled.
-	onDemand     *CatalogService
+	onDemand     *ondemand.CatalogService
 	activity     *ActivityService
 	nowPlaying   *NowPlayingTracker
 	scrobbleSync ScrobbleEnqueuer
@@ -47,7 +48,7 @@ type PlaybackService struct {
 
 // NewPlaybackService wires the playback/annotation application service. onDemand,
 // activity, nowPlaying and scrobbleSync are optional and may be nil.
-func NewPlaybackService(catalog *persistence.CatalogRepo, annotations *persistence.AnnotationRepo, scrobbles *persistence.ScrobbleRepo, onDemand *CatalogService, activity *ActivityService, nowPlaying *NowPlayingTracker, scrobbleSync ScrobbleEnqueuer) *PlaybackService {
+func NewPlaybackService(catalog *persistence.CatalogRepo, annotations *persistence.AnnotationRepo, scrobbles *persistence.ScrobbleRepo, onDemand *ondemand.CatalogService, activity *ActivityService, nowPlaying *NowPlayingTracker, scrobbleSync ScrobbleEnqueuer) *PlaybackService {
 	return &PlaybackService{catalog: catalog, annotations: annotations, scrobbles: scrobbles, onDemand: onDemand, activity: activity, nowPlaying: nowPlaying, scrobbleSync: scrobbleSync}
 }
 
@@ -76,7 +77,7 @@ func (s *PlaybackService) SetStarred(ctx context.Context, user models.User, trac
 // SetRating rates the item the id refers to. A remote track id is rated on its
 // local copy; otherwise the item type (album/artist/track) is detected.
 func (s *PlaybackService) SetRating(ctx context.Context, userID, id string, rating int) error {
-	if IsRemoteID(id) {
+	if ondemand.IsRemoteID(id) {
 		return s.annotations.SetRating(ctx, userID, models.ItemTrack, s.localTrackID(ctx, userID, id), rating)
 	}
 	itemType := models.ItemTrack
@@ -127,7 +128,7 @@ func (s *PlaybackService) Scrobble(ctx context.Context, user models.User, ids []
 // resolveTrack fetches a local track, or for a remote (provider) id triggers the
 // on-demand download and returns the resulting local track.
 func (s *PlaybackService) resolveTrack(ctx context.Context, userID, id string) (models.Track, error) {
-	if IsRemoteID(id) && s.onDemand != nil {
+	if ondemand.IsRemoteID(id) && s.onDemand != nil {
 		track, _, _, err := s.onDemand.Resolve(ctx, userID, id)
 		return track, err
 	}
@@ -139,7 +140,7 @@ func (s *PlaybackService) resolveTrack(ctx context.Context, userID, id string) (
 // target a synthetic remote id no library row matches. Non-remote ids and
 // failures pass through unchanged.
 func (s *PlaybackService) localTrackID(ctx context.Context, userID, id string) string {
-	if IsRemoteID(id) && s.onDemand != nil {
+	if ondemand.IsRemoteID(id) && s.onDemand != nil {
 		if track, _, _, err := s.onDemand.Resolve(ctx, userID, id); err == nil && track.ID != "" {
 			return track.ID
 		}

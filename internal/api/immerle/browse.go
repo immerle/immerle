@@ -12,6 +12,7 @@ import (
 	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/integrations/spotifyweb"
 	"github.com/immerle/immerle/internal/lib/lyrics"
+	"github.com/immerle/immerle/internal/lib/matching"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 )
@@ -538,11 +539,11 @@ func (h *Handler) handleSearch(w http.ResponseWriter, r *http.Request) {
 	if q != "" && (searchType == "" || searchType == "radio") && h.radioEnabled() && h.Radio != nil {
 		if stations, err := h.Radio.ListForUser(r.Context(), userFrom(r.Context()).ID); err == nil {
 			sort.SliceStable(stations, func(i, j int) bool {
-				return core.Relevance(q, stations[i].Name) < core.Relevance(q, stations[j].Name)
+				return matching.Relevance(q, stations[i].Name) < matching.Relevance(q, stations[j].Name)
 			})
 			matched := 0
 			for _, s := range stations {
-				if matched >= maxSearchRadio || core.Relevance(q, s.Name) >= 3 {
+				if matched >= maxSearchRadio || matching.Relevance(q, s.Name) >= 3 {
 					break
 				}
 				v := toStationView(s)
@@ -558,7 +559,7 @@ func (h *Handler) handleSearch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sort.SliceStable(hits, func(i, j int) bool {
-		return core.Relevance(q, hits[i].name) < core.Relevance(q, hits[j].name)
+		return matching.Relevance(q, hits[i].name) < matching.Relevance(q, hits[j].name)
 	})
 
 	out := searchView{Results: make([]searchHitView, len(hits))}

@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/immerle/immerle/internal/providers"
+	"github.com/immerle/immerle/internal/services/ondemand/providers"
 )
 
 func init() { RegisterFactory("deezer", newDeezer) }

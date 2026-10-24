@@ -169,11 +169,11 @@ func bestRecordingMatch(wanted models.Track, candidates []models.Track) string {
 	best := ""
 	bestScore := -1
 	for _, c := range candidates {
-		titleScore := titleOverlap(wanted.Title, c.Title)
+		titleScore := matching.TitleOverlap(wanted.Title, c.Title)
 		if titleScore >= minSearchTitleScore {
 			continue
 		}
-		score := titleScore*10 + Relevance(wanted.ArtistName, c.ArtistName) + matching.VersionMarkerPenalty(wanted.Title, c.Title, c.AlbumName)*100
+		score := titleScore*10 + matching.Relevance(wanted.ArtistName, c.ArtistName) + matching.VersionMarkerPenalty(wanted.Title, c.Title, c.AlbumName)*100
 		if bestScore == -1 || score < bestScore {
 			best, bestScore = c.MBID, score
 		}

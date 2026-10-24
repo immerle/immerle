@@ -7,6 +7,7 @@ import (
 	"github.com/immerle/immerle/internal/integrations/discover"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
+	"github.com/immerle/immerle/internal/services/ondemand"
 )
 
 // annotateTracks attaches the caller's per-user track annotations to a list of
@@ -188,7 +189,7 @@ func (s *LibraryService) SonicRadio(ctx context.Context, userID string, seeds, e
 func (s *LibraryService) resolveSeedTracks(ctx context.Context, seeds []string) []string {
 	var out []string
 	for _, id := range seeds {
-		if IsRemoteID(id) {
+		if ondemand.IsRemoteID(id) {
 			if s.onDemand != nil {
 				if local, ok := s.onDemand.LocalTrackIDForRemote(ctx, id); ok {
 					out = append(out, local)

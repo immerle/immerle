@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/immerle/immerle/internal/models"
+	"github.com/immerle/immerle/internal/services/ondemand"
 	"github.com/immerle/immerle/internal/testutil"
 )
 
@@ -72,7 +73,7 @@ func TestFederatedPlaylistNotMutableByNominalOwner(t *testing.T) {
 // Create/Replace/Update must resolve (download) such ids first, like
 // favoriting already does.
 func TestPlaylistAddResolvesRemoteTrack(t *testing.T) {
-	onDemand, store, _ := newOnDemand(t)
+	onDemand, store := newOnDemand(t)
 	ctx := context.Background()
 	now := time.Now()
 
@@ -87,7 +88,7 @@ func TestPlaylistAddResolvesRemoteTrack(t *testing.T) {
 		t.Fatalf("remote search: %v %+v", err, remote)
 	}
 	remoteID := remote[0].ID
-	if !IsRemoteID(remoteID) {
+	if !ondemand.IsRemoteID(remoteID) {
 		t.Fatalf("expected a remote id, got %q", remoteID)
 	}
 
@@ -97,7 +98,7 @@ func TestPlaylistAddResolvesRemoteTrack(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create with a remote track: %v", err)
 	}
-	if len(d.Tracks) != 1 || IsRemoteID(d.Tracks[0].Track.ID) || d.Tracks[0].Track.ID == "" {
+	if len(d.Tracks) != 1 || ondemand.IsRemoteID(d.Tracks[0].Track.ID) || d.Tracks[0].Track.ID == "" {
 		t.Fatalf("expected the track resolved to a real local id, got %+v", d.Tracks)
 	}
 

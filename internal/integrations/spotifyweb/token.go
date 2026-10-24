@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/immerle/immerle/internal/providers"
+	"github.com/immerle/immerle/internal/services/ondemand/providers"
 )
 
 // secretsURL is a community-maintained tracker of Spotify's current TOTP

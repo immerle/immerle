@@ -1,7 +1,7 @@
 // Package matching holds small, dependency-free heuristics for auto-matching
 // a wanted (artist, title) against track candidates — shared by the local
 // catalog lookup (persistence.CatalogRepo.FindByArtistTitle) and the remote
-// provider search (core.CatalogService.ResolveBestRemoteMatch), so a
+// provider search (ondemand.CatalogService.ResolveBestRemoteMatch), so a
 // candidate can't dodge one path's disambiguation just by winning the other.
 package matching
 

@@ -17,6 +17,7 @@ import (
 	"github.com/immerle/immerle/internal/integrations/bandcamp"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
+	"github.com/immerle/immerle/internal/services/ondemand"
 	"github.com/immerle/immerle/internal/services/scanner"
 )
 
@@ -195,7 +196,7 @@ func (s *PurchasesService) ListJobs(ctx context.Context, userID string) ([]model
 }
 
 // Worker runs the background import queue until ctx is cancelled, resuming
-// jobs left 'running' by a previous crash. Mirrors CatalogService.Worker.
+// jobs left 'running' by a previous crash. Mirrors ondemand.CatalogService.Worker.
 func (s *PurchasesService) Worker(ctx context.Context) {
 	_ = s.jobs.RequeueStale(ctx)
 	ticker := time.NewTicker(5 * time.Second)
@@ -265,7 +266,7 @@ func (s *PurchasesService) processJob(ctx context.Context, job models.BandcampIm
 		return nil, err
 	}
 
-	destDir := filepath.Join(s.uploadsDir, job.UserID, "Bandcamp", sanitize(job.ArtistName), sanitize(job.ItemTitle))
+	destDir := filepath.Join(s.uploadsDir, job.UserID, "Bandcamp", ondemand.SanitizeName(job.ArtistName), ondemand.SanitizeName(job.ItemTitle))
 	if err := os.MkdirAll(destDir, 0o755); err != nil {
 		return nil, err
 	}
@@ -293,7 +294,7 @@ func (s *PurchasesService) processJob(ctx context.Context, job models.BandcampIm
 	if job.ItemType == "album" {
 		files, err = extractZip(tmpPath, destDir, bandcampMaxFileBytes)
 	} else {
-		dest := filepath.Join(destDir, sanitize(job.ItemTitle)+formatExtension(info.Format))
+		dest := filepath.Join(destDir, ondemand.SanitizeName(job.ItemTitle)+formatExtension(info.Format))
 		if err = os.Rename(tmpPath, dest); err == nil {
 			files = []string{dest}
 		}

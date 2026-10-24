@@ -17,6 +17,7 @@ import (
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
 	"github.com/immerle/immerle/internal/platform/config"
+	"github.com/immerle/immerle/internal/services/ondemand"
 	"github.com/immerle/immerle/internal/services/scanner"
 	"github.com/immerle/immerle/internal/stream"
 	"github.com/immerle/immerle/internal/testutil"
@@ -53,8 +54,8 @@ func newBrowseEnv(t *testing.T) (*httptest.Server, string, *persistence.Store) {
 		t.Fatal(err)
 	}
 
-	onDemand := core.NewCatalogService(core.CatalogServiceConfig{
-		Catalog: store.Catalog, Downloads: store.Downloads, Registry: core.NewProviderRegistry(), Logger: testutil.NewLogger(),
+	onDemand := ondemand.NewCatalogService(ondemand.CatalogServiceConfig{
+		Catalog: store.Catalog, Downloads: store.Downloads, Registry: ondemand.NewProviderRegistry(), Logger: testutil.NewLogger(),
 	})
 	nowPlaying := core.NewNowPlayingTracker(0)
 	h := NewHandler(Deps{
@@ -339,7 +340,7 @@ func TestToAlbumViewFallsBackToAlbumIDForCoverArt(t *testing.T) {
 // a still-progressive track to the seekable local one once ready (see
 // ui/src/audio/store.ts's seekTo, which no-ops on a remote track). No
 // completed download reports local=false; once one completes (see
-// internal/core/ondemand_stream.go's finalizeStreamed) it reports the
+// internal/services/ondemand/ondemand_stream.go's finalizeStreamed) it reports the
 // resolved local song.
 func TestSongLocalStatus(t *testing.T) {
 	srv, token, store := newBrowseEnv(t)
