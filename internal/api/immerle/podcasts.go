@@ -292,7 +292,7 @@ type podcastCreateRequest struct {
 // @Failure      400  {object}  errorResponse
 // @Router       /admin/podcasts [post]
 func (h *Handler) handlePodcastCreate(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) || !h.podcastsReady(w) {
+	if !h.podcastsReady(w) {
 		return
 	}
 	var req podcastCreateRequest
@@ -320,7 +320,7 @@ func (h *Handler) handlePodcastCreate(w http.ResponseWriter, r *http.Request) {
 // @Success      204
 // @Router       /admin/podcasts/refresh [post]
 func (h *Handler) handlePodcastRefresh(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) || !h.podcastsReady(w) {
+	if !h.podcastsReady(w) {
 		return
 	}
 	if err := h.Podcasts.RefreshAll(r.Context()); err != nil {
@@ -339,7 +339,7 @@ func (h *Handler) handlePodcastRefresh(w http.ResponseWriter, r *http.Request) {
 // @Success      204
 // @Router       /admin/podcasts/{id} [delete]
 func (h *Handler) handlePodcastDeleteChannel(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) || !h.podcastsReady(w) {
+	if !h.podcastsReady(w) {
 		return
 	}
 	if err := h.Podcasts.DeleteChannel(r.Context(), pathParam(r, "id")); err != nil {
@@ -358,7 +358,7 @@ func (h *Handler) handlePodcastDeleteChannel(w http.ResponseWriter, r *http.Requ
 // @Success      204
 // @Router       /admin/podcasts/episodes/{id} [delete]
 func (h *Handler) handlePodcastDeleteEpisode(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) || !h.podcastsReady(w) {
+	if !h.podcastsReady(w) {
 		return
 	}
 	if err := h.Podcasts.DeleteEpisode(r.Context(), pathParam(r, "id")); err != nil {
@@ -384,7 +384,7 @@ func (h *Handler) handlePodcastDeleteEpisode(w http.ResponseWriter, r *http.Requ
 // @Success      200  {object}  podcastProviderListView
 // @Router       /admin/podcasts/providers [get]
 func (h *Handler) handlePodcastProviders(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) || !h.podcastsReady(w) {
+	if !h.podcastsReady(w) {
 		return
 	}
 	provs, err := h.Podcasts.Providers(r.Context())
@@ -418,7 +418,7 @@ type podcastProviderRequest struct {
 // @Failure      400  {object}  errorResponse
 // @Router       /admin/podcasts/providers/{name} [put]
 func (h *Handler) handlePodcastProviderUpdate(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) || !h.podcastsReady(w) {
+	if !h.podcastsReady(w) {
 		return
 	}
 	var req podcastProviderRequest
@@ -447,7 +447,7 @@ func (h *Handler) handlePodcastProviderUpdate(w http.ResponseWriter, r *http.Req
 // @Success      200  {object}  podcastSearchListView
 // @Router       /admin/podcasts/search [get]
 func (h *Handler) handlePodcastSearch(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) || !h.podcastsReady(w) {
+	if !h.podcastsReady(w) {
 		return
 	}
 	results, err := h.Podcasts.Search(r.Context(), r.URL.Query().Get("q"))

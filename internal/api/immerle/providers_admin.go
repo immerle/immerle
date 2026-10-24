@@ -111,7 +111,7 @@ func (h *Handler) providersAvailable(w http.ResponseWriter) bool {
 // @Failure      503  {object}  errorResponse
 // @Router       /admin/providers [get]
 func (h *Handler) handleProviders(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) || !h.providersAvailable(w) {
+	if !h.providersAvailable(w) {
 		return
 	}
 	list, err := h.Providers.List(r.Context())
@@ -149,7 +149,7 @@ type upsertProviderRequest struct {
 // @Failure      503  {object}  errorResponse
 // @Router       /admin/providers [post]
 func (h *Handler) handleProviderUpsert(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) || !h.providersAvailable(w) {
+	if !h.providersAvailable(w) {
 		return
 	}
 	var req upsertProviderRequest
@@ -211,7 +211,7 @@ type setEnabledRequest struct {
 // @Failure      503  {object}  errorResponse
 // @Router       /admin/providers/{name}/enabled [put]
 func (h *Handler) handleProviderEnable(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) || !h.providersAvailable(w) {
+	if !h.providersAvailable(w) {
 		return
 	}
 	var req setEnabledRequest
@@ -251,7 +251,7 @@ func (h *Handler) handleProviderEnable(w http.ResponseWriter, r *http.Request) {
 // @Failure      503  {object}  errorResponse
 // @Router       /admin/providers/{name}/capabilities/{capability} [put]
 func (h *Handler) handleProviderCapability(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) || !h.providersAvailable(w) {
+	if !h.providersAvailable(w) {
 		return
 	}
 	var req setEnabledRequest
@@ -287,7 +287,7 @@ func (h *Handler) handleProviderCapability(w http.ResponseWriter, r *http.Reques
 // @Failure      503  {object}  errorResponse
 // @Router       /admin/providers/{name} [delete]
 func (h *Handler) handleProviderDelete(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) || !h.providersAvailable(w) {
+	if !h.providersAvailable(w) {
 		return
 	}
 	name := pathParam(r, "name")
@@ -321,7 +321,7 @@ type reorderRequest struct {
 // @Failure      503  {object}  errorResponse
 // @Router       /admin/providers/order [put]
 func (h *Handler) handleProviderReorder(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) || !h.providersAvailable(w) {
+	if !h.providersAvailable(w) {
 		return
 	}
 	var req reorderRequest
@@ -355,7 +355,7 @@ func (h *Handler) handleProviderReorder(w http.ResponseWriter, r *http.Request) 
 // @Failure      503  {object}  errorResponse
 // @Router       /admin/providers/{name}/logs [get]
 func (h *Handler) handleProviderLogs(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) || !h.providersAvailable(w) {
+	if !h.providersAvailable(w) {
 		return
 	}
 	if h.OnDemand == nil {

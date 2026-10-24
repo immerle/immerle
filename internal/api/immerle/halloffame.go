@@ -28,9 +28,6 @@ func (h *Handler) hallOfFameStatus() featureStatusView {
 // @Success  200  {object}  featureStatusView
 // @Router   /admin/hall-of-fame [get]
 func (h *Handler) handleHallOfFameAdmin(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
-		return
-	}
 	writeResource(w, http.StatusOK, h.hallOfFameStatus())
 }
 
@@ -46,9 +43,6 @@ func (h *Handler) handleHallOfFameAdmin(w http.ResponseWriter, r *http.Request) 
 // @Failure  400  {object}  errorResponse
 // @Router   /admin/hall-of-fame [put]
 func (h *Handler) handleHallOfFameToggle(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
-		return
-	}
 	if h.Settings == nil {
 		writeError(w, http.StatusServiceUnavailable, "unavailable", "settings not available")
 		return

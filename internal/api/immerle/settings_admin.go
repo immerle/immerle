@@ -23,9 +23,6 @@ import (
 // @Failure      503  {object}  errorResponse
 // @Router       /admin/settings [get]
 func (h *Handler) handleSettings(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
-		return
-	}
 	if h.Settings == nil {
 		writeError(w, http.StatusServiceUnavailable, "unavailable", "settings unavailable")
 		return
@@ -71,9 +68,6 @@ func redactSettings(rs models.RuntimeSettings) models.RuntimeSettings {
 // @Failure      503  {object}  errorResponse
 // @Router       /admin/settings [patch]
 func (h *Handler) handleSettingsUpdate(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
-		return
-	}
 	if h.Settings == nil {
 		writeError(w, http.StatusServiceUnavailable, "unavailable", "settings unavailable")
 		return
@@ -131,9 +125,6 @@ func (h *Handler) handleSettingsUpdate(w http.ResponseWriter, r *http.Request) {
 // @Failure      503  {object}  errorResponse
 // @Router       /admin/federation/register [post]
 func (h *Handler) handleFederationRegister(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
-		return
-	}
 	if h.Federation == nil || h.Settings == nil {
 		writeError(w, http.StatusServiceUnavailable, "unavailable", "federation unavailable")
 		return
@@ -161,9 +152,6 @@ func (h *Handler) handleFederationRegister(w http.ResponseWriter, r *http.Reques
 // @Failure      503  {object}  errorResponse
 // @Router       /admin/federation [get]
 func (h *Handler) handleFederationProfile(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
-		return
-	}
 	if h.Federation == nil || h.Settings == nil {
 		writeError(w, http.StatusServiceUnavailable, "unavailable", "federation unavailable")
 		return
@@ -189,9 +177,6 @@ func (h *Handler) handleFederationProfile(w http.ResponseWriter, r *http.Request
 // @Failure      503  {object}  errorResponse
 // @Router       /admin/federation [delete]
 func (h *Handler) handleFederationUnlink(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
-		return
-	}
 	if h.Federation == nil || h.Settings == nil {
 		writeError(w, http.StatusServiceUnavailable, "unavailable", "federation unavailable")
 		return
@@ -221,9 +206,6 @@ func (h *Handler) handleFederationUnlink(w http.ResponseWriter, r *http.Request)
 // @Failure      503  {object}  errorResponse
 // @Router       /admin/federation [patch]
 func (h *Handler) handleFederationUpdate(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
-		return
-	}
 	if h.Federation == nil || h.Settings == nil {
 		writeError(w, http.StatusServiceUnavailable, "unavailable", "federation unavailable")
 		return

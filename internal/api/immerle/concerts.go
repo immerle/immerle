@@ -108,9 +108,6 @@ func (h *Handler) concertsStatus() concertsStatusView {
 // @Success  200  {object}  concertsStatusView
 // @Router   /admin/concerts [get]
 func (h *Handler) handleConcertsAdmin(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
-		return
-	}
 	writeResource(w, http.StatusOK, h.concertsStatus())
 }
 
@@ -140,9 +137,6 @@ type concertsUpdateRequest struct {
 // @Failure  400  {object}  errorResponse
 // @Router   /admin/concerts [put]
 func (h *Handler) handleConcertsUpdate(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
-		return
-	}
 	if h.Settings == nil {
 		writeError(w, http.StatusServiceUnavailable, "unavailable", "settings not available")
 		return
@@ -200,9 +194,6 @@ func (h *Handler) handleConcertsUpdate(w http.ResponseWriter, r *http.Request) {
 // @Failure      503  {object}  errorResponse
 // @Router       /admin/concerts/sync [post]
 func (h *Handler) handleConcertsSync(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
-		return
-	}
 	if h.ConcertsSync == nil {
 		writeError(w, http.StatusServiceUnavailable, "unavailable", "concert sync not available")
 		return

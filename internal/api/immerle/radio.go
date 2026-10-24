@@ -167,10 +167,8 @@ func (req radioRequest) valid() bool {
 // @Failure      400  {object}  errorResponse
 // @Router       /admin/radio/stations [post]
 func (h *Handler) handleRadioCreate(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) || h.Radio == nil {
-		if h.Radio == nil {
-			writeError(w, http.StatusServiceUnavailable, "unavailable", "radio not available")
-		}
+	if h.Radio == nil {
+		writeError(w, http.StatusServiceUnavailable, "unavailable", "radio not available")
 		return
 	}
 	var req radioRequest
@@ -206,10 +204,8 @@ func (h *Handler) handleRadioCreate(w http.ResponseWriter, r *http.Request) {
 // @Failure      404  {object}  errorResponse
 // @Router       /admin/radio/stations/{id} [put]
 func (h *Handler) handleRadioUpdate(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) || h.Radio == nil {
-		if h.Radio == nil {
-			writeError(w, http.StatusServiceUnavailable, "unavailable", "radio not available")
-		}
+	if h.Radio == nil {
+		writeError(w, http.StatusServiceUnavailable, "unavailable", "radio not available")
 		return
 	}
 	st, err := h.Radio.Get(r.Context(), radioPathID(r))
@@ -260,10 +256,8 @@ func (h *Handler) handleRadioUpdate(w http.ResponseWriter, r *http.Request) {
 // @Failure      400  {object}  errorResponse
 // @Router       /admin/radio/stations/{id} [delete]
 func (h *Handler) handleRadioDelete(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) || h.Radio == nil {
-		if h.Radio == nil {
-			writeError(w, http.StatusServiceUnavailable, "unavailable", "radio not available")
-		}
+	if h.Radio == nil {
+		writeError(w, http.StatusServiceUnavailable, "unavailable", "radio not available")
 		return
 	}
 	id := radioPathID(r)
@@ -385,9 +379,6 @@ func (h *Handler) radioStatus() featureStatusView {
 // @Success      200  {object}  featureStatusView
 // @Router       /admin/radio [get]
 func (h *Handler) handleRadioAdmin(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
-		return
-	}
 	writeResource(w, http.StatusOK, h.radioStatus())
 }
 
@@ -403,9 +394,6 @@ func (h *Handler) handleRadioAdmin(w http.ResponseWriter, r *http.Request) {
 // @Failure      400  {object}  errorResponse
 // @Router       /admin/radio [put]
 func (h *Handler) handleRadioToggle(w http.ResponseWriter, r *http.Request) {
-	if !h.requireAdmin(w, r) {
-		return
-	}
 	if h.Settings == nil {
 		writeError(w, http.StatusServiceUnavailable, "unavailable", "settings not available")
 		return
