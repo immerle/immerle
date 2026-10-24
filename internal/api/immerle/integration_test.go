@@ -33,15 +33,13 @@ func newEnv(t *testing.T) (*httptest.Server, *persistence.Store) {
 	}
 	activitySvc := core.NewActivityService(store.Activity)
 	h := NewHandler(Deps{
-		Services:    core.NewServices(store, core.ServiceOptions{Auth: auth, Activity: activitySvc, Logger: testutil.NewLogger()}),
-		Auth:        auth,
-		Users:       store.Users,
-		Activity:    activitySvc,
-		Playlists:   store.Playlists,
-		Annotations: store.Annotations,
-		PlayQueues:  store.PlayQueues,
-		Jam:         core.NewJamService(store.Jam),
-		Logger:      testutil.NewLogger(),
+		Services:  core.NewServices(store, core.ServiceOptions{Auth: auth, Activity: activitySvc, Logger: testutil.NewLogger()}),
+		Auth:      auth,
+		Users:     store.Users,
+		Activity:  activitySvc,
+		Playlists: store.Playlists,
+		Jam:       core.NewJamService(store.Jam),
+		Logger:    testutil.NewLogger(),
 	})
 	mux := chi.NewRouter()
 	h.Register(mux)
