@@ -2,6 +2,7 @@ package immerle
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	"github.com/immerle/immerle/internal/core"
@@ -426,15 +427,6 @@ func (h *Handler) handleAddCollaborator(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	p, err := h.Playlists.Get(r.Context(), playlistID)
-	if err != nil {
-		writeLookupError(w, err, "playlist not found")
-		return
-	}
-	if p.Federated || (p.OwnerID != user.ID && !user.IsAdmin) {
-		writeError(w, http.StatusForbidden, "forbidden", "only the owner can add collaborators")
-		return
-	}
 	collaborator, err := h.Users.GetByUsername(r.Context(), req.Username)
 	if err != nil {
 		if !isNotFound(err) {
@@ -444,12 +436,15 @@ func (h *Handler) handleAddCollaborator(w http.ResponseWriter, r *http.Request) 
 		writeErrorParams(w, http.StatusNotFound, "not_found", "user not found", map[string]any{"username": req.Username})
 		return
 	}
-	if !p.Collaborative {
-		p.Collaborative = true
-		_ = h.Playlists.UpdateMeta(r.Context(), p)
-	}
-	if err := h.Playlists.AddCollaborator(r.Context(), playlistID, collaborator.ID); err != nil {
-		writeInternal(w, err)
+	if err := h.Services.Playlists.AddCollaborator(r.Context(), user, playlistID, collaborator.ID); err != nil {
+		switch {
+		case isNotFound(err):
+			writeError(w, http.StatusNotFound, "not_found", "playlist not found")
+		case errors.Is(err, core.ErrForbidden):
+			writeError(w, http.StatusForbidden, "forbidden", "only the owner can add collaborators")
+		default:
+			writeInternal(w, err)
+		}
 		return
 	}
 	writeResource(w, http.StatusCreated, collaboratorView{Collaborator: collaborator.Username})

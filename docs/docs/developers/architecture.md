@@ -54,6 +54,16 @@ internal/
     covergen             generated playlist covers
 ```
 
+## Handlers, services and repositories
+
+The Subsonic and native API handlers are presentation layers. The shared
+application services (`core.Services`) are built once in `internal/app` and
+injected into both. A handler may call a repository directly only for a plain
+read or a CRUD write that carries no rule. Anything with authorization,
+validation, an invariant (e.g. built-in radio stations are read-only) or a side
+effect (activity, hub sync, outbox, external fetch) lives in a `core` service, so
+both protocols enforce it the same way.
+
 ## How it grew
 
 | Milestone | Feature |

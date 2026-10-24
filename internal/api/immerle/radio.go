@@ -2,6 +2,7 @@ package immerle
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,8 +13,8 @@ import (
 	"time"
 
 	"github.com/immerle/immerle/internal/api/httputil"
+	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/models"
-	"github.com/immerle/immerle/internal/persistence"
 	"github.com/immerle/immerle/radio"
 )
 
@@ -151,8 +152,14 @@ type radioRequest struct {
 	CoverURL string `json:"coverUrl" validate:"optional"`
 }
 
-func (req radioRequest) valid() bool {
-	return strings.TrimSpace(req.Name) != "" && strings.HasPrefix(strings.TrimSpace(req.StreamURL), "http")
+// writeRadioError maps a core.RadioService error to its REST response.
+func writeRadioError(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, core.ErrInvalidStation), errors.Is(err, core.ErrBuiltinStation):
+		writeError(w, http.StatusBadRequest, "validation", err.Error())
+	default:
+		writeLookupError(w, err, "station not found")
+	}
 }
 
 // handleRadioCreate adds a custom station (admin only).
@@ -175,17 +182,11 @@ func (h *Handler) handleRadioCreate(w http.ResponseWriter, r *http.Request) {
 	if !decodeJSON(w, r, &req) {
 		return
 	}
-	if !req.valid() {
-		writeError(w, http.StatusBadRequest, "validation", "name and a http(s) streamUrl are required")
-		return
-	}
-	now := time.Now()
-	st := models.RadioStation{
-		ID: persistence.NewStationID(), Name: strings.TrimSpace(req.Name), StreamURL: strings.TrimSpace(req.StreamURL),
-		HomepageURL: strings.TrimSpace(req.HomepageURL), CoverArt: strings.TrimSpace(req.CoverURL), CreatedAt: now, UpdatedAt: now,
-	}
-	if err := h.Radio.Create(r.Context(), st); err != nil {
-		writeInternal(w, err)
+	st, err := h.Services.Radio.Create(r.Context(), models.RadioStation{
+		Name: req.Name, StreamURL: req.StreamURL, HomepageURL: req.HomepageURL, CoverArt: req.CoverURL,
+	})
+	if err != nil {
+		writeRadioError(w, err)
 		return
 	}
 	writeResource(w, http.StatusCreated, toStationView(st))
@@ -208,39 +209,28 @@ func (h *Handler) handleRadioUpdate(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusServiceUnavailable, "unavailable", "radio not available")
 		return
 	}
-	st, err := h.Radio.Get(r.Context(), radioPathID(r))
-	if err != nil {
-		writeLookupError(w, err, "station not found")
-		return
-	}
-	if st.Builtin {
-		// Built-ins are server-managed (refreshed from the embedded JSON on boot);
-		// they cannot be edited via the API.
-		writeError(w, http.StatusBadRequest, "validation", "built-in stations cannot be edited")
-		return
-	}
 	var req radioRequest
 	if !decodeJSON(w, r, &req) {
 		return
 	}
-	if strings.TrimSpace(req.Name) != "" {
-		st.Name = strings.TrimSpace(req.Name)
+	before, st, err := h.Services.Radio.Update(r.Context(), radioPathID(r), func(st *models.RadioStation) {
+		if strings.TrimSpace(req.Name) != "" {
+			st.Name = req.Name
+		}
+		if strings.HasPrefix(strings.TrimSpace(req.StreamURL), "http") {
+			st.StreamURL = req.StreamURL
+		}
+		st.HomepageURL = req.HomepageURL
+		st.CoverArt = req.CoverURL
+	})
+	if err != nil {
+		writeRadioError(w, err)
+		return
 	}
-	if strings.HasPrefix(strings.TrimSpace(req.StreamURL), "http") {
-		st.StreamURL = strings.TrimSpace(req.StreamURL)
-	}
-	st.HomepageURL = strings.TrimSpace(req.HomepageURL)
-	newCover := strings.TrimSpace(req.CoverURL)
-	if newCover != st.CoverArt {
+	if st.CoverArt != before.CoverArt {
 		// The logo changed: drop the stale cached image so the next request
 		// re-fetches from the new source.
 		_ = os.Remove(radioCoverPath(h.CoversDir, st.ID))
-		st.CoverArt = newCover
-	}
-	st.UpdatedAt = time.Now()
-	if err := h.Radio.Update(r.Context(), st); err != nil {
-		writeInternal(w, err)
-		return
 	}
 	writeResource(w, http.StatusOK, toStationView(st))
 }
@@ -261,17 +251,8 @@ func (h *Handler) handleRadioDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	id := radioPathID(r)
-	st, err := h.Radio.Get(r.Context(), id)
-	if err != nil {
-		writeLookupError(w, err, "station not found")
-		return
-	}
-	if st.Builtin {
-		writeError(w, http.StatusBadRequest, "validation", "built-in stations cannot be deleted")
-		return
-	}
-	if err := h.Radio.Delete(r.Context(), id); err != nil {
-		writeInternal(w, err)
+	if err := h.Services.Radio.Delete(r.Context(), id); err != nil {
+		writeRadioError(w, err)
 		return
 	}
 	_ = os.Remove(radioCoverPath(h.CoversDir, id)) // drop the cached logo too

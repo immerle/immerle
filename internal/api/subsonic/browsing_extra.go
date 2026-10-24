@@ -1,13 +1,13 @@
 package subsonic
 
 import (
+	"errors"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
-	"time"
 
-	"github.com/immerle/immerle/internal/integrations/lrclib"
+	"github.com/immerle/immerle/internal/core"
 	"github.com/immerle/immerle/internal/lib/lyrics"
 	"github.com/immerle/immerle/internal/models"
 	"github.com/immerle/immerle/internal/persistence"
@@ -277,18 +277,8 @@ func (h *Handler) handleGetLyrics(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handleGetLyricsBySongID(w http.ResponseWriter, r *http.Request) {
 	resp := newResponse()
 	out := &LyricsList{}
-	if t, err := h.Catalog.GetTrack(r.Context(), param(r, "id")); err == nil {
-		if t.Lyrics == "" {
-			if fetched, err := lrclib.NewClient().Get(r.Context(), t.ArtistName, t.Title, t.AlbumName, t.Duration); err == nil && fetched != "" {
-				t.Lyrics = fetched
-				if _, err := h.Catalog.UpsertTrack(r.Context(), t); err != nil {
-					h.Logger.Warn("lrclib: failed to cache fetched lyrics", "track", t.ID, "err", err)
-				}
-			}
-		}
-		if t.Lyrics != "" {
-			out.StructuredLyrics = []StructuredLyrics{parseStructuredLyrics(t.Lyrics)}
-		}
+	if text, err := h.Services.Library.Lyrics(r.Context(), param(r, "id")); err == nil && text != "" {
+		out.StructuredLyrics = []StructuredLyrics{parseStructuredLyrics(text)}
 	}
 	resp.LyricsList = out
 	write(w, r, resp)
@@ -356,19 +346,11 @@ func (h *Handler) handleCreateInternetRadioStation(w http.ResponseWriter, r *htt
 		writeError(w, r, ErrGeneric, "radio not available")
 		return
 	}
-	streamURL := param(r, "streamUrl")
-	name := param(r, "name")
-	if streamURL == "" || name == "" {
-		writeError(w, r, ErrMissingParameter, "streamUrl and name are required")
-		return
-	}
-	now := time.Now()
-	st := models.RadioStation{
-		ID: persistence.NewStationID(), Name: name, StreamURL: streamURL,
-		HomepageURL: param(r, "homepageUrl"), CreatedAt: now, UpdatedAt: now,
-	}
-	if err := h.Radio.Create(r.Context(), st); err != nil {
-		h.failInternal(w, r, err)
+	_, err := h.Services.Radio.Create(r.Context(), models.RadioStation{
+		Name: param(r, "name"), StreamURL: param(r, "streamUrl"), HomepageURL: param(r, "homepageUrl"),
+	})
+	if err != nil {
+		h.writeRadioError(w, r, err)
 		return
 	}
 	writeOK(w, r)
@@ -383,22 +365,17 @@ func (h *Handler) handleUpdateInternetRadioStation(w http.ResponseWriter, r *htt
 		writeError(w, r, ErrGeneric, "radio not available")
 		return
 	}
-	id := param(r, "id")
-	st, err := h.Radio.Get(r.Context(), id)
+	_, _, err := h.Services.Radio.Update(r.Context(), param(r, "id"), func(st *models.RadioStation) {
+		if v := param(r, "name"); v != "" {
+			st.Name = v
+		}
+		if v := param(r, "streamUrl"); v != "" {
+			st.StreamURL = v
+		}
+		st.HomepageURL = param(r, "homepageUrl")
+	})
 	if err != nil {
-		writeError(w, r, ErrDataNotFound, "Station not found")
-		return
-	}
-	if v := param(r, "name"); v != "" {
-		st.Name = v
-	}
-	if v := param(r, "streamUrl"); v != "" {
-		st.StreamURL = v
-	}
-	st.HomepageURL = param(r, "homepageUrl")
-	st.UpdatedAt = time.Now()
-	if err := h.Radio.Update(r.Context(), st); err != nil {
-		h.failInternal(w, r, err)
+		h.writeRadioError(w, r, err)
 		return
 	}
 	writeOK(w, r)
@@ -414,8 +391,8 @@ func (h *Handler) handleDeleteInternetRadioStation(w http.ResponseWriter, r *htt
 		writeError(w, r, ErrGeneric, "radio not available")
 		return
 	}
-	if err := h.Radio.Delete(r.Context(), param(r, "id")); err != nil {
-		h.failInternal(w, r, err)
+	if err := h.Services.Radio.Delete(r.Context(), param(r, "id")); err != nil {
+		h.writeRadioError(w, r, err)
 		return
 	}
 	writeOK(w, r)
@@ -425,4 +402,18 @@ func (h *Handler) handleGetChatMessages(w http.ResponseWriter, r *http.Request) 
 	resp := newResponse()
 	resp.ChatMessages = &ChatMessages{}
 	write(w, r, resp)
+}
+
+// writeRadioError maps a core.RadioService error to its Subsonic error code.
+func (h *Handler) writeRadioError(w http.ResponseWriter, r *http.Request, err error) {
+	switch {
+	case errors.Is(err, core.ErrInvalidStation):
+		writeError(w, r, ErrMissingParameter, err.Error())
+	case errors.Is(err, core.ErrBuiltinStation):
+		writeError(w, r, ErrGeneric, err.Error())
+	case errors.Is(err, persistence.ErrNotFound):
+		writeError(w, r, ErrDataNotFound, "Station not found")
+	default:
+		h.failInternal(w, r, err)
+	}
 }

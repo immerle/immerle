@@ -18,6 +18,7 @@ type Services struct {
 	Users      *UserService
 	Shares     *ShareService
 	HallOfFame *HallOfFameService
+	Radio      *RadioService
 }
 
 // ServiceOptions are the non-repository collaborators of the shared services.
@@ -45,5 +46,6 @@ func NewServices(store *persistence.Store, o ServiceOptions) *Services {
 		Users:      NewUserService(store.Users, o.Auth).WithForgetter(o.UserForgetter),
 		Shares:     NewShareService(store.Shares, store.Catalog, store.Playlists),
 		HallOfFame: NewHallOfFameService(store.HallOfFame, o.OnDemand),
+		Radio:      NewRadioService(store.Radio),
 	}
 }

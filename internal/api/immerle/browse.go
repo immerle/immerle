@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/immerle/immerle/internal/core"
-	"github.com/immerle/immerle/internal/integrations/lrclib"
 	"github.com/immerle/immerle/internal/integrations/spotifyweb"
 	"github.com/immerle/immerle/internal/lib/lyrics"
 	"github.com/immerle/immerle/internal/models"
@@ -316,20 +315,12 @@ func (h *Handler) handleGetSongLocalStatus(w http.ResponseWriter, r *http.Reques
 // @Failure      404  {object}  errorResponse
 // @Router       /songs/{id}/lyrics [get]
 func (h *Handler) handleGetSongLyrics(w http.ResponseWriter, r *http.Request) {
-	t, err := h.Catalog.GetTrack(r.Context(), pathParam(r, "id"))
+	text, err := h.Services.Library.Lyrics(r.Context(), pathParam(r, "id"))
 	if err != nil {
 		writeServiceError(w, err)
 		return
 	}
-	if t.Lyrics == "" {
-		if fetched, err := lrclib.NewClient().Get(r.Context(), t.ArtistName, t.Title, t.AlbumName, t.Duration); err == nil && fetched != "" {
-			t.Lyrics = fetched
-			if _, err := h.Catalog.UpsertTrack(r.Context(), t); err != nil {
-				h.Logger.Warn("lrclib: failed to cache fetched lyrics", "track", t.ID, "err", err)
-			}
-		}
-	}
-	doc := lyrics.Parse(t.Lyrics)
+	doc := lyrics.Parse(text)
 	out := lyricsView{Synced: doc.Synced, Lines: make([]lyricLine, 0, len(doc.Lines))}
 	for _, l := range doc.Lines {
 		out.Lines = append(out.Lines, lyricLine{StartMs: l.StartMs, Text: l.Text})

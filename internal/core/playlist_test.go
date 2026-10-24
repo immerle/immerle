@@ -47,6 +47,11 @@ func TestFederatedPlaylistNotMutableByNominalOwner(t *testing.T) {
 		t.Fatalf("expected ErrForbidden setting cover on a federated playlist, got %v", err)
 	}
 
+	// No collaborators either.
+	if err := svc.AddCollaborator(ctx, owner, p.ID, owner.ID); err != ErrForbidden {
+		t.Fatalf("expected ErrForbidden adding a collaborator to a federated playlist, got %v", err)
+	}
+
 	// Once subscribed, Delete unsubscribes instead of deleting the row.
 	if err := store.Playlists.Subscribe(ctx, p.ID, owner.ID); err != nil {
 		t.Fatal(err)
