@@ -112,6 +112,8 @@ type ratingRequest struct {
 // @Failure  400  {object}  errorResponse
 // @Failure  401  {object}  errorResponse
 // @Router   /songs/{id}/rating [put]
+// @Router   /albums/{id}/rating [put]
+// @Router   /artists/{id}/rating [put]
 func (h *Handler) handleSetRating(w http.ResponseWriter, r *http.Request) {
 	var req ratingRequest
 	if !decodeJSON(w, r, &req) {
@@ -133,6 +135,8 @@ func (h *Handler) handleSetRating(w http.ResponseWriter, r *http.Request) {
 // @Success  204  "No Content"
 // @Failure  401  {object}  errorResponse
 // @Router   /songs/{id}/rating [delete]
+// @Router   /albums/{id}/rating [delete]
+// @Router   /artists/{id}/rating [delete]
 func (h *Handler) handleClearRating(w http.ResponseWriter, r *http.Request) {
 	if err := h.Services.Playback.SetRating(r.Context(), userFrom(r.Context()).ID, pathParam(r, "id"), 0); err != nil {
 		writeServiceError(w, err)
