@@ -51,6 +51,17 @@
   ],
   packageRules: [
     {
+      // Babel 8 breaks jest 29 (sync loadPartialConfig), brace-expansion 5 breaks minimatch 3/5 (no default export).
+      matchPackageNames: [
+        '@babel/**',
+        'brace-expansion',
+      ],
+      matchUpdateTypes: [
+        'major',
+      ],
+      enabled: false,
+    },
+    {
       matchUpdateTypes: [
         'major',
       ],
