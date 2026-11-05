@@ -75,7 +75,7 @@
     "babel-preset-expo": "~57.0.0",
     "concurrently": "9.2.5",
     "electron": "42.11.16",
-    "electron-builder": "25.1.8",
+    "electron-builder": "26.18.0",
     "eslint": "8.57.1",
     "eslint-config-expo": "~57.0.2",
     "fake-indexeddb": "6.2.5",
