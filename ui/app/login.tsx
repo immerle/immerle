@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { Redirect, router } from 'expo-router';
+import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../src/auth/store';
+import { safeReturnTo } from '../src/auth/routeGuard';
 import { useSelfServer } from '../src/api/selfServer';
 import { Button, Field } from '../src/components/ui';
 import { AuthShell } from '../src/components/AuthShell';
@@ -21,6 +22,8 @@ export default function Login() {
   const login = useAuth((s) => s.login);
   const error = useAuth((s) => s.error);
   const status = useAuth((s) => s.status);
+  const { returnTo } = useLocalSearchParams<{ returnTo?: string | string[] }>();
+  const destination = safeReturnTo(returnTo);
 
   // Pre-fill with the origin when this app is served by its own Immerle binary.
   const selfUrl = useSelfServer((s) => s.url);
@@ -35,7 +38,7 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
 
   // Already signed in: don't let an authenticated user land back on login.
-  if (status === 'authenticated') return <Redirect href="/(tabs)" />;
+  if (status === 'authenticated') return <Redirect href={destination as never} />;
 
   const canSubmit = !!(serverUrl.trim() && username.trim() && password.length > 0);
 
@@ -44,7 +47,7 @@ export default function Login() {
     setBusy(true);
     try {
       await login({ serverUrl, username, password });
-      router.replace('/(tabs)');
+      router.replace(destination as never);
     } catch {
       // Error surfaced via the auth store.
     } finally {

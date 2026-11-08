@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { Redirect, router } from 'expo-router';
+import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { getSetupStatus, initSetup, SetupFieldError } from '../src/api/setup';
+import { loginHref, safeReturnTo } from '../src/auth/routeGuard';
 import { useSelfServer } from '../src/api/selfServer';
 import { useAuth } from '../src/auth/store';
 import { normalizeServerUrl } from '../src/utils/serverUrl';
@@ -29,6 +30,8 @@ type FieldKey = 'setupToken' | 'username' | 'displayName' | 'password' | 'confir
 export default function Setup() {
   const t = useT();
   const colors = useColors();
+  const { returnTo } = useLocalSearchParams<{ returnTo?: string | string[] }>();
+  const destination = safeReturnTo(returnTo);
   const [phase, setPhase] = useState<Phase>('url');
   // Pre-fill with the origin when this app is served by its own Immerle binary.
   const selfUrl = useSelfServer((s) => s.url);
@@ -54,7 +57,7 @@ export default function Setup() {
   const authed = useAuth((s) => s.status) === 'authenticated';
 
   // Already signed in: setup is first-run only, send them into the app.
-  if (authed) return <Redirect href="/(tabs)" />;
+  if (authed) return <Redirect href={destination as never} />;
 
   const set = (key: FieldKey, v: string) => setValues((s) => ({ ...s, [key]: v }));
 
@@ -146,7 +149,7 @@ export default function Setup() {
     setPhase('form');
   };
 
-  const goLogin = () => router.replace('/login');
+  const goLogin = () => router.replace(loginHref(returnTo) as never);
 
   const subtitle =
     phase === 'url'
