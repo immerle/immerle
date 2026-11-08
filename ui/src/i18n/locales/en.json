@@ -237,6 +237,8 @@
     "users_failed": "Could not load the user list.",
     "jam_create_failed": "Could not create the jam.",
     "jam_join_failed": "Could not join the jam.",
+    "login_failed": "Could not connect.",
+    "login_failed_detail": "Could not connect: {{message}}",
     "jam_state_failed": "Could not load the jam.",
     "jam_update_failed": "Could not update the jam.",
     "jam_leave_failed": "Could not leave the jam.",

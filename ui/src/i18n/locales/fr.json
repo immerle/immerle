@@ -237,6 +237,8 @@
     "users_failed": "Impossible de charger la liste des utilisateurs.",
     "jam_create_failed": "Impossible de créer le jam.",
     "jam_join_failed": "Impossible de rejoindre le jam.",
+    "login_failed": "Connexion impossible.",
+    "login_failed_detail": "Connexion impossible : {{message}}",
     "jam_state_failed": "Impossible de charger le jam.",
     "jam_update_failed": "Impossible de mettre à jour le jam.",
     "jam_leave_failed": "Impossible de quitter le jam.",
