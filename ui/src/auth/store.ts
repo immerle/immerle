@@ -6,6 +6,7 @@ import { createAuthedImmerleApi, createImmerleApi } from '../api/immerleApi';
 import { ImmerleClient } from '../api/immerle/client';
 import { probeCapabilities, SUBSONIC_ONLY_CAPABILITIES } from '../api/immerle/capabilities';
 import { Capabilities, ImmerleSession } from '../api/immerle/types';
+import { t } from '../i18n';
 import {
   deleteSecureItem,
   getSecureItem,
@@ -197,7 +198,7 @@ export const useAuth = create<AuthState>((set, get) => ({
     } catch (e) {
       set({
         status: 'unauthenticated',
-        error: e instanceof Error ? `Connexion impossible : ${e.message}` : 'Connexion impossible',
+        error: e instanceof Error ? t('errors.login_failed_detail', { message: e.message }) : t('errors.login_failed'),
       });
       throw e;
     }
