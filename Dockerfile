@@ -13,7 +13,7 @@ RUN npm run export:web
 # ---- build stage ----
 # Also pinned to the build platform; Go cross-compiles to $TARGETARCH natively,
 # which is far faster than running the toolchain under QEMU emulation.
-FROM --platform=$BUILDPLATFORM golang:1.27-alpine@sha256:f2c872bcee949b7be9c490efd02b48a8a2fbf947cdf533f1c58525ec9d8170fd AS build
+FROM --platform=$BUILDPLATFORM golang:1.27-alpine@sha256:eb61c3873c97416fff0116553fff65d67a3549f72e11d9758849a689cdd8b523 AS build
 WORKDIR /src
 ARG TARGETOS TARGETARCH
 
@@ -30,7 +30,7 @@ RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache
     go build -ldflags "-s -w -X main.version=${VERSION}" -o /out/immerle ./cmd/immerle
 
 # ---- runtime stage ----
-FROM alpine:3.24@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
+FROM alpine:3.24@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf
 RUN apk add --no-cache ffmpeg ca-certificates && \
     adduser -D -u 10001 immerle
 WORKDIR /app
