@@ -2,6 +2,8 @@ module github.com/immerle/immerle
 
 go 1.26.9
 
+toolchain go1.26.11
+
 require (
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0
