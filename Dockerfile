@@ -3,7 +3,7 @@
 # ---- web app stage ----
 # Pin to the build platform: the export is static web assets (arch-independent),
 # so we build it once natively instead of emulating it per target arch.
-FROM --platform=$BUILDPLATFORM node:24-alpine@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f AS ui
+FROM --platform=$BUILDPLATFORM node:24-alpine@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5 AS ui
 WORKDIR /ui
 COPY ui/package.json ui/package-lock.json ./
 RUN --mount=type=cache,id=npm-expo57,target=/root/.npm,sharing=locked npm ci --legacy-peer-deps
@@ -13,7 +13,7 @@ RUN npm run export:web
 # ---- build stage ----
 # Also pinned to the build platform; Go cross-compiles to $TARGETARCH natively,
 # which is far faster than running the toolchain under QEMU emulation.
-FROM --platform=$BUILDPLATFORM golang:1.27-alpine@sha256:f2c872bcee949b7be9c490efd02b48a8a2fbf947cdf533f1c58525ec9d8170fd AS build
+FROM --platform=$BUILDPLATFORM golang:1.27-alpine@sha256:70bd7ddea8b6cbe5d6943cde279d6b67feb10cc924fb9100d1d8757c1575b280 AS build
 WORKDIR /src
 ARG TARGETOS TARGETARCH
 
@@ -30,7 +30,7 @@ RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache
     go build -ldflags "-s -w -X main.version=${VERSION}" -o /out/immerle ./cmd/immerle
 
 # ---- runtime stage ----
-FROM alpine:3.24@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
+FROM alpine:3.24@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf
 RUN apk add --no-cache ffmpeg ca-certificates && \
     adduser -D -u 10001 immerle
 WORKDIR /app
